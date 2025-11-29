@@ -396,7 +396,7 @@ internal class SkiaSharpGraphics(SKCanvas canvas) : IGraphics
         _paint.Color = new SKColor(c.R, c.G, c.B, c.A);
     }
 
-    public void FillPolygon(int[] xPoints, int[] yPoints, int nPoints)
+    public void FillPolygon(Span<int> xPoints, Span<int> yPoints, int nPoints)
     {
         if (nPoints <= 2)
         {
@@ -437,7 +437,7 @@ internal class SkiaSharpGraphics(SKCanvas canvas) : IGraphics
         canvas.DrawPath(path, _paint);
     }
 
-    public void DrawPolygon(int[] xPoints, int[] yPoints, int nPoints)
+    public void DrawPolygon(Span<int> xPoints, Span<int> yPoints, int nPoints)
     {
         if (nPoints <= 1 || (nPoints == 2 && xPoints[0] == xPoints[1] && yPoints[0] == yPoints[1]))
         {

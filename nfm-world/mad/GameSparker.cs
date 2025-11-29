@@ -48,6 +48,8 @@ public class GameSparker
 
         accumulator += timer.ElapsedMilliseconds - lastFrameTime;
 
+        var ts = Stopwatch.GetTimestamp();
+
 
         while(accumulator >= physics_dt)
         {
@@ -62,9 +64,11 @@ public class GameSparker
         MediumState interp_state = currentMediumState.InterpWith(prevMediumState, interp_ratio);
         interp_state.Apply();
 
-        Console.WriteLine(currentMediumState.Xz + ", " + prevMediumState.Xz + ", " + interp_state.Xz + ", " + interp_ratio);
+        Console.WriteLine(currentMediumState.Xz + ", " + prevMediumState.Xz + ", " + interp_state.Xz + ", " + interp_ratio + ", ");
 
         Render();
+
+        Console.WriteLine(Stopwatch.GetElapsedTime(ts));
 
         currentMediumState.Apply();
         lastFrameTime = timer.ElapsedMilliseconds;

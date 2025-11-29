@@ -1195,7 +1195,7 @@ class ContO
         {
             P[i83].Colnum = conto78.P[i83].Colnum;
             P[i83].Master = conto78.P[i83].Master;
-            P[i83].Rot(P[i83].Ox, P[i83].Oz, 0, 0, i81, P[i83].N);
+            Plane.Rot(P[i83].Ox, P[i83].Oz, 0, 0, i81, P[i83].N);
             P[i83].Loadprojf();
         }
         if (conto78.Tnt != 0)
@@ -1608,22 +1608,19 @@ class ContO
     internal void D()
     {
         Dist = 0;
-        var i = Medium.Cx + (int) ((X - Medium.X - Medium.Cx) * Medium.Cos(Medium.Xz) -
-                                   (Z - Medium.Z - Medium.Cz) * Medium.Sin(Medium.Xz));
-        var i124 = Medium.Cz + (int) ((X - Medium.X - Medium.Cx) * Medium.Sin(Medium.Xz) +
-                                      (Z - Medium.Z - Medium.Cz) * Medium.Cos(Medium.Xz));
-        var i125 = Medium.Cz + (int) ((Y - Medium.Y - Medium.Cy) * Medium.Sin(Medium.Zy) +
-                                      (i124 - Medium.Cz) * Medium.Cos(Medium.Zy));
-        var i126 = Xs(i + MaxR, i125) - Xs(i - MaxR, i125);
-        if (Xs(i + MaxR * 2, i125) > Medium.Iw && Xs(i - MaxR * 2, i125) < Medium.W && i125 > -MaxR &&
-            (i125 < Medium.Fade[Disline] + MaxR || Medium.Trk != 0) && (i126 > Disp || Medium.Trk != 0) &&
+        var cx = Medium.Cx + (int) ((X - Medium.X - Medium.Cx) * Medium.Cos(Medium.Xz) - (Z - Medium.Z - Medium.Cz) * Medium.Sin(Medium.Xz));
+        var cz = Medium.Cz + (int) ((X - Medium.X - Medium.Cx) * Medium.Sin(Medium.Xz) + (Z - Medium.Z - Medium.Cz) * Medium.Cos(Medium.Xz));
+        var cy = Medium.Cz + (int) ((Y - Medium.Y - Medium.Cy) * Medium.Sin(Medium.Zy) + (cz - Medium.Cz) * Medium.Cos(Medium.Zy));
+        var i126 = Xs(cx + MaxR, cy) - Xs(cx - MaxR, cy);
+        if (Xs(cx + MaxR * 2, cy) > Medium.Iw && Xs(cx - MaxR * 2, cy) < Medium.W && cy > -MaxR &&
+            (cy < Medium.Fade[Disline] + MaxR || Medium.Trk != 0) && (i126 > Disp || Medium.Trk != 0) &&
             (!Decor || Medium.Resdown != 2 && Medium.Trk != 1))
         {
-            PrepareShadow(i125, i124);
+            PrepareShadow(cy, cz);
 
             var i136 = Medium.Cy + (int) ((Y - Medium.Y - Medium.Cy) * Medium.Cos(Medium.Zy) -
-                                          (i124 - Medium.Cz) * Medium.Sin(Medium.Zy));
-            if (Ys(i136 + MaxR, i125) > Medium.Ih && Ys(i136 - MaxR, i125) < Medium.H)
+                                          (cz - Medium.Cz) * Medium.Sin(Medium.Zy));
+            if (Ys(i136 + MaxR, cy) > Medium.Ih && Ys(i136 - MaxR, cy) < Medium.H)
             {
                 if (Elec && Medium.Noelec == 0)
                 {
@@ -1676,10 +1673,7 @@ class ContO
 
                     Dsprk(false);
                 }
-                Dist = (int) (Math.Sqrt((int) Math.Sqrt((Medium.X + Medium.Cx - X) * (Medium.X + Medium.Cx - X) +
-                                                        (Medium.Z - Z) * (Medium.Z - Z) +
-                                                        (Medium.Y + Medium.Cy - Y) * (Medium.Y + Medium.Cy - Y))) *
-                              Grounded);
+                Dist = (int) (Math.Sqrt(Math.Sqrt((Medium.X + Medium.Cx - X) * (Medium.X + Medium.Cx - X) + (Medium.Z - Z) * (Medium.Z - Z) + (Medium.Y + Medium.Cy - Y) * (Medium.Y + Medium.Cy - Y))) * Grounded);
             }
         }
         FinishShadow();

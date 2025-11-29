@@ -219,9 +219,9 @@ class Plane : IComparable<Plane>
             }
         }
 
-        var x = new int[N];
-        var z = new int[N];
-        var y = new int[N];
+        Span<int> x = stackalloc int[N];
+        Span<int> z = stackalloc int[N];
+        Span<int> y = stackalloc int[N];
         if (Embos == 0)
         {
             for (var i39 = 0; i39 < N; i39++)
@@ -285,8 +285,8 @@ class Plane : IComparable<Plane>
         }
         Rot(x, z, Medium.Cx, Medium.Cz, Medium.Xz, N);
         var bool72 = false;
-        var is73 = new int[N];
-        var is74 = new int[N];
+        Span<int> is73 = stackalloc int[N];
+        Span<int> is74 = stackalloc int[N];
         var i75 = 500;
         for (var i76 = 0; i76 < N; i76++)
         {
@@ -309,9 +309,7 @@ class Plane : IComparable<Plane>
         }
         if (is74[i77] < is74[i78])
         {
-            var i81 = i77;
-            i77 = i78;
-            i78 = i81;
+            (i77, i78) = (i78, i77);
         }
         if (Spy(x[i77], z[i77]) > Spy(x[i78], z[i78]))
         {
@@ -336,8 +334,8 @@ class Plane : IComparable<Plane>
         }
         Rot(y, z, Medium.Cy, Medium.Cz, Medium.Zy, N);
         var bool84 = true;
-        var is85 = new int[N];
-        var is86 = new int[N];
+        Span<int> is85 = stackalloc int[N];
+        Span<int> is86 = stackalloc int[N];
         var i87 = 0;
         var i88 = 0;
         var i89 = 0;
@@ -647,7 +645,7 @@ class Plane : IComparable<Plane>
         G.DrawPolygon(is85, is86, N);
     }
 
-    private void GetShouldRender(int i36, int[] is86, int[] is85, int[] y, int[] x, int[] z, bool bool72, ref bool abool,
+    private void GetShouldRender(int i36, Span<int> is86, Span<int> is85, Span<int> y, Span<int> x, Span<int> z, bool bool72, ref bool abool,
         ref bool bool84)
     {
         var i97 = 1;
@@ -903,7 +901,7 @@ class Plane : IComparable<Plane>
         return color;
     }
 
-    private void DrawPart(int[] is85, int[] is86)
+    private void DrawPart(Span<int> is85, Span<int> is86)
     {
         int i114;
         int i115;
@@ -1127,7 +1125,7 @@ class Plane : IComparable<Plane>
         }
     }
 
-    private void RenderFlame(int mx, int my, int mz, int xz, int xy, int yz, int[] x, int[] y, int[] z)
+    private void RenderFlame(int mx, int my, int mz, int xz, int xy, int yz, Span<int> x, Span<int> y, Span<int> z)
     {
         if (Embos <= 11 && Medium.Random() > 0.5 && Glass != 1)
         {
@@ -1157,11 +1155,11 @@ class Plane : IComparable<Plane>
         {
             f = 1.0F + Medium.Random() / 5.0F;
         }
-        if (Embos > 4 && Embos <= 7)
+        if (Embos is > 4 and <= 7)
         {
             f = 1.0F + Medium.Random() / 4.0F;
         }
-        if (Embos > 7 && Embos <= 9)
+        if (Embos is > 7 and <= 9)
         {
             f = 1.0F + Medium.Random() / 3.0F;
             if (HSB[2] > 0.7)
@@ -1169,7 +1167,7 @@ class Plane : IComparable<Plane>
                 HSB[2] = 0.7F;
             }
         }
-        if (Embos > 9 && Embos <= 10)
+        if (Embos is > 9 and <= 10)
         {
             f = 1.0F + Medium.Random() / 2.0F;
             if (HSB[2] > 0.6)
@@ -1177,7 +1175,7 @@ class Plane : IComparable<Plane>
                 HSB[2] = 0.6F;
             }
         }
-        if (Embos > 10 && Embos <= 12)
+        if (Embos is > 10 and <= 12)
         {
             f = 1.0F + Medium.Random() / 1.0F;
             if (HSB[2] > 0.5)
@@ -1464,9 +1462,9 @@ class Plane : IComparable<Plane>
         _projf = _projf / 3.0F;
     }
 
-    internal void Rot(int[] ais, int[] is163, int i, int i164, float i165, int i166)
+    internal static void Rot(Span<int> ais, Span<int> is163, int i, int i164, float i165, int i166)
     {
-        if ((int)i165 != 0)
+        if (i165 > 0 || i165 < 0)
         {
             for (var i167 = 0; i167 < i166; i167++)
             {
@@ -1706,8 +1704,13 @@ class Plane : IComparable<Plane>
         return (i162 - Medium.FocusPoint) * (Medium.Cy - i) / i162 + i;
     }
 
-    public int CompareTo(Plane o)
+    public int CompareTo(Plane? o)
     {
+        if (o == null)
+        {
+            return -1;
+        }
+
         if (_av == o._av)
         {
             return 0;

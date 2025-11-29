@@ -9,9 +9,9 @@ public static class G
     
     public static void SetColor(Color c) => Graphics.SetColor(c);
 
-    public static void FillPolygon(int[] x, int[] y, int n) => Graphics.FillPolygon(x, y, n);
+    public static void FillPolygon(Span<int> x, Span<int> y, int n) => Graphics.FillPolygon(x, y, n);
 
-    public static void DrawPolygon(int[] x, int[] y, int n) => Graphics.DrawPolygon(x, y, n);
+    public static void DrawPolygon(Span<int> x, Span<int> y, int n) => Graphics.DrawPolygon(x, y, n);
 
     public static void FillRect(int x1, int y1, int width, int height) => Graphics.FillRect(x1, y1, width, height);
 
