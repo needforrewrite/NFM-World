@@ -15,9 +15,9 @@ class Plane : IComparable<Plane>
     private readonly int[] _coy = new int[3];
     private readonly int[] _coz = new int[3];
     internal float Ctmag;
-    private int _cxy;
-    private int _cxz;
-    private int _czy;
+    private float _cxy;
+    private float _cxz;
+    private float _czy;
     private float _deltaf = 1.0F;
     private int _disline = 7;
     private int _dx;
@@ -204,7 +204,7 @@ class Plane : IComparable<Plane>
         Deltafntyp();
     }
 
-    internal void D(Plane last, Plane next, int mx, int my, int mz, int xz, int xy, int yz, int i34, int i35,
+    internal void D(Plane last, Plane next, int mx, int my, int mz, float xz, float xy, float yz, float i34, float i35,
         bool abool, int i36)
     {
         if (Master == 1)
@@ -1020,7 +1020,7 @@ class Plane : IComparable<Plane>
         }
     }
 
-    private void RenderChip(int mx, int my, int mz, int xz, int xy, int yz)
+    private void RenderChip(int mx, int my, int mz, float xz, float xy, float yz)
     {
         if (Chip == 1)
         {
@@ -1125,7 +1125,7 @@ class Plane : IComparable<Plane>
         }
     }
 
-    private void RenderFlame(int mx, int my, int mz, int xz, int xy, int yz, Span<int> x, Span<int> y, Span<int> z)
+    private void RenderFlame(int mx, int my, int mz, float xz, float xy, float yz, Span<int> x, Span<int> y, Span<int> z)
     {
         if (Embos <= 11 && Medium.Random() > 0.5 && Glass != 1)
         {
@@ -1206,7 +1206,7 @@ class Plane : IComparable<Plane>
             var i45 = 1;
             var i46 = 1;
             int i47;
-            for (i47 = Math.Abs(yz); i47 > 270; i47 -= 360)
+            for (i47 = (int)Math.Abs(yz); i47 > 270; i47 -= 360)
             {
             }
             i47 = Math.Abs(i47);
@@ -1215,7 +1215,7 @@ class Plane : IComparable<Plane>
                 i45 = -1;
             }
             int i48;
-            for (i48 = Math.Abs(xy); i48 > 270; i48 -= 360)
+            for (i48 = (int)Math.Abs(xy); i48 > 270; i48 -= 360)
             {
             }
             i48 = Math.Abs(i48);
@@ -1477,7 +1477,7 @@ class Plane : IComparable<Plane>
     }
 
 
-    internal void S(int i, int i120, int i121, int i122, int i123, int i124, int i125)
+    internal void S(int i, int i120, int i121, float i122, float i123, float i124, int i125)
     {
         var ais = new int[N];
         var is126 = new int[N];

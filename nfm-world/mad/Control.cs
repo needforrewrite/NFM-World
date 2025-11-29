@@ -3,7 +3,7 @@ using System;
 
 namespace NFMWorld.Mad;
 
-internal class Control
+public class Control
 {
     internal bool Arrace;
 

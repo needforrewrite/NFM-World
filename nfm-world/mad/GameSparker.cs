@@ -8,13 +8,15 @@ public class GameSparker
 {
     private static MicroStopwatch timer;
     private static ContO[] cars;
+    private static CarState[] current_car_states;
+    private static CarState[] prev_car_states;
 
     private static readonly string[] CarRads = { "2000tornados" };
 
     private static long accumulator = 0;
     private static long lastFrameTime = 0;
     /* Frequency of physics ticks */
-    private static int physics_dt_us = 47000;
+    private static int physics_dt_us = (int)(47000*0.333333f);
 
     private static MediumState currentMediumState;
     private static MediumState prevMediumState;
@@ -144,9 +146,18 @@ public static void KeyPressed(Keys key)
         currentMediumState = new MediumState();
         prevMediumState = new MediumState();
 
+        Medium.Groundpolys();
         Medium.D();
         
         cars = new ContO[10];
+        current_car_states = new CarState[10];
+        prev_car_states = new CarState[10];
+
+        for(int i = 0; i < 10; i++)
+        {
+            current_car_states[i] = new CarState();
+            prev_car_states[i] = new CarState();
+        }
 
         FileUtil.LoadFiles("../data/cars", CarRads, (ais, id) =>
         {
@@ -175,14 +186,22 @@ public static void KeyPressed(Keys key)
 
             prevMediumState = currentMediumState;
             currentMediumState = new MediumState();
+
+            prev_car_states[0] = current_car_states[0];
+            current_car_states[0] = new CarState(cars[0]);
         }
 
         float interp_ratio = accumulator / (float)physics_dt_us;
-        MediumState interp_state = currentMediumState.InterpWith(prevMediumState, interp_ratio);
-        interp_state.Apply();
+
+        MediumState medium_interp_state = currentMediumState.InterpWith(prevMediumState, interp_ratio);
+        medium_interp_state.Apply();
+
+        CarState car_interp_state = current_car_states[0].InterpWith(prev_car_states[0], interp_ratio);
+        car_interp_state.Apply(cars[0]);
 
         Render();
 
+        current_car_states[0].Apply(cars[0]);
         currentMediumState.Apply();
         lastFrameTime = timer.ElapsedMicroseconds;
     }

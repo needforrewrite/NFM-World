@@ -1191,7 +1191,7 @@ public class Medium
         }
     }
 
-    internal static void Follow(ContO conto, int i, int i27)
+    internal static void Follow(ContO conto, float i, int i27)
     {
         Zy = 10;
         var i28 = 2 + Math.Abs(_bcxz) / 4;
@@ -1542,7 +1542,7 @@ public class Medium
         }
     }
 
-    private static void Groundpolys()
+    public static void Groundpolys()
     {
         var i = (X - _sgpx) / 1200 - 12;
         if (i < 0)

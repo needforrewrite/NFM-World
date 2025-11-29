@@ -5,7 +5,7 @@ using Random = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
-class ContO
+public class ContO
 {
     internal int Checkpoint;
     internal int Colok;
@@ -76,14 +76,14 @@ class ContO
     private float[] _vry;
     private float[] _vrz;
     internal int Wh;
-    internal int Wxz = 0;
-    internal int Wzy = 0;
+    internal float Wxz = 0;
+    internal float Wzy = 0;
     internal int X;
-    internal int Xy;
-    internal int Xz;
+    internal float Xy;
+    internal float Xz;
     internal int Y;
     internal int Z;
-    internal int Zy;
+    internal float Zy;
 
     internal ContO(byte[] _is)
     {
@@ -2421,7 +2421,7 @@ class ContO
         var is147 = new int[4];
         var i148 = 1;
         int i149;
-        for (i149 = Math.Abs(Zy); i149 > 270; i149 -= 360)
+        for (i149 = (int)Math.Abs(Zy); i149 > 270; i149 -= 360)
         {
         }
         i149 = Math.Abs(i149);
