@@ -67,9 +67,9 @@ public class Medium
         170, 220, 255
     };
 
-    public static int Cx = 400;
-    internal static int Cy = 225;
-    internal static int Cz = 50;
+    public static int Cx = 1280/2;
+    internal static int Cy = 300;
+    internal static int Cz = 720/2;
     internal static bool Darksky;
 
     private static readonly bool[] Diup =

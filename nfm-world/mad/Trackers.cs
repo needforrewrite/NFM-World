@@ -16,7 +16,7 @@ internal class Trackers
     internal static readonly int[] Radx = new int[75000];
     internal static readonly int[] Rady = new int[75000];
     internal static readonly int[] Radz = new int[75000];
-    internal static int[,][] Sect;
+    internal static int[,][] Sect = new int[1000, 1000][];
     internal static readonly int[] Skd = new int[75000];
     internal static int Sx;
     internal static int Sz;

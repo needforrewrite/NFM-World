@@ -318,11 +318,11 @@ public unsafe class Program
     {
         if (isDown)
         {
-            //GameSparker.KeyPressed(key);
+            GameSparker.KeyPressed(key);
         }
         else
         {
-            //GameSparker.KeyReleased(key);
+            GameSparker.KeyReleased(key);
         }
     }
 }
