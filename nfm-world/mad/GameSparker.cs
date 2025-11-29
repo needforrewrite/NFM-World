@@ -62,8 +62,6 @@ public class GameSparker
         MediumState interp_state = currentMediumState.InterpWith(prevMediumState, interp_ratio);
         interp_state.Apply();
 
-        Console.WriteLine(currentMediumState.Xz + ", " + prevMediumState.Xz + ", " + interp_state.Xz + ", " + interp_ratio);
-
         Render();
 
         currentMediumState.Apply();
