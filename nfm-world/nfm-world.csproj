@@ -17,13 +17,17 @@
       <PackageReference Include="Silk.NET.Windowing.Sdl" Version="2.22.0" />
       <PackageReference Include="SkiaSharp" Version="3.119.1" />
       <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
+      <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
-  <Target Name="CopyCustomContent" AfterTargets="AfterBuild">
+  <!-- windows builds -->
+  <Target Name="CopyCustomContentWindows" AfterTargets="AfterBuild" Condition="'$(OS)' == 'Windows_NT'">
     <Copy SourceFiles="skiadriver/bass.dll" DestinationFolder="$(OutDir)" />
   </Target>
 
-  <Target Name="CopyCustomContent" AfterTargets="AfterBuild">
+  <!-- linux builds -->
+  <Target Name="CopyCustomContentLinux" AfterTargets="AfterBuild" Condition="'$(OS)' != 'Windows_NT'">
     <Copy SourceFiles="skiadriver/libbass.so" DestinationFolder="$(OutDir)" />
   </Target>
+
 </Project>
