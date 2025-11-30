@@ -225,6 +225,8 @@ public static void KeyPressed(Keys key)
             }
         });
 
+        playerMad.Reseto(0, cars[0]);
+
         FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id) => {
             stage_parts[id] = new ContO(ais);
         });

@@ -962,7 +962,7 @@ internal class Mad
         }
         for (var i29 = 0; i29 < 4; i29++)
         {
-            wheely[i29] += (Scy[0] + Scy[1] + Scy[2] + Scy[3]) / 4.0F * _tickRate; //Scy[i29] * _tickRate;
+            wheely[i29] += Scy[i29] * _tickRate;
             wheelx[i29] += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4.0F * _tickRate;
             wheelz[i29] += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4.0F * _tickRate;
         }//
@@ -1183,17 +1183,17 @@ internal class Mad
         {
             Skid = 2;
         }
-        var i45 = 0;
+        var nGroundedWheels = 0;
         var isWheelGrounded = new bool[4];
-        int nGroundedWheels = 0;
         float groundY = 250f;
         float wheelYThreshold = 5f;
+        Console.WriteLine(wheely[0] + ", " + wheely[1] + ", " + wheely[2] + ", " + wheely[3]);
         for (var i49 = 0; i49 < 4; i49++)
         {
             isWheelGrounded[i49] = false;
             if (wheely[i49] > 245.0F)
             {
-                i45++;
+                nGroundedWheels++;
                 Wtouch = true;
                 Gtouch = true;
                 if (!wasMtouch && Scy[i49] != 7.0F)
@@ -1251,6 +1251,7 @@ internal class Mad
                     // but when using floating pieces, you have to make sure the ramp comes first in the code
                     if (Trackers.Xy[j] == 0 && Trackers.Zy[j] == 0 && Trackers.Y[j] != groundY && wheely[k] > Trackers.Y[j] - wheelYThreshold)
                     {
+                        Console.WriteLine("incremented");
                         ++nGroundedWheels;
                         Wtouch = true;
                         Gtouch = true;
@@ -1655,6 +1656,8 @@ internal class Mad
                 Pxy -= i_83 * _tickRate;
         }
         //
+        if(nGroundedWheels == 4)
+            Console.WriteLine(nGroundedWheels);
         if (nGroundedWheels == 4) {
             int i_86 = 0;
             while (Pzy < 360) {
@@ -1700,7 +1703,7 @@ internal class Mad
         }
         if (!Mtouch && Wtouch) {
             // NFM-WORLD set this to 0 to enable AB
-            if (_cntouch == 0/*10*/) {
+            if (_cntouch == 10) {
                 //this.mtouch = true;
                 Mtouch = true; //DS-addons: Bad landing hotfix
             } else {
