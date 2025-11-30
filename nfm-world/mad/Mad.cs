@@ -607,10 +607,12 @@ internal class Mad
                 Pzy += (int)((Dcomp - Ucomp) * Medium.Cos(Pxy)) * _tickRate; //
                 if (zyinv)
                 {
+                    // no
                     conto.Xz += (int)((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate;
                 }
                 else
                 {
+                    // no
                     conto.Xz -= (int)((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate;
                 }
                 Pxy += (int)(Rcomp - Lcomp) * _tickRate;
@@ -783,10 +785,12 @@ internal class Mad
                     Pzy += (int)((Dcomp - Ucomp) * Medium.Cos(Pxy)) * _tickRate;
                     if (zyinv)
                     {
+                        // no
                         conto.Xz += (int)((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate;
                     }
                     else
                     {
+                        // no
                         conto.Xz -= (int)((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate;
                     }
                     Pxy += (int)(Rcomp - Lcomp) * _tickRate;
@@ -919,7 +923,6 @@ internal class Mad
                 }
             }
         }
-        Console.WriteLine(Cxz);
         var wheelx = new float[4];
         var wheelz = new float[4];
         var wheely = new float[4];
@@ -939,6 +942,7 @@ internal class Mad
         var i27 = (int)((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4.0F);
         for (var i28 = 0; i28 < 4; i28++)
         {
+            //SCXCHK1
             if (Scx[i28] - i26 > 200.0F)
             {
                 Scx[i28] = 200 + i26;
@@ -995,11 +999,12 @@ internal class Mad
         if (Mtouch)
         {
             var traction = Stat.Grip;
-            traction -= Math.Abs(Txz - conto.Xz) * Speed / 250.0F;
+            traction -= Math.Abs(Txz - conto.Xz) * Speed / 250.0F * (1 / _tickRate);
             if (control.Handb)
             {
                 traction -= Math.Abs(Txz - conto.Xz) * 4;
             }
+
             if (traction < Stat.Grip)
             {
                 if (Skid != 2)
@@ -1012,6 +1017,7 @@ internal class Mad
             {
                 Skid = 2;
             }
+
             if (surfaceType == 1)
             {
                 traction = (int)(traction * 0.75);
@@ -1023,6 +1029,7 @@ internal class Mad
             var speedx = -(int)(Speed * Medium.Sin(conto.Xz) * Medium.Cos(Pzy));
             var speedz = (int)(Speed * Medium.Cos(conto.Xz) * Medium.Cos(Pzy));
             var speedy = -(int)(Speed * Medium.Sin(Pzy));
+
             if (BadLanding || Wasted /*|| CheckPoints.Haltall*/)
             {
                 speedx = 0;
@@ -1051,9 +1058,17 @@ internal class Mad
             float minTraction = 1.0f;
             traction = Math.Max(traction, minTraction);
 
+            // BUG FIXED HERE
+            /*
+                Not sure what scx etc are. However, this is the code that breaks traction if you hold A/D too long.
+                Traction is broken when `speedx` and `scx` (for example) have a difference greater than traction.
+                These values are compared bwteen ticks. So, if the tick duration is too short, the difference remains small.
+                So, traction is not broken.
+                Fix it by multiplying this difference by the tickrate muliplier.
+            */
             for (var j = 0; j < 4; j++)
             {
-                if (Math.Abs(Scx[j] - speedx) > traction)
+                if (Math.Abs((Scx[j] - speedx)*1/_tickRate) > traction)
                 {
                     Scx[j] += traction * Math.Sign(speedx - Scx[j]) * _tickRate;
                 }
@@ -1061,7 +1076,7 @@ internal class Mad
                 {
                     Scx[j] = speedx;
                 }
-                if (Math.Abs(Scz[j] - speedz) > traction)
+                if (Math.Abs((Scz[j] - speedz)*1/_tickRate) > traction)
                 {
                     Scz[j] += traction * Math.Sign(speedz - Scz[j]) * _tickRate;
                 }
@@ -1069,7 +1084,7 @@ internal class Mad
                 {
                     Scz[j] = speedz;
                 }
-                if (Math.Abs(Scy[j] - speedy) > traction)
+                if (Math.Abs((Scy[j] - speedy)*1/_tickRate) > traction)
                 {
                     Scy[j] += traction * Math.Sign(speedy - Scy[j]) * _tickRate;
                 }
@@ -1095,7 +1110,7 @@ internal class Mad
                         {
                             f42 = 1.2F;
                         }
-                        if (Medium.Random() > 0.65)
+                        if (Medium.Random() > 0.65 && Medium.Random() < _tickRate)
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
                                 f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch);
@@ -1108,12 +1123,12 @@ internal class Mad
                     }
                     else
                     {
-                        if (surfaceType == 1 && Medium.Random() > 0.8)
+                        if (surfaceType == 1 && Medium.Random() > 0.8 && Medium.Random() < _tickRate)
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
                                 1.1F * Stat.Simag, (int)_tilt, BadLanding && Mtouch);
                         }
-                        if ((surfaceType == 2 || surfaceType == 3) && Medium.Random() > 0.6)
+                        if ((surfaceType == 2 || surfaceType == 3) && Medium.Random() > 0.6 && Medium.Random() < _tickRate)
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
                                 1.15F * Stat.Simag, (int)_tilt, BadLanding && Mtouch);
@@ -1756,21 +1771,21 @@ internal class Mad
             var f87 = (float)(Speed / Stat.Swits[2] * 14.0F * (Stat.Bounce - 0.4));
             if (control.Left && _tilt < f87 && _tilt >= 0.0F)
             {
-                _tilt += 0.4f;
+                _tilt += 0.4f * _tickRate;
             }
             else if (control.Right && _tilt > -f87 && _tilt <= 0.0F)
             {
-                _tilt -= 0.4f;
+                _tilt -= 0.4f * _tickRate;
             }
             else if (Math.Abs(_tilt) > 3.0 * (Stat.Bounce - 0.4))
             {
                 if (_tilt > 0.0F)
                 {
-                    _tilt -= 3.0f * (Stat.Bounce - 0.3f);
+                    _tilt -= 3.0f * (Stat.Bounce - 0.3f)  * _tickRate;
                 }
                 else
                 {
-                    _tilt += 3.0f * (Stat.Bounce - 0.3f);
+                    _tilt += 3.0f * (Stat.Bounce - 0.3f)  * _tickRate;
                 }
             }
             else
@@ -1780,7 +1795,7 @@ internal class Mad
             conto.Xy += (int)_tilt;
             if (Gtouch)
             {
-                conto.Y -= (int)(_tilt / 1.5f);
+                conto.Y -= (int)(_tilt / 1.5f  * _tickRate);
             }
         }
         else if (_tilt != 0.0F)
