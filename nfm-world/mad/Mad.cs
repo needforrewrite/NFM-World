@@ -962,7 +962,7 @@ internal class Mad
         }
         for (var i29 = 0; i29 < 4; i29++)
         {
-            wheely[i29] += Scy[i29] * _tickRate;
+            wheely[i29] += (Scy[0] + Scy[1] + Scy[2] + Scy[3]) / 4.0F * _tickRate; //Scy[i29] * _tickRate;
             wheelx[i29] += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4.0F * _tickRate;
             wheelz[i29] += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4.0F * _tickRate;
         }//
@@ -1421,7 +1421,7 @@ internal class Mad
                         // https://www.geogebra.org/geometry/vhaznznv
                         // let's call this rotated vector (rz, ry)
                         float ry = (float)(Trackers.Y[j] + ((wheely[k] - Trackers.Y[j]) * Medium.Cos(pAngle) - (wheelz[k] - Trackers.Z[j]) * Medium.Sin(pAngle)));
-                        float rz = (float)(Trackers.Z[j] + ((wheely[k] - Trackers.Z[j]) * Medium.Sin(pAngle) + (wheelz[k] - Trackers.Z[j]) * Medium.Cos(pAngle)));
+                        float rz = (float)(Trackers.Z[j] + ((wheely[k] - Trackers.Y[j]) * Medium.Sin(pAngle) + (wheelz[k] - Trackers.Z[j]) * Medium.Cos(pAngle)));
 
                         // commenting this whole if and its body out makes us phase through ramps
                         // making this always true makes us snap to ramps even when we are airborne
@@ -1646,13 +1646,13 @@ internal class Mad
             } 
         } else {
             if (!zyinv)
-                Pzy += i_81;
+                Pzy += i_81 * _tickRate;
             else
-                Pzy -= i_81;
+                Pzy -= i_81 * _tickRate;
             if (!xyinv)
-                Pxy += i_83;
+                Pxy += i_83 * _tickRate;
             else
-                Pxy -= i_83;
+                Pxy -= i_83 * _tickRate;
         }
         //
         if (nGroundedWheels == 4) {
