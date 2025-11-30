@@ -44,7 +44,9 @@ public class GameSparker
     /////////////////////////////////
 
     private static Control playerControl;
+    private static Control AIControl;
     private static Mad playerMad;
+    private static Mad AIMad;
 
 public static void KeyPressed(Keys key)
     {
@@ -153,7 +155,7 @@ public static void KeyPressed(Keys key)
 
     public static void Load()
     {
-        Trackers.Devidetrackers(100, 100, 100, 100);
+        Trackers.Devidetrackers(10000, 10000, 10000, 10000);
 
         playerMad = new Mad(new Stat(14), 0);
         playerControl = new Control();
@@ -305,14 +307,41 @@ public static void KeyPressed(Keys key)
     {
         Medium.D();
 
-        // needs a proper render sorter, there's a method called renderObjects from nfm world (nfm-lit/experimental branch) that might help
-        for (int i = 0; i < 44; i++)
+        var renderQueue = new List<ContO>();
+
+        // process instantiated stage parts
+        for (int i = 0; i < stage_parts.Length; i++)
         {
-            if (stage_parts[i] != null)
+            if (stage_parts[i] != null && stage_parts[i].Dist != 0 && stage_parts[i].IsInstantiated)
+            {
+                renderQueue.Add(stage_parts[i]);
+            }
+            else if (stage_parts[i] != null && stage_parts[i].Dist == 0 && stage_parts[i].IsInstantiated)
             {
                 stage_parts[i].D();
             }
         }
-        cars[0].D();
+
+        // process instantiated cars
+        for (int i = 0; i < cars.Length; i++)
+        {
+            if (cars[i] != null && cars[i].Dist != 0 && cars[i].IsInstantiated)
+            {
+                renderQueue.Add(cars[i]);
+            }
+            else if (cars[i] != null && cars[i].Dist == 0 && cars[i].IsInstantiated)
+            {
+                cars[i].D();
+            }
+        }
+
+        // sort the render queue by distance in descending order
+        renderQueue.Sort((a, b) => b.Dist.CompareTo(a.Dist));
+
+        // render all objects in the sorted order
+        foreach (var obj in renderQueue)
+        {
+            obj.D();
+        }
     }
 }

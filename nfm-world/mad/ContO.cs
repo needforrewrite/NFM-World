@@ -13,7 +13,8 @@ public class ContO
     internal bool Decor;
     internal int Disline = 14;
     internal int Disp;
-    internal int Dist;
+    public int Dist { get; set; }
+    public bool IsInstantiated { get; private set; }
     private readonly int[] _edl;
     private readonly int[] _edr;
     private readonly int[] _elc;
@@ -173,6 +174,7 @@ public class ContO
 
         var randomcolor = false;
         var randoutline = false;
+        IsInstantiated = false;
 
         try
         {
@@ -260,8 +262,7 @@ public class ContO
                     }
                     if (aastring.StartsWith("</p>"))
                     {
-                        P[Npl] = new Plane(is3, is5, is4, i, is6, i14, i10, i11, 0, 0, 0, Disline, 0, bool7, i13,
-                            bool15);
+                        P[Npl] = new Plane(is3, is5, is4, i, is6, i14, i10, i11, 0, 0, 0, Disline, 0, bool7, i13, bool15);
                         if (is6[0] == Fcol[0] && is6[1] == Fcol[1] && is6[2] == Fcol[2] && i14 == 0)
                         {
                             P[Npl].Colnum = 1;
@@ -459,6 +460,19 @@ public class ContO
                     }
                     if (aastring.StartsWith("</track>"))
                     {
+                        var x1 = _tx[Tnt] - _tradx[Tnt];
+                        var x2 = _tx[Tnt] + _tradx[Tnt];
+                        var y1 = _ty[Tnt] - _trady[Tnt];
+                        var y2 = _ty[Tnt] + _trady[Tnt];
+                        var z1 = _tz[Tnt] - _tradz[Tnt];
+                        var z2 = _tz[Tnt] + _tradz[Tnt];
+
+                        var ggr = 0;
+
+                        
+
+                        //P[Npl] = new Plane(is3, is5, is4, i, is6, i14, i10, i11, 0, 0, 0, Disline, 0, bool7, i13, bool15);
+
                         bool1 = false;
                         Tnt++;
                     }
@@ -1277,6 +1291,7 @@ public class ContO
                 _rtg[i89] = 0;
             }
         }
+        IsInstantiated = true;
     }
 
     internal ContO(int i, int i90, int i91, int i92, int i93, int i94)
