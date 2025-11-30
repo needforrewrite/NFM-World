@@ -48,6 +48,10 @@ public class GameSparker
     private static Mad playerMad;
     private static Mad AIMad;
 
+    // stage loading
+    private static int _indexOffset = 10;
+    public static int _stagePartCount = 0;
+
 public static void KeyPressed(Keys key)
     {
         //if (!_exwist)
@@ -153,10 +157,42 @@ public static void KeyPressed(Keys key)
         //}
     }
 
+    private static int GetModel(string input)
+    {
+        // Combine all model arrays
+        string[][] allModels = new string[][]
+        {
+            StageRads
+        };
+
+        int modelId = 0;
+
+        for (int i = 0; i < allModels.Length; i++)
+        {
+            for (int j = 0; j < allModels[i].Length; j++)
+            {
+                if (string.Equals(input, allModels[i][j], StringComparison.OrdinalIgnoreCase))
+                {
+                    int offset = 0;
+
+                    // Calculate offset based on previous arrays
+                    for (int k = 0; k < i; k++)
+                    {
+                        offset += allModels[k].Length;
+                    }
+
+                    modelId = j + offset;
+                    return modelId;
+                }
+            }
+        }
+
+        Debug.WriteLine("No results for GetModel");
+        return -1;
+    }
+
     public static void Load()
     {
-        Trackers.Devidetrackers(10000, 10000, 10000, 10000);
-
         playerMad = new Mad(new Stat(14), 0);
         playerControl = new Control();
         timer = new MicroStopwatch();
@@ -169,7 +205,7 @@ public static void KeyPressed(Keys key)
         Medium.D();
         
         cars = new ContO[100];
-        stage_parts = new ContO[100];
+        stage_parts = new ContO[100000];
 
         current_car_states = new CarState[100];
         prev_car_states = new CarState[100];
@@ -191,56 +227,11 @@ public static void KeyPressed(Keys key)
             stage_parts[id] = new ContO(ais);
         });
 
-
-        // part gallery stage, kill asap when proper stage loading is done
         cars[0] = new ContO(cars[14], 0, 0, 0, 0);
 
-        stage_parts[0] = new ContO(stage_parts[37], 0, 250, 0, 0);
-        stage_parts[1] = new ContO(stage_parts[0], 0, 250, 5600, 0);
-        stage_parts[2] = new ContO(stage_parts[16], 0, 250, 3400, 0);
-        stage_parts[3] = new ContO(stage_parts[13], 0, 250, 8400, 180);
-        stage_parts[4] = new ContO(stage_parts[13], 0, 250, -2800, 0);
-        //its 4:08 am, idk why the fuck it keeps repeating the first 5 pieces wtf
-        stage_parts[5] = new ContO(stage_parts[0], 0, 250, 18000, 0);
-        stage_parts[6] = new ContO(stage_parts[1], 3000, 250, 18000, 0);
-        stage_parts[7] = new ContO(stage_parts[2], 6000, 250, 18000, 0);
-        stage_parts[8] = new ContO(stage_parts[3], 9000, 250, 18000, 0);
-        stage_parts[9] = new ContO(stage_parts[4], 12000, 250, 18000, 0);
-        stage_parts[10] = new ContO(stage_parts[5], 15000, 250, 18000, 0);
-        stage_parts[11] = new ContO(stage_parts[6], 18000, 250, 18000, 0);
-        stage_parts[12] = new ContO(stage_parts[7], 21000, 250, 18000, 0);
-        stage_parts[13] = new ContO(stage_parts[8], 24000, 250, 18000, 0);
-        stage_parts[14] = new ContO(stage_parts[9], 27000, 250, 18000, 0);
-        stage_parts[15] = new ContO(stage_parts[10], 30000, 250, 18000, 0);
-        stage_parts[16] = new ContO(stage_parts[11], 33000, 250, 18000, 0);
-        stage_parts[17] = new ContO(stage_parts[12], 36000, 250, 18000, 0);
-        stage_parts[18] = new ContO(stage_parts[13], 39000, 250, 18000, 0);
-        stage_parts[19] = new ContO(stage_parts[14], 42000, 250, 18000, 0);
-        stage_parts[20] = new ContO(stage_parts[15], 45000, 250, 18000, 0);
-        stage_parts[21] = new ContO(stage_parts[16], 48000, 250, 18000, 0);
-        stage_parts[22] = new ContO(stage_parts[17], 51000, 250, 18000, 0);
-        stage_parts[23] = new ContO(stage_parts[18], 54000, 250, 18000, 0);
-        stage_parts[24] = new ContO(stage_parts[19], 57000, 250, 18000, 0);
-        stage_parts[25] = new ContO(stage_parts[20], 60000, 250, 18000, 0);
-        stage_parts[26] = new ContO(stage_parts[21], 63000, 250, 18000, 0);
-        stage_parts[27] = new ContO(stage_parts[22], 66000, 250, 18000, 0);
-        stage_parts[28] = new ContO(stage_parts[23], 69000, 250, 18000, 0);
-        stage_parts[29] = new ContO(stage_parts[24], 72000, 250, 18000, 0);
-        stage_parts[30] = new ContO(stage_parts[25], 75000, 250, 18000, 0);
-        stage_parts[31] = new ContO(stage_parts[26], 78000, 250, 18000, 0);
-        stage_parts[32] = new ContO(stage_parts[27], 81000, 250, 18000, 0);
-        stage_parts[33] = new ContO(stage_parts[28], 84000, 250, 18000, 0);
-        stage_parts[34] = new ContO(stage_parts[29], 87000, 250, 18000, 0);
-        stage_parts[35] = new ContO(stage_parts[30], 90000, 250, 18000, 0);
-        stage_parts[36] = new ContO(stage_parts[31], 93000, 250, 18000, 0);
-        stage_parts[37] = new ContO(stage_parts[32], 96000, 250, 18000, 0);
-        stage_parts[38] = new ContO(stage_parts[33], 99000, 250, 18000, 0);
-        stage_parts[39] = new ContO(stage_parts[34], 102000, 250, 18000, 0);
-        stage_parts[40] = new ContO(stage_parts[35], 105000, 250, 18000, 0);
-        stage_parts[41] = new ContO(stage_parts[36], 108000, 250, 18000, 0);
-        stage_parts[42] = new ContO(stage_parts[37], 111000, 250, 18000, 0);
-        stage_parts[43] = new ContO(stage_parts[38], 114000, 250, 18000, 0);
+        Console.WriteLine(StageRads.Length);
 
+        Loadstage("1");
 
         for (var i = 0; i < StageRads.Length; i++) {
             if (stage_parts[i] == null) {
@@ -253,6 +244,339 @@ public static void KeyPressed(Keys key)
                 throw new Exception("No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
+    }
+
+    internal static int Getint(string astring, string string4, int i)
+    {
+        // TODO
+        return Utility.Getint(astring, string4, i);
+    }
+
+
+
+    /**
+     * Loads stage currently set by checkpoints.stage onto stageContos
+     */
+    private static void Loadstage(string stage)
+    {
+        Trackers.Nt = 0;
+        Medium.Resdown = 0;
+        Medium.Rescnt = 5;
+        Medium.Lightson = false;
+        Medium.Noelec = 0;
+        Medium.Ground = 250;
+        Medium.Trk = 0;
+        var i = 0;
+        var k = 100;
+        var l = 0;
+        var m = 100;
+        var astring = "";
+        try
+        {
+            //var customStagePath = "stages/" + CheckPoints.Stage + ".txt";
+            var customStagePath = "data/stages/" + stage + ".txt";
+            foreach (var line in System.IO.File.ReadAllLines(customStagePath))
+            {
+                astring = "" + line.Trim();
+                if (astring.StartsWith("snap"))
+                {
+                    Medium.Setsnap(Getint("snap", astring, 0), Getint("snap", astring, 1),
+                        Getint("snap", astring, 2));
+                }
+                if (astring.StartsWith("sky"))
+                {
+                    Medium.Setsky(Getint("sky", astring, 0), Getint("sky", astring, 1), Getint("sky", astring, 2));
+                }
+                if (astring.StartsWith("ground"))
+                {
+                    Medium.Setgrnd(Getint("ground", astring, 0), Getint("ground", astring, 1),
+                        Getint("ground", astring, 2));
+                }
+                if (astring.StartsWith("polys"))
+                {
+                    Medium.Setpolys(Getint("polys", astring, 0), Getint("polys", astring, 1),
+                        Getint("polys", astring, 2));
+                }
+                if (astring.StartsWith("fog"))
+                {
+                    Medium.Setfade(Getint("fog", astring, 0), Getint("fog", astring, 1), Getint("fog", astring, 2));
+                }
+                if (astring.StartsWith("texture"))
+                {
+                    Medium.Setexture(Getint("texture", astring, 0), Getint("texture", astring, 1),
+                        Getint("texture", astring, 2), Getint("texture", astring, 3));
+                }
+                if (astring.StartsWith("clouds"))
+                {
+                    Medium.Setcloads(Getint("clouds", astring, 0), Getint("clouds", astring, 1),
+                        Getint("clouds", astring, 2), Getint("clouds", astring, 3), Getint("clouds", astring, 4));
+                }
+                if (astring.StartsWith("density"))
+                {
+                    Medium.Fogd = (Getint("density", astring, 0) + 1) * 2 - 1;
+                    if (Medium.Fogd < 1)
+                    {
+                        Medium.Fogd = 1;
+                    }
+                    if (Medium.Fogd > 30)
+                    {
+                        Medium.Fogd = 30;
+                    }
+                }
+                if (astring.StartsWith("fadefrom"))
+                {
+                    Medium.Fadfrom(Getint("fadefrom", astring, 0));
+                }
+                if (astring.StartsWith("lightson"))
+                {
+                    Medium.Lightson = true;
+                }
+                if (astring.StartsWith("mountains"))
+                {
+                    Medium.Mgen = Getint("mountains", astring, 0);
+                }
+                if (astring.StartsWith("set"))
+                {
+                    var setindex = Getint("set", astring, 0);
+
+                    setindex -= _indexOffset;
+                    Console.WriteLine("Setindex ais: " + setindex);
+                    // ok why does it not load certain shit and doesnt assign correct pieces properly, very strange
+                    stage_parts[_stagePartCount] = new ContO(stage_parts[setindex], Getint("set", astring, 1),
+                        Medium.Ground - stage_parts[setindex].Grat, Getint("set", astring, 2),
+                        Getint("set", astring, 3));
+                    if (astring.Contains(")p"))
+                    {
+                        // CheckPoints.X[CheckPoints.N] = Getint("set", astring, 1);
+                        // CheckPoints.Z[CheckPoints.N] = Getint("set", astring, 2);
+                        // CheckPoints.Y[CheckPoints.N] = 0;
+                        // CheckPoints.Typ[CheckPoints.N] = 0;
+                        // if (astring.Contains(")pt"))
+                        // {
+                        //     CheckPoints.Typ[CheckPoints.N] = -1;
+                        // }
+                        // if (astring.Contains(")pr"))
+                        // {
+                        //     CheckPoints.Typ[CheckPoints.N] = -2;
+                        // }
+                        // if (astring.Contains(")po"))
+                        // {
+                        //     CheckPoints.Typ[CheckPoints.N] = -3;
+                        // }
+                        // if (astring.Contains(")ph"))
+                        // {
+                        //     CheckPoints.Typ[CheckPoints.N] = -4;
+                        // }
+                        // if (astring.Contains("aout"))
+                        // {
+                        //     Console.WriteLine("aout: " + CheckPoints.N);
+                        // }
+                        // CheckPoints.N++;
+                        // _notb = _nob + 1;
+                    }
+                    _stagePartCount++;
+                    // if (Medium.Loadnew)
+                    // {
+                    //     Medium.Loadnew = false;
+                    // }
+                }
+                if (astring.StartsWith("chk"))
+                {
+                    var chkindex = Getint("chk", astring, 0);
+                    chkindex -= _indexOffset;
+                    var chkheight = Medium.Ground - stage_parts[chkindex].Grat;
+                    stage_parts[_stagePartCount] = new ContO(stage_parts[chkindex], Getint("chk", astring, 1), chkheight,
+                        Getint("chk", astring, 2), Getint("chk", astring, 3));
+                    
+                    // CheckPoints.X[CheckPoints.N] = Getint("chk", astring, 1);
+                    // CheckPoints.Z[CheckPoints.N] = Getint("chk", astring, 2);
+                    // CheckPoints.Y[CheckPoints.N] = chkheight;
+                    // if (Getint("chk", astring, 3) == 0)
+                    // {
+                    //     CheckPoints.Typ[CheckPoints.N] = 1;
+                    // }
+                    // else
+                    // {
+                    //     CheckPoints.Typ[CheckPoints.N] = 2;
+                    // }
+                    // CheckPoints.Pcs = CheckPoints.N;
+                    // CheckPoints.N++;
+                    //stage_parts[_stagePartCount].Checkpoint = CheckPoints.Nsp + 1;
+                    //CheckPoints.Nsp++;
+                    _stagePartCount++;
+                }
+                if (astring.StartsWith("fix"))
+                {
+                    var fixindex = Getint("fix", astring, 0);
+                    fixindex -= _indexOffset;
+                    stage_parts[_stagePartCount] = new ContO(stage_parts[fixindex], Getint("fix", astring, 1),
+                        Getint("fix", astring, 3),
+                        Getint("fix", astring, 2), Getint("fix", astring, 4));
+                    // CheckPoints.Fx[CheckPoints.Fn] = Getint("fix", astring, 1);
+                    // CheckPoints.Fz[CheckPoints.Fn] = Getint("fix", astring, 2);
+                    // CheckPoints.Fy[CheckPoints.Fn] = Getint("fix", astring, 3);
+                    stage_parts[_stagePartCount].Elec = true;
+                    if (Getint("fix", astring, 4) != 0)
+                    {
+                        //CheckPoints.Roted[CheckPoints.Fn] = true;
+                        stage_parts[_stagePartCount].Roted = true;
+                    }
+                    else
+                    {
+                        //CheckPoints.Roted[CheckPoints.Fn] = false;
+                    }
+                    //CheckPoints.Special[CheckPoints.Fn] = astring.IndexOf(")s") != -1;
+                    //CheckPoints.Fn++;
+                    _stagePartCount++;
+                }
+                // if (!CheckPoints.Notb && astring.StartsWith("pile"))
+                // {
+                //     _stageContos[_nob] = new ContO(Getint("pile", astring, 0), Getint("pile", astring, 1),
+                //         Getint("pile", astring, 2), Getint("pile", astring, 3), Getint("pile", astring, 4),
+                //         Medium.Ground);
+                //     _nob++;
+                // }
+                if (astring.StartsWith("nlaps"))
+                {
+                    //CheckPoints.Nlaps = Getint("nlaps", astring, 0);
+                }
+                if (astring.StartsWith("name"))
+                {
+                    //CheckPoints.Name = Getastring("name", astring, 0).Replace('|', ',');
+                }
+                if (astring.StartsWith("stagemaker"))
+                {
+                    //CheckPoints.Maker = Getastring("stagemaker", astring, 0);
+                }
+                if (astring.StartsWith("publish"))
+                {
+                    //CheckPoints.Pubt = Getint("publish", astring, 0);
+                }
+                if (astring.StartsWith("soundtrack"))
+                {
+                    
+                }
+
+                // stage walls
+                var wall = GetModel("thewall");
+                if (astring.StartsWith("maxr"))
+                {
+                    var n = Getint("maxr", astring, 0);
+                    var o = Getint("maxr", astring, 1);
+                    i = o;
+                    var p = Getint("maxr", astring, 2);
+                    for (var q = 0; q < n; q++)
+                    {
+                        stage_parts[_stagePartCount] = new ContO(stage_parts[wall], o,
+                            Medium.Ground - stage_parts[29].Grat, //29 may need to be 85 or xtgraphics.nCars - 16
+                            q * 4800 + p, 0);
+                        _stagePartCount++;
+                    }
+                    Trackers.Y[Trackers.Nt] = -5000;
+                    Trackers.Rady[Trackers.Nt] = 7100;
+                    Trackers.X[Trackers.Nt] = o + 500;
+                    Trackers.Radx[Trackers.Nt] = 600;
+                    Trackers.Z[Trackers.Nt] = n * 4800 / 2 + p - 2400;
+                    Trackers.Radz[Trackers.Nt] = n * 4800 / 2;
+                    Trackers.Xy[Trackers.Nt] = 90;
+                    Trackers.Zy[Trackers.Nt] = 0;
+                    Trackers.Dam[Trackers.Nt] = 167;
+                    Trackers.Decor[Trackers.Nt] = false;
+                    Trackers.Skd[Trackers.Nt] = 0;
+                    Trackers.Nt++;
+                }
+                if (astring.StartsWith("maxl"))
+                {
+                    var n = Getint("maxl", astring, 0);
+                    var o = Getint("maxl", astring, 1);
+                    k = o;
+                    var p = Getint("maxl", astring, 2);
+                    for (var q = 0; q < n; q++)
+                    {
+                        stage_parts[_stagePartCount] = new ContO(stage_parts[wall], o, Medium.Ground - stage_parts[wall].Grat,
+                            q * 4800 + p,
+                            180);
+                        _stagePartCount++;
+                    }
+                    Trackers.Y[Trackers.Nt] = -5000;
+                    Trackers.Rady[Trackers.Nt] = 7100;
+                    Trackers.X[Trackers.Nt] = o - 500;
+                    Trackers.Radx[Trackers.Nt] = 600;
+                    Trackers.Z[Trackers.Nt] = n * 4800 / 2 + p - 2400;
+                    Trackers.Radz[Trackers.Nt] = n * 4800 / 2;
+                    Trackers.Xy[Trackers.Nt] = -90;
+                    Trackers.Zy[Trackers.Nt] = 0;
+                    Trackers.Dam[Trackers.Nt] = 167;
+                    Trackers.Decor[Trackers.Nt] = false;
+                    Trackers.Skd[Trackers.Nt] = 0;
+                    Trackers.Nt++;
+                }
+                if (astring.StartsWith("maxt"))
+                {
+                    var n = Getint("maxt", astring, 0);
+                    var o = Getint("maxt", astring, 1);
+                    l = o;
+                    var p = Getint("maxt", astring, 2);
+                    for (var q = 0; q < n; q++)
+                    {
+                        stage_parts[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
+                            o,
+                            90);
+                        _stagePartCount++;
+                    }
+                    Trackers.Y[Trackers.Nt] = -5000;
+                    Trackers.Rady[Trackers.Nt] = 7100;
+                    Trackers.Z[Trackers.Nt] = o + 500;
+                    Trackers.Radz[Trackers.Nt] = 600;
+                    Trackers.X[Trackers.Nt] = n * 4800 / 2 + p - 2400;
+                    Trackers.Radx[Trackers.Nt] = n * 4800 / 2;
+                    Trackers.Zy[Trackers.Nt] = 90;
+                    Trackers.Xy[Trackers.Nt] = 0;
+                    Trackers.Dam[Trackers.Nt] = 167;
+                    Trackers.Decor[Trackers.Nt] = false;
+                    Trackers.Skd[Trackers.Nt] = 0;
+                    Trackers.Nt++;
+                }
+                if (astring.StartsWith("maxb"))
+                {
+                    var n = Getint("maxb", astring, 0);
+                    var o = Getint("maxb", astring, 1);
+                    m = o;
+                    var p = Getint("maxb", astring, 2);
+                    for (var q = 0; q < n; q++)
+                    {
+                        stage_parts[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
+                            o,
+                            -90);
+                        _stagePartCount++;
+                    }
+                    Trackers.Y[Trackers.Nt] = -5000;
+                    Trackers.Rady[Trackers.Nt] = 7100;
+                    Trackers.Z[Trackers.Nt] = o - 500;
+                    Trackers.Radz[Trackers.Nt] = 600;
+                    Trackers.X[Trackers.Nt] = n * 4800 / 2 + p - 2400;
+                    Trackers.Radx[Trackers.Nt] = n * 4800 / 2;
+                    Trackers.Zy[Trackers.Nt] = -90;
+                    Trackers.Xy[Trackers.Nt] = 0;
+                    Trackers.Dam[Trackers.Nt] = 167;
+                    Trackers.Decor[Trackers.Nt] = false;
+                    Trackers.Skd[Trackers.Nt] = 0;
+                    Trackers.Nt++;
+                }
+            }
+            //Medium.Newpolys(k, i - k, m, l - m, _notb);
+            Medium.Newclouds(k, i, m, l);
+            Medium.Newmountains(k, i, m, l);
+            Medium.Newstars();
+            Trackers.Devidetrackers(k, i - k, m, l - m);
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine("Error ain stage " + stage);
+            Console.WriteLine("At line: " + astring);
+            Console.WriteLine(exception);
+        }
+        GC.Collect();
     }
 
     public static void GameTick()
