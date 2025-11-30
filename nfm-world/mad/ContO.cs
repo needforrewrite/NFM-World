@@ -16,25 +16,25 @@ public class ContO
     internal int Disp;
     public int Dist { get; set; }
     public bool IsInstantiated { get; private set; }
-    private readonly int[] _edl = [];
-    private readonly int[] _edr = [];
-    private readonly int[] _elc = [];
+    private readonly int[] _edl;
+    private readonly int[] _edr;
+    private readonly int[] _elc;
     internal bool Elec;
     internal string Err;
     internal bool Errd;
     internal int Fcnt;
-    internal readonly int[] Fcol = [];
+    internal readonly int[] Fcol;
     internal bool Fix;
     internal int Grat;
     internal float Grounded = 1.0F;
-    internal readonly int[] Keyx = [];
-    internal readonly int[] Keyz = [];
+    internal readonly int[] Keyx;
+    internal readonly int[] Keyz;
     internal int MaxR;
     internal bool Noline;
     private bool[] _notwall = [];
     internal int Npl;
     internal float[] Osmag = [];
-    internal readonly Plane[] P = [];
+    internal readonly Plane[] P;
     private bool[] _rbef = [];
     internal float Rcx;
     internal float Rcy;
@@ -47,7 +47,7 @@ public class ContO
     private int[] _rz = [];
     private int[] _sav = [];
     private float[] _sbln = [];
-    internal readonly int[] Scol = [];
+    internal readonly int[] Scol;
     internal int[] Scx = [];
     internal int[] Scz = [];
     internal bool Shadow;
