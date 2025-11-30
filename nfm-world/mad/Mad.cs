@@ -1002,7 +1002,7 @@ internal class Mad
             traction -= Math.Abs(Txz - conto.Xz) * Speed / 250.0F * (1 / _tickRate);
             if (control.Handb)
             {
-                traction -= Math.Abs(Txz - conto.Xz) * 4;
+                traction -= Math.Abs(Txz - conto.Xz) * 4 * (1 / _tickRate);
             }
 
             if (traction < Stat.Grip)
