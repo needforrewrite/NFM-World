@@ -46,8 +46,6 @@ jobs:
         include:
           - rid: win-x64
             extension: zip
-          - rid: win-arm64
-            extension: zip
           - rid: linux-x64
             extension: tar.gz
           - rid: linux-arm64
