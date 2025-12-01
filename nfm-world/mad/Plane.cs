@@ -16,9 +16,9 @@ class Plane : IComparable<Plane>
     private readonly int[] _coy = new int[3];
     private readonly int[] _coz = new int[3];
     internal float Ctmag;
-    private float _cxy;
-    private float _cxz;
-    private float _czy;
+    private SinCosFloat _cxy;
+    private SinCosFloat _cxz;
+    private SinCosFloat _czy;
     private float _deltaf = 1.0F;
     private int _disline = 7;
     private int _dx;
