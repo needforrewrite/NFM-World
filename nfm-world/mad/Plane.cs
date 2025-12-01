@@ -205,7 +205,7 @@ class Plane : IComparable<Plane>
         Deltafntyp();
     }
 
-    internal void D(Plane last, Plane next, int mx, int my, int mz, float xz, float xy, float yz, float i34, float i35,
+    internal void D(Plane last, Plane next, int mx, int my, int mz, SinCosFloat xz, SinCosFloat xy, SinCosFloat yz, float i34, float i35,
         bool abool, int i36)
     {
         if (Master == 1)
@@ -1460,6 +1460,20 @@ class Plane : IComparable<Plane>
         _projf = _projf / 3.0F;
     }
 
+    internal static void Rot(Span<int> a, Span<int> b, int offA, int offB, int angle, int len)
+    {
+        if (angle is > 0 or < 0)
+        {
+            for (var i = 0; i < len; i++)
+            {
+                var pa = a[i];
+                var pb = b[i];
+                a[i] = offA + (int) ((pa - offA) * Medium.Cos(angle) - (pb - offB) * Medium.Sin(angle));
+                b[i] = offB + (int) ((pa - offA) * Medium.Sin(angle) + (pb - offB) * Medium.Cos(angle));
+            }
+        }
+    }
+
     internal static void Rot(Span<int> a, Span<int> b, int offA, int offB, float angle, int len)
     {
         if (angle is > 0 or < 0)
@@ -1470,6 +1484,20 @@ class Plane : IComparable<Plane>
                 var pb = b[i];
                 a[i] = offA + (int) ((pa - offA) * Medium.Cos(angle) - (pb - offB) * Medium.Sin(angle));
                 b[i] = offB + (int) ((pa - offA) * Medium.Sin(angle) + (pb - offB) * Medium.Cos(angle));
+            }
+        }
+    }
+
+    internal static void Rot(Span<int> a, Span<int> b, int offA, int offB, SinCosFloat angle, int len)
+    {
+        if (angle > 0 || angle < 0)
+        {
+            for (var i = 0; i < len; i++)
+            {
+                var pa = a[i];
+                var pb = b[i];
+                a[i] = offA + (int) ((pa - offA) * angle.Cos - (pb - offB) * angle.Sin);
+                b[i] = offB + (int) ((pa - offA) * angle.Sin + (pb - offB) * angle.Cos);
             }
         }
     }

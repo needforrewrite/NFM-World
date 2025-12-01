@@ -177,10 +177,10 @@ public class Medium
     internal static float Vxz = 180f;
     internal static int W = 1280;
     internal static int X;
-    internal static float Xz;
+    internal static SinCosFloat Xz;
     internal static int Y;
     internal static int Z;
-    internal static float Zy;
+    internal static SinCosFloat Zy;
 
     static Medium()
     {
@@ -409,6 +409,17 @@ public class Medium
         var r = x % m;
         return r<0 ? r + m : r;
     }
+    
+    internal static float Sin(int deg)
+    {
+        return float.Sin(deg * ((float)Math.PI / 180));
+    }
+        
+    internal static float Cos(int deg)
+    {
+        return float.Cos(deg * ((float)Math.PI / 180));
+    }
+
     internal static float Sin(float deg)
     {
         return float.Sin(deg * ((float)Math.PI / 180));
@@ -417,6 +428,16 @@ public class Medium
     internal static float Cos(float deg)
     {
         return float.Cos(deg * ((float)Math.PI / 180));
+    }
+
+    internal static float Sin(SinCosFloat deg)
+    {
+        return deg.Sin;
+    }
+        
+    internal static float Cos(SinCosFloat deg)
+    {
+        return deg.Cos;
     }
 
     internal static void D()

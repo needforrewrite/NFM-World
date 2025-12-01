@@ -81,11 +81,11 @@ public class ContO
     internal float Wxz = 0;
     internal float Wzy = 0;
     internal int X;
-    internal float Xy;
-    internal float Xz;
+    internal SinCosFloat Xy;
+    internal SinCosFloat Xz;
     internal int Y;
     internal int Z;
-    internal float Zy;
+    internal SinCosFloat Zy;
 
     internal ContO(byte[] _is)
     {
@@ -2067,7 +2067,7 @@ public class ContO
             is186[7] = Y - Medium.Y - _edl[i] + 5 + (int) (Medium.Random() * 5.0F);
             if (Roted)
             {
-                Plane.Rot(ais, is187, X - Medium.X, Z - Medium.Z, 90, 8);
+                Plane.Rot(ais, is187, X - Medium.X, Z - Medium.Z, 90f, 8);
             }
             Plane.Rot(ais, is187, Medium.Cx, Medium.Cz, Medium.Xz, 8);
             Plane.Rot(is186, is187, Medium.Cy, Medium.Cz, Medium.Zy, 8);
@@ -2325,23 +2325,23 @@ public class ContO
             is170[7] = Ys((int) (i178 - i172 / 0.8 - Medium.Random() * (i172 / 2.4)), i177);
             if (Fcnt == 3)
             {
-                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), 22, 8);
+                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), 22f, 8);
             }
             if (Fcnt == 4)
             {
-                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), 22, 8);
+                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), 22f, 8);
             }
             if (Fcnt == 5)
             {
-                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), 0, 8);
+                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), 0f, 8);
             }
             if (Fcnt == 6)
             {
-                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), -22, 8);
+                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), -22f, 8);
             }
             if (Fcnt == 7)
             {
-                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), -22, 8);
+                Plane.Rot(ais, is170, Xs(i176, i177), Ys(i178, i177), -22f, 8);
             }
             var i179 = (int) (191.0F + 191.0F * (Medium.Snap[0] / 350.0F));
             if (i179 > 255)
