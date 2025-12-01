@@ -663,7 +663,7 @@ public static void KeyPressed(Keys key)
         }
 
         // sort the render queue by distance in descending order
-        renderQueue.Sort((a, b) => b.Dist.CompareTo(a.Dist));
+        renderQueue.Sort(static (a, b) => b.Dist.CompareTo(a.Dist));
 
         // render all objects in the sorted order
         foreach (var obj in renderQueue)
