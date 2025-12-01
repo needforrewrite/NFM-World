@@ -1,5 +1,6 @@
 ﻿﻿using System;
 using System.Collections.Frozen;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -18,6 +19,9 @@ using Window = Silk.NET.Windowing.Window;
 using NFMWorld.DriverInterface;
 using NFMWorld.SkiaDriver;
 using NFMWorld.Mad;
+using Silk.NET.Input.Glfw;
+using Silk.NET.Windowing.Glfw;
+using Silk.NET.Windowing.Sdl;
 
 namespace NFMWorld;
 
@@ -168,6 +172,10 @@ public unsafe class Program
 
     private Program()
     {
+        GlfwWindowing.RegisterPlatform();
+        SdlWindowing.RegisterPlatform();
+        GlfwInput.RegisterPlatform();
+
         var options = WindowOptions.Default;
         options.Size = new Vector2D<int>((int)(800*scale), (int)(450*scale));
         options.Title = "Need For Madness: World";
