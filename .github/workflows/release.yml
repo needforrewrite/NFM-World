@@ -65,7 +65,6 @@ jobs:
           sudo apt-get update
           if [[ "${{ matrix.rid }}" == win-* ]]; then
             # mingw-w64 supports cross-compilation to Windows x64
-            # Note: win-arm64 cross-compilation may require additional setup or native Windows runner
             sudo apt-get install -y clang zlib1g-dev mingw-w64
           elif [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
             # Install ARM64 cross-compilation toolchain
