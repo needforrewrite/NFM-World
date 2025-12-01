@@ -9,17 +9,14 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  prepare:
     runs-on: ubuntu-latest
-    
+    outputs:
+      tag_name: ${{ steps.tag.outputs.tag_name }}
+      short_sha: ${{ steps.tag.outputs.short_sha }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
       
       - name: Generate tag name
         id: tag
@@ -35,72 +32,70 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag ${{ steps.tag.outputs.tag_name }}
           git push origin ${{ steps.tag.outputs.tag_name }}
+
+  build:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            extension: zip
+          - rid: win-arm64
+            extension: zip
+          - rid: linux-x64
+            extension: tar.gz
+          - rid: linux-arm64
+            extension: tar.gz
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       
-      - name: Publish win-x64
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Publish ${{ matrix.rid }}
         run: |
           dotnet publish nfm-world/nfm-world.csproj \
             -c Release \
-            -r win-x64 \
+            -r ${{ matrix.rid }} \
             --self-contained \
             -p:PublishAot=true \
-            -o ./publish/win-x64
+            -o ./publish/${{ matrix.rid }}
       
-      - name: Package win-x64
+      - name: Package ${{ matrix.rid }}
         run: |
-          cd ./publish/win-x64
-          zip -r ../../nfm-world-win-x64.zip .
+          cd ./publish/${{ matrix.rid }}
+          if [ "${{ matrix.extension }}" = "zip" ]; then
+            zip -r ../../nfm-world-${{ matrix.rid }}.zip .
+          else
+            tar -czf ../../nfm-world-${{ matrix.rid }}.tar.gz .
+          fi
       
-      - name: Publish win-arm64
-        run: |
-          dotnet publish nfm-world/nfm-world.csproj \
-            -c Release \
-            -r win-arm64 \
-            --self-contained \
-            -p:PublishAot=true \
-            -o ./publish/win-arm64
-      
-      - name: Package win-arm64
-        run: |
-          cd ./publish/win-arm64
-          zip -r ../../nfm-world-win-arm64.zip .
-      
-      - name: Publish linux-x64
-        run: |
-          dotnet publish nfm-world/nfm-world.csproj \
-            -c Release \
-            -r linux-x64 \
-            --self-contained \
-            -p:PublishAot=true \
-            -o ./publish/linux-x64
-      
-      - name: Package linux-x64
-        run: |
-          cd ./publish/linux-x64
-          tar -czf ../../nfm-world-linux-x64.tar.gz .
-      
-      - name: Publish linux-arm64
-        run: |
-          dotnet publish nfm-world/nfm-world.csproj \
-            -c Release \
-            -r linux-arm64 \
-            --self-contained \
-            -p:PublishAot=true \
-            -o ./publish/linux-arm64
-      
-      - name: Package linux-arm64
-        run: |
-          cd ./publish/linux-arm64
-          tar -czf ../../nfm-world-linux-arm64.tar.gz .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfm-world-${{ matrix.rid }}
+          path: nfm-world-${{ matrix.rid }}.${{ matrix.extension }}
+
+  release:
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
       
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag_name }}
-          name: Build ${{ steps.tag.outputs.short_sha }}
-          files: |
-            nfm-world-win-x64.zip
-            nfm-world-win-arm64.zip
-            nfm-world-linux-x64.tar.gz
-            nfm-world-linux-arm64.tar.gz
+          tag_name: ${{ needs.prepare.outputs.tag_name }}
+          name: Build ${{ needs.prepare.outputs.short_sha }}
+          files: artifacts/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
