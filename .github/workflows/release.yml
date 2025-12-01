@@ -63,15 +63,23 @@ jobs:
           dotnet-version: '10.0.x'
       
       - name: Install cross-compilation dependencies
-        if: startsWith(matrix.rid, 'win-')
         run: |
           sudo apt-get update
-          # mingw-w64 supports cross-compilation to Windows x64
-          # Note: win-arm64 cross-compilation may require additional setup or native Windows runner
-          sudo apt-get install -y clang zlib1g-dev mingw-w64
+          if [[ "${{ matrix.rid }}" == win-* ]]; then
+            # mingw-w64 supports cross-compilation to Windows x64
+            # Note: win-arm64 cross-compilation may require additional setup or native Windows runner
+            sudo apt-get install -y clang zlib1g-dev mingw-w64
+          elif [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
+            # Install ARM64 cross-compilation toolchain
+            sudo apt-get install -y clang zlib1g-dev gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          fi
       
       - name: Publish ${{ matrix.rid }}
         run: |
+          if [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
+            # Set linker for ARM64 cross-compilation
+            export COMPlus_CrossLinker=/usr/bin/aarch64-linux-gnu-ld
+          fi
           dotnet publish nfm-world/nfm-world.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
