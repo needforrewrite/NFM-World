@@ -328,7 +328,7 @@ internal class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 
         // part 2: the bigger the bounce stat, the bigger the bounce
-        rebound += CarDefine.Bounce[Cn] * _tickRate;
+        rebound += CarDefine.Bounce[Cn];
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
 
@@ -359,7 +359,7 @@ internal class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
 //            rebound = 0;
-        rebound += (CarDefine.Bounce[Cn] - 0.2F)*_tickRate;
+        rebound += (CarDefine.Bounce[Cn] - 0.2F);
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
         Regz(wi, -1 * Scz[wi] * rebound * Trackers.Dam[ti] /** checkpoints.dam*/, conto);
@@ -372,7 +372,7 @@ internal class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
 //            rebound = 0;
-        rebound += (CarDefine.Bounce[Cn] - 0.2F)*_tickRate;
+        rebound += (CarDefine.Bounce[Cn] - 0.2F);
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
         Regx(wi, -1 * Scx[wi] * rebound * Trackers.Dam[ti]/* * checkpoints.dam*/, conto);
