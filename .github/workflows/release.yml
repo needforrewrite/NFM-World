@@ -30,11 +30,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if ! git rev-parse ${{ steps.tag.outputs.tag_name }} >/dev/null 2>&1; then
-            git tag ${{ steps.tag.outputs.tag_name }}
-            git push origin ${{ steps.tag.outputs.tag_name }}
+          TAG_NAME="${{ steps.tag.outputs.tag_name }}"
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
           else
-            echo "Tag ${{ steps.tag.outputs.tag_name }} already exists, skipping tag creation"
+            echo "Tag $TAG_NAME already exists, skipping tag creation"
           fi
 
   build:
@@ -65,6 +66,8 @@ jobs:
         if: startsWith(matrix.rid, 'win-')
         run: |
           sudo apt-get update
+          # mingw-w64 supports cross-compilation to Windows x64
+          # Note: win-arm64 cross-compilation may require additional setup or native Windows runner
           sudo apt-get install -y clang zlib1g-dev mingw-w64
       
       - name: Publish ${{ matrix.rid }}
