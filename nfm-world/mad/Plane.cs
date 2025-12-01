@@ -506,8 +506,8 @@ class Plane : IComparable<Plane>
                 f = 0.6F;
             }
         }
-        CalcColor(last, next, i36, f, bool72, out var i114, out var i115, out var i116);
-        G.SetColor(new Color(i114, i115, i116));
+        CalcColor(last, next, i36, f, bool72, out var r, out var g, out var b);
+        G.SetColor(new Color(r, g, b));
         G.SetAntialiasing(false);
         G.FillPolygon(is85, is86, N);
         G.SetAntialiasing(true);
@@ -521,93 +521,93 @@ class Plane : IComparable<Plane>
         }
         else if (Road && _av <= 3000 && Medium.Trk == 0 && Medium.Fade[0] > 4000)
         {
-            i114 -= 10;
-            if (i114 < 0)
+            r -= 10;
+            if (r < 0)
             {
-                i114 = 0;
+                r = 0;
             }
-            i115 -= 10;
-            if (i115 < 0)
+            g -= 10;
+            if (g < 0)
             {
-                i115 = 0;
+                g = 0;
             }
-            i116 -= 10;
-            if (i116 < 0)
+            b -= 10;
+            if (b < 0)
             {
-                i116 = 0;
+                b = 0;
             }
-            G.SetColor(new Color(i114, i115, i116));
+            G.SetColor(new Color(r, g, b));
             G.DrawPolygon(is85, is86, N);
         }
         if (Gr == -10)
         {
             if (Medium.Trk == 0)
             {
-                i114 = C[0];
-                i115 = C[1];
-                i116 = C[2];
+                r = C[0];
+                g = C[1];
+                b = C[2];
                 if (i36 == -1 && Medium.Cpflik)
                 {
-                    i114 = (int) (i114 * 1.6);
-                    if (i114 > 255)
+                    r = (int) (r * 1.6);
+                    if (r > 255)
                     {
-                        i114 = 255;
+                        r = 255;
                     }
-                    i115 = (int) (i115 * 1.6);
-                    if (i115 > 255)
+                    g = (int) (g * 1.6);
+                    if (g > 255)
                     {
-                        i115 = 255;
+                        g = 255;
                     }
-                    i116 = (int) (i116 * 1.6);
-                    if (i116 > 255)
+                    b = (int) (b * 1.6);
+                    if (b > 255)
                     {
-                        i116 = 255;
+                        b = 255;
                     }
                 }
                 for (var i118 = 0; i118 < 16; i118++)
                 {
                     if (_av > Medium.Fade[i118])
                     {
-                        i114 = (i114 * Medium.Fogd + Medium.Cfade[0]) / (Medium.Fogd + 1);
-                        i115 = (i115 * Medium.Fogd + Medium.Cfade[1]) / (Medium.Fogd + 1);
-                        i116 = (i116 * Medium.Fogd + Medium.Cfade[2]) / (Medium.Fogd + 1);
+                        r = (r * Medium.Fogd + Medium.Cfade[0]) / (Medium.Fogd + 1);
+                        g = (g * Medium.Fogd + Medium.Cfade[1]) / (Medium.Fogd + 1);
+                        b = (b * Medium.Fogd + Medium.Cfade[2]) / (Medium.Fogd + 1);
                     }
                 }
 
-                G.SetColor(new Color(i114, i115, i116));
+                G.SetColor(new Color(r, g, b));
                 G.DrawPolygon(is85, is86, N);
             }
             else if (Medium.Cpflik && Medium.Hit == 5000)
             {
-                i115 = (int) (Random.Double() * 115.0);
-                i114 = i115 * 2 - 54;
-                if (i114 < 0)
+                g = (int) (Random.Double() * 115.0);
+                r = g * 2 - 54;
+                if (r < 0)
                 {
-                    i114 = 0;
+                    r = 0;
                 }
-                if (i114 > 255)
+                if (r > 255)
                 {
-                    i114 = 255;
+                    r = 255;
                 }
-                i116 = 202 + i115 * 2;
-                if (i116 < 0)
+                b = 202 + g * 2;
+                if (b < 0)
                 {
-                    i116 = 0;
+                    b = 0;
                 }
-                if (i116 > 255)
+                if (b > 255)
                 {
-                    i116 = 255;
+                    b = 255;
                 }
-                i115 += 101;
-                if (i115 < 0)
+                g += 101;
+                if (g < 0)
                 {
-                    i115 = 0;
+                    g = 0;
                 }
-                if (i115 > 255)
+                if (g > 255)
                 {
-                    i115 = 255;
+                    g = 255;
                 }
-                G.SetColor(new Color(i114, i115, i116));
+                G.SetColor(new Color(r, g, b));
                 G.DrawPolygon(is85, is86, N);
             }
         }
@@ -617,32 +617,32 @@ class Plane : IComparable<Plane>
             return;
         }
 
-        i114 = C[0];
-        i115 = C[1];
-        i116 = C[2];
+        r = C[0];
+        g = C[1];
+        b = C[2];
         if (Medium.Cpflik && Medium.Elecr >= 0.0F)
         {
-            i114 = (int) (25.5F * Medium.Elecr);
-            if (i114 > 255)
+            r = (int) (25.5F * Medium.Elecr);
+            if (r > 255)
             {
-                i114 = 255;
+                r = 255;
             }
-            i115 = (int) (128.0F + 12.8F * Medium.Elecr);
-            if (i115 > 255)
+            g = (int) (128.0F + 12.8F * Medium.Elecr);
+            if (g > 255)
             {
-                i115 = 255;
+                g = 255;
             }
-            i116 = 255;
+            b = 255;
         }
         for (var i119 = 0; i119 < 16; i119++)
         {
             if (_av <= Medium.Fade[i119]) continue;
-            i114 = (i114 * Medium.Fogd + Medium.Cfade[0]) / (Medium.Fogd + 1);
-            i115 = (i115 * Medium.Fogd + Medium.Cfade[1]) / (Medium.Fogd + 1);
-            i116 = (i116 * Medium.Fogd + Medium.Cfade[2]) / (Medium.Fogd + 1);
+            r = (r * Medium.Fogd + Medium.Cfade[0]) / (Medium.Fogd + 1);
+            g = (g * Medium.Fogd + Medium.Cfade[1]) / (Medium.Fogd + 1);
+            b = (b * Medium.Fogd + Medium.Cfade[2]) / (Medium.Fogd + 1);
         }
 
-        G.SetColor(new Color(i114, i115, i116));
+        G.SetColor(new Color(r, g, b));
         G.DrawPolygon(is85, is86, N);
     }
 
