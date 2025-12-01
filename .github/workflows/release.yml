@@ -30,8 +30,12 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag ${{ steps.tag.outputs.tag_name }}
-          git push origin ${{ steps.tag.outputs.tag_name }}
+          if ! git rev-parse ${{ steps.tag.outputs.tag_name }} >/dev/null 2>&1; then
+            git tag ${{ steps.tag.outputs.tag_name }}
+            git push origin ${{ steps.tag.outputs.tag_name }}
+          else
+            echo "Tag ${{ steps.tag.outputs.tag_name }} already exists, skipping tag creation"
+          fi
 
   build:
     needs: prepare
@@ -56,6 +60,12 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      
+      - name: Install cross-compilation dependencies
+        if: startsWith(matrix.rid, 'win-')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang zlib1g-dev mingw-w64
       
       - name: Publish ${{ matrix.rid }}
         run: |
