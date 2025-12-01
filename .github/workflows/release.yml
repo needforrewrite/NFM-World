@@ -38,14 +38,52 @@ jobs:
             echo "Tag $TAG_NAME already exists, skipping tag creation"
           fi
 
-  build:
+  build-windows:
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     strategy:
       matrix:
         include:
           - rid: win-x64
             extension: zip
+          - rid: win-arm64
+            extension: zip
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Publish ${{ matrix.rid }}
+        run: |
+          dotnet publish nfm-world/nfm-world.csproj `
+            -c Release `
+            -r ${{ matrix.rid }} `
+            --self-contained `
+            -p:PublishAot=true `
+            -o ./publish/${{ matrix.rid }}
+      
+      - name: Package ${{ matrix.rid }}
+        run: |
+          cd ./publish/${{ matrix.rid }}
+          Compress-Archive -Path * -DestinationPath ../../nfm-world-${{ matrix.rid }}.zip
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfm-world-${{ matrix.rid }}
+          path: nfm-world-${{ matrix.rid }}.${{ matrix.extension }}
+
+  build-linux:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
           - rid: linux-x64
             extension: tar.gz
           - rid: linux-arm64
@@ -61,15 +99,11 @@ jobs:
           dotnet-version: '10.0.x'
       
       - name: Install cross-compilation dependencies
+        if: matrix.rid == 'linux-arm64'
         run: |
           sudo apt-get update
-          if [[ "${{ matrix.rid }}" == win-* ]]; then
-            # mingw-w64 supports cross-compilation to Windows x64
-            sudo apt-get install -y clang zlib1g-dev mingw-w64
-          elif [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
-            # Install ARM64 cross-compilation toolchain
-            sudo apt-get install -y clang zlib1g-dev gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libc6-dev-arm64-cross
-          fi
+          # Install ARM64 cross-compilation toolchain
+          sudo apt-get install -y clang zlib1g-dev gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libc6-dev-arm64-cross
       
       - name: Publish ${{ matrix.rid }}
         run: |
@@ -87,11 +121,7 @@ jobs:
       - name: Package ${{ matrix.rid }}
         run: |
           cd ./publish/${{ matrix.rid }}
-          if [ "${{ matrix.extension }}" = "zip" ]; then
-            zip -r ../../nfm-world-${{ matrix.rid }}.zip .
-          else
-            tar -czf ../../nfm-world-${{ matrix.rid }}.tar.gz .
-          fi
+          tar -czf ../../nfm-world-${{ matrix.rid }}.tar.gz .
       
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -100,7 +130,7 @@ jobs:
           path: nfm-world-${{ matrix.rid }}.${{ matrix.extension }}
 
   release:
-    needs: [prepare, build]
+    needs: [prepare, build-windows, build-linux]
     runs-on: ubuntu-latest
     
     steps:
