@@ -1,0 +1,106 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Generate tag name
+        id: tag
+        run: |
+          SHORT_SHA=$(git rev-parse --short=8 HEAD)
+          TAG_NAME="build-${SHORT_SHA}"
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+      
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ steps.tag.outputs.tag_name }}
+          git push origin ${{ steps.tag.outputs.tag_name }}
+      
+      - name: Publish win-x64
+        run: |
+          dotnet publish nfm-world/nfm-world.csproj \
+            -c Release \
+            -r win-x64 \
+            --self-contained \
+            -p:PublishAot=true \
+            -o ./publish/win-x64
+      
+      - name: Package win-x64
+        run: |
+          cd ./publish/win-x64
+          zip -r ../../nfm-world-win-x64.zip .
+      
+      - name: Publish win-arm64
+        run: |
+          dotnet publish nfm-world/nfm-world.csproj \
+            -c Release \
+            -r win-arm64 \
+            --self-contained \
+            -p:PublishAot=true \
+            -o ./publish/win-arm64
+      
+      - name: Package win-arm64
+        run: |
+          cd ./publish/win-arm64
+          zip -r ../../nfm-world-win-arm64.zip .
+      
+      - name: Publish linux-x64
+        run: |
+          dotnet publish nfm-world/nfm-world.csproj \
+            -c Release \
+            -r linux-x64 \
+            --self-contained \
+            -p:PublishAot=true \
+            -o ./publish/linux-x64
+      
+      - name: Package linux-x64
+        run: |
+          cd ./publish/linux-x64
+          tar -czf ../../nfm-world-linux-x64.tar.gz .
+      
+      - name: Publish linux-arm64
+        run: |
+          dotnet publish nfm-world/nfm-world.csproj \
+            -c Release \
+            -r linux-arm64 \
+            --self-contained \
+            -p:PublishAot=true \
+            -o ./publish/linux-arm64
+      
+      - name: Package linux-arm64
+        run: |
+          cd ./publish/linux-arm64
+          tar -czf ../../nfm-world-linux-arm64.tar.gz .
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag_name }}
+          name: Build ${{ steps.tag.outputs.short_sha }}
+          files: |
+            nfm-world-win-x64.zip
+            nfm-world-win-arm64.zip
+            nfm-world-linux-x64.tar.gz
+            nfm-world-linux-arm64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
