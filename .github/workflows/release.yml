@@ -108,8 +108,9 @@ jobs:
       - name: Publish ${{ matrix.rid }}
         run: |
           if [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
-            # Set linker for ARM64 cross-compilation
+            # Set cross-compilation tools for ARM64
             export COMPlus_CrossLinker=/usr/bin/aarch64-linux-gnu-ld
+            export COMPlus_ObjCopyName=/usr/bin/aarch64-linux-gnu-objcopy
           fi
           dotnet publish nfm-world/nfm-world.csproj \
             -c Release \
