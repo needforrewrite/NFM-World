@@ -234,12 +234,6 @@ class Plane : IComparable<Plane>
         Span<int> y = stackalloc int[n];
         if (Embos == 0)
         {
-            for (var i = 0; i < n; i++)
-            {
-                x[i] = ox[i] + mx;
-                y[i] = oy[i] + my;
-                z[i] = oz[i] + mz;
-            }
             if (gr is -11 or -12 or -13 && Medium.Lastmaf == 1)
             {
                 for (var i = 0; i < n; i++)
@@ -247,6 +241,15 @@ class Plane : IComparable<Plane>
                     x[i] = -ox[i] + mx;
                     y[i] = oy[i] + my;
                     z[i] = -oz[i] + mz;
+                }
+            }
+            else
+            {
+                for (var i = 0; i < n; i++)
+                {
+                    x[i] = ox[i] + mx;
+                    y[i] = oy[i] + my;
+                    z[i] = oz[i] + mz;
                 }
             }
         }
@@ -482,14 +485,7 @@ class Plane : IComparable<Plane>
                     f = 0.6F;
                     if (i36 == -1)
                     {
-                        if (Medium.Cpflik || Medium.Nochekflk && !Medium.Lastcheck)
-                        {
-                            f = 1.0F;
-                        }
-                        else
-                        {
-                            f = 0.76F;
-                        }
+                        f = Medium.Cpflik || Medium.Nochekflk && !Medium.Lastcheck ? 1.0F : 0.76F;
                     }
 
                     break;
@@ -588,7 +584,7 @@ class Plane : IComparable<Plane>
             }
             else if (Medium.Cpflik && Medium.Hit == 5000)
             {
-                g = (int) (Random.Double() * 115.0);
+                g = (int) (Random.Single() * 115.0);
                 r = g * 2 - 54;
                 if (r < 0)
                 {

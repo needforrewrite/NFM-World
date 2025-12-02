@@ -767,8 +767,8 @@ public class Medium
                         is110[i120][i121] = _claz[i, i120, i121] + _clz[i] - Z / 20;
                         is109[i120][i121] = _clay[i, i120, i121] + Cldd[4] - Y / 20;
                     }
-                    Rot(ais[i120], is110[i120], Cx, Cz, Xz, 12);
-                    Rot(is109[i120], is110[i120], Cy, Cz, Zy, 12);
+                    Plane.Rot(ais[i120], is110[i120], Cx, Cz, Xz, 12);
+                    Plane.Rot(is109[i120], is110[i120], Cy, Cz, Zy, 12);
                 }
                 for (var i122 = 0; i122 < 12; i122 += 2)
                 {
@@ -1083,8 +1083,8 @@ public class Medium
                 }
                 var i195 = (int) Math.Sqrt(ais[_nmv[i185] / 4] * ais[_nmv[i185] / 4] +
                                            is193[_nmv[i185] / 4] * is193[_nmv[i185] / 4]);
-                Rot(ais, is193, Cx, Cz, Xz, _nmv[i185] * 2);
-                Rot(is192, is193, Cy, Cz, Zy, _nmv[i185] * 2);
+                Plane.Rot(ais, is193, Cx, Cz, Xz, _nmv[i185] * 2);
+                Plane.Rot(is192, is193, Cy, Cz, Zy, _nmv[i185] * 2);
                 var is196 = new int[4];
                 var is197 = new int[4];
                 bool bool201;
@@ -1642,8 +1642,8 @@ public class Medium
                             is58[i60] = (int) (_ogpz[i53, i60] * _pvr[i53, i60] + _cgpz[i53] - Z);
                             is59[i60] = Ground;
                         }
-                        Rot(is57, is58, Cx, Cz, Xz, 8);
-                        Rot(is59, is58, Cy, Cz, Zy, 8);
+                        Plane.Rot(is57, is58, Cx, Cz, Xz, 8);
+                        Plane.Rot(is59, is58, Cy, Cz, Zy, 8);
                         var is61 = new int[8];
                         var is62 = new int[8];
                         var i63 = 0;
@@ -1716,8 +1716,8 @@ public class Medium
                         is75[i77] = _ogpz[i73, i77] + _cgpz[i73] - Z;
                         is76[i77] = Ground;
                     }
-                    Rot(is74, is75, Cx, Cz, Xz, 8);
-                    Rot(is76, is75, Cy, Cz, Zy, 8);
+                    Plane.Rot(is74, is75, Cx, Cz, Xz, 8);
+                    Plane.Rot(is76, is75, Cy, Cz, Zy, 8);
                     var is78 = new int[8];
                     var is79 = new int[8];
                     var i80 = 0;
@@ -2025,7 +2025,7 @@ public class Medium
                 var i182 = i180 + 1;
                 _mty[i174][i180] = ((_mty[i174][i181] + _mty[i174][i182]) / 2 + _mty[i174][i180]) / 2;
             }
-            Rot(_mtx[i174], _mtz[i174], i170, i171, i177, _nmv[i174] * 2);
+            Plane.Rot(_mtx[i174], _mtz[i174], i170, i171, i177, _nmv[i174] * 2);
             is173[i174] = 0;
         }
         for (var i183 = 0; i183 < _nmt; i183++)
@@ -2163,11 +2163,11 @@ public class Medium
 */
     internal static void Newstars()
     {
-        _stx = null;
-        _stz = null;
-        _stc = null;
-        _bst = null;
-        _twn = null;
+        _stx = [];
+        _stz = [];
+        _stc = new int[0, 0, 0];
+        _bst = [];
+        _twn = [];
         _nst = 0;
         if (Lightson)
         {
@@ -2235,7 +2235,7 @@ public class Medium
         {
             for (var i = 0; i < 3; i++)
             {
-                Rand[i] = (int) (10.0 * URandom.Double());
+                Rand[i] = (int) (10.0f * URandom.Single());
                 Diup[i] = URandom.Boolean();
             }
             _cntrn = 20;
@@ -2270,20 +2270,6 @@ public class Medium
             _trn = 0;
         }
         return Rand[_trn] / 10.0F;
-    }
-
-    private static void Rot(int[] ais, int[] is274, int i, int i275, float i276, int i277)
-    {
-        if ((int)i276 != 0)
-        {
-            for (var i278 = 0; i278 < i277; i278++)
-            {
-                var i279 = ais[i278];
-                var i280 = is274[i278];
-                ais[i278] = i + (int) ((i279 - i) * Cos(i276) - (i280 - i275) * Sin(i276));
-                is274[i278] = i275 + (int) ((i279 - i) * Sin(i276) + (i280 - i275) * Cos(i276));
-            }
-        }
     }
 
     internal static void Setcloads(int i, int i252, int i253, int i254, int i255)

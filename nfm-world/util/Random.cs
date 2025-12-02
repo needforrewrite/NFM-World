@@ -40,8 +40,13 @@ public class Random(long seed)
         return System.Random.Shared.NextDouble();
     }
 
+    public static double Single()
+    {
+        return System.Random.Shared.NextSingle();
+    }
+
     public static bool Boolean()
     {
-        return System.Random.Shared.Next(0, 2) == 0;
+        return System.Random.Shared.NextSingle() >= 0.5f;
     }
 }
