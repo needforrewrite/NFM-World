@@ -3,7 +3,7 @@ using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
 
-internal class Mad
+public class Mad
 {
     private static readonly float _tickRate = GameSparker.PHYSICS_MULTIPLIER;
 

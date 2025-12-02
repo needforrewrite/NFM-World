@@ -46,10 +46,8 @@ public class GameSparker
     private static ViewMode currentViewMode = ViewMode.Follow;
     /////////////////////////////////
 
-    private static Control playerControl;
-    private static Control AIControl;
-    private static Mad playerMad;
-    private static Mad AIMad;
+    private static UnlimitedArray<Car> cars_in_race = [];
+    private static int playerCarIndex = 0;
 
     // stage loading
     private static int _indexOffset = 10;
@@ -62,54 +60,54 @@ public static void KeyPressed(Keys key)
             //115 114 99
             if (key == Keys.Up)
             {
-                playerControl.Up = true;
+                cars_in_race[playerCarIndex].Control.Up = true;
             }
             if (key == Keys.Down)
             {
-                playerControl.Down = true;
+                cars_in_race[playerCarIndex].Control.Down = true;
             }
             if (key == Keys.Right)
             {
-                playerControl.Right = true;
+                cars_in_race[playerCarIndex].Control.Right = true;
             }
             if (key == Keys.Left)
             {
-                playerControl.Left = true;
+                cars_in_race[playerCarIndex].Control.Left = true;
             }
             if (key == Keys.Space)
             {
-                playerControl.Handb = true;
+                cars_in_race[playerCarIndex].Control.Handb = true;
             }
             if (key == Keys.Enter)
             {
-                playerControl.Enter = true;
+                cars_in_race[playerCarIndex].Control.Enter = true;
             }
             if (key == Keys.Z)
             {
-                playerControl.Lookback = -1;
+                cars_in_race[playerCarIndex].Control.Lookback = -1;
             }
             if (key == Keys.X)
             {
-                playerControl.Lookback = 1;
+                cars_in_race[playerCarIndex].Control.Lookback = 1;
             }
             if (key == Keys.M)
             {
-                playerControl.Mutem = !playerControl.Mutem;
+                cars_in_race[playerCarIndex].Control.Mutem = !cars_in_race[playerCarIndex].Control.Mutem;
             }
 
             if (key == Keys.N)
             {
-                playerControl.Mutes = !playerControl.Mutes;
+                cars_in_race[playerCarIndex].Control.Mutes = !cars_in_race[playerCarIndex].Control.Mutes;
             }
 
             if (key == Keys.A)
             {
-                playerControl.Arrace = !playerControl.Arrace;
+                cars_in_race[playerCarIndex].Control.Arrace = !cars_in_race[playerCarIndex].Control.Arrace;
             }
 
             if (key == Keys.S)
             {
-                playerControl.Radar = !playerControl.Radar;
+                cars_in_race[playerCarIndex].Control.Radar = !cars_in_race[playerCarIndex].Control.Radar;
             }
             if (key == Keys.V)
             {
@@ -122,32 +120,32 @@ public static void KeyPressed(Keys key)
     {
         //if (!_exwist)
         //{
-            if (playerControl.Multion < 2)
+            if (cars_in_race[playerCarIndex].Control.Multion < 2)
             {
                 if (key == Keys.Up)
                 {
-                    playerControl.Up = false;
+                    cars_in_race[playerCarIndex].Control.Up = false;
                 }
                 if (key == Keys.Down)
                 {
-                    playerControl.Down = false;
+                    cars_in_race[playerCarIndex].Control.Down = false;
                 }
                 if (key == Keys.Right)
                 {
-                    playerControl.Right = false;
+                    cars_in_race[playerCarIndex].Control.Right = false;
                 }
                 if (key == Keys.Left)
                 {
-                    playerControl.Left = false;
+                    cars_in_race[playerCarIndex].Control.Left = false;
                 }
                 if (key == Keys.Space)
                 {
-                    playerControl.Handb = false;
+                    cars_in_race[playerCarIndex].Control.Handb = false;
                 }
             }
             if (key == Keys.Escape)
             {
-                playerControl.Exit = false;
+                cars_in_race[playerCarIndex].Control.Exit = false;
 //                if (Madness.fullscreen)
 //                {
 //                    Madness.exitfullscreen();
@@ -155,7 +153,7 @@ public static void KeyPressed(Keys key)
             }
             if (key == Keys.X || key == Keys.Z)
             {
-                playerControl.Lookback = 0;
+                cars_in_race[playerCarIndex].Control.Lookback = 0;
             }
         //}
     }
@@ -196,8 +194,6 @@ public static void KeyPressed(Keys key)
 
     public static void Load()
     {
-        playerMad = new Mad(new Stat(14), 0);
-        playerControl = new Control();
         timer = new MicroStopwatch();
         timer.Start();
         new Medium();
@@ -233,9 +229,7 @@ public static void KeyPressed(Keys key)
 
         Loadstage("1");
 
-        placed_stage_elements[0] = new ContO(cars[14], 0, Medium.Ground, 0, 0);
-
-        playerMad.Reseto(0, placed_stage_elements[0]);
+        cars_in_race[playerCarIndex] = new Car(new Stat(14), 0, cars[14], 0, 0);
 
         for (var i = 0; i < StageRads.Length; i++) {
             if (stage_parts[i] == null) {
@@ -264,7 +258,7 @@ public static void KeyPressed(Keys key)
     private static void Loadstage(string stage)
     {
         placed_stage_elements.Clear();
-        _stagePartCount = 1; // 0 is the player car
+        _stagePartCount = 0;
         Trackers.Nt = 0;
         Medium.Resdown = 0;
         Medium.Rescnt = 5;
@@ -596,17 +590,17 @@ public static void KeyPressed(Keys key)
         {
             accumulator -= physics_dt_us;
 
-            //Medium.Follow(cars[0], playerMad.Cxz, playerControl.Lookback);
+            //Medium.Follow(cars[0], playerMad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
             //Medium.Around(cars[0], true);
 
-            playerMad.Drive(playerControl, placed_stage_elements[0]);
+            cars_in_race[playerCarIndex].Drive();
             switch (currentViewMode)
             {
                 case ViewMode.Follow:
-                    Medium.Follow(placed_stage_elements[0], playerMad.Cxz, playerControl.Lookback);
+                    Medium.Follow(cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
                     break;
                 case ViewMode.Around:
-                    Medium.Around(placed_stage_elements[0], true);
+                    Medium.Around(cars_in_race[playerCarIndex].Conto, true);
                     break;
             }
 
@@ -614,7 +608,7 @@ public static void KeyPressed(Keys key)
             currentMediumState = new MediumState();
 
             prev_car_states[0] = current_car_states[0];
-            current_car_states[0] = new CarState(placed_stage_elements[0]);
+            current_car_states[0] = new CarState(cars_in_race[playerCarIndex].Conto);
         }
 
         float interp_ratio = accumulator / (float)physics_dt_us;
@@ -623,7 +617,7 @@ public static void KeyPressed(Keys key)
         medium_interp_state.Apply();
 
         CarState car_interp_state = current_car_states[0].InterpWith(prev_car_states[0], interp_ratio);
-        car_interp_state.Apply(placed_stage_elements[0]);
+        car_interp_state.Apply(cars_in_race[playerCarIndex].Conto);
 
         Render();
 
@@ -638,17 +632,30 @@ public static void KeyPressed(Keys key)
 
         var renderQueue = new UnlimitedArray<ContO>(placed_stage_elements.Count);
 
-        // process stage elements
         var j = 0;
-        for (int i = 0; i < placed_stage_elements.Count; i++)
+        // process player cars
+        foreach (var car in cars_in_race)
         {
-            if (placed_stage_elements[i].Dist != 0)
+            if (car.Conto.Dist != 0)
             {
-                renderQueue[j++] = placed_stage_elements[i];
+                renderQueue[j++] = car.Conto;
             }
-            else if (placed_stage_elements[i].Dist == 0)
+            else if (car.Conto.Dist == 0)
             {
-                placed_stage_elements[i].D();
+                car.Conto.D();
+            }
+        }
+        
+        // process stage elements
+        foreach (var contO in placed_stage_elements)
+        {
+            if (contO.Dist != 0)
+            {
+                renderQueue[j++] = contO;
+            }
+            else if (contO.Dist == 0)
+            {
+                contO.D();
             }
         }
 
