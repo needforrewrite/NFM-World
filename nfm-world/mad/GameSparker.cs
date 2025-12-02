@@ -242,6 +242,8 @@ public static void KeyPressed(Keys key)
                 throw new Exception("No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
+
+        Medium.Fadfrom(5000);
     }
 
     internal static int Getint(string astring, string string4, int i)
@@ -611,6 +613,8 @@ public static void KeyPressed(Keys key)
             current_car_states[0] = new CarState(cars_in_race[playerCarIndex].Conto);
         }
 
+        Render();
+
         lastTickTime = timer.ElapsedMicroseconds;
     }
 
@@ -619,13 +623,14 @@ public static void KeyPressed(Keys key)
         if(lastTickTime == 0) 
             lastTickTime = timer.ElapsedMicroseconds;
 
+        /*
         float interp_ratio = accumulator / (float)physics_dt_us;
 
         MediumState medium_interp_state = currentMediumState.InterpWith(prevMediumState, interp_ratio);
         medium_interp_state.Apply();
 
         CarState car_interp_state = current_car_states[0].InterpWith(prev_car_states[0], interp_ratio);
-        car_interp_state.Apply(cars_in_race[playerCarIndex].Conto);
+        car_interp_state.Apply(cars_in_race[playerCarIndex].Conto);*/
 
         Medium.D();
 
@@ -667,7 +672,7 @@ public static void KeyPressed(Keys key)
             obj.D();
         }
 
-        current_car_states[0].Apply(cars[0]);
-        currentMediumState.Apply();
+        /*current_car_states[0].Apply();
+        currentMediumState.Apply();*/
     }
 }

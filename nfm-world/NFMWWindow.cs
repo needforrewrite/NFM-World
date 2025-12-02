@@ -182,8 +182,6 @@ public unsafe class Program
         options.Size = new Vector2D<int>((int)(800*scale), (int)(450*scale));
         options.Title = "Need For Madness: World";
         options.UpdatesPerSecond = 63f;
-        options.FramesPerSecond = 240f;
-        options.VSync = true;
         options.ShouldSwapAutomatically = false;
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 0));
 
@@ -202,6 +200,14 @@ public unsafe class Program
 
     private void OnUpdate(double delta)
     {   
+        Stopwatch t = new Stopwatch();
+        t.Start();
+
+        _canvas.DrawRect(0, 0, _window.Size.X, _window.Size.Y, new SKPaint
+        {
+            Color = SKColors.Black
+        });
+
         if (!loaded)
         {
             loaded = true;
@@ -210,6 +216,14 @@ public unsafe class Program
         }
             
         GameSparker.GameTick();
+
+        G.SetColor(new Color(0, 0, 0));
+        G.DrawString("Render: " + _lastFrameTime + "ms", 100, 100);
+
+        _canvas.Flush();
+        _window.SwapBuffers();
+
+        _lastFrameTime = (int)t.ElapsedMilliseconds;
     }
 
     private void OnLoad()
@@ -290,23 +304,6 @@ public unsafe class Program
 
     private void OnRender(double delta)
     {
-        Stopwatch t = new Stopwatch();
-        t.Start();
-
-        _canvas.DrawRect(0, 0, _window.Size.X, _window.Size.Y, new SKPaint
-        {
-            Color = SKColors.Black
-        });
-
-        GameSparker.Render();
-
-        G.SetColor(new Color(0, 0, 0));
-        G.DrawString("Render: " + _lastFrameTime + "ms", 100, 100);
-
-        _canvas.Flush();
-        _window.SwapBuffers();
-
-        _lastFrameTime = (int)t.ElapsedMilliseconds;
     }
 
     public static void Main()
