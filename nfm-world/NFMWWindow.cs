@@ -547,6 +547,11 @@ internal class SkiaSharpGraphics(SKCanvas canvas) : IGraphics
         _paint.Style = SKPaintStyle.Fill;
         canvas.DrawImage(((MadSharpSKImage)image).SkImage, new SKRect(x, y, width + x, height + y));
     }
+
+    public void SetAntialiasing(bool useAntialias)
+    {
+        _paint.IsAntialias = useAntialias;
+    }
 }
 
 internal class SkiaFontMetrics(SKFont font) : IFontMetrics
