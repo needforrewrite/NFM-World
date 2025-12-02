@@ -7,6 +7,13 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>USE_BASS</DefineConstants>
+    <PublishAot>true</PublishAot>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DefineConstants />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DefineConstants />
   </PropertyGroup>
   <ItemGroup>
       <PackageReference Include="ManagedBass" Version="4.0.1" />
@@ -18,6 +25,7 @@
       <PackageReference Include="SkiaSharp" Version="3.119.1" />
       <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
       <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
+      <PackageReference Include="System.Numerics.Tensors" Version="10.0.0" />
   </ItemGroup>
 
   <!-- windows builds -->
