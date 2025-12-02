@@ -110,7 +110,12 @@ jobs:
           if [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
             # Set cross-compilation tools for ARM64
             export COMPlus_CrossLinker=/usr/bin/aarch64-linux-gnu-ld
-            export COMPlus_ObjCopyName=/usr/bin/aarch64-linux-gnu-objcopy
+            # Create wrapper for objcopy to use the ARM64 version
+            mkdir -p $HOME/bin
+            echo '#!/bin/bash' > $HOME/bin/objcopy
+            echo 'exec /usr/bin/aarch64-linux-gnu-objcopy "$@"' >> $HOME/bin/objcopy
+            chmod +x $HOME/bin/objcopy
+            export PATH=$HOME/bin:$PATH
           fi
           dotnet publish nfm-world/nfm-world.csproj \
             -c Release \
