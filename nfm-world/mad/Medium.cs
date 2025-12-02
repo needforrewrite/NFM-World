@@ -1777,13 +1777,6 @@ public class Medium
 
     internal static void Newclouds(int i, int i88, int i89, int i90)
     {
-        _clx = null;
-        _clz = null;
-        _cmx = null;
-        _clax = null;
-        _clay = null;
-        _claz = null;
-        _clc = null;
         i = i / 20 - 10000;
         i88 = i88 / 20 + 10000;
         i89 = i89 / 20 - 10000;
@@ -1935,12 +1928,6 @@ public class Medium
         var i170 = (i + i167) / 60;
         var i171 = (i168 + i169) / 60;
         var i172 = Math.Max(i167 - i, i169 - i168) / 60;
-        _mrd = null;
-        _nmv = null;
-        _mtx = null;
-        _mty = null;
-        _mtz = null;
-        _mtc = null;
         _mrd = new int[_nmt];
         _nmv = new int[_nmt];
         _mtx = new int[_nmt][];
