@@ -43,7 +43,7 @@ public static class G
 
     public static void DrawRect(int x1, int y1, int width, int height) => Graphics.DrawRect(x1, y1, width, height);
 
-    public static void DrawImage(IImage bggo, int p1, int i429, int p3, int i, object o)
+    public static void DrawImage(IImage? bggo, int p1, int i429, int p3, int i, object o)
     {
         if (bggo == null)
         {
@@ -53,7 +53,7 @@ public static class G
         Graphics.DrawImage(bggo, p1, i429, p3, i);
     }
 
-    public static void DrawImage(IImage image, int x, int y, int wid, int hei)
+    public static void DrawImage(IImage? image, int x, int y, int wid, int hei)
     {
         if (image == null)
         {
