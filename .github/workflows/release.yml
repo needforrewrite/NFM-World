@@ -1,0 +1,155 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - 'master'
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.tag.outputs.tag_name }}
+      short_sha: ${{ steps.tag.outputs.short_sha }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Generate tag name
+        id: tag
+        run: |
+          SHORT_SHA=$(git rev-parse --short=8 HEAD)
+          TAG_NAME="build-${SHORT_SHA}"
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+      
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          TAG_NAME="${{ steps.tag.outputs.tag_name }}"
+          if ! git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
+            git tag "$TAG_NAME"
+            git push origin "$TAG_NAME"
+          else
+            echo "Tag $TAG_NAME already exists, skipping tag creation"
+          fi
+
+  build-windows:
+    needs: prepare
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            extension: zip
+          - rid: win-arm64
+            extension: zip
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Publish ${{ matrix.rid }}
+        run: |
+          dotnet publish nfm-world/nfm-world.csproj `
+            -c Release `
+            -r ${{ matrix.rid }} `
+            --self-contained `
+            -p:PublishAot=true `
+            -o ./publish/${{ matrix.rid }}
+      
+      - name: Package ${{ matrix.rid }}
+        run: |
+          cd ./publish/${{ matrix.rid }}
+          Compress-Archive -Path * -DestinationPath ../../nfm-world-${{ matrix.rid }}.zip
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfm-world-${{ matrix.rid }}
+          path: nfm-world-${{ matrix.rid }}.${{ matrix.extension }}
+
+  build-linux:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            extension: tar.gz
+          - rid: linux-arm64
+            extension: tar.gz
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Install cross-compilation dependencies
+        if: matrix.rid == 'linux-arm64'
+        run: |
+          sudo apt-get update
+          # Install ARM64 cross-compilation toolchain
+          sudo apt-get install -y clang zlib1g-dev gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libc6-dev-arm64-cross
+      
+      - name: Publish ${{ matrix.rid }}
+        run: |
+          if [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
+            # Set cross-compilation tools for ARM64
+            export COMPlus_CrossLinker=/usr/bin/aarch64-linux-gnu-ld
+            # Create wrapper for objcopy to use the ARM64 version
+            mkdir -p $HOME/bin
+            echo '#!/bin/bash' > $HOME/bin/objcopy
+            echo 'exec /usr/bin/aarch64-linux-gnu-objcopy "$@"' >> $HOME/bin/objcopy
+            chmod +x $HOME/bin/objcopy
+            export PATH=$HOME/bin:$PATH
+          fi
+          dotnet publish nfm-world/nfm-world.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained \
+            -p:PublishAot=true \
+            -o ./publish/${{ matrix.rid }}
+      
+      - name: Package ${{ matrix.rid }}
+        run: |
+          cd ./publish/${{ matrix.rid }}
+          tar -czf ../../nfm-world-${{ matrix.rid }}.tar.gz .
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfm-world-${{ matrix.rid }}
+          path: nfm-world-${{ matrix.rid }}.${{ matrix.extension }}
+
+  release:
+    needs: [prepare, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag_name }}
+          name: Build ${{ needs.prepare.outputs.short_sha }}
+          files: artifacts/**/*
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
