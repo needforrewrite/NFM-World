@@ -181,7 +181,7 @@ public unsafe class Program
         options.Title = "Need For Madness: World";
         options.UpdatesPerSecond = 144f;
         options.ShouldSwapAutomatically = false;
-        options.API = GraphicsAPI.Default;
+        options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 0));
 
         var sdl = Sdl.GetApi();
         // sdl.SetHint("SDL_WINDOWS_DPI_AWARENESS"u8, "permonitorv2"u8);
@@ -218,7 +218,8 @@ public unsafe class Program
 
     private void OnLoad()
     {
-        _grgInterface = GRGlInterface.Create();
+        _grgInterface = GRGlInterface.CreateGles(name => _window.GLContext!.TryGetProcAddress(name, out var addr) ? addr : IntPtr.Zero);
+        _grgInterface.Validate();
         _grContext = GRContext.CreateGl(_grgInterface);
         _renderTarget = new GRBackendRenderTarget(_window.Size.X, _window.Size.Y, 0, 8, new GRGlFramebufferInfo(0, (uint)0x8058));
         _surface = SKSurface.Create(_grContext, _renderTarget, GRSurfaceOrigin.BottomLeft, SKColorType.Rgba8888);
