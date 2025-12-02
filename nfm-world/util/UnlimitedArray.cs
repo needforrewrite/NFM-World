@@ -51,7 +51,7 @@ public class UnlimitedArray<T> : IList<T>
         public bool MoveNext()
         {
             _index++;
-            return _index < array.Count;
+            return _index < array._size;
         }
 
         public void Reset()
@@ -64,9 +64,27 @@ public class UnlimitedArray<T> : IList<T>
         }
     }
 
+    public UnlimitedArray()
+    {
+    }
+
+    public UnlimitedArray(int capacity)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 0);
+        
+        if (capacity <= 4)
+        {
+            _items = new T[4];
+        }
+        else
+        {
+            _items = new T[capacity];
+        }
+    }
+
     public Enumerator GetEnumerator()
     {
-        return new Enumerator();
+        return new Enumerator(this);
     }
 
     IEnumerator<T> IEnumerable<T>.GetEnumerator()
@@ -248,4 +266,9 @@ public class UnlimitedArray<T> : IList<T>
 
     public static implicit operator Span<T>(UnlimitedArray<T> array) => array._items.AsSpan(0, array._size);
     public static implicit operator ReadOnlySpan<T>(UnlimitedArray<T> array) => array._items.AsSpan(0, array._size);
+
+    public void Sort(Comparison<T> compareFunc)
+    {
+        _items.AsSpan(0, _size).Sort(compareFunc);
+    }
 }

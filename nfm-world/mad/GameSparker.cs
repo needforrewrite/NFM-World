@@ -7,8 +7,9 @@ namespace NFMWorld.Mad;
 public class GameSparker
 {
     private static MicroStopwatch timer;
-    private static ContO[] cars;
-    private static ContO[] stage_parts;
+    private static UnlimitedArray<ContO> cars;
+    private static UnlimitedArray<ContO> stage_parts;
+    private static UnlimitedArray<ContO> placed_stage_elements;
     private static CarState[] current_car_states;
     private static CarState[] prev_car_states;
 
@@ -206,8 +207,9 @@ public static void KeyPressed(Keys key)
         Medium.Groundpolys();
         Medium.D();
         
-        cars = new ContO[100];
-        stage_parts = new ContO[100000];
+        cars = [];
+        stage_parts = [];
+        placed_stage_elements = [];
 
         current_car_states = new CarState[100];
         prev_car_states = new CarState[100];
@@ -225,17 +227,15 @@ public static void KeyPressed(Keys key)
             }
         });
 
-        playerMad.Reseto(0, cars[0]);
-
         FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id) => {
             stage_parts[id] = new ContO(ais);
         });
 
-        cars[0] = new ContO(cars[14], 0, 0, 0, 0);
-
-        Console.WriteLine(StageRads.Length);
-
         Loadstage("1");
+
+        placed_stage_elements[0] = new ContO(cars[14], 0, Medium.Ground, 0, 0);
+
+        playerMad.Reseto(0, placed_stage_elements[0]);
 
         for (var i = 0; i < StageRads.Length; i++) {
             if (stage_parts[i] == null) {
@@ -263,6 +263,8 @@ public static void KeyPressed(Keys key)
      */
     private static void Loadstage(string stage)
     {
+        placed_stage_elements.Clear();
+        _stagePartCount = 1; // 0 is the player car
         Trackers.Nt = 0;
         Medium.Resdown = 0;
         Medium.Rescnt = 5;
@@ -346,7 +348,7 @@ public static void KeyPressed(Keys key)
                     setindex -= _indexOffset;
                     Console.WriteLine("Setindex ais: " + setindex);
                     // ok why does it not load certain shit and doesnt assign correct pieces properly, very strange
-                    stage_parts[_stagePartCount] = new ContO(stage_parts[setindex], Getint("set", astring, 1),
+                    placed_stage_elements[_stagePartCount] = new ContO(stage_parts[setindex], Getint("set", astring, 1),
                         Medium.Ground - stage_parts[setindex].Grat, Getint("set", astring, 2),
                         Getint("set", astring, 3));
                     if (astring.Contains(")p"))
@@ -389,7 +391,7 @@ public static void KeyPressed(Keys key)
                     var chkindex = Getint("chk", astring, 0);
                     chkindex -= _indexOffset;
                     var chkheight = Medium.Ground - stage_parts[chkindex].Grat;
-                    stage_parts[_stagePartCount] = new ContO(stage_parts[chkindex], Getint("chk", astring, 1), chkheight,
+                    placed_stage_elements[_stagePartCount] = new ContO(stage_parts[chkindex], Getint("chk", astring, 1), chkheight,
                         Getint("chk", astring, 2), Getint("chk", astring, 3));
                     
                     // CheckPoints.X[CheckPoints.N] = Getint("chk", astring, 1);
@@ -413,17 +415,17 @@ public static void KeyPressed(Keys key)
                 {
                     var fixindex = Getint("fix", astring, 0);
                     fixindex -= _indexOffset;
-                    stage_parts[_stagePartCount] = new ContO(stage_parts[fixindex], Getint("fix", astring, 1),
+                    placed_stage_elements[_stagePartCount] = new ContO(stage_parts[fixindex], Getint("fix", astring, 1),
                         Getint("fix", astring, 3),
                         Getint("fix", astring, 2), Getint("fix", astring, 4));
                     // CheckPoints.Fx[CheckPoints.Fn] = Getint("fix", astring, 1);
                     // CheckPoints.Fz[CheckPoints.Fn] = Getint("fix", astring, 2);
                     // CheckPoints.Fy[CheckPoints.Fn] = Getint("fix", astring, 3);
-                    stage_parts[_stagePartCount].Elec = true;
+                    placed_stage_elements[_stagePartCount].Elec = true;
                     if (Getint("fix", astring, 4) != 0)
                     {
                         //CheckPoints.Roted[CheckPoints.Fn] = true;
-                        stage_parts[_stagePartCount].Roted = true;
+                        placed_stage_elements[_stagePartCount].Roted = true;
                     }
                     else
                     {
@@ -471,7 +473,7 @@ public static void KeyPressed(Keys key)
                     var p = Getint("maxr", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        stage_parts[_stagePartCount] = new ContO(stage_parts[wall], o,
+                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], o,
                             Medium.Ground - stage_parts[29].Grat, //29 may need to be 85 or xtgraphics.nCars - 16
                             q * 4800 + p, 0);
                         _stagePartCount++;
@@ -497,7 +499,7 @@ public static void KeyPressed(Keys key)
                     var p = Getint("maxl", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        stage_parts[_stagePartCount] = new ContO(stage_parts[wall], o, Medium.Ground - stage_parts[wall].Grat,
+                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], o, Medium.Ground - stage_parts[wall].Grat,
                             q * 4800 + p,
                             180);
                         _stagePartCount++;
@@ -523,7 +525,7 @@ public static void KeyPressed(Keys key)
                     var p = Getint("maxt", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        stage_parts[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
+                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
                             o,
                             90);
                         _stagePartCount++;
@@ -549,7 +551,7 @@ public static void KeyPressed(Keys key)
                     var p = Getint("maxb", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        stage_parts[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
+                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
                             o,
                             -90);
                         _stagePartCount++;
@@ -597,14 +599,14 @@ public static void KeyPressed(Keys key)
             //Medium.Follow(cars[0], playerMad.Cxz, playerControl.Lookback);
             //Medium.Around(cars[0], true);
 
-            playerMad.Drive(playerControl, cars[0]);
+            playerMad.Drive(playerControl, placed_stage_elements[0]);
             switch (currentViewMode)
             {
                 case ViewMode.Follow:
-                    Medium.Follow(cars[0], playerMad.Cxz, playerControl.Lookback);
+                    Medium.Follow(placed_stage_elements[0], playerMad.Cxz, playerControl.Lookback);
                     break;
                 case ViewMode.Around:
-                    Medium.Around(cars[0], true);
+                    Medium.Around(placed_stage_elements[0], true);
                     break;
             }
 
@@ -612,7 +614,7 @@ public static void KeyPressed(Keys key)
             currentMediumState = new MediumState();
 
             prev_car_states[0] = current_car_states[0];
-            current_car_states[0] = new CarState(cars[0]);
+            current_car_states[0] = new CarState(placed_stage_elements[0]);
         }
 
         float interp_ratio = accumulator / (float)physics_dt_us;
@@ -621,7 +623,7 @@ public static void KeyPressed(Keys key)
         medium_interp_state.Apply();
 
         CarState car_interp_state = current_car_states[0].InterpWith(prev_car_states[0], interp_ratio);
-        car_interp_state.Apply(cars[0]);
+        car_interp_state.Apply(placed_stage_elements[0]);
 
         Render();
 
@@ -634,31 +636,19 @@ public static void KeyPressed(Keys key)
     {
         Medium.D();
 
-        var renderQueue = new List<ContO>();
+        var renderQueue = new UnlimitedArray<ContO>(placed_stage_elements.Count);
 
-        // process instantiated stage parts
-        for (int i = 0; i < stage_parts.Length; i++)
+        // process stage elements
+        var j = 0;
+        for (int i = 0; i < placed_stage_elements.Count; i++)
         {
-            if (stage_parts[i] != null && stage_parts[i].Dist != 0 && stage_parts[i].IsInstantiated)
+            if (placed_stage_elements[i].Dist != 0)
             {
-                renderQueue.Add(stage_parts[i]);
+                renderQueue[j++] = placed_stage_elements[i];
             }
-            else if (stage_parts[i] != null && stage_parts[i].Dist == 0 && stage_parts[i].IsInstantiated)
+            else if (placed_stage_elements[i].Dist == 0)
             {
-                stage_parts[i].D();
-            }
-        }
-
-        // process instantiated cars
-        for (int i = 0; i < cars.Length; i++)
-        {
-            if (cars[i] != null && cars[i].Dist != 0 && cars[i].IsInstantiated)
-            {
-                renderQueue.Add(cars[i]);
-            }
-            else if (cars[i] != null && cars[i].Dist == 0 && cars[i].IsInstantiated)
-            {
-                cars[i].D();
+                placed_stage_elements[i].D();
             }
         }
 
