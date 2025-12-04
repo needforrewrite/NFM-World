@@ -328,7 +328,7 @@ public class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 
         // part 2: the bigger the bounce stat, the bigger the bounce
-        rebound += CarDefine.Bounce[Cn];
+        rebound += CarDefine.Bounce[Cn] * _tickRate;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
 
@@ -359,7 +359,7 @@ public class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
 //            rebound = 0;
-        rebound += (CarDefine.Bounce[Cn] - 0.2F);
+        rebound += (CarDefine.Bounce[Cn] - 0.2F) * _tickRate;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
         Regz(wi, -1 * Scz[wi] * rebound * Trackers.Dam[ti] /** checkpoints.dam*/, conto);
@@ -372,7 +372,7 @@ public class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
 //            rebound = 0;
-        rebound += (CarDefine.Bounce[Cn] - 0.2F);
+        rebound += (CarDefine.Bounce[Cn] - 0.2F) * _tickRate;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
         Regx(wi, -1 * Scx[wi] * rebound * Trackers.Dam[ti]/* * checkpoints.dam*/, conto);
@@ -570,7 +570,6 @@ public class Mad
                     {
                         Dcomp += (float)(0.5 * Stat.Airs);//
                     }
-                    if(control.Down && !control.Up) Console.WriteLine("dcomp: " + Dcomp + ", ucomp: " + Ucomp + ", diff:" + (Dcomp - Ucomp));
                     f12 = Stat.Airc;
                 }
                 else if (Dcomp != 0.0F * _tickRate && Ucomp > -2.0F * _tickRate)
@@ -935,7 +934,8 @@ public class Mad
             wheelx[i24] = conto.Keyx[i24] + conto.X;
             wheely[i24] = bottomy + conto.Y;
             wheelz[i24] = conto.Z + conto.Keyz[i24];
-            Scy[i24] += 7.0F;
+            // gravity
+            Scy[i24] += 7.0F * _tickRate;
         }
         Rot(wheelx, wheely, conto.X, conto.Y, Pxy, 4);
         Rot(wheely, wheelz, conto.Y, conto.Z, Pzy, 4);
@@ -966,7 +966,7 @@ public class Mad
         }
         for (var i29 = 0; i29 < 4; i29++)
         {
-            wheely[i29] += Scy[i29] * _tickRate;
+            wheely[i29] += Scy[i29]; 
             wheelx[i29] += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4.0F * _tickRate;
             wheelz[i29] += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4.0F * _tickRate;
         }//
@@ -1201,7 +1201,7 @@ public class Mad
                 nGroundedWheels++;
                 Wtouch = true;
                 Gtouch = true;
-                if (!wasMtouch && Scy[i49] != 7.0F)
+                if (!wasMtouch && Scy[i49] != 7.0F * _tickRate)
                 {
                     var f50 = Scy[i49] / 333.33F;
                     if (f50 > 0.3)
@@ -1261,7 +1261,7 @@ public class Mad
                         Gtouch = true;
 
                         // more dust stuff
-                        if (!wasMtouch && Scy[k] != 7.0F /* * checkpoints.gravity */ * _tickRate)
+                        if (!wasMtouch && Scy[k] != 7.0F * _tickRate /* * checkpoints.gravity */ * _tickRate)
                         { //Phy-addons: Recharged mode
                             float f_59 = Scy[k] / 333.33F;
                             if ((double)f_59 > 0.3)
