@@ -181,7 +181,7 @@ public unsafe class Program
         var options = WindowOptions.Default;
         options.Size = new Vector2D<int>((int)(800*scale), (int)(450*scale));
         options.Title = "Need For Madness: World";
-        options.UpdatesPerSecond = 144f;
+        options.UpdatesPerSecond = 63f;
         options.ShouldSwapAutomatically = false;
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 0));
 
