@@ -5,7 +5,7 @@ namespace NFMWorld.Mad;
 
 public class Mad
 {
-    private static readonly float _tickRate = 0.333333f;
+    private static readonly float _tickRate = GameSparker.PHYSICS_MULTIPLIER;
 
     internal bool Btab;
     internal int Capcnt;
@@ -1168,9 +1168,8 @@ public class Mad
         {
             Skid = 2;
         }
-        var i45 = 0;
+        var nGroundedWheels = 0;
         var isWheelGrounded = new bool[4];
-        int nGroundedWheels = 0;
         float groundY = 250f;
         float wheelYThreshold = 5f;
         for (var i49 = 0; i49 < 4; i49++)
@@ -1178,7 +1177,7 @@ public class Mad
             isWheelGrounded[i49] = false;
             if (wheely[i49] > 245.0F)
             {
-                i45++;
+                nGroundedWheels++;
                 Wtouch = true;
                 Gtouch = true;
                 if (!wasMtouch && Scy[i49] != 7.0F)

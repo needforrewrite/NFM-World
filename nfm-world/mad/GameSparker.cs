@@ -29,11 +29,8 @@ public class GameSparker
 
     private static long accumulator = 0;
     private static long lastTickTime = 0;
-    public static float PHYSICS_MULTIPLIER = 0.3377f;
-
-    /* Frequency of physics ticks */
-    //private static int physics_dt_us_mult = 47000;
-    private static int physics_dt_us_mult = 34000;
+    public static float PHYSICS_MULTIPLIER = 21f/63f;
+    private static int physics_dt_us_mult = (int)(1000f/0.021f);
     private static int physics_dt_us = (int)(physics_dt_us_mult*PHYSICS_MULTIPLIER);
 
     private static MediumState currentMediumState;
