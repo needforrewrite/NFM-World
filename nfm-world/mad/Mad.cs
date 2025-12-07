@@ -659,17 +659,17 @@ public class Mad
                     Rcomp -= 2.0F * Stat.Airs * _tickRate;
                 }
 
-                Pzy = (int)(Pzy + (Dcomp - Ucomp) * Medium.Cos(Pxy) * _tickRate); //
+                Pzy = QuantizeTowardsZero((Pzy + (Dcomp - Ucomp) * Medium.Cos(Pxy) * _tickRate), _tickRate); //
                 if (zyinv)
                 {
-                    conto.Xz += (Dcomp - Ucomp) * Medium.Sin(Pxy) * _tickRate;
+                    conto.Xz = QuantizeTowardsZero(conto.Xz + ((Dcomp - Ucomp) * Medium.Sin(Pxy) * _tickRate), _tickRate);
                 }
                 else
                 {
-                    conto.Xz -= (Dcomp - Ucomp) * Medium.Sin(Pxy) * _tickRate;
+                    conto.Xz = QuantizeTowardsZero(conto.Xz - ((Dcomp - Ucomp) * Medium.Sin(Pxy) * _tickRate), _tickRate);
                 }
 
-                Pxy = (int)(Pxy + (Rcomp - Lcomp) * _tickRate);
+                Pxy = QuantizeTowardsZero((Pxy + (Rcomp - Lcomp) * _tickRate), _tickRate);
             }
             else
             {
@@ -851,17 +851,17 @@ public class Mad
                         Pd = false;
                     }
 
-                    Pzy = (int)(Pzy + ((Dcomp - Ucomp) * Medium.Cos(Pxy)) * _tickRate);
+                    Pzy = QuantizeTowardsZero((Pzy + ((Dcomp - Ucomp) * Medium.Cos(Pxy)) * _tickRate), _tickRate);
                     if (zyinv)
                     {
-                        conto.Xz += (int)((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate;
+                        conto.Xz = QuantizeTowardsZero(conto.Xz + (((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate), _tickRate);
                     }
                     else
                     {
-                        conto.Xz -= (int)((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate;
+                        conto.Xz = QuantizeTowardsZero(conto.Xz - (((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate), _tickRate);
                     }
 
-                    Pxy = (int)(Pxy + (Rcomp - Lcomp) * _tickRate);
+                    Pxy = QuantizeTowardsZero((Pxy + (Rcomp - Lcomp) * _tickRate), _tickRate);
                 }
             }
         }
@@ -872,7 +872,7 @@ public class Mad
             f20 = 20.0F;
         }
 
-        conto.Wzy -= (int)f20 * _tickRate;
+        conto.Wzy -= f20 * _tickRate; // maxine: remove int cast. i dont think it belongs here
         // commented out in phys physics
         //        if (conto.Wzy < -30)
         //        {
@@ -2995,5 +2995,17 @@ public class Mad
 
     public float dAtan2(float y, float x) {
         return float.Atan2(y, x) / 2 / MathF.PI * 360;
+    }
+    
+    public float QuantizeTowardsZero(float value, float step)
+    {
+        // Scale by step size
+        float scaled = value / step;
+
+        // Truncate towards zero
+        float truncated = (float)(scaled > 0 ? Math.Floor(scaled) : Math.Ceiling(scaled));
+
+        // Scale back
+        return truncated * step;
     }
 }
