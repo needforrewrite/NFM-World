@@ -54,11 +54,9 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        include:
-          - rid: win-x64
-            extension: zip
-          - rid: win-arm64
-            extension: zip
+        rid:
+          - win-x64
+          - win-arm64
 
     steps:
       - name: Checkout code
@@ -102,11 +100,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - rid: linux-x64
-            extension: tar.gz
-          - rid: linux-arm64
-            extension: tar.gz
+        rid:
+          - linux-x64
+          - linux-arm64
 
     steps:
       - name: Checkout code
