@@ -91,16 +91,11 @@ jobs:
             Write-Warning "impeller.dll not found, skipping"
           }
 
-      - name: Package ${{ matrix.rid }}
-        run: |
-          cd ./publish/${{ matrix.rid }}
-          Compress-Archive -Path * -DestinationPath ../../nfm-world-${{ matrix.rid }}.zip
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: nfm-world-${{ matrix.rid }}
-          path: nfm-world-${{ matrix.rid }}.${{ matrix.extension }}
+          path: ./publish/${{ matrix.rid }}/*
 
   build-linux:
     needs: prepare
@@ -161,16 +156,11 @@ jobs:
             echo "Warning: libimpeller.so not found, skipping"
           fi
 
-      - name: Package ${{ matrix.rid }}
-        run: |
-          cd ./publish/${{ matrix.rid }}
-          tar -czf ../../nfm-world-${{ matrix.rid }}.tar.gz .
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: nfm-world-${{ matrix.rid }}
-          path: nfm-world-${{ matrix.rid }}.${{ matrix.extension }}
+          path: ./publish/${{ matrix.rid }}/*
 
   release:
     needs: [prepare, build-windows, build-linux]
@@ -183,11 +173,33 @@ jobs:
         with:
           path: artifacts
 
+      - name: Package artifacts for release
+        run: |
+          cd artifacts
+          # Package Windows builds as zip files
+          for dir in nfm-world-win-*; do
+            if [ -d "$dir" ]; then
+              cd "$dir"
+              zip -r "../${dir}.zip" .
+              cd ..
+              rm -rf "$dir"
+            fi
+          done
+          # Package Linux builds as tar.gz files
+          for dir in nfm-world-linux-*; do
+            if [ -d "$dir" ]; then
+              cd "$dir"
+              tar -czf "../${dir}.tar.gz" .
+              cd ..
+              rm -rf "$dir"
+            fi
+          done
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
           name: Build ${{ needs.prepare.outputs.short_sha }}
-          files: artifacts/**/*
+          files: artifacts/*
         env:
           GITHUB_TOKEN: ${{ github.token }}
