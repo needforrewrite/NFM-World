@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
@@ -57,8 +58,31 @@ public class Mad
     internal bool Pr;
     internal bool Pu;
     internal bool Pushed;
-    internal int Pxy;
-    internal int Pzy;
+
+    internal float Pxy
+    {
+        set
+        {
+            if (float.IsNaN(value))
+            {
+                Debugger.Break();
+            }
+            field = value;
+        }
+        get;
+    }
+    internal float Pzy
+    {
+        set
+        {
+            if (float.IsNaN(value))
+            {
+                Debugger.Break();
+            }
+            field = value;
+        }
+        get;
+    }
     internal float Rcomp;
     private int _rpdcatch;
     internal bool Rtab;
@@ -323,7 +347,7 @@ public class Mad
     public void bounceRebound(int wi, ContO conto)
     {
         // part 1: the closer we are to 90/-90 in Pxy or Pzy, the bigger the bounce
-        float rebound = (float)((Math.Abs(Medium.Sin(Pxy)) + Math.Abs(Medium.Sin(Pzy))) / 3);
+        float rebound = (Math.Abs(Medium.Sin(Pxy)) + Math.Abs(Medium.Sin(Pzy))) / 3;
         float maxAngleRebound = 0.4F; // capping at 0.4 doesn't do much, max is two thirds
         rebound = Math.Min(rebound, maxAngleRebound);
 
@@ -354,7 +378,7 @@ public class Mad
     }
 
     public void bounceReboundZ(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/) {
-        float rebound = (float)(Math.Abs(Medium.Cos(Pxy)) + Math.Abs(Medium.Cos(Pzy)) / 4);
+        float rebound = Math.Abs(Medium.Cos(Pxy)) + Math.Abs(Medium.Cos(Pzy)) / 4;
         float maxAngleRebound = 0.3F;
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
@@ -367,7 +391,7 @@ public class Mad
     }
 
     public void bounceReboundX(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/) {
-        float rebound = (float)(Math.Abs(Medium.Cos(Pxy)) + Math.Abs(Medium.Cos(Pzy)) / 4);
+        float rebound = Math.Abs(Medium.Cos(Pxy)) + Math.Abs(Medium.Cos(Pzy)) / 4;
         float maxAngleRebound = 0.3F;
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
@@ -391,18 +415,18 @@ public class Mad
         var hitVertical = false;
         BadLanding = false;
         if (!Mtouch) Mtcount++; //DS-addons: Bad landing hotfix
-        int zyangle;
+        float zyangle;
         for (zyangle = Math.Abs(Pzy); zyangle > 360; zyangle -= 360)
         {
             /* empty */
         }
-        int xyangle;
+        float xyangle;
         for (xyangle = Math.Abs(Pxy); xyangle > 360; xyangle -= 360)
         {
             /* empty */
         }
 
-        int zy;
+        float zy;
         for (zy = Math.Abs(Pzy); zy > 270; zy -= 360)
         {
         }
@@ -413,7 +437,7 @@ public class Mad
         }
 
         var xyinv = false;
-        int xy;
+        float xy;
         for (xy = Math.Abs(Pxy); xy > 270; xy -= 360)
         {
         }
@@ -451,9 +475,9 @@ public class Mad
         control.Zyinv = zyinv;
         //
 
-        var f = 0.0F;
-        var f11 = 0.0F;
-        var f12 = 0.0F;
+        var airx = 0.0F;
+        var airz = 0.0F;
+        var airy = 0.0F;
         if (Mtouch)
         {
             Loop = 0;
@@ -534,12 +558,12 @@ public class Mad
                         }
                         Ucomp *= Stat.Airs;
                     }
-                    if (Ucomp < 20.0F)
+                    if (Ucomp < 20.0F * _tickRate) // maxine: scale to tickrate
                     {
-                        Ucomp += (int)(0.5 * Stat.Airs) * _tickRate;//
+                        Ucomp += 0.5f * Stat.Airs * _tickRate;//
                     }
-                    f = -Stat.Airc * Medium.Sin(conto.Xz) * i4 * _tickRate;
-                    f11 = Stat.Airc * Medium.Cos(conto.Xz) * i4 * _tickRate;
+                    airx = -Stat.Airc * Medium.Sin(conto.Xz) * i4 * _tickRate;
+                    airz = Stat.Airc * Medium.Cos(conto.Xz) * i4 * _tickRate;
                 }
                 else if (Ucomp != 0.0F && Ucomp > -2.0F)
                 {
@@ -560,11 +584,11 @@ public class Mad
                         }
                         Dcomp *= Stat.Airs;
                     }
-                    if (Dcomp < 20.0F)
+                    if (Dcomp < 20.0F * _tickRate) // maxine: scale to tickrate
                     {
-                        Dcomp += (int)(0.5 * Stat.Airs) * _tickRate;//
+                        Dcomp += 0.5f * Stat.Airs * _tickRate;//
                     }
-                    f12 = -Stat.Airc * _tickRate;
+                    airy = -Stat.Airc * _tickRate;
                 }
                 else if (Dcomp != 0.0F && Ucomp > -2.0F)
                 {
@@ -576,12 +600,12 @@ public class Mad
                     {
                         Lcomp = 5.0F;
                     }
-                    if (Lcomp < 20.0F)
+                    if (Lcomp < 20.0F * _tickRate) // maxine: scale to tickrate
                     {
                         Lcomp += 2.0F * Stat.Airs * _tickRate;//
                     }
-                    f = -Stat.Airc * Medium.Cos(conto.Xz) * i * _tickRate;
-                    f11 = -Stat.Airc * Medium.Sin(conto.Xz) * i * _tickRate;
+                    airx = -Stat.Airc * Medium.Cos(conto.Xz) * i * _tickRate;
+                    airz = -Stat.Airc * Medium.Sin(conto.Xz) * i * _tickRate;
                 }
                 else if (Lcomp > 0.0F)
                 {
@@ -593,18 +617,18 @@ public class Mad
                     {
                         Rcomp = 5.0F;
                     }
-                    if (Rcomp < 20.0F)
+                    if (Rcomp < 20.0F * _tickRate) // maxine: scale to tickrate
                     {
                         Rcomp += 2.0F * Stat.Airs * _tickRate;
                     }
-                    f = Stat.Airc * Medium.Cos(conto.Xz) * i * _tickRate;
-                    f11 = Stat.Airc * Medium.Sin(conto.Xz) * i * _tickRate;
+                    airx = Stat.Airc * Medium.Cos(conto.Xz) * i * _tickRate;
+                    airz = Stat.Airc * Medium.Sin(conto.Xz) * i * _tickRate;
                 }
                 else if (Rcomp > 0.0F)//
                 {
                     Rcomp -= 2.0F * Stat.Airs * _tickRate;
                 }
-                Pzy = (int) (Pzy + (Dcomp - Ucomp) * Medium.Cos(Pxy) * _tickRate); //
+                Pzy = (Pzy + (Dcomp - Ucomp) * Medium.Cos(Pxy) * _tickRate); //
                 if (zyinv)
                 {
                     conto.Xz += ((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate;
@@ -613,7 +637,7 @@ public class Mad
                 {
                     conto.Xz -= ((Dcomp - Ucomp) * Medium.Sin(Pxy)) * _tickRate;
                 }
-                Pxy = (int) (Pxy + (Rcomp - Lcomp) * _tickRate);
+                Pxy = (Pxy + (Rcomp - Lcomp) * _tickRate);
             }
             else
             {//
@@ -1053,7 +1077,8 @@ public class Mad
 
             for (var j = 0; j < 4; j++)
             {
-                if (Math.Abs(Scx[j] - speedx) > traction)
+                // maxine: traction fixes by Jacher. done slightly different but same result
+                if (Math.Abs(Scx[j] - speedx) > traction * _tickRate)
                 {
                     Scx[j] += traction * Math.Sign(speedx - Scx[j]) * _tickRate;
                 }
@@ -1061,7 +1086,7 @@ public class Mad
                 {
                     Scx[j] = speedx;
                 }
-                if (Math.Abs(Scz[j] - speedz) > traction)
+                if (Math.Abs(Scz[j] - speedz) > traction * _tickRate)
                 {
                     Scz[j] += traction * Math.Sign(speedz - Scz[j]) * _tickRate;
                 }
@@ -1069,7 +1094,7 @@ public class Mad
                 {
                     Scz[j] = speedz;
                 }
-                if (Math.Abs(Scy[j] - speedy) > traction)
+                if (Math.Abs(Scy[j] - speedy) > traction * _tickRate)
                 {
                     Scy[j] += traction * Math.Sign(speedy - Scy[j]) * _tickRate;
                 }
@@ -1078,13 +1103,14 @@ public class Mad
                     Scy[j] = speedy;
                 }//
 
+                // maxine: maybe this should be scaled to tickrate?
                 if (traction < Stat.Grip)
                 {
                     if (Txz != conto.Xz)
                     {
                         _dcnt++;
                     }
-                    else if (_dcnt != 0)
+                    else
                     {
                         _dcnt = 0;
                     }
@@ -1126,7 +1152,7 @@ public class Mad
                 }
                 if (surfaceType == 3 || surfaceType == 4)
                 {
-                    int k = (int)(Util.Random.Double() * 4.0F); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
+                    int k = Util.Random.Int(0, 4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
                     float bumpLift = surfaceType == 3 ? -100F : -150F;
                     float rng = 0.55F;
                     Scy[k] = bumpLift * rng * Speed / CarDefine.Swits[Cn, 2] * (CarDefine.Bounce[Cn] - 0.3F);
@@ -1144,7 +1170,7 @@ public class Mad
             }
             float scxavg = scxsum / 4; /* nwheels */
             float sczavg = sczsum / 4;
-            float scxz = (float)Double.Hypot(sczavg, scxavg);
+            float scxz = float.Hypot(sczavg, scxavg);
 
             Mxz = (int) dAtan2(-scxsum, sczsum);
 
@@ -1169,7 +1195,7 @@ public class Mad
             Skid = 2;
         }
         var nGroundedWheels = 0;
-        var isWheelGrounded = new bool[4];
+        Span<bool> isWheelGrounded = stackalloc bool[4];
         float groundY = 250f;
         float wheelYThreshold = 5f;
         for (var i49 = 0; i49 < 4; i49++)
@@ -1205,7 +1231,7 @@ public class Mad
             }
         }
 
-        bool[] isWheelTouchingPiece = new bool[4]; // nwheels
+        Span<bool> isWheelTouchingPiece = stackalloc bool[4]; // nwheels
         for (int j = 0; j < 4; ++j)
             isWheelTouchingPiece[j] = false;
 
@@ -1243,12 +1269,12 @@ public class Mad
                         if (!wasMtouch && Scy[k] != 7.0F /* * checkpoints.gravity */ * _tickRate)
                         { //Phy-addons: Recharged mode
                             float f_59 = Scy[k] / 333.33F;
-                            if (f_59 > 0.3)
+                            if (f_59 > 0.3F)
                                 f_59 = 0.3F;
                             if (surfaceType == 0)
-                                f_59 += (float)1.1;
+                                f_59 += 1.1f;
                             else
-                                f_59 += (float)1.2;
+                                f_59 += 1.2f;
                             conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_59 * CarDefine.Simag[Cn], 0, BadLanding && Mtouch);
                         }
 
@@ -1537,6 +1563,7 @@ public class Mad
             }
         }
 
+        // maxine: changing these to floats will cause an explosion to NaN. i cannot figure out why
         int i_81 = 0;
         if (Scy[2] != Scy[0]) {
             int sgn = Scy[2] < Scy[0] ? -1 : 1;
@@ -1571,9 +1598,7 @@ public class Mad
         }
 
         // I think this line, among other things, is responsible for causing flatspins after glitching on the edge of a ramp
-        conto.Xz += (int)(_tickRate * _forca * (Scz[0] * _nmlt - Scz[1] * _pmlt + Scz[2] * _pmlt - Scz[3] * _nmlt +
-            Scx[0] * _pmlt +
-            Scx[1] * _nmlt - Scx[2] * _nmlt - Scx[3] * _pmlt));
+        conto.Xz += _tickRate * _forca * (Scz[0] * _nmlt - Scz[1] * _pmlt + Scz[2] * _pmlt - Scz[3] * _nmlt + Scx[0] * _pmlt + Scx[1] * _nmlt - Scx[2] * _nmlt - Scx[3] * _pmlt);
         
         if (Math.Abs(i_82) > Math.Abs(i_81))
         {
@@ -1584,16 +1609,17 @@ public class Mad
             i_83 = i_84;
         }
 
-// CHK11
+        // CHK11
         if (!Mtouch && py < 0/* && this.mtCount > 15*/) {
-            int zeroanglezy = Math.Min(zyangle, 360 - zyangle); //distance from 0 degrees in the zy-plane
-            int flipanglezy = Math.Abs(zyangle - 180); //distance from 180 degrees in the zy-plane
+            var zeroanglezy = Math.Min(zyangle, 360 - zyangle); //distance from 0 degrees in the zy-plane
+            var flipanglezy = Math.Abs(zyangle - 180); //distance from 180 degrees in the zy-plane
             if(zeroanglezy <= flipanglezy && zyangle < 180 || flipanglezy < zeroanglezy && zyangle >= 180) //the landing adjustment mechanism
             {
             	if(Pzy > 0) //Pzy can be negative, so this needs to be accounted for
                 {
                     Pzy -= Math.Abs(i_81); 
-                } else
+                }
+                else
                 {
                     Pzy += Math.Abs(i_81);
                 }
@@ -1603,28 +1629,33 @@ public class Mad
             	if(Pzy > 0)
                 {
                     Pzy += Math.Abs(i_81);
-                } else
+                }
+                else
                 {
                     Pzy -= Math.Abs(i_81);
                 }
             } 
-            int zeroanglexy = Math.Min(xyangle, 360 - xyangle); //distance from 0 degrees in the xy-plane
-            int flipanglexy = Math.Abs(xyangle - 180); //distance from 180 degrees in the xy-plane
+            var zeroanglexy = Math.Min(xyangle, 360 - xyangle); //distance from 0 degrees in the xy-plane
+            var flipanglexy = Math.Abs(xyangle - 180); //distance from 180 degrees in the xy-plane
             if(zeroanglexy <= flipanglexy && xyangle < 180 || flipanglexy < zeroanglexy && xyangle >= 180) //same as above, just for the xy-plane
             {
             	if(Pxy > 0) //again, Pxy can be negative
                 {
                     Pxy -= Math.Abs(i_83);
-                } else
+                }
+                else
                 {
                     Pxy += Math.Abs(i_83);
                 }
             }
             if(zeroanglexy <= flipanglexy && xyangle >= 180 || flipanglexy < zeroanglexy && xyangle < 180)
             {
-            	if(Pxy > 0) {
+            	if (Pxy > 0)
+                {
                     Pxy += Math.Abs(i_83);
-                } else {
+                }
+                else
+                {
                     Pxy -= Math.Abs(i_83);
                 }
             } 
@@ -1645,46 +1676,44 @@ public class Mad
                 Pzy += 360;
                 conto.Zy += 360;
             }
-            while (this.Pzy > 360) {
-                this.Pzy -= 360;
+            while (Pzy > 360) {
+                Pzy -= 360;
                 conto.Zy -= 360;
             }
-            if (this.Pzy < 190 && this.Pzy > 170) {
-                this.Pzy = 180;
+            if (Pzy < 190 && Pzy > 170) {
+                Pzy = 180;
                 conto.Zy = 180;
                 i_86++;
             }
-            if (this.Pzy > 350 || this.Pzy < 10) {
-                this.Pzy = 0;
+            if (Pzy > 350 || Pzy < 10) {
+                Pzy = 0;
                 conto.Zy = 0;
                 i_86++;
             }
-            while (this.Pxy < 360) {
-                this.Pxy += 360;
+            while (Pxy < 360) {
+                Pxy += 360;
                 conto.Xy += 360;
             }
-            while (this.Pxy > 360) {
-                this.Pxy -= 360;
+            while (Pxy > 360) {
+                Pxy -= 360;
                 conto.Xy -= 360;
             }
-            if (this.Pxy < 190 && this.Pxy > 170) {
-                this.Pxy = 180;
+            if (Pxy < 190 && Pxy > 170) {
+                Pxy = 180;
                 conto.Xy = 180;
                 i_86++;
             }
-            if (this.Pxy > 350 || this.Pxy < 10) {
-                this.Pxy = 0;
+            if (Pxy > 350 || Pxy < 10) {
+                Pxy = 0;
                 conto.Xy = 0;
                 i_86++;
             }
             if (i_86 == 2) {
-                //this.mtouch = true;
                 Mtouch = true; //DS-addons: Bad landing hotfix
             }
         }
         if (!Mtouch && Wtouch) {
             if (_cntouch == 10) {
-                //this.mtouch = true;
                 Mtouch = true; //DS-addons: Bad landing hotfix
             } else {
                 _cntouch++;
@@ -1692,7 +1721,7 @@ public class Mad
         } else
             _cntouch = 0; // CHK12
         //DS-addons: Bad landing hotfix
-        int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F - bottomy * Medium.Cos(this.Pzy) * Medium.Cos(this.Pxy) + f12);
+        int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F - bottomy * Medium.Cos(Pzy) * Medium.Cos(Pxy) + airy);
         py = conto.Y - newy;
         conto.Y = newy;
         //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) / 4.0F - (float) i_10 * Medium.Cos(this.Pzy) * Medium.Cos(this.Pxy) + f_12);
@@ -1703,8 +1732,8 @@ public class Mad
             i = 1;
 
         // CHK13
-        conto.X = (int) ((wheelx[0] - (float) conto.Keyx[0] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[0]) * Medium.Sin(conto.Xz) * _tickRate + wheelx[1] - (float) conto.Keyx[1] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[1]) * Medium.Sin(conto.Xz) * _tickRate + wheelx[2] - (float) conto.Keyx[2] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[2]) * Medium.Sin(conto.Xz) * _tickRate + wheelx[3] - (float) conto.Keyx[3] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[3]) * Medium.Sin(conto.Xz) * _tickRate) / 4.0F + (float) bottomy * Medium.Sin(this.Pxy) * Medium.Cos(conto.Xz) - (float) bottomy * Medium.Sin(this.Pzy) * Medium.Sin(conto.Xz) * _tickRate + f);
-        conto.Z = (int) ((wheelz[0] - (float) (i * conto.Keyz[0]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[0] * Medium.Sin(conto.Xz) * _tickRate + wheelz[1] - (float) (i * conto.Keyz[1]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[1] * Medium.Sin(conto.Xz) * _tickRate + wheelz[2] - (float) (i * conto.Keyz[2]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[2] * Medium.Sin(conto.Xz) * _tickRate + wheelz[3] - (float) (i * conto.Keyz[3]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[3] * Medium.Sin(conto.Xz) * _tickRate) / 4.0F + (float) bottomy * Medium.Sin(this.Pxy) * Medium.Sin(conto.Xz) - (float) bottomy * Medium.Sin(this.Pzy) * Medium.Cos(conto.Xz) * _tickRate + f11);
+        conto.X = (int) ((wheelx[0] - conto.Keyx[0] * Medium.Cos(conto.Xz) * _tickRate + i * conto.Keyz[0] * Medium.Sin(conto.Xz) * _tickRate + wheelx[1] - conto.Keyx[1] * Medium.Cos(conto.Xz) * _tickRate + i * conto.Keyz[1] * Medium.Sin(conto.Xz) * _tickRate + wheelx[2] - conto.Keyx[2] * Medium.Cos(conto.Xz) * _tickRate + i * conto.Keyz[2] * Medium.Sin(conto.Xz) * _tickRate + wheelx[3] - conto.Keyx[3] * Medium.Cos(conto.Xz) * _tickRate + i * conto.Keyz[3] * Medium.Sin(conto.Xz) * _tickRate) / 4.0F + bottomy * Medium.Sin(Pxy) * Medium.Cos(conto.Xz) - bottomy * Medium.Sin(Pzy) * Medium.Sin(conto.Xz) * _tickRate + airx);
+        conto.Z = (int) ((wheelz[0] - i * conto.Keyz[0] * Medium.Cos(conto.Xz) * _tickRate - conto.Keyx[0] * Medium.Sin(conto.Xz) * _tickRate + wheelz[1] - i * conto.Keyz[1] * Medium.Cos(conto.Xz) * _tickRate - conto.Keyx[1] * Medium.Sin(conto.Xz) * _tickRate + wheelz[2] - i * conto.Keyz[2] * Medium.Cos(conto.Xz) * _tickRate - conto.Keyx[2] * Medium.Sin(conto.Xz) * _tickRate + wheelz[3] - i * conto.Keyz[3] * Medium.Cos(conto.Xz) * _tickRate - conto.Keyx[3] * Medium.Sin(conto.Xz) * _tickRate) / 4.0F + bottomy * Medium.Sin(Pxy) * Medium.Sin(conto.Xz) - bottomy * Medium.Sin(Pzy) * Medium.Cos(conto.Xz) * _tickRate + airz);
 
         if (Math.Abs(Speed) > 10.0F || !Mtouch)
         {
@@ -1741,7 +1770,7 @@ public class Mad
         } // CHK14
         if (Wtouch && !BadLanding)
         {
-            var f87 = (float)(Speed / Stat.Swits[2] * 14.0F * (Stat.Bounce - 0.4));
+            var f87 = (Speed / Stat.Swits[2] * 14.0F * (Stat.Bounce - 0.4f));
             if (control.Left && _tilt < f87 && _tilt >= 0.0F)
             {
                 _tilt += 0.4f;
@@ -2251,7 +2280,7 @@ public class Mad
                 {
                     if (Power > 0.0F)
                     {
-                        Power -= Power * Power * Power / Stat.Powerloss * _tickRate;
+                        Power -= (Power * Power * Power / Stat.Powerloss) * _tickRate;
                     }
                     else
                     {
@@ -2835,21 +2864,20 @@ public class Mad
         }
     }
 
-    private int Rpy(float f, float f140, float f141, float f142, float
-        f143, float f144)
+    private int Rpy(float x1, float x2, float y1, float y2, float z1, float z2)
     {
-        return (int)((f - f140) * (f - f140) + (f141 - f142) * (f141 - f142) + (f143 - f144) * (f143 - f144));
+        return (int)((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) + (z1 - z2) * (z1 - z2));
     }
 
     public float Hypot3(float x, float y, float z) {
-        return (float) Math.Sqrt(x * x + y * y + z * z);
+        return float.Sqrt(x * x + y * y + z * z);
     }
 
     public float dAcos(float a) {
-        return (float) (Math.Acos(a) / 2 / Math.PI * 360);
+        return float.Acos(a) / 2 / MathF.PI * 360;
     }
 
     public float dAtan2(float y, float x) {
-        return (float) (Math.Atan2(y, x) / 2 / Math.PI * 360);
+        return float.Atan2(y, x) / 2 / MathF.PI * 360;
     }
 }
