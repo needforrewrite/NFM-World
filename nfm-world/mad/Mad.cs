@@ -1007,7 +1007,6 @@ public class Mad
             }
         }
 
-        Console.WriteLine(Cxz);
         var wheelx = new float[4];
         var wheelz = new float[4];
         var wheely = new float[4];

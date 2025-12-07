@@ -233,7 +233,7 @@ public class GameSparker
 
         Loadstage("15");
 
-        cars_in_race[playerCarIndex] = new Car(new Stat(14), 0, cars[14], 0, 0);
+        cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
 
         for (var i = 0; i < StageRads.Length; i++) {
             if (stage_parts[i] == null) {
