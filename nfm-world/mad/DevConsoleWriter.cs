@@ -18,6 +18,31 @@ namespace NFMWorld.Mad
 
         public override Encoding Encoding => Encoding.UTF8;
 
+        public override void Write(char[] buffer, int index, int count)
+        {
+            _devConsole.Log(new string(buffer, index, count), _logLevel);
+            _originalOut.Write(buffer, index, count);
+        }
+
+        public override void Write(string? value)
+        {
+            if (value != null)
+            {
+                _devConsole.Log(value, _logLevel);
+                _originalOut.Write(value);
+            }
+        }
+
+        public override void Write(ReadOnlySpan<char> buffer)
+        {
+            if (!buffer.IsEmpty)
+            {
+                var str = new string(buffer);
+                _devConsole.Log(str, _logLevel);
+                _originalOut.Write(str);
+            }
+        }
+
         public void WriteLine(string? value, string logLevel)
         {
             if (value != null)
@@ -33,6 +58,22 @@ namespace NFMWorld.Mad
             {
                 _devConsole.Log(value, _logLevel);
                 _originalOut.Write(value);
+            }
+        }
+
+        public override void WriteLine(char[] buffer, int index, int count)
+        {
+            _devConsole.Log(new string(buffer, index, count), _logLevel);
+            _originalOut.WriteLine(buffer, index, count);
+        }
+
+        public override void WriteLine(ReadOnlySpan<char> buffer)
+        {
+            if (!buffer.IsEmpty)
+            {
+                var str = new string(buffer);
+                _devConsole.Log(str, _logLevel);
+                _originalOut.WriteLine(str);
             }
         }
     }
