@@ -919,7 +919,6 @@ public class Mad
                 }
             }
         }
-        Console.WriteLine(Cxz);
         var wheelx = new float[4];
         var wheelz = new float[4];
         var wheely = new float[4];
@@ -1053,7 +1052,7 @@ public class Mad
 
             for (var j = 0; j < 4; j++)
             {
-                if (Math.Abs(Scx[j] - speedx) > traction)
+                if (Math.Abs((Scx[j] - speedx)*1/_tickRate) > traction)
                 {
                     Scx[j] += traction * Math.Sign(speedx - Scx[j]) * _tickRate;
                 }
@@ -1061,7 +1060,7 @@ public class Mad
                 {
                     Scx[j] = speedx;
                 }
-                if (Math.Abs(Scz[j] - speedz) > traction)
+                if (Math.Abs((Scz[j] - speedz)*1/_tickRate) > traction)
                 {
                     Scz[j] += traction * Math.Sign(speedz - Scz[j]) * _tickRate;
                 }
@@ -1069,7 +1068,7 @@ public class Mad
                 {
                     Scz[j] = speedz;
                 }
-                if (Math.Abs(Scy[j] - speedy) > traction)
+                if (Math.Abs((Scy[j] - speedy)*1/_tickRate) > traction)
                 {
                     Scy[j] += traction * Math.Sign(speedy - Scy[j]) * _tickRate;
                 }
@@ -1703,8 +1702,18 @@ public class Mad
             i = 1;
 
         // CHK13
-        conto.X = (int) ((wheelx[0] - (float) conto.Keyx[0] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[0]) * Medium.Sin(conto.Xz) * _tickRate + wheelx[1] - (float) conto.Keyx[1] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[1]) * Medium.Sin(conto.Xz) * _tickRate + wheelx[2] - (float) conto.Keyx[2] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[2]) * Medium.Sin(conto.Xz) * _tickRate + wheelx[3] - (float) conto.Keyx[3] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[3]) * Medium.Sin(conto.Xz) * _tickRate) / 4.0F + (float) bottomy * Medium.Sin(this.Pxy) * Medium.Cos(conto.Xz) - (float) bottomy * Medium.Sin(this.Pzy) * Medium.Sin(conto.Xz) * _tickRate + f);
-        conto.Z = (int) ((wheelz[0] - (float) (i * conto.Keyz[0]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[0] * Medium.Sin(conto.Xz) * _tickRate + wheelz[1] - (float) (i * conto.Keyz[1]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[1] * Medium.Sin(conto.Xz) * _tickRate + wheelz[2] - (float) (i * conto.Keyz[2]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[2] * Medium.Sin(conto.Xz) * _tickRate + wheelz[3] - (float) (i * conto.Keyz[3]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[3] * Medium.Sin(conto.Xz) * _tickRate) / 4.0F + (float) bottomy * Medium.Sin(this.Pxy) * Medium.Sin(conto.Xz) - (float) bottomy * Medium.Sin(this.Pzy) * Medium.Cos(conto.Xz) * _tickRate + f11);
+        conto.X = (int) ((wheelx[0] - (float) conto.Keyx[0] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[0]) * Medium.Sin(conto.Xz) * _tickRate + 
+            wheelx[1] - (float) conto.Keyx[1] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[1]) * Medium.Sin(conto.Xz) * _tickRate + 
+            wheelx[2] - (float) conto.Keyx[2] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[2]) * Medium.Sin(conto.Xz) * _tickRate + 
+            wheelx[3] - (float) conto.Keyx[3] * Medium.Cos(conto.Xz) * _tickRate + (float) (i * conto.Keyz[3]) * Medium.Sin(conto.Xz) * _tickRate) / 4.0F 
+            + (float) bottomy * Medium.Sin(this.Pxy) * Medium.Cos(conto.Xz) - (float) bottomy * Medium.Sin(this.Pzy) * Medium.Sin(conto.Xz) * _tickRate + f);
+            
+        conto.Z = (int) (
+            (wheelz[0] - (float) (i * conto.Keyz[0]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[0] * Medium.Sin(conto.Xz) * _tickRate 
+            + wheelz[1] - (float) (i * conto.Keyz[1]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[1] * Medium.Sin(conto.Xz) * _tickRate 
+            + wheelz[2] - (float) (i * conto.Keyz[2]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[2] * Medium.Sin(conto.Xz) * _tickRate 
+            + wheelz[3] - (float) (i * conto.Keyz[3]) * Medium.Cos(conto.Xz) * _tickRate - (float) conto.Keyx[3] * Medium.Sin(conto.Xz) * _tickRate) / 4.0F 
+            + (float) bottomy * Medium.Sin(this.Pxy) * Medium.Sin(conto.Xz) - (float) bottomy * Medium.Sin(this.Pzy) * Medium.Cos(conto.Xz) * _tickRate + f11);
 
         if (Math.Abs(Speed) > 10.0F || !Mtouch)
         {
