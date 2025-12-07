@@ -176,20 +176,16 @@ jobs:
       - name: Package artifacts for release
         run: |
           cd artifacts
-          # Package Windows builds as zip files
-          for dir in nfm-world-win-*; do
+          # Package all artifacts based on platform
+          for dir in nfm-world-*; do
             if [ -d "$dir" ]; then
               cd "$dir"
-              zip -r "../${dir}.zip" .
-              cd ..
-              rm -rf "$dir"
-            fi
-          done
-          # Package Linux builds as tar.gz files
-          for dir in nfm-world-linux-*; do
-            if [ -d "$dir" ]; then
-              cd "$dir"
-              tar -czf "../${dir}.tar.gz" .
+              # Use zip for Windows, tar.gz for Linux
+              if [[ "$dir" == nfm-world-win-* ]]; then
+                zip -r "../${dir}.zip" .
+              elif [[ "$dir" == nfm-world-linux-* ]]; then
+                tar -czf "../${dir}.tar.gz" .
+              fi
               cd ..
               rm -rf "$dir"
             fi
