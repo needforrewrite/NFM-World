@@ -175,18 +175,20 @@ jobs:
 
       - name: Package artifacts for release
         run: |
+          set -e
+          shopt -s nullglob
           cd artifacts
           # Package all artifacts based on platform
           for dir in nfm-world-*; do
             if [ -d "$dir" ]; then
-              cd "$dir"
+              pushd "$dir" > /dev/null
               # Use zip for Windows, tar.gz for Linux
               if [[ "$dir" == nfm-world-win-* ]]; then
                 zip -r "../${dir}.zip" .
               elif [[ "$dir" == nfm-world-linux-* ]]; then
                 tar -czf "../${dir}.tar.gz" .
               fi
-              cd ..
+              popd > /dev/null
               rm -rf "$dir"
             fi
           done
