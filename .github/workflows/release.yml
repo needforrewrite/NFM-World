@@ -3,7 +3,7 @@ name: Build and Release
 on:
   push:
     branches:
-      - 'master'
+      - '**'
 
 permissions:
   contents: write
@@ -14,10 +14,20 @@ jobs:
     outputs:
       tag_name: ${{ steps.tag.outputs.tag_name }}
       short_sha: ${{ steps.tag.outputs.short_sha }}
+      is_master: ${{ steps.check_branch.outputs.is_master }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
+      - name: Check if master branch
+        id: check_branch
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "is_master=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_master=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Generate tag name
         id: tag
         run: |
@@ -25,8 +35,9 @@ jobs:
           TAG_NAME="build-${SHORT_SHA}"
           echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
-      
+
       - name: Create and push tag
+        if: steps.check_branch.outputs.is_master == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -43,21 +54,19 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        include:
-          - rid: win-x64
-            extension: zip
-          - rid: win-arm64
-            extension: zip
-    
+        rid:
+          - win-x64
+          - win-arm64
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      
+
       - name: Publish ${{ matrix.rid }}
         run: |
           dotnet publish nfm-world/nfm-world.csproj `
@@ -66,45 +75,51 @@ jobs:
             --self-contained `
             -p:PublishAot=true `
             -o ./publish/${{ matrix.rid }}
-      
-      - name: Package ${{ matrix.rid }}
+
+      - name: Copy native libraries
         run: |
-          cd ./publish/${{ matrix.rid }}
-          Compress-Archive -Path * -DestinationPath ../../nfm-world-${{ matrix.rid }}.zip
-      
+          if (Test-Path "nfm-world/skiadriver/bass.dll") {
+            Copy-Item -Path "nfm-world/skiadriver/bass.dll" -Destination "./publish/${{ matrix.rid }}/"
+          } else {
+            Write-Warning "bass.dll not found, skipping"
+          }
+          if (Test-Path "nfm-world/nimpellerdriver/impeller.dll") {
+            Copy-Item -Path "nfm-world/nimpellerdriver/impeller.dll" -Destination "./publish/${{ matrix.rid }}/"
+          } else {
+            Write-Warning "impeller.dll not found, skipping"
+          }
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: nfm-world-${{ matrix.rid }}
-          path: nfm-world-${{ matrix.rid }}.${{ matrix.extension }}
+          path: ./publish/${{ matrix.rid }}/
 
   build-linux:
     needs: prepare
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - rid: linux-x64
-            extension: tar.gz
-          - rid: linux-arm64
-            extension: tar.gz
-    
+        rid:
+          - linux-x64
+          - linux-arm64
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      
+
       - name: Install cross-compilation dependencies
         if: matrix.rid == 'linux-arm64'
         run: |
           sudo apt-get update
           # Install ARM64 cross-compilation toolchain
           sudo apt-get install -y clang zlib1g-dev gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu libc6-dev-arm64-cross
-      
+
       - name: Publish ${{ matrix.rid }}
         run: |
           if [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
@@ -123,33 +138,64 @@ jobs:
             --self-contained \
             -p:PublishAot=true \
             -o ./publish/${{ matrix.rid }}
-      
-      - name: Package ${{ matrix.rid }}
+
+      - name: Copy native libraries
         run: |
-          cd ./publish/${{ matrix.rid }}
-          tar -czf ../../nfm-world-${{ matrix.rid }}.tar.gz .
-      
+          if [ -f "nfm-world/skiadriver/libbass.so" ]; then
+            cp nfm-world/skiadriver/libbass.so ./publish/${{ matrix.rid }}/
+          else
+            echo "Warning: libbass.so not found, skipping"
+          fi
+          if [ -f "nfm-world/nimpellerdriver/libimpeller.so" ]; then
+            cp nfm-world/nimpellerdriver/libimpeller.so ./publish/${{ matrix.rid }}/
+          else
+            echo "Warning: libimpeller.so not found, skipping"
+          fi
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: nfm-world-${{ matrix.rid }}
-          path: nfm-world-${{ matrix.rid }}.${{ matrix.extension }}
+          path: ./publish/${{ matrix.rid }}/
 
   release:
     needs: [prepare, build-windows, build-linux]
     runs-on: ubuntu-latest
-    
+    if: needs.prepare.outputs.is_master == 'true'
+
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      
+
+      - name: Package artifacts for release
+        run: |
+          set -e
+          shopt -s nullglob
+          cd artifacts
+          # Package all artifacts based on platform
+          for dir in nfm-world-*; do
+            if [ -d "$dir" ]; then
+              pushd "$dir" > /dev/null
+              # Use zip for Windows, tar.gz for Linux
+              if [[ "$dir" == nfm-world-win-* ]]; then
+                zip -r "../${dir}.zip" .
+              elif [[ "$dir" == nfm-world-linux-* ]]; then
+                tar -czf "../${dir}.tar.gz" .
+              fi
+              popd > /dev/null
+              rm -rf "$dir"
+            fi
+          done
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
           name: Build ${{ needs.prepare.outputs.short_sha }}
-          files: artifacts/**/*
+          files: |
+            artifacts/*.zip
+            artifacts/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ github.token }}
