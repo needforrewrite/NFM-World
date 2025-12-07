@@ -577,9 +577,9 @@ public class Mad
                         Ucomp *= Stat.Airs;
                     }
 
-                    if (Ucomp < 20.0F * _tickRate) // maxine: scale to tickrate
+                    if (Ucomp < 20.0F)
                     {
-                        Ucomp += 0.5f * Stat.Airs * _tickRate; //
+                        Ucomp += 0.5f * Stat.Airs; //
                     }
 
                     airx = -Stat.Airc * Medium.Sin(conto.Xz) * zneg * _tickRate;
@@ -587,7 +587,7 @@ public class Mad
                 }
                 else if (Ucomp != 0.0F && Ucomp > -2.0F)
                 {
-                    Ucomp -= 0.5f * Stat.Airs * _tickRate; //
+                    Ucomp -= 0.5f * Stat.Airs; //
                 }
 
                 if (control.Down)
@@ -608,16 +608,16 @@ public class Mad
                         Dcomp *= Stat.Airs;
                     }
 
-                    if (Dcomp < 20.0F * _tickRate) // maxine: scale to tickrate
+                    if (Dcomp < 20.0F) // maxine: scale to tickrate
                     {
-                        Dcomp += 0.5f * Stat.Airs * _tickRate; //
+                        Dcomp += 0.5f * Stat.Airs; //
                     }
 
                     airy = -Stat.Airc * _tickRate;
                 }
                 else if (Dcomp != 0.0F && Ucomp > -2.0F)
                 {
-                    Dcomp -= 0.5f * Stat.Airs * _tickRate;
+                    Dcomp -= 0.5f * Stat.Airs;
                 } //
 
                 if (control.Left)
@@ -627,9 +627,9 @@ public class Mad
                         Lcomp = 5.0F;
                     }
 
-                    if (Lcomp < 20.0F * _tickRate) // maxine: scale to tickrate
+                    if (Lcomp < 20.0F) // maxine: scale to tickrate
                     {
-                        Lcomp += 2.0F * Stat.Airs * _tickRate; //
+                        Lcomp += 2.0F * Stat.Airs; //
                     }
 
                     airx = -Stat.Airc * Medium.Cos(conto.Xz) * xneg * _tickRate;
@@ -637,7 +637,7 @@ public class Mad
                 }
                 else if (Lcomp > 0.0F)
                 {
-                    Lcomp -= 2.0F * Stat.Airs * _tickRate; //
+                    Lcomp -= 2.0F * Stat.Airs; //
                 }
 
                 if (control.Right) //
@@ -647,9 +647,9 @@ public class Mad
                         Rcomp = 5.0F;
                     }
 
-                    if (Rcomp < 20.0F * _tickRate) // maxine: scale to tickrate
+                    if (Rcomp < 20.0F) // maxine: scale to tickrate
                     {
-                        Rcomp += 2.0F * Stat.Airs * _tickRate;
+                        Rcomp += 2.0F * Stat.Airs;
                     }
 
                     airx = Stat.Airc * Medium.Cos(conto.Xz) * xneg * _tickRate;
@@ -657,7 +657,7 @@ public class Mad
                 }
                 else if (Rcomp > 0.0F) //
                 {
-                    Rcomp -= 2.0F * Stat.Airs * _tickRate;
+                    Rcomp -= 2.0F * Stat.Airs;
                 }
 
                 Pzy = (Pzy + (Dcomp - Ucomp) * Medium.Cos(Pxy) * _tickRate); //
