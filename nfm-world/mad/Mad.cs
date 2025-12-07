@@ -1179,7 +1179,9 @@ public class Mad
 
                 if (Math.Abs(Scy[j] - speedy) > traction * _tickRate)
                 {
-                    Scy[j] += traction * Math.Sign(speedy - Scy[j]) * _tickRate;
+                    // Jacher: decouple this from tickrate
+                    // this reduces bouncing when AB-ing, but at what cost?
+                    Scy[j] += traction * Math.Sign(speedy - Scy[j]); // * _tickRate;
                 }
                 else
                 {
@@ -1831,6 +1833,8 @@ public class Mad
             xneg = -1;
         else
             xneg = 1;
+
+        Console.WriteLine("x: " + airx + ", z: " + airz + ", sum: " + Medium.Sin(Pxy) + ", sum2: " + Medium.Sin(Pzy));
 
         // CHK13
         // car sliding fix by jacher: do not adjust to tickrate

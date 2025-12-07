@@ -213,7 +213,7 @@ public class GameSparker
         Medium.Groundpolys();
         Medium.D();
 
-        Medium.FocusPoint -= 100;
+        //Medium.FocusPoint -= 100;
         
         cars = [];
         stage_parts = [];
