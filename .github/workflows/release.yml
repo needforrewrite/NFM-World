@@ -95,7 +95,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nfm-world-${{ matrix.rid }}
-          path: ./publish/${{ matrix.rid }}/*
+          path: ./publish/${{ matrix.rid }}/
 
   build-linux:
     needs: prepare
@@ -160,7 +160,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nfm-world-${{ matrix.rid }}
-          path: ./publish/${{ matrix.rid }}/*
+          path: ./publish/${{ matrix.rid }}/
 
   release:
     needs: [prepare, build-windows, build-linux]
@@ -200,6 +200,8 @@ jobs:
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
           name: Build ${{ needs.prepare.outputs.short_sha }}
-          files: artifacts/*
+          files: |
+            artifacts/*.zip
+            artifacts/*.tar.gz
         env:
           GITHUB_TOKEN: ${{ github.token }}
