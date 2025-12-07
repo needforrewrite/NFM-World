@@ -40,7 +40,7 @@ public class Random(long seed)
         return System.Random.Shared.NextDouble();
     }
 
-    public static double Single()
+    public static float Single()
     {
         return System.Random.Shared.NextSingle();
     }
@@ -48,5 +48,10 @@ public class Random(long seed)
     public static bool Boolean()
     {
         return System.Random.Shared.NextSingle() >= 0.5f;
+    }
+
+    public static int Int(int minInclusive, int maxExclusive)
+    {
+        return System.Random.Shared.Next(minInclusive, maxExclusive);
     }
 }
