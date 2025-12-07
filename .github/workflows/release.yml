@@ -80,8 +80,16 @@ jobs:
 
       - name: Copy native libraries
         run: |
-          Copy-Item -Path "nfm-world/skiadriver/bass.dll" -Destination "./publish/${{ matrix.rid }}/"
-          Copy-Item -Path "nfm-world/nimpellerdriver/impeller.dll" -Destination "./publish/${{ matrix.rid }}/"
+          if (Test-Path "nfm-world/skiadriver/bass.dll") {
+            Copy-Item -Path "nfm-world/skiadriver/bass.dll" -Destination "./publish/${{ matrix.rid }}/"
+          } else {
+            Write-Warning "bass.dll not found, skipping"
+          }
+          if (Test-Path "nfm-world/nimpellerdriver/impeller.dll") {
+            Copy-Item -Path "nfm-world/nimpellerdriver/impeller.dll" -Destination "./publish/${{ matrix.rid }}/"
+          } else {
+            Write-Warning "impeller.dll not found, skipping"
+          }
 
       - name: Package ${{ matrix.rid }}
         run: |
@@ -142,8 +150,16 @@ jobs:
 
       - name: Copy native libraries
         run: |
-          cp nfm-world/skiadriver/libbass.so ./publish/${{ matrix.rid }}/
-          cp nfm-world/nimpellerdriver/libimpeller.so ./publish/${{ matrix.rid }}/
+          if [ -f "nfm-world/skiadriver/libbass.so" ]; then
+            cp nfm-world/skiadriver/libbass.so ./publish/${{ matrix.rid }}/
+          else
+            echo "Warning: libbass.so not found, skipping"
+          fi
+          if [ -f "nfm-world/nimpellerdriver/libimpeller.so" ]; then
+            cp nfm-world/nimpellerdriver/libimpeller.so ./publish/${{ matrix.rid }}/
+          else
+            echo "Warning: libimpeller.so not found, skipping"
+          fi
 
       - name: Package ${{ matrix.rid }}
         run: |
