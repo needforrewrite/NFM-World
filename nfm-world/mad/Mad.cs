@@ -1109,7 +1109,7 @@ public class Mad
         {
             var traction = Stat.Grip;
             // jach suggested 1/tickrate here
-            traction -= Math.Abs(Txz - conto.Xz) * Speed * (1/_tickRate) / 250.0F;
+            traction -= Math.Abs(Txz - conto.Xz) * Speed * (_applyJachTurntableFix ? 1/_tickRate : 1) / 250.0F;
             if (control.Handb)
             {
                 traction -= Math.Abs(Txz - conto.Xz) * 4;
