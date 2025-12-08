@@ -105,6 +105,8 @@ public class Mad
     internal bool Wtouch;
     private int _xtpower;
 
+    internal bool _applyTractionFix = true;
+
     internal Mad(Stat stat, int i)
     {
         Stat = stat;
@@ -118,7 +120,7 @@ public class Mad
 
     public bool pointInBox(float px, float py, float pz, float bx, float by, float bz, float szx, float szy, float szz)
     {
-        return px > bx - szx && px < bx + szx && pz > bz - szz && pz < bz + szz && py > by - szy && py < by + szy;
+        return px > bx - szx &&  px < bx + szx && pz > bz - szz && pz < bz + szz && py > by - szy && py < by + szy;
     }
 
     /*
@@ -408,6 +410,12 @@ public class Mad
 
     internal void Drive(Control control, ContO conto)
     {
+        if (GameSparker.DebugKeyStates.GetValueOrDefault(Keys.F3))
+        {
+            _applyTractionFix = !_applyTractionFix;
+            GameSparker.DebugKeyStates[Keys.F3] = false;
+        }
+        
         var xneg = 1;
         var zneg = 1;
         var zyinv = false;
@@ -1106,6 +1114,7 @@ public class Mad
                     Skid = 1;
                 }
 
+                FrameTrace.AddMessage("Skidding, dump speed");
                 Speed -= Speed / 100.0F * _tickRate;
             } //
             else if (Skid == 1)
@@ -1144,15 +1153,9 @@ public class Mad
                 Speed = 0.0F;
             }
 
-            if (Cn == 8 && traction < 5.0F)
-            {
-                traction = 5.0F;
-            }
-
-            if (traction < 1.0F)
-            {
-                traction = 1.0F;
-            } //
+            float minTractionDrifterX = 5.0F;
+            if (Cn == 8)
+                traction = Math.Max(traction, minTractionDrifterX);//
 
             float minTraction = 1.0f;
             traction = Math.Max(traction, minTraction);
@@ -1160,7 +1163,7 @@ public class Mad
             for (var j = 0; j < 4; j++)
             {
                 // maxine: traction fixes by Jacher. done slightly different but same result
-                if (Math.Abs(Scx[j] - speedx) > traction * _tickRate)
+                if (Math.Abs(Scx[j] - speedx) > (_applyTractionFix ? traction * _tickRate : traction))
                 {
                     Scx[j] += traction * Math.Sign(speedx - Scx[j]) * _tickRate;
                 }
@@ -1169,7 +1172,7 @@ public class Mad
                     Scx[j] = speedx;
                 }
 
-                if (Math.Abs(Scz[j] - speedz) > traction * _tickRate)
+                if (Math.Abs(Scz[j] - speedz) > (_applyTractionFix ? traction * _tickRate : traction))
                 {
                     Scz[j] += traction * Math.Sign(speedz - Scz[j]) * _tickRate;
                 }
@@ -1178,7 +1181,7 @@ public class Mad
                     Scz[j] = speedz;
                 }
 
-                if (Math.Abs(Scy[j] - speedy) > traction * _tickRate)
+                if (Math.Abs(Scy[j] - speedy) > (_applyTractionFix ? traction * _tickRate : traction))
                 {
                     // Jacher: decouple this from tickrate
                     // this reduces bouncing when AB-ing, but at what cost?
@@ -1190,7 +1193,6 @@ public class Mad
                     Scy[j] = speedy;
                 } //
 
-                // maxine: maybe this should be scaled to tickrate?
                 if (traction < Stat.Grip)
                 {
                     if (Txz != conto.Xz)
@@ -1243,9 +1245,8 @@ public class Mad
 
                 if (surfaceType == 3 || surfaceType == 4)
                 {
-                    int
-                        k = Util.Random.Int(0,
-                            4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
+                    // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
+                    int k = Util.Random.Int(0, 4);
                     float bumpLift = surfaceType == 3 ? -100F : -150F;
                     float rng = 0.55F;
                     Scy[k] = bumpLift * rng * Speed / CarDefine.Swits[Cn, 2] * (CarDefine.Bounce[Cn] - 0.3F);
@@ -1836,7 +1837,7 @@ public class Mad
         else
             xneg = 1;
 
-        Console.WriteLine("x: " + airx + ", z: " + airz + ", sum: " + Medium.Sin(Pxy) + ", sum2: " + Medium.Sin(Pzy));
+        FrameTrace.AddMessage($"x: {airx:0.00}, z: {airz:0.00}, sum: {Medium.Sin(Pxy):0.00}, sum2: {Medium.Sin(Pzy):0.00}");
 
         // CHK13
         // car sliding fix by jacher: do not adjust to tickrate
