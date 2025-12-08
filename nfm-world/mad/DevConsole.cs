@@ -73,8 +73,11 @@ namespace NFMWorld.Mad
 
         public void Log(string message, string logLevel = "default")
         {
+            // Don't log empty strings
+            if (string.IsNullOrWhiteSpace(message)) return;
+            
             string formattedMessage = message;
-            string normalizedLevel = logLevel.ToLower();
+            string normalizedLevel = logLevel.ToLowerInvariant();
 
             // Format the message based on the log level
             switch (normalizedLevel)
