@@ -1089,6 +1089,7 @@ public class Mad
             }
         } //
 
+        // handle turning and a bit of xz direction on landings
         if (Mtouch)
         {
             var traction = Stat.Grip;
@@ -1114,12 +1115,12 @@ public class Mad
 
             if (surfaceType == 1)
             {
-                traction = (int)(traction * 0.75);
+                traction *= 0.75f;
             }
 
             if (surfaceType == 2)
             {
-                traction = (int)(traction * 0.55);
+                traction *= 0.55f;
             }
 
             var speedx = -(int)(Speed * Medium.Sin(conto.Xz) * Medium.Cos(Pzy));
