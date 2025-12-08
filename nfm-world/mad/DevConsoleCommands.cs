@@ -16,6 +16,7 @@ namespace NFMWorld.Mad
             console.RegisterCommand("reset", (c, args) => ResetCar(c));
             console.RegisterCommand("exit", (c, args) => ExitApplication(c));
             console.RegisterCommand("quit", (c, args) => ExitApplication(c));
+            console.RegisterCommand("fov", SetFov);
 
             //im sobbing
             console.RegisterCommand("calc", (c, args) => OpenCalculator(c));
@@ -115,6 +116,22 @@ namespace NFMWorld.Mad
             var stageName = args[0];
             GameSparker.Loadstage(stageName);
             console.Log($"Switched to stage '{stageName}'");
+        }
+        
+
+        private static void SetFov(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !float.TryParse(args[0], out var fov))
+            {
+                console.Log("Usage: fov <fov in degrees>");
+                return;
+            }
+
+            Medium.FocusPoint = GetFocusPoint(fov);
+        }
+        
+        private static int GetFocusPoint(float fov) {
+            return (int) MathF.Round(Medium.Cx * MathF.Tan(MathF.Abs(180 - fov) * 0.5f * (MathF.PI / 180)));
         }
     }
 }
