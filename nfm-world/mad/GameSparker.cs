@@ -620,6 +620,7 @@ public class GameSparker
 
     public static void GameTick()
     {
+        FrameTrace.ClearMessages();
         cars_in_race[playerCarIndex].Drive();
         switch (currentViewMode)
         {
@@ -673,6 +674,8 @@ public class GameSparker
         {
             obj.D();
         }
+        
+        FrameTrace.RenderMessages();
     }
 
     public static void RenderDevConsole()
