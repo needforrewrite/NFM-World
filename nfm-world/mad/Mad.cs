@@ -107,6 +107,8 @@ public class Mad
 
     internal bool _applyTractionFix = true;
 
+    internal bool _applyJachTurntableFix = true;
+
     internal Mad(Stat stat, int i)
     {
         Stat = stat;
@@ -414,6 +416,11 @@ public class Mad
         {
             _applyTractionFix = !_applyTractionFix;
             GameSparker.DebugKeyStates[Keys.F3] = false;
+        }
+        if (GameSparker.DebugKeyStates.GetValueOrDefault(Keys.F4))
+        {
+            _applyJachTurntableFix = !_applyJachTurntableFix;
+            GameSparker.DebugKeyStates[Keys.F4] = false;
         }
         
         var xneg = 1;
@@ -1101,7 +1108,8 @@ public class Mad
         if (Mtouch)
         {
             var traction = Stat.Grip;
-            traction -= Math.Abs(Txz - conto.Xz) * Speed / 250.0F;
+            // jach suggested 1/tickrate here
+            traction -= Math.Abs(Txz - conto.Xz) * Speed * (1/_tickRate) / 250.0F;
             if (control.Handb)
             {
                 traction -= Math.Abs(Txz - conto.Xz) * 4;
@@ -1267,8 +1275,10 @@ public class Mad
             float scxavg = scxsum / 4; /* nwheels */
             float sczavg = sczsum / 4;
             float scxz = float.Hypot(sczavg, scxavg);
-
+            
             Mxz = (int)dAtan2(-scxsum, sczsum);
+            
+            FrameTrace.AddMessage($"mxz: {Mxz:0.00}, Cxz: {Cxz:0.00}, txz: {Txz:0.00}");
 
             if (Skid == 2)
             {

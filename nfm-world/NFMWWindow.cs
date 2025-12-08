@@ -328,6 +328,7 @@ public unsafe class Program
             G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
             G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
             G.DrawString($"Apply traction fix (F3): {GameSparker.cars_in_race[0]?.Mad?._applyTractionFix}", 100, 160);
+            G.DrawString($"Apply jachs 360 fix (F4): {GameSparker.cars_in_race[0]?.Mad?._applyJachTurntableFix}", 100, 180);
   
             displayList = drawListBuilder.CreateDisplayListNew()!;
         }
