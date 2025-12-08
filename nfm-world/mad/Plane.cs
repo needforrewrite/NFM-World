@@ -1720,9 +1720,10 @@ class Plane : IComparable<Plane>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Xs(int x, int z)
     {
-        if (z < Medium.Cz)
+        // maxine: fix polygon distortion when polygon is too close to camera
+        if (z < 1)
         {
-            z = Medium.Cz;
+            z = 1;
         }
         return (z - Medium.FocusPoint) * (Medium.Cx - x) / z + x;
     }
@@ -1730,9 +1731,10 @@ class Plane : IComparable<Plane>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int Ys(int x, int z)
     {
-        if (z < Medium.Cz)
+        // maxine: fix polygon distortion when polygon is too close to camera
+        if (z < 1)
         {
-            z = Medium.Cz;
+            z = 1;
         }
         return (z - Medium.FocusPoint) * (Medium.Cy - x) / z + x;
     }
