@@ -1834,8 +1834,7 @@ public class Mad
         else
             xneg = 1;
 
-        // oteek: temporarily commented it due to console spam
-        //Console.WriteLine("x: " + airx + ", z: " + airz + ", sum: " + Medium.Sin(Pxy) + ", sum2: " + Medium.Sin(Pzy));
+        FrameTrace.AddMessage($"x: {airx:0.00}, z: {airz:0.00}, sum: {Medium.Sin(Pxy):0.00}, sum2: {Medium.Sin(Pzy):0.00}");
 
         // CHK13
         // car sliding fix by jacher: do not adjust to tickrate
