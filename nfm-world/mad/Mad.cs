@@ -1722,22 +1722,22 @@ public class Mad
             {
             	if(Pzy > 0) //Pzy can be negative, so this needs to be accounted for
                 {
-                    Pzy -= Math.Abs(i_81) * _tickRate; 
+                    Pzy -= QuantizeTowardsZero(Math.Abs(i_81) * _tickRate, _tickRate); 
                 }
                 else
                 {
-                    Pzy += Math.Abs(i_81) * _tickRate;
+                    Pzy += QuantizeTowardsZero(Math.Abs(i_81) * _tickRate, _tickRate);
                 }
             }
             if(zeroanglezy <= flipanglezy && zyangle >= 180 || flipanglezy < zeroanglezy && zyangle < 180) //similar to above, just in reverse
             {
             	if(Pzy > 0)
                 {
-                    Pzy += Math.Abs(i_81) * _tickRate;
+                    Pzy += QuantizeTowardsZero(Math.Abs(i_81) * _tickRate, _tickRate);
                 }
                 else
                 {
-                    Pzy -= Math.Abs(i_81) * _tickRate;
+                    Pzy -= QuantizeTowardsZero(Math.Abs(i_81) * _tickRate, _tickRate);
                 }
             } 
             var zeroanglexy = Math.Min(xyangle, 360 - xyangle); //distance from 0 degrees in the xy-plane
@@ -1746,22 +1746,22 @@ public class Mad
             {
             	if(Pxy > 0) //again, Pxy can be negative
                 {
-                    Pxy -= Math.Abs(i_83) * _tickRate;
+                    Pxy -= QuantizeTowardsZero(Math.Abs(i_83) * _tickRate, _tickRate);
                 }
                 else
                 {
-                    Pxy += Math.Abs(i_83) * _tickRate;
+                    Pxy += QuantizeTowardsZero(Math.Abs(i_83) * _tickRate, _tickRate);
                 }
             }
             if(zeroanglexy <= flipanglexy && xyangle >= 180 || flipanglexy < zeroanglexy && xyangle < 180)
             {
             	if (Pxy > 0)
                 {
-                    Pxy += Math.Abs(i_83) * _tickRate;
+                    Pxy += QuantizeTowardsZero(Math.Abs(i_83) * _tickRate, _tickRate);
                 }
                 else
                 {
-                    Pxy -= Math.Abs(i_83) * _tickRate;
+                    Pxy -= QuantizeTowardsZero(Math.Abs(i_83) * _tickRate, _tickRate);
                 }
             }
         } else {
@@ -1774,7 +1774,6 @@ public class Mad
             else
                 Pxy -= i_83;
         }
-        Console.WriteLine(Pzy);
         //
         if (nGroundedWheels == 4) {
             int i_86 = 0;
