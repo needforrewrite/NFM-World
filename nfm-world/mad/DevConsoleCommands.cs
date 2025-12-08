@@ -20,6 +20,8 @@ namespace NFMWorld.Mad
             console.RegisterCommand("followy", SetFollowY);
             console.RegisterCommand("car", SwitchCar);
 
+            console.RegisterCommand("r_frametrace", SetFrameTrace);
+
             //im sobbing
             console.RegisterCommand("calc", (c, args) => OpenCalculator(c));
             
@@ -27,6 +29,17 @@ namespace NFMWorld.Mad
             console.RegisterArgumentAutocompleter("car", (args) => new List<string>(GameSparker.CarRads));
             console.RegisterArgumentAutocompleter("create", (args) => new List<string>(GameSparker.StageRads));
             console.RegisterArgumentAutocompleter("map", (args) => GameSparker.GetAvailableStages());
+        }
+
+        private static void SetFrameTrace(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !int.TryParse(args[0], out var isDeveloper))
+            {
+                isDeveloper = !FrameTrace.IsEnabled ? 1 : 0;
+            }
+
+            FrameTrace.IsEnabled = isDeveloper != 0;
+            console.Log($"Frame trace {(FrameTrace.IsEnabled ? "enabled" : "disabled")}");
         }
 
         private static void OpenCalculator(DevConsole console)

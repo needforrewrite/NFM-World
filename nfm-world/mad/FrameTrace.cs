@@ -7,6 +7,8 @@ namespace NFMWorld.Mad;
 public static class FrameTrace
 {
     private static readonly List<string> _messages = [];
+
+    public static bool IsEnabled = false;
     
     public static void AddMessage(string message)
     {
@@ -15,6 +17,8 @@ public static class FrameTrace
 
     public static void RenderMessages()
     {
+        if (!IsEnabled) return;
+        
         var y = 0f;
         const float x = 250;
         const float increment = 20;
