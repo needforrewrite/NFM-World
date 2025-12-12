@@ -69,7 +69,7 @@ jobs:
 
       - name: Publish ${{ matrix.rid }}
         run: |
-          dotnet publish nfm-world/nfm-world.csproj `
+          dotnet publish nfm-world/NFMWorld.csproj `
             -c Release `
             -r ${{ matrix.rid }} `
             --self-contained `
@@ -132,7 +132,7 @@ jobs:
             chmod +x $HOME/bin/objcopy
             export PATH=$HOME/bin:$PATH
           fi
-          dotnet publish nfm-world/nfm-world.csproj \
+          dotnet publish nfm-world/NFMWorld.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
             --self-contained \
