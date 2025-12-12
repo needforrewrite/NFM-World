@@ -1,3 +1,4 @@
+using System.Numerics;
 using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
@@ -173,5 +174,80 @@ public class Stat
             Createdby = CarDefine.Createdby[cn];
             Publish = CarDefine.Publish[cn];
         }
+    }
+
+    public static float InverseLerp(float a, float b, float value)
+    {
+        return (value - a) / (b - a);
+    }
+
+    public float Score
+    {
+        get
+        {
+            var score = 0f;
+            score += CalculateScoreFromArr(SliceColumn(CarDefine.Swits, 0).ToArray(), Swits[0], 20);
+            score += CalculateScoreFromArr(SliceColumn(CarDefine.Acelf, 0).ToArray(), Acelf[0], 20);
+            score += CalculateScoreFromArr(SliceColumn(CarDefine.Swits, 1).ToArray(), Swits[1], 30);
+            score += CalculateScoreFromArr(SliceColumn(CarDefine.Acelf, 1).ToArray(), Acelf[1], 30);
+            score += CalculateScoreFromArr(SliceColumn(CarDefine.Swits, 2).ToArray(), Swits[2], 50);
+            score += CalculateScoreFromArr(SliceColumn(CarDefine.Acelf, 2).ToArray(), Acelf[2], 50);
+            score += CalculateScoreFromArr(CarDefine.Handb, Handb, 20);
+            score += CalculateScoreFromArr(CarDefine.Airs, Airs); 
+            score += CalculateScoreFromArr(CarDefine.Airc, Airc, 200);
+            score += CalculateScoreFromArr(CarDefine.Turn, Turn, 30);
+            score += CalculateScoreFromArr(CarDefine.Grip, Grip, 50);
+            score += CalculateScoreFromArr(CarDefine.Bounce, Bounce, 200);
+            // score += CalculateScoreFromArr(CarDefine.Simag, Simag);
+            score += CalculateScoreFromArr(CarDefine.Moment, Moment, 200);
+            score += CalculateScoreFromArr(CarDefine.Comprad, Comprad, 10);
+            score += CalculateScoreFromArr(CarDefine.Push, Push, 60);
+            score += CalculateScoreFromArr(CarDefine.Revpush, Revpush, -60);
+            score += CalculateScoreFromArr(CarDefine.Lift, Lift, 60);
+            score += CalculateScoreFromArr(CarDefine.Revlift, Revlift, -60);
+            score += CalculateScoreFromArr(CarDefine.Powerloss, Powerloss);
+            // score += CalculateScoreFromArr(CarDefine.Flipy, Flipy);
+            // score += CalculateScoreFromArr(CarDefine.Msquash, Msquash);
+            // score += CalculateScoreFromArr(CarDefine.Clrad, Clrad);
+            score += CalculateScoreFromArr(CarDefine.Dammult, Dammult, -50);
+            score += CalculateScoreFromArr(CarDefine.Maxmag, Maxmag);
+            // score += CalculateScoreFromArr(CarDefine.Dishandle, Dishandle);
+            // score += CalculateScoreFromArr(CarDefine.Outdam, Outdam);
+            return (score * score * score) / 100_000f;
+        }
+    }
+    // https://stackoverflow.com/a/32652216
+    public static IEnumerable<T> SliceRow<T>(T[,] array, int row)
+    {
+        for (var i = array.GetLowerBound(1); i <= array.GetUpperBound(1); i++)
+        {
+            yield return array[row, i];
+        }
+    }
+
+    public static IEnumerable<T> SliceColumn<T>(T[,] array, int column)
+    {
+        for (var i = array.GetLowerBound(0); i <= array.GetUpperBound(0); i++)
+        {
+            yield return array[i, column];
+        }
+    }
+    
+    static float CalculateScoreFromElement(float min, float max, float actual, float contribution = 100)
+    {
+        return InverseLerp(min, max, actual) * contribution;
+    }
+
+    static float CalculateScoreFromArr(int[] arr, int value, float contribution = 100)
+    {
+        var min = arr.Where(x => x != 0).Min();
+        var max = arr.Where(x => x != 0).Max();
+        return CalculateScoreFromElement(min, max, value, contribution);
+    }
+    static float CalculateScoreFromArr(float[] arr, float value, float contribution = 100)
+    {
+        var min = arr.Where(x => x != 0).Min();
+        var max = arr.Where(x => x != 0).Max();
+        return CalculateScoreFromElement(min, max, value, contribution);
     }
 }

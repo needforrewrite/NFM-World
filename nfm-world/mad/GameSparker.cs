@@ -423,6 +423,10 @@ public class GameSparker
         Loadstage("nfm2/15_dwm");
         cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
         
+        for (var i = 0; i < cars.Count; i++)
+        {
+            Console.WriteLine($"car {new Stat(i).Names}: {new Stat(i).Score:0}");
+        }
         
         scene.Add(cars_in_race[playerCarIndex].Conto.ThreeObject);
         scene.Add(new Object3DCollection(placed_stage_elements));
