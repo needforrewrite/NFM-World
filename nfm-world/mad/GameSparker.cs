@@ -859,15 +859,20 @@ public class GameSparker
         }
         
         cars_in_race[playerCarIndex].Drive();
-        // switch (currentViewMode)
-        // {
-        //     case ViewMode.Follow:
-        PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
-        //         break;
-        //     case ViewMode.Around:
-        //         // Medium.Around(cars_in_race[playerCarIndex].Conto, true);
-        //         break;
-        // }
+        switch (currentViewMode)
+        {
+            case ViewMode.Follow:
+                PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
+                break;
+            case ViewMode.Around:
+                // Medium.Around(cars_in_race[playerCarIndex].Conto, true);
+                break;
+        }
+        
+        foreach (var element in placed_stage_elements)
+        {
+            element.GameTick();
+        }
     }
 
     public static void Render()
