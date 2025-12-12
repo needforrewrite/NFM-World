@@ -838,13 +838,16 @@ public class GameSparker
             // Medium.Newmountains(k, i, m, l);
             // Medium.Newclouds(k, i, m, l);
             // Medium.Newstars();
-            Trackers.Devidetrackers(k, i - k, m, l - m);
+            Trackers.LoadTrackers(placed_stage_elements, k, i - k, m, l - m);
         }
         catch (Exception exception)
         {
             Writer.WriteLine("Error in stage: " + stage, "error");
             Writer.WriteLine("At line: " + astring, "error");
             Writer.WriteLine(exception.ToString(), "error");
+
+            // At least for debugging we want this to crash the game
+            throw;
         }
         GC.Collect();
     }

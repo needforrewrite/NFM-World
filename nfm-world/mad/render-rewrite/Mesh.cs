@@ -208,6 +208,7 @@ public class Mesh : Transform, IContainsThreeObject
             ThreeObject.Rotation.Y = -value.Yaw.Radians;
             ThreeObject.Rotation.X = value.Pitch.Radians;
             ThreeObject.Rotation.Z = value.Roll.Radians;
+            ThreeObject.Rotation.Order = RotationOrder.YXZ; // NFM rotation order: yaw-pitch-roll
         }
     }
 }

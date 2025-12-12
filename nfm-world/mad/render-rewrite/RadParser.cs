@@ -146,14 +146,20 @@ public class RadParser
                 Translation: new Vector3(),
                 Skid: 0,
                 Damage: 0,
-                NotWall: false
+                NotWall: false,
+                Color: new Color3()
             ));
         }
 
         if (_boxes.Count > 0)
         {
             ref var currentBox = ref _boxes.GetValueRef(^1);
-            if (line.StartsWith("xy("))
+            if (line.StartsWith("c("))
+            {
+                var color = Color3.FromSpan(BracketParser.GetNumbers(line, stackalloc short[3]));
+                currentBox = currentBox with { Color = color };
+            }
+            else if (line.StartsWith("xy("))
                 currentBox = currentBox with { Xy = BracketParser.GetNumber<int>(line) };
             else if (line.StartsWith("zy("))
                 currentBox = currentBox with { Zy = BracketParser.GetNumber<int>(line) };
@@ -306,7 +312,8 @@ public readonly record struct Rad3dBoxDef(
     [property: JsonPropertyName("t")] Vector3 Translation,
     [property: JsonPropertyName("skid")] int Skid,
     [property: JsonPropertyName("damage")] int Damage,
-    [property: JsonPropertyName("notwall")] bool NotWall
+    [property: JsonPropertyName("notwall")] bool NotWall,
+    [property: JsonPropertyName("c")] Color3 Color
 );
 
 public record Rad3d(
