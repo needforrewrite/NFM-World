@@ -3,4 +3,4 @@
 	url = https://github.com/AvaloniaUI/NImpeller
 [submodule "THREE"]
 	path = THREE
-	url = https://github.com/hjoykim/THREE
+	url = https://github.com/uwx/THREE
