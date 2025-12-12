@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using NFMWorld.Util;
@@ -34,7 +35,8 @@ public class ContO
     private bool[] _notwall = [];
     internal int Npl;
     internal float[] Osmag = [];
-    internal readonly Plane[] P;
+    internal readonly Plane[] P = [];
+    internal readonly Plane[] PCol = [];
     private bool[] _rbef = [];
     internal float Rcx;
     internal float Rcy;
@@ -65,14 +67,14 @@ public class ContO
     internal int[] Sz = [];
     private int[,] _tc = new int[0, 0];
     internal int Tnt;
-    private int[] _tradx = [];
-    private int[] _trady = [];
-    private int[] _tradz = [];
-    private int[] _tx = [];
-    private int[] _txy = [];
-    private int[] _ty = [];
-    private int[] _tz = [];
-    private int[] _tzy = [];
+    internal int[] _tradx = [];
+    internal int[] _trady = [];
+    internal int[] _tradz = [];
+    internal int[] _tx = [];
+    internal int[] _txy = [];
+    internal int[] _ty = [];
+    internal int[] _tz = [];
+    internal int[] _tzy = [];
     private int _ust;
     private float[] _vrx = [];
     private float[] _vry = [];
@@ -86,10 +88,11 @@ public class ContO
     internal int Y;
     internal int Z;
     internal SinCosFloat Zy;
+    public int Txz;
 
     public static DevConsoleWriter Writer = null!;
 
-    internal ContO(byte[] _is)
+    internal ContO(byte[] bytes)
     {
         Keyx = new int[4];
         Keyz = new int[4];
@@ -129,14 +132,13 @@ public class ContO
         Wh = 0;
         var p = new UnlimitedArray<Plane>();
         var is0 = new UnlimitedArray<int>();
-        int i;
-        for (i = 0; i < 10000; i++)
+        for (int i = 0; i < 10000; i++)
         {
             is0[i] = 0;
         }
         if (Medium.Loadnew)
         {
-            for (i = 0; i < 4; i++)
+            for (int i = 0; i < 4; i++)
             {
                 Keyz[i] = 0;
             }
@@ -145,10 +147,10 @@ public class ContO
         var curline = "";
         var inPoly = false;
         var bool1 = false;
-        i = 0;
-        var f = 1.0F;
-        var f2 = 1.0F;
-        float[] fs =
+        int n = 0;
+        var div = 1.0F;
+        var wid = 1.0F;
+        float[] scale =
         {
             1.0F, 1.0F, 1.0F
         };
@@ -174,7 +176,7 @@ public class ContO
         IsInstantiated = false;
         try
         {
-            foreach (var aline in Encoding.Default.GetString(_is).Split('\n'))
+            foreach (var aline in Encoding.Default.GetString(bytes).Split('\n'))
             {
                 curline = aline.Trim();
                 if (Npl < 10000 /* 210 */)
@@ -182,7 +184,7 @@ public class ContO
                     if (curline.StartsWith("<p>"))
                     {
                         inPoly = true;
-                        i = 0;
+                        n = 0;
                         i10 = 0;
                         i11 = 0;
                         i13 = 0;
@@ -242,20 +244,20 @@ public class ContO
 //                        }
                         if (curline.StartsWith("p("))
                         {
-                            x[i] = (int) (Getvalue("p", curline, 0) * f * f2 * fs[0]);
-                            y[i] = (int) (Getvalue("p", curline, 1) * f * fs[1]);
-                            z[i] = (int) (Getvalue("p", curline, 2) * f * fs[2]);
-                            var i18 = (int) Math.Sqrt(x[i] * x[i] + y[i] * y[i] + z[i] * z[i]);
+                            x[n] = (int) (Getvalue("p", curline, 0) * div * wid * scale[0]);
+                            y[n] = (int) (Getvalue("p", curline, 1) * div * scale[1]);
+                            z[n] = (int) (Getvalue("p", curline, 2) * div * scale[2]);
+                            var i18 = (int) Math.Sqrt(x[n] * x[n] + y[n] * y[n] + z[n] * z[n]);
                             if (i18 > MaxR)
                             {
                                 MaxR = i18;
                             }
-                            i++;
+                            n++;
                         }
                     }
                     if (curline.StartsWith("</p>"))
                     {
-                        p[Npl] = new Plane(x, z, y, i, is6, i14, i10, i11, 0, 0, 0, Disline, 0, bool7, i13, bool15);
+                        p[Npl] = new Plane(x, z, y, n, is6, i14, i10, i11, 0, 0, 0, Disline, 0, bool7, i13, bool15);
                         if (is6[0] == Fcol[0] && is6[1] == Fcol[1] && is6[2] == Fcol[2] && i14 == 0)
                         {
                             p[Npl].Colnum = 1;
@@ -276,16 +278,16 @@ public class ContO
                 }
                 if (curline.StartsWith("w(") && i9 < 4)
                 {
-                    Keyx[i9] = (int) (Getvalue("w", curline, 0) * f * fs[0]);
-                    Keyz[i9] = (int) (Getvalue("w", curline, 2) * f * fs[2]);
-                    wheels.Make(p, Npl, (int) (Getvalue("w", curline, 0) * f * f2 * fs[0]),
-                        (int) (Getvalue("w", curline, 1) * f * fs[1]),
-                        (int) (Getvalue("w", curline, 2) * f * fs[2]), Getvalue("w", curline, 3),
-                        (int) (Getvalue("w", curline, 4) * f * f2), (int) (Getvalue("w", curline, 5) * f), i12);
+                    Keyx[i9] = (int) (Getvalue("w", curline, 0) * div * scale[0]);
+                    Keyz[i9] = (int) (Getvalue("w", curline, 2) * div * scale[2]);
+                    wheels.Make(p, Npl, (int) (Getvalue("w", curline, 0) * div * wid * scale[0]),
+                        (int) (Getvalue("w", curline, 1) * div * scale[1]),
+                        (int) (Getvalue("w", curline, 2) * div * scale[2]), Getvalue("w", curline, 3),
+                        (int) (Getvalue("w", curline, 4) * div * wid), (int) (Getvalue("w", curline, 5) * div), i12);
                     Npl += 19;
                     if (Medium.Loadnew)
                     {
-                        Wh += (int) (Getvalue("w", curline, 5) * f);
+                        Wh += (int) (Getvalue("w", curline, 5) * div);
                         if (wheels.Ground > 140)
                         {
                             var string19 = "FRONT";
@@ -369,7 +371,7 @@ public class ContO
                             Keyz[i9] = 0;
                             Keyx[i9] = 0;
                         }
-                        if ((int) (Getvalue("w", curline, 4) * f * f2) > 300)
+                        if ((int) (Getvalue("w", curline, 4) * div * wid) > 300)
                         {
                             var string22 = "FRONT";
                             if (Keyz[i9] < 0)
@@ -402,6 +404,7 @@ public class ContO
                     _dam = new int[i23];
                     _notwall = new bool[i23];
                     bool8 = true;
+                    PCol = new Plane[i23 * 6];
                 }
                 if (bool8)
                 {
@@ -441,27 +444,27 @@ public class ContO
                         }
                         if (curline.StartsWith("radx"))
                         {
-                            _tradx[Tnt] = (int) (Getvalue("radx", curline, 0) * f);
+                            _tradx[Tnt] = (int) (Getvalue("radx", curline, 0) * div);
                         }
                         if (curline.StartsWith("rady"))
                         {
-                            _trady[Tnt] = (int) (Getvalue("rady", curline, 0) * f);
+                            _trady[Tnt] = (int) (Getvalue("rady", curline, 0) * div);
                         }
                         if (curline.StartsWith("radz"))
                         {
-                            _tradz[Tnt] = (int) (Getvalue("radz", curline, 0) * f);
+                            _tradz[Tnt] = (int) (Getvalue("radz", curline, 0) * div);
                         }
                         if (curline.StartsWith("ty"))
                         {
-                            _ty[Tnt] = (int) (Getvalue("ty", curline, 0) * f);
+                            _ty[Tnt] = (int) (Getvalue("ty", curline, 0) * div);
                         }
                         if (curline.StartsWith("tx"))
                         {
-                            _tx[Tnt] = (int) (Getvalue("tx", curline, 0) * f);
+                            _tx[Tnt] = (int) (Getvalue("tx", curline, 0) * div);
                         }
                         if (curline.StartsWith("tz"))
                         {
-                            _tz[Tnt] = (int) (Getvalue("tz", curline, 0) * f);
+                            _tz[Tnt] = (int) (Getvalue("tz", curline, 0) * div);
                         }
                         if (curline.StartsWith("skid"))
                         {
@@ -478,16 +481,73 @@ public class ContO
                     }
                     if (curline.StartsWith("</track>"))
                     {
-                        var x1 = _tx[Tnt] - _tradx[Tnt];
-                        var x2 = _tx[Tnt] + _tradx[Tnt];
-                        var y1 = _ty[Tnt] - _trady[Tnt];
-                        var y2 = _ty[Tnt] + _trady[Tnt];
-                        var z1 = _tz[Tnt] - _tradz[Tnt];
-                        var z2 = _tz[Tnt] + _tradz[Tnt];
+                        var location = new Vector3(_tx[Tnt], _ty[Tnt], _tz[Tnt]);
+                        var radius = new Vector3(_tradx[Tnt], _trady[Tnt], _tradz[Tnt]);
+
+                        Span<Vector3> corners =
+                        [
+                            new(location.X - radius.X, location.Y - radius.Y, location.Z - radius.Z),
+                            new(location.X + radius.X, location.Y - radius.Y, location.Z - radius.Z),
+                            new(location.X + radius.X, location.Y + radius.Y, location.Z - radius.Z),
+                            new(location.X - radius.X, location.Y + radius.Y, location.Z - radius.Z),
+                            new(location.X - radius.X, location.Y - radius.Y, location.Z + radius.Z),
+                            new(location.X + radius.X, location.Y - radius.Y, location.Z + radius.Z),
+                            new(location.X + radius.X, location.Y + radius.Y, location.Z + radius.Z),
+                            new(location.X - radius.X, location.Y + radius.Y, location.Z + radius.Z),
+                        ];
+
+                        Span<Vector3> bottom = [corners[0], corners[1], corners[2], corners[3]];
+                        Span<Vector3> top = [corners[4], corners[5], corners[6], corners[7]];
+                        Span<Vector3> front = [corners[0], corners[1], corners[5], corners[4]];
+                        Span<Vector3> back = [corners[2], corners[3], corners[7], corners[6]];
+                        Span<Vector3> left = [corners[0], corners[3], corners[7], corners[4]];
+                        Span<Vector3> right = [corners[1], corners[2], corners[6], corners[5]];
 
                         var ggr = 0;
 
-                        
+                        Plane AddPlane(Span<int> x, Span<int> y, Span<int> z, Span<int> color)
+                        {
+                            Plane.Rot(x, y, _tx[Tnt], _ty[Tnt], _tzy[Tnt], 4);
+                            Plane.Rot(y, z, _ty[Tnt], _tz[Tnt], _txy[Tnt], 4);
+                            return new Plane(x, z, y, 4, color, 0, ggr, 0, 0, 0, 0, Disline, 0, false, 0, false); //Bottom
+                        }
+
+                        PCol[Tnt * 6 + 0] = AddPlane(
+                            [(int)bottom[0].X, (int)bottom[1].X, (int)bottom[2].X, (int)bottom[3].X],
+                            [(int)bottom[0].Y, (int)bottom[1].Y, (int)bottom[2].Y, (int)bottom[3].Y],
+                            [(int)bottom[0].Z, (int)bottom[1].Z, (int)bottom[2].Z, (int)bottom[3].Z],
+                            [255, 0, 0]
+                        ); //Bottom
+                        PCol[Tnt * 6 + 1] = AddPlane(
+                            [(int)top[0].X, (int)top[1].X, (int)top[2].X, (int)top[3].X],
+                            [(int)top[0].Y, (int)top[1].Y, (int)top[2].Y, (int)top[3].Y],
+                            [(int)top[0].Z, (int)top[1].Z, (int)top[2].Z, (int)top[3].Z],
+                            [0, 255, 0]
+                        ); //Top
+                        PCol[Tnt * 6 + 2] = AddPlane(
+                            [(int)front[0].X, (int)front[1].X, (int)front[2].X, (int)front[3].X],
+                            [(int)front[0].Y, (int)front[1].Y, (int)front[2].Y, (int)front[3].Y],
+                            [(int)front[0].Z, (int)front[1].Z, (int)front[2].Z, (int)front[3].Z],
+                            [0, 0, 255]
+                        ); //Left
+                        PCol[Tnt * 6 + 3] = AddPlane(
+                            [(int)back[0].X, (int)back[1].X, (int)back[2].X, (int)back[3].X],
+                            [(int)back[0].Y, (int)back[1].Y, (int)back[2].Y, (int)back[3].Y],
+                            [(int)back[0].Z, (int)back[1].Z, (int)back[2].Z, (int)back[3].Z],
+                            [255, 255, 0]
+                        ); //Right
+                        PCol[Tnt * 6 + 4] = AddPlane(
+                            [(int)left[0].X, (int)left[1].X, (int)left[2].X, (int)left[3].X],
+                            [(int)left[0].Y, (int)left[1].Y, (int)left[2].Y, (int)left[3].Y],
+                            [(int)left[0].Z, (int)left[1].Z, (int)left[2].Z, (int)left[3].Z],
+                            [255, 0, 255]
+                        ); //Front
+                        PCol[Tnt * 6 + 5] = AddPlane(
+                            [(int)right[0].X, (int)right[1].X, (int)right[2].X, (int)right[3].X],
+                            [(int)right[0].Y, (int)right[1].Y, (int)right[2].Y, (int)right[3].Y],
+                            [(int)right[0].Z, (int)right[1].Z, (int)right[2].Z, (int)right[3].Z],
+                            [0, 255, 255]
+                        ); //Back
 
                         //P[Npl] = new Plane(is3, is5, is4, i, is6, i14, i10, i11, 0, 0, 0, Disline, 0, bool7, i13, bool15);
 
@@ -535,27 +595,27 @@ public class ContO
                 }
                 if (curline.StartsWith("div("))
                 {
-                    f = Getvalue("div", curline, 0) / 10.0F;
+                    div = Getvalue("div", curline, 0) / 10.0F;
                 }
                 if (curline.StartsWith("idiv("))
                 {
-                    f = Getvalue("idiv", curline, 0) / 100.0F;
+                    div = Getvalue("idiv", curline, 0) / 100.0F;
                 }
                 if (curline.StartsWith("iwid("))
                 {
-                    f2 = Getvalue("iwid", curline, 0) / 100.0F;
+                    wid = Getvalue("iwid", curline, 0) / 100.0F;
                 }
                 if (curline.StartsWith("ScaleX("))
                 {
-                    fs[0] = Getvalue("ScaleX", curline, 0) / 100.0F;
+                    scale[0] = Getvalue("ScaleX", curline, 0) / 100.0F;
                 }
                 if (curline.StartsWith("ScaleY("))
                 {
-                    fs[1] = Getvalue("ScaleY", curline, 0) / 100.0F;
+                    scale[1] = Getvalue("ScaleY", curline, 0) / 100.0F;
                 }
                 if (curline.StartsWith("ScaleZ("))
                 {
-                    fs[2] = Getvalue("ScaleZ", curline, 0) / 100.0F;
+                    scale[2] = Getvalue("ScaleZ", curline, 0) / 100.0F;
                 }
                 if (curline.StartsWith("gwgr("))
                 {
@@ -1154,8 +1214,9 @@ public class ContO
         P = p.ToArray();
     }
 
-    internal ContO(ContO conto78, int toX, int toY, int toZ, int i81)
+    internal ContO(ContO conto78, int toX, int toY, int toZ, int toXz)
     {
+        PCol = conto78.PCol;
         Keyx = new int[4];
         Keyz = new int[4];
         _sprkat = 0;
@@ -1200,7 +1261,7 @@ public class ContO
         Shadow = conto78.Shadow;
         Grounded = conto78.Grounded;
         Decor = conto78.Decor;
-        if (Medium.Loadnew && (i81 == 90 || i81 == -90))
+        if (Medium.Loadnew && (toXz == 90 || toXz == -90))
         {
             Grounded += 10000.0F;
         }
@@ -1229,17 +1290,30 @@ public class ContO
         {
             P[i83].Colnum = conto78.P[i83].Colnum;
             P[i83].Master = conto78.P[i83].Master;
-            Plane.Rot(P[i83].Ox, P[i83].Oz, 0, 0, i81, P[i83].N);
+            Plane.Rot(P[i83].Ox, P[i83].Oz, 0, 0, toXz, P[i83].N);
             P[i83].Loadprojf();
         }
         if (conto78.Tnt != 0)
         {
+            Txz = toXz;
+            _tradx = conto78._tradx;
+            _trady = conto78._trady;
+            _tradz = conto78._tradz;
+            _txy = conto78._txy;
+            _tzy = conto78._tzy;
+            Tnt = conto78.Tnt;
+            _tx = conto78._tx;
+            _ty = conto78._ty;
+            _tz = conto78._tz;
+            _skd = conto78._skd;
+            _dam = conto78._dam;
+            _notwall = conto78._notwall;
             for (var i84 = 0; i84 < conto78.Tnt; i84++)
             {
                 Trackers.Xy[Trackers.Nt] =
-                    (int) (conto78._txy[i84] * Medium.Cos(i81) - conto78._tzy[i84] * Medium.Sin(i81));
+                    (int) (conto78._txy[i84] * Medium.Cos(toXz) - conto78._tzy[i84] * Medium.Sin(toXz));
                 Trackers.Zy[Trackers.Nt] =
-                    (int) (conto78._tzy[i84] * Medium.Cos(i81) + conto78._txy[i84] * Medium.Sin(i81));
+                    (int) (conto78._tzy[i84] * Medium.Cos(toXz) + conto78._txy[i84] * Medium.Sin(toXz));
                 for (var i85 = 0; i85 < 3; i85++)
                 {
                     Trackers.C[Trackers.Nt][i85] =
@@ -1254,15 +1328,15 @@ public class ContO
                     }
                 }
                 Trackers.X[Trackers.Nt] =
-                    (int) (X + conto78._tx[i84] * Medium.Cos(i81) - conto78._tz[i84] * Medium.Sin(i81));
+                    (int) (X + conto78._tx[i84] * Medium.Cos(toXz) - conto78._tz[i84] * Medium.Sin(toXz));
                 Trackers.Z[Trackers.Nt] =
-                    (int) (Z + conto78._tz[i84] * Medium.Cos(i81) + conto78._tx[i84] * Medium.Sin(i81));
+                    (int) (Z + conto78._tz[i84] * Medium.Cos(toXz) + conto78._tx[i84] * Medium.Sin(toXz));
                 Trackers.Y[Trackers.Nt] = Y + conto78._ty[i84];
                 Trackers.Skd[Trackers.Nt] = conto78._skd[i84];
                 Trackers.Dam[Trackers.Nt] = conto78._dam[i84];
                 Trackers.Notwall[Trackers.Nt] = conto78._notwall[i84];
                 Trackers.Decor[Trackers.Nt] = Decor;
-                var i86 = Math.Abs(i81);
+                var i86 = Math.Abs(toXz);
                 if (i86 == 180)
                 {
                     i86 = 0;
@@ -1696,6 +1770,18 @@ public class ContO
                         Noline, i126);
                 }
                 P[npl].D(P[npl - 1], null, X - Medium.X, Y - Medium.Y, Z - Medium.Z, Xz, Xy, Zy, Wxz, Wzy, Noline, i126);
+
+                
+                if (PCol.Length >= 3)
+                {
+                    PCol[0].D(PCol[0], PCol[1], X - Medium.X, Y - Medium.Y, Z - Medium.Z, Xz + Txz, Xy, Zy, Wxz, Wzy, Noline, i126);
+                    for (var j = 1; j < PCol.Length - 1; j++)
+                    {
+                        PCol[j].D(PCol[j - 1], PCol[j + 1], X - Medium.X, Y - Medium.Y, Z - Medium.Z, Xz + Txz, Xy, Zy, Wxz, Wzy,
+                            Noline, i126);
+                    }
+                    PCol[^1].D(PCol[^2], null, X - Medium.X, Y - Medium.Y, Z - Medium.Z, Xz + Txz, Xy, Zy, Wxz, Wzy, Noline, i126);
+                }
 
                 if (Shadow)
                 {
@@ -2422,7 +2508,6 @@ public class ContO
 
     private int Getvalue(string aastring, string string262, int i)
     {
-//TODO
         return Utility.Getint(aastring, string262, i);
     }
 
