@@ -9,7 +9,30 @@ public class GameSparker
 {
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
 
-    public static readonly string version = "NFM-World master-2025.12.11";
+    public static readonly string version = GetVersionString();
+
+    private static string GetVersionString()
+    {
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        var attributes = assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false);
+        if (attributes.Length > 0 && attributes[0] is System.Reflection.AssemblyInformationalVersionAttribute infoVersion)
+        {
+            var version = infoVersion.InformationalVersion;
+            // clip the commit hash
+            var parts = version.Split('-');
+            if (parts.Length >= 3)
+            {
+                var hash = parts[^1];
+                if (hash.Length > 8)
+                {
+                    parts[^1] = hash.Substring(0, 8);
+                    return string.Join("-", parts);
+                }
+            }
+            return version;
+        }
+        return "NFM-World dev";
+    }
 
     public enum GameState
     {

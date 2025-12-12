@@ -7,6 +7,9 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>USE_BASS</DefineConstants>
+    <Version>0.0.0-dev</Version>
+    <InformationalVersion>NFM-World dev</InformationalVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
   </PropertyGroup>
   <ItemGroup>
       <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
