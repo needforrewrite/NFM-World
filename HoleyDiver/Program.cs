@@ -13,7 +13,6 @@ public class PolygonTriangulator
         public int RegionCount;
     }
 
-    // Note: very basic, unoptimized implementation. Can be improved.
     public static TriangulationResult Triangulate(IReadOnlyList<Vector3> vertices)
     {
         if (vertices == null || vertices.Count < 3)
@@ -21,16 +20,8 @@ public class PolygonTriangulator
 
         Vector3 centroid = ComputeCentroid(vertices);
         Vector3 normal = ComputeBestFitPlaneNormal(vertices, centroid);
-        GetProjectionBasis(normal, out Vector3 uAxis, out Vector3 vAxis);
 
-        var projected2D = new List<Vector2>();
-        foreach (var vertex in vertices)
-        {
-            Vector3 relative = vertex - centroid;
-            float u = Vector3.Dot(relative, uAxis);
-            float v = Vector3.Dot(relative, vAxis);
-            projected2D.Add(new Vector2(u, v));
-        }
+        var projected2D = ProjectTo2D(vertices, centroid, normal);
 
         const float epsilon = 1e-5f;
         var uniqueVertices = new List<Vector2>();
@@ -65,7 +56,17 @@ public class PolygonTriangulator
             initialPoly.Add(indexMap[i]);
         }
 
-        var polyLines = ExtractRegions(initialPoly, uniqueVertices);
+        var uniqueIndices = new HashSet<int>(initialPoly);
+
+        List<List<int>> polyLines;
+        if (uniqueIndices.Count == initialPoly.Count)
+        {
+            polyLines = new List<List<int>> { initialPoly };
+        }
+        else
+        {
+            polyLines = ExtractRegions(initialPoly, uniqueVertices);
+        }
 
         var allTriangles = new List<int>();
 
@@ -107,15 +108,112 @@ public class PolygonTriangulator
         };
     }
 
+    private static List<Vector2> ProjectTo2D(IReadOnlyList<Vector3> vertices, Vector3 centroid, Vector3 normal)
+    {
+        GetProjectionBasis(normal, out Vector3 uAxis, out Vector3 vAxis);
+
+        var projected = new List<Vector2>();
+        foreach (var vertex in vertices)
+        {
+            Vector3 relative = vertex - centroid;
+            float u = Vector3.Dot(relative, uAxis);
+            float v = Vector3.Dot(relative, vAxis);
+            projected.Add(new Vector2(u, v));
+        }
+
+        if (IsValidProjection(vertices, projected))
+        {
+            return projected;
+        }
+
+        var projections = new (List<Vector2> proj, string name)[]
+        {
+            (ProjectToYZ(vertices), "YZ"),
+            (ProjectToXZ(vertices), "XZ"),
+            (ProjectToXY(vertices), "XY")
+        };
+
+        foreach (var (proj, name) in projections)
+        {
+            if (IsValidProjection(vertices, proj))
+            {
+                return proj;
+            }
+        }
+
+        float bestArea = 0;
+        List<Vector2> bestProj = projected;
+
+        foreach (var (proj, name) in projections)
+        {
+            float area = Math.Abs(ComputeSignedArea(proj));
+            if (area > bestArea)
+            {
+                bestArea = area;
+                bestProj = proj;
+            }
+        }
+
+        return bestProj;
+    }
+
+    private static bool IsValidProjection(IReadOnlyList<Vector3> vertices3D, List<Vector2> projected2D)
+    {
+        const float epsilon3D = 1e-5f;
+        const float epsilon2D = 1e-5f;
+
+        for (int i = 0; i < vertices3D.Count; i++)
+        {
+            for (int j = i + 1; j < vertices3D.Count; j++)
+            {
+                float dist3D = Vector3.Distance(vertices3D[i], vertices3D[j]);
+                float dist2D = Vector2.Distance(projected2D[i], projected2D[j]);
+
+                if (dist3D > epsilon3D && dist2D < epsilon2D)
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static List<Vector2> ProjectToXY(IReadOnlyList<Vector3> vertices)
+    {
+        var result = new List<Vector2>();
+        foreach (var v in vertices)
+            result.Add(new Vector2(v.X, v.Y));
+        return result;
+    }
+
+    private static List<Vector2> ProjectToXZ(IReadOnlyList<Vector3> vertices)
+    {
+        var result = new List<Vector2>();
+        foreach (var v in vertices)
+            result.Add(new Vector2(v.X, v.Z));
+        return result;
+    }
+
+    private static List<Vector2> ProjectToYZ(IReadOnlyList<Vector3> vertices)
+    {
+        var result = new List<Vector2>();
+        foreach (var v in vertices)
+            result.Add(new Vector2(v.Y, v.Z));
+        return result;
+    }
+
     private static List<List<int>> ExtractRegions(List<int> polyIndices, List<Vector2> vertices)
     {
         var polyLines = new List<List<int>>();
         polyLines.Add(new List<int>(polyIndices));
 
-        int iteration = 0;
-        while (polyLines[0].Count >= 6)
+        int safetyLimit = polyIndices.Count * 2;
+        int outerIterations = 0;
+
+        while (polyLines[0].Count >= 6 && outerIterations < safetyLimit)
         {
-            iteration++;
+            outerIterations++;
             int n = polyLines[0].Count;
             int bestI0 = -1, bestI1 = -1, bestLength = 0;
 
@@ -123,16 +221,25 @@ public class PolygonTriangulator
             {
                 for (int j = 0; j < n; j++)
                 {
+                    if (i == j) continue;
+
                     int k0 = i;
                     int k1 = j;
                     int matchLength = 0;
+                    int maxIterations = n;
 
-                    Console.WriteLine($"i={i}, j={j}, polyLines[0][{i}]={polyLines[0][i]}, polyLines[0][{j}]={polyLines[0][j]}, equal={polyLines[0][i] == polyLines[0][j]}");
-                    while (k0 != k1 && polyLines[0][k0] == polyLines[0][k1])
+                    while (k0 != k1 && polyLines[0][k0] == polyLines[0][k1] && matchLength < maxIterations)
                     {
                         matchLength++;
-                        k0 = (k0 + 1) % n;
-                        k1 = (k1 - 1 + n) % n;
+
+                        int nextK0 = (k0 + 1) % n;
+                        int nextK1 = (k1 - 1 + n) % n;
+
+                        if (nextK0 == k1 || k0 == nextK1)
+                            break;
+
+                        k0 = nextK0;
+                        k1 = nextK1;
                     }
 
                     if (matchLength > bestLength)
@@ -144,47 +251,35 @@ public class PolygonTriangulator
                 }
             }
 
-            Console.WriteLine($"Iteration {iteration}: n={n}, bestI0={bestI0}, bestI1={bestI1}, bestLength={bestLength}");
-            Console.WriteLine($"  Current poly: [{string.Join(", ", polyLines[0])}]");
-
             if (bestLength >= 1)
             {
-                // Show what vertices are matching
-                Console.WriteLine($"  Matching vertices starting at {bestI0} and {bestI1}:");
-                int k0 = bestI0, k1 = bestI1;
-                for (int m = 0; m < bestLength; m++)
-                {
-                    Console.WriteLine($"    polyLines[0][{k0}]={polyLines[0][k0]} == polyLines[0][{k1}]={polyLines[0][k1]}");
-                    k0 = (k0 + 1) % n;
-                    k1 = (k1 - 1 + n) % n;
-                }
-
                 var newRegion = new List<int>();
                 int start = (bestI0 + bestLength - 1) % n;
                 int end = (bestI1 - (bestLength - 1) + n) % n;
 
-                Console.WriteLine($"  Extracting from {start} to {end}");
-
                 int k = start;
-                while (k != end)
+                int safetyCounter = 0;
+                while (k != end && safetyCounter <= n)
                 {
                     newRegion.Add(polyLines[0][k]);
                     k = (k + 1) % n;
+                    safetyCounter++;
                 }
 
-                newRegion.Add(polyLines[0][end]);
-
-                Console.WriteLine($"  New region: [{string.Join(", ", newRegion)}]");
+                if (safetyCounter <= n)
+                {
+                    newRegion.Add(polyLines[0][end]);
+                }
 
                 var toDelete = new bool[n];
                 k = bestI0;
-                while (k != bestI1)
+                safetyCounter = 0;
+                while (k != bestI1 && safetyCounter < n)
                 {
                     toDelete[k] = true;
                     k = (k + 1) % n;
+                    safetyCounter++;
                 }
-
-                Console.WriteLine($"  Deleting indices: [{string.Join(", ", Enumerable.Range(0, n).Where(i => toDelete[i]))}]");
 
                 for (int idx = n - 1; idx >= 0; idx--)
                 {
@@ -193,8 +288,6 @@ public class PolygonTriangulator
                         polyLines[0].RemoveAt(idx);
                     }
                 }
-
-                Console.WriteLine($"  After deletion, polyLines[0]: [{string.Join(", ", polyLines[0])}]");
 
                 bool poly0Valid = polyLines[0].Count >= 3;
                 bool newRegionValid = newRegion.Count >= 3;
@@ -212,11 +305,8 @@ public class PolygonTriangulator
                     bool poly0InsideNew = AllPointsInPolygon(points0, pointsNew);
                     bool newInsidePoly0 = AllPointsInPolygon(pointsNew, points0);
 
-                    Console.WriteLine($"  poly0InsideNew={poly0InsideNew}, newInsidePoly0={newInsidePoly0}");
-
                     if (poly0InsideNew && !newInsidePoly0)
                     {
-                        Console.WriteLine($"  Swapping poly0 and newRegion");
                         var temp = polyLines[0];
                         polyLines[0] = newRegion;
                         newRegion = temp;
@@ -226,28 +316,15 @@ public class PolygonTriangulator
                 }
                 else if (newRegionValid && !poly0Valid)
                 {
-                    Console.WriteLine($"  Replacing poly0 with newRegion (poly0 invalid)");
                     polyLines[0] = newRegion;
-                }
-                else
-                {
-                    Console.WriteLine($"  Discarding newRegion (invalid)");
                 }
             }
             else
             {
-                Console.WriteLine($"  No match found, breaking");
                 break;
             }
         }
 
-        Console.WriteLine($"\nAfter extraction loop:");
-        for (int i = 0; i < polyLines.Count; i++)
-        {
-            Console.WriteLine($"  polyLines[{i}]: [{string.Join(", ", polyLines[i])}]");
-        }
-
-        // Rest of the method...
         polyLines.RemoveAll(r => r.Count < 3);
 
         if (polyLines.Count == 0)
@@ -326,25 +403,30 @@ public class PolygonTriangulator
 
     private static List<int> CombineWithHoles(List<int> outer, List<List<int>> holes, List<Vector2> vertices)
     {
+        var outerCopy = new List<int>(outer);
+
         var outerVerts = new List<Vector2>();
-        foreach (var idx in outer)
+        foreach (var idx in outerCopy)
             outerVerts.Add(vertices[idx]);
 
         if (ComputeSignedArea(outerVerts) < 0)
-            outer.Reverse();
+            outerCopy.Reverse();
 
+        var holesCopy = new List<List<int>>();
         for (int h = 0; h < holes.Count; h++)
         {
+            var holeCopy = new List<int>(holes[h]);
             var holeVerts = new List<Vector2>();
-            foreach (var idx in holes[h])
+            foreach (var idx in holeCopy)
                 holeVerts.Add(vertices[idx]);
 
             if (ComputeSignedArea(holeVerts) > 0)
-                holes[h].Reverse();
+                holeCopy.Reverse();
+
+            holesCopy.Add(holeCopy);
         }
 
-        // Sort holes by rightmost X (descending)
-        holes.Sort((a, b) =>
+        holesCopy.Sort((a, b) =>
         {
             float maxXa = float.MinValue;
             float maxXb = float.MinValue;
@@ -353,9 +435,9 @@ public class PolygonTriangulator
             return maxXb.CompareTo(maxXa);
         });
 
-        var result = new List<int>(outer);
+        var result = new List<int>(outerCopy);
 
-        foreach (var hole in holes)
+        foreach (var hole in holesCopy)
         {
             MergeHoleIntoPolygon(result, hole, vertices);
         }
@@ -365,7 +447,6 @@ public class PolygonTriangulator
 
     private static void MergeHoleIntoPolygon(List<int> polygon, List<int> hole, List<Vector2> vertices)
     {
-        // Find rightmost vertex in hole
         int rightmostHoleIdx = 0;
         float maxX = vertices[hole[0]].X;
         for (int i = 1; i < hole.Count; i++)
@@ -379,7 +460,6 @@ public class PolygonTriangulator
 
         Vector2 holePoint = vertices[hole[rightmostHoleIdx]];
 
-        // Find bridge point on outer polygon
         int bridgePolyIdx = -1;
         float minDist = float.MaxValue;
         Vector2 intersectionPoint = Vector2.Zero;
@@ -390,7 +470,6 @@ public class PolygonTriangulator
             Vector2 p1 = vertices[polygon[i]];
             Vector2 p2 = vertices[polygon[j]];
 
-            // Check if horizontal ray from holePoint intersects edge p1-p2
             if ((p1.Y <= holePoint.Y && p2.Y > holePoint.Y) ||
                 (p2.Y <= holePoint.Y && p1.Y > holePoint.Y))
             {
@@ -410,7 +489,6 @@ public class PolygonTriangulator
             }
         }
 
-        // Refine bridge vertex
         if (bridgePolyIdx >= 0)
         {
             Vector2 bridgeCandidate = vertices[polygon[bridgePolyIdx]];
@@ -437,90 +515,25 @@ public class PolygonTriangulator
 
         if (bridgePolyIdx < 0) return;
 
-        // Build new polygon with hole merged in
         var newPolygon = new List<int>();
 
-        // Add polygon vertices up to and including bridge point
         for (int i = 0; i <= bridgePolyIdx; i++)
             newPolygon.Add(polygon[i]);
 
-        // Add hole vertices starting from rightmost
         for (int i = 0; i < hole.Count; i++)
         {
             int idx = (rightmostHoleIdx + i) % hole.Count;
             newPolygon.Add(hole[idx]);
         }
 
-        // Close bridge back
         newPolygon.Add(hole[rightmostHoleIdx]);
         newPolygon.Add(polygon[bridgePolyIdx]);
 
-        // Add remaining polygon vertices
         for (int i = bridgePolyIdx + 1; i < polygon.Count; i++)
             newPolygon.Add(polygon[i]);
 
         polygon.Clear();
         polygon.AddRange(newPolygon);
-    }
-
-    private static List<int> EarCutTriangulateSimple(List<Vector2> vertices)
-    {
-        var triangles = new List<int>();
-
-        if (vertices.Count < 3)
-            return triangles;
-
-        bool reversed = false;
-        var verts = new List<Vector2>(vertices);
-        if (ComputeSignedArea(verts) < 0)
-        {
-            verts.Reverse();
-            reversed = true;
-        }
-
-        var indices = new LinkedList<int>();
-        for (int i = 0; i < verts.Count; i++)
-            indices.AddLast(i);
-
-        var node = indices.First;
-        int remaining = indices.Count;
-        int iterations = 0;
-        int maxIterations = remaining * remaining * 2;
-
-        while (remaining > 2 && iterations < maxIterations)
-        {
-            iterations++;
-            var prev = node.Previous ?? indices.Last;
-            var next = node.Next ?? indices.First;
-
-            if (IsEar(verts, indices, prev.Value, node.Value, next.Value))
-            {
-                if (reversed)
-                {
-                    int n = vertices.Count;
-                    triangles.Add(n - 1 - prev.Value);
-                    triangles.Add(n - 1 - node.Value);
-                    triangles.Add(n - 1 - next.Value);
-                }
-                else
-                {
-                    triangles.Add(prev.Value);
-                    triangles.Add(node.Value);
-                    triangles.Add(next.Value);
-                }
-
-                var toRemove = node;
-                node = next;
-                indices.Remove(toRemove);
-                remaining--;
-            }
-            else
-            {
-                node = node.Next ?? indices.First;
-            }
-        }
-
-        return triangles;
     }
 
     private static Vector3 ComputeCentroid(IReadOnlyList<Vector3> vertices)
@@ -599,6 +612,120 @@ public class PolygonTriangulator
         return area / 2;
     }
 
+    private static List<int> EarCutTriangulateSimple(List<Vector2> vertices)
+    {
+        var triangles = new List<int>();
+
+        if (vertices.Count < 3)
+            return triangles;
+
+        // Remove duplicate consecutive vertices (including wrap-around from last to first)
+        var cleanIndices = new List<int>();
+        for (int i = 0; i < vertices.Count; i++)
+        {
+            int nextI = (i + 1) % vertices.Count;
+            if (Vector2.Distance(vertices[i], vertices[nextI]) > 1e-5f)
+            {
+                cleanIndices.Add(i);
+            }
+        }
+
+        if (cleanIndices.Count < 3)
+            return triangles;
+
+        // Build cleaned vertex list
+        var cleanVerts = new List<Vector2>();
+        foreach (var idx in cleanIndices)
+        {
+            cleanVerts.Add(vertices[idx]);
+        }
+
+        float area = ComputeSignedArea(cleanVerts);
+
+        // If clockwise, reverse both the vertices and the index mapping
+        if (area < 0)
+        {
+            cleanVerts.Reverse();
+            cleanIndices.Reverse();
+        }
+
+        var nodeIndices = new LinkedList<int>();
+        for (int i = 0; i < cleanVerts.Count; i++)
+            nodeIndices.AddLast(i);
+
+        var node = nodeIndices.First;
+        int remaining = nodeIndices.Count;
+        int iterations = 0;
+        int maxIterations = remaining * remaining * 2;
+
+        while (remaining > 2 && iterations < maxIterations)
+        {
+            iterations++;
+            bool madeProgress = false;
+
+            var startNode = node;
+            do
+            {
+                var prev = node.Previous ?? nodeIndices.Last;
+                var next = node.Next ?? nodeIndices.First;
+
+                if (IsEar(cleanVerts, nodeIndices, prev.Value, node.Value, next.Value))
+                {
+                    // Map back to original vertex indices
+                    triangles.Add(cleanIndices[prev.Value]);
+                    triangles.Add(cleanIndices[node.Value]);
+                    triangles.Add(cleanIndices[next.Value]);
+
+                    var toRemove = node;
+                    node = next;
+                    nodeIndices.Remove(toRemove);
+                    remaining--;
+                    madeProgress = true;
+                    break;
+                }
+                else
+                {
+                    node = node.Next ?? nodeIndices.First;
+                }
+            } while (node != startNode && remaining > 2);
+
+            if (!madeProgress)
+            {
+                var currNode = nodeIndices.First;
+                bool foundAny = false;
+
+                while (currNode != null && remaining > 2)
+                {
+                    var prevNode = currNode.Previous ?? nodeIndices.Last;
+                    var nextNode = currNode.Next ?? nodeIndices.First;
+
+                    if (IsEarRelaxed(cleanVerts, nodeIndices, prevNode.Value, currNode.Value, nextNode.Value))
+                    {
+                        triangles.Add(cleanIndices[prevNode.Value]);
+                        triangles.Add(cleanIndices[currNode.Value]);
+                        triangles.Add(cleanIndices[nextNode.Value]);
+
+                        var toRemove = currNode;
+                        node = nextNode;
+                        nodeIndices.Remove(toRemove);
+                        remaining--;
+                        foundAny = true;
+                        break;
+                    }
+
+                    currNode = currNode.Next;
+                }
+
+                if (!foundAny)
+                {
+                    break;
+                }
+            }
+        }
+
+        return triangles;
+    }
+
     private static bool IsEar(List<Vector2> vertices, LinkedList<int> indices, int prev, int curr, int next)
     {
         Vector2 a = vertices[prev];
@@ -614,11 +741,48 @@ public class PolygonTriangulator
             if (idx == prev || idx == curr || idx == next)
                 continue;
 
-            if (PointInTriangle(vertices[idx], a, b, c))
+            if (PointInTriangleStrict(vertices[idx], a, b, c))
                 return false;
         }
 
         return true;
+    }
+
+    private static bool IsEarRelaxed(List<Vector2> vertices, LinkedList<int> indices, int prev, int curr, int next)
+    {
+        Vector2 a = vertices[prev];
+        Vector2 b = vertices[curr];
+        Vector2 c = vertices[next];
+
+        float cross = Cross(b - a, c - a);
+        if (cross < -1e-10f)
+            return false;
+
+        if (Math.Abs(cross) < 1e-10f)
+            return false;
+
+        foreach (int idx in indices)
+        {
+            if (idx == prev || idx == curr || idx == next)
+                continue;
+
+            if (PointInTriangleStrict(vertices[idx], a, b, c))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool PointInTriangleStrict(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+    {
+        float d1 = Cross(p - a, b - a);
+        float d2 = Cross(p - b, c - b);
+        float d3 = Cross(p - c, a - c);
+
+        bool hasNeg = (d1 < -1e-10f) || (d2 < -1e-10f) || (d3 < -1e-10f);
+        bool hasPos = (d1 > 1e-10f) || (d2 > 1e-10f) || (d3 > 1e-10f);
+
+        return !(hasNeg && hasPos);
     }
 
     private static float Cross(Vector2 a, Vector2 b)
@@ -1139,38 +1303,65 @@ public class Program
         // polygon with self-intersecting path creating holes
         var vertices = new List<Vector3>
         {
-            new Vector3(-47.6000023f,-45.9000015f,5.10000038f),
-            new Vector3(-47.6000023f,-42.5f,5.10000038f),
-            new Vector3(-37.4000015f,-42.5f,6.80000019f),
-            new Vector3(0f,-42.5f,11.9000006f),
-            new Vector3(37.4000015f,-42.5f,6.80000019f),
-            new Vector3(47.6000023f,-42.5f,5.10000038f),
-            new Vector3(47.6000023f,-45.9000015f,5.10000038f),
-            new Vector3(37.4000015f,-45.9000015f,6.80000019f),
-            new Vector3(0f,-45.9000015f,11.9000006f),
-            new Vector3(-37.4000015f,-45.9000015f,6.80000019f),
+            // new Vector3(34, -5, 17),
+            // new Vector3(34, -5, 4),
+            // new Vector3(34, -11, 4),
+            // new Vector3(34, -11, 17),
+            // new Vector3(34, -5, 17), // Returns to start - closes outer loop
+            // new Vector3(34, -5, 16),
+            // new Vector3(34, -11, 16),
+            // new Vector3(34, -11, 13),
+            // new Vector3(34, -5, 13),
+            // new Vector3(34, -5, 12),
+            // new Vector3(34, -11, 12),
+            // new Vector3(34, -11, 9),
+            // new Vector3(34, -5, 9),
+            // new Vector3(34, -5, 8),
+            // new Vector3(34, -11, 8),
+            // new Vector3(34, -11, 5),
+            // new Vector3(34, -5, 5),
+            // new Vector3(34, -5, 4),
+            // new Vector3(34, -11, 4),
+            // new Vector3(34, -5, 4)
+
+            // TODO add test case
+            // TODO is this polygon triangulating correctly?
+            new Vector3(-47.6000023f,-45.9000015f,5.10000038f)*10,
+            new Vector3(-47.6000023f,-42.5f,5.10000038f)*10,
+            new Vector3(-37.4000015f,-42.5f,6.80000019f)*10,
+            new Vector3(0f,-42.5f,11.9000006f)*10,
+            new Vector3(37.4000015f,-42.5f,6.80000019f)*10,
+            new Vector3(47.6000023f,-42.5f,5.10000038f)*10,
+            new Vector3(47.6000023f,-45.9000015f,5.10000038f)*10,
+            new Vector3(37.4000015f,-45.9000015f,6.80000019f)*10,
+            new Vector3(0f,-45.9000015f,11.9000006f)*10,
+            new Vector3(-37.4000015f,-45.9000015f,6.80000019f)*10,
         };
-        
+
         var result = PolygonTriangulator.Triangulate(vertices);
-        
+
         Console.WriteLine($"Plane Normal: {result.PlaneNormal}");
         Console.WriteLine($"Regions Detected: {result.RegionCount}");
         Console.WriteLine($"Triangles: {result.Triangles.Count / 3}");
-        
+
         for (int i = 0; i < result.Triangles.Count; i += 3)
         {
-            Console.WriteLine($"  Triangle: {result.Triangles[i]}, {result.Triangles[i+1]}, {result.Triangles[i+2]}");
+            Console.WriteLine(
+                $"  Triangle: {result.Triangles[i]}, {result.Triangles[i + 1]}, {result.Triangles[i + 2]}");
         }
-        
+
         for (int i = 0; i < result.Triangles.Count; i += 3)
         {
             Console.WriteLine("<p>");
             Console.WriteLine("c(255,0,0)");
             Console.WriteLine("gr(40)");
             Console.WriteLine("fs(1)");
-            Console.WriteLine($"p(-{vertices[result.Triangles[i]]:0})".Replace("<", "").Replace(">", "").Replace(", ", ","));
-            Console.WriteLine($"p(-{vertices[result.Triangles[i+1]]:0})".Replace("<", "").Replace(">", "").Replace(", ", ","));
-            Console.WriteLine($"p(-{vertices[result.Triangles[i+2]]:0})".Replace("<", "").Replace(">", "").Replace(", ", ","));
+            Console.WriteLine($"p({vertices[result.Triangles[i]]:0})".Replace("<", "").Replace(">", "")
+                .Replace(", ", ","));
+            Console.WriteLine($"p({vertices[result.Triangles[i + 1]]:0})".Replace("<", "").Replace(">", "")
+                .Replace(", ", ","));
+            Console.WriteLine($"p({vertices[result.Triangles[i + 2]]:0})".Replace("<", "").Replace(">", "")
+                .Replace(", ", ","));
             Console.WriteLine("</p>");
             Console.WriteLine();
         }
