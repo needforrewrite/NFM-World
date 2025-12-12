@@ -51,8 +51,8 @@ public static class Extensions
     {
         public Euler ToMaxine() =>
             new(
+                -AngleSingle.FromRadians(euler.Y),
                 AngleSingle.FromRadians(euler.X),
-                AngleSingle.FromRadians(euler.Y),
                 AngleSingle.FromRadians(euler.Z)
             ); // TODO is this correct?
     }

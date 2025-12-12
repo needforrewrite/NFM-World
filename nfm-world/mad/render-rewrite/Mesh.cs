@@ -177,8 +177,8 @@ public class Mesh : Transform, IContainsThreeObject
         get => ThreeObject.Rotation.ToMaxine();
         set
         {
-            ThreeObject.Rotation.X = value.Yaw.Radians;
-            ThreeObject.Rotation.Y = value.Pitch.Radians;
+            ThreeObject.Rotation.Y = -value.Yaw.Radians;
+            ThreeObject.Rotation.X = value.Pitch.Radians;
             ThreeObject.Rotation.Z = value.Roll.Radians;
         }
     }
@@ -294,15 +294,14 @@ public class FollowCamera
         _angle.Yaw = AngleSingle.FromDegrees(-cxz);
 
         var position = camera.Position;
-        position.X = mesh.Position.X - (800 * UMath.Sin(cxz));
-        position.Z = mesh.Position.Z - (800 * UMath.Cos(cxz));
-        position.Y = mesh.Position.Y - 250 - FollowYOffset;
+        camera.Position.X = mesh.Position.X + (800 * UMath.Sin(cxz));
+        camera.Position.Z = mesh.Position.Z - (800 * UMath.Cos(cxz));
+        camera.Position.Y = mesh.Position.Y - 250 - FollowYOffset;
         
         // Calculate the look direction by rotating the forward vector
         var lookDirection = (_angle * Vector3.UnitZ) * 100;
         // LookAt should be a target point, not a direction - add direction to position
         var lookAtPoint = position + lookDirection.ToTHREE();
-        camera.Position = position;
         camera.LookAt(lookAtPoint);
     }
 }

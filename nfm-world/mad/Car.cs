@@ -14,12 +14,12 @@ public class Car
         Conto = new Mesh(carConto, new Vector3(x, World.Ground, z), Euler.Identity);
         Mad = new Mad(stat, im);
         Stat = stat;
-        // Mad.Reseto(im, Conto);
+        Mad.Reseto(im, Conto);
         Control = new Control();
     }
 
     public void Drive()
     {
-        // Mad.Drive(Control, Conto);
+        Mad.Drive(Control, Conto);
     }
 }

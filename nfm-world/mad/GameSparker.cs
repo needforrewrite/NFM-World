@@ -308,13 +308,15 @@ public class GameSparker
         renderer.gl = GL.GetApi(control);
         renderer.Init();
         
-        camera.Fov = 45.0f;
+        camera.Fov = 90.0f;
         camera.Aspect = renderer.Width / (float)renderer.Height;
-        camera.Near = 5f;
+        camera.Near = 1f;
         camera.Far = 1_000_000f;
-        camera.Position.X = -30;
-        camera.Position.Y = 40;
-        camera.Position.Z = 30;
+        camera.Position.X = 800;
+        camera.Position.Y = 250;
+        camera.Position.Z = 800;
+        camera.Up.Y = -1f;
+        camera.UpdateProjectionMatrix();
         camera.LookAt(THREE.Vector3.Zero());
         
         renderer.SetClearColor(new Color().SetHex(0xEEEEEE), 1);
@@ -741,7 +743,7 @@ public class GameSparker
         // switch (currentViewMode)
         // {
         //     case ViewMode.Follow:
-        // PlayerFollowCamera.Follow(PlayerCamera, cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
+        PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
         //         break;
         //     case ViewMode.Around:
         //         // Medium.Around(cars_in_race[playerCarIndex].Conto, true);

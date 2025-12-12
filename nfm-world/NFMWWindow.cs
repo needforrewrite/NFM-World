@@ -217,22 +217,22 @@ public unsafe class Program
     private void OnLoad()
     {
         
-        _impellerContext = ImpellerContext.CreateOpenGLESNew(name =>
-        {
-            return _window.GLContext!.TryGetProcAddress(name, out var addr) ? addr : IntPtr.Zero;
-        })!;
-        var gl = _window.CreateOpenGL();
-        gl.GetInteger(GLEnum.FramebufferBinding, out var fbo);
-        _fbo = fbo;
-
-        _surface = _impellerContext.SurfaceCreateWrappedFBONew(
-            (ulong)_fbo,
-            ImpellerPixelFormat.kImpellerPixelFormatRGBA8888,
-            new ImpellerISize(_window.Size.X, _window.Size.Y)
-        );
-        
-        _backend = (NImpellerBackend)(IBackend.Backend = new NImpellerBackend(_surface));
-        _backend.Ratio = new Vector2D<float>(scale);
+        // _impellerContext = ImpellerContext.CreateOpenGLESNew(name =>
+        // {
+        //     return _window.GLContext!.TryGetProcAddress(name, out var addr) ? addr : IntPtr.Zero;
+        // })!;
+        // var gl = _window.CreateOpenGL();
+        // gl.GetInteger(GLEnum.FramebufferBinding, out var fbo);
+        // _fbo = fbo;
+        //
+        // _surface = _impellerContext.SurfaceCreateWrappedFBONew(
+        //     (ulong)_fbo,
+        //     ImpellerPixelFormat.kImpellerPixelFormatRGBA8888,
+        //     new ImpellerISize(_window.Size.X, _window.Size.Y)
+        // );
+        //
+        // _backend = (NImpellerBackend)(IBackend.Backend = new NImpellerBackend(_surface));
+        // _backend.Ratio = new Vector2D<float>(scale);
 
 #if USE_BASS
         Bass.Init();
@@ -240,7 +240,7 @@ public unsafe class Program
 
         _input = _window.CreateInput();
         
-        _imguiController = new ImGuiController(gl, _window, _input);
+        // _imguiController = new ImGuiController(gl, _window, _input);
         
         _input.ConnectionChanged += InputOnConnectionChanged;
         
@@ -307,36 +307,36 @@ public unsafe class Program
         
         GameSparker.renderer.Render(GameSparker.scene, GameSparker.camera);
 
-        ImpellerDisplayList displayList;
-        using (var drawListBuilder = ImpellerDisplayListBuilder.New(new ImpellerRect(100, 100, _window.Size.X, _window.Size.Y))!)
-        {
-            _backend.DrawListBuilder = drawListBuilder;
-            using (var paint = ImpellerPaint.New()!)
-            {
-                paint.SetColor(ImpellerColor.FromArgb(1, 0, 0, 0));
-                drawListBuilder.DrawRect(new ImpellerRect(0, 0, _window.Size.X, _window.Size.Y), paint);
-            }
-            
-            GameSparker.Render();
-        
-            G.SetColor(new Color(0, 0, 0));
-            G.DrawString($"Render: {_lastFrameTime}ms", 100, 100);
-            G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
-            G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
+        // ImpellerDisplayList displayList;
+        // using (var drawListBuilder = ImpellerDisplayListBuilder.New(new ImpellerRect(100, 100, _window.Size.X, _window.Size.Y))!)
+        // {
+        //     _backend.DrawListBuilder = drawListBuilder;
+        //     using (var paint = ImpellerPaint.New()!)
+        //     {
+        //         paint.SetColor(ImpellerColor.FromArgb(1, 0, 0, 0));
+        //         drawListBuilder.DrawRect(new ImpellerRect(0, 0, _window.Size.X, _window.Size.Y), paint);
+        //     }
+        //     
+        //     GameSparker.Render();
+        //
+        //     G.SetColor(new Color(0, 0, 0));
+        //     G.DrawString($"Render: {_lastFrameTime}ms", 100, 100);
+        //     G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
+        //     G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
+        //
+        //     displayList = drawListBuilder.CreateDisplayListNew()!;
+        // }
 
-            displayList = drawListBuilder.CreateDisplayListNew()!;
-        }
-
-        using (displayList)
-        {
-            _surface?.DrawDisplayList(displayList);
-        }
+        // using (displayList)
+        // {
+        //     _surface?.DrawDisplayList(displayList);
+        // }
         
-        // Render ImGui
-        _imguiController?.Update((float)delta);
-        _imguiController?.NewFrame();
-        GameSparker.RenderDevConsole();
-        _imguiController?.Render();
+        // // Render ImGui
+        // _imguiController?.Update((float)delta);
+        // _imguiController?.NewFrame();
+        // GameSparker.RenderDevConsole();
+        // _imguiController?.Render();
 
         _window.SwapBuffers();
 
