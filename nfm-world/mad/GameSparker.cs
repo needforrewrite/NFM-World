@@ -757,6 +757,7 @@ public class GameSparker
 
     public static void Render()
     {
+        renderer.Render(scene, camera);
         FrameTrace.RenderMessages();
     }
 
