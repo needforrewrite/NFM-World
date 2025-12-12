@@ -1,5 +1,6 @@
 using System;
 using NFMWorld.Util;
+using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad
 {
@@ -77,12 +78,7 @@ namespace NFMWorld.Mad
         private static void ResetCar(DevConsole console)
         {
             // doesnt reset gravity i cba rn
-            GameSparker.cars_in_race[0].Conto.X = 0;
-            GameSparker.cars_in_race[0].Conto.Y = 250;
-            GameSparker.cars_in_race[0].Conto.Z = 0;
-            GameSparker.cars_in_race[0].Conto.Xy = 0;
-            GameSparker.cars_in_race[0].Conto.Xz = 0;
-            GameSparker.cars_in_race[0].Conto.Zy = 0;
+            GameSparker.cars_in_race[0].Conto.Move(new Vector3(0, World.Ground, 0), Euler.Identity);
             GameSparker.cars_in_race[0].Mad.Speed = 0;
 
             //idk how to get rid of flames yet
@@ -106,9 +102,8 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            GameSparker.cars_in_race[0].Conto.X = x;
-            GameSparker.cars_in_race[0].Conto.Y = y;
-            GameSparker.cars_in_race[0].Conto.Z = z;
+            var mesh = GameSparker.cars_in_race[0].Conto;
+            mesh.Move(new Vector3(x, y, z), mesh.Rotation);
             console.Log($"Teleported player to ({x}, {y}, {z})");
         }
 
