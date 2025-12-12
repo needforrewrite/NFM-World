@@ -238,6 +238,7 @@ public class FollowCamera
 
     private float _bcxz;
     private Euler _angle;
+    public int FollowZOffset = 0;
 
     public void Follow(Camera camera, Mesh mesh, float cxz, int lookback)
     {
@@ -295,7 +296,7 @@ public class FollowCamera
 
         var position = camera.Position;
         camera.Position.X = mesh.Position.X + (800 * UMath.Sin(cxz));
-        camera.Position.Z = mesh.Position.Z - (800 * UMath.Cos(cxz));
+        camera.Position.Z = mesh.Position.Z - ((800 + FollowZOffset) * UMath.Cos(cxz));
         camera.Position.Y = mesh.Position.Y - 250 - FollowYOffset;
         
         // Calculate the look direction by rotating the forward vector

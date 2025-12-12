@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using NFMWorld.Util;
+using NFMWorld.Mad.UI;
 using ImGuiNET;
 
 namespace NFMWorld.Mad
@@ -13,6 +14,9 @@ namespace NFMWorld.Mad
         private string _currentInput = string.Empty;
         private readonly List<(string message, string level)> _outputLog = new();
         private readonly Dictionary<string, Action<DevConsole, string[]>> _commands = new();
+        
+        // UI Windows
+        private readonly DebugCameraWindow _cameraSettings = new();
 
         private readonly List<string> _commandHistory = new();
         private int _historyIndex = -1;
@@ -21,12 +25,12 @@ namespace NFMWorld.Mad
         // Autocomplete state
         private List<string> _autocompleteMatches = new();
         private int _autocompleteIndex = -1;
-        private readonly Dictionary<string, Func<string[], List<string>>> _argumentAutocompleters = new();
+        private readonly Dictionary<string, Func<string[], int, List<string>>> _argumentAutocompleters = new();
 
         public DevConsole()
         {
             DevConsoleCommands.RegisterAll(this);
-            Log("NFM-World master-2025.12.08", "info");
+            Log(GameSparker.version, "info");
         }
 
         public void Toggle()
@@ -38,8 +42,13 @@ namespace NFMWorld.Mad
         {
             return _isOpen;
         }
+        
+        public void ToggleCameraSettings()
+        {
+            _cameraSettings.Toggle();
+        }
 
-        private void ExecuteCommand(string input)
+        public void ExecuteCommand(string input)
         {
             var parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length == 0) return;
@@ -62,7 +71,7 @@ namespace NFMWorld.Mad
             _commands[name] = action;
         }
 
-        public void RegisterArgumentAutocompleter(string commandName, Func<string[], List<string>> autocompleter)
+        public void RegisterArgumentAutocompleter(string commandName, Func<string[], int, List<string>> autocompleter)
         {
             _argumentAutocompleters[commandName] = autocompleter;
         }
@@ -75,6 +84,7 @@ namespace NFMWorld.Mad
         public void ClearLog()
         {
             _outputLog.Clear();
+            Log(GameSparker.version, "info");
         }
 
         public void Log(string message, string logLevel = "default")
@@ -112,11 +122,21 @@ namespace NFMWorld.Mad
 
         public void Render()
         {
-            if (!_isOpen) return;
-
+            // Render console only if open
+            if (_isOpen)
+            {
+                RenderConsole();
+            }
+            
+            // temp, render UI windows independently (they manage their own visibility)
+            _cameraSettings.Render();
+        }
+        
+        private void RenderConsole()
+        {
             // windows size
             ImGui.SetNextWindowPos(new System.Numerics.Vector2(50, 50), ImGuiCond.FirstUseEver);
-            ImGui.SetNextWindowSize(new System.Numerics.Vector2(900, 600), ImGuiCond.FirstUseEver);
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(540, 400), ImGuiCond.FirstUseEver);
 
             // console pos on screen so autocomplete window moves with it
             System.Numerics.Vector2 consolePos = default;
@@ -390,10 +410,19 @@ namespace NFMWorld.Mad
                 var args = parts.Length > 1 ? parts[1..] : Array.Empty<string>();
                 var currentArg = _currentInput.EndsWith(' ') ? string.Empty : (args.Length > 0 ? args[^1] : string.Empty);
                 
+                // Determine which argument position we're on (0-based)
+                int argPosition = _currentInput.EndsWith(' ') ? args.Length : Math.Max(0, args.Length - 1);
+                
                 // Check if this command has an argument autocompleter
                 if (_argumentAutocompleters.TryGetValue(command, out var autocompleter))
                 {
-                    var suggestions = autocompleter(args);
+                    var suggestions = autocompleter(args, argPosition);
+                    
+                    // If no suggestions returned, don't show autocomplete for this position
+                    if (suggestions == null || suggestions.Count == 0)
+                    {
+                        return;
+                    }
                     
                     // Filter suggestions based on current partial argument
                     foreach (var suggestion in suggestions)

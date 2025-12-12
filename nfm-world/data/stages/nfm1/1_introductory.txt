@@ -9,6 +9,10 @@ ground(195,210,210)
 
 fadefrom(5000)
 
+mountains(false)
+clouds(false)
+polys(false)
+
 nlaps(4)
 
 detail(0)

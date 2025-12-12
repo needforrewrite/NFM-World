@@ -10,6 +10,7 @@ using THREE;
 using Color = THREE.Color;
 using Path = System.IO.Path;
 using Vector3 = Stride.Core.Mathematics.Vector3;
+using NFMWorld.Mad.UI;
 
 namespace NFMWorld.Mad;
 
@@ -45,6 +46,42 @@ public class GameSparker
     public static Camera camera = new PerspectiveCamera();
     public static Scene scene = new();
 
+    public static readonly string version = GetVersionString();
+
+    private static string GetVersionString()
+    {
+        var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+        var attributes = assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false);
+        if (attributes.Length > 0 && attributes[0] is System.Reflection.AssemblyInformationalVersionAttribute infoVersion)
+        {
+            var version = infoVersion.InformationalVersion;
+            // clip the commit hash
+            var parts = version.Split('-');
+            if (parts.Length >= 3)
+            {
+                var hash = parts[^1];
+                if (hash.Length > 8)
+                {
+                    parts[^1] = hash.Substring(0, 8);
+                    return string.Join("-", parts);
+                }
+            }
+            return version;
+        }
+        return "NFM-World dev";
+    }
+
+    public enum GameState
+    {
+        Menu,
+        InGame
+    }
+
+    public static GameState CurrentState = GameState.Menu;
+    public static MainMenu? MainMenu = null;
+    public static MessageWindow MessageWindow = new();
+    public static SettingsMenu SettingsMenu = new();
+
     private static DirectionalLight light;
     
     private static MicroStopwatch timer;
@@ -77,6 +114,7 @@ public class GameSparker
     {
         Follow,
         Around,
+        Watch
     }
     private static ViewMode currentViewMode = ViewMode.Follow;
     /////////////////////////////////
@@ -95,11 +133,6 @@ public class GameSparker
     {
         DebugKeyStates[key] = true;
         
-        //if (!_exwist)
-        //{
-
-        //Console.WriteLine($"Key pressed: {key}");
-
         // ideally it would be perfect if it was the tilde key, like in Source Engine games
         if (key == Keys.F1)
         {
@@ -107,60 +140,75 @@ public class GameSparker
             return;
         }
 
+        if (CurrentState == GameState.Menu)
+        {
+            // Handle key capture for settings menu
+            if (SettingsMenu.IsOpen && SettingsMenu.IsCapturingKey())
+            {
+                SettingsMenu.HandleKeyCapture(key);
+            }
+            return;
+        }
+
         if (!devConsole.IsOpen()) {
-            //115 114 99
-            if (key == Keys.Up)
+            var bindings = SettingsMenu.Bindings;
+            
+            if (key == bindings.Accelerate)
             {
                 cars_in_race[playerCarIndex].Control.Up = true;
             }
-            if (key == Keys.Down)
+            if (key == bindings.Brake)
             {
                 cars_in_race[playerCarIndex].Control.Down = true;
             }
-            if (key == Keys.Right)
+            if (key == bindings.TurnRight)
             {
                 cars_in_race[playerCarIndex].Control.Right = true;
             }
-            if (key == Keys.Left)
+            if (key == bindings.TurnLeft)
             {
                 cars_in_race[playerCarIndex].Control.Left = true;
             }
-            if (key == Keys.Space)
+            if (key == bindings.Handbrake)
             {
                 cars_in_race[playerCarIndex].Control.Handb = true;
             }
-            if (key == Keys.Enter)
+            if (key == bindings.Enter)
             {
                 cars_in_race[playerCarIndex].Control.Enter = true;
             }
-            if (key == Keys.Z)
+            if (key == bindings.LookBack)
             {
                 cars_in_race[playerCarIndex].Control.Lookback = -1;
             }
-            if (key == Keys.X)
+            if (key == bindings.LookLeft)
             {
-                cars_in_race[playerCarIndex].Control.Lookback = 1;
+                cars_in_race[playerCarIndex].Control.Lookback = 3;
             }
-            if (key == Keys.M)
+            if (key == bindings.LookRight)
+            {
+                cars_in_race[playerCarIndex].Control.Lookback = 2;
+            }
+            if (key == bindings.ToggleMusic)
             {
                 cars_in_race[playerCarIndex].Control.Mutem = !cars_in_race[playerCarIndex].Control.Mutem;
             }
 
-            if (key == Keys.N)
+            if (key == bindings.ToggleSFX)
             {
                 cars_in_race[playerCarIndex].Control.Mutes = !cars_in_race[playerCarIndex].Control.Mutes;
             }
 
-            if (key == Keys.A)
+            if (key == bindings.ToggleArrace)
             {
                 cars_in_race[playerCarIndex].Control.Arrace = !cars_in_race[playerCarIndex].Control.Arrace;
             }
 
-            if (key == Keys.S)
+            if (key == bindings.ToggleRadar)
             {
                 cars_in_race[playerCarIndex].Control.Radar = !cars_in_race[playerCarIndex].Control.Radar;
             }
-            if (key == Keys.V)
+            if (key == bindings.CycleView)
             {
                 currentViewMode = (ViewMode)(((int)currentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
             }
@@ -171,44 +219,44 @@ public class GameSparker
     {
         DebugKeyStates[key] = false;
         
-        //if (!_exwist)
-        //{
-            if (cars_in_race[playerCarIndex].Control.Multion < 2)
+        if (CurrentState == GameState.Menu)
+        {
+            return;
+        }
+        
+        var bindings = SettingsMenu.Bindings;
+        
+        if (cars_in_race[playerCarIndex].Control.Multion < 2)
+        {
+            if (key == bindings.Accelerate)
             {
-                if (key == Keys.Up)
-                {
-                    cars_in_race[playerCarIndex].Control.Up = false;
-                }
-                if (key == Keys.Down)
-                {
-                    cars_in_race[playerCarIndex].Control.Down = false;
-                }
-                if (key == Keys.Right)
-                {
-                    cars_in_race[playerCarIndex].Control.Right = false;
-                }
-                if (key == Keys.Left)
-                {
-                    cars_in_race[playerCarIndex].Control.Left = false;
-                }
-                if (key == Keys.Space)
-                {
-                    cars_in_race[playerCarIndex].Control.Handb = false;
-                }
+                cars_in_race[playerCarIndex].Control.Up = false;
             }
-            if (key == Keys.Escape)
+            if (key == bindings.Brake)
             {
-                cars_in_race[playerCarIndex].Control.Exit = false;
-//                if (Madness.fullscreen)
-//                {
-//                    Madness.exitfullscreen();
-//                }
+                cars_in_race[playerCarIndex].Control.Down = false;
             }
-            if (key == Keys.X || key == Keys.Z)
+            if (key == bindings.TurnRight)
             {
-                cars_in_race[playerCarIndex].Control.Lookback = 0;
+                cars_in_race[playerCarIndex].Control.Right = false;
             }
-        //}
+            if (key == bindings.TurnLeft)
+            {
+                cars_in_race[playerCarIndex].Control.Left = false;
+            }
+            if (key == bindings.Handbrake)
+            {
+                cars_in_race[playerCarIndex].Control.Handb = false;
+            }
+        }
+        if (key == Keys.Escape)
+        {
+            cars_in_race[playerCarIndex].Control.Exit = false;
+        }
+        if (key == bindings.LookBack || key == bindings.LookLeft || key == bindings.LookRight)
+        {
+            cars_in_race[playerCarIndex].Control.Lookback = 0;
+        }
     }
 
     public static List<string> GetAvailableStages()
@@ -343,11 +391,15 @@ public class GameSparker
             stage_parts[id] = new Mesh(Encoding.UTF8.GetString(ais));
         });
 
-        Loadstage("nfm2/15_dwm");
-
-        cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
-        scene.Add(cars_in_race[playerCarIndex].Conto.ThreeObject);
-        scene.Add(new Object3DCollection(placed_stage_elements));
+        // init menu
+        CurrentState = GameState.Menu;
+        MainMenu = new MainMenu();
+        
+        // Initialize SettingsMenu writer
+        SettingsMenu.Writer = Writer;
+        
+        // load user config
+        SettingsMenu.LoadConfig();
 
         for (var i = 0; i < StageRads.Length; i++) {
             if (stage_parts[i] == null) {
@@ -360,6 +412,22 @@ public class GameSparker
                 throw new Exception("No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
+    }
+
+    public static void StartGame()
+    {
+        // temp
+        CurrentState = GameState.InGame;
+        MainMenu = null;
+
+        Loadstage("nfm2/15_dwm");
+        cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
+        
+        
+        scene.Add(cars_in_race[playerCarIndex].Conto.ThreeObject);
+        scene.Add(new Object3DCollection(placed_stage_elements));
+        
+        Console.WriteLine("Game started!");
     }
 
     internal static int Getint(string astring, string string4, int i)
@@ -397,6 +465,7 @@ public class GameSparker
         placed_stage_elements.Clear();
         _stagePartCount = 0;
         Trackers.Nt = 0;
+
         var i = 0;
         var k = 100;
         var l = 0;
@@ -428,8 +497,15 @@ public class GameSparker
                 }
                 if (astring.StartsWith("polys"))
                 {
-                    // Medium.Setpolys(Getint("polys", astring, 0), Getint("polys", astring, 1),
-                    //     Getint("polys", astring, 2));
+                    if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Medium.drawPolys = false;
+                    }
+                    else
+                    {
+                        // Medium.Setpolys(Getint("polys", astring, 0), Getint("polys", astring, 1),
+                        // Getint("polys", astring, 2));
+                    }
                 }
                 if (astring.StartsWith("fog"))
                 {
@@ -442,8 +518,15 @@ public class GameSparker
                 }
                 if (astring.StartsWith("clouds"))
                 {
-                    //Medium.Setcloads(Getint("clouds", astring, 0), Getint("clouds", astring, 1),
-                    //    Getint("clouds", astring, 2), Getint("clouds", astring, 3), Getint("clouds", astring, 4));
+                    if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Medium.drawClouds = false;
+                    }
+                    else
+                    {
+                        // Medium.Setclouds(Getint("clouds", astring, 0), Getint("clouds", astring, 1),
+                        //     Getint("clouds", astring, 2), Getint("clouds", astring, 3), Getint("clouds", astring, 4));
+                    }
                 }
                 if (astring.StartsWith("density"))
                 {
@@ -480,14 +563,26 @@ public class GameSparker
                 if (astring.StartsWith("set"))
                 {
                     var setindex = Getint("set", astring, 0);
-
                     setindex -= _indexOffset;
-                    placed_stage_elements[_stagePartCount] = new Mesh(
-                        stage_parts[setindex],
-                        new Vector3(Getint("set", astring, 1), World.Ground, Getint("set", astring, 2)),
-                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
-                    );
-                    if (astring.Contains(")p"))
+                    var setheight = World.Ground - stage_parts[setindex].GroundAt;
+                    
+                    var hasCustomY = astring.Split(',').Length >= 5;
+                    if (hasCustomY)
+                    {
+                        setheight = Getint("set", astring, 4);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[setindex],
+                            new Vector3(Getint("set", astring, 1), setheight, Getint("set", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
+                    }
+                    else
+                    {
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[setindex],
+                            new Vector3(Getint("set", astring, 1), setheight, Getint("set", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
+                    }
+                    if (astring.Contains(")p"))     //AI tags
                     {
                         // CheckPoints.X[CheckPoints.N] = Getint("set", astring, 1);
                         // CheckPoints.Z[CheckPoints.N] = Getint("set", astring, 2);
@@ -526,12 +621,28 @@ public class GameSparker
                 {
                     var chkindex = Getint("chk", astring, 0);
                     chkindex -= _indexOffset;
-                    var chkheight = World.Ground;
-                    placed_stage_elements[_stagePartCount] = new Mesh(
-                        stage_parts[chkindex],
-                        new Vector3(Getint("set", astring, 1), chkheight, Getint("set", astring, 2)),
-                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
-                    );
+                    var chkheight = World.Ground - stage_parts[chkindex].GroundAt;
+
+
+                    // Check if optional Y coordinate is provided (5 parameters instead of 4)
+                    var hasCustomY = astring.Split(',').Length >= 5;
+                    if (hasCustomY)
+                    {
+                        chkheight = Getint("chk", astring, 4);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[chkindex],
+                            new Vector3(Getint("chk", astring, 1), chkheight, Getint("chk", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Getint("chk", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
+                        );
+                    }
+                    else
+                    {
+	                    placed_stage_elements[_stagePartCount] = new Mesh(
+	                        stage_parts[chkindex],
+	                        new Vector3(Getint("set", astring, 1), chkheight, Getint("set", astring, 2)),
+	                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+	                    );
+                    }
                     
                     // CheckPoints.X[CheckPoints.N] = Getint("chk", astring, 1);
                     // CheckPoints.Z[CheckPoints.N] = Getint("chk", astring, 2);
@@ -575,6 +686,7 @@ public class GameSparker
                     //CheckPoints.Fn++;
                     _stagePartCount++;
                 }
+                // oteek: FUCK PILES IM NGL
                 // if (!CheckPoints.Notb && astring.StartsWith("pile"))
                 // {
                 //     _stageContos[_nob] = new ContO(Getint("pile", astring, 0), Getint("pile", astring, 1),
@@ -699,7 +811,7 @@ public class GameSparker
                     {
                         placed_stage_elements[_stagePartCount] = new Mesh(
                             stage_parts[wall],
-                            new Vector3(o, World.Ground, q * 4800 + p),
+                            new Vector3(q * 4800 + p, World.Ground, o),
                             new Euler(AngleSingle.FromDegrees(-90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
                         _stagePartCount++;
@@ -719,12 +831,9 @@ public class GameSparker
                 }
             }
             // Medium.Newpolys(k, i - k, m, l - m, _stagePartCount);
-            // if (Medium.drawMountains)
-            //     Medium.Newmountains(k, i, m, l);
-            // if (Medium.drawClouds)
-            //     Medium.Newclouds(k, i, m, l);
-            // if (Medium.drawStars)
-            //     Medium.Newstars();
+            // Medium.Newmountains(k, i, m, l);
+            // Medium.Newclouds(k, i, m, l);
+            // Medium.Newstars();
             Trackers.Devidetrackers(k, i - k, m, l - m);
         }
         catch (Exception exception)
@@ -739,6 +848,12 @@ public class GameSparker
     public static void GameTick()
     {
         FrameTrace.ClearMessages();
+        // only tick game logic when actually in-game
+        if (CurrentState != GameState.InGame)
+        {
+            return;
+        }
+        
         cars_in_race[playerCarIndex].Drive();
         // switch (currentViewMode)
         // {
@@ -749,20 +864,24 @@ public class GameSparker
         //         // Medium.Around(cars_in_race[playerCarIndex].Conto, true);
         //         break;
         // }
-        // if (cars_in_race[playerCarIndex].Control.Up) PlayerCamera.Move(PlayerCamera.Position + new Vector3(1000, 0, 0), PlayerCamera.LookAt);
-        // if (cars_in_race[playerCarIndex].Control.Down) PlayerCamera.Move(PlayerCamera.Position + new Vector3(-1000, 0, 0), PlayerCamera.LookAt);
-        // if (cars_in_race[playerCarIndex].Control.Left) PlayerCamera.Move(PlayerCamera.Position + new Vector3(0, 0, 1000), PlayerCamera.LookAt);
-        // if (cars_in_race[playerCarIndex].Control.Right) PlayerCamera.Move(PlayerCamera.Position + new Vector3(0, 0, -1000), PlayerCamera.LookAt);
     }
 
     public static void Render()
     {
+        // only render game when in-game state
+        if (CurrentState != GameState.InGame)
+        {
+            return;
+        }
+
         renderer.Render(scene, camera);
         FrameTrace.RenderMessages();
     }
 
-    public static void RenderDevConsole()
+    public static void RenderImgui()
     {
         devConsole.Render();
+        MessageWindow.Render();
+        SettingsMenu.Render();
     }
 }

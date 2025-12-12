@@ -8,6 +8,8 @@ namespace NFMWorld.Mad
     {
         public static void RegisterAll(DevConsole console)
         {
+
+            // general
             console.RegisterCommand("help", (c, args) => PrintHelp(c));
             console.RegisterCommand("clear", (c, args) => ClearLog(c));
             console.RegisterCommand("speed", SetSpeed);
@@ -19,17 +21,37 @@ namespace NFMWorld.Mad
             console.RegisterCommand("quit", (c, args) => ExitApplication(c));
             console.RegisterCommand("fov", SetFov);
             console.RegisterCommand("followy", SetFollowY);
+            console.RegisterCommand("followz", SetFollowZ);
             console.RegisterCommand("car", SwitchCar);
 
+
             console.RegisterCommand("r_frametrace", SetFrameTrace);
+
+            console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
+
+            //ui
+            console.RegisterCommand("ui_dev_cam", (c, args) => ToggleCameraSettings(c));
+            console.RegisterCommand("ui_dev_msg", ShowMessageTest);
+
+            //cheats
+            //console.RegisterCommand("sv_cheats", SVCheats);
+            //console.RegisterCommand("god", Godmode);
 
             //im sobbing
             console.RegisterCommand("calc", (c, args) => OpenCalculator(c));
             
             // argument autocompleters
-            console.RegisterArgumentAutocompleter("car", (args) => new List<string>(GameSparker.CarRads));
-            console.RegisterArgumentAutocompleter("create", (args) => new List<string>(GameSparker.StageRads));
-            console.RegisterArgumentAutocompleter("map", (args) => GameSparker.GetAvailableStages());
+            // car command: only autocomplete first argument (position 0)
+            console.RegisterArgumentAutocompleter("car", (args, position) => 
+                position == 0 ? new List<string>(GameSparker.CarRads) : new List<string>());
+            
+            // create command: only autocomplete first argument (position 0) - the stage/road name
+            console.RegisterArgumentAutocompleter("create", (args, position) => 
+                position == 0 ? new List<string>(GameSparker.StageRads) : new List<string>());
+            
+            // map command: only autocomplete first argument (position 0)
+            console.RegisterArgumentAutocompleter("map", (args, position) => 
+                position == 0 ? GameSparker.GetAvailableStages() : new List<string>());
         }
 
         private static void SetFrameTrace(DevConsole console, string[] args)
@@ -47,6 +69,12 @@ namespace NFMWorld.Mad
         {
             console.Log("F@cked by SkyBULLET!");
             System.Diagnostics.Process.Start("calc.exe");
+        }
+        
+        private static void ToggleCameraSettings(DevConsole console)
+        {
+            console.ToggleCameraSettings();
+            console.Log("Camera settings window toggled");
         }
 
         private static void PrintHelp(DevConsole console)
@@ -77,15 +105,8 @@ namespace NFMWorld.Mad
 
         private static void ResetCar(DevConsole console)
         {
-            // doesnt reset gravity i cba rn
-            GameSparker.cars_in_race[0].Conto.Position = new Vector3(0, World.Ground, 0);
-            GameSparker.cars_in_race[0].Conto.Rotation = Euler.Identity;
-            GameSparker.cars_in_race[0].Mad.Speed = 0;
-
-            //idk how to get rid of flames yet
-            GameSparker.cars_in_race[0].Mad.Newcar = true;
-            GameSparker.cars_in_race[0].Mad.Wasted = false;
-            GameSparker.cars_in_race[0].Mad.Hitmag = 0;
+            GameSparker.cars_in_race.Clear();
+            GameSparker.cars_in_race[GameSparker.playerCarIndex] = new Car(new Stat(GameSparker.playerCarID), GameSparker.playerCarID,  GameSparker.cars[GameSparker.playerCarID], 0, 0);
             console.Log("Position reset");
         }
 
@@ -110,7 +131,7 @@ namespace NFMWorld.Mad
 
         private static void CreateObject(DevConsole console, string[] args)
         {
-            if (args.Length < 4 || !int.TryParse(args[1], out var x) || !int.TryParse(args[2], out var y) || !int.TryParse(args[3], out var z) || !int.TryParse(args[4], out var r))
+            if (args.Length < 5 || !int.TryParse(args[1], out var x) || !int.TryParse(args[2], out var y) || !int.TryParse(args[3], out var z) || !int.TryParse(args[4], out var r))
             {
                 console.Log("Usage: create <object_name> <x> <y> <z> <r>");
                 return;
@@ -182,6 +203,90 @@ namespace NFMWorld.Mad
             }
 
             GameSparker.PlayerFollowCamera.FollowYOffset = yoff;
+        }
+
+        private static void SetFollowZ(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !int.TryParse(args[0], out var zoff))
+            {
+                console.Log("Usage: followz <zoff>");
+                return;
+            }
+
+            GameSparker.PlayerFollowCamera.FollowZOffset = zoff;
+        }
+
+        private static void ShowMessageTest(DevConsole console, string[] args)
+        {
+            if (args.Length == 0)
+            {
+                console.Log("Usage: msg <ok|yesno|okcancel|custom>");
+                return;
+            }
+
+            switch (args[0].ToLower())
+            {
+                case "ok":
+                    GameSparker.MessageWindow.ShowMessage(
+                        "Information",
+                        "This is a simple message with an OK button.",
+                        result => console.Log($"User clicked: {result}")
+                    );
+                    break;
+
+                case "yesno":
+                    GameSparker.MessageWindow.ShowYesNo(
+                        "Confirmation",
+                        "Do you want to continue?",
+                        result => 
+                        {
+                            console.Log($"User clicked: {result}");
+                            if (result == UI.MessageWindow.MessageResult.Yes)
+                            {
+                                console.Log("User confirmed!");
+                            }
+                            else
+                            {
+                                console.Log("User declined.");
+                            }
+                        }
+                    );
+                    break;
+
+                case "okcancel":
+                    GameSparker.MessageWindow.ShowOKCancel(
+                        "Warning",
+                        "Are you sure you want to proceed? This action cannot be undone.",
+                        result => console.Log($"User clicked: {result}")
+                    );
+                    break;
+
+                case "custom":
+                    GameSparker.MessageWindow.ShowCustom(
+                        "Choose Option",
+                        "Please select one of the following options:",
+                        new[] { "Option A", "Option B", "Option C" },
+                        result => console.Log($"User selected: {result}")
+                    );
+                    break;
+
+                default:
+                    console.Log("Invalid argument. Use: ok, yesno, okcancel, or custom");
+                    break;
+            }
+        }
+
+        private static void Disconnect(DevConsole console)
+        {
+            if (GameSparker.CurrentState == GameSparker.GameState.Menu)
+            {
+                console.Log("Not in game.");
+                return;
+            }
+
+            GameSparker.CurrentState = GameSparker.GameState.Menu;
+            GameSparker.MainMenu = new UI.MainMenu();
+            console.Log("Returned to main menu.");
         }
     }
 }

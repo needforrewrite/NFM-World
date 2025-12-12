@@ -1014,7 +1014,6 @@ public class Mad
         UMath.Rot(wheely, wheelz, conto.Y, conto.Z, Pzy, 4);
         UMath.Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
         var wasMtouch = false;
-        double d = 0.0f;
         var i26 = (int)((Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4.0F);
         var i27 = (int)((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4.0F);
         for (var i28 = 0; i28 < 4; i28++)
@@ -1082,11 +1081,12 @@ public class Mad
 
         if (Mtouch)
         {
+            // Jacher: 1/_tickrate for traction; Txz is set on previous tick so we need to scale
             var traction = Stat.Grip;
-            traction -= Math.Abs(Txz - conto.Xz) * Speed / 250.0F;
+            traction -= Math.Abs(Txz - conto.Xz) * (1 / _tickRate) * Speed / 250.0F;
             if (control.Handb)
             {
-                traction -= Math.Abs(Txz - conto.Xz) * 4;
+                traction -= Math.Abs(Txz - conto.Xz) * (1 / _tickRate) * 4;
             }
 
             if (traction < Stat.Grip)
@@ -1341,30 +1341,32 @@ public class Mad
             }
         }
 
-        // maxine: changing these to floats will cause an explosion to NaN. i cannot figure out why
-        int i_81 = 0;
+        // Jacher: change all this to float. The old code was blatantly wrong:
+        // i_81 = d > 1 ? 0 : (float) dAcos(ratio) * sgn;
+        // `d` was an unused double set to 0.0 and never used. GO figure.
+        float i_81 = 0;
         if (Scy[2] != Scy[0]) {
-            int sgn = Scy[2] < Scy[0] ? -1 : 1;
+            float sgn = Scy[2] < Scy[0] ? -1 : 1;
             float ratio = Hypot3(wheelz[0] - wheelz[2], wheely[0] - wheely[2], wheelx[0] - wheelx[2]) / (Math.Abs(conto.Keyz[0]) + Math.Abs(conto.Keyz[2]));
-            i_81 = d > 1 ? 0 : (int) dAcos(ratio) * sgn; // the d > 1 ? 0 part was different in the original code, but this I think makes more sense
+            i_81 = ratio >= 1 ? sgn : (float) dAcos(ratio) * sgn; // the d > 1 ? 0 part was different in the original code, but this I think makes more sense
         }
-        int i_82 = 0;
+        float i_82 = 0;
         if (Scy[3] != Scy[1]) {
-            int sgn = Scy[3] < Scy[1] ? -1 : 1;
+            float sgn = Scy[3] < Scy[1] ? -1 : 1;
             float ratio = Hypot3(wheelz[1] - wheelz[3], wheely[1] - wheely[3], wheelx[1] - wheelx[3]) / (Math.Abs(conto.Keyz[1]) + Math.Abs(conto.Keyz[3]));
-            i_82 = d > 1 ? 0 : (int) dAcos(ratio) * sgn;
+            i_82 = ratio >= 1 ? sgn : (float) dAcos(ratio) * sgn;
         }
-        int i_83 = 0;
+        float i_83 = 0;
         if (Scy[1] != Scy[0]) {
-            int sgn = Scy[1] < Scy[0] ? -1 : 1;
+            float sgn = Scy[1] < Scy[0] ? -1 : 1;
             float ratio = Hypot3(wheelz[0] - wheelz[1], wheely[0] - wheely[1], wheelx[0] - wheelx[1]) / (Math.Abs(conto.Keyx[0]) + Math.Abs(conto.Keyx[1]));
-            i_83 = d > 1 ? 0 : (int) dAcos(ratio) * sgn;
+            i_83 = ratio >= 1 ? sgn : (float) dAcos(ratio) * sgn;
         }
-        int i_84 = 0;
+        float i_84 = 0;
         if (Scy[3] != Scy[2]) {
-            int sgn = Scy[3] < Scy[2] ? -1 : 1;
+            float sgn = Scy[3] < Scy[2] ? -1 : 1;
             float ratio = Hypot3(wheelz[2] - wheelz[3], wheely[2] - wheely[3], wheelx[2] - wheelx[3]) / (Math.Abs(conto.Keyx[2]) + Math.Abs(conto.Keyx[3]));
-            i_84 = d > 1 ? 0 : (int) dAcos(ratio) * sgn;
+            i_84 = ratio >= 1 ? sgn : (float) dAcos(ratio) * sgn;
         }
 
         if (hitVertical) {
@@ -1395,22 +1397,22 @@ public class Mad
             {
             	if(Pzy > 0) //Pzy can be negative, so this needs to be accounted for
                 {
-                    Pzy -= Math.Abs(i_81); 
+                    Pzy -= QuantizeTowardsZero(Math.Abs(i_81) * _tickRate, _tickRate); 
                 }
                 else
                 {
-                    Pzy += Math.Abs(i_81);
+                    Pzy += QuantizeTowardsZero(Math.Abs(i_81) * _tickRate, _tickRate);
                 }
             }
             if(zeroanglezy <= flipanglezy && zyangle >= 180 || flipanglezy < zeroanglezy && zyangle < 180) //similar to above, just in reverse
             {
             	if(Pzy > 0)
                 {
-                    Pzy += Math.Abs(i_81);
+                    Pzy += QuantizeTowardsZero(Math.Abs(i_81) * _tickRate, _tickRate);
                 }
                 else
                 {
-                    Pzy -= Math.Abs(i_81);
+                    Pzy -= QuantizeTowardsZero(Math.Abs(i_81) * _tickRate, _tickRate);
                 }
             } 
             var zeroanglexy = Math.Min(xyangle, 360 - xyangle); //distance from 0 degrees in the xy-plane
@@ -1419,24 +1421,24 @@ public class Mad
             {
             	if(Pxy > 0) //again, Pxy can be negative
                 {
-                    Pxy -= Math.Abs(i_83);
+                    Pxy -= QuantizeTowardsZero(Math.Abs(i_83) * _tickRate, _tickRate);
                 }
                 else
                 {
-                    Pxy += Math.Abs(i_83);
+                    Pxy += QuantizeTowardsZero(Math.Abs(i_83) * _tickRate, _tickRate);
                 }
             }
             if(zeroanglexy <= flipanglexy && xyangle >= 180 || flipanglexy < zeroanglexy && xyangle < 180)
             {
             	if (Pxy > 0)
                 {
-                    Pxy += Math.Abs(i_83);
+                    Pxy += QuantizeTowardsZero(Math.Abs(i_83) * _tickRate, _tickRate);
                 }
                 else
                 {
-                    Pxy -= Math.Abs(i_83);
+                    Pxy -= QuantizeTowardsZero(Math.Abs(i_83) * _tickRate, _tickRate);
                 }
-            } 
+            }
         } else {
             if (!zyinv)
                 Pzy += i_81;

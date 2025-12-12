@@ -312,7 +312,18 @@ public unsafe class Program
         }
         else if (device is IMouse mouse)
         {
-            
+            if (isConnected)
+            {
+                mouse.MouseDown += MouseOnMouseDown;
+                mouse.MouseUp += MouseOnMouseUp;
+                mouse.MouseMove += MouseOnMouseMove;
+            }
+            else
+            {
+                mouse.MouseDown -= MouseOnMouseDown;
+                mouse.MouseUp -= MouseOnMouseUp;
+                mouse.MouseMove -= MouseOnMouseMove;
+            }
         }
     }
 
@@ -324,6 +335,32 @@ public unsafe class Program
     private void KeyboardOnKeyDown(IKeyboard keyboard, Key key, int scancode)
     {
         KeyDown(KeyMapping.GetValueOrDefault(key));
+    }
+
+    private void MouseOnMouseDown(IMouse mouse, Silk.NET.Input.MouseButton button)
+    {
+        if (button == Silk.NET.Input.MouseButton.Left)
+        {
+            var pos = mouse.Position;
+            MouseDown((int)pos.X, (int)pos.Y);
+        }
+    }
+
+    private void MouseOnMouseUp(IMouse mouse, Silk.NET.Input.MouseButton button)
+    {
+        if (button == Silk.NET.Input.MouseButton.Left)
+        {
+            var pos = mouse.Position;
+            MouseUp((int)pos.X, (int)pos.Y);
+        }
+    }
+
+    private void MouseOnMouseMove(IMouse mouse, System.Numerics.Vector2 position)
+    {
+        if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
+        {
+            GameSparker.MainMenu.UpdateMouse((int)position.X, (int)position.Y);
+        }
     }
 
     private void OnRender(double delta)
@@ -341,13 +378,20 @@ public unsafe class Program
                 drawListBuilder.DrawRect(new ImpellerRect(0, 0, _window.Size.X, _window.Size.Y), paint);
             }
             
-            GameSparker.Render();
-        
-            G.SetColor(new Color(0, 0, 0));
-            G.DrawString($"Render: {_lastFrameTime}ms", 100, 100);
-            G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
-            G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
-        
+            // Render based on game state
+            if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
+            {
+                GameSparker.MainMenu.Render();
+            }
+            else if (GameSparker.CurrentState == GameSparker.GameState.InGame)
+            {
+                GameSparker.Render();
+            
+                G.SetColor(new Color(0, 0, 0));
+                G.DrawString($"Render: {_lastFrameTime}ms", 100, 100);
+                G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
+                G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
+            }
             displayList = drawListBuilder.CreateDisplayListNew()!;
         }
 
@@ -356,7 +400,20 @@ public unsafe class Program
             _surface?.DrawDisplayList(displayList);
         }
 #else
-        GameSparker.Render();
+        // Render based on game state
+        if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
+        {
+            GameSparker.MainMenu.Render();
+        }
+        else if (GameSparker.CurrentState == GameSparker.GameState.InGame)
+        {
+            GameSparker.Render();
+        
+            G.SetColor(new Color(0, 0, 0));
+            G.DrawString($"Render: {_lastFrameTime}ms", 100, 100);
+            G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
+            G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
+        }
         
         _grContext.ResetContext(GRGlBackendState.All);
         _canvas.Flush();
@@ -386,7 +443,7 @@ public unsafe class Program
         // // Render ImGui
         _imguiController?.Update((float)delta);
         _imguiController?.NewFrame();
-        GameSparker.RenderDevConsole();
+        GameSparker.RenderImgui();
         _imguiController?.Render();
 
         _window.SwapBuffers();
@@ -413,12 +470,15 @@ public unsafe class Program
 
     private void MouseUp(int x, int y)
     {
-        //GameSparker.MouseReleased(x, y);
+        if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
+        {
+            GameSparker.MainMenu.HandleClick(x, y);
+        }
     }
 
     private void MouseDown(int x, int y)
     {
-        //GameSparker.MousePressed(x, y);
+        // Currently not needed, but could be used for button press effects
     }
 
     private void HandleKeyPress(Keys key, bool isDown)
@@ -620,12 +680,17 @@ internal class NImpellerGraphics(NImpellerBackend backend) : IGraphics
 
     public void FillRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei)
     {
-        
+        // for now, use regular rectangles
+        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleFill);
+        backend.DrawListBuilder?.DrawRect(new ImpellerRect(x, y, wid, hei), _paint);
     }
 
     public void DrawRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei)
     {
-        
+        // for now, use regular rectangles
+        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleStroke);
+        _paint.SetStrokeWidth(2.0f);
+        backend.DrawListBuilder?.DrawRect(new ImpellerRect(x, y, wid, hei), _paint);
     }
 
     public void DrawRect(int x1, int y1, int width, int height)
