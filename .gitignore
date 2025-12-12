@@ -25,3 +25,6 @@ replay_pid*
 
 **/obj
 **/bin
+
+.idea
+*.user
