@@ -177,9 +177,9 @@ public class Medium
     internal static float Vxz = 180f;
     internal static int W = 1280;
     internal static int X;
-    internal static SinCosFloat Xz;
     internal static int Y;
     internal static int Z;
+    internal static SinCosFloat Xz;
     internal static SinCosFloat Zy;
 
     public static bool drawMountains = true;
