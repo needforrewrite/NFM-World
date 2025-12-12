@@ -12,8 +12,6 @@ class CarDefine
 
     public static DevConsoleWriter Writer = null!;
 
-    private static ContO[] _bco;
-
     internal static readonly int[,] Swits =
     {
         {
@@ -567,13 +565,6 @@ class CarDefine
 
     private CarDefine()
     {
-    }
-
-    internal static CarDefine Create(ContO[] contos)
-    {
-        _thread = new CarDefine();
-        _bco = contos;
-        return _thread;
     }
 
     private static void Loadstat(byte[] _is, string str, int i, int i0, int i1, int i2)

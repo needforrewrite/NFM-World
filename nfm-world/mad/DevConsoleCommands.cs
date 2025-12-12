@@ -78,7 +78,8 @@ namespace NFMWorld.Mad
         private static void ResetCar(DevConsole console)
         {
             // doesnt reset gravity i cba rn
-            GameSparker.cars_in_race[0].Conto.Move(new Vector3(0, World.Ground, 0), Euler.Identity);
+            GameSparker.cars_in_race[0].Conto.Position = new Vector3(0, World.Ground, 0);
+            GameSparker.cars_in_race[0].Conto.Rotation = Euler.Identity;
             GameSparker.cars_in_race[0].Mad.Speed = 0;
 
             //idk how to get rid of flames yet
@@ -103,7 +104,7 @@ namespace NFMWorld.Mad
             }
 
             var mesh = GameSparker.cars_in_race[0].Conto;
-            mesh.Move(new Vector3(x, y, z), mesh.Rotation);
+            mesh.Position = new Vector3(x, y, z);
             console.Log($"Teleported player to ({x}, {y}, {z})");
         }
 
@@ -169,12 +170,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            Medium.FocusPoint = GetFocusPoint(fov);
-        }
-        
-        private static int GetFocusPoint(float fov)
-        {
-            return (int) MathF.Round(Medium.Cx * MathF.Tan(MathF.Abs(180 - fov) * 0.5f * (MathF.PI / 180)));
+            GameSparker.camera.Fov = fov;
         }
         
         private static void SetFollowY(DevConsole console, string[] args)
@@ -185,7 +181,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            Medium.FollowYOffset = yoff;
+            GameSparker.PlayerFollowCamera.FollowYOffset = yoff;
         }
     }
 }

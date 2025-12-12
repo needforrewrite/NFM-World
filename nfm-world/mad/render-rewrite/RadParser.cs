@@ -20,6 +20,7 @@ public class RadParser
     private Rad3dRimsDef? _rims;
     private List<Rad3dBoxDef> _boxes = new();
     private List<Rad3dPoly> _polys = new();
+    private List<Vector3> _points = new();
 
     private RadParser()
     {
@@ -246,11 +247,13 @@ public class RadParser
                     position.Y * idiv * scaleY,
                     position.Z * idiv * scaleZ
                 );
-                poly.Points.Add(transformedPoint);
+                _points.Add(transformedPoint);
             }
 
             else if (line.StartsWith("</p>"))
             {
+                poly = poly with { Points = _points.ToArray() };
+                _points.Clear();
                 if (_stonecold || _noOutline)
                 {
                     poly = poly with { LineType = null };
@@ -284,7 +287,11 @@ public readonly record struct Rad3dWheelDef(
     [property: JsonPropertyName("rotates")] int Rotates,
     [property: JsonPropertyName("w")] float Width,
     [property: JsonPropertyName("h")] float Height
-);
+)
+{
+    public int Sparkat { get; } = (int) ((Height / 10f) * 24.0F);
+    public int Ground { get; } = (int) (Position.Y + 13.0F * (Height / 10f));
+}
 
 public readonly record struct Rad3dRimsDef(
     [property: JsonPropertyName("color")] Color3 Color,
@@ -316,7 +323,7 @@ public readonly record struct Rad3dPoly(
     [property: JsonPropertyName("colnum")] int? ColNum,
     [property: JsonPropertyName("polyType")] PolyType PolyType,
     [property: JsonPropertyName("lineType")] LineType? LineType,
-    [property: JsonPropertyName("p")] List<Vector3> Points
+    [property: JsonPropertyName("p")] Vector3[] Points
 );
 
 public readonly record struct CarStats
@@ -432,7 +439,7 @@ public readonly record struct Color3(
                 0 => R,
                 1 => G,
                 2 => B,
-                _ => throw new System.IndexOutOfRangeException()
+                _ => throw new IndexOutOfRangeException()
             };
         }
     }

@@ -38,6 +38,23 @@ public static class Extensions
         
         public static Vector3 FromSpan(ReadOnlySpan<float> span)
             => new(span[0], span[1], span[2]);
+
+        public THREE.Vector3 ToTHREE() => new(vector3.X, vector3.Y, vector3.Z);
+    }
+
+    extension(THREE.Vector3 vector3)
+    {
+        public Vector3 ToStride() => new(vector3.X, vector3.Y, vector3.Z);
+    }
+
+    extension(THREE.Euler euler)
+    {
+        public Euler ToMaxine() =>
+            new(
+                AngleSingle.FromRadians(euler.X),
+                AngleSingle.FromRadians(euler.Y),
+                AngleSingle.FromRadians(euler.Z)
+            ); // TODO is this correct?
     }
 
     extension(Int3 int3)

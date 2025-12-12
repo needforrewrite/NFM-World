@@ -1,252 +1,17 @@
 ﻿using System;
+using HoleyDiver;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
+using THREE;
 using Color = Stride.Core.Mathematics.Color;
+using Vector3 = Stride.Core.Mathematics.Vector3;
 
 namespace NFMWorld.Mad;
 
-public interface IPolygonShading
+public class Transform
 {
-    void Shade(
-        Matrix worldViewProjection,
-        Transform parent,
-        ref Color3 color,
-        ReadOnlySpan<Vector3> pointsWorld,
-        ReadOnlySpan<int> xScreen,
-        ReadOnlySpan<int> yScreen,
-        ReadOnlySpan<float> zDepth,
-        float distanceToCamera
-    );
-}
-
-public class FullBrightShading : IPolygonShading
-{
-    public void Shade(
-        Matrix worldViewProjection,
-        Transform parent,
-        ref Color3 color,
-        ReadOnlySpan<Vector3> pointsWorld,
-        ReadOnlySpan<int> xScreen,
-        ReadOnlySpan<int> yScreen,
-        ReadOnlySpan<float> zDepth,
-        float distanceToCamera
-    )
-    {
-    }
-}
-
-public class OmarPolygonShading : IPolygonShading
-{
-    private float _projf = 1.0F;
-    private float _deltaf = 1.0F;
-    private float[] _hsb;
-    private readonly Vector3 _normal;
-    
-    private static Vector3 LightDirection => new(0, -1, 0);
-
-    public OmarPolygonShading(MeshPoly poly)
-    {
-        _hsb = new float[3];
-        Colors.RGBtoHSB(poly.Color.R, poly.Color.G, poly.Color.B, out _hsb[0], out _hsb[1], out _hsb[2]);
-        
-        _normal = CalculateNormal(poly.Points);
-    }
-    
-    // Newell's Method
-    private static Vector3 CalculateNormal(ReadOnlySpan<Vector3> points)
-    {
-        var normal = Vector3.Zero;
-
-        for (var i = 0; i < points.Length; i++)
-        {
-            var current = points[i];
-            var next = points[(i + 1) % points.Length];
-
-            normal.X += (current.Y - next.Y) * (current.Z + next.Z);
-            normal.Y += (current.Z - next.Z) * (current.X + next.X);
-            normal.Z += (current.X - next.X) * (current.Y + next.Y);
-        }
-
-        normal.Normalize();
-        return normal;
-    }
-
-    private static Color3 SnapColor(Color3 color)
-    {
-        return color with
-        {
-            R = (short)Math.Clamp(color.R + color.R * (World.Snap.R / 100.0F), 0, 255),
-            G = (short)Math.Clamp(color.G + color.G * (World.Snap.G / 100.0F), 0, 255),
-            B = (short)Math.Clamp(color.B + color.B * (World.Snap.B / 100.0F), 0, 255),
-        };
-    }
-
-    public void Shade(
-        Matrix worldViewProjection,
-        Transform parent,
-        ref Color3 color,
-        ReadOnlySpan<Vector3> pointsWorld,
-        ReadOnlySpan<int> xScreen,
-        ReadOnlySpan<int> yScreen,
-        ReadOnlySpan<float> zDepth,
-        float distanceToCamera
-    )
-    {
-        var normal = Vector3.TransformNormal(_normal, parent.WorldMatrix);
-        
-        var diffuse = MathF.Abs(Vector3.Dot(normal, LightDirection));
-        var colorVector = new Vector3(color.R / 255f, color.G / 255f, color.B / 255f) * (0.37f + 0.63f * diffuse);
-        color = new Color3((short)(colorVector.X * 255f), (short)(colorVector.Y * 255f), (short)(colorVector.Z * 255f));
-        color = SnapColor(color);
-    }
-}
-
-public class MeshPoly : IComparable<MeshPoly>
-{
-    public Color3 Color;
-    public int? ColNum;
-    public PolyType PolyType;
-    public LineType? LineType;
-    public Vector3[] Points;
-
-    public int Gr
-    {
-        get;
-        set
-        { 
-            field = value;
-            _grMult = value != 0 ? MathF.Sqrt(value) : 1;
-        }
-    }
-
-    public int Fs;
-
-    private float DistanceToCamera;
-
-    private float _grMult;
-    
-    public IPolygonShading Shading;
-
-    public BoundingBoxExt BoundingBox { get; private set; }
-    
-    public MeshPoly(Rad3dPoly poly) : this(poly.Color, poly.ColNum, poly.PolyType, poly.LineType, poly.Points, poly.Gr, poly.Fs)
-    {
-    }
-
-    public MeshPoly(Color3 color, int? colNum, PolyType polyType, LineType? lineType, IReadOnlyList<Vector3> points, int gr, int fs)
-    {
-        Color = color;
-        ColNum = colNum;
-        PolyType = polyType;
-        LineType = lineType;
-        Points = points.ToArray();
-        Gr = gr;
-        Fs = fs;
-        Shading = new OmarPolygonShading(this);
-        RecalculateBounds();
-    }
-
-    public MeshPoly(MeshPoly basePoly)
-    {
-        Color = basePoly.Color;
-        ColNum = basePoly.ColNum;
-        PolyType = basePoly.PolyType;
-        LineType = basePoly.LineType;
-        Points = basePoly.Points.ToArray();
-        Gr = basePoly.Gr;
-        Fs = basePoly.Fs;
-        Shading = basePoly.Shading;
-        RecalculateBounds();
-    }
-
-    public void RecalculateBounds()
-    {
-        BoundingBox = (BoundingBoxExt) Stride.Core.Mathematics.BoundingBox.FromPoints(Points);
-    }
-
-    public void Render(Matrix worldViewProjection, Transform parent, Camera camera)
-    {
-        // translate and rotate bbox to transform position and rotation
-        var bboxWorld = BoundingBox;
-        bboxWorld.Transform(parent.WorldMatrix);
-        if (!camera.Frustum.Contains(in bboxWorld))
-        {
-            return;
-        }
-
-        // project points onto screen space
-        var points = Points.AsSpan();
-        
-        Span<Vector3> pointsWorld = stackalloc Vector3[points.Length];
-        Span<int> xScreen = stackalloc int[points.Length];
-        Span<int> yScreen = stackalloc int[points.Length];
-        Span<float> zDepth = stackalloc float[points.Length];
-        float depthAccumulated = 0;
-        for (var i = 0; i < points.Length; i++)
-        {
-            // translate and rotate points to transform position and rotation
-            var point = points[i];
-            pointsWorld[i] = Vector3.TransformCoordinate(point, parent.WorldMatrix);
-            var pointScreen = Vector3.TransformCoordinate(point, worldViewProjection);
-            // convert to screen space
-            var x = (pointScreen.X + 1) * 0.5f * camera.Width;
-            var y = (1 - (pointScreen.Y + 1) * 0.5f) * camera.Height;
-            xScreen[i] = (int)x;
-            yScreen[i] = (int)y;
-            zDepth[i] = pointScreen.Z;
-            depthAccumulated += pointScreen.Z;
-        }
-        
-        DistanceToCamera = (depthAccumulated / points.Length) * _grMult;
-
-        var color = Color;
-        Shading.Shade(worldViewProjection, parent, ref color, pointsWorld, xScreen, yScreen, zDepth, DistanceToCamera);
-        
-        G.SetColor(color);
-        G.FillPolygon(xScreen, yScreen, points.Length);
-    }
-
-    public int CompareTo(MeshPoly? other)
-    {
-        if (other == null) return 1;
-        return other.DistanceToCamera.CompareTo(DistanceToCamera);
-    }
-}
-
-public class Transform : IComparable<Transform>
-{
-    public Vector3 Position { get; private set; } = Vector3.Zero;
-    public Euler Rotation { get; private set; } = new();
-    
-    public int Grounded = 1;
-    protected float _grMult = 1;
-
-    public float DistanceToCamera;
-
-    public Matrix WorldMatrix { get; private set; }
-
-    public Transform()
-    {
-        Move(Position, Rotation);
-    }
-
-    public void Move(Vector3 position, Euler rotation)
-    {
-        Position = position;
-        Rotation = rotation;
-        RecalculateWorldMatrix();
-    }
-
-    private void RecalculateWorldMatrix()
-    {
-        WorldMatrix = Matrix.RotationQuaternion(Rotation) * Matrix.Translation(Position);
-    }
-
-    public int CompareTo(Transform? other)
-    {
-        if (other == null) return 1;
-        return other.DistanceToCamera.CompareTo(DistanceToCamera);
-    }
+    public virtual Vector3 Position { get; set; } = Vector3.Zero;
+    public virtual Euler Rotation { get; set; } = new();
 }
 
 public class FixHoop(Mesh baseMesh, Vector3 position, Euler rotation) : Mesh(baseMesh, position, rotation)
@@ -254,31 +19,40 @@ public class FixHoop(Mesh baseMesh, Vector3 position, Euler rotation) : Mesh(bas
     public bool Rotated;
 }
 
-public interface IRenderable
+public interface IContainsThreeObject
 {
-    void Render(Camera camera);
+    public Object3D ThreeObject { get; }
+    public event Action<(Object3D OldObject, Object3D NewObject)>? ThreeObjectChanged;
 }
 
-public class Mesh : Transform, IRenderable
+public class Mesh : Transform, IContainsThreeObject
 {
-    private Color3[] Colors;
-    private CarStats Stats;
-    private Rad3dWheelDef[] Wheels;
-    private Rad3dRimsDef? Rims;
-    private Rad3dBoxDef[] Boxes;
-    private MeshPoly[] Polys;
-
-    public BoundingBoxExt BoundingBox;
-
-    public void RecalculateBounds()
+    public Object3D ThreeObject
     {
-        BoundingBox = BoundingBoxExt.Empty;
-        foreach (var poly in Polys)
+        get;
+        private set
         {
-            var polyBoundingBox = poly.BoundingBox;
-            BoundingBoxExt.Merge(in BoundingBox, in polyBoundingBox, out BoundingBox);
+            var oldValue = field;
+            field = value;
+            ThreeObjectChanged?.Invoke((oldValue, value));
         }
     }
+
+    public event Action<(Object3D OldObject, Object3D NewObject)>? ThreeObjectChanged;
+
+    public Color3[] Colors;
+    public CarStats Stats;
+    public Rad3dWheelDef[] Wheels;
+    public Rad3dRimsDef? Rims;
+    public Rad3dBoxDef[] Boxes;
+    public Rad3dPoly[] Polys;
+    
+    // visually wasted
+    public bool Wasted;
+
+    public int GroundAt;
+
+    public Euler TurningWheelAngle { get; set; }
 
     public Mesh(string code)
     {
@@ -288,9 +62,10 @@ public class Mesh : Transform, IRenderable
         Wheels = rad.Wheels;
         Rims = rad.Rims;
         Boxes = rad.Boxes;
-        Polys = Array.ConvertAll(rad.Polys, poly => new MeshPoly(poly));
+        Polys = rad.Polys;
 
-        _grMult = MathF.Sqrt(Grounded);
+        GroundAt = rad.Wheels.FirstOrDefault().Ground;
+        ThreeObject = BuildMesh();
     }
     
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -300,85 +75,162 @@ public class Mesh : Transform, IRenderable
         Wheels = baseMesh.Wheels;
         Rims = baseMesh.Rims;
         Boxes = baseMesh.Boxes;
-        Polys = Array.ConvertAll(baseMesh.Polys, poly => new MeshPoly(poly));
-        Grounded = baseMesh.Grounded;
-        _grMult = baseMesh._grMult;
+        Polys = baseMesh.Polys;
+        GroundAt = baseMesh.GroundAt;
 
-        Move(position, rotation);
+        ThreeObject = BuildMesh();
+        Position = position;
+        Rotation = rotation;
     }
 
-    public void Render(Camera camera)
+    private Object3D BuildMesh()
     {
-        Polys.AsSpan().Sort();
+        var geometry = new BufferGeometry();
         
-        // translate and rotate bbox to transform position and rotation
-        var bboxWorld = BoundingBox;
-        bboxWorld.Transform(WorldMatrix);
-        if (!camera.Frustum.Contains(in bboxWorld))
-        {
-            return;
-        }
-        
-        var worldViewProjection = WorldMatrix * camera.ViewProjectionMatrix;
-        
-        var transformedPoint = Vector3.TransformCoordinate(new Vector3(), worldViewProjection);
-
-        DistanceToCamera = transformedPoint.Z * _grMult;
+        var positions = new List<float>();
+        var normals = new List<float>();
+        var colors = new List<float>();
         
         foreach (var poly in Polys)
         {
-            poly.Render(worldViewProjection, this, camera);
+            // TODO: the result of triangulation can be cached.
+            var result = PolygonTriangulator.Triangulate(Array.ConvertAll(poly.Points, input => (System.Numerics.Vector3)input));
+
+            for (var index = 0; index < result.Triangles.Count; index += 3)
+            {
+                var i0 = result.Triangles[index];
+                var i1 = result.Triangles[index + 1];
+                var i2 = result.Triangles[index + 2];
+                
+                var p0 = poly.Points[i0];
+                var p1 = poly.Points[i1];
+                var p2 = poly.Points[i2];
+                
+                positions.Add(p0.X);
+                positions.Add(p0.Y);
+                positions.Add(p0.Z);
+                positions.Add(p1.X);
+                positions.Add(p1.Y);
+                positions.Add(p1.Z);
+                positions.Add(p2.X);;
+                positions.Add(p2.Y);
+                positions.Add(p2.Z);
+
+                normals.Add(result.PlaneNormal.X);
+                normals.Add(result.PlaneNormal.Y);
+                normals.Add(result.PlaneNormal.Z);
+                normals.Add(result.PlaneNormal.X);
+                normals.Add(result.PlaneNormal.Y);
+                normals.Add(result.PlaneNormal.Z);
+                normals.Add(result.PlaneNormal.X);
+                normals.Add(result.PlaneNormal.Y);
+                normals.Add(result.PlaneNormal.Z);
+
+                colors.Add(poly.Color.R / 255f);
+                colors.Add(poly.Color.G / 255f);
+                colors.Add(poly.Color.B / 255f);
+                colors.Add(poly.Color.R / 255f);
+                colors.Add(poly.Color.G / 255f);
+                colors.Add(poly.Color.B / 255f);
+                colors.Add(poly.Color.R / 255f);
+                colors.Add(poly.Color.G / 255f);
+                colors.Add(poly.Color.B / 255f);
+            }
+        }
+        
+        geometry.SetAttribute("position", new BufferAttribute<float>(positions.ToArray(), 3));
+        geometry.SetAttribute("normal", new BufferAttribute<float>(normals.ToArray(), 3));
+        geometry.SetAttribute("color", new BufferAttribute<float>(colors.ToArray(), 3));
+
+        geometry.ComputeBoundingSphere();
+
+        var material = new MeshPhongMaterial()
+        {
+            Color = THREE.Color.Hex(0xaaaaaa),
+            Specular = THREE.Color.Hex(0xffffff),
+            Shininess = 250,
+            Side = Constants.DoubleSide,
+            VertexColors = true
+        };
+
+        var mesh = new THREE.Mesh(geometry, material);
+
+        var containerObject = new Object3D();
+        containerObject.Add(mesh);
+
+        return containerObject;
+    }
+
+    public sealed override Vector3 Position
+    {
+        get => ThreeObject.Position.ToStride();
+        set
+        {
+            ThreeObject.Position.X = value.X;
+            ThreeObject.Position.Y = value.Y;
+            ThreeObject.Position.Z = value.Z;
+        }
+    }
+
+    public sealed override Euler Rotation
+    {
+        get => ThreeObject.Rotation.ToMaxine();
+        set
+        {
+            ThreeObject.Rotation.X = value.Yaw.Radians;
+            ThreeObject.Rotation.Y = value.Pitch.Radians;
+            ThreeObject.Rotation.Z = value.Roll.Radians;
         }
     }
 }
-
-public class Camera
-{
-    public int Width { get; private set; } = 1280;
-    public int Height { get; private set; } = 720;
-    public float Fov { get; private set; } = 90f;
-    
-    public Vector3 Position { get; private set; } = Vector3.Zero;
-    public Vector3 LookAt { get; private set; } = Vector3.UnitZ;
-    public Vector3 Up  { get; private set; } = -Vector3.UnitY;
-
-    public Matrix ViewMatrix { get; private set; }
-
-    public Matrix ProjectionMatrix { get; private set; }
-
-    public Matrix ViewProjectionMatrix { get; private set; }
-
-    public BoundingFrustum Frustum { get; private set; }
-
-    public Camera()
-    {
-        Reorient(Fov, Width, Height);
-        Move(Position, LookAt);
-    }
-
-    public void Reorient(float fov, int width, int height)
-    {
-        Fov = fov;
-        Width = width;
-        Height = height;
-        ProjectionMatrix = Matrix.PerspectiveFovRH(MathUtil.DegreesToRadians(fov), width / (float)height, 50f, 1_000_000f);
-        UpdateViewProjection();
-    }
-
-    public void Move(Vector3 to, Vector3 lookAt)
-    {
-        Position = to;
-        LookAt = lookAt;
-        ViewMatrix = Matrix.LookAtRH(to, lookAt, Up);
-        UpdateViewProjection();
-    }
-
-    private void UpdateViewProjection()
-    {
-        var viewProjectionMatrix = ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
-        Frustum = new BoundingFrustum(in viewProjectionMatrix);
-    }
-}
+//
+// public class Camera
+// {
+//     public int Width { get; private set; } = 1280;
+//     public int Height { get; private set; } = 720;
+//     public float Fov { get; private set; } = 90f;
+//     
+//     public Vector3 Position { get; private set; } = Vector3.Zero;
+//     public Vector3 LookAt { get; private set; } = Vector3.UnitZ;
+//     public Vector3 Up  { get; private set; } = -Vector3.UnitY;
+//
+//     public Matrix ViewMatrix { get; private set; }
+//
+//     public Matrix ProjectionMatrix { get; private set; }
+//
+//     public Matrix ViewProjectionMatrix { get; private set; }
+//
+//     public BoundingFrustum Frustum { get; private set; }
+//
+//     public Camera()
+//     {
+//         Reorient(Fov, Width, Height);
+//         Move(Position, LookAt);
+//     }
+//
+//     public void Reorient(float fov, int width, int height)
+//     {
+//         Fov = fov;
+//         Width = width;
+//         Height = height;
+//         ProjectionMatrix = Matrix.PerspectiveFovRH(MathUtil.DegreesToRadians(fov), width / (float)height, 50f, 1_000_000f);
+//         UpdateViewProjection();
+//     }
+//
+//     public void Move(Vector3 to, Vector3 lookAt)
+//     {
+//         Position = to;
+//         LookAt = lookAt;
+//         ViewMatrix = Matrix.LookAtRH(to, lookAt, Up);
+//         UpdateViewProjection();
+//     }
+//
+//     private void UpdateViewProjection()
+//     {
+//         var viewProjectionMatrix = ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
+//         Frustum = new BoundingFrustum(in viewProjectionMatrix);
+//     }
+// }
 
 public class FollowCamera
 {
@@ -442,15 +294,16 @@ public class FollowCamera
         _angle.Yaw = AngleSingle.FromDegrees(-cxz);
 
         var position = camera.Position;
-        position.X = mesh.Position.X - (800 * Medium.Sin(cxz));
-        position.Z = mesh.Position.Z - (800 * Medium.Cos(cxz));
+        position.X = mesh.Position.X - (800 * UMath.Sin(cxz));
+        position.Z = mesh.Position.Z - (800 * UMath.Cos(cxz));
         position.Y = mesh.Position.Y - 250 - FollowYOffset;
         
         // Calculate the look direction by rotating the forward vector
         var lookDirection = (_angle * Vector3.UnitZ) * 100;
         // LookAt should be a target point, not a direction - add direction to position
-        var lookAtPoint = position + lookDirection;
-        camera.Move(position, lookAtPoint);
+        var lookAtPoint = position + lookDirection.ToTHREE();
+        camera.Position = position;
+        camera.LookAt(lookAtPoint);
     }
 }
 
