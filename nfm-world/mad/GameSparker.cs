@@ -1,7 +1,9 @@
 using System.Diagnostics;
+using System.Text;
 using NFMWorld.Mad.Interp;
 using NFMWorld.Util;
 using ImGuiNET;
+using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad;
 
@@ -10,10 +12,13 @@ public class GameSparker
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
 
     private static MicroStopwatch timer;
-    public static UnlimitedArray<ContO> cars;
-    public static UnlimitedArray<ContO> stage_parts;
-    public static UnlimitedArray<ContO> placed_stage_elements;
+    public static UnlimitedArray<Mesh> cars;
+    public static UnlimitedArray<Mesh> stage_parts;
+    public static UnlimitedArray<Mesh> placed_stage_elements;
 
+    public static Camera PlayerCamera = new();
+    public static FollowCamera PlayerFollowCamera = new();
+    
     public static DevConsole devConsole = new();
 
     public static readonly string[] CarRads = {
@@ -273,15 +278,15 @@ public class GameSparker
         placed_stage_elements = [];
 
         FileUtil.LoadFiles("./data/models/cars", CarRads, (ais, id) => {
-            cars[id] = new ContO(ais);
-            if (!cars[id].Shadow)
-            {
-                throw new Exception("car does not have a shadow");
-            }
+            cars[id] = new Mesh(Encoding.UTF8.GetString(ais));
+            // if (!cars[id].Shadow)
+            // {
+            //     throw new Exception("car does not have a shadow");
+            // }
         });
 
         FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id) => {
-            stage_parts[id] = new ContO(ais);
+            stage_parts[id] = new Mesh(Encoding.UTF8.GetString(ais));
         });
 
         Loadstage("nfm2/15_dwm");
@@ -319,8 +324,11 @@ public class GameSparker
             return;
         }
 
-        placed_stage_elements[_stagePartCount] = new ContO(
-            stage_parts[model], x, 250 - stage_parts[model].Grat - y, z, r);
+        placed_stage_elements[_stagePartCount] = new Mesh(
+            stage_parts[model],
+            new Vector3(x, 250 - y, z),
+            new Euler(AngleSingle.FromDegrees(r), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
+        );
 
         _stagePartCount++;
 
@@ -357,8 +365,11 @@ public class GameSparker
                 astring = "" + line.Trim();
                 if (astring.StartsWith("snap"))
                 {
-                    Medium.Setsnap(Getint("snap", astring, 0), Getint("snap", astring, 1),
-                        Getint("snap", astring, 2));
+                    World.Snap = new Color3(
+                        (short) Getint("snap", astring, 0),
+                        (short) Getint("snap", astring, 1),
+                        (short) Getint("snap", astring, 2)
+                    );
                 }
                 if (astring.StartsWith("sky"))
                 {
@@ -425,9 +436,11 @@ public class GameSparker
                     var setindex = Getint("set", astring, 0);
 
                     setindex -= _indexOffset;
-                    placed_stage_elements[_stagePartCount] = new ContO(stage_parts[setindex], Getint("set", astring, 1),
-                        Medium.Ground - stage_parts[setindex].Grat, Getint("set", astring, 2),
-                        Getint("set", astring, 3));
+                    placed_stage_elements[_stagePartCount] = new Mesh(
+                        stage_parts[setindex],
+                        new Vector3(Getint("set", astring, 1), Medium.Ground, Getint("set", astring, 2)),
+                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                    );
                     if (astring.Contains(")p"))
                     {
                         // CheckPoints.X[CheckPoints.N] = Getint("set", astring, 1);
@@ -467,9 +480,12 @@ public class GameSparker
                 {
                     var chkindex = Getint("chk", astring, 0);
                     chkindex -= _indexOffset;
-                    var chkheight = Medium.Ground - stage_parts[chkindex].Grat;
-                    placed_stage_elements[_stagePartCount] = new ContO(stage_parts[chkindex], Getint("chk", astring, 1), chkheight,
-                        Getint("chk", astring, 2), Getint("chk", astring, 3));
+                    var chkheight = Medium.Ground;
+                    placed_stage_elements[_stagePartCount] = new Mesh(
+                        stage_parts[chkindex],
+                        new Vector3(Getint("set", astring, 1), chkheight, Getint("set", astring, 2)),
+                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                    );
                     
                     // CheckPoints.X[CheckPoints.N] = Getint("chk", astring, 1);
                     // CheckPoints.Z[CheckPoints.N] = Getint("chk", astring, 2);
@@ -492,17 +508,18 @@ public class GameSparker
                 {
                     var fixindex = Getint("fix", astring, 0);
                     fixindex -= _indexOffset;
-                    placed_stage_elements[_stagePartCount] = new ContO(stage_parts[fixindex], Getint("fix", astring, 1),
-                        Getint("fix", astring, 3),
-                        Getint("fix", astring, 2), Getint("fix", astring, 4));
+                    placed_stage_elements[_stagePartCount] = new FixHoop(
+                        stage_parts[fixindex],
+                        new Vector3(Getint("set", astring, 1), Getint("set", astring, 3), Getint("set", astring, 2)),
+                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 4)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                    );
                     // CheckPoints.Fx[CheckPoints.Fn] = Getint("fix", astring, 1);
                     // CheckPoints.Fz[CheckPoints.Fn] = Getint("fix", astring, 2);
                     // CheckPoints.Fy[CheckPoints.Fn] = Getint("fix", astring, 3);
-                    placed_stage_elements[_stagePartCount].Elec = true;
                     if (Getint("fix", astring, 4) != 0)
                     {
                         //CheckPoints.Roted[CheckPoints.Fn] = true;
-                        placed_stage_elements[_stagePartCount].Roted = true;
+                        ((FixHoop)placed_stage_elements[_stagePartCount]).Rotated = true;
                     }
                     else
                     {
@@ -550,9 +567,11 @@ public class GameSparker
                     var p = Getint("maxr", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], o,
-                            Medium.Ground - stage_parts[wall].Grat,
-                            q * 4800 + p, 0);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[wall],
+                            new Vector3(o, Medium.Ground, q * 4800 + p),
+                            Euler.Identity                        
+                        );
                         _stagePartCount++;
                     }
                     Trackers.Y[Trackers.Nt] = -5000;
@@ -576,9 +595,11 @@ public class GameSparker
                     var p = Getint("maxl", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], o, Medium.Ground - stage_parts[wall].Grat,
-                            q * 4800 + p,
-                            180);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[wall],
+                            new Vector3(o, Medium.Ground, q * 4800 + p),
+                            new Euler(AngleSingle.FromDegrees(180), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                        );
                         _stagePartCount++;
                     }
                     Trackers.Y[Trackers.Nt] = -5000;
@@ -602,9 +623,11 @@ public class GameSparker
                     var p = Getint("maxt", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
-                            o,
-                            90);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[wall],
+                            new Vector3(o, Medium.Ground, q * 4800 + p),
+                            new Euler(AngleSingle.FromDegrees(90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                        );
                         _stagePartCount++;
                     }
                     Trackers.Y[Trackers.Nt] = -5000;
@@ -628,9 +651,11 @@ public class GameSparker
                     var p = Getint("maxb", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
-                            o,
-                            -90);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[wall],
+                            new Vector3(o, Medium.Ground, q * 4800 + p),
+                            new Euler(AngleSingle.FromDegrees(-90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                        );
                         _stagePartCount++;
                     }
                     Trackers.Y[Trackers.Nt] = -5000;
@@ -669,57 +694,47 @@ public class GameSparker
     {
         FrameTrace.ClearMessages();
         cars_in_race[playerCarIndex].Drive();
-        switch (currentViewMode)
-        {
-            case ViewMode.Follow:
-                Medium.Follow(cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
-                break;
-            case ViewMode.Around:
-                Medium.Around(cars_in_race[playerCarIndex].Conto, true);
-                break;
-        }
+        // switch (currentViewMode)
+        // {
+        //     case ViewMode.Follow:
+        PlayerFollowCamera.Follow(PlayerCamera, cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
+        //         break;
+        //     case ViewMode.Around:
+        //         // Medium.Around(cars_in_race[playerCarIndex].Conto, true);
+        //         break;
+        // }
+        if (cars_in_race[playerCarIndex].Control.Up) PlayerCamera.Move(PlayerCamera.Position + new Vector3(1000, 0, 0), PlayerCamera.LookAt);
+        if (cars_in_race[playerCarIndex].Control.Down) PlayerCamera.Move(PlayerCamera.Position + new Vector3(-1000, 0, 0), PlayerCamera.LookAt);
+        if (cars_in_race[playerCarIndex].Control.Left) PlayerCamera.Move(PlayerCamera.Position + new Vector3(0, 0, 1000), PlayerCamera.LookAt);
+        if (cars_in_race[playerCarIndex].Control.Right) PlayerCamera.Move(PlayerCamera.Position + new Vector3(0, 0, -1000), PlayerCamera.LookAt);
     }
 
     public static void Render()
     {
-        Medium.D();
+        // Medium.D();
 
-        var renderQueue = new UnlimitedArray<ContO>(placed_stage_elements.Count);
+        var renderQueue = new UnlimitedArray<Transform>(cars_in_race.Count + placed_stage_elements.Count);
 
         var j = 0;
         // process player cars
         foreach (var car in cars_in_race)
         {
-            if (car.Conto.Dist != 0)
-            {
-                renderQueue[j++] = car.Conto;
-            }
-            else if (car.Conto.Dist == 0)
-            {
-                car.Conto.D();
-            }
+            renderQueue[j++] = car.Conto;
         }
         
         // process stage elements
         foreach (var contO in placed_stage_elements)
         {
-            if (contO.Dist != 0)
-            {
-                renderQueue[j++] = contO;
-            }
-            else if (contO.Dist == 0)
-            {
-                contO.D();
-            }
+            renderQueue[j++] = contO;
         }
 
         // sort the render queue by distance in descending order
-        renderQueue.Sort(static (a, b) => b.Dist.CompareTo(a.Dist));
+        renderQueue.Sort(static (a, b) => b.DistanceToCamera.CompareTo(a.DistanceToCamera));
 
         // render all objects in the sorted order
         foreach (var obj in renderQueue)
         {
-            obj.D();
+            (obj as IRenderable)?.Render(PlayerCamera);
         }
         
         FrameTrace.RenderMessages();
