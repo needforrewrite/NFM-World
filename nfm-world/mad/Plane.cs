@@ -53,7 +53,7 @@ class Plane : IComparable<Plane>
 
     internal sbyte Project;
 
-    internal Plane(ReadOnlySpan<int> x, ReadOnlySpan<int> z, ReadOnlySpan<int> y, int n, int[] is2, int i3, int i4, int i5, int i6, int i7,
+    internal Plane(ReadOnlySpan<int> x, ReadOnlySpan<int> z, ReadOnlySpan<int> y, int n, Span<int> c, int i3, int i4, int i5, int i6, int i7,
         int i8, int i9, int i10, bool abool, int i11, bool bool12)
     {
         N = n;
@@ -66,10 +66,10 @@ class Plane : IComparable<Plane>
             Oy[i13] = y[i13];
             Oz[i13] = z[i13];
         }
-        Array.Copy(is2, 0, Oc, 0, 3);
+        c.CopyTo(Oc);
         if (i4 == -15)
         {
-            if (is2[0] == 211)
+            if (c[0] == 211)
             {
                 var i15 = (int) (Random.Double() * 40.0 - 20.0);
                 var i16 = (int) (Random.Double() * 40.0 - 20.0);
@@ -80,13 +80,13 @@ class Plane : IComparable<Plane>
                 }
             }
             var i18 = (int) (185.0 + Random.Double() * 20.0);
-            is2[0] = (217 + i18) / 2;
-            if (is2[0] == 211)
+            c[0] = (217 + i18) / 2;
+            if (c[0] == 211)
             {
-                is2[0] = 210;
+                c[0] = 210;
             }
-            is2[1] = (189 + i18) / 2;
-            is2[2] = (132 + i18) / 2;
+            c[1] = (189 + i18) / 2;
+            c[2] = (132 + i18) / 2;
             for (var i19 = 0; i19 < N; i19++)
             {
                 if (Random.Double() > Random.Double())
@@ -103,7 +103,7 @@ class Plane : IComparable<Plane>
                 }
             }
         }
-        if (is2[0] == is2[1] && is2[1] == is2[2])
+        if (c[0] == c[1] && c[1] == c[2])
         {
             Nocol = true;
         }
@@ -111,7 +111,7 @@ class Plane : IComparable<Plane>
         {
             for (var i20 = 0; i20 < 3; i20++)
             {
-                C[i20] = (int) (is2[i20] + is2[i20] * (Medium.Snap[i20] / 100.0F));
+                C[i20] = (int) (c[i20] + c[i20] * (Medium.Snap[i20] / 100.0F));
                 if (C[i20] > 255)
                 {
                     C[i20] = 255;
@@ -139,7 +139,7 @@ class Plane : IComparable<Plane>
         }
         if (i3 == 3)
         {
-            Array.Copy(is2, 0, C, 0, 3);
+            c.CopyTo(C);
         }
         _disline = i9;
         Bfase = i10;
@@ -431,83 +431,79 @@ class Plane : IComparable<Plane>
             return;
         }
 
-        var f = (_projf / _deltaf + 0.3f).Cap();
+        var brightness = (_projf / _deltaf + 0.3f).Cap();
 
         if (lowZ && !Solo)
         {
-            var bool113 = false;
-            if (f > 1.0F)
+            var overbright = false;
+            if (brightness > 1.0F)
             {
-                if (f >= 1.27)
+                if (brightness >= 1.27)
                 {
-                    bool113 = true;
+                    overbright = true;
                 }
-                f = 1.0F;
+                brightness = 1.0F;
             }
-            if (bool113)
+            if (overbright)
             {
-                f *= 0.89f;
+                brightness *= 0.89f;
             }
             else
             {
-                f *= 0.86f;
+                brightness *= 0.86f;
             }
-            if (f < 0.37)
+            if (brightness < 0.37)
             {
-                f = 0.37F;
+                brightness = 0.37F;
             }
-            switch (gr)
-            {
-                case -9:
-                    f = 0.7F;
-                    break;
-                case -4:
-                    f = 0.74F;
-                    break;
-            }
+
+            if (gr == -9)
+                brightness = 0.7F;
+            if (gr == -4)
+                brightness = 0.74F;
+
             if (gr != -7 && trk == 0 && bool72)
             {
-                f = 0.32F;
+                brightness = 0.32F;
             }
-            switch (gr)
-            {
-                case -8:
-                case -14:
-                case -15:
-                    f = 1.0F;
-                    break;
-                case -11:
-                case -12:
-                    f = 0.6F;
-                    if (i36 == -1)
-                    {
-                        f = Medium.Cpflik || Medium.Nochekflk && !Medium.Lastcheck ? 1.0F : 0.76F;
-                    }
 
-                    break;
-                case -13 when i36 == -1:
-                    f = Medium.Cpflik ? 0.0F : 0.76F;
-                    break;
-                case -6:
-                    f = 0.62F;
-                    break;
-                case -5:
-                    f = 0.55F;
-                    break;
+            if (gr is -8 or -14 or -15)
+            {
+                brightness = 1.0F;
+            }
+            else if (gr is -11 or -12)
+            {
+                brightness = 0.6F;
+                if (i36 == -1)
+                {
+                    brightness = Medium.Cpflik || Medium.Nochekflk && !Medium.Lastcheck ? 1.0F : 0.76F;
+                }
+            }
+            else if (gr == -13 && i36 == -1)
+            {
+                brightness = Medium.Cpflik ? 0.0F : 0.76F;
+            }
+            else if (gr == -6)
+            {
+                brightness = 0.62F;
+            }
+            else if (gr == -5)
+            {
+                brightness = 0.55F;
             }
         }
         else
         {
-            if (f > 1.0F)
+            if (brightness > 1.0F)
             {
-                f = 1.0F;
+                brightness = 1.0F;
             }
-            if (f < 0.6 || bool72)
+            if (brightness < 0.6 || bool72)
             {
-                f = 0.6F;
+                brightness = 0.6F;
             }
         }
-        CalcColor(last, next, i36, f, bool72, out var r, out var g, out var b);
+        CalcColor(last, next, i36, brightness, bool72, out var r, out var g, out var b);
         G.SetColor(new Color(r, g, b));
         G.SetAntialiasing(false);
         G.FillPolygon(xScreen, yScreen, n);
