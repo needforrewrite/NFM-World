@@ -52,54 +52,54 @@ public class RadParser
 
         else if (line.StartsWith("1stColor("))
         {
-            var color = NewColor3(BracketParser.GetNumbers(line, stackalloc short[3]));
+            var color = Color3.FromSpan(BracketParser.GetNumbers(line, stackalloc short[3]));
             _colors[color] = 0;
         }
 
         else if (line.StartsWith("2ndColor("))
         {
-            var color = NewColor3(BracketParser.GetNumbers(line, stackalloc short[3]));
+            var color = Color3.FromSpan(BracketParser.GetNumbers(line, stackalloc short[3]));
             _colors[color] = 1;
         }
 
         else if (line.StartsWith("3rdColor("))
         {
-            var color = NewColor3(BracketParser.GetNumbers(line, stackalloc short[3]));
+            var color = Color3.FromSpan(BracketParser.GetNumbers(line, stackalloc short[3]));
             _colors[color] = 2;
         }
 
         else if (line.StartsWith("4thColor("))
         {
-            var color = NewColor3(BracketParser.GetNumbers(line, stackalloc short[3]));
+            var color = Color3.FromSpan(BracketParser.GetNumbers(line, stackalloc short[3]));
             _colors[color] = 3;
         }
 
-        else if (line.StartsWith("swits(")) _stats = _stats with { Swits = NewInt3(BracketParser.GetNumbers(line, stackalloc int[3])) };
-        else if (line.StartsWith("acelf(")) _stats = _stats with { Acelf = NewVector3(BracketParser.GetNumbers(line, stackalloc float[3])) };
-        else if (line.StartsWith("handb(")) _stats = _stats with { Handb = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("airs(")) _stats = _stats with { Airs = BracketParser.GetNumbers(line, stackalloc float[1])[0] };
-        else if (line.StartsWith("airc(")) _stats = _stats with { Airc = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("turn(")) _stats = _stats with { Turn = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("grip(")) _stats = _stats with { Grip = BracketParser.GetNumbers(line, stackalloc float[1])[0] };
-        else if (line.StartsWith("bounce(")) _stats = _stats with { Bounce = BracketParser.GetNumbers(line, stackalloc float[1])[0] };
-        else if (line.StartsWith("simag(")) _stats = _stats with { Simag = BracketParser.GetNumbers(line, stackalloc float[1])[0] };
-        else if (line.StartsWith("moment(")) _stats = _stats with { Moment = BracketParser.GetNumbers(line, stackalloc float[1])[0] };
-        else if (line.StartsWith("comprad(")) _stats = _stats with { Comprad = BracketParser.GetNumbers(line, stackalloc float[1])[0] };
-        else if (line.StartsWith("push(")) _stats = _stats with { Push = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("revpush(")) _stats = _stats with { Revpush = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("lift(")) _stats = _stats with { Lift = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("revlift(")) _stats = _stats with { Revlift = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("powerloss(")) _stats = _stats with { Powerloss = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("flipy(")) _stats = _stats with { Flipy = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("msquash(")) _stats = _stats with { Msquash = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("clrad(")) _stats = _stats with { Clrad = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("dammult(")) _stats = _stats with { Dammult = BracketParser.GetNumbers(line, stackalloc float[1])[0] };
-        else if (line.StartsWith("maxmag(")) _stats = _stats with { Maxmag = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-        else if (line.StartsWith("dishandle(")) _stats = _stats with { Dishandle = BracketParser.GetNumbers(line, stackalloc float[1])[0] };
-        else if (line.StartsWith("outdam(")) _stats = _stats with { Outdam = BracketParser.GetNumbers(line, stackalloc float[1])[0] };
-        else if (line.StartsWith("cclass(")) _stats = _stats with { Cclass = BracketParser.GetNumbers(line, stackalloc sbyte[1])[0] };
-        else if (line.StartsWith("name(")) _stats = _stats with { Name = BracketParser.GetStrings(line, 1)[0] };
-        else if (line.StartsWith("enginsignature(")) _stats = _stats with { Enginsignature = BracketParser.GetNumbers(line, stackalloc sbyte[1])[0] };
+        else if (line.StartsWith("swits(")) _stats = _stats with { Swits = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3])) };
+        else if (line.StartsWith("acelf(")) _stats = _stats with { Acelf = Vector3.FromSpan(BracketParser.GetNumbers(line, stackalloc float[3])) };
+        else if (line.StartsWith("handb(")) _stats = _stats with { Handb = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("airs(")) _stats = _stats with { Airs = BracketParser.GetNumber<float>(line) };
+        else if (line.StartsWith("airc(")) _stats = _stats with { Airc = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("turn(")) _stats = _stats with { Turn = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("grip(")) _stats = _stats with { Grip = BracketParser.GetNumber<float>(line) };
+        else if (line.StartsWith("bounce(")) _stats = _stats with { Bounce = BracketParser.GetNumber<float>(line) };
+        else if (line.StartsWith("simag(")) _stats = _stats with { Simag = BracketParser.GetNumber<float>(line) };
+        else if (line.StartsWith("moment(")) _stats = _stats with { Moment = BracketParser.GetNumber<float>(line) };
+        else if (line.StartsWith("comprad(")) _stats = _stats with { Comprad = BracketParser.GetNumber<float>(line) };
+        else if (line.StartsWith("push(")) _stats = _stats with { Push = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("revpush(")) _stats = _stats with { Revpush = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("lift(")) _stats = _stats with { Lift = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("revlift(")) _stats = _stats with { Revlift = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("powerloss(")) _stats = _stats with { Powerloss = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("flipy(")) _stats = _stats with { Flipy = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("msquash(")) _stats = _stats with { Msquash = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("clrad(")) _stats = _stats with { Clrad = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("dammult(")) _stats = _stats with { Dammult = BracketParser.GetNumber<float>(line) };
+        else if (line.StartsWith("maxmag(")) _stats = _stats with { Maxmag = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("dishandle(")) _stats = _stats with { Dishandle = BracketParser.GetNumber<float>(line) };
+        else if (line.StartsWith("outdam(")) _stats = _stats with { Outdam = BracketParser.GetNumber<float>(line) };
+        else if (line.StartsWith("cclass(")) _stats = _stats with { Cclass = BracketParser.GetNumber<sbyte>(line) };
+        else if (line.StartsWith("name(")) _stats = _stats with { Name = BracketParser.GetString(line) };
+        else if (line.StartsWith("enginsignature(")) _stats = _stats with { Enginsignature = BracketParser.GetNumber<sbyte>(line) };
 
         else if (line.StartsWith("w("))
         {
@@ -129,12 +129,12 @@ public class RadParser
             );
         }
 
-        else if (line.StartsWith("div(")) idiv = BracketParser.GetNumbers(line, stackalloc int[1])[0] / 10f;
-        else if (line.StartsWith("idiv(")) idiv = BracketParser.GetNumbers(line, stackalloc int[1])[0] / 100f;
-        else if (line.StartsWith("iwid(")) iwid = BracketParser.GetNumbers(line, stackalloc int[1])[0] / 100f;
-        else if (line.StartsWith("ScaleX(")) scaleX = BracketParser.GetNumbers(line, stackalloc int[1])[0] / 100f;
-        else if (line.StartsWith("ScaleY(")) scaleY = BracketParser.GetNumbers(line, stackalloc int[1])[0] / 100f;
-        else if (line.StartsWith("ScaleZ(")) scaleZ = BracketParser.GetNumbers(line, stackalloc int[1])[0] / 100f;
+        else if (line.StartsWith("div(")) idiv = BracketParser.GetNumber<int>(line) / 10f;
+        else if (line.StartsWith("idiv(")) idiv = BracketParser.GetNumber<int>(line) / 100f;
+        else if (line.StartsWith("iwid(")) iwid = BracketParser.GetNumber<int>(line) / 100f;
+        else if (line.StartsWith("ScaleX(")) scaleX = BracketParser.GetNumber<int>(line) / 100f;
+        else if (line.StartsWith("ScaleY(")) scaleY = BracketParser.GetNumber<int>(line) / 100f;
+        else if (line.StartsWith("ScaleZ(")) scaleZ = BracketParser.GetNumber<int>(line) / 100f;
 
         else if (line.StartsWith("<track>"))
         {
@@ -153,15 +153,15 @@ public class RadParser
         {
             ref var currentBox = ref _boxes.GetValueRef(^1);
             if (line.StartsWith("xy("))
-                currentBox = currentBox with { Xy = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
+                currentBox = currentBox with { Xy = BracketParser.GetNumber<int>(line) };
             else if (line.StartsWith("zy("))
-                currentBox = currentBox with { Zy = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
+                currentBox = currentBox with { Zy = BracketParser.GetNumber<int>(line) };
             else if (line.StartsWith("radx("))
                 currentBox = currentBox with
                 {
                     Radius = currentBox.Radius with
                     {
-                        X = BracketParser.GetNumbers(line, stackalloc int[1])[0] * idiv * iwid * scaleX
+                        X = BracketParser.GetNumber<int>(line) * idiv * iwid * scaleX
                     }
                 };
             else if (line.StartsWith("rady("))
@@ -169,7 +169,7 @@ public class RadParser
                 {
                     Radius = currentBox.Radius with
                     {
-                        Y = BracketParser.GetNumbers(line, stackalloc int[1])[0] * idiv * scaleY
+                        Y = BracketParser.GetNumber<int>(line) * idiv * scaleY
                     }
                 };
             else if (line.StartsWith("radz("))
@@ -177,7 +177,7 @@ public class RadParser
                 {
                     Radius = currentBox.Radius with
                     {
-                        Z = BracketParser.GetNumbers(line, stackalloc int[1])[0] * idiv * scaleZ
+                        Z = BracketParser.GetNumber<int>(line) * idiv * scaleZ
                     }
                 };
             else if (line.StartsWith("tx("))
@@ -185,7 +185,7 @@ public class RadParser
                 {
                     Translation = currentBox.Translation with
                     {
-                        X = BracketParser.GetNumbers(line, stackalloc int[1])[0] * idiv * iwid * scaleX
+                        X = BracketParser.GetNumber<int>(line) * idiv * iwid * scaleX
                     }
                 };
             else if (line.StartsWith("ty("))
@@ -193,7 +193,7 @@ public class RadParser
                 {
                     Translation = currentBox.Translation with
                     {
-                        Y = BracketParser.GetNumbers(line, stackalloc int[1])[0] * idiv * scaleY
+                        Y = BracketParser.GetNumber<int>(line) * idiv * scaleY
                     }
                 };
             else if (line.StartsWith("tz("))
@@ -201,11 +201,11 @@ public class RadParser
                 {
                     Translation = currentBox.Translation with
                     {
-                        Z = BracketParser.GetNumbers(line, stackalloc int[1])[0] * idiv * scaleZ
+                        Z = BracketParser.GetNumber<int>(line) * idiv * scaleZ
                     }
                 };
             else if (line.StartsWith("skid("))
-                currentBox = currentBox with { Skid = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
+                currentBox = currentBox with { Skid = BracketParser.GetNumber<int>(line) };
             else if (line.StartsWith("dam"))
                 currentBox = currentBox with { Damage = 3 };
             else if (line.StartsWith("notwall("))
@@ -214,7 +214,7 @@ public class RadParser
 
         if (line.StartsWith("<p>"))
         {
-            _polys.Add(new Rad3dPoly(new Color3(), null, PolyType.Flat, LineType.Flat, new List<Vector3>(), 0, 0));
+            _polys.Add(new Rad3dPoly(new Color3(), null, PolyType.Flat, LineType.Flat, []));
             _noOutline = false;
         }
 
@@ -223,7 +223,7 @@ public class RadParser
             ref var poly = ref _polys.GetValueRef(^1);
             if (line.StartsWith("c("))
             {
-                var color = NewColor3(BracketParser.GetNumbers(line, stackalloc short[3]));
+                var color = Color3.FromSpan(BracketParser.GetNumbers(line, stackalloc short[3]));
                 poly = poly with { Color = color };
                 if (_colors.TryGetValue(color, out var colNum))
                 {
@@ -237,12 +237,10 @@ public class RadParser
             else if (line.StartsWith("light")) poly = poly with { PolyType = PolyType.Light };
             else if (line.StartsWith("gr(-18)")) poly = poly with { LineType = LineType.Charged };
             else if (line.StartsWith("gr(-13)")) poly = poly with { PolyType = PolyType.Finish };
-            else if (line.StartsWith("gr(")) poly = poly with { Gr = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
-            else if (line.StartsWith("fs(")) poly = poly with { Fs = BracketParser.GetNumbers(line, stackalloc int[1])[0] };
 
             else if (line.StartsWith("p("))
             {
-                var position = NewInt3(BracketParser.GetNumbers(line, stackalloc int[3]));
+                var position = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3]));
                 var transformedPoint = new Vector3(
                     position.X * idiv * iwid * scaleX,
                     position.Y * idiv * scaleY,
@@ -259,21 +257,6 @@ public class RadParser
                 }
             }
         }
-    }
-
-    private static Color3 NewColor3(ReadOnlySpan<short> values)
-    {
-        return new Color3(values[0], values[1], values[2]);
-    }
-
-    private static Vector3 NewVector3(ReadOnlySpan<float> values)
-    {
-        return new Vector3(values[0], values[1], values[2]);
-    }
-
-    private static Int3 NewInt3(ReadOnlySpan<int> values)
-    {
-        return new Int3(values[0], values[1], values[2]);
     }
 }
 
@@ -333,9 +316,7 @@ public readonly record struct Rad3dPoly(
     [property: JsonPropertyName("colnum")] int? ColNum,
     [property: JsonPropertyName("polyType")] PolyType PolyType,
     [property: JsonPropertyName("lineType")] LineType? LineType,
-    [property: JsonPropertyName("p")] List<Vector3> Points,
-    [property: JsonPropertyName("gr")] int Gr,
-    [property: JsonPropertyName("fs")] int Fs
+    [property: JsonPropertyName("p")] List<Vector3> Points
 );
 
 public readonly record struct CarStats

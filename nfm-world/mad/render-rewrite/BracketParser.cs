@@ -1,16 +1,28 @@
 ﻿using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 
 namespace NFMWorld.Mad;
 
 public static class BracketParser
 {
+    private static ReadOnlySpan<char> GetLineSlice(ReadOnlySpan<char> line)
+    {
+        var closingParen = line.IndexOf(')');
+        return line[(line.IndexOf('(') + 1)..(closingParen != -1 ? closingParen : line.Length)];
+    }
+
+    public static T GetNumber<T>(ReadOnlySpan<char> line)
+        where T : INumberBase<T>
+    {
+        return T.Parse(GetLineSlice(line), NumberStyles.Number, CultureInfo.InvariantCulture);
+    }
+    
     public static Span<T> GetNumbers<T>(ReadOnlySpan<char> line, Span<T> n)
         where T : INumberBase<T>
     {
         // Console.WriteLine(line);
-        var closingParen = line.IndexOf(')');
-        var lineSlice = line[(line.IndexOf('(') + 1)..(closingParen != -1 ? closingParen : line.Length)];
+        var lineSlice = GetLineSlice(line);
 
         var i = 0;
         foreach (var range in lineSlice.Split(','))
@@ -18,18 +30,23 @@ public static class BracketParser
             if (i >= n.Length)
                 break;
             // Console.WriteLine($"{i},{lineSlice[range]}");
-            n[i] = T.Parse(lineSlice[range], NumberStyles.Number, null);
+            n[i] = T.Parse(lineSlice[range], NumberStyles.Number, CultureInfo.InvariantCulture);
             i++;
         }
 
         return n[..i];
     }
-    
-    public static string[] GetStrings(ReadOnlySpan<char> line, int? n = null)
-    {
-        var lineSlice = line[(line.IndexOf('(') + 1)..line.IndexOf(')')];
 
-        var strings = new List<string>(n ?? 64);
+    public static string GetString(ReadOnlySpan<char> line)
+    {
+        return new string(GetLineSlice(line));
+    }
+    
+    public static Span<string> GetStrings(ReadOnlySpan<char> line, int? n = null)
+    {
+        var lineSlice = GetLineSlice(line);
+
+        var strings = new List<string>(n ?? 3);
         var i = 0;
         foreach (var range in lineSlice.Split(','))
         {
@@ -37,6 +54,11 @@ public static class BracketParser
                 break;
             strings.Add(new string(lineSlice[range]));
             i++;
+        }
+
+        if (strings.Capacity == strings.Count)
+        {
+            return CollectionsMarshal.AsSpan(strings);
         }
 
         return strings.ToArray();

@@ -35,5 +35,20 @@ public static class Extensions
             => Vector3.RotateAround(in source, in target, in axis, angle.Radians);
         
         public static Vector3 Abs(Vector3 vector) => new(MathF.Abs(vector.X), MathF.Abs(vector.Y), MathF.Abs(vector.Z));
+        
+        public static Vector3 FromSpan(ReadOnlySpan<float> span)
+            => new(span[0], span[1], span[2]);
+    }
+
+    extension(Int3 int3)
+    {
+        public static Int3 FromSpan(ReadOnlySpan<int> span)
+            => new(span[0], span[1], span[2]);
+    }
+
+    extension(Color3 color3)
+    {
+        public static Color3 FromSpan(ReadOnlySpan<short> span)
+            => new(span[0], span[1], span[2]);
     }
 }
