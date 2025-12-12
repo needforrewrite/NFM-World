@@ -20,6 +20,7 @@
       <PackageReference Include="SkiaSharp" Version="3.119.1" />
       <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.1" />
       <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
+      <PackageReference Include="Stride.Core.Mathematics" Version="4.3.0.2507" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="NImpeller">
