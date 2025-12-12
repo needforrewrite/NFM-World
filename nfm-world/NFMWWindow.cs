@@ -361,6 +361,7 @@ public unsafe class Program
         _grContext.ResetContext(GRGlBackendState.All);
         _canvas.Flush();
         
+        // Reset GL state modified by SkiaSharp
         _gl.Disable(EnableCap.Blend);
         // _gl.Disable(EnableCap.VertexProgramPointSize);
         // _gl.BindVertexArray(vertexArrayObject); // Restore default VAO 
