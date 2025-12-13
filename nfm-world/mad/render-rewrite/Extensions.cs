@@ -1,7 +1,10 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Microsoft.Xna.Framework.Graphics;
 using Stride.Core.Mathematics;
+using Color = Microsoft.Xna.Framework.Color;
+using Matrix = Microsoft.Xna.Framework.Matrix;
 using Vector3 = Stride.Core.Mathematics.Vector3;
 
 namespace NFMWorld.Mad;
@@ -29,6 +32,11 @@ public static class Extensions
             => Unsafe.BitCast<float, AngleSingle>(MathUtil.DegreesToRadians(degrees));
     }
 
+    extension(System.Numerics.Vector3 vector3)
+    {
+        public Microsoft.Xna.Framework.Vector3 ToXna() => new(vector3.X, vector3.Y, vector3.Z);
+    }
+
     extension(Vector3 vector3)
     {
         public static Vector3 RotateAround(in Vector3 source, in Vector3 target, in Vector3 axis, AngleSingle angle)
@@ -38,23 +46,8 @@ public static class Extensions
         
         public static Vector3 FromSpan(ReadOnlySpan<float> span)
             => new(span[0], span[1], span[2]);
-
-        public THREE.Vector3 ToTHREE() => new(vector3.X, vector3.Y, vector3.Z);
-    }
-
-    extension(THREE.Vector3 vector3)
-    {
-        public Vector3 ToStride() => new(vector3.X, vector3.Y, vector3.Z);
-    }
-
-    extension(THREE.Euler euler)
-    {
-        public Euler ToMaxine() =>
-            new(
-                -AngleSingle.FromRadians(euler.Y),
-                AngleSingle.FromRadians(euler.X),
-                AngleSingle.FromRadians(euler.Z)
-            ); // TODO is this correct?
+        
+        public Microsoft.Xna.Framework.Vector3 ToXna() => new(vector3.X, vector3.Y, vector3.Z);
     }
 
     extension(Int3 int3)
@@ -83,6 +76,83 @@ public static class Extensions
             return new Color3(r, g, b);
         }
         
-        public THREE.Vector3 ToTHREEVector3() => new(color3[0] / 255.0F, color3[1] / 255.0F, color3[2] / 255.0F);
+        public Color ToXna()
+            =>
+                new(
+                    (byte)Math.Clamp(color3.R, (short)0, (short)255),
+                    (byte)Math.Clamp(color3.G, (short)0, (short)255),
+                    (byte)Math.Clamp(color3.B, (short)0, (short)255)
+                );
+        
+        public Microsoft.Xna.Framework.Vector3 ToXnaVector3()
+            => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
+    }
+
+    extension(Matrix matrix)
+    {
+        public static Matrix CreateFromEuler(Euler euler)
+        {
+            // NFM rotation order: yaw-pitch-roll
+
+            Span<float> te = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ];
+
+            float x = euler.Pitch.Radians, y = -euler.Yaw.Radians, z = euler.Roll.Radians;
+            float a = MathF.Cos(x), b = MathF.Sin(x);
+            float c = MathF.Cos(y), d = MathF.Sin(y);
+            float e = MathF.Cos(z), f = MathF.Sin(z);
+
+            {
+
+                float ce = c * e, cf = c * f, de = d * e, df = d * f;
+
+                te[0] = ce + df * b;
+                te[4] = de * b - cf;
+                te[8] = a * d;
+
+                te[1] = a * f;
+                te[5] = a * e;
+                te[9] = -b;
+
+                te[2] = cf * b - de;
+                te[6] = df + ce * b;
+                te[10] = a * c;
+
+            }
+
+            // bottom row
+            te[3] = 0;
+            te[7] = 0;
+            te[11] = 0;
+
+            // last column
+            te[12] = 0;
+            te[13] = 0;
+            te[14] = 0;
+            te[15] = 1;
+
+            return new Matrix(
+                te[0],
+                te[1],
+                te[2],
+                te[3],
+                te[4],
+                te[5],
+                te[6],
+                te[7],
+                te[8],
+                te[9],
+                te[10],
+                te[11],
+                te[12],
+                te[13],
+                te[14],
+                te[15]
+            );
+        }
     }
 }

@@ -22,4 +22,9 @@ public class Car
     {
         Mad.Drive(Control, Conto);
     }
+
+    public void Render(Camera camera)
+    {
+        Conto.Render(camera);
+    }
 }

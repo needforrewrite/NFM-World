@@ -131,7 +131,6 @@ namespace NFMWorld.Mad
         private static void ResetCar(DevConsole console)
         {
             GameSparker.cars_in_race[GameSparker.playerCarIndex] = new Car(new Stat(GameSparker.playerCarID), GameSparker.playerCarID,  GameSparker.cars[GameSparker.playerCarID], 0, 0);
-            GameSparker.scene.Add(GameSparker.cars_in_race[GameSparker.playerCarIndex].Conto.ThreeObject);
             console.Log("Position reset");
         }
 

@@ -3,48 +3,20 @@ using System.Text;
 using NFMWorld.Mad.Interp;
 using NFMWorld.Util;
 using ImGuiNET;
-using Silk.NET.OpenGLES;
-using Silk.NET.Windowing;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Stride.Core.Mathematics;
-using THREE;
-using Color = THREE.Color;
 using Path = System.IO.Path;
 using Vector3 = Stride.Core.Mathematics.Vector3;
 using NFMWorld.Mad.UI;
 
 namespace NFMWorld.Mad;
 
-public class Object3DCollection : Object3D
-{
-    public Object3DCollection(IEnumerable<Object3D> objects)
-    {
-        foreach (var @object in objects)
-        {
-            Add(@object);
-        }
-    }
-    
-    public Object3DCollection(IEnumerable<IContainsThreeObject> objects)
-    {
-        foreach (var @object in objects)
-        {
-            Add(@object.ThreeObject);
-            @object.ThreeObjectChanged += (t) =>
-            {
-                Remove(t.OldObject);
-                Add(t.NewObject);
-            };
-        }
-    }
-}
-
 public class GameSparker
 {
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
 
-    public static GLRenderer renderer = new();
-    public static Camera camera = new PerspectiveCamera();
-    public static Scene scene = new();
+    public static Camera camera = new();
 
     public static readonly string version = GetVersionString();
 
@@ -345,61 +317,21 @@ public class GameSparker
         return -1;
     }
 
-    public static void Load(IWindow control)
+    public static void Load(Game game)
     {
         timer = new MicroStopwatch();
         timer.Start();
-        
-        renderer.Width = control.Size.X;
-        renderer.Height = control.Size.Y;
-        renderer.Context = control;
-        renderer.gl = GL.GetApi(control);
-        renderer.Init();
-        
-        camera.Fov = 90.0f;
-        camera.Aspect = renderer.Width / (float)renderer.Height;
-        camera.Near = 1f;
-        camera.Far = 1_000_000f;
-        camera.Position.X = 800;
-        camera.Position.Y = 250;
-        camera.Position.Z = 800;
-        camera.Up.Y = -1f;
-        camera.UpdateProjectionMatrix();
-        camera.LookAt(THREE.Vector3.Zero());
-        
-        renderer.SetClearColor(new Color().SetHex(0xEEEEEE), 1);
-        renderer.ShadowMap.Enabled = true;
-        // renderer.ShadowMap.type = Constants.VSMShadowMap;
-
-        light = new DirectionalLight(new Color(1, 1, 1));
-        light.CastShadow = true;
-        light.Position.Set(0, -1000, 0);
-        light.Target.Position.Set(0, 250, 0);
-        light.Shadow.MapSize.Width = 2048; // default
-        light.Shadow.MapSize.Height = 2048; // default
-        light.Shadow.Camera.Near = 50; // default
-        light.Shadow.Camera.Far = 5000000; // default
-        light.Shadow.Camera.Left = -4096;
-        light.Shadow.Camera.CameraRight = 4096;
-        light.Shadow.Camera.Top = 4096;
-        light.Shadow.Camera.Bottom = -4096;
-        light.Shadow.Camera.Up.Y = -1f;
-
-        scene.Add(light);
-
-        var helper = new CameraHelper(light.Shadow.Camera);
-        scene.Add(helper);
         
         cars = [];
         stage_parts = [];
         placed_stage_elements = [];
 
         FileUtil.LoadFiles("./data/models/cars", CarRads, (ais, id) => {
-            cars[id] = new Mesh(Encoding.UTF8.GetString(ais));
+            cars[id] = new Mesh(game.GraphicsDevice, Encoding.UTF8.GetString(ais));
         });
 
         FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id) => {
-            stage_parts[id] = new Mesh(Encoding.UTF8.GetString(ais));
+            stage_parts[id] = new Mesh(game.GraphicsDevice, Encoding.UTF8.GetString(ais));
         });
 
         // init menu
@@ -438,9 +370,6 @@ public class GameSparker
         {
             Console.WriteLine($"car {new Stat(i).Names}: {new Stat(i).Score:0}");
         }
-        
-        scene.Add(cars_in_race[playerCarIndex].Conto.ThreeObject);
-        scene.Add(new Object3DCollection(placed_stage_elements));
         
         Console.WriteLine("Game started!");
     }
@@ -906,7 +835,18 @@ public class GameSparker
             return;
         }
 
-        renderer.Render(scene, camera);
+        camera.OnBeforeRender();
+        
+        foreach (var element in placed_stage_elements)
+        {
+            element.Render(camera);
+        }
+        
+        foreach (var car in cars_in_race)
+        {
+            car.Render(camera);
+        }
+        
         FrameTrace.RenderMessages();
     }
 
