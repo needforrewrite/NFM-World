@@ -4,52 +4,11 @@ using System.Runtime.InteropServices;
 using HoleyDiver;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Util;
-using Stride.Core.Mathematics;
 using Color = Stride.Core.Mathematics.Color;
 using Matrix = Microsoft.Xna.Framework.Matrix;
 using Vector3 = Stride.Core.Mathematics.Vector3;
 
 namespace NFMWorld.Mad;
-
-public class Transform
-{
-    public virtual Vector3 Position { get; set; } = Vector3.Zero;
-    public virtual Euler Rotation { get; set; } = new();
-    
-    public virtual void GameTick()
-    {
-    }
-}
-
-public class FixHoop(Mesh baseMesh, Vector3 position, Euler rotation) : Mesh(baseMesh, position, rotation)
-{
-    public bool Rotated;
-    
-    public override void GameTick()
-    {
-        if (!Rotated || Rotation.Xz != AngleSingle.ZeroAngle)
-        {
-            var xy = Rotation.Xy.Degrees;
-            xy += 11 * GameSparker.PHYSICS_MULTIPLIER;
-            if (xy > 360)
-            {
-                xy -= 360;
-            }
-            Rotation = Rotation with { Xy = AngleSingle.FromDegrees(xy) };
-        }
-        else
-        {
-            var zy = Rotation.Zy.Degrees;
-            zy += 11 * GameSparker.PHYSICS_MULTIPLIER;
-            if (zy > 360)
-            {
-                zy -= 360;
-            }
-            Rotation = Rotation with { Zy = AngleSingle.FromDegrees(zy) };
-        }
-    }
-}
 
 public class Mesh : Transform
 {
@@ -67,8 +26,13 @@ public class Mesh : Transform
     private readonly GraphicsDevice _graphicsDevice;
 
     private VertexBuffer _vertexBuffer;
-    private Effect _material;
+    private PolyEffect _material;
     private int _triangleCount;
+
+    private LineEffect _lineMaterial;    
+    private VertexBuffer? _lineVertexBuffer;
+    private IndexBuffer? _lineIndexBuffer;
+    private int? _lineTriangleCount;
 
     public Euler TurningWheelAngle { get; set; }
 
@@ -81,10 +45,13 @@ public class Mesh : Transform
         Rims = rad.Rims;
         Boxes = rad.Boxes;
         Polys = rad.Polys;
+        _material = new PolyEffect(Program._polyShader);
+        _lineMaterial = new LineEffect(Program._lineShader);
 
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
         _graphicsDevice = graphicsDevice;
         BuildMesh(graphicsDevice);
+        BuildLineMesh(graphicsDevice);
     }
     
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -97,8 +64,11 @@ public class Mesh : Transform
         Polys = baseMesh.Polys;
         GroundAt = baseMesh.GroundAt;
         _graphicsDevice = baseMesh._graphicsDevice;
+        _material = baseMesh._material;
+        _lineMaterial = baseMesh._lineMaterial;
 
         BuildMesh(_graphicsDevice);
+        BuildLineMesh(_graphicsDevice);
         Position = position;
         Rotation = rotation;
     }
@@ -119,7 +89,7 @@ public class Mesh : Transform
                 centroid += point;
             }
             centroid /= poly.Points.Length;
-        
+
             for (var index = 0; index < result.Triangles.Count; index += 3)
             {
                 var i0 = result.Triangles[index];
@@ -139,13 +109,102 @@ public class Mesh : Transform
         }
         _triangleCount /= 3;
 
-        var vertexBuffer = new VertexBuffer(graphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, _triangleCount * 3, BufferUsage.None);
+        var vertexBuffer = new VertexBuffer(graphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
 
         vertexBuffer.SetData(data.ToArray());
 
         _vertexBuffer = vertexBuffer;
+    }
+    
+    private struct LineEqualityComparer : IEqualityComparer<(Vector3 point0, Vector3 point1)>
+    {
+        public static LineEqualityComparer Instance { get; } = new();
 
-        _material = Program._polyShader;
+        public bool Equals((Vector3 point0, Vector3 point1) x, (Vector3 point0, Vector3 point1) y)
+        {
+            return (x.point0 == y.point0 && x.point1 == y.point1) ||
+                   (x.point0 == y.point1 && x.point1 == y.point0);
+        }
+
+        public int GetHashCode((Vector3 point0, Vector3 point1) obj)
+        {
+            return obj.point0.GetHashCode() ^ obj.point1.GetHashCode();
+        }
+    }
+
+    private void BuildLineMesh(GraphicsDevice graphicsDevice)
+    {
+        var lines = new OrderedDictionary<(Vector3 point0, Vector3 point1), Rad3dPoly>(LineEqualityComparer.Instance);
+        
+        foreach (var poly in Polys)
+        {
+            if (poly.LineType == null) continue;
+            
+            for (var i = 0; i < poly.Points.Length; ++i)
+            {
+                var p0 = poly.Points[i];
+                var p1 = poly.Points[(i + 1) % poly.Points.Length];
+                lines.TryAdd((p0, p1), poly);
+            }
+        }
+
+        if (lines.Count == 0) return;
+
+        var mesh = new GoodLinesMesh();
+        mesh.SetLinesFromPoints(lines.Keys);
+
+        var data = new VertexPositionNormalColorCentroidPrevNextOrientation[lines.Count * 4];
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var poly = lines.GetAt(i).Value;
+            var color = (poly.Color - new Color3(10, 10, 10)).ToXna();
+            data[(i * 4) + 0] = new VertexPositionNormalColorCentroidPrevNextOrientation(
+                mesh.Vertices[(i * 4) + 0].ToXna(),
+                Microsoft.Xna.Framework.Vector3.Zero, // todo
+                Microsoft.Xna.Framework.Vector3.Zero, // todo
+                mesh.Prevs[(i * 4) + 0].ToXna(),
+                mesh.Nexts[(i * 4) + 0].ToXna(),
+                mesh.Data[(i * 4) + 0].ToXna(),
+                color
+            );
+            data[(i * 4) + 1] = new VertexPositionNormalColorCentroidPrevNextOrientation(
+                mesh.Vertices[(i * 4) + 1].ToXna(),
+                Microsoft.Xna.Framework.Vector3.Zero, // todo
+                Microsoft.Xna.Framework.Vector3.Zero, // todo
+                mesh.Prevs[(i * 4) + 1].ToXna(),
+                mesh.Nexts[(i * 4) + 1].ToXna(),
+                mesh.Data[(i * 4) + 1].ToXna(),
+                color
+            );
+            data[(i * 4) + 2] = new VertexPositionNormalColorCentroidPrevNextOrientation(
+                mesh.Vertices[(i * 4) + 2].ToXna(),
+                Microsoft.Xna.Framework.Vector3.Zero, // todo
+                Microsoft.Xna.Framework.Vector3.Zero, // todo
+                mesh.Prevs[(i * 4) + 2].ToXna(),
+                mesh.Nexts[(i * 4) + 2].ToXna(),
+                mesh.Data[(i * 4) + 2].ToXna(),
+                color
+            );
+            data[(i * 4) + 3] = new VertexPositionNormalColorCentroidPrevNextOrientation(
+                mesh.Vertices[(i * 4) + 3].ToXna(),
+                Microsoft.Xna.Framework.Vector3.Zero, // todo
+                Microsoft.Xna.Framework.Vector3.Zero, // todo
+                mesh.Prevs[(i * 4) + 3].ToXna(),
+                mesh.Nexts[(i * 4) + 3].ToXna(),
+                mesh.Data[(i * 4) + 3].ToXna(),
+                color
+            );
+        }
+        
+        var vertexBuffer = new VertexBuffer(graphicsDevice, VertexPositionNormalColorCentroidPrevNextOrientation.VertexDeclaration, data.Length, BufferUsage.None);
+
+        vertexBuffer.SetData(data.ToArray());
+
+        _lineVertexBuffer = vertexBuffer;
+        var indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.SixteenBits, mesh.Triangles.Length, BufferUsage.None);
+        indexBuffer.SetData(mesh.Triangles);
+        _lineIndexBuffer = indexBuffer;
+        _lineTriangleCount = mesh.Triangles.Length / 3;
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -154,7 +213,8 @@ public class Mesh : Transform
         Microsoft.Xna.Framework.Vector3 Normal,
         Microsoft.Xna.Framework.Vector3 Centroid,
         Microsoft.Xna.Framework.Color Color)
-    {  /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />
+    {
+        /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />
         public static readonly VertexDeclaration VertexDeclaration = new([
             new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
             new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
@@ -163,50 +223,80 @@ public class Mesh : Transform
         ]);
     }
 
+    public readonly record struct VertexPositionNormalColorCentroidPrevNextOrientation(
+        Microsoft.Xna.Framework.Vector3 Position,
+        Microsoft.Xna.Framework.Vector3 Normal,
+        Microsoft.Xna.Framework.Vector3 Centroid,
+        Microsoft.Xna.Framework.Vector3 Prev,
+        Microsoft.Xna.Framework.Vector3 Next,
+        Microsoft.Xna.Framework.Vector2 Orientation,
+        Microsoft.Xna.Framework.Color Color)
+    {
+        /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />
+        public static readonly VertexDeclaration VertexDeclaration = new([
+            new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
+            new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
+            new VertexElement(24, VertexElementFormat.Vector3, VertexElementUsage.Position, 1),
+            new VertexElement(36, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 1),
+            new VertexElement(48, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 2),
+            new VertexElement(60, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 3),
+            new VertexElement(68, VertexElementFormat.Color, VertexElementUsage.Color, 0),
+        ]);
+    }
+
     public virtual void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
     {
         var matrixWorld = Matrix.CreateFromEuler(Rotation) * Matrix.CreateTranslation(Position.ToXna());
 
+        RenderPolygons(camera, lightCamera, isCreateShadowMap, matrixWorld);
+        RenderLines(camera, lightCamera, isCreateShadowMap, matrixWorld);
+    }
+
+    private void RenderPolygons(Camera camera, Camera? lightCamera, bool isCreateShadowMap, Matrix matrixWorld)
+    {
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
         
         // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.Parameters["World"]?.SetValue(matrixWorld);
-        _material.Parameters["WorldInverseTranspose"]?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
-        _material.Parameters["View"]?.SetValue(camera.ViewMatrix);
-        _material.Parameters["Projection"]?.SetValue(camera.ProjectionMatrix);
-        _material.Parameters["WorldView"]?.SetValue(matrixWorld * camera.ViewMatrix);
-        _material.Parameters["WorldViewProj"]?.SetValue(matrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
-        _material.Parameters["CameraPosition"]?.SetValue(camera.Position.ToXna());
-        _material.Parameters["SnapColor"]?.SetValue(World.Snap.ToXnaVector3());
-        _material.Parameters["IsFullbright"]?.SetValue(false);
-        _material.Parameters["UseBaseColor"]?.SetValue(false);
-        _material.Parameters["BaseColor"]?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
-        _material.Parameters["LightDirection"]?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 1, 0));
-        _material.Parameters["FogColor"]?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
-        _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
-        _material.Parameters["FogDensity"]?.SetValue(0.857f);
-        _material.Parameters["EnvironmentLight"]?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
-        _material.Parameters["DepthBias"]?.SetValue(0.00002f);
+        _material.World?.SetValue(matrixWorld);
+        _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
+        _material.SnapColor?.SetValue(World.Snap.ToXnaVector3());
+        _material.IsFullbright?.SetValue(false);
+        _material.UseBaseColor?.SetValue(false);
+        _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
+        _material.LightDirection?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 1, 0));
+        _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
+        _material.FogDistance?.SetValue(World.FadeFrom);
+        _material.FogDensity?.SetValue(0.857f);
+        _material.EnvironmentLight?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
+        _material.DepthBias?.SetValue(0.00002f);
 
         if (isCreateShadowMap)
         {
-            _material.Parameters["View"]?.SetValue(lightCamera!.ViewMatrix);
-            _material.Parameters["Projection"]?.SetValue(lightCamera!.ProjectionMatrix);
-            _material.Parameters["WorldView"]?.SetValue(matrixWorld * lightCamera!.ViewMatrix);
-            _material.Parameters["WorldViewProj"]?.SetValue(matrixWorld * lightCamera!.ViewMatrix * lightCamera.ProjectionMatrix);
-            _material.Parameters["CameraPosition"]?.SetValue(lightCamera!.Position.ToXna());
+            _material.View?.SetValue(lightCamera!.ViewMatrix);
+            _material.Projection?.SetValue(lightCamera!.ProjectionMatrix);
+            _material.WorldView?.SetValue(matrixWorld * lightCamera!.ViewMatrix);
+            _material.WorldViewProj?.SetValue(matrixWorld * lightCamera!.ViewMatrix * lightCamera.ProjectionMatrix);
+            _material.CameraPosition?.SetValue(lightCamera!.Position.ToXna());
+        }
+        else
+        {
+            _material.View?.SetValue(camera.ViewMatrix);
+            _material.Projection?.SetValue(camera.ProjectionMatrix);
+            _material.WorldView?.SetValue(matrixWorld * camera.ViewMatrix);
+            _material.WorldViewProj?.SetValue(matrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
+            _material.CameraPosition?.SetValue(camera.Position.ToXna());
         }
 
         if (lightCamera != null)
         {
-            _material.Parameters["LightViewProj"]?.SetValue(lightCamera.ViewProjectionMatrix);
+            _material.LightViewProj?.SetValue(lightCamera.ViewProjectionMatrix);
         }
 
         _material.CurrentTechnique = isCreateShadowMap ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
         if (!isCreateShadowMap)
         {
-            _material.Parameters["ShadowMap"]?.SetValue(Program.shadowRenderTarget);
+            _material.ShadowMap?.SetValue(Program.shadowRenderTarget);
         }
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
@@ -215,6 +305,39 @@ public class Mesh : Transform
             _graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, _triangleCount);
         }
         
+        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+    }
+
+    private void RenderLines(Camera camera, Camera? lightCamera, bool isCreateShadowMap, Matrix matrixWorld)
+    {
+        if (isCreateShadowMap) return; // no lines in shadow map
+        if (_lineVertexBuffer == null) return; // no lines to render
+
+        _graphicsDevice.SetVertexBuffer(_lineVertexBuffer);
+        _graphicsDevice.Indices = _lineIndexBuffer;
+        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
+        
+        _lineMaterial.WorldViewProj?.SetValue(matrixWorld * lightCamera!.ViewMatrix * lightCamera.ProjectionMatrix);
+        _lineMaterial.ScreenParams?.SetValue(new Vector4(
+            camera.Width,
+            camera.Height,
+            1.0f + 1.0f / camera.Width,
+            1.0f + 1.0f / camera.Height
+        ));
+        _lineMaterial.Thickness?.SetValue(1f);
+        _lineMaterial.MiterThreshold?.SetValue(0.8f);
+        _lineMaterial.IsFullbright?.SetValue(false);
+        _lineMaterial.UseBaseColor?.SetValue(true);
+        _lineMaterial.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
+        _lineMaterial.SnapColor?.SetValue(World.Snap.ToXnaVector3());
+        foreach (var pass in _lineMaterial.CurrentTechnique.Passes)
+        {
+            pass.Apply();
+    
+            _graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, _lineTriangleCount!.Value);
+        }
+
+        _graphicsDevice.Indices = null;
         _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
     }
 
@@ -442,134 +565,4 @@ public class Mesh : Transform
     public sealed override Vector3 Position { get; set; }
 
     public sealed override Euler Rotation { get; set; }
-}
-
-public abstract class Camera
-{
-    public int Width { get; set; } = 1280;
-    public int Height { get; set; } = 720;
-    public float Near { get; set; } = 50f;
-    public float Far { get; set; } = 1_000_000f;
-    
-    public Vector3 Position { get; set; } = Vector3.Zero;
-    public Vector3 LookAt { get; set; } = Vector3.UnitZ;
-    public Vector3 Up  { get; set; } = -Vector3.UnitY;
-
-    public Microsoft.Xna.Framework.Matrix ViewMatrix { get; protected set; }
-
-    public Microsoft.Xna.Framework.Matrix ProjectionMatrix { get; protected set; }
-
-    public Microsoft.Xna.Framework.Matrix ViewProjectionMatrix { get; protected set; }
-
-    public abstract void OnBeforeRender();
-}
-
-public class OrthoCamera : Camera
-{
-    public override void OnBeforeRender()
-    {
-        ProjectionMatrix = Matrix.CreateOrthographic(Width, Height, Near, Far);
-        ViewMatrix = Matrix.CreateLookAt(Position.ToXna(), LookAt.ToXna(), Up.ToXna());
-        ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
-    }
-}
-
-public class PerspectiveCamera : Camera
-{
-    public float Fov { get; set; } = 90f;
-    
-    public override void OnBeforeRender()
-    {
-        ProjectionMatrix = Microsoft.Xna.Framework.Matrix.CreatePerspectiveFieldOfView(MathUtil.DegreesToRadians(Fov), Width / (float)Height, Near, Far);
-        ViewMatrix = Microsoft.Xna.Framework.Matrix.CreateLookAt(Position.ToXna(), LookAt.ToXna(), Up.ToXna());
-        ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
-    }
-}
-
-public class FollowCamera
-{
-    public int FollowYOffset = 0;
-
-    private float _bcxz;
-    private Euler _angle;
-    public int FollowZOffset = 0;
-
-    public void Follow(PerspectiveCamera camera, Mesh mesh, float cxz, int lookback)
-    {
-        // x: yaw = xz
-        // y: pitch = zy
-        // z: roll = xy
-        _angle.Pitch = AngleSingle.FromDegrees(10);
-        var i28 = 2 + Math.Abs(_bcxz) / 4;
-        if (i28 > 20)
-        {
-            i28 = 20;
-        }
-        if (lookback != 0)
-        {
-            if (lookback == 1)
-            {
-                if (_bcxz < 180)
-                {
-                    _bcxz += i28;
-                }
-                if (_bcxz > 180)
-                {
-                    _bcxz = 180;
-                }
-            }
-            if (lookback == -1)
-            {
-                if (_bcxz > -180)
-                {
-                    _bcxz -= i28;
-                }
-                if (_bcxz < -180)
-                {
-                    _bcxz = -180;
-                }
-            }
-        }
-        else if (Math.Abs(_bcxz) > i28)
-        {
-            if (_bcxz > 0)
-            {
-                _bcxz -= i28;
-            }
-            else
-            {
-                _bcxz += i28;
-            }
-        }
-        else
-        {
-            _bcxz = 0;
-        }
-        cxz += _bcxz;
-        _angle.Yaw = AngleSingle.FromDegrees(-cxz);
-
-        camera.Position = camera.Position with
-        {
-            X = mesh.Position.X + (800 * UMath.Sin(cxz)),
-            Z = mesh.Position.Z - ((800 + FollowZOffset) * UMath.Cos(cxz)),
-            Y = mesh.Position.Y - 250 - FollowYOffset,
-        };
-        
-        // Calculate the look direction by rotating the forward vector
-        var lookDirection = (_angle * Vector3.UnitZ) * 100;
-        // LookAt should be a target point, not a direction - add direction to position
-        var lookAtPoint = camera.Position + lookDirection;
-        camera.LookAt = lookAtPoint;
-    }
-}
-
-public static class World
-{
-    public static int FadeFrom;
-    public static float Density;
-    public static float BlackPoint = 0.37f;
-    public static float WhitePoint = 0.63f;
-    public static int Ground = 250;
-    public static Color3 Snap;
-    public static Color3 Fog;
 }

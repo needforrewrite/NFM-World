@@ -455,4 +455,29 @@ public readonly record struct Color3(
     public static implicit operator ColorBGRA(Color3 color) => new(color.R, color.G, color.B, 255);
     public static explicit operator Color3(Color color) => new(color.R, color.G, color.B);
     public static explicit operator Color3(ColorBGRA color) => new(color.R, color.G, color.B);
+    
+    public static Color3 operator +(Color3 a, Color3 b)
+        => new(
+            (short)(a.R + b.R),
+            (short)(a.G + b.G),
+            (short)(a.B + b.B)
+        );
+    public static Color3 operator *(Color3 a, float b)
+        => new(
+            (short)(a.R * b),
+            (short)(a.G * b),
+            (short)(a.B * b)
+        );
+    public static Color3 operator /(Color3 a, float b)
+        => new(
+            (short)(a.R / b),
+            (short)(a.G / b),
+            (short)(a.B / b)
+        );
+    public static Color3 operator -(Color3 a, Color3 b)
+        => new(
+            (short)(a.R - b.R),
+            (short)(a.G - b.G),
+            (short)(a.B - b.B)
+        );
 }

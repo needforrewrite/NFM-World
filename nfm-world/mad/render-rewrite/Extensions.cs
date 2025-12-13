@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Stride.Core.Mathematics;
 using Color = Microsoft.Xna.Framework.Color;
 using Matrix = Microsoft.Xna.Framework.Matrix;
+using Vector2 = Stride.Core.Mathematics.Vector2;
 using Vector3 = Stride.Core.Mathematics.Vector3;
 
 namespace NFMWorld.Mad;
@@ -83,7 +84,7 @@ public static class Extensions
                     (byte)Math.Clamp(color3.G, (short)0, (short)255),
                     (byte)Math.Clamp(color3.B, (short)0, (short)255)
                 );
-        
+
         public Microsoft.Xna.Framework.Vector3 ToXnaVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
     }
@@ -154,5 +155,11 @@ public static class Extensions
                 te[15]
             );
         }
+    }
+
+    extension(Vector2 vector2)
+    {
+        public Microsoft.Xna.Framework.Vector2 ToXna()
+            => new(vector2.X, vector2.Y);
     }
 }

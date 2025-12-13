@@ -25,6 +25,7 @@ public unsafe class Program : Game
     private GraphicsDeviceManager _graphics;
     public static SpriteBatch _spriteBatch { get; private set; }
     public static Effect _polyShader { get; private set; }
+    public static Effect _lineShader { get; private set; }
     public static RenderTarget2D shadowRenderTarget { get; private set; }
     private ImGuiRenderer _imguiRenderer;
 
@@ -208,18 +209,19 @@ public unsafe class Program : Game
         oldKeyState = Keyboard.GetState();
         oldMouseState = Mouse.GetState();
         
-        var originalOut = Console.Out;
-        GameSparker.Writer = new DevConsoleWriter(GameSparker.devConsole, originalOut);
-        Console.SetOut(GameSparker.Writer);
-        GameSparker.Load(this);
-        
         base.Initialize();
     }
 
     protected override void LoadContent()
     {
         _polyShader = Content.Load<Effect>("Poly");
+        _lineShader = Content.Load<Effect>("Outline");
         
+        var originalOut = Console.Out;
+        GameSparker.Writer = new DevConsoleWriter(GameSparker.devConsole, originalOut);
+        Console.SetOut(GameSparker.Writer);
+        GameSparker.Load(this);
+
         // Create floating point render target
         shadowRenderTarget = new RenderTarget2D(
             GraphicsDevice,
