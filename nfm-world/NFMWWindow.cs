@@ -30,6 +30,7 @@ public unsafe class Program : Game
     private int _lastTickTime;
     private KeyboardState oldKeyState;
     private MouseState oldMouseState;
+    private MonoGameSkia _skia;
 
     private static bool loaded;
     private const int FrameDelay = (int) (1000 / 21.3f);
@@ -171,6 +172,8 @@ public unsafe class Program : Game
         _graphics.PreferredBackBufferWidth = 1280;
         _graphics.PreferredBackBufferHeight = 720;
         _graphics.ApplyChanges();
+        
+        _skia = new MonoGameSkia(GraphicsDevice);
     }
 
     protected override void Update(GameTime gameTime)
@@ -195,8 +198,6 @@ public unsafe class Program : Game
     protected override void Initialize()
     {
         base.Initialize();
-        
-        IBackend.Backend = new DummyBackend(); // TODO
 
 #if USE_BASS
         Bass.Init();
@@ -292,6 +293,8 @@ public unsafe class Program : Game
             G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
             G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
         }
+        
+        _skia.Render();
         
         // // Render ImGui
         // _imguiController?.Update((float)delta);

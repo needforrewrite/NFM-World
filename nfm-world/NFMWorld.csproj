@@ -32,6 +32,8 @@
       <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
       <PackageReference Include="ManagedBass" Version="4.0.1" />
       <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
+      <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
+      <PackageReference Include="SkiaSharp" Version="3.119.2-preview.1" />
       <PackageReference Include="Stride.Core.Mathematics" Version="4.3.0.2507" />
 
       <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
