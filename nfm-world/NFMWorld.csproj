@@ -34,6 +34,7 @@
       <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
       <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
       <PackageReference Include="SkiaSharp" Version="3.119.2-preview.1" />
+      <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.2-preview.1" />
       <PackageReference Include="Stride.Core.Mathematics" Version="4.3.0.2507" />
 
       <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
@@ -44,4 +45,13 @@
     <ProjectReference Include="..\MonoGame.ImGuiNet\MonoGame.ImGuiNet\Monogame.ImGuiNet.csproj" />
   </ItemGroup>
 
+    <!-- windows builds -->
+    <Target Name="CopyCustomContentWindows" AfterTargets="AfterBuild" Condition="'$(OS)' == 'Windows_NT'">
+        <Copy SourceFiles="skiadriver/bass.dll" DestinationFolder="$(OutDir)" />
+    </Target>
+
+    <!-- linux builds -->
+    <Target Name="CopyCustomContentLinux" AfterTargets="AfterBuild" Condition="'$(OS)' != 'Windows_NT'">
+        <Copy SourceFiles="skiadriver/libbass.so" DestinationFolder="$(OutDir)" />
+    </Target>
 </Project>
