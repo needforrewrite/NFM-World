@@ -175,7 +175,8 @@ public unsafe class Program : Game
         _graphics.PreferredBackBufferHeight = 720;
         _graphics.ApplyChanges();
         
-        _skia = new MonoGameSkia(GraphicsDevice);
+        // _skia = new MonoGameSkia(GraphicsDevice);
+        IBackend.Backend = new DummyBackend();
     }
 
     protected override void Update(GameTime gameTime)
@@ -396,7 +397,7 @@ public unsafe class Program : Game
             G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
         }
         
-        _skia.Render();
+        // _skia.Render();
         
         // // Render ImGui
         _imguiRenderer.BeginLayout(gameTime);
