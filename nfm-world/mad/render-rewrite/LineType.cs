@@ -2,5 +2,5 @@
 
 public enum LineType
 {
-    Flat, Charged
+    Flat, Charged, Colored
 }

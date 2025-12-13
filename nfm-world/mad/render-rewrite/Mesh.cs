@@ -145,6 +145,8 @@ public class Mesh : Transform
             var poly = line.Value.Poly;
             var centroid = line.Value.Centroid;
             var normal = line.Value.Normal;
+            var color = poly.LineType == LineType.Colored ? (poly.Color - new Color3(10, 10, 10)).ToXna() : Microsoft.Xna.Framework.Color.Black;            
+            
             var lineDir = Vector3.Normalize(p1 - p0);
             var up = Vector3.UnitY;
             if (Vector3.Dot(lineDir, up) > 0.99f)
@@ -163,14 +165,14 @@ public class Mesh : Transform
             var v6 = p1 + right + up;
             var v7 = p1 - right + up;
             var baseIndex = data.Count;
-            data.Add(new VertexPositionNormalColorCentroid(v0.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
-            data.Add(new VertexPositionNormalColorCentroid(v1.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
-            data.Add(new VertexPositionNormalColorCentroid(v2.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
-            data.Add(new VertexPositionNormalColorCentroid(v3.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
-            data.Add(new VertexPositionNormalColorCentroid(v4.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
-            data.Add(new VertexPositionNormalColorCentroid(v5.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
-            data.Add(new VertexPositionNormalColorCentroid(v6.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
-            data.Add(new VertexPositionNormalColorCentroid(v7.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+            data.Add(new VertexPositionNormalColorCentroid(v0.ToXna(), normal.ToXna(), centroid.ToXna(), color));
+            data.Add(new VertexPositionNormalColorCentroid(v1.ToXna(), normal.ToXna(), centroid.ToXna(), color));
+            data.Add(new VertexPositionNormalColorCentroid(v2.ToXna(), normal.ToXna(), centroid.ToXna(), color));
+            data.Add(new VertexPositionNormalColorCentroid(v3.ToXna(), normal.ToXna(), centroid.ToXna(), color));
+            data.Add(new VertexPositionNormalColorCentroid(v4.ToXna(), normal.ToXna(), centroid.ToXna(), color));
+            data.Add(new VertexPositionNormalColorCentroid(v5.ToXna(), normal.ToXna(), centroid.ToXna(), color));
+            data.Add(new VertexPositionNormalColorCentroid(v6.ToXna(), normal.ToXna(), centroid.ToXna(), color));
+            data.Add(new VertexPositionNormalColorCentroid(v7.ToXna(), normal.ToXna(), centroid.ToXna(), color));
             // Two triangles per quad face
             indices.AddRange(
                 baseIndex, baseIndex + 1, baseIndex + 2,
@@ -309,8 +311,8 @@ public class Mesh : Transform
         _material.World?.SetValue(matrixWorld);
         _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
         _material.SnapColor?.SetValue(World.Snap.ToXnaVector3());
-        _material.IsFullbright?.SetValue(true);
-        _material.UseBaseColor?.SetValue(true);
+        _material.IsFullbright?.SetValue(false);
+        _material.UseBaseColor?.SetValue(false);
         _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
         _material.LightDirection?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 1, 0));
         _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());

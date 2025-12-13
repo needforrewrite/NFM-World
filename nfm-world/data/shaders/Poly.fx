@@ -73,8 +73,6 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
           diff = abs(dot(n, LightDirection));
         }
 		color = (EnvironmentLight.x + EnvironmentLight.y * diff) * color;
-	} else {
-		color = BaseColor;
 	}
 
 	// Apply snap

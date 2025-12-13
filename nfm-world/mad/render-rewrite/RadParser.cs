@@ -21,6 +21,7 @@ public class RadParser
     private List<Rad3dBoxDef> _boxes = new();
     private List<Rad3dPoly> _polys = new();
     private List<Vector3> _points = new();
+    private bool _road;
 
     private RadParser()
     {
@@ -50,6 +51,8 @@ public class RadParser
     private void ParseLine(ReadOnlySpan<char> line)
     {
         if (line.StartsWith("stonecold") || line.StartsWith("newstone")) _stonecold = true;
+        else if (line.StartsWith("road")) _road = true;
+        else if (line.StartsWith("notroad")) _road = false;
 
         else if (line.StartsWith("1stColor("))
         {
@@ -262,7 +265,14 @@ public class RadParser
                 _points.Clear();
                 if (_stonecold || _noOutline)
                 {
-                    poly = poly with { LineType = null };
+                    if (_road)
+                    {
+                        poly = poly with { LineType = LineType.Colored };
+                    }
+                    else
+                    {
+                        poly = poly with { LineType = null };
+                    }
                 }
             }
         }
