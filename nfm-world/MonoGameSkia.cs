@@ -32,7 +32,11 @@ public class MonoGameSkia
         var getProcAddressDelegate = (Delegate)getProcAddressField.GetValue(null)!;
         var GetProcAddress = Marshal.GetDelegateForFunctionPointer<d_sdl_gl_getprocaddress>(Marshal.GetFunctionPointerForDelegate(getProcAddressDelegate));
         
-        _grgInterface = GRGlInterface.CreateOpenGl(e => GetProcAddress(e));
+        _grgInterface = GRGlInterface.CreateOpenGl(e =>
+        {
+            Console.WriteLine(e);
+            return GetProcAddress(e);
+        });
         _grgInterface.Validate();
         _grContext = GRContext.CreateGl(_grgInterface);
         _renderTarget = new GRBackendRenderTarget(graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 8, new GRGlFramebufferInfo(0, (uint)0x8058));
