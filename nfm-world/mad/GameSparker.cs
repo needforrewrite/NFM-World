@@ -14,6 +14,8 @@ namespace NFMWorld.Mad;
 
 public class GameSparker
 {
+    private static SpriteBatch _spriteBatch;
+    private static GraphicsDevice _graphicsDevice;
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
 
     public static Camera camera = new();
@@ -319,6 +321,8 @@ public class GameSparker
 
     public static void Load(Game game)
     {
+        _graphicsDevice = game.GraphicsDevice;
+        _spriteBatch = new SpriteBatch(game.GraphicsDevice);
         timer = new MicroStopwatch();
         timer.Start();
         
@@ -837,17 +841,56 @@ public class GameSparker
 
         camera.OnBeforeRender();
         
-        foreach (var element in placed_stage_elements)
-        {
-            element.Render(camera);
-        }
+        _graphicsDevice.BlendState = BlendState.Opaque;
+        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+
+        // CREATE SHADOW MAP
         
+        // Set our render target to our floating point render target
+        _graphicsDevice.SetRenderTarget(Program.shadowRenderTarget);
+
+        // Clear the render target to white or all 1's
+        // We set the clear to white since that represents the 
+        // furthest the object could be away
+        _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.White);
+
+        RenderInternal(true);
+
+        _graphicsDevice.SetRenderTarget(null);
+        
+        // DRAW WITH SHADOW MAP
+        
+        _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
+
+        _graphicsDevice.SamplerStates[1] = SamplerState.PointClamp;
+
+        RenderInternal();
+        
+        // DISPLAY SHADOW MAP
+        _spriteBatch.Begin(0, BlendState.Opaque, SamplerState.PointClamp);
+        _spriteBatch.Draw(Program.shadowRenderTarget, new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Microsoft.Xna.Framework.Color.White);
+        _spriteBatch.End();
+
+        _graphicsDevice.Textures[0] = null;
+        _graphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
+
+        FrameTrace.RenderMessages();
+    }
+
+    private static void RenderInternal(bool isCreateShadowMap = false)
+    {
+        if (!isCreateShadowMap)
+        {
+            foreach (var element in placed_stage_elements)
+            {
+                element.Render(camera, isCreateShadowMap);
+            }
+        }
+
         foreach (var car in cars_in_race)
         {
-            car.Render(camera);
+            car.Render(camera, isCreateShadowMap);
         }
-        
-        FrameTrace.RenderMessages();
     }
 
     public static void RenderImgui()

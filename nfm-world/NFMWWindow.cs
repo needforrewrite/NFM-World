@@ -23,6 +23,7 @@ public unsafe class Program : Game
     private GraphicsDeviceManager _graphics;
     public static SpriteBatch _spriteBatch { get; private set; }
     public static Effect _polyShader { get; private set; }
+    public static RenderTarget2D shadowRenderTarget { get; private set; }
     private SpriteFont _basicFont;
 
     private int _lastFrameTime;
@@ -216,6 +217,15 @@ public unsafe class Program : Game
     {
         _polyShader = Content.Load<Effect>("Poly");
         _basicFont = Content.Load<SpriteFont>("BasicFont");
+        
+        // Create floating point render target
+        shadowRenderTarget = new RenderTarget2D(
+            GraphicsDevice,
+            2048,
+            2048,
+            false,
+            SurfaceFormat.Single,
+            DepthFormat.Depth24);
     }
 
     private void UpdateInput()

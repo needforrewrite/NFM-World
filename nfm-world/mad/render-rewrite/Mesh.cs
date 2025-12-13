@@ -163,7 +163,7 @@ public class Mesh : Transform
         ]);
     }
 
-    public virtual void Render(Camera camera)
+    public virtual void Render(Camera camera, bool isCreateShadowMap = false)
     {
         var matrixWorld = Matrix.CreateFromEuler(Rotation) * Matrix.CreateTranslation(Position.ToXna());
 
@@ -188,6 +188,22 @@ public class Mesh : Transform
         _material.Parameters["FogDensity"]?.SetValue(0.857f);
         _material.Parameters["EnvironmentLight"]?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
         _material.Parameters["CameraPosition"]?.SetValue(camera.Position.ToXna());
+        
+        var lightView = Matrix.CreateLookAt(
+            (camera.Position with { Y = camera.Position.Y + 1000 }).ToXna(),
+            camera.Position.ToXna(),
+            -Microsoft.Xna.Framework.Vector3.Up);
+
+        var lightProjection = Matrix.CreateOrthographic(4096, 4096, 50, 100_000);
+        
+        var lightViewProjection = lightView * lightProjection;
+
+        _material.Parameters["LightViewProj"]?.SetValue(lightViewProjection);
+        _material.CurrentTechnique = isCreateShadowMap ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
+        if (!isCreateShadowMap)
+        {
+            _material.Parameters["ShadowMap"]?.SetValue(Program.shadowRenderTarget);
+        }
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();

@@ -27,6 +27,16 @@ float FogDensity;
 float2 EnvironmentLight;
 float3 CameraPosition;
 
+// Lighting
+matrix LightViewProj;
+float DepthBias = 0.001f;
+
+texture ShadowMap;
+sampler ShadowMapSampler = sampler_state
+{
+    Texture = <ShadowMap>;
+};
+
 struct VertexShaderInput
 {
 	float3 Position : POSITION0;
@@ -39,6 +49,7 @@ struct VertexShaderOutput
 {
 	float4 Position : SV_POSITION;
 	float3 Color : COLOR0;
+    float4 WorldPos : TEXCOORD2;
 };
 
 VertexShaderOutput MainVS(in VertexShaderInput input)
@@ -73,15 +84,73 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 
 	output.Color = color * float3(f, f, f) + FogColor * float3(1.0 - f, 1.0 - f, 1.0 - f);
 
+    // Save the vertices postion in world space (for shadow mapping)
+    output.WorldPos = mul(float4(input.Position, 1), World);
+
 	return output;
 }
 
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
-	return float4(input.Color, 1.0);
+    // Find the position of this pixel in light space
+    float4 lightingPosition = mul(input.WorldPos, LightViewProj);
+
+    // Find the position in the shadow map for this pixel
+    float2 ShadowTexCoord = 0.5 * lightingPosition.xy /
+                            lightingPosition.w + float2( 0.5, 0.5 );
+    ShadowTexCoord.y = 1.0f - ShadowTexCoord.y;
+
+    // Get the current depth stored in the shadow map
+    float shadowdepth = tex2D(ShadowMapSampler, ShadowTexCoord).r;
+
+    // Calculate the current pixel depth
+    // The bias is used to prevent folating point errors that occur when
+    // the pixel of the occluder is being drawn
+    float ourdepth = (lightingPosition.z / lightingPosition.w) - DepthBias;
+
+    // Check to see if this pixel is in front or behind the value in the shadow map
+	float3 diffuse = input.Color;
+    if (shadowdepth < ourdepth)
+    {
+        // Shadow the pixel by lowering the intensity
+		diffuse = diffuse * float3(0.5, 0.5, 0.5);
+    }
+
+	return float4(diffuse, 1.0);
 }
 
-technique BasicColorDrawing
+struct CreateShadowMap_VSOut
+{
+    float4 Position : POSITION;
+    float Depth     : TEXCOORD0;
+};
+
+// Transforms the model into light space an renders out the depth of the object
+CreateShadowMap_VSOut CreateShadowMapVS(float4 Position: POSITION)
+{
+    CreateShadowMap_VSOut output;
+    output.Position = mul(Position, mul(World, LightViewProj));
+    output.Depth = output.Position.z / output.Position.w;
+    return output;
+}
+
+// Saves the depth value out to the 32bit floating point texture
+float4 CreateShadowMapPS(CreateShadowMap_VSOut input) : COLOR
+{
+    return float4(input.Depth, 0, 0, 0);
+}
+
+
+technique CreateShadowMap
+{
+    pass Pass1
+    {
+        VertexShader = compile vs_2_0 CreateShadowMapVS();
+        PixelShader = compile ps_2_0 CreateShadowMapPS();
+    }
+}
+
+technique Basic
 {
 	pass P0
 	{
