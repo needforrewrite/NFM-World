@@ -69,10 +69,9 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 		float3 n = normalize(mul(float4(input.Normal, 0), WorldInverseTranspose).xyz);
 		float diff = 0.0;
 		// phy original
-        //if (sign(dot(n, LightDirection)) == sign(dot(n, c - CameraPosition))) {
-        //  diff = abs(dot(n, LightDirection));
-        //}
-		diff = abs(dot(n, LightDirection));
+        if (sign(dot(n, LightDirection)) == sign(dot(n, c - CameraPosition))) {
+          diff = abs(dot(n, LightDirection));
+        }
 		color = (EnvironmentLight.x + EnvironmentLight.y * diff) * color;
 	} else {
 		color = BaseColor;
