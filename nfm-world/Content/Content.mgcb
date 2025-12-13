@@ -13,9 +13,3 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin Poly.fx
-/importer:EffectImporter
-/processor:EffectProcessor
-/processorParam:DebugMode=Auto
-/build:Poly.fx
-

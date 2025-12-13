@@ -19,6 +19,12 @@
     <ItemGroup>
         <None Remove="Icon.ico"/>
         <None Remove="Icon.bmp"/>
+        <None Update="data\shaders\Outline.fx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="data\shaders\Poly.fx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
     <ItemGroup>
         <EmbeddedResource Include="Icon.ico">
@@ -53,5 +59,13 @@
     <!-- linux builds -->
     <Target Name="CopyCustomContentLinux" AfterTargets="AfterBuild" Condition="'$(OS)' != 'Windows_NT'">
         <Copy SourceFiles="skiadriver/libbass.so" DestinationFolder="$(OutDir)" />
+    </Target>
+    
+    <!-- Run mgfxc if on Windows -->
+    <Target Name="RunMgfxc" AfterTargets="AfterBuild" Condition="'$(OS)' == 'Windows_NT'">
+        <ItemGroup>
+            <MgfxInputFiles Include="data\shaders\**\*.fx" />
+        </ItemGroup>
+        <Exec Command="mgfxc @(MgfxInputFiles->'%(FullPath)') .\data\shaders\%(RecursiveDir)%(Filename).fxc /Profile:OpenGL" />
     </Target>
 </Project>

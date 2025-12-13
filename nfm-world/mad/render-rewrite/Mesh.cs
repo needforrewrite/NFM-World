@@ -48,7 +48,6 @@ public class Mesh : Transform
         Boxes = rad.Boxes;
         Polys = rad.Polys;
         _material = new PolyEffect(Program._polyShader);
-        _lineMaterial = new LineEffect(Program._lineShader);
 
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
         _graphicsDevice = graphicsDevice;
