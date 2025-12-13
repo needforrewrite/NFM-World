@@ -1,13 +1,29 @@
 using System.Diagnostics;
+using System.Text;
 using NFMWorld.Mad.Interp;
 using NFMWorld.Util;
+using ImGuiNET;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Stride.Core.Mathematics;
+using Path = System.IO.Path;
+using Vector3 = Stride.Core.Mathematics.Vector3;
 using NFMWorld.Mad.UI;
 
 namespace NFMWorld.Mad;
 
 public class GameSparker
 {
+    private static SpriteBatch _spriteBatch;
+    private static GraphicsDevice _graphicsDevice;
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
+
+    public static PerspectiveCamera camera = new();
+    public static OrthoCamera lightCamera = new()
+    {
+        Width = 8192,
+        Height = 8192
+    };
 
     public static readonly string version = GetVersionString();
 
@@ -45,11 +61,15 @@ public class GameSparker
     public static MessageWindow MessageWindow = new();
     public static SettingsMenu SettingsMenu = new();
 
-    private static MicroStopwatch timer = null!;
-    public static UnlimitedArray<ContO> cars = null!;
-    public static UnlimitedArray<ContO> stage_parts = null!;
-    public static UnlimitedArray<ContO> placed_stage_elements = null!;
+    private static DirectionalLight light;
+    
+    private static MicroStopwatch timer;
+    public static UnlimitedArray<Mesh> cars;
+    public static UnlimitedArray<Mesh> stage_parts;
+    public static UnlimitedArray<Mesh> placed_stage_elements;
 
+    public static FollowCamera PlayerFollowCamera = new();
+    
     public static DevConsole devConsole = new();
 
     public static readonly string[] CarRads = {
@@ -304,30 +324,23 @@ public class GameSparker
         return -1;
     }
 
-    public static void Load()
+    public static void Load(Game game)
     {
+        _graphicsDevice = game.GraphicsDevice;
+        _spriteBatch = new SpriteBatch(game.GraphicsDevice);
         timer = new MicroStopwatch();
         timer.Start();
-        new Medium();
-
-        //Medium.D();
-
-        //Medium.FocusPoint -= 100;
         
         cars = [];
         stage_parts = [];
         placed_stage_elements = [];
 
         FileUtil.LoadFiles("./data/models/cars", CarRads, (ais, id) => {
-            cars[id] = new ContO(ais);
-            if (!cars[id].Shadow)
-            {
-                throw new Exception("car does not have a shadow");
-            }
+            cars[id] = new Mesh(game.GraphicsDevice, Encoding.UTF8.GetString(ais));
         });
 
         FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id) => {
-            stage_parts[id] = new ContO(ais);
+            stage_parts[id] = new Mesh(game.GraphicsDevice, Encoding.UTF8.GetString(ais));
         });
 
         // init menu
@@ -351,10 +364,6 @@ public class GameSparker
                 throw new Exception("No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
-
-        //devConsole.ExecuteCommand("ui_dev_cam");
-
-        Medium.Fadfrom(5000);
     }
 
     public static void StartGame()
@@ -366,13 +375,17 @@ public class GameSparker
         Loadstage("nfm2/15_dwm");
         cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
         
+        for (var i = 0; i < cars.Count; i++)
+        {
+            Console.WriteLine($"car {new Stat(i).Names}: {new Stat(i).Score:0}");
+        }
+        
         Console.WriteLine("Game started!");
     }
 
     internal static int Getint(string astring, string string4, int i)
     {
-        // TODO
-        return Utility.Getint(astring, string4, i);
+        return Utility.GetInt(astring, string4, i);
     }
 
 
@@ -385,8 +398,11 @@ public class GameSparker
             return;
         }
 
-        placed_stage_elements[_stagePartCount] = new ContO(
-            stage_parts[model], x, 250 - stage_parts[model].Grat - y, z, r);
+        placed_stage_elements[_stagePartCount] = new Mesh(
+            stage_parts[model],
+            new Vector3(x, 250 - y, z),
+            new Euler(AngleSingle.FromDegrees(r), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
+        );
 
         _stagePartCount++;
 
@@ -401,16 +417,7 @@ public class GameSparker
         placed_stage_elements.Clear();
         _stagePartCount = 0;
         Trackers.Nt = 0;
-        Medium.Resdown = 0;
-        Medium.Rescnt = 5;
-        Medium.Lightson = false;
-        Medium.Noelec = 0;
-        Medium.Ground = 250;
-        Medium.Trk = 0;
-        Medium.drawClouds = true;
-        Medium.drawMountains = true;
-        Medium.drawStars = true;
-        Medium.drawPolys = true;
+
         var i = 0;
         var k = 100;
         var l = 0;
@@ -425,102 +432,116 @@ public class GameSparker
                 astring = "" + line.Trim();
                 if (astring.StartsWith("snap"))
                 {
-                    Medium.Setsnap(Getint("snap", astring, 0), Getint("snap", astring, 1),
-                        Getint("snap", astring, 2));
+                    World.Snap = new Color3(
+                        (short) Getint("snap", astring, 0),
+                        (short) Getint("snap", astring, 1),
+                        (short) Getint("snap", astring, 2)
+                    );
                 }
                 if (astring.StartsWith("sky"))
                 {
-                    Medium.Setsky(Getint("sky", astring, 0), Getint("sky", astring, 1), Getint("sky", astring, 2));
+                    // Medium.Setsky(Getint("sky", astring, 0), Getint("sky", astring, 1), Getint("sky", astring, 2));
                 }
                 if (astring.StartsWith("ground"))
                 {
-                    Medium.Setgrnd(Getint("ground", astring, 0), Getint("ground", astring, 1),
-                        Getint("ground", astring, 2));
+                    // Medium.Setgrnd(Getint("ground", astring, 0), Getint("ground", astring, 1),
+                    //     Getint("ground", astring, 2));
                 }
                 if (astring.StartsWith("polys"))
                 {
                     if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
                     {
-                        Medium.drawPolys = false;
+                        // Medium.drawPolys = false;
                     }
                     else
                     {
-                        Medium.Setpolys(Getint("polys", astring, 0), Getint("polys", astring, 1),
-                        Getint("polys", astring, 2));
+                        // Medium.Setpolys(Getint("polys", astring, 0), Getint("polys", astring, 1),
+                        // Getint("polys", astring, 2));
                     }
                 }
                 if (astring.StartsWith("fog"))
                 {
-                    Medium.Setfade(Getint("fog", astring, 0), Getint("fog", astring, 1), Getint("fog", astring, 2));
+                    World.Fog = new Color3(
+                        (short) Getint("fog", astring, 0),
+                        (short) Getint("fog", astring, 1),
+                        (short) Getint("fog", astring, 2)
+                    );
+                    // Medium.Setfade(Getint("fog", astring, 0), Getint("fog", astring, 1), Getint("fog", astring, 2));
                 }
                 if (astring.StartsWith("texture"))
                 {
-                    Medium.Setexture(Getint("texture", astring, 0), Getint("texture", astring, 1),
-                        Getint("texture", astring, 2), Getint("texture", astring, 3));
+                    //Medium.Setexture(Getint("texture", astring, 0), Getint("texture", astring, 1),
+                    //    Getint("texture", astring, 2), Getint("texture", astring, 3));
                 }
                 if (astring.StartsWith("clouds"))
                 {
                     if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
                     {
-                        Medium.drawClouds = false;
+                        // Medium.drawClouds = false;
                     }
                     else
                     {
-                        Medium.Setclouds(Getint("clouds", astring, 0), Getint("clouds", astring, 1),
-                            Getint("clouds", astring, 2), Getint("clouds", astring, 3), Getint("clouds", astring, 4));
+                        // Medium.Setclouds(Getint("clouds", astring, 0), Getint("clouds", astring, 1),
+                        //     Getint("clouds", astring, 2), Getint("clouds", astring, 3), Getint("clouds", astring, 4));
                     }
                 }
                 if (astring.StartsWith("density"))
                 {
-                    Medium.Fogd = (Getint("density", astring, 0) + 1) * 2 - 1;
-                    if (Medium.Fogd < 1)
-                    {
-                        Medium.Fogd = 1;
-                    }
-                    if (Medium.Fogd > 30)
-                    {
-                        Medium.Fogd = 30;
-                    }
+                    var fogd = (Getint("density", astring, 0) + 1) * 2 - 1;
+                    fogd = Math.Clamp(fogd, 1, 30);
+                    World.Density = UMath.InverseLerp(1, 30, fogd);
+                    //Medium.Fogd = (Getint("density", astring, 0) + 1) * 2 - 1;
+                    //if (Medium.Fogd < 1)
+                    //{
+                    //    Medium.Fogd = 1;
+                    //}
+                    //if (Medium.Fogd > 30)
+                    //{
+                    //    Medium.Fogd = 30;
+                    //}
                 }
                 if (astring.StartsWith("fadefrom"))
                 {
-                    Medium.Fadfrom(Getint("fadefrom", astring, 0));
+                    World.FadeFrom = Getint("fadefrom", astring, 0);
+                    // Medium.Fadfrom(Getint("fadefrom", astring, 0));
                 }
                 if (astring.StartsWith("lightson"))
                 {
-                    Medium.Lightson = true;
+                    // Medium.Lightson = true;
                 }
                 if (astring.StartsWith("mountains"))
                 {
                     // Check for mountains(false) first
-                    if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
-                    {
-                        Medium.drawMountains = false;
-                    }
-                    else
-                    {
-                        Medium.Mgen = Getint("mountains", astring, 0);
-                    }
+                    // if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
+                    // {
+                    //     Medium.drawMountains = false;
+                    // }
+                    // else
+                    // {
+                    //     Medium.Mgen = Getint("mountains", astring, 0);
+                    // }
                 }
                 if (astring.StartsWith("set"))
                 {
                     var setindex = Getint("set", astring, 0);
                     setindex -= _indexOffset;
-                    var setheight = Medium.Ground - stage_parts[setindex].Grat;
+                    var setheight = World.Ground - stage_parts[setindex].GroundAt;
                     
                     var hasCustomY = astring.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
                         setheight = Getint("set", astring, 4);
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[setindex], Getint("set", astring, 1),
-                            setheight, Getint("set", astring, 2),
-                            Getint("set", astring, 3));
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[setindex],
+                            new Vector3(Getint("set", astring, 1), setheight, Getint("set", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
                     }
                     else
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[setindex], Getint("set", astring, 1),
-                            setheight, Getint("set", astring, 2),
-                            Getint("set", astring, 3));
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[setindex],
+                            new Vector3(Getint("set", astring, 1), setheight, Getint("set", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
                     }
                     if (astring.Contains(")p"))     //AI tags
                     {
@@ -561,21 +582,27 @@ public class GameSparker
                 {
                     var chkindex = Getint("chk", astring, 0);
                     chkindex -= _indexOffset;
+                    var chkheight = World.Ground - stage_parts[chkindex].GroundAt;
 
-                    var chkheight = Medium.Ground - stage_parts[chkindex].Grat;
 
                     // Check if optional Y coordinate is provided (5 parameters instead of 4)
                     var hasCustomY = astring.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
                         chkheight = Getint("chk", astring, 4);
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[chkindex], Getint("chk", astring, 1), chkheight,
-                            Getint("chk", astring, 2), Getint("chk", astring, 3));
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[chkindex],
+                            new Vector3(Getint("chk", astring, 1), chkheight, Getint("chk", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Getint("chk", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
+                        );
                     }
                     else
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[chkindex], Getint("chk", astring, 1), chkheight,
-                            Getint("chk", astring, 2), Getint("chk", astring, 3));
+	                    placed_stage_elements[_stagePartCount] = new Mesh(
+	                        stage_parts[chkindex],
+	                        new Vector3(Getint("set", astring, 1), chkheight, Getint("set", astring, 2)),
+	                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+	                    );
                     }
                     
                     // CheckPoints.X[CheckPoints.N] = Getint("chk", astring, 1);
@@ -599,17 +626,18 @@ public class GameSparker
                 {
                     var fixindex = Getint("fix", astring, 0);
                     fixindex -= _indexOffset;
-                    placed_stage_elements[_stagePartCount] = new ContO(stage_parts[fixindex], Getint("fix", astring, 1),
-                        Getint("fix", astring, 3),
-                        Getint("fix", astring, 2), Getint("fix", astring, 4));
+                    placed_stage_elements[_stagePartCount] = new FixHoop(
+                        stage_parts[fixindex],
+                        new Vector3(Getint("set", astring, 1), Getint("set", astring, 3), Getint("set", astring, 2)),
+                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 4)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                    );
                     // CheckPoints.Fx[CheckPoints.Fn] = Getint("fix", astring, 1);
                     // CheckPoints.Fz[CheckPoints.Fn] = Getint("fix", astring, 2);
                     // CheckPoints.Fy[CheckPoints.Fn] = Getint("fix", astring, 3);
-                    placed_stage_elements[_stagePartCount].Elec = true;
                     if (Getint("fix", astring, 4) != 0)
                     {
                         //CheckPoints.Roted[CheckPoints.Fn] = true;
-                        placed_stage_elements[_stagePartCount].Roted = true;
+                        ((FixHoop)placed_stage_elements[_stagePartCount]).Rotated = true;
                     }
                     else
                     {
@@ -658,9 +686,11 @@ public class GameSparker
                     var p = Getint("maxr", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], o,
-                            Medium.Ground - stage_parts[wall].Grat,
-                            q * 4800 + p, 0);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[wall],
+                            new Vector3(o, World.Ground, q * 4800 + p),
+                            Euler.Identity                        
+                        );
                         _stagePartCount++;
                     }
                     Trackers.Y[Trackers.Nt] = -5000;
@@ -684,9 +714,11 @@ public class GameSparker
                     var p = Getint("maxl", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], o, Medium.Ground - stage_parts[wall].Grat,
-                            q * 4800 + p,
-                            180);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[wall],
+                            new Vector3(o, World.Ground, q * 4800 + p),
+                            new Euler(AngleSingle.FromDegrees(180), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                        );
                         _stagePartCount++;
                     }
                     Trackers.Y[Trackers.Nt] = -5000;
@@ -710,9 +742,11 @@ public class GameSparker
                     var p = Getint("maxt", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
-                            o,
-                            90);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[wall],
+                            new Vector3(q * 4800 + p, World.Ground, o),
+                            new Euler(AngleSingle.FromDegrees(90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                        );
                         _stagePartCount++;
                     }
                     Trackers.Y[Trackers.Nt] = -5000;
@@ -736,9 +770,11 @@ public class GameSparker
                     var p = Getint("maxb", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        placed_stage_elements[_stagePartCount] = new ContO(stage_parts[wall], q * 4800 + p, Medium.Ground - stage_parts[wall].Grat,
-                            o,
-                            -90);
+                        placed_stage_elements[_stagePartCount] = new Mesh(
+                            stage_parts[wall],
+                            new Vector3(q * 4800 + p, World.Ground, o),
+                            new Euler(AngleSingle.FromDegrees(-90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                        );
                         _stagePartCount++;
                     }
                     Trackers.Y[Trackers.Nt] = -5000;
@@ -755,41 +791,49 @@ public class GameSparker
                     Trackers.Nt++;
                 }
             }
-            Medium.Newpolys(k, i - k, m, l - m, _stagePartCount);
-            Medium.Newmountains(k, i, m, l);
-            Medium.Newclouds(k, i, m, l);
-            Medium.Newstars();
-            Trackers.Devidetrackers(k, i - k, m, l - m);
+            // Medium.Newpolys(k, i - k, m, l - m, _stagePartCount);
+            // Medium.Newmountains(k, i, m, l);
+            // Medium.Newclouds(k, i, m, l);
+            // Medium.Newstars();
+            Trackers.LoadTrackers(placed_stage_elements, k, i - k, m, l - m);
         }
         catch (Exception exception)
         {
             Writer.WriteLine("Error in stage: " + stage, "error");
             Writer.WriteLine("At line: " + astring, "error");
             Writer.WriteLine(exception.ToString(), "error");
+
+            // At least for debugging we want this to crash the game
+            throw;
         }
         GC.Collect();
     }
 
     public static void GameTick()
     {
+        FrameTrace.ClearMessages();
         // only tick game logic when actually in-game
         if (CurrentState != GameState.InGame)
         {
             return;
         }
-
+        
         cars_in_race[playerCarIndex].Drive();
         switch (currentViewMode)
         {
             case ViewMode.Follow:
-                Medium.Follow(cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
+                PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
                 break;
             case ViewMode.Around:
-                Medium.Around(cars_in_race[playerCarIndex].Conto, true);
+                // Medium.Around(cars_in_race[playerCarIndex].Conto, true);
                 break;
-            case ViewMode.Watch:
-                Medium.Watch(cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Mxz);
-                break;
+        }
+        // camera.Position = new Vector3(0, 10000, 0);
+        // camera.LookAt = new Vector3(1, 250, 0);
+        
+        foreach (var element in placed_stage_elements)
+        {
+            element.GameTick();
         }
     }
 
@@ -801,44 +845,58 @@ public class GameSparker
             return;
         }
 
-        Medium.D();
+        lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
+        lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0); // 0,0,0 causes shadows to break
 
-        var renderQueue = new UnlimitedArray<ContO>(placed_stage_elements.Count);
+        camera.OnBeforeRender();
+        lightCamera.OnBeforeRender();
+        
+        _graphicsDevice.BlendState = BlendState.Opaque;
+        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
 
-        var j = 0;
-        // process player cars
+        // CREATE SHADOW MAP
+        
+        // Set our render target to our floating point render target
+        _graphicsDevice.SetRenderTarget(Program.shadowRenderTarget);
+
+        // Clear the render target to white or all 1's
+        // We set the clear to white since that represents the 
+        // furthest the object could be away
+        _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.White);
+        
+        RenderInternal(true);
+
+        _graphicsDevice.SetRenderTarget(null);
+        
+        // DRAW WITH SHADOW MAP
+        
+        _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
+
+        _graphicsDevice.SamplerStates[1] = SamplerState.PointClamp;
+
+        RenderInternal();
+        
+        // DISPLAY SHADOW MAP
+        _spriteBatch.Begin(0, BlendState.Opaque, SamplerState.PointClamp);
+        _spriteBatch.Draw(Program.shadowRenderTarget, new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Microsoft.Xna.Framework.Color.White);
+        _spriteBatch.End();
+
+        _graphicsDevice.Textures[0] = null;
+        _graphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
+
+        FrameTrace.RenderMessages();
+    }
+
+    private static void RenderInternal(bool isCreateShadowMap = false)
+    {
+        foreach (var element in placed_stage_elements)
+        {
+            element.Render(camera, lightCamera, isCreateShadowMap);
+        }
+
         foreach (var car in cars_in_race)
         {
-            if (car.Conto.Dist != 0)
-            {
-                renderQueue[j++] = car.Conto;
-            }
-            else if (car.Conto.Dist == 0)
-            {
-                car.Conto.D();
-            }
-        }
-        
-        // process stage elements
-        foreach (var contO in placed_stage_elements)
-        {
-            if (contO.Dist != 0)
-            {
-                renderQueue[j++] = contO;
-            }
-            else if (contO.Dist == 0)
-            {
-                contO.D();
-            }
-        }
-
-        // sort the render queue by distance in descending order
-        renderQueue.Sort(static (a, b) => b.Dist.CompareTo(a.Dist));
-
-        // render all objects in the sorted order
-        foreach (var obj in renderQueue)
-        {
-            obj.D();
+            car.Render(camera, lightCamera, isCreateShadowMap);
         }
     }
 

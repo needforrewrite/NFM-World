@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace NFMWorld.Util;
 
-public class UnlimitedArray<T> : IList<T>
+public class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
 {
     private T[] _items = [];
     private int _size = 0;

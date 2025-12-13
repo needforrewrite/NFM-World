@@ -1,5 +1,6 @@
 using System;
 using NFMWorld.Util;
+using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad
 {
@@ -22,6 +23,10 @@ namespace NFMWorld.Mad
             console.RegisterCommand("followy", SetFollowY);
             console.RegisterCommand("followz", SetFollowZ);
             console.RegisterCommand("car", SwitchCar);
+            
+            console.RegisterCommand("r_frametrace", SetFrameTrace);
+            console.RegisterCommand("r_blackpoint", SetBlackPoint);
+            console.RegisterCommand("r_whitepoint", SetWhitePoint);
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
@@ -48,6 +53,41 @@ namespace NFMWorld.Mad
             // map command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("map", (args, position) => 
                 position == 0 ? GameSparker.GetAvailableStages() : new List<string>());
+        }
+
+        private static void SetBlackPoint(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !float.TryParse(args[0], out var blackPoint))
+            {
+                console.Log("Usage: r_blackpoint <value>");
+                return;
+            }
+
+            World.BlackPoint = blackPoint;
+            console.Log($"Set black point to {blackPoint}");
+        }
+        
+        private static void SetWhitePoint(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !float.TryParse(args[0], out var whitePoint))
+            {
+                console.Log("Usage: r_whitepoint <value>");
+                return;
+            }
+
+            World.WhitePoint = whitePoint;
+            console.Log($"Set white point to {whitePoint}");
+        }
+
+        private static void SetFrameTrace(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !int.TryParse(args[0], out var isDeveloper))
+            {
+                isDeveloper = !FrameTrace.IsEnabled ? 1 : 0;
+            }
+
+            FrameTrace.IsEnabled = isDeveloper != 0;
+            console.Log($"Frame trace {(FrameTrace.IsEnabled ? "enabled" : "disabled")}");
         }
 
         private static void OpenCalculator(DevConsole console)
@@ -90,7 +130,6 @@ namespace NFMWorld.Mad
 
         private static void ResetCar(DevConsole console)
         {
-            GameSparker.cars_in_race.Clear();
             GameSparker.cars_in_race[GameSparker.playerCarIndex] = new Car(new Stat(GameSparker.playerCarID), GameSparker.playerCarID,  GameSparker.cars[GameSparker.playerCarID], 0, 0);
             console.Log("Position reset");
         }
@@ -109,9 +148,8 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            GameSparker.cars_in_race[0].Conto.X = x;
-            GameSparker.cars_in_race[0].Conto.Y = y;
-            GameSparker.cars_in_race[0].Conto.Z = z;
+            var mesh = GameSparker.cars_in_race[0].Conto;
+            mesh.Position = new Vector3(x, y, z);
             console.Log($"Teleported player to ({x}, {y}, {z})");
         }
 
@@ -177,12 +215,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            Medium.FocusPoint = GetFocusPoint(fov);
-        }
-        
-        private static int GetFocusPoint(float fov)
-        {
-            return (int) MathF.Round(Medium.Cx * MathF.Tan(MathF.Abs(180 - fov) * 0.5f * (MathF.PI / 180)));
+            GameSparker.camera.Fov = fov;
         }
         
         private static void SetFollowY(DevConsole console, string[] args)
@@ -193,7 +226,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            Medium.FollowYOffset = yoff;
+            GameSparker.PlayerFollowCamera.FollowYOffset = yoff;
         }
 
         private static void SetFollowZ(DevConsole console, string[] args)
@@ -204,7 +237,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            Medium.FollowZOffset = zoff;
+            GameSparker.PlayerFollowCamera.FollowZOffset = zoff;
         }
 
         private static void ShowMessageTest(DevConsole console, string[] args)

@@ -1,0 +1,70 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>nfm_world</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>USE_BASS</DefineConstants>
+    <Version>0.0.0-dev</Version>
+    <InformationalVersion>NFM-World dev</InformationalVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <TieredCompilation>false</TieredCompilation>
+  </PropertyGroup>
+    <PropertyGroup>
+        <ApplicationManifest>app.manifest</ApplicationManifest>
+        <ApplicationIcon>Icon.ico</ApplicationIcon>
+    </PropertyGroup>
+    <ItemGroup>
+        <None Remove="Icon.ico"/>
+        <None Remove="Icon.bmp"/>
+        <None Update="data\shaders\Outline.fx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="data\shaders\Poly.fx">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="Icon.ico">
+            <LogicalName>Icon.ico</LogicalName>
+        </EmbeddedResource>
+        <EmbeddedResource Include="Icon.bmp">
+            <LogicalName>Icon.bmp</LogicalName>
+        </EmbeddedResource>
+    </ItemGroup>
+  <ItemGroup>
+      <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
+      <PackageReference Include="ManagedBass" Version="4.0.1" />
+      <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
+      <PackageReference Include="SkiaSharp" Version="3.119.2-preview.1" />
+      <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="3.119.2-preview.1" />
+      <PackageReference Include="Stride.Core.Mathematics" Version="4.3.0.2507" />
+
+      <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.4.1" />
+      <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*"/>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
+    <ProjectReference Include="..\MonoGame.ImGuiNet\MonoGame.ImGuiNet\Monogame.ImGuiNet.csproj" />
+  </ItemGroup>
+
+    <!-- windows builds -->
+    <Target Name="CopyCustomContentWindows" AfterTargets="AfterBuild" Condition="'$(OS)' == 'Windows_NT'">
+        <Copy SourceFiles="skiadriver/bass.dll" DestinationFolder="$(OutDir)" />
+    </Target>
+
+    <!-- linux builds -->
+    <Target Name="CopyCustomContentLinux" AfterTargets="AfterBuild" Condition="'$(OS)' != 'Windows_NT'">
+        <Copy SourceFiles="skiadriver/libbass.so" DestinationFolder="$(OutDir)" />
+    </Target>
+    
+    <!-- Run mgfxc if on Windows -->
+    <Target Name="RunMgfxc" AfterTargets="AfterBuild" Condition="'$(OS)' == 'Windows_NT'">
+        <ItemGroup>
+            <MgfxInputFiles Include="data\shaders\**\*.fx" />
+        </ItemGroup>
+        <Exec Command="mgfxc @(MgfxInputFiles->'%(FullPath)') .\data\shaders\%(RecursiveDir)%(Filename).fxc /Profile:OpenGL" />
+    </Target>
+</Project>

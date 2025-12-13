@@ -25,8 +25,48 @@ internal class Trackers
     internal static readonly UnlimitedArray<int> Z = [];
     internal static readonly UnlimitedArray<int> Zy = [];
 
-    internal static void Devidetrackers(int sx, int ncx, int sz, int ncz)
+    internal static void LoadTrackers(IReadOnlyList<Mesh> elements, int sx, int ncx, int sz, int ncz)
     {
+        foreach (var element in elements)
+        {
+            var i81 = (int)element.Rotation.Xz.Degrees;
+            for (var i84 = 0; i84 < element.Boxes.Length; i84++)
+            {
+                Xy[Nt] = (int) (element.Boxes[i84].Xy * UMath.Cos(i81) - element.Boxes[i84].Zy * UMath.Sin(i81));
+                Zy[Nt] = (int) (element.Boxes[i84].Zy * UMath.Cos(i81) + element.Boxes[i84].Xy * UMath.Sin(i81));
+                for (var i85 = 0; i85 < 3; i85++)
+                {
+                    C[Nt][i85] = (int) (element.Boxes[i84].Color[i85] + element.Boxes[i84].Color[i85] * (World.Snap[i85] / 100.0F));
+                    if (C[Nt][i85] > 255)
+                    {
+                        C[Nt][i85] = 255;
+                    }
+                    if (C[Nt][i85] < 0)
+                    {
+                        C[Nt][i85] = 0;
+                    }
+                }
+                X[Nt] = (int) (element.Position.X + element.Boxes[i84].Translation.X * UMath.Cos(i81) - element.Boxes[i84].Translation.Z * UMath.Sin(i81));
+                Z[Nt] = (int) (element.Position.Z + element.Boxes[i84].Translation.Z * UMath.Cos(i81) + element.Boxes[i84].Translation.X * UMath.Sin(i81));
+                Y[Nt] = (int)(element.Position.Y + element.Boxes[i84].Translation.Y);
+                Skd[Nt] = element.Boxes[i84].Skid;
+                Dam[Nt] = element.Boxes[i84].Damage;
+                Notwall[Nt] = element.Boxes[i84].NotWall;
+                Decor[Nt] = false;
+                var i86 = Math.Abs(i81);
+                if (i86 == 180)
+                {
+                    i86 = 0;
+                }
+                Radx[Nt] = (int) Math.Abs(element.Boxes[i84].Radius.X * UMath.Cos(i86) + element.Boxes[i84].Radius.Z * UMath.Sin(i86));
+                Radz[Nt] = (int) Math.Abs(element.Boxes[i84].Radius.X * UMath.Sin(i86) + element.Boxes[i84].Radius.Z * UMath.Cos(i86));
+                Rady[Nt] = (int) element.Boxes[i84].Radius.Y;
+                Nt++;
+            }
+        }
+        
+        Console.WriteLine(Nt);
+        
         Sx = sx;
         Sz = sz;
         Ncx = ncx / 3000;

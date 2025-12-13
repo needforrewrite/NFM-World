@@ -75,9 +75,9 @@ public class SettingsMenu
         _isOpen = true;
         
         // Load current game settings
-        _fov = GetFovFromFocusPoint(Medium.FocusPoint);
-        _followY = Medium.FollowYOffset;
-        _followZ = Medium.FollowZOffset;
+        _fov = GameSparker.camera.Fov;
+        _followY = GameSparker.PlayerFollowCamera.FollowYOffset;
+        _followZ = GameSparker.PlayerFollowCamera.FollowZOffset;
     }
 
     public void Close()
@@ -423,25 +423,12 @@ public class SettingsMenu
         }
 
         // Apply camera settings
-        Medium.FocusPoint = GetFocusPoint(_fov);
-        Medium.FollowYOffset = _followY;
-        Medium.FollowZOffset = _followZ;
+        GameSparker.camera.Fov = _fov;
+        GameSparker.PlayerFollowCamera.FollowYOffset = _followY;
+        GameSparker.PlayerFollowCamera.FollowZOffset = _followZ;
         
         // Save config to file
         SaveConfig();
-    }
-    
-    private float GetFovFromFocusPoint(int focusPoint)
-    {
-        if (Medium.Cx == 0) return 90.0f;
-        float tanValue = (float)focusPoint / Medium.Cx;
-        float halfAngle = MathF.Atan(tanValue) * (180.0f / MathF.PI);
-        return 180.0f - (halfAngle * 2.0f);
-    }
-    
-    private int GetFocusPoint(float fov)
-    {
-        return (int)MathF.Round(Medium.Cx * MathF.Tan(MathF.Abs(180 - fov) * 0.5f * (MathF.PI / 180)));
     }
     
     private void SaveConfig()
@@ -628,9 +615,9 @@ public class SettingsMenu
             }
             
             // Apply loaded camera settings immediately
-            Medium.FocusPoint = GetFocusPoint(_fov);
-            Medium.FollowYOffset = _followY;
-            Medium.FollowZOffset = _followZ;
+            GameSparker.camera.Fov = _fov;
+            GameSparker.PlayerFollowCamera.FollowYOffset = _followY;
+            GameSparker.PlayerFollowCamera.FollowZOffset = _followZ;
             
             Writer?.WriteLine($"Config loaded from {configPath}", "debug");
         }
