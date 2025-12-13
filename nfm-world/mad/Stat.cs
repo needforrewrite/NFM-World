@@ -176,11 +176,6 @@ public class Stat
         }
     }
 
-    public static float InverseLerp(float a, float b, float value)
-    {
-        return (value - a) / (b - a);
-    }
-
     public float Score
     {
         get
@@ -235,7 +230,7 @@ public class Stat
     
     static float CalculateScoreFromElement(float min, float max, float actual, float contribution = 100)
     {
-        return InverseLerp(min, max, actual) * contribution;
+        return UMath.InverseLerp(min, max, actual) * contribution;
     }
 
     static float CalculateScoreFromArr(int[] arr, int value, float contribution = 100)

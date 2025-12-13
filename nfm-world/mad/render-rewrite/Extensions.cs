@@ -67,5 +67,22 @@ public static class Extensions
     {
         public static Color3 FromSpan(ReadOnlySpan<short> span)
             => new(span[0], span[1], span[2]);
+
+        public Color3 Snap(Color3 snap)
+        {
+            var r = (short) (color3[0] + color3[0] * (snap[0] / 100.0F));
+            if (r > 255) r = 255;
+            if (r < 0) r = 0;
+            var g = (short) (color3[1] + color3[1] * (snap[1] / 100.0F));
+            if (g > 255) g = 255;
+            if (g < 0) g = 0;
+            var b = (short) (color3[2] + color3[2] * (snap[2] / 100.0F));
+            if (b > 255) b = 255;
+            if (b < 0) b = 0;
+
+            return new Color3(r, g, b);
+        }
+        
+        public THREE.Vector3 ToTHREEVector3() => new(color3[0] / 255.0F, color3[1] / 255.0F, color3[2] / 255.0F);
     }
 }

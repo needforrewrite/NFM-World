@@ -23,9 +23,10 @@ namespace NFMWorld.Mad
             console.RegisterCommand("followy", SetFollowY);
             console.RegisterCommand("followz", SetFollowZ);
             console.RegisterCommand("car", SwitchCar);
-
-
+            
             console.RegisterCommand("r_frametrace", SetFrameTrace);
+            console.RegisterCommand("r_blackpoint", SetBlackPoint);
+            console.RegisterCommand("r_whitepoint", SetWhitePoint);
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
@@ -52,6 +53,30 @@ namespace NFMWorld.Mad
             // map command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("map", (args, position) => 
                 position == 0 ? GameSparker.GetAvailableStages() : new List<string>());
+        }
+
+        private static void SetBlackPoint(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !float.TryParse(args[0], out var blackPoint))
+            {
+                console.Log("Usage: r_blackpoint <value>");
+                return;
+            }
+
+            World.BlackPoint = blackPoint;
+            console.Log($"Set black point to {blackPoint}");
+        }
+        
+        private static void SetWhitePoint(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !float.TryParse(args[0], out var whitePoint))
+            {
+                console.Log("Usage: r_whitepoint <value>");
+                return;
+            }
+
+            World.WhitePoint = whitePoint;
+            console.Log($"Set white point to {whitePoint}");
         }
 
         private static void SetFrameTrace(DevConsole console, string[] args)

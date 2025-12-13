@@ -209,4 +209,9 @@ public static class UMath
             }
         }
     }
+
+    public static float InverseLerp(float a, float b, float value)
+    {
+        return (value - a) / (b - a);
+    }
 }

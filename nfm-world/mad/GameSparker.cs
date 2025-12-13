@@ -369,15 +369,26 @@ public class GameSparker
         
         renderer.SetClearColor(new Color().SetHex(0xEEEEEE), 1);
         renderer.ShadowMap.Enabled = true;
-        renderer.ShadowMap.type = Constants.PCFSoftShadowMap;
+        // renderer.ShadowMap.type = Constants.VSMShadowMap;
 
         light = new DirectionalLight(new Color(1, 1, 1));
         light.CastShadow = true;
-        light.Position.Set(0, -10000, 0);
+        light.Position.Set(0, -1000, 0);
         light.Target.Position.Set(0, 250, 0);
-        light.Shadow.NormalBias = 0.1f;
+        light.Shadow.MapSize.Width = 2048; // default
+        light.Shadow.MapSize.Height = 2048; // default
+        light.Shadow.Camera.Near = 50; // default
+        light.Shadow.Camera.Far = 5000000; // default
+        light.Shadow.Camera.Left = -4096;
+        light.Shadow.Camera.CameraRight = 4096;
+        light.Shadow.Camera.Top = 4096;
+        light.Shadow.Camera.Bottom = -4096;
+        light.Shadow.Camera.Up.Y = -1f;
 
         scene.Add(light);
+
+        var helper = new CameraHelper(light.Shadow.Camera);
+        scene.Add(helper);
         
         cars = [];
         stage_parts = [];
@@ -513,6 +524,11 @@ public class GameSparker
                 }
                 if (astring.StartsWith("fog"))
                 {
+                    World.Fog = new Color3(
+                        (short) Getint("fog", astring, 0),
+                        (short) Getint("fog", astring, 1),
+                        (short) Getint("fog", astring, 2)
+                    );
                     // Medium.Setfade(Getint("fog", astring, 0), Getint("fog", astring, 1), Getint("fog", astring, 2));
                 }
                 if (astring.StartsWith("texture"))
@@ -534,6 +550,9 @@ public class GameSparker
                 }
                 if (astring.StartsWith("density"))
                 {
+                    var fogd = (Getint("density", astring, 0) + 1) * 2 - 1;
+                    fogd = Math.Clamp(fogd, 1, 30);
+                    World.Density = UMath.InverseLerp(1, 30, fogd);
                     //Medium.Fogd = (Getint("density", astring, 0) + 1) * 2 - 1;
                     //if (Medium.Fogd < 1)
                     //{
@@ -546,6 +565,7 @@ public class GameSparker
                 }
                 if (astring.StartsWith("fadefrom"))
                 {
+                    World.FadeFrom = Getint("fadefrom", astring, 0);
                     // Medium.Fadfrom(Getint("fadefrom", astring, 0));
                 }
                 if (astring.StartsWith("lightson"))
@@ -787,7 +807,7 @@ public class GameSparker
                     {
                         placed_stage_elements[_stagePartCount] = new Mesh(
                             stage_parts[wall],
-                            new Vector3(o, World.Ground, q * 4800 + p),
+                            new Vector3(q * 4800 + p, World.Ground, o),
                             new Euler(AngleSingle.FromDegrees(90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
                         _stagePartCount++;
