@@ -5,9 +5,9 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.SkiaDriver;
 using NFMWorld.Util;
-using Silk.NET.Maths;
-using Silk.NET.OpenGL;
 using SkiaSharp;
+using Stride.Core.Mathematics;
+using Color = NFMWorld.Util.Color;
 using File = NFMWorld.Util.File;
 
 namespace NFMWorld;
@@ -21,7 +21,6 @@ public class MonoGameSkia
     private SKCanvas _canvas;
     private SkiaSharpBackend _backend;
     private int _fbo;
-    private readonly GL _gl;
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate IntPtr d_sdl_gl_getprocaddress(string proc);
@@ -32,8 +31,6 @@ public class MonoGameSkia
         var getProcAddressField = glType.GetField("GetProcAddress", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException("GetProcAddress field not found");
         var getProcAddressDelegate = (Delegate)getProcAddressField.GetValue(null)!;
         var GetProcAddress = Marshal.GetDelegateForFunctionPointer<d_sdl_gl_getprocaddress>(Marshal.GetFunctionPointerForDelegate(getProcAddressDelegate));
-        
-        _gl = GL.GetApi(e => GetProcAddress(e));
         
         _grgInterface = GRGlInterface.CreateOpenGl(e => GetProcAddress(e));
         _grgInterface.Validate();
@@ -71,13 +68,6 @@ public class MonoGameSkia
         // _gl.Enable(EnableCap.Multisample);
         // _gl.Disable(EnableCap.ScissorTest);
     }
-
-    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_Context")]
-    [return: UnsafeAccessorType("MonoGame.OpenGL.IGraphicsContext, MonoGame.Framework")]
-    private static extern object GetContext(GraphicsDevice graphicsDevice);
-
-    [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "NativeLibrary")]
-    private static extern ref IntPtr SdlNativeLibrary([UnsafeAccessorType("Sdl, MonoGame.Framework")] object? gl);
 }
 
 internal class SkiaSharpBackend(SKCanvas canvas) : IBackend
@@ -109,7 +99,7 @@ internal class SkiaSharpBackend(SKCanvas canvas) : IBackend
 
     public IGraphics Graphics { get; } = new SkiaSharpGraphics(canvas);
 
-    public Vector2D<float> Ratio
+    public Vector2 Ratio
     {
         set => ((SkiaSharpGraphics)Graphics).Ratio = value;
     }
@@ -125,7 +115,7 @@ internal class SkiaSharpGraphics(SKCanvas canvas) : IGraphics
     private float sx = 1;
     private float sy = 1;
 
-    public Vector2D<float> Ratio
+    public Vector2 Ratio
     {
         set
         {
