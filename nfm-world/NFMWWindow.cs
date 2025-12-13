@@ -257,9 +257,7 @@ public unsafe class Program : Game
         // Border
         style.WindowBorderSize = 2.0f;
         style.FrameBorderSize = 2.0f;
-        
-        System.Numerics.Vector4 RGB(int r, int g, int b, float a = 1.0f) => new(r / 255f, g / 255f, b / 255f, a);
-        
+
         var colors = style.Colors;
         
         // Windows and backgrounds
@@ -329,6 +327,10 @@ public unsafe class Program : Game
         style.WindowPadding = new System.Numerics.Vector2(10, 10);
         style.FramePadding = new System.Numerics.Vector2(5, 3);
         style.ItemSpacing = new System.Numerics.Vector2(8, 4);
+
+        return;
+
+        static System.Numerics.Vector4 RGB(int r, int g, int b, float a = 1.0f) => new(r / 255f, g / 255f, b / 255f, a);
     }
 
     private void UpdateInput()
