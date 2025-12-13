@@ -35,6 +35,14 @@ public class MonoGameSkia
         _grgInterface = GRGlInterface.CreateOpenGl(e =>
         {
             Console.WriteLine(e);
+            if (e == "eglQueryString")
+            {
+                return 0;
+            }
+            if (e == "eglGetCurrentDisplay")
+            {
+                return 0;
+            }
             return GetProcAddress(e);
         });
         _grgInterface.Validate();
