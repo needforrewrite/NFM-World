@@ -31,10 +31,12 @@ public class Mesh : Transform
     private PolyEffect _material;
     private int _triangleCount;
 
-    private LineEffect _lineMaterial;    
     private VertexBuffer? _lineVertexBuffer;
     private IndexBuffer? _lineIndexBuffer;
     private int? _lineTriangleCount;
+    
+    public bool CastsShadow { get; set; }
+    public bool GetsShadowed { get; set; }
 
     public Euler TurningWheelAngle { get; set; }
 
@@ -52,8 +54,10 @@ public class Mesh : Transform
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
         _graphicsDevice = graphicsDevice;
         BuildMesh(graphicsDevice);
+
+        CastsShadow = rad.CastsShadow;
     }
-    
+
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
     {
         Colors = baseMesh.Colors;
@@ -65,7 +69,6 @@ public class Mesh : Transform
         GroundAt = baseMesh.GroundAt;
         _graphicsDevice = baseMesh._graphicsDevice;
         _material = baseMesh._material;
-        _lineMaterial = baseMesh._lineMaterial;
 
         BuildMesh(_graphicsDevice);
         Position = position;
@@ -244,6 +247,8 @@ public class Mesh : Transform
 
     private void RenderPolygons(Camera camera, Camera? lightCamera, bool isCreateShadowMap, Matrix matrixWorld)
     {
+        if (isCreateShadowMap && !(CastsShadow || Position.Y < World.Ground)) return;
+
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
         
@@ -260,6 +265,7 @@ public class Mesh : Transform
         _material.FogDensity?.SetValue(0.857f);
         _material.EnvironmentLight?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
+        _material.GetsShadowed?.SetValue(true);
 
         if (isCreateShadowMap)
         {
@@ -320,6 +326,7 @@ public class Mesh : Transform
         _material.FogDensity?.SetValue(0.857f);
         _material.EnvironmentLight?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00002f);
+        _material.GetsShadowed?.SetValue(false);
 
         _material.View?.SetValue(camera.ViewMatrix);
         _material.Projection?.SetValue(camera.ProjectionMatrix);

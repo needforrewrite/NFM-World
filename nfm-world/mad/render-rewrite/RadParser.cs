@@ -22,6 +22,7 @@ public class RadParser
     private List<Rad3dPoly> _polys = new();
     private List<Vector3> _points = new();
     private bool _road;
+    private bool _castsShadow;
 
     private RadParser()
     {
@@ -44,7 +45,8 @@ public class RadParser
             Wheels: parser._wheels.ToArray(),
             Rims: parser._rims,
             Boxes: parser._boxes.ToArray(),
-            Polys: parser._polys.ToArray()
+            Polys: parser._polys.ToArray(),
+            CastsShadow: parser._castsShadow
         );
     }
 
@@ -53,6 +55,8 @@ public class RadParser
         if (line.StartsWith("stonecold") || line.StartsWith("newstone")) _stonecold = true;
         else if (line.StartsWith("road")) _road = true;
         else if (line.StartsWith("notroad")) _road = false;
+        else if (line.StartsWith("shadow")) _castsShadow = true;
+        else if (line.StartsWith("gshadow")) _castsShadow = true; // used by decorative trees
 
         else if (line.StartsWith("1stColor("))
         {
@@ -332,7 +336,8 @@ public record Rad3d(
     [property: JsonPropertyName("wheels")] Rad3dWheelDef[] Wheels,
     [property: JsonPropertyName("rims")] Rad3dRimsDef? Rims,
     [property: JsonPropertyName("boxes")] Rad3dBoxDef[] Boxes,
-    [property: JsonPropertyName("polys")] Rad3dPoly[] Polys
+    [property: JsonPropertyName("polys")] Rad3dPoly[] Polys,
+    [property: JsonPropertyName("shadow")] bool CastsShadow
 );
 
 public readonly record struct Rad3dPoly(
