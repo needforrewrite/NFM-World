@@ -128,71 +128,66 @@ public class Mesh : Transform
 
         if (lines.Count > 0)
         {
-            // CreateMeshFromLines(lines);
+            CreateMeshFromLines(lines);
         }
     }
 
     private void CreateMeshFromLines(IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>> lines)
     {
-	    // Create a thin capsule for each line segment
-	    // then displace it by the center position between the two endpoints
-	    // and rotate it to align with the line segment direction
-	    // then merge all the capsule meshes into a single mesh
-	    // We use the normals of the original poly.
-	    var capsulePoints = new List<Vector3>();
-	    var capsuleIndices = new List<int>();
+	    var data = new List<VertexPositionNormalColorCentroid>(8 * lines.Count);
+	    var indices = new List<int>(12 * 3 * lines.Count);
 
-	    const float capsuleRadius = 10f;
-	    const int radialSegments = 6;
-	    const int rings = 4;
-
-	    var data = new List<VertexPositionNormalColorCentroid>(lines.Count * ((rings + 2) * (radialSegments + 1) * 2));
-	    var indices = new List<int>(lines.Count * ((rings + 1) * (radialSegments) * 6 * 2));
-
+        const float halfThickness = 2f;
 	    foreach (var line in lines)
 	    {
-		    capsulePoints.Clear();
-		    capsuleIndices.Clear();
-		    
-		    CreateCapsuleMesh(
-			    capsuleRadius,
-			    (line.Key.Point1 - line.Key.Point0).Length(),
-			    radialSegments,
-			    rings,
-			    capsulePoints,
-			    capsuleIndices
-		    );
+            // Create two quads for each line segment to give it some thickness
+            var p0 = line.Key.Point0;
+            var p1 = line.Key.Point1;
+            var poly = line.Value.Poly;
+            var centroid = line.Value.Centroid;
+            var normal = line.Value.Normal;
+            var lineDir = Vector3.Normalize(p1 - p0);
+            var up = Vector3.UnitY;
+            if (Vector3.Dot(lineDir, up) > 0.99f)
+            {
+                up = Vector3.UnitX; // Avoid degenerate case
+            }
 
-		    // Transform the capsule to align with the line segment
-		    var direction = Vector3.Normalize(line.Key.Point1 - line.Key.Point0);
-		    var rotationMatrix = Stride.Core.Mathematics.Matrix.RotationYawPitchRoll(
-			    (float)Math.Atan2(direction.X, direction.Z),
-			    (float)Math.Asin(-direction.Y),
-			    0f
-		    );
-
-		    var center = (line.Key.Point0 + line.Key.Point1) / 2;
-
-		    // Add transformed points to the final mesh
-		    foreach (var p in capsulePoints)
-		    {
-			    // Rotate and translate point
-			    var transformedPoint = Vector3.TransformCoordinate(p, rotationMatrix) + center;
-
-			    data.Add(new VertexPositionNormalColorCentroid(
-				    transformedPoint.ToXna(),
-				    line.Value.Normal.ToXna(),
-				    line.Value.Centroid.ToXna(),
-				    line.Value.Poly.Color.ToXna()
-			    ));
-		    }
-
-		    var indexOffset = indices.Count;
-		    foreach (var idx in capsuleIndices)
-		    {
-			    indices.Add(idx + indexOffset);
-		    }
-	    }
+            var right = Vector3.Normalize(Vector3.Cross(lineDir, up)) * halfThickness; // Line half-thickness
+            up = Vector3.Normalize(Vector3.Cross(right, lineDir)) * halfThickness; // Recalculate up to ensure orthogonality
+            var v0 = p0 - right - up;
+            var v1 = p0 + right - up;
+            var v2 = p0 + right + up;
+            var v3 = p0 - right + up;
+            var v4 = p1 - right - up;
+            var v5 = p1 + right - up;
+            var v6 = p1 + right + up;
+            var v7 = p1 - right + up;
+            var baseIndex = data.Count;
+            data.Add(new VertexPositionNormalColorCentroid(v0.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+            data.Add(new VertexPositionNormalColorCentroid(v1.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+            data.Add(new VertexPositionNormalColorCentroid(v2.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+            data.Add(new VertexPositionNormalColorCentroid(v3.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+            data.Add(new VertexPositionNormalColorCentroid(v4.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+            data.Add(new VertexPositionNormalColorCentroid(v5.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+            data.Add(new VertexPositionNormalColorCentroid(v6.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+            data.Add(new VertexPositionNormalColorCentroid(v7.ToXna(), normal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+            // Two triangles per quad face
+            indices.AddRange(
+                baseIndex, baseIndex + 1, baseIndex + 2,
+                baseIndex, baseIndex + 2, baseIndex + 3,
+                baseIndex + 4, baseIndex + 6, baseIndex + 5,
+                baseIndex + 4, baseIndex + 7, baseIndex + 6,
+                baseIndex + 3, baseIndex + 2, baseIndex + 6,
+                baseIndex + 3, baseIndex + 6, baseIndex + 7,
+                baseIndex, baseIndex + 5, baseIndex + 1,
+                baseIndex, baseIndex + 4, baseIndex + 5,
+                baseIndex + 1, baseIndex + 5, baseIndex + 6,
+                baseIndex + 1, baseIndex + 6, baseIndex + 2,
+                baseIndex + 4, baseIndex + 0, baseIndex + 3,
+                baseIndex + 4, baseIndex + 3, baseIndex + 7
+            );
+        }
 	    
 	    _lineVertexBuffer = new VertexBuffer(_graphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
 	    _lineVertexBuffer.SetData(data.ToArray());
@@ -202,202 +197,6 @@ public class Mesh : Transform
 	    
 	    _lineTriangleCount = indices.Count / 3;
     }
-
-    // https://github.com/godotengine/godot/blob/08e6cd181f98f9ca3f58d89af0a54ce3768552d3/scene/resources/3d/primitive_meshes.cpp#L410
-	private static void CreateCapsuleMesh(
-		float radius,
-		float height,
-		int radial_segments,
-		int rings,
-		List<Vector3> points,
-		List<int> indices,
-		List<Vector3>? normals = null,
-		List<float>? tangents = null,
-		List<Vector2>? uvs = null,
-		List<Vector2>? uv2s = null,
-		float p_uv2_padding = 0
-	)
-	{
-		int i, j, prevrow, thisrow, point;
-		float x, y, z, u, v, w;
-		const float onethird = 1.0f / 3.0f;
-		const float twothirds = 2.0f / 3.0f;
-
-		// Only used if we calculate UV2
-		float radial_width = 2.0f * radius * MathF.PI;
-		float radial_h = radial_width / (radial_width + p_uv2_padding);
-		float radial_length = radius * MathF.PI * 0.5f; // circumference of 90 degree bend
-		float vertical_length = radial_length * 2 + (height - 2.0f * radius) + p_uv2_padding; // total vertical length
-		float radial_v = radial_length / vertical_length; // v size of top and bottom section
-		float height_v = (height - 2.0f * radius) / vertical_length; // v size of height section
-
-		// Use LocalVector for operations and copy to Vector at the end to save the cost of CoW semantics which aren't
-		// needed here and are very expensive in such a hot loop. Use reserve to avoid repeated memory allocations.
-		int num_points = (rings + 2) * (radial_segments + 1) * 2;
-		points.EnsureCapacity(num_points);
-		normals?.EnsureCapacity(num_points);
-		tangents?.EnsureCapacity(num_points * 4);
-		uvs?.EnsureCapacity(num_points);
-		uv2s?.EnsureCapacity(num_points);
-		indices.EnsureCapacity((rings + 1) * (radial_segments) * 6 * 2);
-		point = 0;
-
-		void ADD_TANGENT(float m_x, float m_y, float m_z, float m_d)
-		{
-			if (tangents == null) return;
-			tangents.Add(m_x);
-			tangents.Add(m_y);
-			tangents.Add(m_z);
-			tangents.Add(m_d);
-		}
-
-		// Note, this has been aligned with our collision shape but I've left the descriptions as top/middle/bottom.
-
-		/* top hemisphere */
-		thisrow = 0;
-		prevrow = 0;
-		for (j = 0; j <= (rings + 1); j++) {
-			v = j;
-
-			v /= (rings + 1);
-			if (j == (rings + 1)) {
-				w = 1.0f;
-				y = 0.0f;
-			} else {
-				w = MathF.Sin(0.5f * MathF.PI * v);
-				y = MathF.Cos(0.5f * MathF.PI * v);
-			}
-
-			for (i = 0; i <= radial_segments; i++) {
-				u = i;
-				u /= radial_segments;
-
-				if (i == radial_segments) {
-					x = 0.0f;
-					z = 1.0f;
-				} else {
-					x = -MathF.Sin(u * (2*MathF.PI));
-					z = MathF.Cos(u * (2*MathF.PI));
-				}
-
-				Vector3 p = new Vector3(x * w, y, -z * w);
-				points.Add(p * radius + new Vector3(0.0f, 0.5f * height - radius, 0.0f));
-				normals?.Add(p);
-				ADD_TANGENT(-z, 0.0f, -x, 1.0f);
-				uvs?.Add(new Vector2(u, v * onethird));
-				uv2s?.Add(new Vector2(u * radial_h, v * radial_v));
-				point++;
-
-				if (i > 0 && j > 0) {
-					indices.Add(prevrow + i - 1);
-					indices.Add(prevrow + i);
-					indices.Add(thisrow + i - 1);
-
-					indices.Add(prevrow + i);
-					indices.Add(thisrow + i);
-					indices.Add(thisrow + i - 1);
-				}
-			}
-
-			prevrow = thisrow;
-			thisrow = point;
-		}
-
-		/* cylinder */
-		thisrow = point;
-		prevrow = 0;
-		for (j = 0; j <= (rings + 1); j++) {
-			v = j;
-			v /= (rings + 1);
-
-			y = (height - 2.0f * radius) * v;
-			y = (0.5f * height - radius) - y;
-
-			for (i = 0; i <= radial_segments; i++) {
-				u = i;
-				u /= radial_segments;
-
-				if (i == radial_segments) {
-					x = 0.0f;
-					z = 1.0f;
-				} else {
-					x = -MathF.Sin(u * (2*MathF.PI));
-					z = MathF.Cos(u * (2*MathF.PI));
-				}
-
-				Vector3 p = new Vector3(x * radius, y, -z * radius);
-				points.Add(p);
-				normals?.Add(new Vector3(x, 0.0f, -z));
-				ADD_TANGENT(-z, 0.0f, -x, 1.0f);
-				uvs?.Add(new Vector2(u, onethird + (v * onethird)));
-				uv2s?.Add(new Vector2(u * radial_h, radial_v + (v * height_v)));
-				point++;
-
-				if (i > 0 && j > 0) {
-					indices.Add(prevrow + i - 1);
-					indices.Add(prevrow + i);
-					indices.Add(thisrow + i - 1);
-
-					indices.Add(prevrow + i);
-					indices.Add(thisrow + i);
-					indices.Add(thisrow + i - 1);
-				}
-			}
-
-			prevrow = thisrow;
-			thisrow = point;
-		}
-
-		/* bottom hemisphere */
-		thisrow = point;
-		prevrow = 0;
-		for (j = 0; j <= (rings + 1); j++) {
-			v = j;
-
-			v /= (rings + 1);
-			if (j == (rings + 1)) {
-				w = 0.0f;
-				y = -1.0f;
-			} else {
-				w = MathF.Cos(0.5f * MathF.PI * v);
-				y = -MathF.Sin(0.5f * MathF.PI * v);
-			}
-
-			for (i = 0; i <= radial_segments; i++) {
-				u = i;
-				u /= radial_segments;
-
-				if (i == radial_segments) {
-					x = 0.0f;
-					z = 1.0f;
-				} else {
-					x = -MathF.Sin(u * (2*MathF.PI));
-					z = MathF.Cos(u * (2*MathF.PI));
-				}
-
-				Vector3 p = new Vector3(x * w, y, -z * w);
-				points.Add(p * radius + new Vector3(0.0f, -0.5f * height + radius, 0.0f));
-				normals?.Add(p);
-				ADD_TANGENT(-z, 0.0f, -x, 1.0f);
-				uvs?.Add(new Vector2(u, twothirds + v * onethird));
-				uv2s?.Add(new Vector2(u * radial_h, radial_v + height_v + v * radial_v));
-				point++;
-
-				if (i > 0 && j > 0) {
-					indices.Add(prevrow + i - 1);
-					indices.Add(prevrow + i);
-					indices.Add(thisrow + i - 1);
-
-					indices.Add(prevrow + i);
-					indices.Add(thisrow + i);
-					indices.Add(thisrow + i - 1);
-				}
-			}
-
-			prevrow = thisrow;
-			thisrow = point;
-		}
-	}
 
     /// <summary>
     /// Equality comparer that considers two lines equal if they have the same endpoints, regardless of order.
@@ -459,7 +258,7 @@ public class Mesh : Transform
         _material.FogDistance?.SetValue(World.FadeFrom);
         _material.FogDensity?.SetValue(0.857f);
         _material.EnvironmentLight?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00002f);
+        _material.DepthBias?.SetValue(0.00005f);
 
         if (isCreateShadowMap)
         {
