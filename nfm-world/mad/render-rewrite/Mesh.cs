@@ -326,7 +326,7 @@ public class Mesh : Transform
         _material.FogDensity?.SetValue(0.857f);
         _material.EnvironmentLight?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00002f);
-        _material.GetsShadowed?.SetValue(false);
+        _material.GetsShadowed?.SetValue(true);
 
         _material.View?.SetValue(camera.ViewMatrix);
         _material.Projection?.SetValue(camera.ProjectionMatrix);
