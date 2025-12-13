@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
@@ -22,11 +23,19 @@ public class MonoGameSkia
     private int _fbo;
     private readonly GL _gl;
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate IntPtr d_sdl_gl_getprocaddress(string proc);
+
     public MonoGameSkia(GraphicsDevice graphicsDevice)
     {
-        _gl = GL.GetApi(GetProcAddress);
+        var glType = Type.GetType("Sdl+GL, MonoGame.Framework") ?? throw new InvalidOperationException("SDL GL type not found");
+        var getProcAddressField = glType.GetField("GetProcAddress", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException("GetProcAddress field not found");
+        var getProcAddressDelegate = (Delegate)getProcAddressField.GetValue(null)!;
+        var GetProcAddress = Marshal.GetDelegateForFunctionPointer<d_sdl_gl_getprocaddress>(Marshal.GetFunctionPointerForDelegate(getProcAddressDelegate));
         
-        _grgInterface = GRGlInterface.CreateOpenGl(GetProcAddress);
+        _gl = GL.GetApi(e => GetProcAddress(e));
+        
+        _grgInterface = GRGlInterface.CreateOpenGl(e => GetProcAddress(e));
         _grgInterface.Validate();
         _grContext = GRContext.CreateGl(_grgInterface);
         _renderTarget = new GRBackendRenderTarget(graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 8, new GRGlFramebufferInfo(0, (uint)0x8058));
@@ -69,154 +78,6 @@ public class MonoGameSkia
 
     [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name = "NativeLibrary")]
     private static extern ref IntPtr SdlNativeLibrary([UnsafeAccessorType("Sdl, MonoGame.Framework")] object? gl);
-
-    private static T? LoadFunction<T>(IntPtr library, string function, bool throwIfNotFound = false)
-    {
-        IntPtr zero = IntPtr.Zero;
-        IntPtr ptr;
-        switch (CurrentPlatform.OS)
-        {
-            case OS.Windows:
-                ptr = Windows.GetProcAddress(library, function);
-                break;
-            case OS.MacOSX:
-                ptr = OSX.dlsym(library, function);
-                break;
-            default:
-                ptr = Linux.dlsym(library, function);
-                break;
-        }
-        if (ptr != IntPtr.Zero)
-            return Marshal.GetDelegateForFunctionPointer<T>(ptr);
-        if (throwIfNotFound)
-            throw new EntryPointNotFoundException(function);
-        return default;
-    }
-
-    private class Windows
-    {
-        [DllImport("kernel32", CharSet = CharSet.Ansi, SetLastError = true)]
-        public static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-
-        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
-        public static extern IntPtr LoadLibraryW(string lpszLib);
-    }
-
-    private class Linux
-    {
-        [DllImport("libdl.so.2")]
-        public static extern IntPtr dlopen(string path, int flags);
-
-        [DllImport("libdl.so.2")]
-        public static extern IntPtr dlsym(IntPtr handle, string symbol);
-    }
-
-    private class OSX
-    {
-        [DllImport("/usr/lib/libSystem.dylib")]
-        public static extern IntPtr dlopen(string path, int flags);
-
-        [DllImport("/usr/lib/libSystem.dylib")]
-        public static extern IntPtr dlsym(IntPtr handle, string symbol);
-    }
-    
-    private static d_sdl_gl_getprocaddress _GetProcAddress = LoadFunction<d_sdl_gl_getprocaddress>(SdlNativeLibrary(null), "SDL_GL_GetProcAddress", true)!;
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate IntPtr d_sdl_gl_getprocaddress(string proc);
-    
-    private static IntPtr GetProcAddress(string name)
-    {
-        return _GetProcAddress(name);
-    }
-}
-
-file enum OS
-{
-    Windows,
-    Linux,
-    MacOSX,
-    Unknown,
-}
-
-file static class CurrentPlatform
-{
-    private static bool _init;
-    private static OS _os;
-
-    [DllImport("libc")]
-    private static extern int uname(IntPtr buf);
-
-    private static void Init()
-    {
-        if (CurrentPlatform._init)
-            return;
-        switch (Environment.OSVersion.Platform)
-        {
-            case PlatformID.Win32S:
-            case PlatformID.Win32Windows:
-            case PlatformID.Win32NT:
-            case PlatformID.WinCE:
-                CurrentPlatform._os = OS.Windows;
-                break;
-            case PlatformID.Unix:
-                CurrentPlatform._os = OS.MacOSX;
-                IntPtr num = IntPtr.Zero;
-                try
-                {
-                    num = Marshal.AllocHGlobal(8192 /*0x2000*/);
-                    if (CurrentPlatform.uname(num) == 0)
-                    {
-                        if (Marshal.PtrToStringAnsi(num) == "Linux")
-                        {
-                            CurrentPlatform._os = OS.Linux;
-                            break;
-                        }
-                        break;
-                    }
-                    break;
-                }
-                catch
-                {
-                    break;
-                }
-                finally
-                {
-                    if (num != IntPtr.Zero)
-                        Marshal.FreeHGlobal(num);
-                }
-            case PlatformID.MacOSX:
-                CurrentPlatform._os = OS.MacOSX;
-                break;
-            default:
-                CurrentPlatform._os = OS.Unknown;
-                break;
-        }
-        CurrentPlatform._init = true;
-    }
-
-    public static OS OS
-    {
-        get
-        {
-            CurrentPlatform.Init();
-            return CurrentPlatform._os;
-        }
-    }
-
-    public static string Rid
-    {
-        get
-        {
-            if (CurrentPlatform.OS == OS.Windows && Environment.Is64BitProcess)
-                return "win-x64";
-            if (CurrentPlatform.OS == OS.Windows && !Environment.Is64BitProcess)
-                return "win-x86";
-            if (CurrentPlatform.OS == OS.Linux)
-                return "linux-x64";
-            return CurrentPlatform.OS == OS.MacOSX ? "osx" : "unknown";
-        }
-    }
 }
 
 internal class SkiaSharpBackend(SKCanvas canvas) : IBackend
