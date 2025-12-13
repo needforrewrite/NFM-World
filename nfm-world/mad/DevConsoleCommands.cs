@@ -125,7 +125,7 @@ namespace NFMWorld.Mad
 
             var objectName = args[0];
 
-            GameSparker.CreateObject(objectName, x, y, z, r);
+            GameSparker.current_stage.CreateObject(objectName, x, y, z, r);
         }
 
         private static void LoadStage(DevConsole console, string[] args)
@@ -137,7 +137,7 @@ namespace NFMWorld.Mad
             }
 
             var stageName = args[0];
-            GameSparker.Loadstage(stageName);
+            GameSparker.current_stage = new Stage(stageName);
             console.Log($"Switched to stage '{stageName}'");
 
             GameSparker.cars_in_race.Clear();
