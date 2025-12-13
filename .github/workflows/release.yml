@@ -144,23 +144,23 @@ jobs:
           # Create 64-bit wine prefix
           export WINEPREFIX=$HOME/.wine64
           export WINEARCH=win64
-          
+
           # Initialize wine prefix
           wineboot -u
-          
+
           # Wait for wine server to start
           timeout 30 sh -c 'until wineserver -w; do sleep 1; done' || true
-          
+
           # Install d3dcompiler_47 using winetricks
           winetricks -q d3dcompiler_47
-          
+
           # Download and install .NET 8 SDK
           wget https://download.visualstudio.microsoft.com/download/pr/93961dfb-d1e0-49c8-9230-abcba1ebab5a/811ed1eb63d7652325727720edda26a8/dotnet-sdk-8.0.403-win-x64.exe -O /tmp/dotnet-sdk-8.exe
           wine /tmp/dotnet-sdk-8.exe /install /quiet /norestart
-          
+
           # Wait for installation to complete
           sleep 30
-          
+
           # Set environment variable for MGFXC
           echo "MGFXC_WINE_PATH=$WINEPREFIX" >> $GITHUB_ENV
           echo "WINEPREFIX=$WINEPREFIX" >> $GITHUB_ENV
