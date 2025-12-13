@@ -1,3 +1,6 @@
 [submodule "NImpeller"]
 	path = NImpeller
 	url = https://github.com/AvaloniaUI/NImpeller
+[submodule "MonoGame.ImGuiNet"]
+	path = MonoGame.ImGuiNet
+	url = https://github.com/tsMezotic/MonoGame.ImGuiNet

@@ -8,9 +8,11 @@ using NFMWorld.DriverInterface;
 using NFMWorld.SkiaDriver;
 using NFMWorld.Mad;
 using System.Diagnostics;
+using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using MonoGame.ImGuiNet;
 
 namespace NFMWorld;
 
@@ -25,6 +27,7 @@ public unsafe class Program : Game
     public static Effect _polyShader { get; private set; }
     public static RenderTarget2D shadowRenderTarget { get; private set; }
     private SpriteFont _basicFont;
+    private ImGuiRenderer _imguiRenderer;
 
     private int _lastFrameTime;
     private int _lastTickTime;
@@ -197,7 +200,7 @@ public unsafe class Program : Game
 
     protected override void Initialize()
     {
-        base.Initialize();
+        _imguiRenderer = new ImGuiRenderer(this);
 
 #if USE_BASS
         Bass.Init();
@@ -211,7 +214,7 @@ public unsafe class Program : Game
         Console.SetOut(GameSparker.Writer);
         GameSparker.Load(this);
         
-        GameSparker.StartGame();
+        base.Initialize();
     }
 
     protected override void LoadContent()
@@ -227,6 +230,105 @@ public unsafe class Program : Game
             false,
             SurfaceFormat.Single,
             DepthFormat.Depth24);
+        
+        _imguiRenderer.RebuildFontAtlas();
+        
+        // Initialize ImGui
+        ImGui.CreateContext();
+        ImGui.StyleColorsDark();
+
+
+        // custom style
+        var style = ImGui.GetStyle();
+        
+        // Rounding 
+        style.WindowRounding = 4.0f;
+        style.FrameRounding = 6.0f;
+        style.GrabRounding = 4.0f;
+        style.PopupRounding = 6.0f;
+        style.ScrollbarRounding = 6.0f;
+        style.TabRounding = 4.0f;
+        
+        // Spacing and padding
+        style.WindowPadding = new System.Numerics.Vector2(12, 12);
+        style.FramePadding = new System.Numerics.Vector2(8, 4);
+        style.ItemSpacing = new System.Numerics.Vector2(8, 6);
+        
+        // Border
+        style.WindowBorderSize = 2.0f;
+        style.FrameBorderSize = 2.0f;
+        
+        System.Numerics.Vector4 RGB(int r, int g, int b, float a = 1.0f) => new(r / 255f, g / 255f, b / 255f, a);
+        
+        var colors = style.Colors;
+        
+        // Windows and backgrounds
+        colors[(int)ImGuiCol.WindowBg] = RGB(31, 26, 46, 0.95f);          // Dark purple
+        colors[(int)ImGuiCol.ChildBg] = RGB(26, 20, 38, 0.90f);           // Darker purple
+        colors[(int)ImGuiCol.PopupBg] = RGB(26, 20, 38, 0.95f);           // Darker purple
+        colors[(int)ImGuiCol.MenuBarBg] = RGB(38, 31, 56, 1.0f);          // Medium purple
+        
+        // Borders
+        colors[(int)ImGuiCol.Border] = RGB(230, 128, 26, 0.8f);           // Orange
+        colors[(int)ImGuiCol.BorderShadow] = RGB(0, 0, 0, 0.5f);          // Black shadow
+        
+        // Text
+        colors[(int)ImGuiCol.Text] = RGB(255, 191, 51, 1.0f);             // Light orange/yellow
+        colors[(int)ImGuiCol.TextDisabled] = RGB(153, 115, 38, 1.0f);     // Dimmed orange
+        
+        // Title bar
+        colors[(int)ImGuiCol.TitleBg] = RGB(38, 31, 64, 1.0f);            // Dark purple
+        colors[(int)ImGuiCol.TitleBgActive] = RGB(51, 38, 89, 1.0f);      // Medium purple
+        colors[(int)ImGuiCol.TitleBgCollapsed] = RGB(31, 26, 51, 0.75f);  // Very dark purple
+        
+        // Frames (inputs, etc)
+        colors[(int)ImGuiCol.FrameBg] = RGB(38, 31, 56, 0.9f);            // Medium purple
+        colors[(int)ImGuiCol.FrameBgHovered] = RGB(64, 51, 89, 1.0f);     // Lighter purple
+        colors[(int)ImGuiCol.FrameBgActive] = RGB(77, 64, 102, 1.0f);     // Even lighter purple
+        
+        // Buttons (dark with orange on hover)
+        colors[(int)ImGuiCol.Button] = RGB(38, 31, 64, 1.0f);             // Dark purple
+        colors[(int)ImGuiCol.ButtonHovered] = RGB(64, 51, 89, 1.0f);      // Lighter purple
+        colors[(int)ImGuiCol.ButtonActive] = RGB(128, 77, 3, 0.8f);       // Dark orange
+        
+        // Headers
+        colors[(int)ImGuiCol.Header] = RGB(51, 38, 77, 1.0f);             // Medium purple
+        colors[(int)ImGuiCol.HeaderHovered] = RGB(230, 128, 26, 0.6f);    // Orange
+        colors[(int)ImGuiCol.HeaderActive] = RGB(128, 77, 3, 0.8f);       // Dark orange
+        
+        // Tabs
+        colors[(int)ImGuiCol.Tab] = RGB(38, 31, 64, 1.0f);                     // Dark purple (inactive)
+        colors[(int)ImGuiCol.TabHovered] = RGB(230, 128, 26, 0.8f);            // Orange (hovered)
+        colors[(int)ImGuiCol.TabSelected] = RGB(128, 77, 3, 1.0f);           // Orange (active/selected)
+        colors[(int)ImGuiCol.TabDimmed] = RGB(31, 26, 51, 1.0f);               // Very dark purple (unfocused)
+        colors[(int)ImGuiCol.TabDimmedSelected] = RGB(128, 77, 26, 0.8f);      // Dimmed orange (unfocused selected)
+        colors[(int)ImGuiCol.TabDimmedSelectedOverline] = RGB(230, 128, 26, 1.0f); // Orange underline
+        colors[(int)ImGuiCol.TabSelectedOverline] = RGB(230, 128, 26, 1.0f);   // Orange underline (focused)
+        
+        // Checkmarks and sliders (orange)
+        colors[(int)ImGuiCol.CheckMark] = RGB(255, 179, 51, 1.0f);        // Light orange
+        colors[(int)ImGuiCol.SliderGrab] = RGB(230, 128, 26, 1.0f);       // Orange
+        colors[(int)ImGuiCol.SliderGrabActive] = RGB(255, 166, 51, 1.0f); // Lighter orange
+        
+        // Scrollbar
+        colors[(int)ImGuiCol.ScrollbarBg] = RGB(26, 20, 38, 0.9f);        // Dark purple
+        colors[(int)ImGuiCol.ScrollbarGrab] = RGB(64, 51, 89, 1.0f);      // Medium purple
+        colors[(int)ImGuiCol.ScrollbarGrabHovered] = RGB(89, 71, 115, 1.0f); // Lighter purple
+        colors[(int)ImGuiCol.ScrollbarGrabActive] = RGB(230, 128, 26, 1.0f); // Orange
+        
+        // Separators (orange)
+        colors[(int)ImGuiCol.Separator] = RGB(230, 128, 26, 0.5f);        // Orange
+        colors[(int)ImGuiCol.SeparatorHovered] = RGB(230, 128, 26, 0.8f); // Orange
+        colors[(int)ImGuiCol.SeparatorActive] = RGB(255, 153, 51, 1.0f);  // Lighter orange
+        
+        // Resize grip
+        colors[(int)ImGuiCol.ResizeGrip] = RGB(230, 128, 26, 0.3f);       // Orange
+        colors[(int)ImGuiCol.ResizeGripHovered] = RGB(230, 128, 26, 0.6f); // Orange
+        colors[(int)ImGuiCol.ResizeGripActive] = RGB(255, 153, 51, 1.0f);  // Lighter orange
+        style.FrameRounding = 3.0f;
+        style.WindowPadding = new System.Numerics.Vector2(10, 10);
+        style.FramePadding = new System.Numerics.Vector2(5, 3);
+        style.ItemSpacing = new System.Numerics.Vector2(8, 4);
     }
 
     private void UpdateInput()
@@ -266,7 +368,7 @@ public unsafe class Program : Game
         {
             if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
             {
-                // GameSparker.MainMenu.UpdateMouse(newState.X, newState.Y);
+                GameSparker.MainMenu.UpdateMouse(newState.X, newState.Y);
             }
         }
 
@@ -297,10 +399,9 @@ public unsafe class Program : Game
         _skia.Render();
         
         // // Render ImGui
-        // _imguiController?.Update((float)delta);
-        // _imguiController?.NewFrame();
-        // GameSparker.RenderImgui();
-        // _imguiController?.Render();
+        _imguiRenderer.BeginLayout(gameTime);
+        GameSparker.RenderImgui();
+        _imguiRenderer.EndLayout();
 
         base.Draw(gameTime);
         _lastFrameTime = (int)t.ElapsedMilliseconds;
@@ -328,7 +429,7 @@ public unsafe class Program : Game
     {
         if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
         {
-            // GameSparker.MainMenu.HandleClick(x, y);
+            GameSparker.MainMenu.HandleClick(x, y);
         }
     }
 

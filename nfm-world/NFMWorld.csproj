@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
+    <ProjectReference Include="..\MonoGame.ImGuiNet\MonoGame.ImGuiNet\Monogame.ImGuiNet.csproj" />
   </ItemGroup>
 
 </Project>
