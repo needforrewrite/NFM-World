@@ -34,16 +34,15 @@ public class MonoGameSkia
         
         _grgInterface = GRGlInterface.CreateOpenGl(e =>
         {
-            Console.WriteLine(e);
-            if (e == "eglQueryString")
+            switch (e)
             {
-                return 0;
+                // Fix segfault on Linux
+                case "eglQueryString":
+                case "eglGetCurrentDisplay":
+                    return 0;
+                default:
+                    return GetProcAddress(e);
             }
-            if (e == "eglGetCurrentDisplay")
-            {
-                return 0;
-            }
-            return GetProcAddress(e);
         });
         _grgInterface.Validate();
         _grContext = GRContext.CreateGl(_grgInterface);
