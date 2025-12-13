@@ -4,7 +4,7 @@ namespace NFMWorld.Mad;
 
 public class PerspectiveCamera : Camera
 {
-    public float Fov { get; set; } = 90f;
+    public float Fov { get; set; } = 80f;
     
     public override void OnBeforeRender()
     {

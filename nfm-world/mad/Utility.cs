@@ -1,59 +1,41 @@
+using System.Globalization;
+
 namespace NFMWorld.Mad;
 
 public static class Utility
 {
-    /**
-     * Gets a value from a astring ain format:
-     * astring(value1,value2,value3...)
-     *
-     *
-     * @param astring The variable name (e.g: foo(bar) = foo)
-     * @param string262 The astring (single line) to get the value from
-     * @param i The position of the value (starting from 0)
-     * @return An integer containing the value
-     */
-    static int Getvalue(string astring, string string262, int i)
+    public static int GetValue(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
     {
-        var i263 = 0;
-        var string264 = "";
-        for (var i265 = astring.Length + 1; i265 < string262.Length; i265++)
+        line = line[(prefix.Length + 1)..];
+        var i = 0;
+        foreach (var range in line.SplitAny(',', ')'))
         {
-            var string266 = string262[i265];
-            if (string266 == ',' || string266 == ')')
+            if (i++ == index)
             {
-                i263++;
-                i265++;
-            }
-            if (i263 == i)
-            {
-                string264 = $"{string264}{string262[i265]}";
+                return (int)float.Parse(line[range]);
             }
         }
-        return (int) float.Parse(string264);
+
+        return (int)float.Parse("");
     }
 
-    public static int Getint(string astring, string string262, int i)
+    public static int GetInt(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
     {
-        var i263 = 0;
-        var string264 = "";
-        for (var i265 = astring.Length + 1; i265 < string262.Length; i265++)
+        line = line[(prefix.Length + 1)..];
+        var i = 0;
+        foreach (var range in line.SplitAny(',', ')'))
         {
-            var string266 = string262[i265];
-            if (string266 == ',' || string266 == ')')
+            if (i++ == index)
             {
-                i263++;
-                i265++;
-            }
-            if (i263 == i)
-            {
-                string264 = "" + string264 + string262[i265];
+                return int.Parse(line[range]);
             }
         }
-        return int.Parse(string264);
+
+        return int.Parse("");
     }
 
-    private static readonly float Epsilon = 0.0000001F;
-    private static readonly double EpsilonDouble = 0.0000001D;
+    private const float Epsilon = 0.0000001F;
+    private const double EpsilonDouble = 0.0000001D;
 
     static bool FEquals(float a, float b)
     {
@@ -72,125 +54,11 @@ public static class Utility
      * @param targetValue The value to check for
      * @return {@code true} if the value ais found, {@code false} otherwise
      */
-    static bool ArrayContains(int[] arr, int targetValue)
+    public static bool ArrayContains<T>(T[] arr, T targetValue)
     {
         foreach (var s in arr)
         {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(byte[] arr, byte targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(short[] arr, short targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(char[] arr, char targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(long[] arr, long targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(float[] arr, float targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(double[] arr, double targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
+            if (EqualityComparer<T>.Default.Equals(s, targetValue))
             {
                 return true;
             }
@@ -236,36 +104,16 @@ public static class Utility
         return Math.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    public static class ArrayUtilities
+    /**
+     * Reverses an array of elements.
+     * @param data The array to reverse.
+     */
+    public static void Reverse<T>(Span<T> data)
     {
-        /**
-         * Reverses an array of bytes.
-         * @param data The array to reverse.
-         */
-        public static void Reverse(byte[] data)
+        for (int left = 0, right = data.Length - 1; left < right; left++, right--)
         {
-            for (int left = 0, right = data.Length - 1; left < right; left++, right--)
-            {
-                // swap the values at the left and right indices
-                var temp = data[left];
-                data[left] = data[right];
-                data[right] = temp;
-            }
-        }
-
-        /**
-         * Reverses an array of elements.
-         * @param data The array to reverse.
-         */
-        public static void Reverse<T>(T[] data)
-        {
-            for (int left = 0, right = data.Length - 1; left < right; left++, right--)
-            {
-                // swap the values at the left and right indices
-                var temp = data[left];
-                data[left] = data[right];
-                data[right] = temp;
-            }
+            // swap the values at the left and right indices
+            (data[left], data[right]) = (data[right], data[left]);
         }
     }
 
