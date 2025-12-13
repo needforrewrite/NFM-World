@@ -70,6 +70,9 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Install MGFXC
+        run: dotnet tool install -g dotnet-mgfxc
+
       - name: Generate version string
         id: version
         shell: bash
