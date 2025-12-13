@@ -18,20 +18,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
         
-      - name: Install wine
-        run: |
-          # Remove ppa:ondrej/php since it breaks i386 packages -- https://github.com/oerdnj/deb.sury.org/issues/1745
-          sudo add-apt-repository ppa:ondrej/php
-          sudo apt-get install --yes ppa-purge
-          sudo ppa-purge -y ppa:ondrej/php
-
-          sudo dpkg --add-architecture i386
-          wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
-          sudo add-apt-repository ppa:cybermax-dexter/sdl2-backport
-          sudo apt-add-repository "deb https://dl.winehq.org/wine-builds/ubuntu $(lsb_release -cs) main"
-          sudo apt install --install-recommends winehq-stable
-
       - name: Check if master branch
         id: check_branch
         run: |
@@ -69,11 +58,12 @@ jobs:
       matrix:
         rid:
           - win-x64
-          - win-arm64
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -129,11 +119,23 @@ jobs:
       matrix:
         rid:
           - linux-x64
-          - linux-arm64
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install wine
+        run: |
+          # Remove ppa:ondrej/php since it breaks i386 packages -- https://github.com/oerdnj/deb.sury.org/issues/1745
+          sudo add-apt-repository ppa:ondrej/php
+          sudo apt-get install --yes ppa-purge
+          sudo ppa-purge -y ppa:ondrej/php
+
+          sudo dpkg --add-architecture i386
+          wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
+          sudo add-apt-repository ppa:cybermax-dexter/sdl2-backport
+          sudo apt-add-repository "deb https://dl.winehq.org/wine-builds/ubuntu $(lsb_release -cs) main"
+          sudo apt install --install-recommends winehq-stable
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
