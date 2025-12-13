@@ -18,7 +18,12 @@ public class GameSparker
     private static GraphicsDevice _graphicsDevice;
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
 
-    public static Camera camera = new();
+    public static PerspectiveCamera camera = new();
+    public static OrthoCamera lightCamera = new()
+    {
+        Width = 8192,
+        Height = 8192
+    };
 
     public static readonly string version = GetVersionString();
 
@@ -824,6 +829,8 @@ public class GameSparker
                 // Medium.Around(cars_in_race[playerCarIndex].Conto, true);
                 break;
         }
+        // camera.Position = new Vector3(0, 10000, 0);
+        // camera.LookAt = new Vector3(1, 250, 0);
         
         foreach (var element in placed_stage_elements)
         {
@@ -839,7 +846,11 @@ public class GameSparker
             return;
         }
 
+        lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
+        lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0); // 0,0,0 causes shadows to break
+
         camera.OnBeforeRender();
+        lightCamera.OnBeforeRender();
         
         _graphicsDevice.BlendState = BlendState.Opaque;
         _graphicsDevice.DepthStencilState = DepthStencilState.Default;
@@ -853,7 +864,7 @@ public class GameSparker
         // We set the clear to white since that represents the 
         // furthest the object could be away
         _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.White);
-
+        
         RenderInternal(true);
 
         _graphicsDevice.SetRenderTarget(null);
@@ -879,17 +890,14 @@ public class GameSparker
 
     private static void RenderInternal(bool isCreateShadowMap = false)
     {
-        if (!isCreateShadowMap)
+        foreach (var element in placed_stage_elements)
         {
-            foreach (var element in placed_stage_elements)
-            {
-                element.Render(camera, isCreateShadowMap);
-            }
+            element.Render(camera, lightCamera, isCreateShadowMap);
         }
 
         foreach (var car in cars_in_race)
         {
-            car.Render(camera, isCreateShadowMap);
+            car.Render(camera, lightCamera, isCreateShadowMap);
         }
     }
 

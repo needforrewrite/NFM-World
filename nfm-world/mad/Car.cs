@@ -23,8 +23,8 @@ public class Car
         Mad.Drive(Control, Conto);
     }
 
-    public void Render(Camera camera, bool isCreateShadowMap = false)
+    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
     {
-        Conto.Render(camera, isCreateShadowMap);
+        Conto.Render(camera, lightCamera, isCreateShadowMap);
     }
 }

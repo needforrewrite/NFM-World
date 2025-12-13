@@ -163,7 +163,7 @@ public class Mesh : Transform
         ]);
     }
 
-    public virtual void Render(Camera camera, bool isCreateShadowMap = false)
+    public virtual void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
     {
         var matrixWorld = Matrix.CreateFromEuler(Rotation) * Matrix.CreateTranslation(Position.ToXna());
 
@@ -187,18 +187,22 @@ public class Mesh : Transform
         _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
         _material.Parameters["FogDensity"]?.SetValue(0.857f);
         _material.Parameters["EnvironmentLight"]?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
-        _material.Parameters["CameraPosition"]?.SetValue(camera.Position.ToXna());
-        
-        var lightView = Matrix.CreateLookAt(
-            (camera.Position with { Y = camera.Position.Y + 1000 }).ToXna(),
-            camera.Position.ToXna(),
-            -Microsoft.Xna.Framework.Vector3.Up);
+        _material.Parameters["DepthBias"]?.SetValue(0.00002f);
 
-        var lightProjection = Matrix.CreateOrthographic(4096, 4096, 50, 100_000);
-        
-        var lightViewProjection = lightView * lightProjection;
+        if (isCreateShadowMap)
+        {
+            _material.Parameters["View"]?.SetValue(lightCamera!.ViewMatrix);
+            _material.Parameters["Projection"]?.SetValue(lightCamera!.ProjectionMatrix);
+            _material.Parameters["WorldView"]?.SetValue(matrixWorld * lightCamera!.ViewMatrix);
+            _material.Parameters["WorldViewProj"]?.SetValue(matrixWorld * lightCamera!.ViewMatrix * lightCamera.ProjectionMatrix);
+            _material.Parameters["CameraPosition"]?.SetValue(lightCamera!.Position.ToXna());
+        }
 
-        _material.Parameters["LightViewProj"]?.SetValue(lightViewProjection);
+        if (lightCamera != null)
+        {
+            _material.Parameters["LightViewProj"]?.SetValue(lightCamera.ViewProjectionMatrix);
+        }
+
         _material.CurrentTechnique = isCreateShadowMap ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
         if (!isCreateShadowMap)
         {
@@ -440,25 +444,43 @@ public class Mesh : Transform
     public sealed override Euler Rotation { get; set; }
 }
 
-public class Camera
+public abstract class Camera
 {
     public int Width { get; set; } = 1280;
     public int Height { get; set; } = 720;
-    public float Fov { get; set; } = 90f;
+    public float Near { get; set; } = 50f;
+    public float Far { get; set; } = 1_000_000f;
     
     public Vector3 Position { get; set; } = Vector3.Zero;
     public Vector3 LookAt { get; set; } = Vector3.UnitZ;
     public Vector3 Up  { get; set; } = -Vector3.UnitY;
 
-    public Microsoft.Xna.Framework.Matrix ViewMatrix { get; private set; }
+    public Microsoft.Xna.Framework.Matrix ViewMatrix { get; protected set; }
 
-    public Microsoft.Xna.Framework.Matrix ProjectionMatrix { get; private set; }
+    public Microsoft.Xna.Framework.Matrix ProjectionMatrix { get; protected set; }
 
-    public Microsoft.Xna.Framework.Matrix ViewProjectionMatrix { get; private set; }
+    public Microsoft.Xna.Framework.Matrix ViewProjectionMatrix { get; protected set; }
 
-    public void OnBeforeRender()
+    public abstract void OnBeforeRender();
+}
+
+public class OrthoCamera : Camera
+{
+    public override void OnBeforeRender()
     {
-        ProjectionMatrix = Microsoft.Xna.Framework.Matrix.CreatePerspectiveFieldOfView(MathUtil.DegreesToRadians(Fov), Width / (float)Height, 50f, 1_000_000f);
+        ProjectionMatrix = Matrix.CreateOrthographic(Width, Height, Near, Far);
+        ViewMatrix = Matrix.CreateLookAt(Position.ToXna(), LookAt.ToXna(), Up.ToXna());
+        ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
+    }
+}
+
+public class PerspectiveCamera : Camera
+{
+    public float Fov { get; set; } = 90f;
+    
+    public override void OnBeforeRender()
+    {
+        ProjectionMatrix = Microsoft.Xna.Framework.Matrix.CreatePerspectiveFieldOfView(MathUtil.DegreesToRadians(Fov), Width / (float)Height, Near, Far);
         ViewMatrix = Microsoft.Xna.Framework.Matrix.CreateLookAt(Position.ToXna(), LookAt.ToXna(), Up.ToXna());
         ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
     }
@@ -472,7 +494,7 @@ public class FollowCamera
     private Euler _angle;
     public int FollowZOffset = 0;
 
-    public void Follow(Camera camera, Mesh mesh, float cxz, int lookback)
+    public void Follow(PerspectiveCamera camera, Mesh mesh, float cxz, int lookback)
     {
         // x: yaw = xz
         // y: pitch = zy
