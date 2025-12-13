@@ -26,7 +26,6 @@ public unsafe class Program : Game
     public static SpriteBatch _spriteBatch { get; private set; }
     public static Effect _polyShader { get; private set; }
     public static RenderTarget2D shadowRenderTarget { get; private set; }
-    private SpriteFont _basicFont;
     private ImGuiRenderer _imguiRenderer;
 
     private int _lastFrameTime;
@@ -220,7 +219,6 @@ public unsafe class Program : Game
     protected override void LoadContent()
     {
         _polyShader = Content.Load<Effect>("Poly");
-        _basicFont = Content.Load<SpriteFont>("BasicFont");
         
         // Create floating point render target
         shadowRenderTarget = new RenderTarget2D(
