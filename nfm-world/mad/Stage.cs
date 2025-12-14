@@ -3,6 +3,7 @@ using NFMWorld.Mad;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
 using Color3 = NFMWorld.Mad.Color3;
+using Environment = System.Environment;
 
 /**
     Represents a stage. Holds all information relating to track pices, scenery, etc.
@@ -16,6 +17,7 @@ public class Stage
 
     public Sky sky;
     public Ground ground;
+    public GroundPolys? polys;
 
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
@@ -24,6 +26,7 @@ public class Stage
     {
         int indexOffset = 10;
 
+        World.HasTexture = false;
         Trackers.Nt = 0;
         // Medium.Resdown = 0;
         // Medium.Rescnt = 5;
@@ -31,10 +34,10 @@ public class Stage
         // Medium.Noelec = 0;
         // Medium.Ground = 250;
         // Medium.Trk = 0;
-        // Medium.drawClouds = true;
-        // Medium.drawMountains = true;
-        // Medium.drawStars = true;
-        // Medium.drawPolys = true;
+        World.DrawClouds = true;
+        World.DrawMountains = true;
+        World.DrawStars = true;
+        World.DrawPolys = true;
         var maxr = 0;
         var maxl = 100;
         var maxt = 0;
@@ -73,15 +76,18 @@ public class Stage
                 }
                 if (astring.StartsWith("polys"))
                 {
-                    // if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
-                    // {
-                    //     Medium.drawPolys = false;
-                    // }
-                    // else
-                    // {
-                    //     Medium.Setpolys(Utility.GetInt("polys", astring, 0), Utility.GetInt("polys", astring, 1),
-                    //     Utility.GetInt("polys", astring, 2));
-                    // }
+                    if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
+                    {
+                        World.DrawPolys = false;
+                    }
+                    else
+                    {
+                        World.GroundPolysColor = new Color3(
+                            (short) Utility.GetInt("polys", astring, 0),
+                            (short) Utility.GetInt("polys", astring, 1),
+                            (short) Utility.GetInt("polys", astring, 2)
+                        );
+                    }
                 }
                 if (astring.StartsWith("fog"))
                 {
@@ -93,8 +99,14 @@ public class Stage
                 }
                 if (astring.StartsWith("texture"))
                 {
-                    // Medium.Setexture(Utility.GetInt("texture", astring, 0), Utility.GetInt("texture", astring, 1),
-                    //     Utility.GetInt("texture", astring, 2), Utility.GetInt("texture", astring, 3));
+                    World.HasTexture = true;
+                    World.Texture =
+                    [
+                        Utility.GetInt("texture", astring, 0),
+                        Utility.GetInt("texture", astring, 1),
+                        Utility.GetInt("texture", astring, 2),
+                        Utility.GetInt("texture", astring, 3)
+                    ];
                 }
                 if (astring.StartsWith("clouds"))
                 {
@@ -397,11 +409,16 @@ public class Stage
                     Trackers.Nt++;
                 }
             }
-            // Medium.Newpolys(k, i - k, m, l - m, stagePartCount);
-            // Medium.Newmountains(k, i, m, l);
-            // Medium.Newclouds(k, i, m, l);
+            // Medium.Newpolys(maxl, maxr - maxl, maxb, maxt - maxb, stagePartCount);
+            // Medium.Newmountains(maxl, maxr, maxb, maxt);
+            // Medium.Newclouds(maxl, maxr, maxb, maxt);
             // Medium.Newstars();
             Trackers.LoadTrackers(pieces, maxl, maxr - maxl, maxb, maxt - maxb);
+
+            if (World.DrawPolys)
+            {
+                polys = NFMWorld.Mad.Environment.MakePolys(maxl, maxr - maxl, maxb, maxt - maxb, stagePartCount, graphicsDevice);
+            }
         }
         catch (Exception exception)
         {
@@ -440,6 +457,7 @@ public class Stage
         {
             sky.Render(camera);
             ground.Render(camera, lightCamera);
+            polys?.Render(camera, lightCamera);
         }
 
         foreach (var element in pieces)

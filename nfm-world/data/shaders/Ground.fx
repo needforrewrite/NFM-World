@@ -9,7 +9,12 @@
 
 #include "./Mad.fxh"
 
+matrix WorldView;
 matrix WorldViewProj;
+
+float3 FogColor;
+float FogDistance;
+float FogDensity;
 
 // Lighting
 matrix LightViewProj;
@@ -35,7 +40,14 @@ VertexShaderOutput VertexShaderFunction(
 {
     VertexShaderOutput output;
     output.Position = mul(Position, WorldViewProj); // Transform vertex position
-    output.Color = Color;
+
+    float3 color = Color.xyz;
+	float3 viewPos = mul(Position, WorldView).xyz;
+    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
+
+    VS_ColorCorrect(color);
+
+    output.Color = float4(color, Color.w);
 
     // Save the vertices postion in world space (for shadow mapping)
     output.WorldPos = Position;

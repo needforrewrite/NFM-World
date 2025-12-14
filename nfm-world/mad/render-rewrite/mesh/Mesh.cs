@@ -26,24 +26,27 @@ public class Mesh : Transform
     public bool Wasted;
 
     public int GroundAt;
-    private readonly GraphicsDevice _graphicsDevice;
+    protected readonly GraphicsDevice GraphicsDevice;
 
-    private Submesh?[] _submeshes;
-    private LineMesh? _lineMesh;
+    protected Submesh?[] Submeshes;
+    protected LineMesh? LineMesh;
     
-    private readonly PolygonTriangulator.TriangulationResult[] _triangulation;
+    protected readonly PolygonTriangulator.TriangulationResult[] Triangulation;
 
     // Stores "brokenness" phase for damageable meshes
-    public readonly float[] bfase;
+    public readonly float[] Bfase;
 
     public bool CastsShadow { get; set; }
     public bool GetsShadowed { get; set; } = true;
 
     public Euler TurningWheelAngle { get; set; }
 
-    public Mesh(GraphicsDevice graphicsDevice, string code)
+    public Mesh(GraphicsDevice graphicsDevice, string code) : this(graphicsDevice, RadParser.ParseRad(code))
     {
-        var rad = RadParser.ParseRad(code);
+    }
+
+    public Mesh(GraphicsDevice graphicsDevice, Rad3d rad)
+    {
         Colors = rad.Colors;
         Stats = rad.Stats;
         Wheels = rad.Wheels;
@@ -52,16 +55,46 @@ public class Mesh : Transform
         Polys = rad.Polys;
 
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
-        _graphicsDevice = graphicsDevice;
+        GraphicsDevice = graphicsDevice;
 
-        _triangulation = Array.ConvertAll(Polys,
-            poly => PolygonTriangulator.Triangulate(Array.ConvertAll(poly.Points,
+        Triangulation = Array.ConvertAll(Polys,
+            poly => TriangulateIfNeeded(Array.ConvertAll(poly.Points,
                 input => (System.Numerics.Vector3)input)));
         BuildMesh(graphicsDevice);
 
         CastsShadow = rad.CastsShadow;
         
-        bfase = new float[Polys.Length];
+        Bfase = new float[Polys.Length];
+    }
+
+    internal static PolygonTriangulator.TriangulationResult TriangulateIfNeeded(System.Numerics.Vector3[] verts)
+    {
+        if (verts.Length <= 3)
+        {
+            // Compute triangle normal
+            var normal = System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Cross(
+                verts[1] - verts[0],
+                verts[2] - verts[0]
+            ));
+            
+            // Compute centroid
+            var centroid = System.Numerics.Vector3.Zero;
+            foreach (var v in verts)
+            {
+                centroid += v;
+            }
+            centroid /= verts.Length;
+
+            return new PolygonTriangulator.TriangulationResult
+            {
+                PlaneNormal = normal,
+                Centroid = centroid,
+                Triangles = verts.Length == 3 ? [0, 1, 2] : [],
+                RegionCount = 1
+            };
+        }
+        
+        return PolygonTriangulator.Triangulate(verts);
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -74,21 +107,21 @@ public class Mesh : Transform
         // make a copy of points for damageable meshes
         Polys = Array.ConvertAll(baseMesh.Polys, poly => poly with { Points = [..poly.Points] });
         GroundAt = baseMesh.GroundAt;
-        _graphicsDevice = baseMesh._graphicsDevice;
+        GraphicsDevice = baseMesh.GraphicsDevice;
 
-        _triangulation = baseMesh._triangulation;
+        Triangulation = baseMesh.Triangulation;
 
-        BuildMesh(_graphicsDevice);
+        BuildMesh(GraphicsDevice);
         Position = position;
         Rotation = rotation;
 
         CastsShadow = baseMesh.CastsShadow;
         GetsShadowed = baseMesh.GetsShadowed;
         
-        bfase = new float[Polys.Length];
+        Bfase = new float[Polys.Length];
     }
 
-    [MemberNotNull(nameof(_submeshes))]
+    [MemberNotNull(nameof(Submeshes))]
     private void BuildMesh(GraphicsDevice graphicsDevice)
     {
         var submeshes = new (
@@ -106,7 +139,7 @@ public class Mesh : Transform
         for (var i = 0; i < Polys.Length; i++)
         {
             var poly = Polys[i];
-            var result = _triangulation[i];
+            var result = Triangulation[i];
 
             var (data, indices) = submeshes[(int)poly.PolyType];
             
@@ -137,7 +170,7 @@ public class Mesh : Transform
             }
         }
 
-        _submeshes = new Submesh[submeshes.Length];
+        Submeshes = new Submesh[submeshes.Length];
         for (var i = 0; i < submeshes.Length; i++)
         {
             var (data, indices) = submeshes[i];
@@ -149,15 +182,15 @@ public class Mesh : Transform
 
             vertexBuffer.SetData(data.ToArray());
 
-            var indexBuffer = new IndexBuffer(_graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+            var indexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
             indexBuffer.SetData(indices.ToArray());
 
-            _submeshes[i] = new Submesh(type, this, _graphicsDevice, vertexBuffer, indexBuffer, indices.Count / 3);
+            Submeshes[i] = new Submesh(type, this, GraphicsDevice, vertexBuffer, indexBuffer, indices.Count / 3);
         }
 
         if (lines.Count > 0)
         {
-            _lineMesh = CreateMeshFromLines(lines);
+            LineMesh = CreateMeshFromLines(lines);
         }
     }
 
@@ -220,14 +253,14 @@ public class Mesh : Transform
             );
         }
 	    
-	    var lineVertexBuffer = new VertexBuffer(_graphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
+	    var lineVertexBuffer = new VertexBuffer(GraphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
 	    lineVertexBuffer.SetData(data.ToArray());
 	    
-	    var lineIndexBuffer = new IndexBuffer(_graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+	    var lineIndexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
 	    lineIndexBuffer.SetData(indices.ToArray());
 	    
 	    var lineTriangleCount = indices.Count / 3;
-        return new LineMesh(this, _graphicsDevice, lineVertexBuffer, lineIndexBuffer, lineTriangleCount);
+        return new LineMesh(this, GraphicsDevice, lineVertexBuffer, lineIndexBuffer, lineTriangleCount);
     }
 
     /// <summary>
@@ -269,16 +302,16 @@ public class Mesh : Transform
     {
         var matrixWorld = Matrix.CreateFromEuler(Rotation) * Matrix.CreateTranslation(Position.ToXna());
 
-        foreach (var submesh in _submeshes)
+        foreach (var submesh in Submeshes)
         {
             submesh?.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
         }
-        if (!isCreateShadowMap) _lineMesh?.Render(camera, lightCamera, matrixWorld);
+        if (!isCreateShadowMap) LineMesh?.Render(camera, lightCamera, matrixWorld);
     }
 
     public void RebuildMesh()
     {
-        BuildMesh(_graphicsDevice);
+        BuildMesh(GraphicsDevice);
     }
 
     public sealed override Vector3 Position { get; set; }

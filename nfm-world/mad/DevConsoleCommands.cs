@@ -187,7 +187,7 @@ namespace NFMWorld.Mad
         private static void ExitApplication(DevConsole console)
         {
             console.Log("Exiting application...");
-            Environment.Exit(0); // Terminates the application
+            System.Environment.Exit(0); // Terminates the application
         }
 
         private static void SetPos(DevConsole console, string[] args)
