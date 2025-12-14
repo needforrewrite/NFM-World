@@ -491,6 +491,10 @@ public class DummyBackend : IBackend
 
     public class DummyGraphics : IGraphics
     {
+        public void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[] colorPos)
+        {
+            
+        }
         public void SetColor(Color c)
         {
         }

@@ -6,6 +6,7 @@ namespace NFMWorld.DriverInterface;
 
 public interface IGraphics
 {
+    void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos);
     void SetColor(Color c);
     void FillPolygon(Span<int> x, Span<int> y, int n);
     void DrawPolygon(Span<int> x, Span<int> y, int n);
