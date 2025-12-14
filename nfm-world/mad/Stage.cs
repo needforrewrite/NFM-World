@@ -14,7 +14,7 @@ public class Stage
 
     public int stagePartCount => pieces.Count;
 
-    public Sky? sky;
+    public Sky sky;
     public Ground ground;
 
     /**
