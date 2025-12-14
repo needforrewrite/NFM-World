@@ -17,7 +17,7 @@ public class Stat
     internal readonly float Moment;
     internal readonly float Comprad;
     internal readonly int Push;
-    internal readonly int Revpush;
+    internal readonly float Revpush;
     internal readonly int Lift;
     internal readonly int Revlift;
     internal readonly int Powerloss;
@@ -37,7 +37,7 @@ public class Stat
     internal readonly int Publish;
 
     public Stat(int[] swits, float[] acelf, int handb, float airs, int airc, int turn, float grip, float bounce,
-        float simag, float moment, float comprad, int push, int revpush, int lift, int revlift, int powerloss,
+        float simag, float moment, float comprad, int push, float revpush, int lift, int revlift, int powerloss,
         int flipy, int msquash, int clrad, float dammult, int maxmag, float dishandle, float outdam, int cclass,
         string names, int enginsignature,
         bool include, string createdby, int publish) : this(swits,
@@ -73,7 +73,7 @@ public class Stat
     }
 
     public Stat(int[] swits, float[] acelf, int handb, float airs, int airc, int turn, float grip, float bounce,
-        float simag, float moment, float comprad, int push, int revpush, int lift, int revlift, int powerloss,
+        float simag, float moment, float comprad, int push, float revpush, int lift, int revlift, int powerloss,
         int flipy, int msquash, int clrad, float dammult, int maxmag, float dishandle, float outdam, int cclass,
         string names, int enginsignature)
     {

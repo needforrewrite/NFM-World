@@ -167,9 +167,9 @@ class CarDefine
         2, 2, 3, 3, 2, 2, 2, 4, 2, 2, 2, 4, 2, 2, 2, 2
     };
 
-    internal static readonly int[] Revpush =
+    internal static readonly float[] Revpush =
     {
-        2, 3, 2, 2, 2, 2, 2, 1, 2, 1, 2, 1, 2, 2, 2, 1
+        2F, 3F, 2F, 2F, 2F, 2F, 2F, 1F, 2F, 1F, 2F, 1F, 2F, 2F, 2F, 1F
     };
 
     internal static readonly int[] Lift =
