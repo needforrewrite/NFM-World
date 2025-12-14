@@ -53,7 +53,11 @@ public class Stage
                 }
                 if (astring.StartsWith("sky"))
                 {
-                    // Medium.Setsky(Utility.GetInt("sky", astring, 0), Utility.GetInt("sky", astring, 1), Utility.GetInt("sky", astring, 2));
+                    World.Sky = new Color3(
+                        (short) Utility.GetInt("sky", astring, 0),
+                        (short) Utility.GetInt("sky", astring, 1),
+                        (short) Utility.GetInt("sky", astring, 2)
+                    );
                 }
                 if (astring.StartsWith("ground"))
                 {
