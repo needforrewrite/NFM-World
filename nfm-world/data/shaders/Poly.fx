@@ -81,7 +81,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 	}
 
 	// Apply snap
-	color += (color * SnapColor);
+	color += (color * (SnapColor * 255.0 / 100.0));
 
     VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
 
