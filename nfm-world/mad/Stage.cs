@@ -13,6 +13,8 @@ public class Stage
 
     public int stagePartCount => pieces.Count;
 
+    public Ground ground;
+
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
      */
@@ -61,8 +63,11 @@ public class Stage
                 }
                 if (astring.StartsWith("ground"))
                 {
-                    // Medium.Setgrnd(Utility.GetInt("ground", astring, 0), Utility.GetInt("ground", astring, 1),
-                    //     Utility.GetInt("ground", astring, 2));
+                    World.GroundColor = new Color3(
+                        (short)Utility.GetInt("ground", astring, 0),
+                        (short)Utility.GetInt("ground", astring, 1),
+                        (short)Utility.GetInt("ground", astring, 2)
+                    );
                 }
                 if (astring.StartsWith("polys"))
                 {
@@ -402,7 +407,7 @@ public class Stage
             GameSparker.Writer.WriteLine("At line: " + astring, "error");
             GameSparker.Writer.WriteLine(exception.ToString(), "error");
         }
-        GC.Collect();
+        ground = new Ground(graphicsDevice);
     }
 
     public void CreateObject(string objectName, int x, int y, int z, int r)
@@ -424,5 +429,18 @@ public class Stage
 
 
         GameSparker.devConsole.Log($"Created {objectName} at ({x}, {y}, {z}), rotation: {r}", "info");
+    }
+
+    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
+    {
+        if (!isCreateShadowMap)
+        {
+            ground.Render(camera, lightCamera);
+        }
+
+        foreach (var element in pieces)
+        {
+            element.Render(camera, lightCamera, isCreateShadowMap);
+        }
     }
 }
