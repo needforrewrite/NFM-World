@@ -15,4 +15,5 @@ public static class World
     public static Color3 Fog;
     public static bool LightsOn;
     public static Color3 Sky;
+    public static Color3 GroundColor;
 }
