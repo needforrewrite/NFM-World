@@ -15,58 +15,73 @@ namespace NFMWorld;
 
 public class MonoGameSkia
 {
-    private readonly GraphicsDevice _graphicsDevice;
+    private GRGlInterface _grgInterface;
+    private GRContext _grContext;
+    private GRBackendRenderTarget _renderTarget;
     private SKSurface _surface;
     private SKCanvas _canvas;
     private SkiaSharpBackend _backend;
-    private readonly Texture2D _backBuffer;
-    private readonly byte[] _backBufferData;
-    private readonly SpriteBatch _spriteBatch;
+    private int _fbo;
+    private readonly GL _gl;
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate IntPtr d_sdl_gl_getprocaddress(string proc);
 
     public MonoGameSkia(GraphicsDevice graphicsDevice)
     {
-        _graphicsDevice = graphicsDevice;
-        _surface = SKSurface.Create(new SKImageInfo(graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, SKImageInfo.PlatformColorType, SKAlphaType.Premul));
+        var glType = Type.GetType("Sdl+GL, MonoGame.Framework") ?? throw new InvalidOperationException("SDL GL type not found");
+        var getProcAddressField = glType.GetField("GetProcAddress", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException("GetProcAddress field not found");
+        var getProcAddressDelegate = (Delegate)getProcAddressField.GetValue(null)!;
+        var GetProcAddress = Marshal.GetDelegateForFunctionPointer<d_sdl_gl_getprocaddress>(Marshal.GetFunctionPointerForDelegate(getProcAddressDelegate));
+
+        _gl = GL.GetApi(e => GetProcAddress(e));
+
+        _grgInterface = GRGlInterface.CreateOpenGl(e =>
+        {
+            switch (e)
+            {
+                // Fix segfault on Linux
+                case "eglQueryString":
+                case "eglGetCurrentDisplay":
+                    return 0;
+                default:
+                    return GetProcAddress(e);
+            }
+        });
+        _grgInterface.Validate();
+        _grContext = GRContext.CreateGl(_grgInterface);
+        _renderTarget = new GRBackendRenderTarget(graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, 0, 8, new GRGlFramebufferInfo(0, (uint)0x8058));
+        _surface = SKSurface.Create(_grContext, _renderTarget, GRSurfaceOrigin.BottomLeft, SKColorType.Rgba8888);
         _canvas = _surface.Canvas;
 
-        _backBuffer = new Texture2D(graphicsDevice, graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height, false, SurfaceFormat.Color);
-        _backBufferData = new byte[graphicsDevice.Viewport.Width * graphicsDevice.Viewport.Height * sizeof(int)];
-
         _backend = (SkiaSharpBackend)(IBackend.Backend = new SkiaSharpBackend(_canvas));
-        _spriteBatch = new SpriteBatch(_graphicsDevice);
     }
 
     public void Render()
     {
+        _grContext.ResetContext(GRGlBackendState.All);
         _canvas.Flush();
-        
-        var viewport = _graphicsDevice.Viewport;
-        var destInfo = new SKImageInfo(viewport.Width, viewport.Height, SKColorType.Rgba8888);
-        bool successful;
-
-        unsafe
-        {
-            fixed (byte* bufferPtr = _backBufferData)
-            {
-                var ptr = new IntPtr(bufferPtr);
-
-                successful = _surface.ReadPixels(destInfo, ptr, viewport.Width * sizeof(int), 0, 0);
-            }
-        }
-
-        if (successful)
-        {
-            _backBuffer.SetData(_backBufferData);
-            
-            _spriteBatch.Begin();
-            _spriteBatch.Draw(_backBuffer, Microsoft.Xna.Framework.Vector2.Zero, Microsoft.Xna.Framework.Color.White);
-            _spriteBatch.End();
-        }
-
-        _canvas.Clear();
+        //
+        // Reset GL state modified by SkiaSharp
+        _gl.Disable(EnableCap.Blend);
+        // _gl.Disable(EnableCap.VertexProgramPointSize);
+        // _gl.BindVertexArray(vertexArrayObject); // Restore default VAO 
+        // _gl.FrontFace(FrontFaceDirection.CW);
+        // _gl.Enable(EnableCap.FramebufferSrgb);
+        _gl.ActiveTexture(TextureUnit.Texture0);
+        _gl.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
+        _gl.BindFramebuffer(FramebufferTarget.ReadFramebuffer, 0);
+        _gl.BindFramebuffer(FramebufferTarget.DrawFramebuffer, 0);
+        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        // _gl.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
+        _gl.UseProgram(0);
+        _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
+        _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
+        _gl.DrawBuffers([DrawBufferMode.Back]);
+        _gl.Enable(EnableCap.Dither);
+        _gl.DepthMask(true);
+        _gl.Enable(EnableCap.Multisample);
+        _gl.Disable(EnableCap.ScissorTest);
     }
 }
 
