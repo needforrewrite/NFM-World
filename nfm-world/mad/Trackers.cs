@@ -29,38 +29,38 @@ internal class Trackers
     {
         foreach (var element in elements)
         {
-            var i81 = (int)element.Rotation.Xz.Degrees;
-            for (var i84 = 0; i84 < element.Boxes.Length; i84++)
+            var xz = (int)element.Rotation.Xz.Degrees;
+            for (var i = 0; i < element.Boxes.Length; i++)
             {
-                Xy[Nt] = (int) (element.Boxes[i84].Xy * UMath.Cos(i81) - element.Boxes[i84].Zy * UMath.Sin(i81));
-                Zy[Nt] = (int) (element.Boxes[i84].Zy * UMath.Cos(i81) + element.Boxes[i84].Xy * UMath.Sin(i81));
-                for (var i85 = 0; i85 < 3; i85++)
+                Xy[Nt] = (int) (element.Boxes[i].Xy * UMath.Cos(xz) - element.Boxes[i].Zy * UMath.Sin(xz));
+                Zy[Nt] = (int) (element.Boxes[i].Zy * UMath.Cos(xz) + element.Boxes[i].Xy * UMath.Sin(xz));
+                for (var c = 0; c < 3; c++)
                 {
-                    C[Nt][i85] = (int) (element.Boxes[i84].Color[i85] + element.Boxes[i84].Color[i85] * (World.Snap[i85] / 100.0F));
-                    if (C[Nt][i85] > 255)
+                    C[Nt][c] = (int) (element.Boxes[i].Color[c] + element.Boxes[i].Color[c] * (World.Snap[c] / 100.0F));
+                    if (C[Nt][c] > 255)
                     {
-                        C[Nt][i85] = 255;
+                        C[Nt][c] = 255;
                     }
-                    if (C[Nt][i85] < 0)
+                    if (C[Nt][c] < 0)
                     {
-                        C[Nt][i85] = 0;
+                        C[Nt][c] = 0;
                     }
                 }
-                X[Nt] = (int) (element.Position.X + element.Boxes[i84].Translation.X * UMath.Cos(i81) - element.Boxes[i84].Translation.Z * UMath.Sin(i81));
-                Z[Nt] = (int) (element.Position.Z + element.Boxes[i84].Translation.Z * UMath.Cos(i81) + element.Boxes[i84].Translation.X * UMath.Sin(i81));
-                Y[Nt] = (int)(element.Position.Y + element.Boxes[i84].Translation.Y);
-                Skd[Nt] = element.Boxes[i84].Skid;
-                Dam[Nt] = element.Boxes[i84].Damage;
-                Notwall[Nt] = element.Boxes[i84].NotWall;
+                X[Nt] = (int) (element.Position.X + element.Boxes[i].Translation.X * UMath.Cos(xz) - element.Boxes[i].Translation.Z * UMath.Sin(xz));
+                Z[Nt] = (int) (element.Position.Z + element.Boxes[i].Translation.Z * UMath.Cos(xz) + element.Boxes[i].Translation.X * UMath.Sin(xz));
+                Y[Nt] = (int)(element.Position.Y + element.Boxes[i].Translation.Y);
+                Skd[Nt] = element.Boxes[i].Skid;
+                Dam[Nt] = element.Boxes[i].Damage;
+                Notwall[Nt] = element.Boxes[i].NotWall;
                 Decor[Nt] = false;
-                var i86 = Math.Abs(i81);
+                var i86 = Math.Abs(xz);
                 if (i86 == 180)
                 {
                     i86 = 0;
                 }
-                Radx[Nt] = (int) Math.Abs(element.Boxes[i84].Radius.X * UMath.Cos(i86) + element.Boxes[i84].Radius.Z * UMath.Sin(i86));
-                Radz[Nt] = (int) Math.Abs(element.Boxes[i84].Radius.X * UMath.Sin(i86) + element.Boxes[i84].Radius.Z * UMath.Cos(i86));
-                Rady[Nt] = (int) element.Boxes[i84].Radius.Y;
+                Radx[Nt] = (int) Math.Abs(element.Boxes[i].Radius.X * UMath.Cos(i86) + element.Boxes[i].Radius.Z * UMath.Sin(i86));
+                Radz[Nt] = (int) Math.Abs(element.Boxes[i].Radius.X * UMath.Sin(i86) + element.Boxes[i].Radius.Z * UMath.Cos(i86));
+                Rady[Nt] = (int) element.Boxes[i].Radius.Y;
                 Nt++;
             }
         }
