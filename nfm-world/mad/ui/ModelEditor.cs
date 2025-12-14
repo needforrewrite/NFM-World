@@ -24,6 +24,8 @@ public class ModelEditor
     private bool _rotateDown = false;
     private bool _raiseUp = false;
     private bool _lowerDown = false;
+
+    private bool _lightsOn = true;
     
     // Rotation speeds
     private const float ROTATION_SPEED = 2.0f;
@@ -152,81 +154,176 @@ public class ModelEditor
     {
         if (!_isOpen) return;
         
-        // Set up ImGui window
-        ImGui.SetNextWindowSize(new System.Numerics.Vector2(400, 600), ImGuiCond.FirstUseEver);
-        ImGui.SetNextWindowPos(new System.Numerics.Vector2(50, 50), ImGuiCond.FirstUseEver);
+        var io = ImGui.GetIO();
+        var displaySize = io.DisplaySize;
         
-        if (ImGui.Begin("Model Editor", ref _isOpen, ImGuiWindowFlags.None))
+        // Top tabs bar (fixed position, full width)
+        ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, 0));
+        ImGui.SetNextWindowSize(new System.Numerics.Vector2(displaySize.X, 60));
+        ImGui.Begin("##TopTabs", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | 
+                    ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse);
+        
+        if (ImGui.Button("Car", new System.Numerics.Vector2(100, 30)))
         {
-            ImGui.Text("Model Viewer");
-            ImGui.Separator();
-            
-            // Model selection dropdown
-            if (ImGui.BeginCombo("Select Model", _modelNames[_selectedModelIndex]))
-            {
-                for (int i = 0; i < _modelNames.Length; i++)
-                {
-                    bool isSelected = (_selectedModelIndex == i);
-                    if (ImGui.Selectable(_modelNames[i], isSelected))
-                    {
-                        _selectedModelIndex = i;
-                        ResetView();
-                    }
-                    
-                    if (isSelected)
-                        ImGui.SetItemDefaultFocus();
-                }
-                ImGui.EndCombo();
-            }
-            
-            ImGui.Separator();
-            ImGui.Text("View Controls");
-            
-            // Rotation controls with sliders
-            float rotX = _modelRotation.X;
-            float rotY = _modelRotation.Y;
-            float rotZ = _modelRotation.Z;
-            
-            if (ImGui.SliderFloat("Rotation X (Pitch)", ref rotX, -180f, 180f))
-                _modelRotation.X = rotX;
-            if (ImGui.SliderFloat("Rotation Y (Yaw)", ref rotY, -180f, 180f))
-                _modelRotation.Y = rotY;
-            if (ImGui.SliderFloat("Rotation Z (Roll)", ref rotZ, -180f, 180f))
-                _modelRotation.Z = rotZ;
-            
-            // Height control
-            if (ImGui.SliderFloat("Height", ref _modelHeight, -500f, 500f))
-            {
-                UpdateCameraPosition();
-            }
-            
-            // Camera distance
-            if (ImGui.SliderFloat("Camera Distance", ref _cameraDistance, 100f, 2000f))
-            {
-                UpdateCameraPosition();
-            }
-            
-            ImGui.Separator();
-            
-            // Reset button
-            if (ImGui.Button("Reset View"))
-            {
-                ResetView();
-            }
-            
-            ImGui.Separator();
-            ImGui.Text("Keyboard Controls:");
-            ImGui.BulletText("W/S: Rotate up/down");
-            ImGui.BulletText("A/D: Rotate left/right");
-            ImGui.BulletText("+/-: Raise/lower model");
-            
-            ImGui.Separator();
-            ImGui.Text($"Model: {_modelNames[_selectedModelIndex]}");
-            if (_models[_selectedModelIndex] != null)
-            {
-                ImGui.Text($"Polys: {_models[_selectedModelIndex].Polys.Length}");
-            }
+            // Car tab
         }
+        ImGui.SameLine();
+        if (ImGui.Button("Code Edit", new System.Numerics.Vector2(100, 30)))
+        {
+            // Code Edit tab
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("3D Edit", new System.Numerics.Vector2(100, 30)))
+        {
+            // 3D Edit tab (current)
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Publish", new System.Numerics.Vector2(100, 30)))
+        {
+            // Publish tab
+        }
+        
+        // Right-aligned back button
+        ImGui.SameLine(displaySize.X - 180);
+        if (ImGui.Button("BACK TO GAME", new System.Numerics.Vector2(170, 30)))
+        {
+            GameSparker.ExitModelViewer();
+        }
+        
+        ImGui.End();
+        
+        // Bottom control panel (fixed position, full width)
+        float bottomPanelHeight = 180;
+        ImGui.SetNextWindowPos(new System.Numerics.Vector2(0, displaySize.Y - bottomPanelHeight));
+        ImGui.SetNextWindowSize(new System.Numerics.Vector2(displaySize.X, bottomPanelHeight));
+        ImGui.Begin("##BottomControls", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | 
+                    ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse);
+        
+        // Sub-tabs for bottom panel
+        if (ImGui.BeginTabBar("ControlTabs"))
+        {
+            if (ImGui.BeginTabItem("3D Controls"))
+            {
+                ImGui.Columns(2, "ControlColumns", false);
+                
+                // Left column
+                ImGui.Text("Car Model:");
+                if (ImGui.BeginCombo("##Model", _modelNames[_selectedModelIndex]))
+                {
+                    for (int i = 0; i < _modelNames.Length; i++)
+                    {
+                        bool isSelected = (_selectedModelIndex == i);
+                        if (ImGui.Selectable(_modelNames[i], isSelected))
+                        {
+                            _selectedModelIndex = i;
+                            ResetView();
+                        }
+                        
+                        if (isSelected)
+                            ImGui.SetItemDefaultFocus();
+                    }
+                    ImGui.EndCombo();
+                }
+                
+                ImGui.Spacing();
+                ImGui.Text("Rotate on X / Z axis:");
+                ImGui.Text("Move Up / Down:");
+                ImGui.Spacing();
+                ImGui.Text("Car Wheels:");
+                ImGui.Text("Spin Forward / Back:");
+                ImGui.Text("Turn Left / Right:");
+                
+                ImGui.NextColumn();
+                
+                // Right column
+                float rotX = _modelRotation.X;
+                float rotY = _modelRotation.Y;
+                float rotZ = _modelRotation.Z;
+                
+                ImGui.Text("Rotation Controls:");
+                if (ImGui.SliderFloat("X (Pitch)", ref rotX, -180f, 180f))
+                    _modelRotation.X = rotX;
+                if (ImGui.SliderFloat("Y (Yaw)", ref rotY, -180f, 180f))
+                    _modelRotation.Y = rotY;
+                if (ImGui.SliderFloat("Z (Roll)", ref rotZ, -180f, 180f))
+                    _modelRotation.Z = rotZ;
+                
+                if (ImGui.SliderFloat("Height", ref _modelHeight, -500f, 500f))
+                {
+                    UpdateCameraPosition();
+                }
+                
+                if (ImGui.SliderFloat("Camera Distance", ref _cameraDistance, 100f, 2000f))
+                {
+                    UpdateCameraPosition();
+                }
+                
+                ImGui.Columns(1);
+                ImGui.EndTabItem();
+            }
+            
+            if (ImGui.BeginTabItem("Color Edit"))
+            {
+                ImGui.Text("Color editing not yet implemented");
+                ImGui.EndTabItem();
+            }
+            
+            if (ImGui.BeginTabItem("Scale & Align"))
+            {
+                ImGui.Text("Scale & Align not yet implemented");
+                ImGui.EndTabItem();
+            }
+            
+            if (ImGui.BeginTabItem("Wheels"))
+            {
+                ImGui.Text("Wheel editing not yet implemented");
+                ImGui.EndTabItem();
+            }
+            
+            if (ImGui.BeginTabItem("Stats & Class"))
+            {
+                ImGui.Text("Stats & Class not yet implemented");
+                ImGui.EndTabItem();
+            }
+            
+            if (ImGui.BeginTabItem("Physics"))
+            {
+                ImGui.Text("Physics not yet implemented");
+                ImGui.EndTabItem();
+            }
+            
+            if (ImGui.BeginTabItem("Test Drive"))
+            {
+                ImGui.Text("Test Drive not yet implemented");
+                ImGui.EndTabItem();
+            }
+            
+            ImGui.EndTabBar();
+        }
+        
+        ImGui.End();
+        
+        // Left sidebar - Lights toggle
+        ImGui.SetNextWindowPos(new System.Numerics.Vector2(10, 70));
+        ImGui.SetNextWindowSize(new System.Numerics.Vector2(120, 50));
+        ImGui.Begin("##Lights", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | 
+                    ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse);
+        
+        ImGui.Checkbox("Lights", ref _lightsOn);
+        
+        ImGui.End();
+        
+        // Right sidebar - Reset view
+        ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X - 130, 70));
+        ImGui.SetNextWindowSize(new System.Numerics.Vector2(120, 50));
+        ImGui.Begin("##ResetView", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | 
+                    ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoCollapse);
+        
+        if (ImGui.Button("Reset view"))
+        {
+            ResetView();
+        }
+        
         ImGui.End();
     }
     

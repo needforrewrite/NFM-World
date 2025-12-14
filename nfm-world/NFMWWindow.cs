@@ -385,14 +385,6 @@ public unsafe class Program : Game
         // Render based on game state
         if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
         {
-            // Render 3D model in model editor if open
-            if (GameSparker.ModelEditor?.IsOpen == true)
-            {
-                GraphicsDevice.BlendState = BlendState.Opaque;
-                GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-                GameSparker.ModelEditor.RenderModel(GameSparker.camera);
-            }
-            
             GameSparker.MainMenu.Render();
         }
         else if (GameSparker.CurrentState == GameSparker.GameState.InGame)
@@ -404,8 +396,21 @@ public unsafe class Program : Game
             G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
             G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
         }
+        else if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer)
+        {
+            // Clear with a gradient background (sky blue to tan)
+            GraphicsDevice.Clear(new Microsoft.Xna.Framework.Color(135, 206, 235));
+        }
         
         _skia.Render();
+        
+        // Render 3D model in model viewer state (after Skia)
+        if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer && GameSparker.ModelEditor != null)
+        {
+            GraphicsDevice.BlendState = BlendState.Opaque;
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            GameSparker.ModelEditor.RenderModel(GameSparker.camera);
+        }
         
         // // Render ImGui
         _imguiRenderer.BeginLayout(gameTime);

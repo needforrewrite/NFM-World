@@ -53,7 +53,8 @@ public class GameSparker
     public enum GameState
     {
         Menu,
-        InGame
+        InGame,
+        ModelViewer
     }
 
     public static GameState CurrentState = GameState.Menu;
@@ -125,8 +126,12 @@ public class GameSparker
             {
                 SettingsMenu.HandleKeyCapture(key);
             }
-            // Handle model editor controls
-            else if (ModelEditor?.IsOpen == true)
+            return;
+        }
+        
+        if (CurrentState == GameState.ModelViewer)
+        {
+            if (ModelEditor != null)
             {
                 ModelEditor.HandleKeyPress(key);
             }
@@ -204,8 +209,12 @@ public class GameSparker
         
         if (CurrentState == GameState.Menu)
         {
-            // Handle model editor key releases
-            if (ModelEditor?.IsOpen == true)
+            return;
+        }
+        
+        if (CurrentState == GameState.ModelViewer)
+        {
+            if (ModelEditor != null)
             {
                 ModelEditor.HandleKeyRelease(key);
             }
@@ -377,6 +386,20 @@ public class GameSparker
         }
     }
 
+    public static void StartModelViewer()
+    {
+        CurrentState = GameState.ModelViewer;
+        MainMenu = null;
+        ModelEditor?.Open();
+    }
+    
+    public static void ExitModelViewer()
+    {
+        CurrentState = GameState.Menu;
+        MainMenu = new MainMenu();
+        ModelEditor?.Close();
+    }
+
     public static void StartGame()
     {
         // temp
@@ -400,8 +423,8 @@ public class GameSparker
         // only tick game logic when actually in-game
         if (CurrentState != GameState.InGame)
         {
-            // Update model editor in menu state
-            if (CurrentState == GameState.Menu && ModelEditor?.IsOpen == true)
+            // Update model editor in ModelViewer state
+            if (CurrentState == GameState.ModelViewer && ModelEditor != null)
             {
                 ModelEditor.Update();
             }
