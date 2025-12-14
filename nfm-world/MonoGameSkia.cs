@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.SkiaDriver;
 using NFMWorld.Util;
+using Silk.NET.OpenGL;
 using SkiaSharp;
 using Stride.Core.Mathematics;
 using Color = NFMWorld.Util.Color;
@@ -21,6 +22,7 @@ public class MonoGameSkia
     private SKCanvas _canvas;
     private SkiaSharpBackend _backend;
     private int _fbo;
+    private readonly GL _gl;
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate IntPtr d_sdl_gl_getprocaddress(string proc);
@@ -31,7 +33,9 @@ public class MonoGameSkia
         var getProcAddressField = glType.GetField("GetProcAddress", BindingFlags.Public | BindingFlags.Static) ?? throw new InvalidOperationException("GetProcAddress field not found");
         var getProcAddressDelegate = (Delegate)getProcAddressField.GetValue(null)!;
         var GetProcAddress = Marshal.GetDelegateForFunctionPointer<d_sdl_gl_getprocaddress>(Marshal.GetFunctionPointerForDelegate(getProcAddressDelegate));
-        
+
+        _gl = GL.GetApi(e => GetProcAddress(e));
+
         _grgInterface = GRGlInterface.CreateOpenGl(e =>
         {
             switch (e)
@@ -58,26 +62,26 @@ public class MonoGameSkia
         _grContext.ResetContext(GRGlBackendState.All);
         _canvas.Flush();
         //
-        // // Reset GL state modified by SkiaSharp
-        // _gl.Disable(EnableCap.Blend);
-        // // _gl.Disable(EnableCap.VertexProgramPointSize);
-        // // _gl.BindVertexArray(vertexArrayObject); // Restore default VAO 
-        // // _gl.FrontFace(FrontFaceDirection.CW);
+        // Reset GL state modified by SkiaSharp
+        _gl.Disable(EnableCap.Blend);
+        // _gl.Disable(EnableCap.VertexProgramPointSize);
+        // _gl.BindVertexArray(vertexArrayObject); // Restore default VAO 
+        // _gl.FrontFace(FrontFaceDirection.CW);
         // _gl.Enable(EnableCap.FramebufferSrgb);
-        // _gl.ActiveTexture(TextureUnit.Texture0);
-        // _gl.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
-        // _gl.BindFramebuffer(FramebufferTarget.ReadFramebuffer, 0);
-        // _gl.BindFramebuffer(FramebufferTarget.DrawFramebuffer, 0);
-        // _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-        // // _gl.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
-        // _gl.UseProgram(0);
-        // _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
-        // _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
-        // _gl.DrawBuffers([DrawBufferMode.Back]);
-        // _gl.Enable(EnableCap.Dither);
-        // _gl.DepthMask(true);
-        // _gl.Enable(EnableCap.Multisample);
-        // _gl.Disable(EnableCap.ScissorTest);
+        _gl.ActiveTexture(TextureUnit.Texture0);
+        _gl.PixelStore(PixelStoreParameter.UnpackAlignment, 4);
+        _gl.BindFramebuffer(FramebufferTarget.ReadFramebuffer, 0);
+        _gl.BindFramebuffer(FramebufferTarget.DrawFramebuffer, 0);
+        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        // _gl.BindFramebuffer(FramebufferTarget.FramebufferExt, 0);
+        _gl.UseProgram(0);
+        _gl.BindBuffer(BufferTargetARB.ElementArrayBuffer, 0);
+        _gl.BindBuffer(BufferTargetARB.ArrayBuffer, 0);
+        _gl.DrawBuffers([DrawBufferMode.Back]);
+        _gl.Enable(EnableCap.Dither);
+        _gl.DepthMask(true);
+        _gl.Enable(EnableCap.Multisample);
+        _gl.Disable(EnableCap.ScissorTest);
     }
 }
 
