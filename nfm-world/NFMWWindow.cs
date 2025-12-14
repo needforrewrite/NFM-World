@@ -181,6 +181,9 @@ public unsafe class Program : Game
         _graphics.PreferredBackBufferHeight = 720;
         _graphics.ApplyChanges();
         
+        GraphicsDevice.PresentationParameters.MultiSampleCount = 8;
+        _graphics.ApplyChanges();
+
         _skia = new MonoGameSkia(GraphicsDevice);
         // IBackend.Backend = new DummyBackend();
     }
