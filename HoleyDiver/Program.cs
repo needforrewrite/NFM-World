@@ -8,8 +8,9 @@ public class PolygonTriangulator
 {
     public struct TriangulationResult
     {
-        public List<int> Triangles;
+        public int[] Triangles;
         public Vector3 PlaneNormal;
+        public Vector3 Centroid;
         public int RegionCount;
     }
 
@@ -102,8 +103,9 @@ public class PolygonTriangulator
 
         return new TriangulationResult
         {
-            Triangles = allTriangles,
+            Triangles = allTriangles.ToArray(),
             PlaneNormal = normal,
+            Centroid = centroid,
             RegionCount = polyLines.Count
         };
     }
@@ -208,12 +210,20 @@ public class PolygonTriangulator
         var polyLines = new List<List<int>>();
         polyLines.Add(new List<int>(polyIndices));
 
-        int safetyLimit = polyIndices.Count * 2;
+        int safetyLimit = polyIndices.Count * polyIndices.Count;
         int outerIterations = 0;
 
-        while (polyLines[0].Count >= 6 && outerIterations < safetyLimit)
+        // Keep extracting until no more mirrored sequences are found
+        bool foundMatch = true;
+        while (foundMatch && outerIterations < safetyLimit)
         {
+            foundMatch = false;
             outerIterations++;
+
+            // Process polyLines[0] if it's large enough
+            if (polyLines[0].Count < 4)
+                break;
+
             int n = polyLines[0].Count;
             int bestI0 = -1, bestI1 = -1, bestLength = 0;
 
@@ -226,9 +236,9 @@ public class PolygonTriangulator
                     int k0 = i;
                     int k1 = j;
                     int matchLength = 0;
-                    int maxIterations = n;
+                    int maxMatchIterations = n;
 
-                    while (k0 != k1 && polyLines[0][k0] == polyLines[0][k1] && matchLength < maxIterations)
+                    while (k0 != k1 && polyLines[0][k0] == polyLines[0][k1] && matchLength < maxMatchIterations)
                     {
                         matchLength++;
 
@@ -253,6 +263,8 @@ public class PolygonTriangulator
 
             if (bestLength >= 1)
             {
+                foundMatch = true;
+
                 var newRegion = new List<int>();
                 int start = (bestI0 + bestLength - 1) % n;
                 int end = (bestI1 - (bestLength - 1) + n) % n;
@@ -319,10 +331,12 @@ public class PolygonTriangulator
                     polyLines[0] = newRegion;
                 }
             }
-            else
-            {
-                break;
-            }
+        }
+
+        // Remove consecutive duplicate indices from all regions
+        for (int ri = 0; ri < polyLines.Count; ri++)
+        {
+            polyLines[ri] = RemoveConsecutiveDuplicates(polyLines[ri]);
         }
 
         polyLines.RemoveAll(r => r.Count < 3);
@@ -363,11 +377,67 @@ public class PolygonTriangulator
 
         if (holes.Count > 0)
         {
+            // Check if any hole shares vertices with the outer boundary
+            // If so, they're not true holes but connected regions
+            var outerSet = new HashSet<int>(polyLines[0]);
+            bool hasSharedVertices = false;
+
+            foreach (var hole in holes)
+            {
+                foreach (var idx in hole)
+                {
+                    if (outerSet.Contains(idx))
+                    {
+                        hasSharedVertices = true;
+                        break;
+                    }
+                }
+                if (hasSharedVertices) break;
+            }
+
+            if (hasSharedVertices)
+            {
+                // Return all regions as separate polygons to triangulate
+                var allRegions = new List<List<int>> { polyLines[0] };
+                allRegions.AddRange(holes);
+                return allRegions;
+            }
+
+            // True holes - merge them into the outer boundary
             var combined = CombineWithHoles(polyLines[0], holes, vertices);
             return new List<List<int>> { combined };
         }
 
         return polyLines;
+    }
+
+    private static List<int> RemoveConsecutiveDuplicates(List<int> indices)
+    {
+        if (indices.Count < 2)
+            return indices;
+
+        var result = new List<int>();
+        for (int i = 0; i < indices.Count; i++)
+        {
+            int next = (i + 1) % indices.Count;
+            if (indices[i] != indices[next] || i == indices.Count - 1)
+            {
+                // Only add if not a duplicate of the next, or if it's the last element
+                // But also check if last element equals first
+                if (result.Count == 0 || indices[i] != result[result.Count - 1])
+                {
+                    result.Add(indices[i]);
+                }
+            }
+        }
+
+        // Check if first and last are the same
+        if (result.Count > 1 && result[0] == result[result.Count - 1])
+        {
+            result.RemoveAt(result.Count - 1);
+        }
+
+        return result;
     }
 
     private static bool AllPointsInPolygon(List<Vector2> points, List<Vector2> polygon)
@@ -664,12 +734,16 @@ public class PolygonTriangulator
             bool madeProgress = false;
 
             var startNode = node;
+            int loopCount = 0;
             do
             {
+                loopCount++;
                 var prev = node.Previous ?? nodeIndices.Last;
                 var next = node.Next ?? nodeIndices.First;
 
-                if (IsEar(cleanVerts, nodeIndices, prev.Value, node.Value, next.Value))
+                bool isEar = IsEar(cleanVerts, nodeIndices, prev.Value, node.Value, next.Value);
+
+                if (isEar)
                 {
                     // Map back to original vertex indices
                     triangles.Add(cleanIndices[prev.Value]);
@@ -717,9 +791,7 @@ public class PolygonTriangulator
                 }
 
                 if (!foundAny)
-                {
                     break;
-                }
             }
         }
 
@@ -741,7 +813,15 @@ public class PolygonTriangulator
             if (idx == prev || idx == curr || idx == next)
                 continue;
 
-            if (PointInTriangleStrict(vertices[idx], a, b, c))
+            // Skip vertices that are at the same position as any triangle vertex
+            // (can happen after hole merging creates bridge edges)
+            Vector2 p = vertices[idx];
+            if (Vector2.DistanceSquared(p, a) < 1e-10f ||
+                Vector2.DistanceSquared(p, b) < 1e-10f ||
+                Vector2.DistanceSquared(p, c) < 1e-10f)
+                continue;
+
+            if (PointInTriangleStrict(p, a, b, c))
                 return false;
         }
 
@@ -766,7 +846,14 @@ public class PolygonTriangulator
             if (idx == prev || idx == curr || idx == next)
                 continue;
 
-            if (PointInTriangleStrict(vertices[idx], a, b, c))
+            // Skip vertices that are at the same position as any triangle vertex
+            Vector2 p = vertices[idx];
+            if (Vector2.DistanceSquared(p, a) < 1e-10f ||
+                Vector2.DistanceSquared(p, b) < 1e-10f ||
+                Vector2.DistanceSquared(p, c) < 1e-10f)
+                continue;
+
+            if (PointInTriangleStrict(p, a, b, c))
                 return false;
         }
 
@@ -807,563 +894,61 @@ public class Program
 {
     public static void Main()
     {
-//         Vector3[][] polys =
-//         [
-//             [
-//                 new Vector3(-32, -10, 55),
-//                 new Vector3(-34, -14, 0),
-//                 new Vector3(-15, -14, 5),
-//                 new Vector3(-15, -10, 52),
-//             ],
-//             [
-//                 new Vector3(-15, -14, 5),
-//                 new Vector3(-5, -14, 5),
-//                 new Vector3(-5, -12, 52),
-//                 new Vector3(-15, -10, 52),
-//             ],
-//             [
-//                 new Vector3(32, -10, 55),
-//                 new Vector3(34, -14, 0),
-//                 new Vector3(15, -14, 5),
-//                 new Vector3(15, -10, 52),
-//             ],
-//             [
-//                 new Vector3(15, -14, 5),
-//                 new Vector3(5, -14, 5),
-//                 new Vector3(5, -12, 52),
-//                 new Vector3(15, -10, 52),
-//             ],
-//             [
-//                 new Vector3(-5, -14, 5),
-//                 new Vector3(-5, -12, 52),
-//                 new Vector3(5, -12, 52),
-//                 new Vector3(5, -14, 5),
-//             ],
-//             [
-//                 new Vector3(-31, -14, 0),
-//                 new Vector3(-34, -14, 0),
-//                 new Vector3(-25, -26, -17),
-//                 new Vector3(-22, -26, -17),
-//             ],
-//             [
-//                 new Vector3(31, -14, 0),
-//                 new Vector3(34, -14, 0),
-//                 new Vector3(25, -26, -17),
-//                 new Vector3(22, -26, -17),
-//             ],
-//             [
-//                 new Vector3(-15, -14, 5),
-//                 new Vector3(-31, -14, 0),
-//                 new Vector3(-22, -26, -17),
-//                 new Vector3(0, -26, -13),
-//                 new Vector3(22, -26, -17),
-//                 new Vector3(31, -14, 0),
-//                 new Vector3(15, -14, 5),
-//             ],
-//             [
-//                 new Vector3(-23, -26, -44),
-//                 new Vector3(-25, -26, -17),
-//                 new Vector3(0, -26, -13),
-//                 new Vector3(25, -26, -17),
-//                 new Vector3(23, -26, -44),
-//                 new Vector3(18, -26, -49),
-//                 new Vector3(0, -26, -52),
-//                 new Vector3(-18, -26, -49),
-//             ],
-//             [
-//                 new Vector3(-25, -26, -17),
-//                 new Vector3(-25, -26, -22),
-//                 new Vector3(-34, -14, -5),
-//                 new Vector3(-34, -14, 0),
-//             ],
-//             [
-//                 new Vector3(25, -26, -17),
-//                 new Vector3(25, -26, -22),
-//                 new Vector3(34, -14, -5),
-//                 new Vector3(34, -14, 0),
-//             ],
-//             [
-//                 new Vector3(-25, -26, -22),
-//                 new Vector3(-23, -26, -44),
-//                 new Vector3(-32, -14, -55),
-//                 new Vector3(-34, -14, -5),
-//             ],
-//             [
-//                 new Vector3(25, -26, -22),
-//                 new Vector3(23, -26, -44),
-//                 new Vector3(32, -14, -55),
-//                 new Vector3(34, -14, -5),
-//             ],
-//             [
-//                 new Vector3(-23, -26, -44),
-//                 new Vector3(-18, -26, -49),
-//                 new Vector3(-25, -14, -66),
-//                 new Vector3(-32, -14, -55),
-//             ],
-//             [
-//                 new Vector3(23, -26, -44),
-//                 new Vector3(18, -26, -49),
-//                 new Vector3(25, -14, -66),
-//                 new Vector3(32, -14, -55),
-//             ],
-//             [
-//                 new Vector3(-25, -14, -66),
-//                 new Vector3(-18, -26, -49),
-//                 new Vector3(0, -26, -50),
-//                 new Vector3(18, -26, -49),
-//                 new Vector3(25, -14, -66),
-//                 new Vector3(0, -14, -67),
-//             ],
-//             [
-//                 new Vector3(-32, -14, -55),
-//                 new Vector3(-35, -20, -110),
-//                 new Vector3(-10, -14, -105),
-//                 new Vector3(-10, -14, -67),
-//                 new Vector3(-25, -14, -66),
-//             ],
-//             [
-//                 new Vector3(32, -14, -55),
-//                 new Vector3(35, -20, -110),
-//                 new Vector3(10, -14, -105),
-//                 new Vector3(10, -14, -67),
-//                 new Vector3(25, -14, -66),
-//             ],
-//             [
-//                 new Vector3(10, -14, -67),
-//                 new Vector3(10, -14, -105),
-//                 new Vector3(-10, -14, -105),
-//                 new Vector3(-10, -14, -67),
-//                 new Vector3(0, -14, -67),
-//             ],
-//             [
-//                 new Vector3(-34, 7, 12),
-//                 new Vector3(-34, 7, 0),
-//                 new Vector3(-34, -14, 0),
-//                 new Vector3(-32, -10, 55),
-//                 new Vector3(-32, -3, 50),
-//                 new Vector3(-32, 5, 50),
-//                 new Vector3(-33, 7, 42),
-//                 new Vector3(-33, -3, 37),
-//                 new Vector3(-34, -3, 17),
-//             ],
-//             [
-//                 new Vector3(-34, -5, 17),
-//                 new Vector3(-34, -5, 4),
-//                 new Vector3(-34, -11, 4),
-//                 new Vector3(-34, -11, 17),
-//                 new Vector3(-34, -5, 17),
-//                 new Vector3(-34, -5, 16),
-//                 new Vector3(-34, -11, 16),
-//                 new Vector3(-34, -11, 13),
-//                 new Vector3(-34, -5, 13),
-//                 new Vector3(-34, -5, 12),
-//                 new Vector3(-34, -11, 12),
-//                 new Vector3(-34, -11, 9),
-//                 new Vector3(-34, -5, 9),
-//                 new Vector3(-34, -5, 8),
-//                 new Vector3(-34, -11, 8),
-//                 new Vector3(-34, -11, 5),
-//                 new Vector3(-34, -5, 5),
-//                 new Vector3(-34, -5, 4),
-//                 new Vector3(-34, -11, 4),
-//                 new Vector3(-34, -5, 4),
-//             ],
-//             [
-//                 new Vector3(-32, -14, -55),
-//                 new Vector3(-34, -14, 0),
-//                 new Vector3(-34, 7, 0),
-//                 new Vector3(-32, 7, -50),
-//             ],
-//             [
-//                 new Vector3(-35, -20, -110),
-//                 new Vector3(-32, -14, -55),
-//                 new Vector3(-32, 7, -50),
-//                 new Vector3(-31, 6, -58),
-//                 new Vector3(-31, -3, -62),
-//                 new Vector3(-32, -3, -82),
-//                 new Vector3(-32, 2, -85),
-//                 new Vector3(-35, 0, -100),
-//                 new Vector3(-35, -10, -100),
-//             ],
-//
-//             [
-//                 new Vector3(-32, 5, 50),
-//                 new Vector3(-33, 7, 42),
-//                 new Vector3(-33, 11, 42),
-//                 new Vector3(-32, 9, 50),
-//             ],
-//             [
-//                 new Vector3(-34, 11, 12),
-//                 new Vector3(-34, 7, 12),
-//                 new Vector3(-34, 7, 0),
-//                 new Vector3(-32, 7, -50),
-//                 new Vector3(-32, 11, -50),
-//             ],
-//             [
-//                 new Vector3(-32, 7, -50),
-//                 new Vector3(-31, 6, -58),
-//                 new Vector3(-31, 11, -58),
-//                 new Vector3(-32, 11, -50),
-//             ],
-//             [
-//                 new Vector3(-35, 0, -100),
-//                 new Vector3(-32, 2, -85),
-//                 new Vector3(-32, 7, -87),
-//                 new Vector3(-32, 11, -87),
-//             ],
-//             [
-//                 new Vector3(34, 7, 12),
-//                 new Vector3(34, 7, 0),
-//                 new Vector3(34, -14, 0),
-//                 new Vector3(32, -10, 55),
-//                 new Vector3(32, -3, 50),
-//                 new Vector3(32, 5, 50),
-//                 new Vector3(33, 7, 42),
-//                 new Vector3(33, -3, 37),
-//                 new Vector3(34, -3, 17),
-//             ],
-//             [
-//                 new Vector3(34, -5, 17),
-//                 new Vector3(34, -5, 4),
-//                 new Vector3(34, -11, 4),
-//                 new Vector3(34, -11, 17),
-//                 new Vector3(34, -5, 17),
-//                 new Vector3(34, -5, 16),
-//                 new Vector3(34, -11, 16),
-//                 new Vector3(34, -11, 13),
-//                 new Vector3(34, -5, 13),
-//                 new Vector3(34, -5, 12),
-//                 new Vector3(34, -11, 12),
-//                 new Vector3(34, -11, 9),
-//                 new Vector3(34, -5, 9),
-//                 new Vector3(34, -5, 8),
-//                 new Vector3(34, -11, 8),
-//                 new Vector3(34, -11, 5),
-//                 new Vector3(34, -5, 5),
-//                 new Vector3(34, -5, 4),
-//                 new Vector3(34, -11, 4),
-//                 new Vector3(34, -5, 4),
-//             ],
-//             [
-//                 new Vector3(32, -14, -55),
-//                 new Vector3(34, -14, 0),
-//                 new Vector3(34, 7, 0),
-//                 new Vector3(32, 7, -50),
-//             ],
-//             [
-//                 new Vector3(35, -20, -110),
-//                 new Vector3(32, -14, -55),
-//                 new Vector3(32, 7, -50),
-//                 new Vector3(31, 6, -58),
-//                 new Vector3(31, -3, -62),
-//                 new Vector3(32, -3, -82),
-//                 new Vector3(32, 2, -85),
-//                 new Vector3(35, 0, -100),
-//                 new Vector3(35, -10, -100),
-//             ],
-//
-//             [
-//                 new Vector3(32, 5, 50),
-//                 new Vector3(33, 7, 42),
-//                 new Vector3(33, 11, 42),
-//                 new Vector3(32, 9, 50),
-//             ],
-//             [
-//                 new Vector3(34, 11, 12),
-//                 new Vector3(34, 7, 12),
-//                 new Vector3(34, 7, 0),
-//                 new Vector3(32, 7, -50),
-//                 new Vector3(32, 11, -50),
-//             ],
-//             [
-//                 new Vector3(32, 7, -50),
-//                 new Vector3(31, 6, -58),
-//                 new Vector3(31, 11, -58),
-//                 new Vector3(32, 11, -50),
-//             ],
-//             [
-//                 new Vector3(35, 0, -100),
-//                 new Vector3(32, 2, -85),
-//                 new Vector3(32, 7, -87),
-//                 new Vector3(32, 11, -87),
-//             ],
-//             [
-//                 new Vector3(-31, -8, 50),
-//                 new Vector3(-31, -1, 50),
-//                 new Vector3(-15, -2, 50),
-//                 new Vector3(-16, -6, 50),
-//             ],
-//             [
-//                 new Vector3(31, -8, 50),
-//                 new Vector3(31, -1, 50),
-//                 new Vector3(15, -2, 50),
-//                 new Vector3(16, -6, 50),
-//             ],
-//             [
-//                 new Vector3(-5, -12, 52),
-//                 new Vector3(-15, -10, 52),
-//                 new Vector3(-13, -2, 50),
-//                 new Vector3(13, -2, 50),
-//                 new Vector3(15, -10, 52),
-//                 new Vector3(5, -12, 52),
-//             ],
-//             [
-//                 new Vector3(-15, -10, 52),
-//                 new Vector3(-32, -10, 55),
-//                 new Vector3(-32, -3, 50),
-//                 new Vector3(-31, -1, 50),
-//                 new Vector3(-31, -8, 50),
-//                 new Vector3(-16, -6, 50),
-//                 new Vector3(-15, -2, 50),
-//                 new Vector3(-13, -2, 50),
-//             ],
-//             [
-//                 new Vector3(15, -10, 52),
-//                 new Vector3(32, -10, 55),
-//                 new Vector3(32, -3, 50),
-//                 new Vector3(31, -1, 50),
-//                 new Vector3(31, -8, 50),
-//                 new Vector3(16, -6, 50),
-//                 new Vector3(15, -2, 50),
-//                 new Vector3(13, -2, 50),
-//             ],
-//             [
-//                 new Vector3(-32, 5, 50),
-//                 new Vector3(32, 5, 50),
-//                 new Vector3(32, -3, 50),
-//                 new Vector3(31, -1, 50),
-//                 new Vector3(15, -2, 50),
-//                 new Vector3(13, -2, 50),
-//                 new Vector3(-13, -2, 50),
-//                 new Vector3(-15, -2, 50),
-//                 new Vector3(-31, -1, 50),
-//                 new Vector3(-32, -3, 50),
-//             ],
-//             [
-//                 new Vector3(-32, 5, 50),
-//                 new Vector3(-32, 9, 50),
-//                 new Vector3(32, 9, 50),
-//                 new Vector3(32, 5, 50),
-//             ],
-// // back
-//             [
-//                 new Vector3(-35, -20, -110),
-//                 new Vector3(-35, -10, -100),
-//                 new Vector3(-10, -10, -100),
-//                 new Vector3(-10, -14, -105),
-//             ],
-//             [
-//                 new Vector3(35, -20, -110),
-//                 new Vector3(35, -10, -100),
-//                 new Vector3(10, -10, -100),
-//                 new Vector3(10, -14, -105),
-//             ],
-//             [
-//                 new Vector3(-10, -14, -105),
-//                 new Vector3(-10, -10, -100),
-//                 new Vector3(10, -10, -100),
-//                 new Vector3(10, -14, -105),
-//             ],
-//             [
-//                 new Vector3(-33, -9, -100),
-//                 new Vector3(-33, -4, -100),
-//                 new Vector3(-17, -6, -100),
-//                 new Vector3(-17, -9, -100),
-//             ],
-//             [
-//                 new Vector3(33, -9, -100),
-//                 new Vector3(33, -4, -100),
-//                 new Vector3(17, -6, -100),
-//                 new Vector3(17, -9, -100),
-//             ],
-//             [
-//                 new Vector3(17, -6, -100),
-//                 new Vector3(33, -4, -100),
-//                 new Vector3(35, 0, -100),
-//                 new Vector3(-35, 0, -100),
-//                 new Vector3(-33, -4, -100),
-//                 new Vector3(-17, -6, -100),
-//                 new Vector3(-17, -9, -100),
-//                 new Vector3(17, -9, -100),
-//             ],
-//             [
-//                 new Vector3(-35, 0, -100),
-//                 new Vector3(-35, -10, -100),
-//                 new Vector3(35, -10, -100),
-//                 new Vector3(35, 0, -100),
-//                 new Vector3(33, -4, -100),
-//                 new Vector3(33, -9, -100),
-//                 new Vector3(17, -9, -100),
-//                 new Vector3(-17, -9, -100),
-//                 new Vector3(-33, -9, -100),
-//                 new Vector3(-33, -4, -100),
-//             ],
-//             [
-//                 new Vector3(-35, 0, -100),
-//                 new Vector3(35, 0, -100),
-//                 new Vector3(32, 11, -87),
-//                 new Vector3(-32, 11, -87),
-//             ],
-// // bellow
-//             [
-//                 new Vector3(32, 9, 50),
-//                 new Vector3(33, 11, 42),
-//                 new Vector3(-33, 11, 42),
-//                 new Vector3(-32, 9, 50),
-//             ],
-//             [
-//                 new Vector3(34, 11, 12),
-//                 new Vector3(33, 11, 42),
-//                 new Vector3(-33, 11, 42),
-//                 new Vector3(-34, 11, 12),
-//             ],
-//             [
-//                 new Vector3(34, 11, 12),
-//                 new Vector3(32, 11, -50),
-//                 new Vector3(-32, 11, -50),
-//                 new Vector3(-34, 11, 12),
-//             ],
-//             [
-//                 new Vector3(31, 11, -58),
-//                 new Vector3(32, 11, -50),
-//                 new Vector3(-32, 11, -50),
-//                 new Vector3(-31, 11, -58),
-//             ],
-//             [
-//                 new Vector3(31, 11, -58),
-//                 new Vector3(32, 11, -87),
-//                 new Vector3(-32, 11, -87),
-//                 new Vector3(-31, 11, -58),
-//             ],
-//         ];
-//
-//         var random = new Random();
-//         foreach (var poly in polys)
-//         {
-//             Console.WriteLine("yield return (object[]) [");
-//             var result = PolygonTriangulator.Triangulate(poly);
-//             
-//             Console.WriteLine($"Plane Normal: {result.PlaneNormal}");
-//             Console.WriteLine($"Regions Detected: {result.RegionCount}");
-//             Console.WriteLine($"Triangles: {result.Triangles.Count / 3}");
-//             //
-//             // for (int i = 0; i < result.Triangles.Count; i += 3)
-//             // {
-//             //     Console.WriteLine($"  Triangle: {result.Triangles[i]}, {result.Triangles[i+1]}, {result.Triangles[i+2]}");
-//             // }
-//             
-//             // for (int i = 0; i < result.Triangles.Count; i += 3)
-//             // {
-//             //     Console.WriteLine("<p>");
-//             //     Console.WriteLine($"c({random.Next(0, 256)},{random.Next(0, 256)},{random.Next(0, 256)})");
-//             //     Console.WriteLine($"p({poly[result.Triangles[i]]:0})".Replace("<", "").Replace(">", "").Replace(", ", ","));
-//             //     Console.WriteLine($"p({poly[result.Triangles[i+1]]:0})".Replace("<", "").Replace(">", "").Replace(", ", ","));
-//             //     Console.WriteLine($"p({poly[result.Triangles[i+2]]:0})".Replace("<", "").Replace(">", "").Replace(", ", ","));
-//             //     Console.WriteLine("</p>");
-//             //     Console.WriteLine();
-//             // }
-//             
-//             Console.WriteLine(
-//                 """
-//                     (Vector3[])
-//                     [
-//                 """);
-//             foreach (var point in poly)
-//             {
-//                 Console.WriteLine($"        new Vector3({point:0}),".Replace("<", "").Replace(">", ""));
-//             }
-//             Console.WriteLine(
-//                 """
-//                     ],
-//                 """);
-//             
-//             Console.WriteLine(
-//                 """
-//                     (Vector3[][])
-//                     [
-//                 """);
-//             for (int i = 0; i < result.Triangles.Count; i += 3)
-//             {
-//                 Console.WriteLine("        [");
-//                 Console.WriteLine($"            new Vector3({poly[result.Triangles[i]]:0}),".Replace("<", "").Replace(">", ""));
-//                 Console.WriteLine($"            new Vector3({poly[result.Triangles[i+1]]:0}),".Replace("<", "").Replace(">", ""));
-//                 Console.WriteLine($"            new Vector3({poly[result.Triangles[i+2]]:0}),".Replace("<", "").Replace(">", ""));
-//                 Console.WriteLine("        ],");
-//                 Console.WriteLine();
-//             }
-//             Console.WriteLine(
-//                 $"""
-//                     ],
-//                     new Vector3({result.PlaneNormal.X}f, {result.PlaneNormal.Y}f, {result.PlaneNormal.Z}f),
-//                     {result.RegionCount}
-//                 """.Replace("<", "").Replace(">", ""));
-//             Console.WriteLine("];");
-//         }
-
-        // polygon with self-intersecting path creating holes
         var vertices = new List<Vector3>
         {
-            // new Vector3(34, -5, 17),
-            // new Vector3(34, -5, 4),
-            // new Vector3(34, -11, 4),
-            // new Vector3(34, -11, 17),
-            // new Vector3(34, -5, 17), // Returns to start - closes outer loop
-            // new Vector3(34, -5, 16),
-            // new Vector3(34, -11, 16),
-            // new Vector3(34, -11, 13),
-            // new Vector3(34, -5, 13),
-            // new Vector3(34, -5, 12),
-            // new Vector3(34, -11, 12),
-            // new Vector3(34, -11, 9),
-            // new Vector3(34, -5, 9),
-            // new Vector3(34, -5, 8),
-            // new Vector3(34, -11, 8),
-            // new Vector3(34, -11, 5),
-            // new Vector3(34, -5, 5),
-            // new Vector3(34, -5, 4),
-            // new Vector3(34, -11, 4),
-            // new Vector3(34, -5, 4)
+            new Vector3(-30,-18,85),
+            new Vector3(-44,-15,79),
+            new Vector3(-44,-7,87),
 
-            // TODO add test case
-            // TODO is this polygon triangulating correctly?
-            new Vector3(-47.6000023f,-45.9000015f,5.10000038f)*10,
-            new Vector3(-47.6000023f,-42.5f,5.10000038f)*10,
-            new Vector3(-37.4000015f,-42.5f,6.80000019f)*10,
-            new Vector3(0f,-42.5f,11.9000006f)*10,
-            new Vector3(37.4000015f,-42.5f,6.80000019f)*10,
-            new Vector3(47.6000023f,-42.5f,5.10000038f)*10,
-            new Vector3(47.6000023f,-45.9000015f,5.10000038f)*10,
-            new Vector3(37.4000015f,-45.9000015f,6.80000019f)*10,
-            new Vector3(0f,-45.9000015f,11.9000006f)*10,
-            new Vector3(-37.4000015f,-45.9000015f,6.80000019f)*10,
+            new Vector3(-17,-7,104),
+            new Vector3(-15,-8,103),
+
+            new Vector3(-21,-9,100),
+            new Vector3(-39,-10,87),
+            new Vector3(-39,-14,83),
+            new Vector3(-33,-15,85),
+            new Vector3(-20,-10,99),
+            new Vector3(-21,-9,100),
+
+            new Vector3(-15,-8,103),
         };
 
         var result = PolygonTriangulator.Triangulate(vertices);
 
         Console.WriteLine($"Plane Normal: {result.PlaneNormal}");
         Console.WriteLine($"Regions Detected: {result.RegionCount}");
-        Console.WriteLine($"Triangles: {result.Triangles.Count / 3}");
+        Console.WriteLine($"Triangles: {result.Triangles.Length / 3}");
 
-        for (int i = 0; i < result.Triangles.Count; i += 3)
+        for (int i = 0; i < result.Triangles.Length; i += 3)
         {
             Console.WriteLine(
                 $"  Triangle: {result.Triangles[i]}, {result.Triangles[i + 1]}, {result.Triangles[i + 2]}");
         }
 
-        for (int i = 0; i < result.Triangles.Count; i += 3)
+        for (int i = 0; i < result.Triangles.Length; i += 3)
         {
-            Console.WriteLine("<p>");
-            Console.WriteLine("c(255,0,0)");
-            Console.WriteLine("gr(40)");
-            Console.WriteLine("fs(1)");
-            Console.WriteLine($"p({vertices[result.Triangles[i]]:0})".Replace("<", "").Replace(">", "")
-                .Replace(", ", ","));
-            Console.WriteLine($"p({vertices[result.Triangles[i + 1]]:0})".Replace("<", "").Replace(">", "")
-                .Replace(", ", ","));
-            Console.WriteLine($"p({vertices[result.Triangles[i + 2]]:0})".Replace("<", "").Replace(">", "")
-                .Replace(", ", ","));
-            Console.WriteLine("</p>");
+            Console.WriteLine("[");
+            Console.WriteLine($"new Vector3({vertices[result.Triangles[i]]}),".Replace("<", "").Replace(">", ""));
+            Console.WriteLine($"new Vector3({vertices[result.Triangles[i + 1]]}),".Replace("<", "").Replace(">", ""));
+            Console.WriteLine($"new Vector3({vertices[result.Triangles[i + 2]]}),".Replace("<", "").Replace(">", ""));
+            Console.WriteLine("],");
             Console.WriteLine();
         }
+
+        // for (int i = 0; i < result.Triangles.Length; i += 3)
+        // {
+        //     Console.WriteLine("<p>");
+        //     Console.WriteLine("c(255,0,0)");
+        //     Console.WriteLine("gr(40)");
+        //     Console.WriteLine("fs(1)");
+        //     Console.WriteLine($"p({vertices[result.Triangles[i]]})".Replace("<", "").Replace(">", "")
+        //         .Replace(", ", ","));
+        //     Console.WriteLine($"p({vertices[result.Triangles[i + 1]]})".Replace("<", "").Replace(">", "")
+        //         .Replace(", ", ","));
+        //     Console.WriteLine($"p({vertices[result.Triangles[i + 2]]})".Replace("<", "").Replace(">", "")
+        //         .Replace(", ", ","));
+        //     Console.WriteLine("</p>");
+        //     Console.WriteLine();
+        // }
     }
 }

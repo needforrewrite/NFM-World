@@ -2050,6 +2050,168 @@ public class Tests
         ];
 
         #endregion
+
+        #region Complex poly that it fell apart on before
+
+        yield return (object[])
+        [
+            (Vector3[])
+            [
+                new Vector3(-47.6000023f, -45.9000015f, 5.10000038f) * 10,
+                new Vector3(-47.6000023f, -42.5f, 5.10000038f) * 10,
+                new Vector3(-37.4000015f, -42.5f, 6.80000019f) * 10,
+                new Vector3(0f, -42.5f, 11.9000006f) * 10,
+                new Vector3(37.4000015f, -42.5f, 6.80000019f) * 10,
+                new Vector3(47.6000023f, -42.5f, 5.10000038f) * 10,
+                new Vector3(47.6000023f, -45.9000015f, 5.10000038f) * 10,
+                new Vector3(37.4000015f, -45.9000015f, 6.80000019f) * 10,
+                new Vector3(0f, -45.9000015f, 11.9000006f) * 10,
+                new Vector3(-37.4000015f, -45.9000015f, 6.80000019f) * 10,
+            ],
+            (Vector3[][])
+            [
+                [
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(476.00003f, -459f, 51.000004f),
+                    new Vector3(476.00003f, -425f, 51.000004f),
+                ],
+                [
+
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(476.00003f, -425f, 51.000004f),
+                    new Vector3(374f, -425f, 68f),
+                ],
+                [
+
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(374f, -425f, 68f),
+                    new Vector3(0f, -425f, 119.00001f),
+                ],
+                [
+
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(0f, -425f, 119.00001f),
+                    new Vector3(-374f, -425f, 68f),
+                ],
+                [
+
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(-374f, -425f, 68f),
+                    new Vector3(-476.00003f, -425f, 51.000004f),
+                ],
+                [
+
+                    new Vector3(-476.00003f, -425f, 51.000004f),
+                    new Vector3(-476.00003f, -459f, 51.000004f),
+                    new Vector3(-374f, -459f, 68f),
+                ],
+                [
+
+                    new Vector3(-476.00003f, -425f, 51.000004f),
+                    new Vector3(-374f, -459f, 68f),
+                    new Vector3(0f, -459f, 119.00001f),
+                ],
+                [
+
+                    new Vector3(-476.00003f, -425f, 51.000004f),
+                    new Vector3(0f, -459f, 119.00001f),
+                    new Vector3(374f, -459f, 68f),
+                ],
+            ],
+            new Vector3(5.4962326E-18f, 1f, 3.6665675E-09f),
+            1,
+        ];
+
+        #endregion
+
+        #region radicalone headlight fixture (very hard!)
+
+        yield return (object[])
+        [
+            (Vector3[]) [
+                new Vector3(-30,-18,85),
+                new Vector3(-44,-15,79),
+                new Vector3(-44,-7,87),
+
+                new Vector3(-17,-7,104),
+                new Vector3(-15,-8,103),
+
+                new Vector3(-21,-9,100),
+                new Vector3(-39,-10,87),
+                new Vector3(-39,-14,83),
+                new Vector3(-33,-15,85),
+                new Vector3(-20,-10,99),
+                new Vector3(-21,-9,100),
+
+                new Vector3(-15,-8,103),
+            ],
+            (Vector3[][]) [
+                [
+                    new Vector3(-30, -18, 85),
+                    new Vector3(-44, -15, 79),
+                    new Vector3(-39, -14, 83),
+                ],
+
+                [
+                    new Vector3(-30, -18, 85),
+                    new Vector3(-39, -14, 83),
+                    new Vector3(-33, -15, 85),
+                ],
+
+                [
+                    new Vector3(-30, -18, 85),
+                    new Vector3(-33, -15, 85),
+                    new Vector3(-20, -10, 99),
+                ],
+
+                [
+                    new Vector3(-39, -10, 87),
+                    new Vector3(-39, -14, 83),
+                    new Vector3(-44, -15, 79),
+                ],
+
+                [
+                    new Vector3(-39, -10, 87),
+                    new Vector3(-44, -15, 79),
+                    new Vector3(-44, -7, 87),
+                ],
+
+                [
+                    new Vector3(-39, -10, 87),
+                    new Vector3(-44, -7, 87),
+                    new Vector3(-17, -7, 104),
+                ],
+
+                [
+                    new Vector3(-15, -8, 103),
+                    new Vector3(-30, -18, 85),
+                    new Vector3(-20, -10, 99),
+                ],
+
+                [
+                    new Vector3(-15, -8, 103),
+                    new Vector3(-20, -10, 99),
+                    new Vector3(-21, -9, 100),
+                ],
+
+                [
+                    new Vector3(-21, -9, 100),
+                    new Vector3(-39, -10, 87),
+                    new Vector3(-17, -7, 104),
+                ],
+
+                [
+                    new Vector3(-21, -9, 100),
+                    new Vector3(-17, -7, 104),
+                    new Vector3(-15, -8, 103),
+                ],
+
+            ],
+            new Vector3(0.39011782f, 0.6627052f, -0.63924164f),
+            1
+        ];
+
+        #endregion
     }
 
     [Test]
@@ -2061,7 +2223,7 @@ public class Tests
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(result.Triangles.Count / 3, Is.EqualTo(expectedOutput.Length), "Unexpected triangle count.");
+            Assert.That(result.Triangles.Length / 3, Is.EqualTo(expectedOutput.Length), "Unexpected triangle count.");
             Assert.That(result.RegionCount, Is.EqualTo(expectedRegionCount), "Unexpected region count.");
             Assert.That(result.PlaneNormal, Is.EqualTo(expectedNormal), "Unexpected plane normal.");
 
@@ -2070,7 +2232,7 @@ public class Tests
 
             // Convert result triangles (indices) to array of triangle arrays (Vector3)
             var actualTriangles = new List<Vector3[]>();
-            for (int i = 0; i < result.Triangles.Count; i += 3)
+            for (int i = 0; i < result.Triangles.Length; i += 3)
             {
                 actualTriangles.Add([
                     expectedInput[result.Triangles[i]],
