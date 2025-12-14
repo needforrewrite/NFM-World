@@ -15,10 +15,6 @@ public class Sky : Transform
     {
         _graphicsDevice = graphicsDevice;
 
-        float fade(int i) {
-            return World.FadeFrom / 2 * (i + 1);
-        }
-
         var skyline = -300;
 
         var layers = new LinkedList<(Vector3 Position, Vector3 Color)>();
@@ -27,7 +23,7 @@ public class Sky : Transform
         var col = World.Sky.Snap(World.Snap).ToVector3();
         for (var i = 0; i < 16; ++i) {
             col = ((new Vector3(7, 7, 7) * col) + World.Fog.ToVector3()) / (new Vector3(8, 8, 8));
-            layers.AddLast((new Vector3(0, skyline, fade(i)), col));
+            layers.AddLast((new Vector3(0, skyline, Fade(i)), col));
         }
 
         col = World.Sky.Snap(World.Snap).ToVector3();
@@ -62,6 +58,11 @@ public class Sky : Transform
         _material = Program._skyShader;
         
         _triangleCount = data.Count / 3;
+        return;
+
+        static float Fade(int i) {
+            return World.FadeFrom / 2f * (i + 1);
+        }
     }
     
     public void Render(Camera camera)
