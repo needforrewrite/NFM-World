@@ -25,6 +25,7 @@ public class PolyEffect(Effect effect)
     public EffectParameter? LightViewProj { get; } = effect.Parameters["LightViewProj"];
     public EffectParameter? ShadowMap { get; } = effect.Parameters["ShadowMap"];
     public EffectParameter? GetsShadowed { get; } = effect.Parameters["GetsShadowed"];
+    public EffectParameter? Alpha { get; } = effect.Parameters["Alpha"];
 
     /// <inheritdoc cref="Effect.Parameters"/>
     public EffectParameterCollection Parameters => effect.Parameters;
