@@ -16,7 +16,7 @@ public class FollowCamera
         // x: yaw = xz
         // y: pitch = zy
         // z: roll = xy
-        _angle.Pitch = AngleSingle.FromDegrees(10);
+        _angle.Pitch = AngleSingle.FromDegrees(-10);
         var i28 = 2 + Math.Abs(_bcxz) / 4;
         if (i28 > 20)
         {
@@ -24,22 +24,32 @@ public class FollowCamera
         }
         if (lookback != 0)
         {
-            if (lookback == 1)
+            if (lookback == 2)   //look right
             {
-                if (_bcxz < 180)
-                {
-                    _bcxz += i28;
+                if (_bcxz > -90) {
+                    //_bcxz -= i28;
+                    _bcxz = -90;
                 }
-                if (_bcxz > 180)
-                {
-                    _bcxz = 180;
+                if (_bcxz < -90) {
+                    _bcxz = -90;
                 }
             }
-            if (lookback == -1)
+            if (lookback == 3)   //look left
+            {
+                if (_bcxz < 90) {
+                    //_bcxz += i28;
+                    _bcxz = 90;
+                }
+                if (_bcxz > 90) {
+                    _bcxz = 90;
+                }
+            }
+            if (lookback == -1)  // look back
             {
                 if (_bcxz > -180)
                 {
-                    _bcxz -= i28;
+                    //_bcxz -= i28;
+                    _bcxz = -180;
                 }
                 if (_bcxz < -180)
                 {
@@ -51,11 +61,13 @@ public class FollowCamera
         {
             if (_bcxz > 0)
             {
-                _bcxz -= i28;
+                //_bcxz -= i28;
+                _bcxz = 0;
             }
             else
             {
-                _bcxz += i28;
+                //_bcxz += i28;
+                _bcxz = 0;
             }
         }
         else
@@ -65,10 +77,11 @@ public class FollowCamera
         cxz += _bcxz;
         _angle.Yaw = AngleSingle.FromDegrees(-cxz);
 
+        var followDistance = 800 + FollowZOffset;
         camera.Position = camera.Position with
         {
-            X = mesh.Position.X + (800 * UMath.Sin(cxz)),
-            Z = mesh.Position.Z - ((800 + FollowZOffset) * UMath.Cos(cxz)),
+            X = mesh.Position.X + (followDistance * UMath.Sin(cxz)),
+            Z = mesh.Position.Z - (followDistance * UMath.Cos(cxz)),
             Y = mesh.Position.Y - 250 - FollowYOffset,
         };
         
