@@ -241,7 +241,7 @@ public class Stage
                     if (Utility.GetInt("fix", astring, 4) != 0)
                     {
                         //CheckPoints.Roted[CheckPoints.Fn] = true;
-                        ((FixHoop)pieces[stagePartCount]).Rotated = true;
+                        ((FixHoop)pieces[stagePartCount - 1]).Rotated = true;
                     }
                     else
                     {
