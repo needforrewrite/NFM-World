@@ -39,28 +39,28 @@ public static class MeshDamage
                 if (breakFactor > 0.0) {
                     if (mesh.Polys[i].PolyType != PolyType.Glass) {
                         mesh.Polys[i].Color.ToHSB(out var hue, out var saturation, out var brightness);
-                        if (mesh.bfase[i] > 20 && saturation > 0.25) {
+                        if (mesh.Bfase[i] > 20 && saturation > 0.25) {
                             saturation = 0.25f;
                         }
-                        if (mesh.bfase[i] > 25 && brightness > 0.7) {
+                        if (mesh.Bfase[i] > 25 && brightness > 0.7) {
                             brightness = 0.7f;
                         }
-                        if (mesh.bfase[i] > 30 && saturation > 0.15) {
+                        if (mesh.Bfase[i] > 30 && saturation > 0.15) {
                             saturation = 0.15f;
                         }
-                        if (mesh.bfase[i] > 35 && brightness > 0.6) {
+                        if (mesh.Bfase[i] > 35 && brightness > 0.6) {
                             brightness = 0.6f;
                         }
-                        if (mesh.bfase[i] > 40) {
+                        if (mesh.Bfase[i] > 40) {
                             hue = 0.075f;
                         }
-                        if (mesh.bfase[i] > 50 && brightness > 0.5) {
+                        if (mesh.Bfase[i] > 50 && brightness > 0.5) {
                             brightness = 0.5f;
                         }
-                        if (mesh.bfase[i] > 60) {
+                        if (mesh.Bfase[i] > 60) {
                             hue = 0.05f;
                         }
-                        mesh.bfase[i] += Math.Abs(breakFactor);
+                        mesh.Bfase[i] += Math.Abs(breakFactor);
                         mesh.Polys[i] = mesh.Polys[i] with { Color = Color3.FromHSB(hue, saturation, brightness) };
                     }
                 }
@@ -137,28 +137,28 @@ public static class MeshDamage
                     if (breakFactor > 0.0) {
                         if (mesh.Polys[i].PolyType != PolyType.Glass) {
                             mesh.Polys[i].Color.ToHSB(out var hue, out var saturation, out var brightness);
-                            if (mesh.bfase[i] > 20 && saturation > 0.25) {
+                            if (mesh.Bfase[i] > 20 && saturation > 0.25) {
                                 saturation = 0.25f;
                             }
-                            if (mesh.bfase[i] > 25 && brightness > 0.7) {
+                            if (mesh.Bfase[i] > 25 && brightness > 0.7) {
                                 brightness = 0.7f;
                             }
-                            if (mesh.bfase[i] > 30 && saturation > 0.15) {
+                            if (mesh.Bfase[i] > 30 && saturation > 0.15) {
                                 saturation = 0.15f;
                             }
-                            if (mesh.bfase[i] > 35 && brightness > 0.6) {
+                            if (mesh.Bfase[i] > 35 && brightness > 0.6) {
                                 brightness = 0.6f;
                             }
-                            if (mesh.bfase[i] > 40) {
+                            if (mesh.Bfase[i] > 40) {
                                 hue = 0.075f;
                             }
-                            if (mesh.bfase[i] > 50 && brightness > 0.5) {
+                            if (mesh.Bfase[i] > 50 && brightness > 0.5) {
                                 brightness = 0.5f;
                             }
-                            if (mesh.bfase[i] > 60) {
+                            if (mesh.Bfase[i] > 60) {
                                 hue = 0.05f;
                             }
-                            mesh.bfase[i] += Math.Abs(breakFactor);
+                            mesh.Bfase[i] += Math.Abs(breakFactor);
                             mesh.Polys[i] = mesh.Polys[i] with { Color = Color3.FromHSB(hue, saturation, brightness) };
                         }
                     }
@@ -182,7 +182,7 @@ public static class MeshDamage
                             }
                         }
                         if (mesh.Polys[i].PolyType != PolyType.Glass && polyDmg != 0.0f) {
-                            mesh.bfase[i] += polyDmg;
+                            mesh.Bfase[i] += polyDmg;
                         }
                         // if (Math.Abs(f108) >= 1.0) {
                         //     conto.p[i].chip = 1;
@@ -232,28 +232,28 @@ public static class MeshDamage
                 if (breakFactor > 0.0) {
                     if (mesh.Polys[i].PolyType != PolyType.Glass) {
                         mesh.Polys[i].Color.ToHSB(out var hue, out var saturation, out var brightness);
-                        if (mesh.bfase[i] > 20 && saturation > 0.25) {
+                        if (mesh.Bfase[i] > 20 && saturation > 0.25) {
                             saturation = 0.25f;
                         }
-                        if (mesh.bfase[i] > 25 && brightness > 0.7f) {
+                        if (mesh.Bfase[i] > 25 && brightness > 0.7f) {
                             brightness = 0.7f;
                         }
-                        if (mesh.bfase[i] > 30 && saturation > 0.15f) {
+                        if (mesh.Bfase[i] > 30 && saturation > 0.15f) {
                             saturation = 0.15f;
                         }
-                        if (mesh.bfase[i] > 35 && brightness > 0.6f) {
+                        if (mesh.Bfase[i] > 35 && brightness > 0.6f) {
                             brightness = 0.6f;
                         }
-                        if (mesh.bfase[i] > 40) {
+                        if (mesh.Bfase[i] > 40) {
                             hue = 0.075f;
                         }
-                        if (mesh.bfase[i] > 50 && brightness > 0.5f) {
+                        if (mesh.Bfase[i] > 50 && brightness > 0.5f) {
                             brightness = 0.5f;
                         }
-                        if (mesh.bfase[i] > 60) {
+                        if (mesh.Bfase[i] > 60) {
                             hue = 0.05f;
                         }
-                        mesh.bfase[i] += Math.Abs(breakFactor);
+                        mesh.Bfase[i] += Math.Abs(breakFactor);
                         mesh.Polys[i] = mesh.Polys[i] with { Color = Color3.FromHSB(hue, saturation, brightness) };
                     }
                 }

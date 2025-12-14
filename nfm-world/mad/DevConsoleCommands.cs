@@ -189,7 +189,7 @@ namespace NFMWorld.Mad
         private static void ExitApplication(DevConsole console)
         {
             console.Log("Exiting application...");
-            Environment.Exit(0); // Terminates the application
+            System.Environment.Exit(0); // Terminates the application
         }
 
         private static void SetPos(DevConsole console, string[] args)
@@ -227,7 +227,7 @@ namespace NFMWorld.Mad
             }
 
             var stageName = args[0];
-            GameSparker.current_stage = new Stage(stageName);
+            GameSparker.current_stage = new Stage(stageName, GameSparker._graphicsDevice);
             console.Log($"Switched to stage '{stageName}'");
 
             GameSparker.cars_in_race.Clear();

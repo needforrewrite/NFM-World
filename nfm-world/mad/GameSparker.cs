@@ -15,7 +15,7 @@ namespace NFMWorld.Mad;
 public class GameSparker
 {
     private static SpriteBatch _spriteBatch;
-    private static GraphicsDevice _graphicsDevice;
+    public static GraphicsDevice _graphicsDevice;
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
 
     public static PerspectiveCamera camera = new();
@@ -406,7 +406,7 @@ public class GameSparker
         CurrentState = GameState.InGame;
         MainMenu = null;
 
-        current_stage = new Stage("nfm2/15_dwm");
+        current_stage = new Stage("nfm2/15_dwm", _graphicsDevice);
         cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
         
         for (var i = 0; i < cars.Count; i++)
@@ -502,11 +502,8 @@ public class GameSparker
 
     private static void RenderInternal(bool isCreateShadowMap = false)
     {
-        foreach (var element in current_stage.pieces)
-        {
-            element.Render(camera, lightCamera, isCreateShadowMap);
-        }
-
+        current_stage.Render(camera, lightCamera, isCreateShadowMap);
+        
         foreach (var car in cars_in_race)
         {
             car.Render(camera, lightCamera, isCreateShadowMap);

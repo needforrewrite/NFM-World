@@ -267,7 +267,7 @@ public class MainMenu
         GameSparker.MessageWindow.ShowYesNo("Quit", "Are you sure you want to quit?",
         result => {
             if (result == MessageWindow.MessageResult.Yes) {
-                Environment.Exit(0);
+                System.Environment.Exit(0);
             }
         });
     }
