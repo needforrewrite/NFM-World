@@ -272,7 +272,10 @@ internal class Trackers
 	    
         lineTriangleCount = indices.Count / 3;
         
-        lineEffect = new BasicEffect(GameSparker._graphicsDevice);
+        lineEffect = new BasicEffect(GameSparker._graphicsDevice)
+        {
+            VertexColorEnabled = true
+        };
         
         #endregion
     }
