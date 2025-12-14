@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
+﻿using System.Numerics;
 using Poly2Tri;
 
 namespace HoleyDiver;
@@ -28,7 +25,7 @@ public class PolygonTriangulator
 
         const float epsilon = 1e-5f;
         var uniqueVertices = new List<Vector2>();
-        var indexMap = new List<int>();
+        var indexMap = new List<int>(projected2D.Count);
 
         for (int i = 0; i < projected2D.Count; i++)
         {
@@ -53,7 +50,7 @@ public class PolygonTriangulator
             }
         }
 
-        var initialPoly = new List<int>();
+        var initialPoly = new List<int>(vertices.Count);
         for (int i = 0; i < vertices.Count; i++)
         {
             initialPoly.Add(indexMap[i]);
@@ -106,7 +103,7 @@ public class PolygonTriangulator
         }
 
         // Separate outer polygon from holes (holes are marked with -1 as first element)
-        List<int> outerPoly = null;
+        List<int>? outerPoly = null;
         var holePolys = new List<List<int>>();
 
         foreach (var region in polyLines)
@@ -153,7 +150,6 @@ public class PolygonTriangulator
 
         // For polygons with holes, we need to include hole vertices in the triangulation
         // Build a complete vertex list and use constrained triangulation
-        var allVerts = new List<int>(outerPoly);
         var allTriangles = new List<int>();
 
         // If there are holes, we need to use a different approach
@@ -166,26 +162,26 @@ public class PolygonTriangulator
             try
             {
                 // Convert outer polygon to PolygonPoints
-                var outerPoints = new List<PolygonPoint>();
+                var outerPoints = new List<PolygonPoint>(outerPoly.Count);
                 foreach (var idx in outerPoly)
                 {
                     var pt = uniqueVertices[idx];
                     outerPoints.Add(new PolygonPoint(pt.X, pt.Y));
                 }
 
-                var poly = new Poly2Tri.Polygon(outerPoints);
+                var poly = new Polygon(outerPoints);
 
                 // Add each hole
                 foreach (var hole in holePolys)
                 {
-                    var holePoints = new List<PolygonPoint>();
+                    var holePoints = new List<PolygonPoint>(hole.Count);
                     foreach (var idx in hole)
                     {
                         var pt = uniqueVertices[idx];
                         holePoints.Add(new PolygonPoint(pt.X, pt.Y));
                     }
 
-                    poly.AddHole(new Poly2Tri.Polygon(holePoints));
+                    poly.AddHole(new Polygon(holePoints));
                 }
 
                 // Triangulate using constrained Delaunay
@@ -196,7 +192,7 @@ public class PolygonTriangulator
                 // Extract triangles and map back to original vertex indices
                 foreach (var tri in poly.Triangles)
                 {
-                    var triIndices = new List<int>();
+                    var triIndices = new List<int>(3);
                     for (int i = 0; i < 3; i++)
                     {
                         var p = tri.Points[i];
@@ -236,6 +232,10 @@ public class PolygonTriangulator
                     {
                         allTriangles.AddRange(triIndices);
                     }
+                    else
+                    {
+                        Console.WriteLine("Delaunay created degenerate triangle, this should never happen!");
+                    }
                 }
 
                 return new TriangulationResult
@@ -253,7 +253,7 @@ public class PolygonTriangulator
             }
 
             // Fallback: use ear-cut with centroid filtering
-            var outerVerts = new List<Vector2>();
+            var outerVerts = new List<Vector2>(outerPoly.Count);
             foreach (var idx in outerPoly)
                 outerVerts.Add(uniqueVertices[idx]);
 
@@ -420,7 +420,7 @@ public class PolygonTriangulator
 
     private static List<Vector2> ProjectToXY(IReadOnlyList<Vector3> vertices)
     {
-        var result = new List<Vector2>();
+        var result = new List<Vector2>(vertices.Count);
         foreach (var v in vertices)
             result.Add(new Vector2(v.X, v.Y));
         return result;
@@ -428,7 +428,7 @@ public class PolygonTriangulator
 
     private static List<Vector2> ProjectToXZ(IReadOnlyList<Vector3> vertices)
     {
-        var result = new List<Vector2>();
+        var result = new List<Vector2>(vertices.Count);
         foreach (var v in vertices)
             result.Add(new Vector2(v.X, v.Z));
         return result;
@@ -436,7 +436,7 @@ public class PolygonTriangulator
 
     private static List<Vector2> ProjectToYZ(IReadOnlyList<Vector3> vertices)
     {
-        var result = new List<Vector2>();
+        var result = new List<Vector2>(vertices.Count);
         foreach (var v in vertices)
             result.Add(new Vector2(v.Y, v.Z));
         return result;
@@ -444,8 +444,7 @@ public class PolygonTriangulator
 
     private static List<List<int>> ExtractRegions(List<int> polyIndices, List<Vector2> vertices)
     {
-        var polyLines = new List<List<int>>();
-        polyLines.Add(new List<int>(polyIndices));
+        List<List<int>> polyLines = [[..polyIndices]];
 
         int safetyLimit = polyIndices.Count * polyIndices.Count;
         int outerIterations = 0;
@@ -1015,7 +1014,7 @@ public class PolygonTriangulator
             return triangles;
 
         // Build cleaned vertex list
-        var cleanVerts = new List<Vector2>();
+        var cleanVerts = new List<Vector2>(cleanIndices.Count);
         foreach (var idx in cleanIndices)
         {
             cleanVerts.Add(vertices[idx]);
@@ -1034,7 +1033,7 @@ public class PolygonTriangulator
         for (int i = 0; i < cleanVerts.Count; i++)
             nodeIndices.AddLast(i);
 
-        var node = nodeIndices.First;
+        var node = nodeIndices.First!;
         int remaining = nodeIndices.Count;
         int iterations = 0;
         int maxIterations = remaining * remaining * 2;
@@ -1049,8 +1048,8 @@ public class PolygonTriangulator
             do
             {
                 loopCount++;
-                var prev = node.Previous ?? nodeIndices.Last;
-                var next = node.Next ?? nodeIndices.First;
+                var prev = node.Previous ?? nodeIndices.Last!;
+                var next = node.Next ?? nodeIndices.First!;
 
                 bool isEar = IsEar(cleanVerts, nodeIndices, prev.Value, node.Value, next.Value);
 
@@ -1070,7 +1069,7 @@ public class PolygonTriangulator
                 }
                 else
                 {
-                    node = node.Next ?? nodeIndices.First;
+                    node = node.Next ?? nodeIndices.First!;
                 }
             } while (node != startNode && remaining > 2);
 
@@ -1081,8 +1080,8 @@ public class PolygonTriangulator
 
                 while (currNode != null && remaining > 2)
                 {
-                    var prevNode = currNode.Previous ?? nodeIndices.Last;
-                    var nextNode = currNode.Next ?? nodeIndices.First;
+                    var prevNode = currNode.Previous ?? nodeIndices.Last!;
+                    var nextNode = currNode.Next ?? nodeIndices.First!;
 
                     if (IsEarRelaxed(cleanVerts, nodeIndices, prevNode.Value, currNode.Value, nextNode.Value))
                     {
@@ -1103,49 +1102,49 @@ public class PolygonTriangulator
 
                 if (!foundAny)
                 {
-                    Console.WriteLine($"DEBUG EarCut: Stuck at iteration {iterations}, remaining={remaining}");
-                    Console.WriteLine($"DEBUG EarCut: remaining vertices: [{string.Join(", ", nodeIndices)}]");
-
-                    // Debug why each vertex fails
-                    var debugNode = nodeIndices.First;
-                    Console.WriteLine("DEBUG EarCut: Vertex positions:");
-                    while (debugNode != null)
-                    {
-                        int idx = debugNode.Value;
-                        Console.WriteLine($"  node {idx} (vert {cleanIndices[idx]}): {cleanVerts[idx]}");
-                        debugNode = debugNode.Next;
-                    }
-
-                    debugNode = nodeIndices.First;
-                    while (debugNode != null)
-                    {
-                        var prevNode = debugNode.Previous ?? nodeIndices.Last;
-                        var nextNode = debugNode.Next ?? nodeIndices.First;
-
-                        int pv = prevNode.Value, cv = debugNode.Value, nv = nextNode.Value;
-                        Vector2 a = cleanVerts[pv], b = cleanVerts[cv], c = cleanVerts[nv];
-                        float cross = Cross(b - a, c - a);
-
-                        bool hasPointInside = false;
-                        int pointInsideIdx = -1;
-                        foreach (int idx in nodeIndices)
-                        {
-                            if (idx == pv || idx == cv || idx == nv) continue;
-                            Vector2 p = cleanVerts[idx];
-                            if (Vector2.DistanceSquared(p, a) < 1e-10f ||
-                                Vector2.DistanceSquared(p, b) < 1e-10f ||
-                                Vector2.DistanceSquared(p, c) < 1e-10f) continue;
-                            if (PointInTriangleStrict(p, a, b, c))
-                            {
-                                hasPointInside = true;
-                                pointInsideIdx = idx;
-                                break;
-                            }
-                        }
-
-                        Console.WriteLine($"DEBUG EarCut: node {cv} (orig {cleanIndices[cv]}): prev={pv}, next={nv}, cross={cross:F6}, pointInside={hasPointInside} (idx={pointInsideIdx})");
-                        debugNode = debugNode.Next;
-                    }
+                    // Console.WriteLine($"DEBUG EarCut: Stuck at iteration {iterations}, remaining={remaining}");
+                    // Console.WriteLine($"DEBUG EarCut: remaining vertices: [{string.Join(", ", nodeIndices)}]");
+                    //
+                    // // Debug why each vertex fails
+                    // var debugNode = nodeIndices.First;
+                    // Console.WriteLine("DEBUG EarCut: Vertex positions:");
+                    // while (debugNode != null)
+                    // {
+                    //     int idx = debugNode.Value;
+                    //     Console.WriteLine($"  node {idx} (vert {cleanIndices[idx]}): {cleanVerts[idx]}");
+                    //     debugNode = debugNode.Next;
+                    // }
+                    //
+                    // debugNode = nodeIndices.First;
+                    // while (debugNode != null)
+                    // {
+                    //     var prevNode = debugNode.Previous ?? nodeIndices.Last;
+                    //     var nextNode = debugNode.Next ?? nodeIndices.First;
+                    //
+                    //     int pv = prevNode.Value, cv = debugNode.Value, nv = nextNode.Value;
+                    //     Vector2 a = cleanVerts[pv], b = cleanVerts[cv], c = cleanVerts[nv];
+                    //     float cross = Cross(b - a, c - a);
+                    //
+                    //     bool hasPointInside = false;
+                    //     int pointInsideIdx = -1;
+                    //     foreach (int idx in nodeIndices)
+                    //     {
+                    //         if (idx == pv || idx == cv || idx == nv) continue;
+                    //         Vector2 p = cleanVerts[idx];
+                    //         if (Vector2.DistanceSquared(p, a) < 1e-10f ||
+                    //             Vector2.DistanceSquared(p, b) < 1e-10f ||
+                    //             Vector2.DistanceSquared(p, c) < 1e-10f) continue;
+                    //         if (PointInTriangleStrict(p, a, b, c))
+                    //         {
+                    //             hasPointInside = true;
+                    //             pointInsideIdx = idx;
+                    //             break;
+                    //         }
+                    //     }
+                    //
+                    //     Console.WriteLine($"DEBUG EarCut: node {cv} (orig {cleanIndices[cv]}): prev={pv}, next={nv}, cross={cross:F6}, pointInside={hasPointInside} (idx={pointInsideIdx})");
+                    //     debugNode = debugNode.Next;
+                    // }
 
                     break;
                 }
