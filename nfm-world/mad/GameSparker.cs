@@ -385,8 +385,7 @@ public class GameSparker
 
     internal static int Getint(string astring, string string4, int i)
     {
-        // TODO
-        return Utility.Getint(astring, string4, i);
+        return Utility.GetInt(astring, string4, i);
     }
 
 

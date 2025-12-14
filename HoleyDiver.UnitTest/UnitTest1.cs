@@ -2050,6 +2050,447 @@ public class Tests
         ];
 
         #endregion
+
+        #region Complex poly that it fell apart on before
+
+        yield return (object[])
+        [
+            (Vector3[])
+            [
+                new Vector3(-47.6000023f, -45.9000015f, 5.10000038f) * 10,
+                new Vector3(-47.6000023f, -42.5f, 5.10000038f) * 10,
+                new Vector3(-37.4000015f, -42.5f, 6.80000019f) * 10,
+                new Vector3(0f, -42.5f, 11.9000006f) * 10,
+                new Vector3(37.4000015f, -42.5f, 6.80000019f) * 10,
+                new Vector3(47.6000023f, -42.5f, 5.10000038f) * 10,
+                new Vector3(47.6000023f, -45.9000015f, 5.10000038f) * 10,
+                new Vector3(37.4000015f, -45.9000015f, 6.80000019f) * 10,
+                new Vector3(0f, -45.9000015f, 11.9000006f) * 10,
+                new Vector3(-37.4000015f, -45.9000015f, 6.80000019f) * 10,
+            ],
+            (Vector3[][])
+            [
+                [
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(476.00003f, -459f, 51.000004f),
+                    new Vector3(476.00003f, -425f, 51.000004f),
+                ],
+                [
+
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(476.00003f, -425f, 51.000004f),
+                    new Vector3(374f, -425f, 68f),
+                ],
+                [
+
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(374f, -425f, 68f),
+                    new Vector3(0f, -425f, 119.00001f),
+                ],
+                [
+
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(0f, -425f, 119.00001f),
+                    new Vector3(-374f, -425f, 68f),
+                ],
+                [
+
+                    new Vector3(374f, -459f, 68f),
+                    new Vector3(-374f, -425f, 68f),
+                    new Vector3(-476.00003f, -425f, 51.000004f),
+                ],
+                [
+
+                    new Vector3(-476.00003f, -425f, 51.000004f),
+                    new Vector3(-476.00003f, -459f, 51.000004f),
+                    new Vector3(-374f, -459f, 68f),
+                ],
+                [
+
+                    new Vector3(-476.00003f, -425f, 51.000004f),
+                    new Vector3(-374f, -459f, 68f),
+                    new Vector3(0f, -459f, 119.00001f),
+                ],
+                [
+
+                    new Vector3(-476.00003f, -425f, 51.000004f),
+                    new Vector3(0f, -459f, 119.00001f),
+                    new Vector3(374f, -459f, 68f),
+                ],
+            ],
+            new Vector3(5.4962326E-18f, 1f, 3.6665675E-09f),
+            1,
+        ];
+
+        #endregion
+
+        #region radicalone headlight fixture (very hard!)
+
+        yield return (object[])
+        [
+            (Vector3[]) [
+                new Vector3(-30,-18,85),
+                new Vector3(-44,-15,79),
+                new Vector3(-44,-7,87),
+
+                new Vector3(-17,-7,104),
+                new Vector3(-15,-8,103),
+
+                new Vector3(-21,-9,100),
+                new Vector3(-39,-10,87),
+                new Vector3(-39,-14,83),
+                new Vector3(-33,-15,85),
+                new Vector3(-20,-10,99),
+                new Vector3(-21,-9,100),
+
+                new Vector3(-15,-8,103),
+            ],
+            (Vector3[][]) [
+
+                [
+                    new Vector3(-17, -7, 104),
+                    new Vector3(-21, -9, 100),
+                    new Vector3(-44, -7, 87),
+                ],
+
+                [
+                    new Vector3(-44, -7, 87),
+                    new Vector3(-21, -9, 100),
+                    new Vector3(-39, -10, 87),
+                ],
+
+                [
+                    new Vector3(-44, -7, 87),
+                    new Vector3(-39, -10, 87),
+                    new Vector3(-39, -14, 83),
+                ],
+
+                [
+                    new Vector3(-44, -7, 87),
+                    new Vector3(-39, -14, 83),
+                    new Vector3(-44, -15, 79),
+                ],
+
+                [
+                    new Vector3(-39, -14, 83),
+                    new Vector3(-30, -18, 85),
+                    new Vector3(-44, -15, 79),
+                ],
+
+                [
+                    new Vector3(-39, -14, 83),
+                    new Vector3(-33, -15, 85),
+                    new Vector3(-30, -18, 85),
+                ],
+
+                [
+                    new Vector3(-33, -15, 85),
+                    new Vector3(-20, -10, 99),
+                    new Vector3(-30, -18, 85),
+                ],
+
+                [
+                    new Vector3(-30, -18, 85),
+                    new Vector3(-20, -10, 99),
+                    new Vector3(-15, -8, 103),
+                ],
+
+                [
+                    new Vector3(-17, -7, 104),
+                    new Vector3(-15, -8, 103),
+                    new Vector3(-20, -10, 99),
+                ],
+
+                [
+                    new Vector3(-21, -9, 100),
+                    new Vector3(-17, -7, 104),
+                    new Vector3(-20, -10, 99),
+                ],
+            ],
+            new Vector3(0.39011782f, 0.6627052f, -0.63924164f),
+            2
+        ];
+
+        #endregion
+
+        #region drmonster rear part (this one was a nightmare)
+
+        yield return (object[])
+        [
+            (Vector3[]) [
+                new Vector3(-40,-54,-103),
+                new Vector3(-40,-27,-103),
+                new Vector3(40,-27,-103),
+                new Vector3(40,-54,-103),
+                new Vector3(38,-43,-103),
+                new Vector3(33,-42,-104),
+                new Vector3(33,-34,-104),
+                new Vector3(38,-33,-103),
+                new Vector3(38,-43,-103),
+                new Vector3(40,-54,-103),
+                new Vector3(19,-43,-103),
+                new Vector3(0,-45,-103),
+                new Vector3(-19,-43,-103),
+                new Vector3(-40,-54,-103),
+                new Vector3(-38,-43,-103),
+                new Vector3(-33,-42,-104),
+                new Vector3(-33,-34,-104),
+                new Vector3(-38,-33,-103),
+                new Vector3(-38,-43,-103),
+            ],
+            (Vector3[][]) [
+                [
+                    new Vector3(-40, -54, -103),
+                    new Vector3(-38, -43, -103),
+                    new Vector3(-40, -27, -103),
+                ],
+
+                [
+                    new Vector3(-38, -43, -103),
+                    new Vector3(-38, -33, -103),
+                    new Vector3(-40, -27, -103),
+                ],
+
+                [
+                    new Vector3(-40, -27, -103),
+                    new Vector3(-38, -33, -103),
+                    new Vector3(-33, -34, -104),
+                ],
+
+                [
+                    new Vector3(-40, -27, -103),
+                    new Vector3(-33, -34, -104),
+                    new Vector3(40, -27, -103),
+                ],
+
+                [
+                    new Vector3(40, -27, -103),
+                    new Vector3(-33, -34, -104),
+                    new Vector3(33, -34, -104),
+                ],
+
+                [
+                    new Vector3(-33, -34, -104),
+                    new Vector3(-19, -43, -103),
+                    new Vector3(33, -34, -104),
+                ],
+
+                [
+                    new Vector3(-19, -43, -103),
+                    new Vector3(0, -45, -103),
+                    new Vector3(33, -34, -104),
+                ],
+
+                [
+                    new Vector3(19, -43, -103),
+                    new Vector3(33, -34, -104),
+                    new Vector3(0, -45, -103),
+                ],
+
+                [
+                    new Vector3(33, -42, -104),
+                    new Vector3(33, -34, -104),
+                    new Vector3(19, -43, -103),
+                ],
+
+                [
+                    new Vector3(19, -43, -103),
+                    new Vector3(40, -54, -103),
+                    new Vector3(33, -42, -104),
+                ],
+
+                [
+                    new Vector3(33, -42, -104),
+                    new Vector3(40, -54, -103),
+                    new Vector3(38, -43, -103),
+                ],
+
+                [
+                    new Vector3(38, -43, -103),
+                    new Vector3(40, -54, -103),
+                    new Vector3(40, -27, -103),
+                ],
+
+                [
+                    new Vector3(38, -33, -103),
+                    new Vector3(38, -43, -103),
+                    new Vector3(40, -27, -103),
+                ],
+
+                [
+                    new Vector3(38, -33, -103),
+                    new Vector3(40, -27, -103),
+                    new Vector3(33, -34, -104),
+                ],
+
+                [
+                    new Vector3(-33, -34, -104),
+                    new Vector3(-33, -42, -104),
+                    new Vector3(-19, -43, -103),
+                ],
+
+                [
+                    new Vector3(-33, -42, -104),
+                    new Vector3(-40, -54, -103),
+                    new Vector3(-19, -43, -103),
+                ],
+
+                [
+                    new Vector3(-33, -42, -104),
+                    new Vector3(-38, -43, -103),
+                    new Vector3(-40, -54, -103),
+                ],
+            ],
+            new Vector3(-3.573928E-12f, 0.010934371f, 0.9999402f),
+            3
+        ];
+
+        #endregion
+
+        #region polygon that was previously returning a triangle count not divisible by 3
+
+        yield return (object[])
+        [
+            (Vector3[])
+            [
+
+                new Vector3(42.5f, 23.800001f, 207.40001f),
+                new Vector3(42.5f, -8.5f, 207.40001f),
+                new Vector3(27.2f, -20.400002f, 207.40001f),
+                new Vector3(13.6f, -23.800001f, 207.40001f),
+                new Vector3(-13.6f, -23.800001f, 207.40001f),
+                new Vector3(-27.2f, -20.400002f, 207.40001f),
+                new Vector3(-42.5f, -8.5f, 207.40001f),
+                new Vector3(-42.5f, 23.800001f, 207.40001f),
+                new Vector3(-35.7f, 23.800001f, 207.40001f),
+                new Vector3(35.7f, 23.800001f, 207.40001f),
+                new Vector3(35.7f, 11.900001f, 207.40001f),
+                new Vector3(-35.7f, 11.900001f, 207.40001f),
+                new Vector3(-35.7f, -5.1000004f, 207.40001f),
+                new Vector3(-23.800001f, -15.3f, 207.40001f),
+                new Vector3(-13.6f, -17f, 207.40001f),
+                new Vector3(13.6f, -17f, 207.40001f),
+                new Vector3(23.800001f, -15.3f, 207.40001f),
+                new Vector3(35.7f, -5.1000004f, 207.40001f),
+                new Vector3(35.7f, 23.800001f, 207.40001f),
+            ],
+            (Vector3[][])
+            [
+                [
+                    new Vector3(-23.800001f, -15.3f, 207.40001f),
+                    new Vector3(-27.2f, -20.400002f, 207.40001f),
+                    new Vector3(-13.6f, -23.800001f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-23.800001f, -15.3f, 207.40001f),
+                    new Vector3(-13.6f, -23.800001f, 207.40001f),
+                    new Vector3(-13.6f, -17f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-13.6f, -17f, 207.40001f),
+                    new Vector3(-13.6f, -23.800001f, 207.40001f),
+                    new Vector3(13.6f, -23.800001f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-13.6f, -17f, 207.40001f),
+                    new Vector3(13.6f, -23.800001f, 207.40001f),
+                    new Vector3(13.6f, -17f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(13.6f, -17f, 207.40001f),
+                    new Vector3(13.6f, -23.800001f, 207.40001f),
+                    new Vector3(23.800001f, -15.3f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(13.6f, -23.800001f, 207.40001f),
+                    new Vector3(27.2f, -20.400002f, 207.40001f),
+                    new Vector3(23.800001f, -15.3f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(23.800001f, -15.3f, 207.40001f),
+                    new Vector3(27.2f, -20.400002f, 207.40001f),
+                    new Vector3(35.7f, -5.1000004f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(27.2f, -20.400002f, 207.40001f),
+                    new Vector3(42.5f, -8.5f, 207.40001f),
+                    new Vector3(35.7f, -5.1000004f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(35.7f, 11.900001f, 207.40001f),
+                    new Vector3(35.7f, -5.1000004f, 207.40001f),
+                    new Vector3(42.5f, -8.5f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(42.5f, 23.800001f, 207.40001f),
+                    new Vector3(35.7f, 11.900001f, 207.40001f),
+                    new Vector3(42.5f, -8.5f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(35.7f, 11.900001f, 207.40001f),
+                    new Vector3(42.5f, 23.800001f, 207.40001f),
+                    new Vector3(35.7f, 23.800001f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-35.7f, -5.1000004f, 207.40001f),
+                    new Vector3(-27.2f, -20.400002f, 207.40001f),
+                    new Vector3(-23.800001f, -15.3f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-42.5f, -8.5f, 207.40001f),
+                    new Vector3(-27.2f, -20.400002f, 207.40001f),
+                    new Vector3(-35.7f, -5.1000004f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-42.5f, -8.5f, 207.40001f),
+                    new Vector3(-35.7f, -5.1000004f, 207.40001f),
+                    new Vector3(-35.7f, 11.900001f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-42.5f, 23.800001f, 207.40001f),
+                    new Vector3(-42.5f, -8.5f, 207.40001f),
+                    new Vector3(-35.7f, 11.900001f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-35.7f, 11.900001f, 207.40001f),
+                    new Vector3(-35.7f, 23.800001f, 207.40001f),
+                    new Vector3(-42.5f, 23.800001f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-35.7f, 11.900001f, 207.40001f),
+                    new Vector3(35.7f, 23.800001f, 207.40001f),
+                    new Vector3(-35.7f, 23.800001f, 207.40001f),
+                ],
+
+                [
+                    new Vector3(-35.7f, 11.900001f, 207.40001f),
+                    new Vector3(35.7f, 11.900001f, 207.40001f),
+                    new Vector3(35.7f, 23.800001f, 207.40001f),
+                ],
+
+
+            ],
+            new Vector3(4.382401E-14f, 8.668599E-14f, 1f),
+            2
+        ];
+
+        #endregion
     }
 
     [Test]
@@ -2061,7 +2502,7 @@ public class Tests
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(result.Triangles.Count / 3, Is.EqualTo(expectedOutput.Length), "Unexpected triangle count.");
+            Assert.That(result.Triangles.Length / 3, Is.EqualTo(expectedOutput.Length), "Unexpected triangle count.");
             Assert.That(result.RegionCount, Is.EqualTo(expectedRegionCount), "Unexpected region count.");
             Assert.That(result.PlaneNormal, Is.EqualTo(expectedNormal), "Unexpected plane normal.");
 
@@ -2070,13 +2511,39 @@ public class Tests
 
             // Convert result triangles (indices) to array of triangle arrays (Vector3)
             var actualTriangles = new List<Vector3[]>();
-            for (int i = 0; i < result.Triangles.Count; i += 3)
+            for (int i = 0; i < result.Triangles.Length; i += 3)
             {
                 actualTriangles.Add([
                     expectedInput[result.Triangles[i]],
                     expectedInput[result.Triangles[i + 1]],
                     expectedInput[result.Triangles[i + 2]]
                 ]);
+            }
+            
+            for (int i = 0; i < result.Triangles.Length; i += 3)
+            {
+                Console.WriteLine("[");
+                Console.WriteLine($"new Vector3({expectedInput[result.Triangles[i]]}),".Replace("<", "").Replace(">", ""));
+                Console.WriteLine($"new Vector3({expectedInput[result.Triangles[i + 1]]}),".Replace("<", "").Replace(">", ""));
+                Console.WriteLine($"new Vector3({expectedInput[result.Triangles[i + 2]]}),".Replace("<", "").Replace(">", ""));
+                Console.WriteLine("],");
+                Console.WriteLine();
+            }
+            
+            for (int i = 0; i < result.Triangles.Length; i += 3)
+            {
+                Console.WriteLine("<p>");
+                Console.WriteLine($"c({Random.Shared.Next(0, 256)},{Random.Shared.Next(0, 256)},{Random.Shared.Next(0, 256)})");
+                Console.WriteLine("gr(40)");
+                Console.WriteLine("fs(1)");
+                Console.WriteLine($"p({expectedInput[result.Triangles[i]]})".Replace("<", "").Replace(">", "")
+                    .Replace(", ", ","));
+                Console.WriteLine($"p({expectedInput[result.Triangles[i + 1]]})".Replace("<", "").Replace(">", "")
+                    .Replace(", ", ","));
+                Console.WriteLine($"p({expectedInput[result.Triangles[i + 2]]})".Replace("<", "").Replace(">", "")
+                    .Replace(", ", ","));
+                Console.WriteLine("</p>");
+                Console.WriteLine();
             }
 
             // Check that each expected triangle exists in actual triangles

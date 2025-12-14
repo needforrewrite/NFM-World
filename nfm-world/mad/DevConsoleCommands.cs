@@ -23,6 +23,9 @@ namespace NFMWorld.Mad
             console.RegisterCommand("followy", SetFollowY);
             console.RegisterCommand("followz", SetFollowZ);
             console.RegisterCommand("car", SwitchCar);
+            console.RegisterCommand("breakx", BreakX);
+            console.RegisterCommand("breaky", BreakY);
+            console.RegisterCommand("breakz", BreakZ);
             
             console.RegisterCommand("r_frametrace", SetFrameTrace);
             console.RegisterCommand("r_blackpoint", SetBlackPoint);
@@ -53,6 +56,53 @@ namespace NFMWorld.Mad
             // map command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("map", (args, position) => 
                 position == 0 ? GameSparker.GetAvailableStages() : new List<string>());
+        }
+
+        private static void BreakX(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !float.TryParse(args[0], out float amount))
+            {
+                amount = 150;
+                return;
+            }
+
+            var car = GameSparker.cars_in_race[GameSparker.playerCarIndex];
+            MeshDamage.DamageX(car.Stat, car.Conto, 0, amount);
+            MeshDamage.DamageX(car.Stat, car.Conto, 1, amount);
+            MeshDamage.DamageX(car.Stat, car.Conto, 2, amount);
+            MeshDamage.DamageX(car.Stat, car.Conto, 3, amount);
+        }
+
+        private static void BreakY(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !float.TryParse(args[0], out float amount))
+            {
+                amount = 150;
+                return;
+            }
+
+            var car = GameSparker.cars_in_race[GameSparker.playerCarIndex];
+            var nbsq = 0;
+            var squash = car.Mad.Squash;
+            MeshDamage.DamageY(car.Stat, car.Conto, 0, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+            MeshDamage.DamageY(car.Stat, car.Conto, 1, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+            MeshDamage.DamageY(car.Stat, car.Conto, 2, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+            MeshDamage.DamageY(car.Stat, car.Conto, 3, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+        }
+
+        private static void BreakZ(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !float.TryParse(args[0], out float amount))
+            {
+                amount = 150;
+                return;
+            }
+
+            var car = GameSparker.cars_in_race[GameSparker.playerCarIndex];
+            MeshDamage.DamageZ(car.Stat, car.Conto, 0, amount);
+            MeshDamage.DamageZ(car.Stat, car.Conto, 1, amount);
+            MeshDamage.DamageZ(car.Stat, car.Conto, 2, amount);
+            MeshDamage.DamageZ(car.Stat, car.Conto, 3, amount);
         }
 
         private static void SetBlackPoint(DevConsole console, string[] args)

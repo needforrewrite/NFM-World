@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Frozen;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using HoleyDiver;
@@ -28,15 +29,20 @@ public class Mesh : Transform
     private readonly GraphicsDevice _graphicsDevice;
 
     private VertexBuffer _vertexBuffer;
+    private IndexBuffer _indexBuffer;
     private PolyEffect _material;
     private int _triangleCount;
 
     private VertexBuffer? _lineVertexBuffer;
     private IndexBuffer? _lineIndexBuffer;
     private int? _lineTriangleCount;
-    
+    private readonly PolygonTriangulator.TriangulationResult[] _triangulation;
+
+    // Stores "brokenness" phase for damageable meshes
+    public readonly float[] bfase;
+
     public bool CastsShadow { get; set; }
-    public bool GetsShadowed { get; set; }
+    public bool GetsShadowed { get; set; } = true;
 
     public Euler TurningWheelAngle { get; set; }
 
@@ -53,9 +59,15 @@ public class Mesh : Transform
 
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
         _graphicsDevice = graphicsDevice;
+
+        _triangulation = Array.ConvertAll(Polys,
+            poly => PolygonTriangulator.Triangulate(Array.ConvertAll(poly.Points,
+                input => (System.Numerics.Vector3)input)));
         BuildMesh(graphicsDevice);
 
         CastsShadow = rad.CastsShadow;
+        
+        bfase = new float[Polys.Length];
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -65,61 +77,65 @@ public class Mesh : Transform
         Wheels = baseMesh.Wheels;
         Rims = baseMesh.Rims;
         Boxes = baseMesh.Boxes;
-        Polys = baseMesh.Polys;
+        // make a copy of points for damageable meshes
+        Polys = Array.ConvertAll(baseMesh.Polys, poly => poly with { Points = [..poly.Points] });
         GroundAt = baseMesh.GroundAt;
         _graphicsDevice = baseMesh._graphicsDevice;
         _material = baseMesh._material;
 
+        _triangulation = baseMesh._triangulation;
+
         BuildMesh(_graphicsDevice);
         Position = position;
         Rotation = rotation;
+
+        CastsShadow = baseMesh.CastsShadow;
+        GetsShadowed = baseMesh.GetsShadowed;
+        
+        bfase = new float[Polys.Length];
     }
 
-    [MemberNotNull(nameof(_vertexBuffer))]
+    [MemberNotNull(nameof(_vertexBuffer), nameof(_indexBuffer))]
     private void BuildMesh(GraphicsDevice graphicsDevice)
     {
         var data = new List<VertexPositionNormalColorCentroid>();
+        var indices = new List<int>();
         
         var lines = new OrderedDictionary<(Vector3 point0, Vector3 point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>(LineEqualityComparer.Instance);
         
         _triangleCount = 0;
-        foreach (var poly in Polys)
+        for (var i = 0; i < Polys.Length; i++)
         {
-            // TODO: the result of triangulation can be cached.
-            var result = PolygonTriangulator.Triangulate(Array.ConvertAll(poly.Points, input => (System.Numerics.Vector3)input));
-            var centroid = Vector3.Zero;
+            var poly = Polys[i];
+            var result = _triangulation[i];
+            var baseIndex = data.Count;
             foreach (var point in poly.Points)
             {
-                centroid += point;
+                data.Add(new VertexPositionNormalColorCentroid(point.ToXna(), result.PlaneNormal.ToXna(),
+                    result.Centroid.ToXna(), poly.Color.ToXna()));
             }
-            centroid /= poly.Points.Length;
 
-            for (var index = 0; index < result.Triangles.Count; index += 3)
+            for (var index = 0; index < result.Triangles.Length; index += 3)
             {
                 var i0 = result.Triangles[index];
                 var i1 = result.Triangles[index + 1];
                 var i2 = result.Triangles[index + 2];
-                
-                var p0 = poly.Points[i0];
-                var p1 = poly.Points[i1];
-                var p2 = poly.Points[i2];
-                
-                data.Add(new VertexPositionNormalColorCentroid(p0.ToXna(), result.PlaneNormal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
-                data.Add(new VertexPositionNormalColorCentroid(p1.ToXna(), result.PlaneNormal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
-                data.Add(new VertexPositionNormalColorCentroid(p2.ToXna(), result.PlaneNormal.ToXna(), centroid.ToXna(), poly.Color.ToXna()));
+
+                indices.AddRange(i0 + baseIndex, i1 + baseIndex, i2 + baseIndex);
             }
 
-            _triangleCount += result.Triangles.Count;
+            _triangleCount += result.Triangles.Length;
             if (poly.LineType != null)
             {
-                for (var i = 0; i < poly.Points.Length; ++i)
+                for (var j = 0; j < poly.Points.Length; ++j)
                 {
-                    var p0 = poly.Points[i];
-                    var p1 = poly.Points[(i + 1) % poly.Points.Length];
-                    lines.TryAdd((p0, p1), (poly, centroid, result.PlaneNormal));
+                    var p0 = poly.Points[j];
+                    var p1 = poly.Points[(j + 1) % poly.Points.Length];
+                    lines.TryAdd((p0, p1), (poly, result.Centroid, result.PlaneNormal));
                 }
             }
         }
+
         _triangleCount /= 3;
 
         var vertexBuffer = new VertexBuffer(graphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
@@ -127,6 +143,9 @@ public class Mesh : Transform
         vertexBuffer.SetData(data.ToArray());
 
         _vertexBuffer = vertexBuffer;
+
+        _indexBuffer = new IndexBuffer(_graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+        _indexBuffer.SetData(indices.ToArray());
 
         if (lines.Count > 0)
         {
@@ -250,6 +269,7 @@ public class Mesh : Transform
         if (isCreateShadowMap && !(CastsShadow || Position.Y < World.Ground)) return;
 
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
+        _graphicsDevice.Indices = _indexBuffer;
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
         
         // If a parameter is null that means the HLSL compiler optimized it out.
@@ -265,7 +285,7 @@ public class Mesh : Transform
         _material.FogDensity?.SetValue(0.857f);
         _material.EnvironmentLight?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
-        _material.GetsShadowed?.SetValue(true);
+        _material.GetsShadowed?.SetValue(GetsShadowed);
 
         if (isCreateShadowMap)
         {
@@ -298,7 +318,7 @@ public class Mesh : Transform
         {
             pass.Apply();
     
-            _graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, _triangleCount);
+            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _triangleCount);
         }
         
         _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
@@ -325,8 +345,8 @@ public class Mesh : Transform
         _material.FogDistance?.SetValue(World.FadeFrom);
         _material.FogDensity?.SetValue(0.857f);
         _material.EnvironmentLight?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00002f);
-        _material.GetsShadowed?.SetValue(false);
+        _material.DepthBias?.SetValue(0.00005f);
+        _material.GetsShadowed?.SetValue(GetsShadowed);
 
         _material.View?.SetValue(camera.ViewMatrix);
         _material.Projection?.SetValue(camera.ProjectionMatrix);
@@ -343,226 +363,10 @@ public class Mesh : Transform
         }
     }
 
-    // private Object3D BuildMesh()
-    // {
-    //     var geometry = new BufferGeometry();
-    //     
-    //     var positions = new List<float>();
-    //     var normals = new List<float>();
-    //     var colors = new List<float>();
-    //     var centroids = new List<float>();
-    //     
-    //     foreach (var poly in Polys)
-    //     {
-    //         // TODO: the result of triangulation can be cached.
-    //         var result = PolygonTriangulator.Triangulate(Array.ConvertAll(poly.Points, input => (System.Numerics.Vector3)input));
-    //         var centroid = Vector3.Zero;
-    //         foreach (var point in poly.Points)
-    //         {
-    //             centroid += point;
-    //         }
-    //         centroid /= poly.Points.Length;
-    //
-    //         for (var index = 0; index < result.Triangles.Count; index += 3)
-    //         {
-    //             var i0 = result.Triangles[index];
-    //             var i1 = result.Triangles[index + 1];
-    //             var i2 = result.Triangles[index + 2];
-    //             
-    //             var p0 = poly.Points[i0];
-    //             var p1 = poly.Points[i1];
-    //             var p2 = poly.Points[i2];
-    //             
-    //             positions.Add(p0.X);
-    //             positions.Add(p0.Y);
-    //             positions.Add(p0.Z);
-    //             positions.Add(p1.X);
-    //             positions.Add(p1.Y);
-    //             positions.Add(p1.Z);
-    //             positions.Add(p2.X);
-    //             positions.Add(p2.Y);
-    //             positions.Add(p2.Z);
-    //
-    //             normals.Add(result.PlaneNormal.X);
-    //             normals.Add(result.PlaneNormal.Y);
-    //             normals.Add(result.PlaneNormal.Z);
-    //             normals.Add(result.PlaneNormal.X);
-    //             normals.Add(result.PlaneNormal.Y);
-    //             normals.Add(result.PlaneNormal.Z);
-    //             normals.Add(result.PlaneNormal.X);
-    //             normals.Add(result.PlaneNormal.Y);
-    //             normals.Add(result.PlaneNormal.Z);
-    //
-    //             colors.Add(poly.Color.R / 255f);
-    //             colors.Add(poly.Color.G / 255f);
-    //             colors.Add(poly.Color.B / 255f);
-    //             colors.Add(poly.Color.R / 255f);
-    //             colors.Add(poly.Color.G / 255f);
-    //             colors.Add(poly.Color.B / 255f);
-    //             colors.Add(poly.Color.R / 255f);
-    //             colors.Add(poly.Color.G / 255f);
-    //             colors.Add(poly.Color.B / 255f);
-    //
-    //             centroids.Add(centroid.X);
-    //             centroids.Add(centroid.Y);
-    //             centroids.Add(centroid.Z);
-    //             centroids.Add(centroid.X);
-    //             centroids.Add(centroid.Y);
-    //             centroids.Add(centroid.Z);
-    //             centroids.Add(centroid.X);
-    //             centroids.Add(centroid.Y);
-    //             centroids.Add(centroid.Z);
-    //         }
-    //     }
-    //     
-    //     geometry.SetAttribute("position", new BufferAttribute<float>(positions.ToArray(), 3));
-    //     geometry.SetAttribute("normal", new BufferAttribute<float>(normals.ToArray(), 3));
-    //     geometry.SetAttribute("tcentroid", new BufferAttribute<float>(centroids.ToArray(), 3));
-    //     geometry.SetAttribute("color", new BufferAttribute<float>(colors.ToArray(), 3));
-    //
-    //     geometry.ComputeBoundingSphere();
-    //
-    //     var material = new ShaderMaterial()
-    //     {
-    //         Side = Constants.DoubleSide,
-    //         VertexColors = true,
-    //         VertexShader =
-    //             """
-    //             // attribute vec3 position;
-    //             // attribute vec3 normal;
-    //             attribute vec3 tcentroid;
-    //             // attribute vec3 color;
-    //             
-    //             varying vec3 v_view_pos;
-    //             varying vec3 v_color;
-    //             
-    //             uniform vec3 u_snap;
-    //             uniform bool u_light;
-    //             uniform bool u_color;
-    //             uniform vec3 u_base_color;
-    //             uniform vec3 u_light_dir;
-    //             uniform vec3 u_fog;
-    //             uniform float fade;
-    //             uniform float density;
-    //             uniform vec2 env_light;
-    //             
-    //             #include <common>
-    //             #include <logdepthbuf_pars_vertex>
-    //             #include <shadowmap_pars_vertex>
-    //             
-    //             void main() {
-    //                 #include <beginnormal_vertex>
-    //                 #include <defaultnormal_vertex>
-    //                 #include <begin_vertex>
-    //                 #include <skinning_vertex>
-    //                 #include <project_vertex>
-    //                 #include <logdepthbuf_vertex>
-    //                 #include <worldpos_vertex>
-    //                 #include <shadowmap_vertex>
-    //                 
-    //                 vec4 view_pos4 = modelViewMatrix * vec4(position, 1.0);
-    //                 gl_Position = projectionMatrix * view_pos4;
-    //                 
-    //                 v_view_pos = view_pos4.xyz;
-    //             
-    //                 vec3 base_color = mix(color, u_base_color, vec3(u_color ? 1.0 : 0.0));
-    //                 
-    //                 if (!u_light) {
-    //                     vec3 c = vec3(modelMatrix * vec4(tcentroid, 1.0));
-    //                     vec3 n = normalize(normalMatrix * normal);
-    //                     float diff = 0.0;
-    //                     // TODO phys is different here!!!
-    //                     diff = abs(dot(n, u_light_dir));
-    //                     v_color = (env_light.x + env_light.y * diff) * base_color;
-    //                 } else {
-    //                     v_color = base_color;
-    //                 }
-    //                 
-    //                 v_color += (v_color * u_snap);
-    //             
-    //                 float d = length(v_view_pos);
-    //                 float f = pow(density, max((d - fade / 2.0) / fade, 0.0));
-    //                 v_color = v_color * vec3(f) + u_fog * vec3(1.0 - f);
-    //             }
-    //             """,
-    //         FragmentShader =
-    //             """
-    //             varying vec3 v_view_pos;
-    //             varying vec3 v_color;
-    //             
-    //             #include <common>
-    //             #include <packing>
-    //             #include <fog_pars_fragment>
-    //             #include <bsdfs>
-    //             #include <lights_pars_begin>
-    //             #include <logdepthbuf_pars_fragment>
-    //             #include <shadowmap_pars_fragment>
-    //             #include <shadowmask_pars_fragment>
-    //             
-    //             void main() {
-    //                 #include <logdepthbuf_fragment>
-    //                 
-    //                 gl_FragColor = mix(vec4(v_color, 1.0), vec4(0.0, 0.0, 0.0, 1.0), (1.0 - getShadowMask()));
-    //             }
-    //             """,
-    //         Uniforms =
-    //         {
-    //             ["u_snap"] = new GLUniform(),
-    //             ["u_fog"] = new GLUniform(),
-    //             ["u_light"] = new GLUniform(),
-    //             ["u_color"] = new GLUniform(),
-    //             ["fade"] = new GLUniform(),
-    //             ["density"] = new GLUniform(),
-    //             ["u_light_dir"] = new GLUniform() { ["value"] = new THREE.Vector3(0, 1, 0) },
-    //             ["env_light"] = new GLUniform() { ["value"] = new THREE.Vector2(0.37f, 0.63f) },
-    //         },
-    //     };
-    //
-    //     // var material1 = new MeshLambertMaterial()
-    //     // {
-    //     //     Color = THREE.Color.Hex(0xaaaaaa),
-    //     //     Specular = THREE.Color.Hex(0xffffff),
-    //     //     Shininess = 250,
-    //     //     Side = Constants.DoubleSide,
-    //     //     VertexColors = true
-    //     // };
-    //
-    //     var mesh = new THREE.Mesh(geometry, material);
-    //
-    //     mesh.OnBeforeRender += (renderer, object3D, camera, geometry, material, drawRange, glRenderTarget) =>
-    //     {
-    //         object3D.UpdateWorldMatrix(true, false);
-    //         
-    //         var shaderMaterial = (material as ShaderMaterial)!;
-    //         (shaderMaterial.Uniforms["u_snap"] as GLUniform)!["value"] = new THREE.Vector3(World.Snap[0] / 100f, World.Snap[1] / 100f, World.Snap[2] / 100f);
-    //         (shaderMaterial.Uniforms["u_fog"] as GLUniform)!["value"] = World.Fog.Snap(World.Snap).ToTHREEVector3();
-    //         (shaderMaterial.Uniforms["u_light"] as GLUniform)!["value"] = false;
-    //         (shaderMaterial.Uniforms["u_color"] as GLUniform)!["value"] = false;
-    //         (shaderMaterial.Uniforms["fade"] as GLUniform)!["value"] = World.FadeFrom;
-    //         (shaderMaterial.Uniforms["density"] as GLUniform)!["value"] = World.Density;
-    //         (shaderMaterial.Uniforms["env_light"] as GLUniform)!["value"] = new THREE.Vector2(World.BlackPoint, World.WhitePoint);
-    //     
-    //         shaderMaterial.UniformsNeedUpdate = true;
-    //     
-    //         // if (this.polyType === 'glass') {
-    //         //     (this.material as THREE.ShaderMaterial).uniforms.u_color.value = true;
-    //         //     (this.material as THREE.ShaderMaterial).uniforms.u_base_color.value = new THREE.Vector3(stage.sky[0] / 255, stage.sky[1] / 255, stage.sky[2] / 255);
-    //         // } else if (this.polyType === 'light' && (stage.lightson || (this.parent as NFMOGeometry).lightson)) {
-    //         //     (this.material as THREE.ShaderMaterial).uniforms.u_light.value = true;
-    //         //     (this.material as THREE.ShaderMaterial).uniforms.u_snap.value = new THREE.Vector3(0, 0, 0);
-    //         //     (this.material as THREE.ShaderMaterial).uniforms.u_color.value = false;
-    //         // } else if (this.polyType === 'fullbright') {
-    //         //     (this.material as THREE.ShaderMaterial).uniforms.u_light.value = true;
-    //         //     (this.material as THREE.ShaderMaterial).uniforms.u_color.value = false;
-    //         // }
-    //     };
-    //     mesh.ReceiveShadow = true;
-    //
-    //     var containerObject = new Object3D();
-    //     containerObject.Add(mesh);
-    //
-    //     return containerObject;
-    // }
+    public void RebuildMesh()
+    {
+        BuildMesh(_graphicsDevice);
+    }
 
     public sealed override Vector3 Position { get; set; }
 
