@@ -27,6 +27,7 @@ namespace NFMWorld.Mad
             console.RegisterCommand("breaky", BreakY);
             console.RegisterCommand("breakz", BreakZ);
             
+            // rendering
             console.RegisterCommand("r_frametrace", SetFrameTrace);
             console.RegisterCommand("r_blackpoint", SetBlackPoint);
             console.RegisterCommand("r_whitepoint", SetWhitePoint);
@@ -34,8 +35,9 @@ namespace NFMWorld.Mad
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
             //ui
-            console.RegisterCommand("ui_dev_cam", (c, args) => ToggleCameraSettings(c));
-            console.RegisterCommand("ui_dev_msg", ShowMessageTest);
+            console.RegisterCommand("ui_open_devcam", (c, args) => ToggleCameraSettings(c));
+            console.RegisterCommand("ui_open_devmsg", ShowMessageTest);
+            console.RegisterCommand("ui_open_settings", (c, args) => GameSparker.SettingsMenu.Open());
 
             //cheats
             //console.RegisterCommand("sv_cheats", SVCheats);
@@ -187,7 +189,7 @@ namespace NFMWorld.Mad
         private static void ExitApplication(DevConsole console)
         {
             console.Log("Exiting application...");
-            Environment.Exit(0); // Terminates the application
+            System.Environment.Exit(0); // Terminates the application
         }
 
         private static void SetPos(DevConsole console, string[] args)
@@ -225,7 +227,7 @@ namespace NFMWorld.Mad
             }
 
             var stageName = args[0];
-            GameSparker.current_stage = new Stage(stageName);
+            GameSparker.current_stage = new Stage(stageName, GameSparker._graphicsDevice);
             console.Log($"Switched to stage '{stageName}'");
 
             GameSparker.cars_in_race.Clear();

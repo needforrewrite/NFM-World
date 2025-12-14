@@ -25,6 +25,8 @@ public unsafe class Program : Game
     private GraphicsDeviceManager _graphics;
     public static SpriteBatch _spriteBatch { get; private set; }
     public static Effect _polyShader { get; private set; }
+    public static Effect _skyShader { get; private set; }
+    public static Effect _groundShader { get; private set; }
     public static RenderTarget2D shadowRenderTarget { get; private set; }
     private ImGuiRenderer _imguiRenderer;
 
@@ -37,6 +39,8 @@ public unsafe class Program : Game
     private static bool loaded;
     private const int FrameDelay = (int) (1000 / 21.3f);
 
+    #region KeyMapping
+    
     private static readonly FrozenDictionary<Microsoft.Xna.Framework.Input.Keys, Keys> KeyMapping = new Dictionary<Microsoft.Xna.Framework.Input.Keys, Keys>
     {
         // [Key.Unknown] = Keys.Unknown,
@@ -161,6 +165,8 @@ public unsafe class Program : Game
         // [Key.SuperRight] = Keys.SuperRight,
         // [Key.Menu] = Keys.Menu,
     }.ToFrozenDictionary();
+    
+    #endregion
 
     private Program()
     {
@@ -175,6 +181,9 @@ public unsafe class Program : Game
         _graphics.PreferredBackBufferHeight = 720;
         _graphics.ApplyChanges();
         
+        GraphicsDevice.PresentationParameters.MultiSampleCount = 8;
+        _graphics.ApplyChanges();
+
         _skia = new MonoGameSkia(GraphicsDevice);
         // IBackend.Backend = new DummyBackend();
     }
@@ -215,6 +224,8 @@ public unsafe class Program : Game
     protected override void LoadContent()
     {
         _polyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Poly.fxc"));
+        _skyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Sky.fxc"));
+        _groundShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Ground.fxc"));
         
         var originalOut = Console.Out;
         GameSparker.Writer = new DevConsoleWriter(GameSparker.devConsole, originalOut);
@@ -231,6 +242,8 @@ public unsafe class Program : Game
             DepthFormat.Depth24);
         
         _imguiRenderer.RebuildFontAtlas();
+
+        #region Imgui
         
         // Initialize ImGui
         ImGui.CreateContext();
@@ -326,6 +339,8 @@ public unsafe class Program : Game
         style.WindowPadding = new System.Numerics.Vector2(10, 10);
         style.FramePadding = new System.Numerics.Vector2(5, 3);
         style.ItemSpacing = new System.Numerics.Vector2(8, 4);
+        
+        #endregion
 
         return;
 
@@ -396,8 +411,21 @@ public unsafe class Program : Game
             G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
             G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
         }
+        else if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer)
+        {
+            // Clear with a gradient background (sky blue to tan)
+            GraphicsDevice.Clear(new Microsoft.Xna.Framework.Color(135, 206, 235));
+        }
         
         _skia.Render();
+        
+        // Render 3D model in model viewer state (after Skia)
+        if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer && GameSparker.ModelEditor != null)
+        {
+            GraphicsDevice.BlendState = BlendState.Opaque;
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+            GameSparker.ModelEditor.RenderModel(GameSparker.camera);
+        }
         
         // // Render ImGui
         _imguiRenderer.BeginLayout(gameTime);
@@ -483,6 +511,10 @@ public class DummyBackend : IBackend
 
     public class DummyGraphics : IGraphics
     {
+        public void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[] colorPos)
+        {
+            
+        }
         public void SetColor(Color c)
         {
         }

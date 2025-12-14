@@ -15,7 +15,7 @@ namespace NFMWorld.Mad;
 public class GameSparker
 {
     private static SpriteBatch _spriteBatch;
-    private static GraphicsDevice _graphicsDevice;
+    public static GraphicsDevice _graphicsDevice;
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
 
     public static PerspectiveCamera camera = new();
@@ -53,13 +53,15 @@ public class GameSparker
     public enum GameState
     {
         Menu,
-        InGame
+        InGame,
+        ModelViewer
     }
 
     public static GameState CurrentState = GameState.Menu;
     public static MainMenu? MainMenu = null;
     public static MessageWindow MessageWindow = new();
     public static SettingsMenu SettingsMenu = new();
+    public static ModelEditor? ModelEditor = null;
 
     private static DirectionalLight light;
     
@@ -123,6 +125,15 @@ public class GameSparker
             if (SettingsMenu.IsOpen && SettingsMenu.IsCapturingKey())
             {
                 SettingsMenu.HandleKeyCapture(key);
+            }
+            return;
+        }
+        
+        if (CurrentState == GameState.ModelViewer)
+        {
+            if (ModelEditor != null)
+            {
+                ModelEditor.HandleKeyPress(key);
             }
             return;
         }
@@ -198,6 +209,15 @@ public class GameSparker
         
         if (CurrentState == GameState.Menu)
         {
+            return;
+        }
+        
+        if (CurrentState == GameState.ModelViewer)
+        {
+            if (ModelEditor != null)
+            {
+                ModelEditor.HandleKeyRelease(key);
+            }
             return;
         }
         
@@ -344,6 +364,9 @@ public class GameSparker
         CurrentState = GameState.Menu;
         MainMenu = new MainMenu();
         
+        // Initialize ModelEditor after cars are loaded
+        ModelEditor = new ModelEditor();
+        
         // Initialize SettingsMenu writer
         SettingsMenu.Writer = Writer;
         
@@ -363,13 +386,27 @@ public class GameSparker
         }
     }
 
+    public static void StartModelViewer()
+    {
+        CurrentState = GameState.ModelViewer;
+        MainMenu = null;
+        ModelEditor?.Open();
+    }
+    
+    public static void ExitModelViewer()
+    {
+        CurrentState = GameState.Menu;
+        MainMenu = new MainMenu();
+        ModelEditor?.Close();
+    }
+
     public static void StartGame()
     {
         // temp
         CurrentState = GameState.InGame;
         MainMenu = null;
 
-        current_stage = new Stage("nfm2/15_dwm");
+        current_stage = new Stage("nfm2/15_dwm", _graphicsDevice);
         cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
         
         for (var i = 0; i < cars.Count; i++)
@@ -386,6 +423,11 @@ public class GameSparker
         // only tick game logic when actually in-game
         if (CurrentState != GameState.InGame)
         {
+            // Update model editor in ModelViewer state
+            if (CurrentState == GameState.ModelViewer && ModelEditor != null)
+            {
+                ModelEditor.Update();
+            }
             return;
         }
         
@@ -460,11 +502,8 @@ public class GameSparker
 
     private static void RenderInternal(bool isCreateShadowMap = false)
     {
-        foreach (var element in current_stage.pieces)
-        {
-            element.Render(camera, lightCamera, isCreateShadowMap);
-        }
-
+        current_stage.Render(camera, lightCamera, isCreateShadowMap);
+        
         foreach (var car in cars_in_race)
         {
             car.Render(camera, lightCamera, isCreateShadowMap);
@@ -476,5 +515,6 @@ public class GameSparker
         devConsole.Render();
         MessageWindow.Render();
         SettingsMenu.Render();
+        ModelEditor?.Render();
     }
 }

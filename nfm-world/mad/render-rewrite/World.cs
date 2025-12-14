@@ -4,6 +4,7 @@ namespace NFMWorld.Mad;
 
 public static class World
 {
+    public static bool HasTexture;
     public static float FogDensity = 0.857f; // TODO ASSIGN
     public static Vector3 LightDirection = new Vector3(0, 1, 0);
     public static int FadeFrom;
@@ -15,4 +16,11 @@ public static class World
     public static Color3 Fog;
     public static bool LightsOn;
     public static Color3 Sky;
+    public static Color3 GroundColor;
+    public static bool DrawClouds;
+    public static bool DrawMountains;
+    public static bool DrawStars;
+    public static bool DrawPolys;
+    public static Color3 GroundPolysColor;
+    public static int[] Texture = [0, 0, 0, 50];
 }

@@ -117,7 +117,7 @@ public class Mad
 
     public bool pointInBox(float px, float py, float pz, float bx, float by, float bz, float szx, float szy, float szz)
     {
-        return px > bx - szx && px < bx + szx && pz > bz - szz && pz < bz + szz && py > by - szy && py < by + szy;
+        return px > bx - szx && px < bx + szx && pz > bz - szz && pz < bz + szz && py > by - szy && py < by + Math.Max(szy, 5);
     }
 
     /*

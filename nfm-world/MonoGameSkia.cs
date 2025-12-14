@@ -519,7 +519,36 @@ internal class SkiaSharpGraphics(SKCanvas canvas) : IGraphics
 
     public void SetColor(Color c)
     {
+        _paint.Shader = null;
         _paint.Color = new SKColor(c.R, c.G, c.B, c.A);
+    }
+
+        /// <summary>
+    /// Sets a gradient. May need to be cleared once done with it (ClearShader)
+    /// </summary>
+    /// <param name="x">Absolute X where the gradient starts</param>
+    /// <param name="y">Absolute Y where the gradient starts</param>
+    /// <param name="width">Gradient width</param>
+    /// <param name="height">Gradient height</param>
+    /// <param name="colors">Array of colours the gradient should traverse through</param>
+    /// <param name="colorPos">Same length as colors, values between 0 to 1 which is the ratio of that colour, or null for auto.</param>
+    public void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos)
+    {
+        var skcolors = new SKColor[colors.Length];
+        int i = 0;
+
+        foreach(Color c in colors) {
+            skcolors[i++] = new SKColor(c.R, c.G, c.B, c.A);
+        }
+
+        var shader = SKShader.CreateLinearGradient(
+            new SKPoint(x, y),
+            new SKPoint(x + width, y + height),
+            skcolors,
+            colorPos,
+            SKShaderTileMode.Clamp);
+
+        _paint.Shader = shader;
     }
 
     public void FillPolygon(Span<int> xPoints, Span<int> yPoints, int nPoints)

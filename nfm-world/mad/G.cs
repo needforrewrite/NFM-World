@@ -9,6 +9,8 @@ public static class G
     
     public static void SetColor(Color c) => Graphics.SetColor(c);
 
+    public static void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos) => Graphics.SetLinearGradient(x, y, width, height, colors, colorPos);
+
     public static void FillPolygon(Span<int> x, Span<int> y, int n) => Graphics.FillPolygon(x, y, n);
 
     public static void DrawPolygon(Span<int> x, Span<int> y, int n) => Graphics.DrawPolygon(x, y, n);
