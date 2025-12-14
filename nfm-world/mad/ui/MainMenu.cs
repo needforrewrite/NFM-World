@@ -249,7 +249,7 @@ public class MainMenu
 
     private void OnModelEditorClicked()
     {
-        GameSparker.ModelEditor?.Open();
+        GameSparker.StartModelViewer();
     }
 
     private void OnSettingsClicked()
