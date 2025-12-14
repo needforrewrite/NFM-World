@@ -383,11 +383,6 @@ public class GameSparker
         Console.WriteLine("Game started!");
     }
 
-    internal static int Getint(string astring, string string4, int i)
-    {
-        return Utility.GetInt(astring, string4, i);
-    }
-
 
     public static void CreateObject(string objectName, int x, int y, int z, int r)
     {
@@ -434,13 +429,18 @@ public class GameSparker
                 if (astring.StartsWith("snap"))
                 {
                     World.Snap = new Color3(
-                        (short) Getint("snap", astring, 0),
-                        (short) Getint("snap", astring, 1),
-                        (short) Getint("snap", astring, 2)
+                        (short) Utility.GetInt("snap", astring, 0),
+                        (short) Utility.GetInt("snap", astring, 1),
+                        (short) Utility.GetInt("snap", astring, 2)
                     );
                 }
                 if (astring.StartsWith("sky"))
                 {
+                    World.Sky = new Color3(
+                        (short) Utility.GetInt("sky", astring, 0),
+                        (short) Utility.GetInt("sky", astring, 1),
+                        (short) Utility.GetInt("sky", astring, 2)
+                    );
                     // Medium.Setsky(Getint("sky", astring, 0), Getint("sky", astring, 1), Getint("sky", astring, 2));
                 }
                 if (astring.StartsWith("ground"))
@@ -463,9 +463,9 @@ public class GameSparker
                 if (astring.StartsWith("fog"))
                 {
                     World.Fog = new Color3(
-                        (short) Getint("fog", astring, 0),
-                        (short) Getint("fog", astring, 1),
-                        (short) Getint("fog", astring, 2)
+                        (short) Utility.GetInt("fog", astring, 0),
+                        (short) Utility.GetInt("fog", astring, 1),
+                        (short) Utility.GetInt("fog", astring, 2)
                     );
                     // Medium.Setfade(Getint("fog", astring, 0), Getint("fog", astring, 1), Getint("fog", astring, 2));
                 }
@@ -488,7 +488,7 @@ public class GameSparker
                 }
                 if (astring.StartsWith("density"))
                 {
-                    var fogd = (Getint("density", astring, 0) + 1) * 2 - 1;
+                    var fogd = (Utility.GetInt("density", astring, 0) + 1) * 2 - 1;
                     fogd = Math.Clamp(fogd, 1, 30);
                     World.Density = UMath.InverseLerp(1, 30, fogd);
                     //Medium.Fogd = (Getint("density", astring, 0) + 1) * 2 - 1;
@@ -503,7 +503,7 @@ public class GameSparker
                 }
                 if (astring.StartsWith("fadefrom"))
                 {
-                    World.FadeFrom = Getint("fadefrom", astring, 0);
+                    World.FadeFrom = Utility.GetInt("fadefrom", astring, 0);
                     // Medium.Fadfrom(Getint("fadefrom", astring, 0));
                 }
                 if (astring.StartsWith("lightson"))
@@ -524,25 +524,25 @@ public class GameSparker
                 }
                 if (astring.StartsWith("set"))
                 {
-                    var setindex = Getint("set", astring, 0);
+                    var setindex = Utility.GetInt("set", astring, 0);
                     setindex -= _indexOffset;
                     var setheight = World.Ground - stage_parts[setindex].GroundAt;
                     
                     var hasCustomY = astring.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
-                        setheight = Getint("set", astring, 4);
+                        setheight = Utility.GetInt("set", astring, 4);
                         placed_stage_elements[_stagePartCount] = new Mesh(
                             stage_parts[setindex],
-                            new Vector3(Getint("set", astring, 1), setheight, Getint("set", astring, 2)),
-                            new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
+                            new Vector3(Utility.GetInt("set", astring, 1), setheight, Utility.GetInt("set", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
                     }
                     else
                     {
                         placed_stage_elements[_stagePartCount] = new Mesh(
                             stage_parts[setindex],
-                            new Vector3(Getint("set", astring, 1), setheight, Getint("set", astring, 2)),
-                            new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
+                            new Vector3(Utility.GetInt("set", astring, 1), setheight, Utility.GetInt("set", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
                     }
                     if (astring.Contains(")p"))     //AI tags
                     {
@@ -581,7 +581,7 @@ public class GameSparker
                 }
                 if (astring.StartsWith("chk"))
                 {
-                    var chkindex = Getint("chk", astring, 0);
+                    var chkindex = Utility.GetInt("chk", astring, 0);
                     chkindex -= _indexOffset;
                     var chkheight = World.Ground - stage_parts[chkindex].GroundAt;
 
@@ -590,19 +590,19 @@ public class GameSparker
                     var hasCustomY = astring.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
-                        chkheight = Getint("chk", astring, 4);
+                        chkheight = Utility.GetInt("chk", astring, 4);
                         placed_stage_elements[_stagePartCount] = new Mesh(
                             stage_parts[chkindex],
-                            new Vector3(Getint("chk", astring, 1), chkheight, Getint("chk", astring, 2)),
-                            new Euler(AngleSingle.FromDegrees(Getint("chk", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
+                            new Vector3(Utility.GetInt("chk", astring, 1), chkheight, Utility.GetInt("chk", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("chk", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
                         );
                     }
                     else
                     {
 	                    placed_stage_elements[_stagePartCount] = new Mesh(
 	                        stage_parts[chkindex],
-	                        new Vector3(Getint("set", astring, 1), chkheight, Getint("set", astring, 2)),
-	                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+	                        new Vector3(Utility.GetInt("set", astring, 1), chkheight, Utility.GetInt("set", astring, 2)),
+	                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
 	                    );
                     }
                     
@@ -625,17 +625,17 @@ public class GameSparker
                 }
                 if (astring.StartsWith("fix"))
                 {
-                    var fixindex = Getint("fix", astring, 0);
+                    var fixindex = Utility.GetInt("fix", astring, 0);
                     fixindex -= _indexOffset;
                     placed_stage_elements[_stagePartCount] = new FixHoop(
                         stage_parts[fixindex],
-                        new Vector3(Getint("set", astring, 1), Getint("set", astring, 3), Getint("set", astring, 2)),
-                        new Euler(AngleSingle.FromDegrees(Getint("set", astring, 4)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                        new Vector3(Utility.GetInt("set", astring, 1), Utility.GetInt("set", astring, 3), Utility.GetInt("set", astring, 2)),
+                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", astring, 4)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                     );
                     // CheckPoints.Fx[CheckPoints.Fn] = Getint("fix", astring, 1);
                     // CheckPoints.Fz[CheckPoints.Fn] = Getint("fix", astring, 2);
                     // CheckPoints.Fy[CheckPoints.Fn] = Getint("fix", astring, 3);
-                    if (Getint("fix", astring, 4) != 0)
+                    if (Utility.GetInt("fix", astring, 4) != 0)
                     {
                         //CheckPoints.Roted[CheckPoints.Fn] = true;
                         ((FixHoop)placed_stage_elements[_stagePartCount]).Rotated = true;
@@ -681,10 +681,10 @@ public class GameSparker
                 var wall = GetModel("thewall");
                 if (astring.StartsWith("maxr"))
                 {
-                    var n = Getint("maxr", astring, 0);
-                    var o = Getint("maxr", astring, 1);
+                    var n = Utility.GetInt("maxr", astring, 0);
+                    var o = Utility.GetInt("maxr", astring, 1);
                     i = o;
-                    var p = Getint("maxr", astring, 2);
+                    var p = Utility.GetInt("maxr", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
                         placed_stage_elements[_stagePartCount] = new Mesh(
@@ -709,10 +709,10 @@ public class GameSparker
                 }
                 if (astring.StartsWith("maxl"))
                 {
-                    var n = Getint("maxl", astring, 0);
-                    var o = Getint("maxl", astring, 1);
+                    var n = Utility.GetInt("maxl", astring, 0);
+                    var o = Utility.GetInt("maxl", astring, 1);
                     k = o;
-                    var p = Getint("maxl", astring, 2);
+                    var p = Utility.GetInt("maxl", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
                         placed_stage_elements[_stagePartCount] = new Mesh(
@@ -737,10 +737,10 @@ public class GameSparker
                 }
                 if (astring.StartsWith("maxt"))
                 {
-                    var n = Getint("maxt", astring, 0);
-                    var o = Getint("maxt", astring, 1);
+                    var n = Utility.GetInt("maxt", astring, 0);
+                    var o = Utility.GetInt("maxt", astring, 1);
                     l = o;
-                    var p = Getint("maxt", astring, 2);
+                    var p = Utility.GetInt("maxt", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
                         placed_stage_elements[_stagePartCount] = new Mesh(
@@ -765,10 +765,10 @@ public class GameSparker
                 }
                 if (astring.StartsWith("maxb"))
                 {
-                    var n = Getint("maxb", astring, 0);
-                    var o = Getint("maxb", astring, 1);
+                    var n = Utility.GetInt("maxb", astring, 0);
+                    var o = Utility.GetInt("maxb", astring, 1);
                     m = o;
-                    var p = Getint("maxb", astring, 2);
+                    var p = Utility.GetInt("maxb", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
                         placed_stage_elements[_stagePartCount] = new Mesh(

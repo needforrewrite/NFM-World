@@ -28,14 +28,9 @@ public class Mesh : Transform
     public int GroundAt;
     private readonly GraphicsDevice _graphicsDevice;
 
-    private VertexBuffer _vertexBuffer;
-    private IndexBuffer _indexBuffer;
-    private PolyEffect _material;
-    private int _triangleCount;
-
-    private VertexBuffer? _lineVertexBuffer;
-    private IndexBuffer? _lineIndexBuffer;
-    private int? _lineTriangleCount;
+    private Submesh?[] _submeshes;
+    private LineMesh? _lineMesh;
+    
     private readonly PolygonTriangulator.TriangulationResult[] _triangulation;
 
     // Stores "brokenness" phase for damageable meshes
@@ -55,7 +50,6 @@ public class Mesh : Transform
         Rims = rad.Rims;
         Boxes = rad.Boxes;
         Polys = rad.Polys;
-        _material = new PolyEffect(Program._polyShader);
 
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
         _graphicsDevice = graphicsDevice;
@@ -81,7 +75,6 @@ public class Mesh : Transform
         Polys = Array.ConvertAll(baseMesh.Polys, poly => poly with { Points = [..poly.Points] });
         GroundAt = baseMesh.GroundAt;
         _graphicsDevice = baseMesh._graphicsDevice;
-        _material = baseMesh._material;
 
         _triangulation = baseMesh._triangulation;
 
@@ -95,24 +88,33 @@ public class Mesh : Transform
         bfase = new float[Polys.Length];
     }
 
-    [MemberNotNull(nameof(_vertexBuffer), nameof(_indexBuffer))]
+    [MemberNotNull(nameof(_submeshes))]
     private void BuildMesh(GraphicsDevice graphicsDevice)
     {
-        var data = new List<VertexPositionNormalColorCentroid>();
-        var indices = new List<int>();
+        var submeshes = new (
+            List<VertexPositionNormalColorCentroid> Data,
+            List<int> Indices
+        )[(int)(PolyType.MaxValue + 1)];
+
+        for (var i = 0; i < submeshes.Length; i++)
+        {
+            submeshes[i] = ([], []);
+        }
         
         var lines = new OrderedDictionary<(Vector3 point0, Vector3 point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>(LineEqualityComparer.Instance);
         
-        _triangleCount = 0;
         for (var i = 0; i < Polys.Length; i++)
         {
             var poly = Polys[i];
             var result = _triangulation[i];
+
+            var (data, indices) = submeshes[(int)poly.PolyType];
+            
             var baseIndex = data.Count;
             foreach (var point in poly.Points)
             {
-                data.Add(new VertexPositionNormalColorCentroid(point.ToXna(), result.PlaneNormal.ToXna(),
-                    result.Centroid.ToXna(), poly.Color.ToXna()));
+                var color = poly.Color.ToXna();
+                data.Add(new VertexPositionNormalColorCentroid(point.ToXna(), result.PlaneNormal.ToXna(), result.Centroid.ToXna(), color));
             }
 
             for (var index = 0; index < result.Triangles.Length; index += 3)
@@ -124,7 +126,6 @@ public class Mesh : Transform
                 indices.AddRange(i0 + baseIndex, i1 + baseIndex, i2 + baseIndex);
             }
 
-            _triangleCount += result.Triangles.Length;
             if (poly.LineType != null)
             {
                 for (var j = 0; j < poly.Points.Length; ++j)
@@ -136,24 +137,31 @@ public class Mesh : Transform
             }
         }
 
-        _triangleCount /= 3;
+        _submeshes = new Submesh[submeshes.Length];
+        for (var i = 0; i < submeshes.Length; i++)
+        {
+            var (data, indices) = submeshes[i];
+            var type = (PolyType)i;
+            
+            if (data.Count == 0 || indices.Count == 0) continue;
 
-        var vertexBuffer = new VertexBuffer(graphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
+            var vertexBuffer = new VertexBuffer(graphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
 
-        vertexBuffer.SetData(data.ToArray());
+            vertexBuffer.SetData(data.ToArray());
 
-        _vertexBuffer = vertexBuffer;
+            var indexBuffer = new IndexBuffer(_graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+            indexBuffer.SetData(indices.ToArray());
 
-        _indexBuffer = new IndexBuffer(_graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
-        _indexBuffer.SetData(indices.ToArray());
+            _submeshes[i] = new Submesh(type, this, _graphicsDevice, vertexBuffer, indexBuffer, indices.Count / 3);
+        }
 
         if (lines.Count > 0)
         {
-            CreateMeshFromLines(lines);
+            _lineMesh = CreateMeshFromLines(lines);
         }
     }
 
-    private void CreateMeshFromLines(IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>> lines)
+    private LineMesh CreateMeshFromLines(IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>> lines)
     {
 	    var data = new List<VertexPositionNormalColorCentroid>(8 * lines.Count);
 	    var indices = new List<int>(12 * 3 * lines.Count);
@@ -212,13 +220,14 @@ public class Mesh : Transform
             );
         }
 	    
-	    _lineVertexBuffer = new VertexBuffer(_graphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
-	    _lineVertexBuffer.SetData(data.ToArray());
+	    var lineVertexBuffer = new VertexBuffer(_graphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
+	    lineVertexBuffer.SetData(data.ToArray());
 	    
-	    _lineIndexBuffer = new IndexBuffer(_graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
-	    _lineIndexBuffer.SetData(indices.ToArray());
+	    var lineIndexBuffer = new IndexBuffer(_graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+	    lineIndexBuffer.SetData(indices.ToArray());
 	    
-	    _lineTriangleCount = indices.Count / 3;
+	    var lineTriangleCount = indices.Count / 3;
+        return new LineMesh(this, _graphicsDevice, lineVertexBuffer, lineIndexBuffer, lineTriangleCount);
     }
 
     /// <summary>
@@ -260,107 +269,11 @@ public class Mesh : Transform
     {
         var matrixWorld = Matrix.CreateFromEuler(Rotation) * Matrix.CreateTranslation(Position.ToXna());
 
-        RenderPolygons(camera, lightCamera, isCreateShadowMap, matrixWorld);
-        RenderLines(camera, lightCamera, isCreateShadowMap, matrixWorld);
-    }
-
-    private void RenderPolygons(Camera camera, Camera? lightCamera, bool isCreateShadowMap, Matrix matrixWorld)
-    {
-        if (isCreateShadowMap && !(CastsShadow || Position.Y < World.Ground)) return;
-
-        _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-        _graphicsDevice.Indices = _indexBuffer;
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        
-        // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.World?.SetValue(matrixWorld);
-        _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
-        _material.SnapColor?.SetValue(World.Snap.ToXnaVector3());
-        _material.IsFullbright?.SetValue(false);
-        _material.UseBaseColor?.SetValue(false);
-        _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
-        _material.LightDirection?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 1, 0));
-        _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
-        _material.FogDistance?.SetValue(World.FadeFrom);
-        _material.FogDensity?.SetValue(0.857f);
-        _material.EnvironmentLight?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00005f);
-        _material.GetsShadowed?.SetValue(GetsShadowed);
-
-        if (isCreateShadowMap)
+        foreach (var submesh in _submeshes)
         {
-            _material.View?.SetValue(lightCamera!.ViewMatrix);
-            _material.Projection?.SetValue(lightCamera!.ProjectionMatrix);
-            _material.WorldView?.SetValue(matrixWorld * lightCamera!.ViewMatrix);
-            _material.WorldViewProj?.SetValue(matrixWorld * lightCamera!.ViewMatrix * lightCamera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(lightCamera!.Position.ToXna());
+            submesh?.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
         }
-        else
-        {
-            _material.View?.SetValue(camera.ViewMatrix);
-            _material.Projection?.SetValue(camera.ProjectionMatrix);
-            _material.WorldView?.SetValue(matrixWorld * camera.ViewMatrix);
-            _material.WorldViewProj?.SetValue(matrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(camera.Position.ToXna());
-        }
-
-        if (lightCamera != null)
-        {
-            _material.LightViewProj?.SetValue(lightCamera.ViewProjectionMatrix);
-        }
-
-        _material.CurrentTechnique = isCreateShadowMap ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
-        if (!isCreateShadowMap)
-        {
-            _material.ShadowMap?.SetValue(Program.shadowRenderTarget);
-        }
-        foreach (var pass in _material.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-    
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _triangleCount);
-        }
-        
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
-    }
-
-    private void RenderLines(Camera camera, Camera? lightCamera, bool isCreateShadowMap, Matrix matrixWorld)
-    {
-        if (isCreateShadowMap) return; // no lines in shadow map
-        if (_lineVertexBuffer == null) return; // no lines to render
-
-        _graphicsDevice.SetVertexBuffer(_lineVertexBuffer);
-        _graphicsDevice.Indices = _lineIndexBuffer;
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
-        
-        // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.World?.SetValue(matrixWorld);
-        _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
-        _material.SnapColor?.SetValue(World.Snap.ToXnaVector3());
-        _material.IsFullbright?.SetValue(false);
-        _material.UseBaseColor?.SetValue(false);
-        _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
-        _material.LightDirection?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 1, 0));
-        _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
-        _material.FogDistance?.SetValue(World.FadeFrom);
-        _material.FogDensity?.SetValue(0.857f);
-        _material.EnvironmentLight?.SetValue(new Microsoft.Xna.Framework.Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00005f);
-        _material.GetsShadowed?.SetValue(GetsShadowed);
-
-        _material.View?.SetValue(camera.ViewMatrix);
-        _material.Projection?.SetValue(camera.ProjectionMatrix);
-        _material.WorldView?.SetValue(matrixWorld * camera.ViewMatrix);
-        _material.WorldViewProj?.SetValue(matrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
-        _material.CameraPosition?.SetValue(camera.Position.ToXna());
-
-        _material.CurrentTechnique = _material.Techniques["Basic"];
-        foreach (var pass in _material.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-    
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineTriangleCount!.Value);
-        }
+        if (!isCreateShadowMap) _lineMesh?.Render(camera, lightCamera, matrixWorld);
     }
 
     public void RebuildMesh()

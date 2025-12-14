@@ -28,6 +28,7 @@ float FogDistance;
 float FogDensity;
 float2 EnvironmentLight;
 float3 CameraPosition;
+float Alpha;
 
 // Lighting
 matrix LightViewProj;
@@ -53,7 +54,7 @@ struct VertexShaderInput
 struct VertexShaderOutput
 {
 	float4 Position : SV_POSITION;
-	float3 Color : COLOR0;
+	float4 Color : COLOR0;
     float4 WorldPos : TEXCOORD2;
 };
 
@@ -84,7 +85,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 
     VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
 
-    output.Color = color;
+    output.Color = float4(color, Alpha);
 
     // Save the vertices postion in world space (for shadow mapping)
     output.WorldPos = mul(float4(input.Position, 1), World);
@@ -94,17 +95,19 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
-    float3 diffuse = input.Color;
+    float4 diffuse = input.Color;
 
     if (GetsShadowed == true)
     {
         // Find the position of this pixel in light space
         float4 lightingPosition = mul(input.WorldPos, LightViewProj);
 
-        PS_ApplyShadowing(diffuse, lightingPosition, ShadowMapSampler, DepthBias);
+        float3 diffuseRGB = diffuse.xyz;
+        PS_ApplyShadowing(diffuseRGB, lightingPosition, ShadowMapSampler, DepthBias);
+        diffuse = float4(diffuseRGB, diffuse.w);
     }
 
-	return float4(diffuse, 1.0);
+	return diffuse;
 }
 
 struct CreateShadowMap_VSOut

@@ -2,5 +2,8 @@
 
 public enum PolyType
 {
-    Flat, Glass, Light, BrakeLight, ReverseLight, Finish, Fullbright
+    // Put glass last so when rendering it is last in the render order due to alpha sorting
+    Flat, Light, BrakeLight, ReverseLight, Finish, Fullbright, Glass,
+    
+    MaxValue = Glass
 }
