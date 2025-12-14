@@ -5,6 +5,12 @@ namespace NFMWorld.Mad.UI;
 
 public class MainMenu
 {
+    private enum MenuState
+    {
+        Main,
+        Workshop
+    }
+
     private struct Button
     {
         public int X;
@@ -21,6 +27,7 @@ public class MainMenu
     private int _mouseY;
     private readonly Font _titleFont;
     private readonly Font _buttonFont;
+    private MenuState _currentMenuState = MenuState.Main;
 
     public MainMenu()
     {
@@ -28,6 +35,13 @@ public class MainMenu
         _titleFont = new Font("Arial", 1, 48); // Large title
         _buttonFont = new Font("Arial", 1, 24); // Button text
 
+        BuildMainMenu();
+    }
+
+    private void BuildMainMenu()
+    {
+        _buttons.Clear();
+        
         // Initialize buttons (matching the image positions)
         int buttonWidth = 230;
         int buttonHeight = 35;
@@ -37,10 +51,27 @@ public class MainMenu
 
         AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "PLAY", OnPlayClicked);
         AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "GARAGE", OnClickUnavailable);
-        AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "WORKSHOP", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "WORKSHOP", OnWorkshopClicked);
         AddButton(startX, startY + spacing * 3, buttonWidth, buttonHeight, "SETTINGS", OnSettingsClicked);
         AddButton(startX, startY + spacing * 4, buttonWidth, buttonHeight, "CREDITS", OnClickUnavailable);
         AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "QUIT", OnQuitClicked);
+    }
+
+    private void BuildWorkshopMenu()
+    {
+        _buttons.Clear();
+        
+        // Initialize submenu buttons
+        int buttonWidth = 230;
+        int buttonHeight = 35;
+        int startX = 100;
+        int startY = 390;
+        int spacing = 40;
+
+        AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "MODEL EDITOR", OnModelEditorClicked);
+        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "STAGE MAKER", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "CAMPAIGN MAKER", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "BACK", OnBackClicked);
     }
 
     private void AddButton(int x, int y, int width, int height, string text, Action? onClick)
@@ -152,6 +183,10 @@ public class MainMenu
                     "SETTINGS" => "Adjust game settings.",
                     "CREDITS" => "View game credits.",
                     "QUIT" => "Exit the game.",
+                    "MODEL EDITOR" => "View and edit custom models.",
+                    "STAGE MAKER" => "Design your own stages.",
+                    "CAMPAIGN MAKER" => "Build custom campaign modes.",
+                    "BACK" => "Return to the main menu.",
                     _ => ""
                 };
                 G.DrawString(description, 120, 637);
@@ -190,7 +225,7 @@ public class MainMenu
         
         // Center the text in the button
         int textX = button.X + 12; // Left-aligned with padding
-        int textY = button.Y + 5; // Adjusted for proper vertical centering
+        int textY = button.Y + 25; // Adjusted for proper vertical centering
         
         G.DrawString(button.Text, textX, textY);
     }
@@ -198,6 +233,23 @@ public class MainMenu
     private void OnPlayClicked()
     {
         GameSparker.StartGame();
+    }
+
+    private void OnWorkshopClicked()
+    {
+        _currentMenuState = MenuState.Workshop;
+        BuildWorkshopMenu();
+    }
+
+    private void OnBackClicked()
+    {
+        _currentMenuState = MenuState.Main;
+        BuildMainMenu();
+    }
+
+    private void OnModelEditorClicked()
+    {
+        GameSparker.ModelEditor?.Open();
     }
 
     private void OnSettingsClicked()

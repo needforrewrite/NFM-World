@@ -60,6 +60,7 @@ public class GameSparker
     public static MainMenu? MainMenu = null;
     public static MessageWindow MessageWindow = new();
     public static SettingsMenu SettingsMenu = new();
+    public static ModelEditor? ModelEditor = null;
 
     private static DirectionalLight light;
     
@@ -123,6 +124,11 @@ public class GameSparker
             if (SettingsMenu.IsOpen && SettingsMenu.IsCapturingKey())
             {
                 SettingsMenu.HandleKeyCapture(key);
+            }
+            // Handle model editor controls
+            else if (ModelEditor?.IsOpen == true)
+            {
+                ModelEditor.HandleKeyPress(key);
             }
             return;
         }
@@ -198,6 +204,11 @@ public class GameSparker
         
         if (CurrentState == GameState.Menu)
         {
+            // Handle model editor key releases
+            if (ModelEditor?.IsOpen == true)
+            {
+                ModelEditor.HandleKeyRelease(key);
+            }
             return;
         }
         
@@ -344,6 +355,9 @@ public class GameSparker
         CurrentState = GameState.Menu;
         MainMenu = new MainMenu();
         
+        // Initialize ModelEditor after cars are loaded
+        ModelEditor = new ModelEditor();
+        
         // Initialize SettingsMenu writer
         SettingsMenu.Writer = Writer;
         
@@ -386,6 +400,11 @@ public class GameSparker
         // only tick game logic when actually in-game
         if (CurrentState != GameState.InGame)
         {
+            // Update model editor in menu state
+            if (CurrentState == GameState.Menu && ModelEditor?.IsOpen == true)
+            {
+                ModelEditor.Update();
+            }
             return;
         }
         
@@ -476,5 +495,6 @@ public class GameSparker
         devConsole.Render();
         MessageWindow.Render();
         SettingsMenu.Render();
+        ModelEditor?.Render();
     }
 }

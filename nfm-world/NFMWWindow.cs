@@ -385,6 +385,14 @@ public unsafe class Program : Game
         // Render based on game state
         if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
         {
+            // Render 3D model in model editor if open
+            if (GameSparker.ModelEditor?.IsOpen == true)
+            {
+                GraphicsDevice.BlendState = BlendState.Opaque;
+                GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+                GameSparker.ModelEditor.RenderModel(GameSparker.camera);
+            }
+            
             GameSparker.MainMenu.Render();
         }
         else if (GameSparker.CurrentState == GameSparker.GameState.InGame)
