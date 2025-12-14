@@ -488,6 +488,8 @@ public class GameSparker
         _graphicsDevice.SamplerStates[1] = SamplerState.PointClamp;
 
         RenderInternal();
+
+        Trackers.RenderDebugTrackers(camera);
         
         // DISPLAY SHADOW MAP
         _spriteBatch.Begin(0, BlendState.Opaque, SamplerState.PointClamp);
