@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Mad;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
@@ -13,10 +14,12 @@ public class Stage
 
     public int stagePartCount => pieces.Count;
 
+    public Sky? sky;
+
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
      */
-    public Stage(string stageName)
+    public Stage(string stageName, GraphicsDevice graphicsDevice)
     {
         int indexOffset = 10;
 
@@ -31,10 +34,10 @@ public class Stage
         // Medium.drawMountains = true;
         // Medium.drawStars = true;
         // Medium.drawPolys = true;
-        var i = 0;
-        var k = 100;
-        var l = 0;
-        var m = 100;
+        var maxr = 0;
+        var maxl = 100;
+        var maxt = 0;
+        var maxb = 100;
         var astring = "";
         try
         {
@@ -285,7 +288,7 @@ public class Stage
                 {
                     var n = Utility.GetInt("maxr", astring, 0);
                     var o = Utility.GetInt("maxr", astring, 1);
-                    i = o;
+                    maxr = o;
                     var p = Utility.GetInt("maxr", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
@@ -312,7 +315,7 @@ public class Stage
                 {
                     var n = Utility.GetInt("maxl", astring, 0);
                     var o = Utility.GetInt("maxl", astring, 1);
-                    k = o;
+                    maxl = o;
                     var p = Utility.GetInt("maxl", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
@@ -339,7 +342,7 @@ public class Stage
                 {
                     var n = Utility.GetInt("maxt", astring, 0);
                     var o = Utility.GetInt("maxt", astring, 1);
-                    l = o;
+                    maxt = o;
                     var p = Utility.GetInt("maxt", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
@@ -366,7 +369,7 @@ public class Stage
                 {
                     var n = Utility.GetInt("maxb", astring, 0);
                     var o = Utility.GetInt("maxb", astring, 1);
-                    m = o;
+                    maxb = o;
                     var p = Utility.GetInt("maxb", astring, 2);
                     for (var q = 0; q < n; q++)
                     {
@@ -394,7 +397,7 @@ public class Stage
             // Medium.Newmountains(k, i, m, l);
             // Medium.Newclouds(k, i, m, l);
             // Medium.Newstars();
-            Trackers.LoadTrackers(pieces, k, i - k, m, l - m);
+            Trackers.LoadTrackers(pieces, maxl, maxr - maxl, maxb, maxt - maxb);
         }
         catch (Exception exception)
         {
@@ -402,7 +405,7 @@ public class Stage
             GameSparker.Writer.WriteLine("At line: " + astring, "error");
             GameSparker.Writer.WriteLine(exception.ToString(), "error");
         }
-        GC.Collect();
+        sky = new Sky(graphicsDevice);
     }
 
     public void CreateObject(string objectName, int x, int y, int z, int r)
@@ -424,5 +427,16 @@ public class Stage
 
 
         GameSparker.devConsole.Log($"Created {objectName} at ({x}, {y}, {z}), rotation: {r}", "info");
+    }
+
+    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
+    {
+        if (!isCreateShadowMap)
+            sky?.Render(camera);
+        
+        foreach (var element in pieces)
+        {
+            element.Render(camera, lightCamera, isCreateShadowMap);
+        }
     }
 }

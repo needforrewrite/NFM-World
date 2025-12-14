@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Stride.Core.Mathematics;
 using Color = Microsoft.Xna.Framework.Color;
 using Matrix = Microsoft.Xna.Framework.Matrix;
+using Quaternion = Stride.Core.Mathematics.Quaternion;
 using Vector2 = Stride.Core.Mathematics.Vector2;
 using Vector3 = Stride.Core.Mathematics.Vector3;
 
@@ -87,6 +88,9 @@ public static class Extensions
 
         public Microsoft.Xna.Framework.Vector3 ToXnaVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
+        
+        public Vector3 ToVector3()
+            => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
     }
 
     extension(Matrix matrix)
@@ -161,5 +165,11 @@ public static class Extensions
     {
         public Microsoft.Xna.Framework.Vector2 ToXna()
             => new(vector2.X, vector2.Y);
+    }
+
+    extension(Quaternion quat)
+    {
+        public Microsoft.Xna.Framework.Quaternion ToXna()
+            => new(quat.X, quat.Y, quat.Z, quat.W);
     }
 }
