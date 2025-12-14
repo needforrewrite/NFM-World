@@ -2146,69 +2146,69 @@ public class Tests
                 new Vector3(-15,-8,103),
             ],
             (Vector3[][]) [
-                [
-                    new Vector3(-30, -18, 85),
-                    new Vector3(-44, -15, 79),
-                    new Vector3(-39, -14, 83),
-                ],
 
                 [
-                    new Vector3(-30, -18, 85),
-                    new Vector3(-39, -14, 83),
-                    new Vector3(-33, -15, 85),
-                ],
-
-                [
-                    new Vector3(-30, -18, 85),
-                    new Vector3(-33, -15, 85),
-                    new Vector3(-20, -10, 99),
-                ],
-
-                [
-                    new Vector3(-39, -10, 87),
-                    new Vector3(-39, -14, 83),
-                    new Vector3(-44, -15, 79),
-                ],
-
-                [
-                    new Vector3(-39, -10, 87),
-                    new Vector3(-44, -15, 79),
+                    new Vector3(-17, -7, 104),
+                    new Vector3(-21, -9, 100),
                     new Vector3(-44, -7, 87),
                 ],
 
                 [
-                    new Vector3(-39, -10, 87),
                     new Vector3(-44, -7, 87),
-                    new Vector3(-17, -7, 104),
+                    new Vector3(-21, -9, 100),
+                    new Vector3(-39, -10, 87),
                 ],
 
                 [
-                    new Vector3(-15, -8, 103),
+                    new Vector3(-44, -7, 87),
+                    new Vector3(-39, -10, 87),
+                    new Vector3(-39, -14, 83),
+                ],
+
+                [
+                    new Vector3(-44, -7, 87),
+                    new Vector3(-39, -14, 83),
+                    new Vector3(-44, -15, 79),
+                ],
+
+                [
+                    new Vector3(-39, -14, 83),
+                    new Vector3(-30, -18, 85),
+                    new Vector3(-44, -15, 79),
+                ],
+
+                [
+                    new Vector3(-39, -14, 83),
+                    new Vector3(-33, -15, 85),
+                    new Vector3(-30, -18, 85),
+                ],
+
+                [
+                    new Vector3(-33, -15, 85),
+                    new Vector3(-20, -10, 99),
+                    new Vector3(-30, -18, 85),
+                ],
+
+                [
                     new Vector3(-30, -18, 85),
                     new Vector3(-20, -10, 99),
+                    new Vector3(-15, -8, 103),
                 ],
 
                 [
+                    new Vector3(-17, -7, 104),
                     new Vector3(-15, -8, 103),
                     new Vector3(-20, -10, 99),
-                    new Vector3(-21, -9, 100),
-                ],
-
-                [
-                    new Vector3(-21, -9, 100),
-                    new Vector3(-39, -10, 87),
-                    new Vector3(-17, -7, 104),
                 ],
 
                 [
                     new Vector3(-21, -9, 100),
                     new Vector3(-17, -7, 104),
-                    new Vector3(-15, -8, 103),
+                    new Vector3(-20, -10, 99),
                 ],
-
             ],
             new Vector3(0.39011782f, 0.6627052f, -0.63924164f),
-            1
+            2
         ];
 
         #endregion
@@ -2239,6 +2239,32 @@ public class Tests
                     expectedInput[result.Triangles[i + 1]],
                     expectedInput[result.Triangles[i + 2]]
                 ]);
+            }
+            
+            for (int i = 0; i < result.Triangles.Length; i += 3)
+            {
+                Console.WriteLine("[");
+                Console.WriteLine($"new Vector3({expectedInput[result.Triangles[i]]}),".Replace("<", "").Replace(">", ""));
+                Console.WriteLine($"new Vector3({expectedInput[result.Triangles[i + 1]]}),".Replace("<", "").Replace(">", ""));
+                Console.WriteLine($"new Vector3({expectedInput[result.Triangles[i + 2]]}),".Replace("<", "").Replace(">", ""));
+                Console.WriteLine("],");
+                Console.WriteLine();
+            }
+            
+            for (int i = 0; i < result.Triangles.Length; i += 3)
+            {
+                Console.WriteLine("<p>");
+                Console.WriteLine($"c({Random.Shared.Next(0, 256)},{Random.Shared.Next(0, 256)},{Random.Shared.Next(0, 256)})");
+                Console.WriteLine("gr(40)");
+                Console.WriteLine("fs(1)");
+                Console.WriteLine($"p({expectedInput[result.Triangles[i]]})".Replace("<", "").Replace(">", "")
+                    .Replace(", ", ","));
+                Console.WriteLine($"p({expectedInput[result.Triangles[i + 1]]})".Replace("<", "").Replace(">", "")
+                    .Replace(", ", ","));
+                Console.WriteLine($"p({expectedInput[result.Triangles[i + 2]]})".Replace("<", "").Replace(">", "")
+                    .Replace(", ", ","));
+                Console.WriteLine("</p>");
+                Console.WriteLine();
             }
 
             // Check that each expected triangle exists in actual triangles
