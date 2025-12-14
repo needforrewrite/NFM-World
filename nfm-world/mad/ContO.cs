@@ -74,17 +74,16 @@ public class ContO
 
     public static implicit operator ContO(Mesh mesh) => new ContO(mesh);
 
-    public void DamageX(int wheelnum, float amount)
+    public void DamageX(Stat stat, int wheelnum, float amount)
     {
+        MeshDamage.DamageX(stat, _mesh, wheelnum, amount);
     }
-    public void DamageY(int wheelnum, float amount)
+    public void DamageY(Stat stat, int wheelnum, float amount, bool mtouch, int nbsq, int squash)
     {
+        MeshDamage.DamageY(stat, _mesh, wheelnum, amount, mtouch, ref nbsq, ref squash);
     }
-    public void DamageZ(int wheelnum, float amount)
+    public void DamageZ(Stat stat, int wheelnum, float amount)
     {
-    }
-
-    public void Squash(int wheelnum, float amount)
-    {
+        MeshDamage.DamageZ(stat, _mesh, wheelnum, amount);
     }
 }

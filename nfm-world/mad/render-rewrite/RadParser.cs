@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using NFMWorld.Util;
 using Stride.Core.Mathematics;
 using Color = NFMWorld.Util.Color;
 
@@ -495,4 +496,15 @@ public readonly record struct Color3(
             (short)(a.G - b.G),
             (short)(a.B - b.B)
         );
+
+    public void ToHSB(out float hue, out float saturation, out float brightness)
+    {
+        Colors.RGBtoHSB(R, G, B, out hue, out saturation, out brightness);
+    }
+
+    public static Color3 FromHSB(float hue, float saturation, float brightness)
+    {
+        var (r, g, b) = Colors.HSBtoRGB(hue, saturation, brightness);
+        return new Color3(r, g, b);
+    }
 }

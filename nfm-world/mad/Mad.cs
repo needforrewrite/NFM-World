@@ -2442,13 +2442,10 @@ public class Mad
             Mtouch = true;
     }
 
-    private int Py(int i, int i145, int i146, int i147)
-    {
-        return (i - i145) * (i - i145) + (i146 - i147) * (i146 - i147);
-    }
-
     private int Regx(int i, float f, ContO conto)
     {
+        conto.DamageX(Stat, i, f);
+
         var i110 = 0;
         var abool = true;
         /*if (XTGraphics.Multion == 1 && XTGraphics.Im != Im)
@@ -2480,7 +2477,6 @@ public class Mad
             {
                 XTGraphics.Acrash(Im, f, 0);
             }*/
-            conto.DamageX(i, f);
             for (var i111 = 0; i111 < 40; i111++)
             {
                 var f112 = 0.0F;
@@ -2500,6 +2496,7 @@ public class Mad
 
     private int Regy(int i, float f, ContO conto)
     {
+        conto.DamageY(Stat, i, f, Mtouch, _nbsq, Squash);
         var i97 = 0;
         var abool = true;
         /*if (XTGraphics.Multion == 1 && XTGraphics.Im != Im)
@@ -2562,7 +2559,6 @@ public class Mad
             }*/
             if (i99 * i98 == 0 || Mtouch)
             {
-                conto.DamageY(i, f);
                 for (var i102 = 0; i102 < 40; i102++)
                 {
                     var f103 = 0.0F;
@@ -2579,7 +2575,6 @@ public class Mad
             }
             if (i99 * i98 == -1)
             {
-                conto.Squash(i, f);
                 if (_nbsq > 0)
                 {
                     var i105 = 0;
@@ -2613,6 +2608,7 @@ public class Mad
 
     private int Regz(int i, float f, ContO conto)
     {
+        conto.DamageZ(Stat, i, f);
         var i114 = 0;
         var abool = true;
         /*if (XTGraphics.Multion == 1 && XTGraphics.Im != Im)
@@ -2645,7 +2641,6 @@ public class Mad
             {
                 XTGraphics.Acrash(Im, f, 0);
             }*/
-            conto.DamageZ(i, f);
             for (var i115 = 0; i115 < 40; i115++)
             {
                 var f116 = 0.0F;

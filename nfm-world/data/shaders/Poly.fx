@@ -7,6 +7,8 @@
 	#define PS_SHADERMODEL ps_4_0_level_9_1
 #endif
 
+#include "./Mad.fxh"
+
 // BasicEffect
 matrix World;
 matrix WorldInverseTranspose;
@@ -67,24 +69,22 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 	// Apply diffuse lighting
 	if (IsFullbright == false)
     {
-		float3 c = mul(float4(input.Centroid, 1), World).xyz;
-		float3 n = normalize(mul(float4(input.Normal, 0), WorldInverseTranspose).xyz);
-		float diff = 0.0;
-		// phy original
-        if (sign(dot(n, LightDirection)) == sign(dot(n, c - CameraPosition)))
-        {
-            diff = abs(dot(n, LightDirection));
-        }
-		color = (EnvironmentLight.x + EnvironmentLight.y * diff) * color;
+        VS_ApplyPolygonDiffuse(
+            color,
+            mul(float4(input.Centroid, 1), World).xyz,
+            normalize(mul(float4(input.Normal, 0), WorldInverseTranspose).xyz),
+            LightDirection,
+            CameraPosition,
+            EnvironmentLight
+        );
 	}
 
 	// Apply snap
 	color += (color * SnapColor);
 
-	float d = length(viewPos);
-	float f = pow(FogDensity, max((d - FogDistance / 2.0) / FogDistance, 0.0));
+    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
 
-	output.Color = color * float3(f, f, f) + FogColor * float3(1.0 - f, 1.0 - f, 1.0 - f);
+    output.Color = color;
 
     // Save the vertices postion in world space (for shadow mapping)
     output.WorldPos = mul(float4(input.Position, 1), World);
@@ -101,31 +101,7 @@ float4 MainPS(VertexShaderOutput input) : COLOR
         // Find the position of this pixel in light space
         float4 lightingPosition = mul(input.WorldPos, LightViewProj);
 
-        // Find the position in the shadow map for this pixel
-        float2 ShadowTexCoord = 0.5 * lightingPosition.xy /
-                                lightingPosition.w + float2( 0.5, 0.5 );
-        ShadowTexCoord.y = 1.0f - ShadowTexCoord.y;
-
-        // Only apply shadows if we're inside the light's view frustum
-        if (ShadowTexCoord.x >= 0.0 && ShadowTexCoord.x <= 1.0 &&
-            ShadowTexCoord.y >= 0.0 && ShadowTexCoord.y <= 1.0 &&
-            lightingPosition.z > 0.0)
-        {
-            // Get the current depth stored in the shadow map
-            float shadowdepth = tex2D(ShadowMapSampler, ShadowTexCoord).r;
-
-            // Calculate the current pixel depth
-            // The bias is used to prevent floating point errors that occur when
-            // the pixel of the occluder is being drawn
-            float ourdepth = (lightingPosition.z / lightingPosition.w) - DepthBias;
-
-            // Check to see if this pixel is in front or behind the value in the shadow map
-            if (shadowdepth < ourdepth)
-            {
-                // Shadow the pixel by lowering the intensity
-                diffuse = diffuse * float3(0.5, 0.5, 0.5);
-            }
-        }
+        PS_ApplyShadowing(diffuse, lightingPosition, ShadowMapSampler, DepthBias);
     }
 
 	return float4(diffuse, 1.0);

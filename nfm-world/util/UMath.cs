@@ -214,4 +214,14 @@ public static class UMath
     {
         return (value - a) / (b - a);
     }
+    
+    public static int Py(int x1, int x2, int y1, int y2)
+    {
+        return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+    }
+    
+    public static float Py(float x1, float x2, float y1, float y2)
+    {
+        return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+    }
 }
