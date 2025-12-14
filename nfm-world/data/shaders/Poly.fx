@@ -85,6 +85,8 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 
     VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
 
+    VS_ColorCorrect(color);
+
     output.Color = float4(color, Alpha);
 
     // Save the vertices postion in world space (for shadow mapping)
