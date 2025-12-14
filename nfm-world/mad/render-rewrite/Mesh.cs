@@ -158,7 +158,7 @@ public class Mesh : Transform
 	    var data = new List<VertexPositionNormalColorCentroid>(8 * lines.Count);
 	    var indices = new List<int>(12 * 3 * lines.Count);
 
-        const float halfThickness = 2f;
+        const float halfThickness = 1f;
 	    foreach (var line in lines)
 	    {
             // Create two quads for each line segment to give it some thickness

@@ -72,14 +72,36 @@ public class PolygonTriangulator
         }
 
         // WORKAROUND: ExtractRegions sometimes produces incomplete outer boundaries
-        // For polygons with holes, reconstruct the outer boundary from the convex hull or extreme vertices
+        // The outer boundary should include all vertices not in holes, in path order
         if (polyLines.Count > 1)
         {
-            // Find the convex hull of all unique vertices to get the true outer boundary
-            var convexHull = ComputeConvexHull(uniqueVertices);
-            if (convexHull.Count >= 3)
+            // Collect all hole vertices
+            var holeVertices = new HashSet<int>();
+            for (int r = 1; r < polyLines.Count; r++)
             {
-                polyLines[0] = convexHull;
+                foreach (var idx in polyLines[r])
+                {
+                    if (idx != -1)  // Skip the hole marker
+                        holeVertices.Add(idx);
+                }
+            }
+
+            // Reconstruct outer polygon from original path, excluding hole vertices
+            var reconstructedOuter = new List<int>();
+            var seenOuter = new HashSet<int>();
+
+            foreach (var idx in initialPoly)
+            {
+                if (!holeVertices.Contains(idx) && !seenOuter.Contains(idx))
+                {
+                    reconstructedOuter.Add(idx);
+                    seenOuter.Add(idx);
+                }
+            }
+
+            if (reconstructedOuter.Count >= 3)
+            {
+                polyLines[0] = reconstructedOuter;
             }
         }
 
@@ -174,6 +196,7 @@ public class PolygonTriangulator
                 // Extract triangles and map back to original vertex indices
                 foreach (var tri in poly.Triangles)
                 {
+                    var triIndices = new List<int>();
                     for (int i = 0; i < 3; i++)
                     {
                         var p = tri.Points[i];
@@ -202,8 +225,16 @@ public class PolygonTriangulator
                                 }
                             }
                             if (origIdx >= 0)
-                                allTriangles.Add(origIdx);
+                            {
+                                triIndices.Add(origIdx);
+                            }
                         }
+                    }
+
+                    // Only add complete triangles (must have exactly 3 vertices)
+                    if (triIndices.Count == 3)
+                    {
+                        allTriangles.AddRange(triIndices);
                     }
                 }
 
@@ -1222,44 +1253,44 @@ public class Program
     {
         var vertices = new List<Vector3>
         {
-            new Vector3(42.5f,23.800001f,207.40001f),
-            new Vector3(42.5f,-8.5f,207.40001f),
-            new Vector3(27.2f,-20.400002f,207.40001f),
-            new Vector3(13.6f,-23.800001f,207.40001f),
-            new Vector3(-13.6f,-23.800001f,207.40001f),
-            new Vector3(-27.2f,-20.400002f,207.40001f),
-            new Vector3(-42.5f,-8.5f,207.40001f),
-            new Vector3(-42.5f,23.800001f,207.40001f),
-            new Vector3(-35.7f,23.800001f,207.40001f),
-            new Vector3(35.7f,23.800001f,207.40001f),
-            new Vector3(35.7f,11.900001f,207.40001f),
-            new Vector3(-35.7f,11.900001f,207.40001f),
-            new Vector3(-35.7f,-5.1000004f,207.40001f),
-            new Vector3(-23.800001f,-15.3f,207.40001f),
-            new Vector3(-13.6f,-17f,207.40001f),
-            new Vector3(13.6f,-17f,207.40001f),
-            new Vector3(23.800001f,-15.3f,207.40001f),
-            new Vector3(35.7f,-5.1000004f,207.40001f),
-            new Vector3(35.7f,23.800001f,207.40001f),
-            // new Vector3(-40,-54,-103),
-            // new Vector3(-40,-27,-103),
-            // new Vector3(40,-27,-103),
-            // new Vector3(40,-54,-103),
-            // new Vector3(38,-43,-103),
-            // new Vector3(33,-42,-104),
-            // new Vector3(33,-34,-104),
-            // new Vector3(38,-33,-103),
-            // new Vector3(38,-43,-103),
-            // new Vector3(40,-54,-103),
-            // new Vector3(19,-43,-103),
-            // new Vector3(0,-45,-103),
-            // new Vector3(-19,-43,-103),
-            // new Vector3(-40,-54,-103),
-            // new Vector3(-38,-43,-103),
-            // new Vector3(-33,-42,-104),
-            // new Vector3(-33,-34,-104),
-            // new Vector3(-38,-33,-103),
-            // new Vector3(-38,-43,-103),
+            // new Vector3(42.5f,23.800001f,207.40001f),
+            // new Vector3(42.5f,-8.5f,207.40001f),
+            // new Vector3(27.2f,-20.400002f,207.40001f),
+            // new Vector3(13.6f,-23.800001f,207.40001f),
+            // new Vector3(-13.6f,-23.800001f,207.40001f),
+            // new Vector3(-27.2f,-20.400002f,207.40001f),
+            // new Vector3(-42.5f,-8.5f,207.40001f),
+            // new Vector3(-42.5f,23.800001f,207.40001f),
+            // new Vector3(-35.7f,23.800001f,207.40001f),
+            // new Vector3(35.7f,23.800001f,207.40001f),
+            // new Vector3(35.7f,11.900001f,207.40001f),
+            // new Vector3(-35.7f,11.900001f,207.40001f),
+            // new Vector3(-35.7f,-5.1000004f,207.40001f),
+            // new Vector3(-23.800001f,-15.3f,207.40001f),
+            // new Vector3(-13.6f,-17f,207.40001f),
+            // new Vector3(13.6f,-17f,207.40001f),
+            // new Vector3(23.800001f,-15.3f,207.40001f),
+            // new Vector3(35.7f,-5.1000004f,207.40001f),
+            // new Vector3(35.7f,23.800001f,207.40001f),
+            new Vector3(-40,-54,-103),
+            new Vector3(-40,-27,-103),
+            new Vector3(40,-27,-103),
+            new Vector3(40,-54,-103),
+            new Vector3(38,-43,-103),
+            new Vector3(33,-42,-104),
+            new Vector3(33,-34,-104),
+            new Vector3(38,-33,-103),
+            new Vector3(38,-43,-103),
+            new Vector3(40,-54,-103),
+            new Vector3(19,-43,-103),
+            new Vector3(0,-45,-103),
+            new Vector3(-19,-43,-103),
+            new Vector3(-40,-54,-103),
+            new Vector3(-38,-43,-103),
+            new Vector3(-33,-42,-104),
+            new Vector3(-33,-34,-104),
+            new Vector3(-38,-33,-103),
+            new Vector3(-38,-43,-103),
         };
 
         var result = PolygonTriangulator.Triangulate(vertices);
