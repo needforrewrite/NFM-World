@@ -36,7 +36,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
-internal class GlConstants
+file class GlConstants
 {
     public const int SDL_GL_SHARE_WITH_CURRENT_CONTEXT = 22;
     public const int GL_ALL_ATTRIB_BITS = 0xfffff;
@@ -120,7 +120,7 @@ internal class GlConstants
     }
 }
 
-internal static class GlWrapper
+file static class GlWrapper
 {
     private const CallingConvention callingConvention = CallingConvention.Winapi;
 
@@ -350,7 +350,7 @@ internal static class GlWrapper
 /// Manages contexts and loads all the needed functions for Skia drawing. You should 
 /// call Initialize() once when the game is created passing a valid GraphicsDevice.
 /// </summary>
-public static class SkiaGlManager
+file static class SkiaGlManager
 {
     internal static GraphicsDevice GraphicsDevice { get; private set; }
 
@@ -429,8 +429,6 @@ public class MonoGameSkia
     private SKSurface _surface;
     private SKCanvas _canvas;
     private SkiaSharpBackend _backend;
-    private int _fbo;
-    private readonly GL _gl;
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate IntPtr d_sdl_gl_getprocaddress(string proc);
