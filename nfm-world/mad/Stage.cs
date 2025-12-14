@@ -142,7 +142,7 @@ public class Stage
                     var hasCustomY = astring.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
-                        setheight = Utility.GetInt("set", astring, 4);
+                        setheight = Utility.GetInt("set", astring, 4) * -1;
                     }
 
                     pieces[stagePartCount] = new Mesh(
@@ -187,14 +187,19 @@ public class Stage
                 {
                     var chkindex = Utility.GetInt("chk", astring, 0);
                     chkindex -= indexOffset;
-                    var chkheight = World.Ground - GameSparker.stage_parts[chkindex].GroundAt;
 
+                    var ymult = -1;
+                    if (chkindex == GameSparker.GetModel("aircheckpoint")) {
+                        ymult = 1; // default to inverted Y for stupid rollercoaster chks for compatibility reasons
+                    }
+
+                    var chkheight = World.Ground - GameSparker.stage_parts[chkindex].GroundAt;
 
                     // Check if optional Y coordinate is provided (5 parameters instead of 4)
                     var hasCustomY = astring.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
-                        chkheight = Utility.GetInt("chk", astring, 4);
+                        chkheight = Utility.GetInt("chk", astring, 4) * ymult;
                         pieces[stagePartCount] = new Mesh(
                             GameSparker.stage_parts[chkindex],
                             new Vector3(Utility.GetInt("chk", astring, 1), chkheight, Utility.GetInt("chk", astring, 2)),
@@ -205,8 +210,8 @@ public class Stage
                     {
                         pieces[stagePartCount] = new Mesh(
                             GameSparker.stage_parts[chkindex],
-                            new Vector3(Utility.GetInt("set", astring, 1), chkheight, Utility.GetInt("set", astring, 2)),
-                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                            new Vector3(Utility.GetInt("chk", astring, 1), chkheight, Utility.GetInt("chk", astring, 2)),
+                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("chk", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
                     }
                     
@@ -232,8 +237,8 @@ public class Stage
                     fixindex -= indexOffset;
                     pieces[stagePartCount] = new FixHoop(
                         GameSparker.stage_parts[fixindex],
-                        new Vector3(Utility.GetInt("set", astring, 1), Utility.GetInt("set", astring, 3), Utility.GetInt("set", astring, 2)),
-                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", astring, 4)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                        new Vector3(Utility.GetInt("fix", astring, 1), Utility.GetInt("fix", astring, 3), Utility.GetInt("fix", astring, 2)),
+                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("fix", astring, 4)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                     );
                     // CheckPoints.Fx[CheckPoints.Fn] = Utility.GetInt("fix", astring, 1);
                     // CheckPoints.Fz[CheckPoints.Fn] = Utility.GetInt("fix", astring, 2);
