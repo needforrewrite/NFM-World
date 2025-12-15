@@ -173,3 +173,74 @@ public static class Extensions
             => new(quat.X, quat.Y, quat.Z, quat.W);
     }
 }
+
+public static class Extensions2
+{
+    extension(Stride.Core.Mathematics.Matrix matrix)
+    {
+        public static Stride.Core.Mathematics.Matrix CreateFromEuler(Euler euler)
+        {
+            // NFM rotation order: yaw-pitch-roll
+
+            Span<float> te = [
+                1, 0, 0, 0,
+                0, 1, 0, 0,
+                0, 0, 1, 0,
+                0, 0, 0, 1
+            ];
+
+            float x = euler.Pitch.Radians, y = -euler.Yaw.Radians, z = euler.Roll.Radians;
+            float a = MathF.Cos(x), b = MathF.Sin(x);
+            float c = MathF.Cos(y), d = MathF.Sin(y);
+            float e = MathF.Cos(z), f = MathF.Sin(z);
+
+            {
+
+                float ce = c * e, cf = c * f, de = d * e, df = d * f;
+
+                te[0] = ce + df * b;
+                te[4] = de * b - cf;
+                te[8] = a * d;
+
+                te[1] = a * f;
+                te[5] = a * e;
+                te[9] = -b;
+
+                te[2] = cf * b - de;
+                te[6] = df + ce * b;
+                te[10] = a * c;
+
+            }
+
+            // bottom row
+            te[3] = 0;
+            te[7] = 0;
+            te[11] = 0;
+
+            // last column
+            te[12] = 0;
+            te[13] = 0;
+            te[14] = 0;
+            te[15] = 1;
+
+            return new Stride.Core.Mathematics.Matrix(
+                te[0],
+                te[1],
+                te[2],
+                te[3],
+                te[4],
+                te[5],
+                te[6],
+                te[7],
+                te[8],
+                te[9],
+                te[10],
+                te[11],
+                te[12],
+                te[13],
+                te[14],
+                te[15]
+            );
+        }
+    }
+}
