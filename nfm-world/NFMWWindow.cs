@@ -396,6 +396,10 @@ public unsafe class Program : Game
             {
                 GameSparker.MainMenu.UpdateMouse(newState.X, newState.Y);
             }
+            else if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer && GameSparker.ModelEditor != null)
+            {
+                GameSparker.ModelEditor.HandleMouseMove(newState.X, newState.Y);
+            }
         }
 
         oldMouseState = newState;
@@ -474,7 +478,11 @@ public unsafe class Program : Game
 
     private void MouseDown(int x, int y)
     {
-        // Currently not needed, but could be used for button press effects
+        if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer && GameSparker.ModelEditor != null)
+        {
+            GameSparker.ModelEditor.HandleMouseDown(x, y);
+        }
+        // Currently not needed for other states, but could be used for button press effects
     }
 
     private void HandleKeyPress(Keys key, bool isDown)
