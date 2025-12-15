@@ -80,7 +80,7 @@ public class GameSparker
 
     public static readonly string[] CarRads = {
         "2000tornados", "formula7", "canyenaro", "lescrab", "nimi", "maxrevenge", "leadoxide", "koolkat", "drifter",
-        "policecops", "mustang", "king", "audir8", "masheen", "radicalone", "drmonster"
+        "policecops", "mustang", "king", "audir8", "masheen", "radicalone", "drmonster", "marauder"
     };
     public static readonly string[] StageRads = {
         "road", "froad", "twister2", "twister1", "turn", "offroad", "bumproad", "offturn", "nroad", "nturn",
