@@ -161,7 +161,7 @@ public class Mesh : Transform
 
             if (poly.LineType != null)
             {
-                for (var j = 0; j < poly.Points.Length; ++j)
+                for (var j = 0; j < poly.Points.Length; j++)
                 {
                     var p0 = poly.Points[j];
                     var p1 = poly.Points[(j + 1) % poly.Points.Length];
@@ -211,14 +211,12 @@ public class Mesh : Transform
             var color = poly.LineType == LineType.Colored ? (poly.Color - new Color3(10, 10, 10)).ToXna() : Microsoft.Xna.Framework.Color.Black;            
             
             var lineDir = Vector3.Normalize(p1 - p0);
-            var up = Vector3.UnitY;
-            if (Vector3.Dot(lineDir, up) > 0.99f)
-            {
-                up = Vector3.UnitX; // Avoid degenerate case
-            }
+            
+            // Choose an initial perpendicular vector that's not parallel to lineDir
+            var perpendicular = Math.Abs(lineDir.Y) > 0.99f ? Vector3.UnitX : Vector3.UnitY;
 
-            var right = Vector3.Normalize(Vector3.Cross(lineDir, up)) * halfThickness; // Line half-thickness
-            up = Vector3.Normalize(Vector3.Cross(right, lineDir)) * halfThickness; // Recalculate up to ensure orthogonality
+            var right = Vector3.Normalize(Vector3.Cross(lineDir, perpendicular)) * halfThickness;
+            var up = Vector3.Normalize(Vector3.Cross(right, lineDir)) * halfThickness;
             var v0 = p0 - right - up;
             var v1 = p0 + right - up;
             var v2 = p0 + right + up;
