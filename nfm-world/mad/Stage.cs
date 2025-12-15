@@ -4,6 +4,7 @@ using NFMWorld.Util;
 using Stride.Core.Mathematics;
 using Color3 = NFMWorld.Mad.Color3;
 using Environment = System.Environment;
+using Random = NFMWorld.Util.Random;
 
 /**
     Represents a stage. Holds all information relating to track pices, scenery, etc.
@@ -18,6 +19,8 @@ public class Stage : IRenderable
     public Sky sky;
     public Ground ground;
     public GroundPolys? polys;
+    public GroundPolys? clouds;
+    public GroundPolys? mountains;
 
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
@@ -26,101 +29,114 @@ public class Stage : IRenderable
     {
         int indexOffset = 10;
 
-        World.HasTexture = false;
+        World.ResetValues();
         Trackers.Nt = 0;
-        // Medium.Resdown = 0;
-        // Medium.Rescnt = 5;
-        // Medium.Lightson = false;
         // Medium.Noelec = 0;
         // Medium.Ground = 250;
         // Medium.Trk = 0;
-        World.DrawClouds = true;
-        World.DrawMountains = true;
-        World.DrawStars = true;
-        World.DrawPolys = true;
         var maxr = 0;
         var maxl = 100;
         var maxt = 0;
         var maxb = 100;
-        var astring = "";
+        var line = "";
         try
         {
             //var customStagePath = "stages/" + CheckPoints.Stage + ".txt";
             var customStagePath = "data/stages/" + stageName + ".txt";
-            foreach (var line in System.IO.File.ReadAllLines(customStagePath))
+            foreach (var aline in System.IO.File.ReadAllLines(customStagePath))
             {
-                astring = "" + line.Trim();
-                if (astring.StartsWith("snap"))
+                line = aline.Trim();
+                if (line.StartsWith("snap"))
                 {
                     World.Snap = new Color3(
-                        (short) Utility.GetInt("snap", astring, 0),
-                        (short) Utility.GetInt("snap", astring, 1),
-                        (short) Utility.GetInt("snap", astring, 2)
+                        (short)Utility.GetInt("snap", line, 0),
+                        (short)Utility.GetInt("snap", line, 1),
+                        (short)Utility.GetInt("snap", line, 2)
                     );
                 }
-                if (astring.StartsWith("sky"))
+
+                if (line.StartsWith("sky"))
                 {
                     World.Sky = new Color3(
-                        (short) Utility.GetInt("sky", astring, 0),
-                        (short) Utility.GetInt("sky", astring, 1),
-                        (short) Utility.GetInt("sky", astring, 2)
+                        (short)Utility.GetInt("sky", line, 0),
+                        (short)Utility.GetInt("sky", line, 1),
+                        (short)Utility.GetInt("sky", line, 2)
                     );
                 }
-                if (astring.StartsWith("ground"))
+
+                if (line.StartsWith("ground"))
                 {
                     World.GroundColor = new Color3(
-                        (short)Utility.GetInt("ground", astring, 0),
-                        (short)Utility.GetInt("ground", astring, 1),
-                        (short)Utility.GetInt("ground", astring, 2)
+                        (short)Utility.GetInt("ground", line, 0),
+                        (short)Utility.GetInt("ground", line, 1),
+                        (short)Utility.GetInt("ground", line, 2)
                     );
                 }
-                if (astring.StartsWith("polys"))
+
+                if (line.StartsWith("polys"))
                 {
-                    if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
+                    if (line.Contains("false", StringComparison.OrdinalIgnoreCase))
                     {
                         World.DrawPolys = false;
                     }
                     else
                     {
+                        World.HasPolys = true;
                         World.GroundPolysColor = new Color3(
-                            (short) Utility.GetInt("polys", astring, 0),
-                            (short) Utility.GetInt("polys", astring, 1),
-                            (short) Utility.GetInt("polys", astring, 2)
+                            (short)Utility.GetInt("polys", line, 0),
+                            (short)Utility.GetInt("polys", line, 1),
+                            (short)Utility.GetInt("polys", line, 2)
                         );
                     }
                 }
-                if (astring.StartsWith("fog"))
+
+                if (line.StartsWith("fog"))
                 {
                     World.Fog = new Color3(
-                        (short)Utility.GetInt("fog", astring, 0),
-                        (short)Utility.GetInt("fog", astring, 1),
-                        (short)Utility.GetInt("fog", astring, 2)
+                        (short)Utility.GetInt("fog", line, 0),
+                        (short)Utility.GetInt("fog", line, 1),
+                        (short)Utility.GetInt("fog", line, 2)
                     );
                 }
-                if (astring.StartsWith("texture"))
+
+                if (line.StartsWith("texture"))
                 {
                     World.HasTexture = true;
                     World.Texture =
                     [
-                        Utility.GetInt("texture", astring, 0),
-                        Utility.GetInt("texture", astring, 1),
-                        Utility.GetInt("texture", astring, 2),
-                        Utility.GetInt("texture", astring, 3)
+                        Utility.GetInt("texture", line, 0),
+                        Utility.GetInt("texture", line, 1),
+                        Utility.GetInt("texture", line, 2),
+                        Utility.GetInt("texture", line, 3)
                     ];
                 }
-                if (astring.StartsWith("clouds"))
+
+                if (line.StartsWith("clouds"))
                 {
-                    // if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
-                    // {
-                    //     Medium.drawClouds = false;
-                    // }
-                    // else
-                    // {
-                    //     Medium.Setclouds(Utility.GetInt("clouds", astring, 0), Utility.GetInt("clouds", astring, 1),
-                    //         Utility.GetInt("clouds", astring, 2), Utility.GetInt("clouds", astring, 3), Utility.GetInt("clouds", astring, 4));
-                    // }
+                    if (line.Contains("false", StringComparison.OrdinalIgnoreCase))
+                    {
+                        World.DrawClouds = false;
+                    }
+                    else
+                    {
+                        World.HasClouds = true;
+                        World.Clouds =
+                        [
+                            Utility.GetInt("clouds", line, 0),
+                            Utility.GetInt("clouds", line, 1),
+                            Utility.GetInt("clouds", line, 2),
+                            Utility.GetInt("clouds", line, 3),
+                            Utility.GetInt("clouds", line, 4)
+                        ];
+                    }
                 }
-                if (astring.StartsWith("density"))
+
+                if (line.StartsWith("cloudcoverage"))
+                {
+                    World.CloudCoverage = Utility.GetFloat("cloudcoverage", line, 0);
+                }
+
+                if (line.StartsWith("density"))
                 {
                     // Medium.Fogd = (Utility.GetInt("density", astring, 0) + 1) * 2 - 1;
                     // if (Medium.Fogd < 1)
@@ -132,43 +148,61 @@ public class Stage : IRenderable
                     //     Medium.Fogd = 30;
                     // }
                 }
-                if (astring.StartsWith("fadefrom"))
+
+                if (line.StartsWith("fadefrom"))
                 {
-                    World.FadeFrom = Utility.GetInt("fadefrom", astring, 0);
+                    World.FadeFrom = Utility.GetInt("fadefrom", line, 0);
                 }
-                if (astring.StartsWith("lightson"))
+
+                if (line.StartsWith("lightson"))
                 {
-                    // Medium.Lightson = true;
+                    World.LightsOn = true;
                 }
-                if (astring.StartsWith("mountains"))
+
+                if (line.StartsWith("mountains"))
                 {
-                    // // Check for mountains(false) first
-                    // if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
-                    // {
-                    //     Medium.drawMountains = false;
-                    // }
-                    // else
-                    // {
-                    //     Medium.Mgen = Utility.GetInt("mountains", astring, 0);
-                    // }
+                    // Check for mountains(false) first
+                    if (line.Contains("false", StringComparison.OrdinalIgnoreCase))
+                    {
+                        World.DrawMountains = false;
+                    }
+                    else
+                    {
+                        World.MountainSeed = Utility.GetInt("mountains", line, 0);
+                    }
                 }
-                if (astring.StartsWith("set"))
+
+                if (line.StartsWith("mountaincoverage"))
                 {
-                    var setindex = Utility.GetInt("set", astring, 0);
+                    World.MountainCoverage = Utility.GetFloat("mountaincoverage", line, 0);
+                }
+
+                if (line.StartsWith("lightdir"))
+                {
+                    World.LightDirection = new Vector3(
+                        Utility.GetFloat("lightdir", line, 0),
+                        Utility.GetFloat("lightdir", line, 1),
+                        Utility.GetFloat("lightdir", line, 2)
+                    );
+                }
+
+                if (line.StartsWith("set"))
+                {
+                    var setindex = Utility.GetInt("set", line, 0);
                     setindex -= indexOffset;
                     var setheight = World.Ground - GameSparker.stage_parts[setindex].GroundAt;
                     
-                    var hasCustomY = astring.Split(',').Length >= 5;
+                    var hasCustomY = line.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
-                        setheight = Utility.GetInt("set", astring, 4) * -1;
+                        setheight = Utility.GetInt("set", line, 4) * -1;
                     }
 
                     pieces[stagePartCount] = new Mesh(
                         GameSparker.stage_parts[setindex],
-                        new Vector3(Utility.GetInt("set", astring, 1), setheight, Utility.GetInt("set", astring, 2)),
-                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
-                    if (astring.Contains(")p"))     //AI tags
+                        new Vector3(Utility.GetInt("set", line, 1), setheight, Utility.GetInt("set", line, 2)),
+                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", line, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
+                    if (line.Contains(")p"))     //AI tags
                     {
                         // CheckPoints.X[CheckPoints.N] = Utility.GetInt("set", astring, 1);
                         // CheckPoints.Z[CheckPoints.N] = Utility.GetInt("set", astring, 2);
@@ -202,9 +236,9 @@ public class Stage : IRenderable
                     //     Medium.Loadnew = false;
                     // }
                 }
-                if (astring.StartsWith("chk"))
+                if (line.StartsWith("chk"))
                 {
-                    var chkindex = Utility.GetInt("chk", astring, 0);
+                    var chkindex = Utility.GetInt("chk", line, 0);
                     chkindex -= indexOffset;
 
                     var ymult = -1;
@@ -215,22 +249,22 @@ public class Stage : IRenderable
                     var chkheight = World.Ground - GameSparker.stage_parts[chkindex].GroundAt;
 
                     // Check if optional Y coordinate is provided (5 parameters instead of 4)
-                    var hasCustomY = astring.Split(',').Length >= 5;
+                    var hasCustomY = line.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
-                        chkheight = Utility.GetInt("chk", astring, 4) * ymult;
+                        chkheight = Utility.GetInt("chk", line, 4) * ymult;
                         pieces[stagePartCount] = new Mesh(
                             GameSparker.stage_parts[chkindex],
-                            new Vector3(Utility.GetInt("chk", astring, 1), chkheight, Utility.GetInt("chk", astring, 2)),
-                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("chk", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
+                            new Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
+                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("chk", line, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
                         );
                     }
                     else
                     {
                         pieces[stagePartCount] = new Mesh(
                             GameSparker.stage_parts[chkindex],
-                            new Vector3(Utility.GetInt("chk", astring, 1), chkheight, Utility.GetInt("chk", astring, 2)),
-                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("chk", astring, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                            new Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
+                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("chk", line, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
                     }
                     
@@ -250,19 +284,19 @@ public class Stage : IRenderable
                     //stage_parts[stagePartCount].Checkpoint = CheckPoints.Nsp + 1;
                     //CheckPoints.Nsp++;
                 }
-                if (astring.StartsWith("fix"))
+                if (line.StartsWith("fix"))
                 {
-                    var fixindex = Utility.GetInt("fix", astring, 0);
+                    var fixindex = Utility.GetInt("fix", line, 0);
                     fixindex -= indexOffset;
                     pieces[stagePartCount] = new FixHoop(
                         GameSparker.stage_parts[fixindex],
-                        new Vector3(Utility.GetInt("fix", astring, 1), Utility.GetInt("fix", astring, 3), Utility.GetInt("fix", astring, 2)),
-                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("fix", astring, 4)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                        new Vector3(Utility.GetInt("fix", line, 1), Utility.GetInt("fix", line, 3), Utility.GetInt("fix", line, 2)),
+                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("fix", line, 4)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                     );
                     // CheckPoints.Fx[CheckPoints.Fn] = Utility.GetInt("fix", astring, 1);
                     // CheckPoints.Fz[CheckPoints.Fn] = Utility.GetInt("fix", astring, 2);
                     // CheckPoints.Fy[CheckPoints.Fn] = Utility.GetInt("fix", astring, 3);
-                    if (Utility.GetInt("fix", astring, 4) != 0)
+                    if (Utility.GetInt("fix", line, 4) != 0)
                     {
                         //CheckPoints.Roted[CheckPoints.Fn] = true;
                         ((FixHoop)pieces[stagePartCount - 1]).Rotated = true;
@@ -282,35 +316,35 @@ public class Stage : IRenderable
                 //         Medium.Ground);
                 //     _nob++;
                 // }
-                if (astring.StartsWith("nlaps"))
+                if (line.StartsWith("nlaps"))
                 {
                     //CheckPoints.Nlaps = Utility.GetInt("nlaps", astring, 0);
                 }
-                if (astring.StartsWith("name"))
+                if (line.StartsWith("name"))
                 {
                     //CheckPoints.Name = Getastring("name", astring, 0).Replace('|', ',');
                 }
-                if (astring.StartsWith("stagemaker"))
+                if (line.StartsWith("stagemaker"))
                 {
                     //CheckPoints.Maker = Getastring("stagemaker", astring, 0);
                 }
-                if (astring.StartsWith("publish"))
+                if (line.StartsWith("publish"))
                 {
                     //CheckPoints.Pubt = Utility.GetInt("publish", astring, 0);
                 }
-                if (astring.StartsWith("soundtrack"))
+                if (line.StartsWith("soundtrack"))
                 {
                     
                 }
 
                 // stage walls
                 var wall = GameSparker.GetModel("thewall");
-                if (astring.StartsWith("maxr"))
+                if (line.StartsWith("maxr"))
                 {
-                    var n = Utility.GetInt("maxr", astring, 0);
-                    var o = Utility.GetInt("maxr", astring, 1);
+                    var n = Utility.GetInt("maxr", line, 0);
+                    var o = Utility.GetInt("maxr", line, 1);
                     maxr = o;
-                    var p = Utility.GetInt("maxr", astring, 2);
+                    var p = Utility.GetInt("maxr", line, 2);
                     for (var q = 0; q < n; q++)
                     {
                         pieces[stagePartCount] = new Mesh(
@@ -332,12 +366,12 @@ public class Stage : IRenderable
                     Trackers.Skd[Trackers.Nt] = 0;
                     Trackers.Nt++;
                 }
-                if (astring.StartsWith("maxl"))
+                if (line.StartsWith("maxl"))
                 {
-                    var n = Utility.GetInt("maxl", astring, 0);
-                    var o = Utility.GetInt("maxl", astring, 1);
+                    var n = Utility.GetInt("maxl", line, 0);
+                    var o = Utility.GetInt("maxl", line, 1);
                     maxl = o;
-                    var p = Utility.GetInt("maxl", astring, 2);
+                    var p = Utility.GetInt("maxl", line, 2);
                     for (var q = 0; q < n; q++)
                     {
                         pieces[stagePartCount] = new Mesh(
@@ -359,12 +393,12 @@ public class Stage : IRenderable
                     Trackers.Skd[Trackers.Nt] = 0;
                     Trackers.Nt++;
                 }
-                if (astring.StartsWith("maxt"))
+                if (line.StartsWith("maxt"))
                 {
-                    var n = Utility.GetInt("maxt", astring, 0);
-                    var o = Utility.GetInt("maxt", astring, 1);
+                    var n = Utility.GetInt("maxt", line, 0);
+                    var o = Utility.GetInt("maxt", line, 1);
                     maxt = o;
-                    var p = Utility.GetInt("maxt", astring, 2);
+                    var p = Utility.GetInt("maxt", line, 2);
                     for (var q = 0; q < n; q++)
                     {
                         pieces[stagePartCount] = new Mesh(
@@ -386,12 +420,12 @@ public class Stage : IRenderable
                     Trackers.Skd[Trackers.Nt] = 0;
                     Trackers.Nt++;
                 }
-                if (astring.StartsWith("maxb"))
+                if (line.StartsWith("maxb"))
                 {
-                    var n = Utility.GetInt("maxb", astring, 0);
-                    var o = Utility.GetInt("maxb", astring, 1);
+                    var n = Utility.GetInt("maxb", line, 0);
+                    var o = Utility.GetInt("maxb", line, 1);
                     maxb = o;
-                    var p = Utility.GetInt("maxb", astring, 2);
+                    var p = Utility.GetInt("maxb", line, 2);
                     for (var q = 0; q < n; q++)
                     {
                         pieces[stagePartCount] = new Mesh(
@@ -424,11 +458,21 @@ public class Stage : IRenderable
             {
                 polys = NFMWorld.Mad.Environment.MakePolys(maxl, maxr - maxl, maxb, maxt - maxb, stagePartCount, graphicsDevice);
             }
+
+            if (World.DrawClouds)
+            {
+                clouds = NFMWorld.Mad.Environment.MakeClouds(maxl, maxr, maxb, maxt, graphicsDevice);
+            }
+
+            if (World.DrawMountains)
+            {
+                mountains = NFMWorld.Mad.Environment.MakeMountains(maxl, maxr, maxb, maxt, graphicsDevice);
+            }
         }
         catch (Exception exception)
         {
             GameSparker.Writer.WriteLine("Error in stage: " + stageName, "error");
-            GameSparker.Writer.WriteLine("At line: " + astring, "error");
+            GameSparker.Writer.WriteLine("At line: " + line, "error");
             GameSparker.Writer.WriteLine(exception.ToString(), "error");
         }
         sky = new Sky(graphicsDevice);
@@ -461,6 +505,8 @@ public class Stage : IRenderable
         sky.Render(camera, lightCamera, isCreateShadowMap);
         ground.Render(camera, lightCamera, isCreateShadowMap);
         polys?.Render(camera, lightCamera, isCreateShadowMap);
+        clouds?.Render(camera, lightCamera, isCreateShadowMap);
+        mountains?.Render(camera, lightCamera, isCreateShadowMap);
 
         foreach (var piece in pieces)
         {

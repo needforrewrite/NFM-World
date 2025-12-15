@@ -34,6 +34,21 @@ public static class Utility
         return int.Parse("");
     }
 
+    public static float GetFloat(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
+    {
+        line = line[(prefix.Length + 1)..];
+        var i = 0;
+        foreach (var range in line.SplitAny(',', ')'))
+        {
+            if (i++ == index)
+            {
+                return float.Parse(line[range]);
+            }
+        }
+
+        return float.Parse("");
+    }
+
     private const float Epsilon = 0.0000001F;
     private const double EpsilonDouble = 0.0000001D;
 

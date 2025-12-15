@@ -1,14 +1,19 @@
 ﻿using Stride.Core.Mathematics;
+using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
 public static class World
 {
+    public static int MountainSeed;
+    public static float MountainCoverage;
+    public static float CloudCoverage;
+    public static bool HasPolys;
+    public static bool HasClouds;
     public static bool HasTexture;
     public static float FogDensity = 0.857f; // TODO ASSIGN
     public static Vector3 LightDirection = new Vector3(0, 1, 0);
     public static int FadeFrom;
-    public static float Density;
     public static float BlackPoint = 0.37f;
     public static float WhitePoint = 0.63f;
     public static int Ground = 250;
@@ -22,5 +27,27 @@ public static class World
     public static bool DrawStars;
     public static bool DrawPolys;
     public static Color3 GroundPolysColor;
+    
+    // texture (without snap)
     public static int[] Texture = [0, 0, 0, 50];
+    
+    // clouds (without snap)
+    public static int[] Clouds = [210, 210, 210, 1, -1000];
+
+    public static void ResetValues()
+    {
+        HasTexture = false;
+        HasClouds = false;
+        HasPolys = false;
+        CloudCoverage = 1;
+        MountainCoverage = 1;
+        LightsOn = false;
+        DrawClouds = true;
+        DrawMountains = true;
+        DrawStars = true;
+        DrawPolys = true;
+        MountainSeed = URandom.Int(0, 100000);
+        FogDensity = 0.857f;
+        LightDirection = new Vector3(0, 1, 0);
+    }
 }

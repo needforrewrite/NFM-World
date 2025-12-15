@@ -1,6 +1,7 @@
 ﻿using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using CommunityToolkit.HighPerformance;
 using Microsoft.Xna.Framework.Graphics;
 using Stride.Core.Mathematics;
 using Color = Microsoft.Xna.Framework.Color;
@@ -171,6 +172,17 @@ public static class Extensions
     {
         public Microsoft.Xna.Framework.Quaternion ToXna()
             => new(quat.X, quat.Y, quat.Z, quat.W);
+    }
+
+    extension<T>(Span2D<T> span2D)
+    {
+        public static Span2D<T> Create(Span<T> span, int height, int width)
+        {
+            if (height * width != span.Length)
+                throw new ArgumentException("Span length does not match the provided dimensions.");
+            
+            return Span2D<T>.DangerousCreate(ref span[0], height, width, 0);
+        }
     }
 }
 
