@@ -217,7 +217,10 @@ namespace NFMWorld.Mad
 
             var objectName = args[0];
 
-            GameSparker.current_stage.CreateObject(objectName, x, y, z, r);
+            if (GameSparker.current_stage.CreateObject(objectName, x, y, z, r) is { } mesh)
+            {
+                Trackers.LoadTracker(mesh);
+            }
         }
 
         private static void LoadStage(DevConsole console, string[] args)

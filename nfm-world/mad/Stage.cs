@@ -479,16 +479,16 @@ public class Stage : IRenderable
         ground = new Ground(graphicsDevice);
     }
 
-    public void CreateObject(string objectName, int x, int y, int z, int r)
+    public Mesh? CreateObject(string objectName, int x, int y, int z, int r)
     {
         var model = GameSparker.GetModel(objectName);
         if (model == -1)
         {
             GameSparker.devConsole.Log($"Object '{objectName}' not found.", "warning");
-            return;
+            return null;
         }
 
-        pieces[stagePartCount] = new Mesh(
+        var mesh = pieces[stagePartCount] = new Mesh(
             GameSparker.stage_parts[model],
             new Vector3(x,
             250 - GameSparker.stage_parts[model].GroundAt - y,
@@ -498,6 +498,8 @@ public class Stage : IRenderable
 
 
         GameSparker.devConsole.Log($"Created {objectName} at ({x}, {y}, {z}), rotation: {r}", "info");
+
+        return mesh;
     }
 
     public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
