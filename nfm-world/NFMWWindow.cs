@@ -170,6 +170,8 @@ public unsafe class Program : Game
 
     private Program()
     {
+        Multiplayer.Initialize();
+        
         _graphics = new GraphicsDeviceManager(this);
         Content.RootDirectory = "Content";
         IsMouseVisible = true;

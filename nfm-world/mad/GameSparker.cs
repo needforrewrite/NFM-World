@@ -440,6 +440,11 @@ public class GameSparker
             return;
         }
         
+        if (Multiplayer.InMultiplayerGame)
+        {
+            Multiplayer.ReceiveMultiplayData();
+        }
+        
         cars_in_race[playerCarIndex].Drive();
         switch (currentViewMode)
         {
@@ -452,6 +457,11 @@ public class GameSparker
         }
         // camera.Position = new Vector3(0, 10000, 0);
         // camera.LookAt = new Vector3(1, 250, 0);
+
+        if (Multiplayer.InMultiplayerGame)
+        {
+            Multiplayer.SendPlayerData(playerCarIndex);
+        }
         
         foreach (var element in current_stage.pieces)
         {
