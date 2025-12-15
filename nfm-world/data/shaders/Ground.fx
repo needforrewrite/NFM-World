@@ -36,18 +36,18 @@ struct VertexShaderOutput
 };
 
 VertexShaderOutput VertexShaderFunction(
-    float4 Position : POSITION, float4 Color : COLOR0)
+    float4 Position : POSITION, float3 Color : COLOR0)
 {
     VertexShaderOutput output;
     output.Position = mul(Position, WorldViewProj); // Transform vertex position
 
-    float3 color = Color.xyz;
+    float3 color = Color;
 	float3 viewPos = mul(Position, WorldView).xyz;
-    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
+    // VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
 
     VS_ColorCorrect(color);
 
-    output.Color = float4(color, Color.w);
+    output.Color = float4(color, 1.0);
 
     // Save the vertices postion in world space (for shadow mapping)
     output.WorldPos = Position;
