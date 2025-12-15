@@ -1,31 +1,12 @@
-﻿using Stride.Core.Mathematics;
+﻿using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Mad;
 
-namespace NFMWorld.Mad;
-
-public class Car : IRenderable
+public class Car : Mesh
 {
-    public Mesh Conto;
-    public Mad Mad;
-    public Stat Stat;
-    public Control Control;
+    public CarStats Stats;
 
-    public Car(Stat stat, int im, Mesh carConto, int x, int z)
+    public Car(GraphicsDevice device, Rad3d rad) : base(device, rad)
     {
-        Conto = new Mesh(carConto, new Vector3(x, World.Ground, z), Euler.Identity);
-        Mad = new Mad(stat, im);
-        Stat = stat;
-        Mad.Reseto(im, Conto);
-        Control = new Control();
-    }
-
-    public void Drive()
-    {
-        Conto.GameTick();
-        Mad.Drive(Control, Conto);
-    }
-
-    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
-    {
-        Conto.Render(camera, lightCamera, isCreateShadowMap);
+        Stats = rad.Stats;
     }
 }

@@ -66,7 +66,7 @@ public class GameSparker
     private static DirectionalLight light;
     
     private static MicroStopwatch timer;
-    public static UnlimitedArray<Mesh> cars;
+    public static UnlimitedArray<Car> cars;
     public static UnlimitedArray<Mesh> stage_parts;
     
     public static Stage current_stage = null!;
@@ -104,7 +104,7 @@ public class GameSparker
     private static ViewMode currentViewMode = ViewMode.Follow;
     /////////////////////////////////
 
-    public static UnlimitedArray<Car> cars_in_race = [];
+    public static UnlimitedArray<InGameCar> cars_in_race = [];
     public static int playerCarIndex = 0;
     public static int playerCarID = 14;
     public static int _stagePartCount = 0;
@@ -356,7 +356,7 @@ public class GameSparker
         stage_parts = [];
 
         FileUtil.LoadFiles("./data/models/cars", CarRads, (ais, id) => {
-            cars[id] = new Mesh(game.GraphicsDevice, Encoding.UTF8.GetString(ais));
+            cars[id] = new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)));
         });
 
         FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id) => {
@@ -412,18 +412,13 @@ public class GameSparker
         MainMenu = null;
 
         current_stage = new Stage("nfm2/15_dwm", _graphicsDevice);
-        cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
+        cars_in_race[playerCarIndex] = new InGameCar(14, cars[14], 0, 0);
         current_scene = new Scene(
             _graphicsDevice,
             [current_stage, ..cars_in_race],
             camera,
             lightCamera
         );
-        
-        for (var i = 0; i < cars.Count; i++)
-        {
-            Console.WriteLine($"car {new Stat(i).Names}: {new Stat(i).Score:0}");
-        }
         
         Console.WriteLine("Game started!");
     }
@@ -446,7 +441,7 @@ public class GameSparker
         switch (currentViewMode)
         {
             case ViewMode.Follow:
-                PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
+                PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].CarRef, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
                 break;
             case ViewMode.Around:
                 // Medium.Around(cars_in_race[playerCarIndex].Conto, true);

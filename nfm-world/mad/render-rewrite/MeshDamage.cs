@@ -6,7 +6,7 @@ namespace NFMWorld.Mad;
 public static class MeshDamage
 {
     public static void DamageX(
-        Stat stat,
+        CarStats stat,
         Mesh mesh,
         int wheelIdx,
         float damageFactor
@@ -70,7 +70,7 @@ public static class MeshDamage
     }
 
     public static void DamageY(
-        Stat stat,
+        CarStats stat,
         Mesh mesh,
         int wheelIdx,
         float damageFactor,
@@ -200,7 +200,7 @@ public static class MeshDamage
     }
     
     public static void DamageZ(
-        Stat stat,
+        CarStats stat,
         Mesh mesh,
         int wheelIdx,
         float damageFactor

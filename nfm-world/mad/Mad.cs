@@ -11,7 +11,7 @@ public class Mad
     internal int Capcnt;
     internal bool BadLanding;
     private readonly bool[] _caught = new bool[8];
-    internal Stat Stat;
+    internal CarStats Stat;
     internal int Clear;
     internal int Cn;
     internal int Cntdest;
@@ -104,13 +104,13 @@ public class Mad
     internal bool Wtouch;
     private int _xtpower;
 
-    internal Mad(Stat stat, int i)
+    internal Mad(CarStats stat, int i)
     {
         Stat = stat;
         Im = i;
     }
 
-    public void SetStat(Stat stat)
+    public void SetStat(CarStats stat)
     {
         Stat = stat;
     }
@@ -345,7 +345,7 @@ public class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 
         // part 2: the bigger the bounce stat, the bigger the bounce
-        rebound += CarDefine.Bounce[Cn];
+        rebound += Stat.Bounce;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
 

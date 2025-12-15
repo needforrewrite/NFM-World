@@ -1,3 +1,27 @@
+swits(100, 200, 310)
+acelf(14.0, 7.0, 5.0)
+handb(10)
+airs(1.2)
+airc(30)
+turn(9)
+grip(27.0)
+bounce(1.05)
+simag(0.85)
+moment(0.75)
+comprad(0.4)
+push(2)
+revpush(3)
+lift(30)
+revlift(0)
+powerloss(2500000)
+flipy(-60)
+msquash(4)
+clrad(1700)
+dammult(0.8)
+maxmag(4200)
+dishandle(0.6)
+outdam(0.35)
+
 idiv(170)
 iwid(105)
 shadow()
@@ -1253,7 +1277,7 @@ p(7,-15,53)
 </p>
 
 
-//rims([color],size,depth)
+//rims((color),size,depth)
 
 rims(120,120,120,15,30)
 
