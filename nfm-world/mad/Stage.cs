@@ -18,6 +18,7 @@ public class Stage : IRenderable
     public Sky sky;
     public Ground ground;
     public GroundPolys? polys;
+    public GroundPolys? clouds;
 
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
@@ -27,10 +28,11 @@ public class Stage : IRenderable
         int indexOffset = 10;
 
         World.HasTexture = false;
+        World.HasClouds = false;
+        World.HasPolys = false;
+        World.CloudCoverage = 1;
         Trackers.Nt = 0;
-        // Medium.Resdown = 0;
-        // Medium.Rescnt = 5;
-        // Medium.Lightson = false;
+        World.LightsOn = false;
         // Medium.Noelec = 0;
         // Medium.Ground = 250;
         // Medium.Trk = 0;
@@ -82,6 +84,7 @@ public class Stage : IRenderable
                     }
                     else
                     {
+                        World.HasPolys = true;
                         World.GroundPolysColor = new Color3(
                             (short) Utility.GetInt("polys", astring, 0),
                             (short) Utility.GetInt("polys", astring, 1),
@@ -110,15 +113,25 @@ public class Stage : IRenderable
                 }
                 if (astring.StartsWith("clouds"))
                 {
-                    // if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
-                    // {
-                    //     Medium.drawClouds = false;
-                    // }
-                    // else
-                    // {
-                    //     Medium.Setclouds(Utility.GetInt("clouds", astring, 0), Utility.GetInt("clouds", astring, 1),
-                    //         Utility.GetInt("clouds", astring, 2), Utility.GetInt("clouds", astring, 3), Utility.GetInt("clouds", astring, 4));
-                    // }
+                    if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
+                    {
+                        World.DrawClouds = false;
+                    }
+                    else
+                    {
+                        World.HasClouds = true;
+                        World.Clouds = [
+                            Utility.GetInt("clouds", astring, 0),
+                            Utility.GetInt("clouds", astring, 1),
+                            Utility.GetInt("clouds", astring, 2),
+                            Utility.GetInt("clouds", astring, 3),
+                            Utility.GetInt("clouds", astring, 4)
+                        ];
+                    }
+                }
+                if (astring.StartsWith("cloudcoverage"))
+                {
+                    World.CloudCoverage = Utility.GetFloat("cloudcoverage", astring, 0) / 100f;
                 }
                 if (astring.StartsWith("density"))
                 {
@@ -138,7 +151,7 @@ public class Stage : IRenderable
                 }
                 if (astring.StartsWith("lightson"))
                 {
-                    // Medium.Lightson = true;
+                    World.LightsOn = true;
                 }
                 if (astring.StartsWith("mountains"))
                 {
@@ -424,6 +437,11 @@ public class Stage : IRenderable
             {
                 polys = NFMWorld.Mad.Environment.MakePolys(maxl, maxr - maxl, maxb, maxt - maxb, stagePartCount, graphicsDevice);
             }
+
+            if (World.DrawClouds)
+            {
+                clouds = NFMWorld.Mad.Environment.MakeClouds(maxl, maxr, maxb, maxt, graphicsDevice);
+            }
         }
         catch (Exception exception)
         {
@@ -461,6 +479,7 @@ public class Stage : IRenderable
         sky.Render(camera, lightCamera, isCreateShadowMap);
         ground.Render(camera, lightCamera, isCreateShadowMap);
         polys?.Render(camera, lightCamera, isCreateShadowMap);
+        clouds?.Render(camera, lightCamera, isCreateShadowMap);
 
         foreach (var piece in pieces)
         {
