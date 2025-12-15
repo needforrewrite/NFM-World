@@ -38,6 +38,7 @@ public class Mesh : Transform, IRenderable
 
     private readonly Mesh[] _wheels;
     private readonly CollisionDebugMesh? _collisionDebugMesh;
+    internal readonly Flames Flames;
 
     public bool CastsShadow { get; set; }
     public bool GetsShadowed { get; set; } = true;
@@ -72,6 +73,7 @@ public class Mesh : Transform, IRenderable
 
         _wheels = Array.ConvertAll(Wheels, wheel => new WheelMeshBuilder(wheel, Rims).BuildMesh(graphicsDevice, this));
         _collisionDebugMesh = rad.Boxes.Length > 0 ? new CollisionDebugMesh(rad.Boxes) : null;
+        Flames = new Flames(this, graphicsDevice);
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -99,6 +101,7 @@ public class Mesh : Transform, IRenderable
 
         _wheels = baseMesh._wheels;
         _collisionDebugMesh = baseMesh._collisionDebugMesh;
+        Flames = new Flames(this, GraphicsDevice);
     }
 
     [MemberNotNull(nameof(Submeshes))]
@@ -209,6 +212,12 @@ public class Mesh : Transform, IRenderable
 	    );
     }
 
+    public override void GameTick()
+    {
+        Flames.GameTick();
+        base.GameTick();
+    }
+
     public virtual void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
     {
         var matrixWorld = MatrixWorld;
@@ -239,6 +248,8 @@ public class Mesh : Transform, IRenderable
             submesh?.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
         }
         if (!isCreateShadowMap) LineMesh?.Render(camera, lightCamera, matrixWorld);
+
+        if (!isCreateShadowMap) Flames.Render(camera);
     }
 
     public void RebuildMesh()

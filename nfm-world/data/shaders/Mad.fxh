@@ -93,3 +93,9 @@ void VS_ColorCorrect(inout float3 color)
     // hsv.z *= 0.9;
     // color = hsv2rgb(hsv);
 }
+
+// Get uniquely looking random float between 0 and 1 from float input without using bitwise operations (not supported in vs_3_0)
+float Random(float input)
+{
+    return frac(sin(input * 12.9898) * 43758.5453);
+}

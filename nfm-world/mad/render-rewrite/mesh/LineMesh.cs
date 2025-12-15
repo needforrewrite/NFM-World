@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Vector3 = Stride.Core.Mathematics.Vector3;
+using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
@@ -87,6 +88,10 @@ public class LineMesh
         _material.CameraPosition?.SetValue(camera.Position.ToXna());
 
         _material.CurrentTechnique = _material.Techniques["Basic"];
+
+        _material.Expand?.SetValue(_supermesh.Flames.Expand);
+        _material.Darken?.SetValue(_supermesh.Flames.Darken);
+        _material.RandomFloat?.SetValue(URandom.Single());
         
         if (lightCamera != null)
         {

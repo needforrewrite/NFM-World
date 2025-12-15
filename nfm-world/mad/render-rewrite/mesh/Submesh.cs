@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
@@ -71,6 +72,11 @@ public class Submesh(
         {
             _material.ShadowMap?.SetValue(Program.shadowRenderTarget);
         }
+
+        _material.Expand?.SetValue(supermesh.Flames.Expand);
+        _material.Darken?.SetValue(supermesh.Flames.Darken);
+        _material.RandomFloat?.SetValue(URandom.Single());
+        
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();

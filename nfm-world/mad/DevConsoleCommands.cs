@@ -26,6 +26,7 @@ namespace NFMWorld.Mad
             console.RegisterCommand("breakx", BreakX);
             console.RegisterCommand("breaky", BreakY);
             console.RegisterCommand("breakz", BreakZ);
+            console.RegisterCommand("waste", WastePlayer);
             
             // rendering
             console.RegisterCommand("r_frametrace", SetFrameTrace);
@@ -58,6 +59,11 @@ namespace NFMWorld.Mad
             // map command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("map", (args, position) => 
                 position == 0 ? GameSparker.GetAvailableStages() : new List<string>());
+        }
+
+        private static void WastePlayer(DevConsole console, string[] args)
+        {
+            GameSparker.cars_in_race[GameSparker.playerCarIndex].Conto.Wasted = true;
         }
 
         private static void BreakX(DevConsole console, string[] args)

@@ -35,6 +35,11 @@ matrix LightViewProj;
 float DepthBias = 0.25f;
 bool GetsShadowed;
 
+// Damage
+bool Expand;
+float RandomFloat;
+float Darken; // set below 1.0f to adjust brightness
+
 texture ShadowMap;
 sampler ShadowMapSampler = sampler_state
 {
@@ -65,7 +70,37 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 	float3 viewPos = mul(float4(input.Position, 1), WorldView).xyz;
 	output.Position = mul(float4(input.Position, 1), WorldViewProj);
 
-	float3 color = lerp(input.Color, BaseColor, UseBaseColor ? 1.0 : 0.0);
+	float3 color = input.Color;
+
+    // Apply base color
+    if (UseBaseColor == true)
+    {
+        color = BaseColor;
+    }
+
+    if (Expand == true)
+    {
+        // Translate vertex around centroid by a random factor between -15 and 15 units
+
+        float3 direction = normalize(input.Position - input.Centroid);
+        float3 randomScale = float3(
+            15.0 - Random(input.Centroid.x + RandomFloat) * 30.0,
+            15.0 - Random(input.Centroid.y + RandomFloat) * 30.0,
+            15.0 - Random(input.Centroid.z + RandomFloat) * 30.0
+        );
+        float3 scaledPosition = input.Position + direction * randomScale;
+        output.Position = mul(float4(scaledPosition, 1), WorldViewProj);
+    }
+
+    if (Darken < 1.0f)
+    {
+        float3 hsv = rgb2hsv(color);
+        if (hsv.z > Darken)
+        {
+            hsv.z = Darken;
+            color = hsv2rgb(hsv);
+        }
+    }
 
 	// Apply diffuse lighting
 	if (IsFullbright == false)
