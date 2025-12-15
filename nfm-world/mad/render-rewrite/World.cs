@@ -14,7 +14,6 @@ public static class World
     public static float FogDensity = 0.857f; // TODO ASSIGN
     public static Vector3 LightDirection = new Vector3(0, 1, 0);
     public static int FadeFrom;
-    public static float Density;
     public static float BlackPoint = 0.37f;
     public static float WhitePoint = 0.63f;
     public static int Ground = 250;
@@ -48,5 +47,7 @@ public static class World
         DrawStars = true;
         DrawPolys = true;
         MountainSeed = URandom.Int(0, 100000);
+        FogDensity = 0.857f;
+        LightDirection = new Vector3(0, 1, 0);
     }
 }
