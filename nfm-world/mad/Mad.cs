@@ -1240,8 +1240,8 @@ public class Mad
                         k = Util.Random.Int(0,
                             4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
                     float bumpLift = surfaceType == 3 ? -100F : -150F;
-                    float rng = 0.55F;
-                    Scy[k] = bumpLift * rng * Speed / CarDefine.Swits[Cn, 2] * (CarDefine.Bounce[Cn] - 0.3F);
+                    float rng = 0.75F;
+                    Scy[k] = bumpLift * rng * Speed * _tickRate / CarDefine.Swits[Cn, 2] * (CarDefine.Bounce[Cn] - 0.3F);
                 }
             }
 
