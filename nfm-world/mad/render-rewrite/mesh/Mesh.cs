@@ -30,7 +30,7 @@ public class Mesh : Transform, IRenderable
     protected Submesh?[] Submeshes;
     protected LineMesh? LineMesh;
     
-    protected readonly PolygonTriangulator.TriangulationResult[] Triangulation;
+    public readonly PolygonTriangulator.TriangulationResult[] Triangulation;
 
     // Stores "brokenness" phase for damageable meshes
     public readonly float[] Bfase;
