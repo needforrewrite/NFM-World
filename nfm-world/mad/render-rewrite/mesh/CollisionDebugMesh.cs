@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.HighPerformance;
 using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Util;
 using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad;
@@ -102,7 +103,7 @@ public class CollisionDebugMesh : Transform
         
         var data = new List<VertexPositionColor>(LineMeshHelpers.VerticesPerLine * linesPerPolygon * boxes.Length);
         var indices = new List<int>(LineMeshHelpers.IndicesPerLine * linesPerPolygon * boxes.Length);
-        void AddLine(Vector3 p0, Vector3 p1, Color3 color)
+        void AddLine(Vector3 p0, Vector3 p1, Color3 color, float mult = 1)
         {
             const float halfThickness = 2f;
             // Create two quads for each line segment to give it some thickness
@@ -110,7 +111,7 @@ public class CollisionDebugMesh : Transform
             Span<Vector3> verts = stackalloc Vector3[LineMeshHelpers.VerticesPerLine];
             Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
-            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness, in verts, in inds);
+            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness * mult, in verts, in inds);
             indices.AddRange(inds);
             foreach (var vert in verts)
             {
@@ -118,47 +119,96 @@ public class CollisionDebugMesh : Transform
             }
         }
         
-        void DrawPolygon3D(Span<float> px, Span<float> py, Span<float> pz, int pn, Color3 color)
+        void DrawPolygon3D(Span<float> px, Span<float> py, Span<float> pz, int pn, Color3 color, float mult = 1)
         {
             for (var i = 0; i < pn; i++)
             {
                 var p0 = new Vector3(px[i], py[i], pz[i]);
                 var p1 = new Vector3(px[(i + 1) % pn], py[(i + 1) % pn], pz[(i + 1) % pn]);
-                AddLine(p0, p1, color);
+                AddLine(p0, p1, color, mult);
             }
         }
         
         for (var i = 0; i < boxes.Length; i++)
         {
-            var color = boxes[i].Radius.Y <= 1 ? new Color3(255, 0, 0) : new Color3(255, 255, 255);
-            DrawPolygon3D(
-                [lbx[i,0], lbx[i,1], lbx[i,2], lbx[i,3]],
-                [lby[i,0], lby[i,1], lby[i,2], lby[i,3]],
-                [lbz[i,0], lbz[i,1], lbz[i,2], lbz[i,3]],
-                4,
-                color
-            ); // draw left box
-            DrawPolygon3D(
-                [rbx[i,0], rbx[i,1], rbx[i,2], rbx[i,3]],
-                [rby[i,0], rby[i,1], rby[i,2], rby[i,3]],
-                [rbz[i,0], rbz[i,1], rbz[i,2], rbz[i,3]],
-                4,
-                color
-            ); // draw right box
-            DrawPolygon3D(
-                [fbx[i,0], fbx[i,1], fbx[i,2], fbx[i,3]],
-                [fby[i,0], fby[i,1], fby[i,2], fby[i,3]],
-                [fbz[i,0], fbz[i,1], fbz[i,2], fbz[i,3]],
-                4,
-                color
-            ); // draw front box
-            DrawPolygon3D(
-                [bbx[i,0], bbx[i,1], bbx[i,2], bbx[i,3]],
-                [bby[i,0], bby[i,1], bby[i,2], bby[i,3]],
-                [bbz[i,0], bbz[i,1], bbz[i,2], bbz[i,3]],
-                4,
-                color
-            ); // draw back box
+            var box = boxes[i];
+            var center = box.Translation;
+            var radius = box.Radius;
+
+            // Define the 8 corners of the box
+            Span<Vector3> corners = new Vector3[8]
+            {
+                new(center.X - radius.X, center.Y - radius.Y, center.Z - radius.Z), // 0: left-bottom-back
+                new(center.X + radius.X, center.Y - radius.Y, center.Z - radius.Z), // 1: right-bottom-back
+                new(center.X + radius.X, center.Y + radius.Y, center.Z - radius.Z), // 2: right-top-back
+                new(center.X - radius.X, center.Y + radius.Y, center.Z - radius.Z), // 3: left-top-back
+                new(center.X - radius.X, center.Y - radius.Y, center.Z + radius.Z), // 4: left-bottom-front
+                new(center.X + radius.X, center.Y - radius.Y, center.Z + radius.Z), // 5: right-bottom-front
+                new(center.X + radius.X, center.Y + radius.Y, center.Z + radius.Z), // 6: right-top-front
+                new(center.X - radius.X, center.Y + radius.Y, center.Z + radius.Z)  // 7: left-top-front
+            };
+
+            // Define the 12 edges as pairs of corner indices
+            Span<(int, int, bool isVertical)> edges = new (int, int, bool)[12]
+            {
+                // Bottom face
+                (0, 1, false), (1, 5, false), (5, 4, false), (4, 0, false),
+                // Top face
+                (3, 2, false), (2, 6, false), (6, 7, false), (7, 3, false),
+                // Vertical edges
+                (0, 3, true), (1, 2, true), (5, 6, true), (4, 7, true)
+            };
+
+            var normalColor = box.Radius.Y <= 1 ? new Color3(255, 0, 0) : new Color3(255, 255, 255);
+            var solidSideColor = new Color3(0, 255, 0);
+            var flatColor = new Color3(0, 0, 255);
+
+            // Determine which faces are solid
+            bool leftSolid = box.Xy == 90;
+            bool rightSolid = box.Xy == -90;
+            bool backSolid = box.Zy == 90;
+            bool frontSolid = box.Zy == -90;
+            bool isFlat = box.Xy is not 90 and not -90 && box.Zy is not 90 and not -90;
+
+            foreach (var (i0, i1, isVertical) in edges)
+            {
+                var p0 = corners[i0];
+                var p1 = corners[i1];
+                
+                // Determine color based on which face the edge belongs to
+                var edgeColor = normalColor;
+                
+                // Check which face(s) this edge belongs to
+                bool isLeft = p0.X < center.X && p1.X < center.X;
+                bool isRight = p0.X > center.X && p1.X > center.X;
+                bool isFront = p0.Z > center.Z && p1.Z > center.Z;
+                bool isBack = p0.Z < center.Z && p1.Z < center.Z;
+
+                if (isLeft && leftSolid) edgeColor = solidSideColor;
+                else if (isRight && rightSolid) edgeColor = solidSideColor;
+                else if (isFront && frontSolid) edgeColor = solidSideColor;
+                else if (isBack && backSolid) edgeColor = solidSideColor;
+
+                AddLine(p0, p1, edgeColor, edgeColor == solidSideColor ? 2f : 1f);
+
+                // Add flat representation if applicable
+                if (isFlat && !isVertical)
+                {
+                    var flatP0 = new Vector3(p0.X, center.Y, p0.Z);
+                    var flatP1 = new Vector3(p1.X, center.Y, p1.Z);
+
+                    var angle = new Euler(AngleSingle.ZeroAngle, AngleSingle.FromDegrees(180 - box.Zy), AngleSingle.FromDegrees(180 - box.Xy));
+                    
+                    // Rotate around center
+                    var rotationMatrix = Matrix.CreateFromEuler(angle);
+                    var translatedP0 = flatP0 - center;
+                    var translatedP1 = flatP1 - center;
+                    var rotatedP0 = Vector3.TransformCoordinate(translatedP0, rotationMatrix) + center;
+                    var rotatedP1 = Vector3.TransformCoordinate(translatedP1, rotationMatrix) + center;
+
+                    AddLine(rotatedP0, rotatedP1, flatColor, 2f);
+                }
+            }
         }
 
         lineVertexBuffer = new VertexBuffer(GameSparker._graphicsDevice, VertexPositionColor.VertexDeclaration, data.Count, BufferUsage.None);
