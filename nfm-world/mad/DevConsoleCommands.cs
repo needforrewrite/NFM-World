@@ -243,6 +243,12 @@ namespace NFMWorld.Mad
 
             GameSparker.cars_in_race.Clear();
             GameSparker.cars_in_race[GameSparker.playerCarIndex] = new Car(new Stat(GameSparker.playerCarID), GameSparker.playerCarID,  GameSparker.cars[GameSparker.playerCarID], 0, 0);
+            GameSparker.current_scene = new Scene(
+                GameSparker._graphicsDevice,
+                [GameSparker.current_stage, ..GameSparker.cars_in_race],
+                GameSparker.camera,
+                GameSparker.lightCamera
+            );
         }
 
         private static void SwitchCar(DevConsole console, string[] args)
