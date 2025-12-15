@@ -43,6 +43,7 @@ public class Mesh : Transform, IRenderable
     public bool GetsShadowed { get; set; } = true;
 
     public Euler TurningWheelAngle { get; set; }
+    public Euler WheelAngle { get; set; }
 
     public Mesh(GraphicsDevice graphicsDevice, string code) : this(graphicsDevice, RadParser.ParseRad(code))
     {
@@ -216,11 +217,15 @@ public class Mesh : Transform, IRenderable
         {
             var wheel = _wheels[i];
             wheel.Parent = this;
-            wheel.Render(camera, lightCamera, isCreateShadowMap);
             if (Wheels[i].Rotates == 11)
             {
                 wheel.Rotation = TurningWheelAngle;
             }
+            else
+            {
+                wheel.Rotation = WheelAngle;
+            }
+            wheel.Render(camera, lightCamera, isCreateShadowMap);
         }
 
         if (_collisionDebugMesh != null && !isCreateShadowMap)
