@@ -44,7 +44,11 @@ public class ContO
     public float Wzy
     {
         get => _mesh.TurningWheelAngle.Zy.Degrees;
-        set => _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Zy = AngleSingle.FromDegrees(value) };
+        set
+        {
+            _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Zy = AngleSingle.FromDegrees(value) };
+            _mesh.WheelAngle = _mesh.WheelAngle with { Zy = AngleSingle.FromDegrees(value) };
+        }
     }
 
     public float Wxz
