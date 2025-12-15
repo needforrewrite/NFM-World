@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Util;
 using Vector3 = Stride.Core.Mathematics.Vector3;
 
 namespace NFMWorld.Mad;
@@ -593,7 +594,6 @@ public class Environment
         const int div = 20;
 
         var polys = new List<Rad3dPoly>(noc * (12 * 2 + 1));
-
         var points = new List<Vector3>(12);
 
         for (int i = 0; i < noc; i++)
@@ -754,6 +754,173 @@ public class Environment
                 for (int j = 0; j < 12; j++)
                 {
                     points.Add(new Vector3(px[0, j], py[0, j], pz[0, j]));
+                }
+
+                polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, points.ToArray()));
+            }
+        }
+
+        #endregion
+
+        return new GroundPolys(graphicsDevice, polys.ToArray());
+    }
+    
+    public static GroundPolys MakeMountains(
+        int maxl, int maxr, int maxb, int maxt, // newmountains
+        GraphicsDevice graphicsDevice
+    )
+    {
+        #region newmountains
+
+        var random = new URandom(World.MountainSeed);
+        var nmt = (int) (20.0 + 10.0 * random.NextDouble() * World.MountainCoverage);
+        var i170 = (maxl + maxr) / 60;
+        var i171 = (maxb + maxt) / 60;
+        var i172 = Math.Max(maxr - maxl, maxt - maxb) / 60;
+        var mrd = new int[nmt];
+        var nmv = new int[nmt];
+        var mtx = new int[nmt][];
+        var mty = new int[nmt][];
+        var mtz = new int[nmt][];
+        var mtc = new int[nmt][][];
+        var ais = new int[nmt];
+        var is173 = new int[nmt];
+        for (var i174 = 0; i174 < nmt; i174++)
+        {
+            int i175;
+            float f;
+            float f176;
+            ais[i174] = (int) (10000.0 + random.NextDouble() * 10000.0);
+            var i177 = (int) (random.NextDouble() * 360.0);
+            if (random.NextDouble() > random.NextDouble())
+            {
+                f = (float) (0.2 + random.NextDouble() * 0.35);
+                f176 = (float) (0.2 + random.NextDouble() * 0.35);
+                nmv[i174] = (int) (f * (24.0 + 16.0 * random.NextDouble()));
+                i175 = (int) (85.0 + 10.0 * random.NextDouble());
+            }
+            else
+            {
+                f = (float) (0.3 + random.NextDouble() * 1.1);
+                f176 = (float) (0.2 + random.NextDouble() * 0.35);
+                nmv[i174] = (int) (f * (12.0 + 8.0 * random.NextDouble()));
+                i175 = (int) (104.0 - 10.0 * random.NextDouble());
+            }
+            mtx[i174] = new int[nmv[i174] * 2];
+            mty[i174] = new int[nmv[i174] * 2];
+            mtz[i174] = new int[nmv[i174] * 2];
+            mtc[i174] = ArrayExt.New<int>(nmv[i174], 3);
+            for (var i178 = 0; i178 < nmv[i174]; i178++)
+            {
+                mtx[i174][i178] =
+                    (int) ((i178 * 500 + (random.NextDouble() * 800.0 - 400.0) - 250 * (nmv[i174] - 1)) * f);
+                mtx[i174][i178 + nmv[i174]] =
+                    (int) ((i178 * 500 + (random.NextDouble() * 800.0 - 400.0) - 250 * (nmv[i174] - 1)) * f);
+                mtx[i174][nmv[i174]] = (int) (mtx[i174][0] - (100.0 + random.NextDouble() * 600.0) * f);
+                mtx[i174][nmv[i174] * 2 - 1] =
+                    (int) (mtx[i174][nmv[i174] - 1] + (100.0 + random.NextDouble() * 600.0) * f);
+                if (i178 == 0 || i178 == nmv[i174] - 1)
+                {
+                    mty[i174][i178] = (int) ((-400.0 - 1200.0 * random.NextDouble()) * f176 + World.Ground);
+                }
+                if (i178 == 1 || i178 == nmv[i174] - 2)
+                {
+                    mty[i174][i178] = (int) ((-1000.0 - 1450.0 * random.NextDouble()) * f176 + World.Ground);
+                }
+                if (i178 > 1 && i178 < nmv[i174] - 2)
+                {
+                    mty[i174][i178] = (int) ((-1600.0 - 1700.0 * random.NextDouble()) * f176 + World.Ground);
+                }
+                mty[i174][i178 + nmv[i174]] = World.Ground - 70;
+                mtz[i174][i178] = i171 + i172 + ais[i174];
+                mtz[i174][i178 + nmv[i174]] = i171 + i172 + ais[i174];
+                var f179 = (float) (0.5 + random.NextDouble() * 0.5);
+                mtc[i174][i178][0] = (int) (170.0F * f179 + 170.0F * f179 * (World.Snap[0] / 100.0F));
+                if (mtc[i174][i178][0] > 255)
+                {
+                    mtc[i174][i178][0] = 255;
+                }
+                if (mtc[i174][i178][0] < 0)
+                {
+                    mtc[i174][i178][0] = 0;
+                }
+                mtc[i174][i178][1] = (int) (i175 * f179 + 85.0F * f179 * (World.Snap[1] / 100.0F));
+                if (mtc[i174][i178][1] > 255)
+                {
+                    mtc[i174][i178][1] = 255;
+                }
+                if (mtc[i174][i178][1] < 1)
+                {
+                    mtc[i174][i178][1] = 0;
+                }
+                mtc[i174][i178][2] = 0;
+            }
+            for (var i180 = 1; i180 < nmv[i174] - 1; i180++)
+            {
+                var i181 = i180 - 1;
+                var i182 = i180 + 1;
+                mty[i174][i180] = ((mty[i174][i181] + mty[i174][i182]) / 2 + mty[i174][i180]) / 2;
+            }
+            UMath.Rot(mtx[i174], mtz[i174], i170, i171, i177, nmv[i174] * 2);
+            is173[i174] = 0;
+        }
+        for (var i183 = 0; i183 < nmt; i183++)
+        {
+            for (var i184 = i183 + 1; i184 < nmt; i184++)
+            {
+                if (ais[i183] < ais[i184])
+                {
+                    is173[i183]++;
+                }
+                else
+                {
+                    is173[i184]++;
+                }
+            }
+
+            mrd[is173[i183]] = i183;
+        }
+        
+        #endregion
+
+        #region writeMountains
+        
+        const int div = 30;
+        
+        var polys = new List<Rad3dPoly>();
+        var points = new List<Vector3>();
+        
+        var cgrnd = World.GroundColor.Snap(World.Snap);
+
+        for (int i = 0; i < nmt; i++) {
+            int[] mx = new int[nmv[mrd[i]] * 2];
+            int[] my = new int[nmv[mrd[i]] * 2];
+            int[] mz = new int[nmv[mrd[i]] * 2];
+
+            for (int j = 0; j < nmv[mrd[i]] * 2; j++) {
+                mx[j] = mtx[mrd[i]][j] * div;
+                my[j] = (mty[mrd[i]][j] - 250 + 70) * div + 250;
+                mz[j] = mtz[mrd[i]][j] * div;
+            }
+
+            for (int j = 0; j < nmv[mrd[i]] - 1; j++) {
+                points.Clear();
+                int mr = (int)((mtc[mrd[i]][j][0] + cgrnd[0]) / 2.0F);
+                int mg = (int)((mtc[mrd[i]][j][1] + cgrnd[1]) / 2.0F);
+                int mb = (int)((mtc[mrd[i]][j][2] + cgrnd[2]) / 2.0F);
+                var color = new Color3((short)mr, (short)mg, (short)mb);
+
+                for (int k = 0; k < 4; k++) {
+                    int l = k + j;
+                    if (k == 2) {
+                        l = j + nmv[mrd[i]] + 1;
+                    }
+
+                    if (k == 3) {
+                        l = j + nmv[mrd[i]];
+                    }
+
+                    points.Add(new Vector3(mx[l], my[l], mz[l]));
                 }
 
                 polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, points.ToArray()));

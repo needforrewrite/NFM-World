@@ -1,9 +1,12 @@
 ﻿using Stride.Core.Mathematics;
+using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
 public static class World
 {
+    public static int MountainSeed;
+    public static float MountainCoverage;
     public static float CloudCoverage;
     public static bool HasPolys;
     public static bool HasClouds;
@@ -31,4 +34,19 @@ public static class World
     
     // clouds (without snap)
     public static int[] Clouds = [210, 210, 210, 1, -1000];
+
+    public static void ResetValues()
+    {
+        HasTexture = false;
+        HasClouds = false;
+        HasPolys = false;
+        CloudCoverage = 1;
+        MountainCoverage = 1;
+        LightsOn = false;
+        DrawClouds = true;
+        DrawMountains = true;
+        DrawStars = true;
+        DrawPolys = true;
+        MountainSeed = URandom.Int(0, 100000);
+    }
 }

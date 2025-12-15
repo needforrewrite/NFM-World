@@ -4,6 +4,7 @@ using NFMWorld.Util;
 using Stride.Core.Mathematics;
 using Color3 = NFMWorld.Mad.Color3;
 using Environment = System.Environment;
+using Random = NFMWorld.Util.Random;
 
 /**
     Represents a stage. Holds all information relating to track pices, scenery, etc.
@@ -19,6 +20,7 @@ public class Stage : IRenderable
     public Ground ground;
     public GroundPolys? polys;
     public GroundPolys? clouds;
+    public GroundPolys? mountains;
 
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
@@ -27,19 +29,11 @@ public class Stage : IRenderable
     {
         int indexOffset = 10;
 
-        World.HasTexture = false;
-        World.HasClouds = false;
-        World.HasPolys = false;
-        World.CloudCoverage = 1;
+        World.ResetValues();
         Trackers.Nt = 0;
-        World.LightsOn = false;
         // Medium.Noelec = 0;
         // Medium.Ground = 250;
         // Medium.Trk = 0;
-        World.DrawClouds = true;
-        World.DrawMountains = true;
-        World.DrawStars = true;
-        World.DrawPolys = true;
         var maxr = 0;
         var maxl = 100;
         var maxt = 0;
@@ -131,7 +125,7 @@ public class Stage : IRenderable
                 }
                 if (astring.StartsWith("cloudcoverage"))
                 {
-                    World.CloudCoverage = Utility.GetFloat("cloudcoverage", astring, 0) / 100f;
+                    World.CloudCoverage = Utility.GetFloat("cloudcoverage", astring, 0);
                 }
                 if (astring.StartsWith("density"))
                 {
@@ -155,15 +149,19 @@ public class Stage : IRenderable
                 }
                 if (astring.StartsWith("mountains"))
                 {
-                    // // Check for mountains(false) first
-                    // if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
-                    // {
-                    //     Medium.drawMountains = false;
-                    // }
-                    // else
-                    // {
-                    //     Medium.Mgen = Utility.GetInt("mountains", astring, 0);
-                    // }
+                    // Check for mountains(false) first
+                    if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
+                    {
+                        World.DrawMountains = false;
+                    }
+                    else
+                    {
+                        World.MountainSeed = Utility.GetInt("mountains", astring, 0);
+                    }
+                }
+                if (astring.StartsWith("mountaincoverage"))
+                {
+                    World.MountainCoverage = Utility.GetFloat("mountaincoverage", astring, 0);
                 }
                 if (astring.StartsWith("set"))
                 {
@@ -442,6 +440,11 @@ public class Stage : IRenderable
             {
                 clouds = NFMWorld.Mad.Environment.MakeClouds(maxl, maxr, maxb, maxt, graphicsDevice);
             }
+
+            if (World.DrawMountains)
+            {
+                mountains = NFMWorld.Mad.Environment.MakeMountains(maxl, maxr, maxb, maxt, graphicsDevice);
+            }
         }
         catch (Exception exception)
         {
@@ -480,6 +483,7 @@ public class Stage : IRenderable
         ground.Render(camera, lightCamera, isCreateShadowMap);
         polys?.Render(camera, lightCamera, isCreateShadowMap);
         clouds?.Render(camera, lightCamera, isCreateShadowMap);
+        mountains?.Render(camera, lightCamera, isCreateShadowMap);
 
         foreach (var piece in pieces)
         {
