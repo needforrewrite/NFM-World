@@ -73,6 +73,8 @@ public class GameSparker
     public static Scene current_scene;
 
     public static FollowCamera PlayerFollowCamera = new();
+
+    public static bool devRenderTrackers = false;
     
     public static DevConsole devConsole = new();
 
@@ -392,7 +394,6 @@ public class GameSparker
     {
         CurrentState = GameState.ModelViewer;
         MainMenu = null;
-        ModelEditor.Writer = Writer;
         ModelEditor?.Open();
     }
     
@@ -401,6 +402,7 @@ public class GameSparker
         CurrentState = GameState.Menu;
         MainMenu = new MainMenu();
         ModelEditor?.Close();
+        devRenderTrackers = false;
     }
 
     public static void StartGame()

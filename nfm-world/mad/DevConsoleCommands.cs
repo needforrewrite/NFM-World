@@ -32,6 +32,7 @@ namespace NFMWorld.Mad
             console.RegisterCommand("r_frametrace", SetFrameTrace);
             console.RegisterCommand("r_blackpoint", SetBlackPoint);
             console.RegisterCommand("r_whitepoint", SetWhitePoint);
+            console.RegisterCommand("r_displaytrackers", (c, args) => GameSparker.devRenderTrackers = !GameSparker.devRenderTrackers);
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 

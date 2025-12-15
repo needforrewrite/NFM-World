@@ -9,7 +9,6 @@ namespace NFMWorld.Mad.UI;
 
 public class ModelEditor
 {
-     public static DevConsoleWriter Writer = null!;
     private bool _isOpen = false;
     private string[] _userModelNames = [];
     private string? _currentModelPath = null;
@@ -213,9 +212,9 @@ public class ModelEditor
             {
                 var err = $"Error parsing model: {parseEx.Message}\n\nFile loaded in text editor for correction.";
                 GameSparker.MessageWindow.ShowMessage("Parse Error", err);
-                if (Writer != null)
+                if (GameSparker.Writer != null)
                 {
-                    Writer.WriteLine($"Parse error in {Path.GetFileName(filePath)}: {parseEx.Message}", "error");
+                    GameSparker.Writer.WriteLine($"Parse error in {Path.GetFileName(filePath)}: {parseEx.Message}", "error");
                 }
                 _currentModel = null;
             }
@@ -224,9 +223,9 @@ public class ModelEditor
         {
             var err = $"Error loading file: {ex.Message}";
             GameSparker.MessageWindow.ShowMessage("Error", err);
-            if (Writer != null)
+            if (GameSparker.Writer != null)
             {
-                Writer.WriteLine(err, "error");
+                GameSparker.Writer.WriteLine(err, "error");
             }
             _currentModel = null;
             _currentModelPath = null;
@@ -447,9 +446,9 @@ public class ModelEditor
                     {
                         var err = $"Error saving/reloading model:\n{ex.Message}";
                         GameSparker.MessageWindow.ShowMessage("Error", err);
-                        if (Writer != null)
+                        if (GameSparker.Writer != null)
                         {
-                            Writer.WriteLine(err, "error");
+                            GameSparker.Writer.WriteLine(err, "error");
                         }
                     }
                 }
@@ -471,9 +470,9 @@ public class ModelEditor
                     {
                         var err = $"Error saving/reloading model:\n{ex.Message}";
                         GameSparker.MessageWindow.ShowMessage("Error", err);
-                        if (Writer != null)
+                        if (GameSparker.Writer != null)
                         {
-                            Writer.WriteLine(err, "error");
+                            GameSparker.Writer.WriteLine(err, "error");
                         }
                     }
                 }
@@ -495,6 +494,10 @@ public class ModelEditor
                     {
                         var err = $"Error opening external editor: {ex.Message}";
                         GameSparker.MessageWindow.ShowMessage("Error", err);
+                        if (GameSparker.Writer != null)
+                        {
+                            GameSparker.Writer.WriteLine(err, "error");
+                        }
                     }
                 }
                 
@@ -589,6 +592,23 @@ public class ModelEditor
                 }
                 
                 ImGui.Columns(1);
+                ImGui.EndTabItem();
+            }
+
+            if (ImGui.BeginTabItem("Render"))
+            {
+                bool showTrackers = GameSparker.devRenderTrackers;
+                if (ImGui.Checkbox("Display Trackers", ref showTrackers))
+                {
+                    GameSparker.devRenderTrackers = showTrackers;
+                }
+                ImGui.SameLine();
+                ImGui.TextDisabled("(?)");
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip("Show collision/tracking boxes on models");
+                }
+                
                 ImGui.EndTabItem();
             }
             

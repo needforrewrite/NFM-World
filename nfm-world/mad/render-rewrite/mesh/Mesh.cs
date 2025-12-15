@@ -240,7 +240,8 @@ public class Mesh : Transform, IRenderable
         if (_collisionDebugMesh != null && !isCreateShadowMap)
         {
             _collisionDebugMesh.Parent = this;
-            _collisionDebugMesh.Render(camera);
+            if (GameSparker.devRenderTrackers)
+                _collisionDebugMesh.Render(camera);
         }
 
         foreach (var submesh in Submeshes)
