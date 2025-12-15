@@ -20,6 +20,7 @@ public class Car : IRenderable
 
     public void Drive()
     {
+        Conto.GameTick();
         Mad.Drive(Control, Conto);
     }
 
