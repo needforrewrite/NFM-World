@@ -376,7 +376,7 @@ public class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
 //            rebound = 0;
-        rebound += CarDefine.Bounce[Cn] - 0.2F;
+        rebound += Stat.Bounce - 0.2F;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
         Regz(wi, -1 * Scz[wi] * rebound * Trackers.Dam[ti] /** checkpoints.dam*/, conto);
@@ -389,7 +389,7 @@ public class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
 //            rebound = 0;
-        rebound += CarDefine.Bounce[Cn] - 0.2F;
+        rebound += Stat.Bounce - 0.2F;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
         Regx(wi, -1 * Scx[wi] * rebound * Trackers.Dam[ti]/* * checkpoints.dam*/, conto);
@@ -1241,7 +1241,7 @@ public class Mad
                             4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
                     float bumpLift = surfaceType == 3 ? -100F : -150F;
                     float rng = 0.55F;
-                    Scy[k] = bumpLift * rng * Speed / CarDefine.Swits[Cn, 2] * (CarDefine.Bounce[Cn] - 0.3F);
+                    Scy[k] = bumpLift * rng * Speed / Stat.Swits[2] * (Stat.Bounce - 0.3F);
                 }
             }
 
