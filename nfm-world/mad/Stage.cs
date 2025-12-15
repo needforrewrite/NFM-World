@@ -9,7 +9,7 @@ using Environment = System.Environment;
     Represents a stage. Holds all information relating to track pices, scenery, etc.
     But does NOT hold any information relating to the actual game being played, unless such game affects the layout or scenery of the stage.
 */
-public class Stage
+public class Stage : IRenderable
 {
     public UnlimitedArray<Mesh> pieces = [];
 
@@ -458,16 +458,13 @@ public class Stage
 
     public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
     {
-        if (!isCreateShadowMap)
-        {
-            sky.Render(camera);
-            ground.Render(camera, lightCamera);
-            polys?.Render(camera, lightCamera);
-        }
+        sky.Render(camera, lightCamera, isCreateShadowMap);
+        ground.Render(camera, lightCamera, isCreateShadowMap);
+        polys?.Render(camera, lightCamera, isCreateShadowMap);
 
-        foreach (var element in pieces)
+        foreach (var piece in pieces)
         {
-            element.Render(camera, lightCamera, isCreateShadowMap);
+            piece.Render(camera, lightCamera, isCreateShadowMap);
         }
     }
 }

@@ -13,7 +13,7 @@ using Vector2 = Stride.Core.Mathematics.Vector2;
 
 namespace NFMWorld.Mad;
 
-public class Mesh : Transform
+public class Mesh : Transform, IRenderable
 {
     public Color3[] Colors;
     public CarStats Stats;
@@ -58,43 +58,13 @@ public class Mesh : Transform
         GraphicsDevice = graphicsDevice;
 
         Triangulation = Array.ConvertAll(Polys,
-            poly => TriangulateIfNeeded(Array.ConvertAll(poly.Points,
+            poly => MeshHelpers.TriangulateIfNeeded(Array.ConvertAll(poly.Points,
                 input => (System.Numerics.Vector3)input)));
         BuildMesh(graphicsDevice);
 
         CastsShadow = rad.CastsShadow;
         
         Bfase = new float[Polys.Length];
-    }
-
-    internal static PolygonTriangulator.TriangulationResult TriangulateIfNeeded(System.Numerics.Vector3[] verts)
-    {
-        if (verts.Length <= 3)
-        {
-            // Compute triangle normal
-            var normal = System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Cross(
-                verts[1] - verts[0],
-                verts[2] - verts[0]
-            ));
-            
-            // Compute centroid
-            var centroid = System.Numerics.Vector3.Zero;
-            foreach (var v in verts)
-            {
-                centroid += v;
-            }
-            centroid /= verts.Length;
-
-            return new PolygonTriangulator.TriangulationResult
-            {
-                PlaneNormal = normal,
-                Centroid = centroid,
-                Triangles = verts.Length == 3 ? [0, 1, 2] : [],
-                RegionCount = 1
-            };
-        }
-        
-        return PolygonTriangulator.Triangulate(verts);
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -190,75 +160,8 @@ public class Mesh : Transform
 
         if (lines.Count > 0)
         {
-            LineMesh = CreateMeshFromLines(lines);
+            LineMesh = new LineMesh(this, GraphicsDevice, lines);
         }
-    }
-
-    private LineMesh CreateMeshFromLines(IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>> lines)
-    {
-	    var data = new List<VertexPositionNormalColorCentroid>(8 * lines.Count);
-	    var indices = new List<int>(12 * 3 * lines.Count);
-
-        const float halfThickness = 1f;
-	    foreach (var line in lines)
-	    {
-            // Create two quads for each line segment to give it some thickness
-            var p0 = line.Key.Point0;
-            var p1 = line.Key.Point1;
-            var poly = line.Value.Poly;
-            var centroid = line.Value.Centroid;
-            var normal = line.Value.Normal;
-            var color = poly.LineType == LineType.Colored ? (poly.Color - new Color3(10, 10, 10)).ToXna() : Microsoft.Xna.Framework.Color.Black;            
-            
-            var lineDir = Vector3.Normalize(p1 - p0);
-            
-            // Choose an initial perpendicular vector that's not parallel to lineDir
-            var perpendicular = Math.Abs(lineDir.Y) > 0.99f ? Vector3.UnitX : Vector3.UnitY;
-
-            var right = Vector3.Normalize(Vector3.Cross(lineDir, perpendicular)) * halfThickness;
-            var up = Vector3.Normalize(Vector3.Cross(right, lineDir)) * halfThickness;
-            var v0 = p0 - right - up;
-            var v1 = p0 + right - up;
-            var v2 = p0 + right + up;
-            var v3 = p0 - right + up;
-            var v4 = p1 - right - up;
-            var v5 = p1 + right - up;
-            var v6 = p1 + right + up;
-            var v7 = p1 - right + up;
-            var baseIndex = data.Count;
-            data.Add(new VertexPositionNormalColorCentroid(v0.ToXna(), normal.ToXna(), centroid.ToXna(), color));
-            data.Add(new VertexPositionNormalColorCentroid(v1.ToXna(), normal.ToXna(), centroid.ToXna(), color));
-            data.Add(new VertexPositionNormalColorCentroid(v2.ToXna(), normal.ToXna(), centroid.ToXna(), color));
-            data.Add(new VertexPositionNormalColorCentroid(v3.ToXna(), normal.ToXna(), centroid.ToXna(), color));
-            data.Add(new VertexPositionNormalColorCentroid(v4.ToXna(), normal.ToXna(), centroid.ToXna(), color));
-            data.Add(new VertexPositionNormalColorCentroid(v5.ToXna(), normal.ToXna(), centroid.ToXna(), color));
-            data.Add(new VertexPositionNormalColorCentroid(v6.ToXna(), normal.ToXna(), centroid.ToXna(), color));
-            data.Add(new VertexPositionNormalColorCentroid(v7.ToXna(), normal.ToXna(), centroid.ToXna(), color));
-            // Two triangles per quad face
-            indices.AddRange(
-                baseIndex, baseIndex + 1, baseIndex + 2,
-                baseIndex, baseIndex + 2, baseIndex + 3,
-                baseIndex + 4, baseIndex + 6, baseIndex + 5,
-                baseIndex + 4, baseIndex + 7, baseIndex + 6,
-                baseIndex + 3, baseIndex + 2, baseIndex + 6,
-                baseIndex + 3, baseIndex + 6, baseIndex + 7,
-                baseIndex, baseIndex + 5, baseIndex + 1,
-                baseIndex, baseIndex + 4, baseIndex + 5,
-                baseIndex + 1, baseIndex + 5, baseIndex + 6,
-                baseIndex + 1, baseIndex + 6, baseIndex + 2,
-                baseIndex + 4, baseIndex + 0, baseIndex + 3,
-                baseIndex + 4, baseIndex + 3, baseIndex + 7
-            );
-        }
-	    
-	    var lineVertexBuffer = new VertexBuffer(GraphicsDevice, VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
-	    lineVertexBuffer.SetData(data.ToArray());
-	    
-	    var lineIndexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
-	    lineIndexBuffer.SetData(indices.ToArray());
-	    
-	    var lineTriangleCount = indices.Count / 3;
-        return new LineMesh(this, GraphicsDevice, lineVertexBuffer, lineIndexBuffer, lineTriangleCount);
     }
 
     /// <summary>

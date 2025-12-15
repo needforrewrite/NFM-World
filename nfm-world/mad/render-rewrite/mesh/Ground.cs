@@ -2,7 +2,7 @@
 
 namespace NFMWorld.Mad;
 
-public class Ground : Transform
+public class Ground : Transform, IRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;
@@ -32,8 +32,10 @@ public class Ground : Transform
         _material = Program._groundShader;
     }
 
-    public void Render(Camera camera, Camera? lightCamera)
+    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
     {
+        if (isCreateShadowMap) return;
+
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
         _material.Parameters["WorldView"]?.SetValue(camera.ViewMatrix);

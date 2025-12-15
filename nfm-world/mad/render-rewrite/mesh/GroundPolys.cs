@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
 
-public class GroundPolys : Transform
+public class GroundPolys : Transform, IRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;
@@ -16,7 +16,7 @@ public class GroundPolys : Transform
         _graphicsDevice = graphicsDevice;
         
         var triangulation = Array.ConvertAll(polys,
-            poly => Mesh.TriangulateIfNeeded(Array.ConvertAll(poly.Points,
+            poly => MeshHelpers.TriangulateIfNeeded(Array.ConvertAll(poly.Points,
                 input => (System.Numerics.Vector3)input)));
 
         var data = new List<VertexPositionColor>();
@@ -54,8 +54,10 @@ public class GroundPolys : Transform
         _material = Program._groundShader;
     }
 
-    public void Render(Camera camera, Camera? lightCamera)
+    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
     {
+        if (isCreateShadowMap) return;
+
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.Indices = _indexBuffer;
         _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;

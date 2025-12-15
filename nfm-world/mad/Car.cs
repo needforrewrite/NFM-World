@@ -2,7 +2,7 @@
 
 namespace NFMWorld.Mad;
 
-public class Car
+public class Car : IRenderable
 {
     public Mesh Conto;
     public Mad Mad;

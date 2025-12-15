@@ -171,54 +171,24 @@ internal class Trackers
         }
         
         // disp 0
-        List<VertexPositionColor> data = [];
-        List<int> indices = [];
+        const int linesPerPolygon = 16;
+        
+        var data = new List<VertexPositionColor>(LineMeshHelpers.VerticesPerLine * linesPerPolygon * Nt);
+        var indices = new List<int>(LineMeshHelpers.IndicesPerLine * linesPerPolygon * Nt);
         void AddLine(Vector3 p0, Vector3 p1, Color3 color)
         {
             const float halfThickness = 2f;
             // Create two quads for each line segment to give it some thickness
             
-            var lineDir = Vector3.Normalize(p1 - p0);
-            var up = Vector3.UnitY;
-            if (Vector3.Dot(lineDir, up) > 0.99f)
-            {
-                up = Vector3.UnitX; // Avoid degenerate case
-            }
+            Span<Vector3> verts = stackalloc Vector3[LineMeshHelpers.VerticesPerLine];
+            Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
-            var right = Vector3.Normalize(Vector3.Cross(lineDir, up)) * halfThickness; // Line half-thickness
-            up = Vector3.Normalize(Vector3.Cross(right, lineDir)) * halfThickness; // Recalculate up to ensure orthogonality
-            var v0 = p0 - right - up;
-            var v1 = p0 + right - up;
-            var v2 = p0 + right + up;
-            var v3 = p0 - right + up;
-            var v4 = p1 - right - up;
-            var v5 = p1 + right - up;
-            var v6 = p1 + right + up;
-            var v7 = p1 - right + up;
-            var baseIndex = data.Count;
-            data.Add(new VertexPositionColor(v0.ToXna(), color.ToXna()));
-            data.Add(new VertexPositionColor(v1.ToXna(), color.ToXna()));
-            data.Add(new VertexPositionColor(v2.ToXna(), color.ToXna()));
-            data.Add(new VertexPositionColor(v3.ToXna(), color.ToXna()));
-            data.Add(new VertexPositionColor(v4.ToXna(), color.ToXna()));
-            data.Add(new VertexPositionColor(v5.ToXna(), color.ToXna()));
-            data.Add(new VertexPositionColor(v6.ToXna(), color.ToXna()));
-            data.Add(new VertexPositionColor(v7.ToXna(), color.ToXna()));
-            // Two triangles per quad face
-            indices.AddRange(
-                baseIndex, baseIndex + 1, baseIndex + 2,
-                baseIndex, baseIndex + 2, baseIndex + 3,
-                baseIndex + 4, baseIndex + 6, baseIndex + 5,
-                baseIndex + 4, baseIndex + 7, baseIndex + 6,
-                baseIndex + 3, baseIndex + 2, baseIndex + 6,
-                baseIndex + 3, baseIndex + 6, baseIndex + 7,
-                baseIndex, baseIndex + 5, baseIndex + 1,
-                baseIndex, baseIndex + 4, baseIndex + 5,
-                baseIndex + 1, baseIndex + 5, baseIndex + 6,
-                baseIndex + 1, baseIndex + 6, baseIndex + 2,
-                baseIndex + 4, baseIndex + 0, baseIndex + 3,
-                baseIndex + 4, baseIndex + 3, baseIndex + 7
-            );
+            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness, in verts, in inds);
+            indices.AddRange(inds);
+            foreach (var vert in verts)
+            {
+                data.Add(new VertexPositionColor(vert.ToXna(), color.ToXna()));
+            }
         }
         
         void drawPolygon3D(Span<int> px, Span<int> py, Span<int> pz, int pn, Color3 color)

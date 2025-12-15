@@ -70,6 +70,7 @@ public class GameSparker
     public static UnlimitedArray<Mesh> stage_parts;
     
     public static Stage current_stage = null!;
+    private static Scene current_scene;
 
     public static FollowCamera PlayerFollowCamera = new();
     
@@ -410,6 +411,12 @@ public class GameSparker
 
         current_stage = new Stage("nfm2/15_dwm", _graphicsDevice);
         cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
+        current_scene = new Scene(
+            _graphicsDevice,
+            [current_stage, ..cars_in_race],
+            camera,
+            lightCamera
+        );
         
         for (var i = 0; i < cars.Count; i++)
         {
@@ -463,33 +470,7 @@ public class GameSparker
         lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
         lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0); // 0,0,0 causes shadows to break
 
-        camera.OnBeforeRender();
-        lightCamera.OnBeforeRender();
-        
-        _graphicsDevice.BlendState = BlendState.Opaque;
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
-
-        // CREATE SHADOW MAP
-        
-        // Set our render target to our floating point render target
-        _graphicsDevice.SetRenderTarget(Program.shadowRenderTarget);
-
-        // Clear the render target to white or all 1's
-        // We set the clear to white since that represents the 
-        // furthest the object could be away
-        _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.White);
-        
-        RenderInternal(true);
-
-        _graphicsDevice.SetRenderTarget(null);
-        
-        // DRAW WITH SHADOW MAP
-        
-        _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
-
-        _graphicsDevice.SamplerStates[1] = SamplerState.PointClamp;
-
-        RenderInternal();
+        current_scene.Render(true);
 
         Trackers.RenderDebugTrackers(camera);
         

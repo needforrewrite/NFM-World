@@ -1,23 +1,68 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Vector3 = Stride.Core.Mathematics.Vector3;
 
 namespace NFMWorld.Mad;
 
-public class LineMesh(
-    Mesh supermesh,
-    GraphicsDevice graphicsDevice,
-    VertexBuffer lineVertexBuffer,
-    IndexBuffer lineIndexBuffer,
-    int lineTriangleCount
-)
+public class LineMesh
 {
     private readonly PolyEffect _material = new(Program._polyShader);
+    private readonly Mesh _supermesh;
+    private readonly GraphicsDevice _graphicsDevice;
+    private readonly VertexBuffer _lineVertexBuffer;
+    private readonly IndexBuffer _lineIndexBuffer;
+    private readonly int _lineTriangleCount;
+
+    public LineMesh(
+        Mesh supermesh,
+        GraphicsDevice graphicsDevice,
+        IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>>lines)
+    {
+        var data = new List<Mesh.VertexPositionNormalColorCentroid>(8 * lines.Count);
+        var indices = new List<int>(12 * 3 * lines.Count);
+
+        const float halfThickness = 1f;
+        Span<Vector3> verts = stackalloc Vector3[LineMeshHelpers.VerticesPerLine];
+        Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
+
+        foreach (var line in lines)
+        {
+            // Create two quads for each line segment to give it some thickness
+            var p0 = line.Key.Point0;
+            var p1 = line.Key.Point1;
+            var poly = line.Value.Poly;
+            var centroid = line.Value.Centroid;
+            var normal = line.Value.Normal;
+            var color = poly.LineType == LineType.Colored ? (poly.Color - new Color3(10, 10, 10)).ToXna() : Color.Black;            
+            
+            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness, in verts, in inds);
+            indices.AddRange(inds);
+            foreach (var vert in verts)
+            {
+                data.Add(new Mesh.VertexPositionNormalColorCentroid(vert.ToXna(), normal.ToXna(), centroid.ToXna(), color));
+            }
+        }
+	    
+        var lineVertexBuffer = new VertexBuffer(graphicsDevice, Mesh.VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
+        lineVertexBuffer.SetData(data.ToArray());
+	    
+        var lineIndexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+        lineIndexBuffer.SetData(indices.ToArray());
+	    
+        var lineTriangleCount = indices.Count / 3;
+        
+        _supermesh = supermesh;
+        _graphicsDevice = graphicsDevice;
+        _lineVertexBuffer = lineVertexBuffer;
+        _lineIndexBuffer = lineIndexBuffer;
+        _lineTriangleCount = lineTriangleCount;
+    }
 
     public void Render(Camera camera, Camera? lightCamera, Matrix matrixWorld)
     {
-        graphicsDevice.SetVertexBuffer(lineVertexBuffer);
-        graphicsDevice.Indices = lineIndexBuffer;
-        graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        _graphicsDevice.SetVertexBuffer(_lineVertexBuffer);
+        _graphicsDevice.Indices = _lineIndexBuffer;
+        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
         
         // If a parameter is null that means the HLSL compiler optimized it out.
         _material.World?.SetValue(matrixWorld);
@@ -25,14 +70,14 @@ public class LineMesh(
         _material.SnapColor?.SetValue(World.Snap.ToXnaVector3());
         _material.IsFullbright?.SetValue(false);
         _material.UseBaseColor?.SetValue(false);
-        _material.BaseColor?.SetValue(new Vector3(0, 0, 0));
+        _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
         _material.LightDirection?.SetValue(World.LightDirection.ToXna());
         _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
         _material.FogDistance?.SetValue(World.FadeFrom);
         _material.FogDensity?.SetValue(World.FogDensity);
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
-        _material.GetsShadowed?.SetValue(supermesh.GetsShadowed);
+        _material.GetsShadowed?.SetValue(_supermesh.GetsShadowed);
         _material.Alpha?.SetValue(1f);
 
         _material.View?.SetValue(camera.ViewMatrix);
@@ -52,7 +97,7 @@ public class LineMesh(
         {
             pass.Apply();
     
-            graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, lineTriangleCount);
+            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineTriangleCount);
         }
     }
 }

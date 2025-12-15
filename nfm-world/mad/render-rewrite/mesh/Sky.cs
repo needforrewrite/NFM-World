@@ -4,7 +4,7 @@ using Matrix = Microsoft.Xna.Framework.Matrix;
 
 namespace NFMWorld.Mad;
 
-public class Sky : Transform
+public class Sky : Transform, IRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;
@@ -65,8 +65,10 @@ public class Sky : Transform
         }
     }
     
-    public void Render(Camera camera)
+    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
     {
+        if (isCreateShadowMap) return;
+
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
 

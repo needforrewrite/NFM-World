@@ -109,7 +109,7 @@ public class ModelEditor
         GameSparker._graphicsDevice.DepthStencilState = DepthStencilState.Default;
         
         _modelViewerStage.Render(GameSparker.camera, GameSparker.lightCamera, false);
-
+        
         _currentModel = null;
         _currentModelPath = null;
         RefreshUserModels();
@@ -799,9 +799,6 @@ public class ModelEditor
         lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
         lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0);
         
-        camera.OnBeforeRender();
-        lightCamera.OnBeforeRender();
-        
         // Store original transform
         var originalPosition = _currentModel.Position;
         var originalRotation = _currentModel.Rotation;
@@ -815,8 +812,11 @@ public class ModelEditor
             AngleSingle.FromDegrees(_modelRotation.Z)   // Roll (Z-axis rotation)
         );
         
+        // TODO maybe cache this scene instead of making it every time
+        var scene = new Scene(GameSparker._graphicsDevice, [_currentModel], camera, lightCamera);
+        
         // Render the model with lighting
-        _currentModel.Render(camera, lightCamera, false);
+        scene.Render(false);
         
         // Restore original transform
         _currentModel.Position = originalPosition;
