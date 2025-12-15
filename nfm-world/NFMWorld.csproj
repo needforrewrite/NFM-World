@@ -35,6 +35,7 @@
         </EmbeddedResource>
     </ItemGroup>
   <ItemGroup>
+      <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
       <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
       <PackageReference Include="ManagedBass" Version="4.0.1" />
       <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
