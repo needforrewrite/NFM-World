@@ -36,6 +36,8 @@ public class Mesh : Transform, IRenderable
     // Stores "brokenness" phase for damageable meshes
     public readonly float[] Bfase;
 
+    private Mesh[] _wheels;
+
     public bool CastsShadow { get; set; }
     public bool GetsShadowed { get; set; } = true;
 
@@ -65,6 +67,8 @@ public class Mesh : Transform, IRenderable
         CastsShadow = rad.CastsShadow;
         
         Bfase = new float[Polys.Length];
+
+        _wheels = Array.ConvertAll(Wheels, wheel => new WheelMeshBuilder(wheel, Rims).BuildMesh(graphicsDevice, this));
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -89,6 +93,8 @@ public class Mesh : Transform, IRenderable
         GetsShadowed = baseMesh.GetsShadowed;
         
         Bfase = new float[Polys.Length];
+
+        _wheels = baseMesh._wheels;
     }
 
     [MemberNotNull(nameof(Submeshes))]
@@ -201,7 +207,18 @@ public class Mesh : Transform, IRenderable
 
     public virtual void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
     {
-        var matrixWorld = Matrix.CreateFromEuler(Rotation) * Matrix.CreateTranslation(Position.ToXna());
+        var matrixWorld = MatrixWorld;
+
+        for (var i = 0; i < _wheels.Length; i++)
+        {
+            var wheel = _wheels[i];
+            wheel.Parent = this;
+            wheel.Render(camera, lightCamera, isCreateShadowMap);
+            if (Wheels[i].Rotates == 11)
+            {
+                wheel.Rotation = TurningWheelAngle;
+            }
+        }
 
         foreach (var submesh in Submeshes)
         {
@@ -214,8 +231,4 @@ public class Mesh : Transform, IRenderable
     {
         BuildMesh(GraphicsDevice);
     }
-
-    public sealed override Vector3 Position { get; set; }
-
-    public sealed override Euler Rotation { get; set; }
 }

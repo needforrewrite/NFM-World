@@ -142,8 +142,8 @@ public class RadParser
                     (byte)BracketParser.GetNumbers(line, stackalloc int[3])[1],
                     (byte)BracketParser.GetNumbers(line, stackalloc int[3])[2]
                 ),
-                Size: BracketParser.GetNumbers(line, stackalloc int[1])[0],
-                Depth: BracketParser.GetNumbers(line, stackalloc int[1])[0]
+                Size: BracketParser.GetNumbers(line, stackalloc int[5])[3],
+                Depth: BracketParser.GetNumbers(line, stackalloc int[5])[4]
             );
         }
 
@@ -348,7 +348,12 @@ public record Rad3d(
     [property: JsonPropertyName("boxes")] Rad3dBoxDef[] Boxes,
     [property: JsonPropertyName("polys")] Rad3dPoly[] Polys,
     [property: JsonPropertyName("shadow")] bool CastsShadow
-);
+)
+{
+    public Rad3d(Rad3dPoly[] polys, bool castsShadow) : this([], new CarStats(), [], null, [], polys, castsShadow)
+    {
+    }
+}
 
 public readonly record struct Rad3dPoly(
     [property: JsonPropertyName("c")] Color3 Color,
