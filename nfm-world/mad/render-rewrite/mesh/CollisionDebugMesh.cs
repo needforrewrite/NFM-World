@@ -177,18 +177,17 @@ public class CollisionDebugMesh : Transform
                 
                 // Determine color based on which face the edge belongs to
                 var edgeColor = normalColor;
-                if (!isVertical)
-                {
-                    bool isLeft = p0.X < center.X && p1.X < center.X;
-                    bool isRight = p0.X > center.X && p1.X > center.X;
-                    bool isFront = p0.Z > center.Z && p1.Z > center.Z;
-                    bool isBack = p0.Z < center.Z && p1.Z < center.Z;
+                
+                // Check which face(s) this edge belongs to
+                bool isLeft = p0.X < center.X && p1.X < center.X;
+                bool isRight = p0.X > center.X && p1.X > center.X;
+                bool isFront = p0.Z > center.Z && p1.Z > center.Z;
+                bool isBack = p0.Z < center.Z && p1.Z < center.Z;
 
-                    if (isLeft && leftSolid) edgeColor = solidSideColor;
-                    else if (isRight && rightSolid) edgeColor = solidSideColor;
-                    else if (isFront && frontSolid) edgeColor = solidSideColor;
-                    else if (isBack && backSolid) edgeColor = solidSideColor;
-                }
+                if (isLeft && leftSolid) edgeColor = solidSideColor;
+                else if (isRight && rightSolid) edgeColor = solidSideColor;
+                else if (isFront && frontSolid) edgeColor = solidSideColor;
+                else if (isBack && backSolid) edgeColor = solidSideColor;
 
                 AddLine(p0, p1, edgeColor, edgeColor == solidSideColor ? 2f : 1f);
 
