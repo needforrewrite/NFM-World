@@ -472,8 +472,6 @@ public class GameSparker
 
         current_scene.Render(true);
 
-        Trackers.RenderDebugTrackers(camera);
-        
         // DISPLAY SHADOW MAP
         _spriteBatch.Begin(0, BlendState.Opaque, SamplerState.PointClamp);
         _spriteBatch.Draw(Program.shadowRenderTarget, new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Microsoft.Xna.Framework.Color.White);

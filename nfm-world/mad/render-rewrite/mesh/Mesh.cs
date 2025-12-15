@@ -36,7 +36,8 @@ public class Mesh : Transform, IRenderable
     // Stores "brokenness" phase for damageable meshes
     public readonly float[] Bfase;
 
-    private Mesh[] _wheels;
+    private readonly Mesh[] _wheels;
+    private readonly CollisionDebugMesh? _collisionDebugMesh;
 
     public bool CastsShadow { get; set; }
     public bool GetsShadowed { get; set; } = true;
@@ -69,6 +70,7 @@ public class Mesh : Transform, IRenderable
         Bfase = new float[Polys.Length];
 
         _wheels = Array.ConvertAll(Wheels, wheel => new WheelMeshBuilder(wheel, Rims).BuildMesh(graphicsDevice, this));
+        _collisionDebugMesh = rad.Boxes.Length > 0 ? new CollisionDebugMesh(rad.Boxes) : null;
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -95,6 +97,7 @@ public class Mesh : Transform, IRenderable
         Bfase = new float[Polys.Length];
 
         _wheels = baseMesh._wheels;
+        _collisionDebugMesh = baseMesh._collisionDebugMesh;
     }
 
     [MemberNotNull(nameof(Submeshes))]
@@ -218,6 +221,12 @@ public class Mesh : Transform, IRenderable
             {
                 wheel.Rotation = TurningWheelAngle;
             }
+        }
+
+        if (_collisionDebugMesh != null && !isCreateShadowMap)
+        {
+            _collisionDebugMesh.Parent = this;
+            _collisionDebugMesh.Render(camera);
         }
 
         foreach (var submesh in Submeshes)
