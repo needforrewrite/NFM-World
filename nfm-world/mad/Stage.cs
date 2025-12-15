@@ -49,19 +49,21 @@ public class Stage : IRenderable
                 if (astring.StartsWith("snap"))
                 {
                     World.Snap = new Color3(
-                        (short) Utility.GetInt("snap", astring, 0),
-                        (short) Utility.GetInt("snap", astring, 1),
-                        (short) Utility.GetInt("snap", astring, 2)
+                        (short)Utility.GetInt("snap", astring, 0),
+                        (short)Utility.GetInt("snap", astring, 1),
+                        (short)Utility.GetInt("snap", astring, 2)
                     );
                 }
+
                 if (astring.StartsWith("sky"))
                 {
                     World.Sky = new Color3(
-                        (short) Utility.GetInt("sky", astring, 0),
-                        (short) Utility.GetInt("sky", astring, 1),
-                        (short) Utility.GetInt("sky", astring, 2)
+                        (short)Utility.GetInt("sky", astring, 0),
+                        (short)Utility.GetInt("sky", astring, 1),
+                        (short)Utility.GetInt("sky", astring, 2)
                     );
                 }
+
                 if (astring.StartsWith("ground"))
                 {
                     World.GroundColor = new Color3(
@@ -70,6 +72,7 @@ public class Stage : IRenderable
                         (short)Utility.GetInt("ground", astring, 2)
                     );
                 }
+
                 if (astring.StartsWith("polys"))
                 {
                     if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
@@ -80,12 +83,13 @@ public class Stage : IRenderable
                     {
                         World.HasPolys = true;
                         World.GroundPolysColor = new Color3(
-                            (short) Utility.GetInt("polys", astring, 0),
-                            (short) Utility.GetInt("polys", astring, 1),
-                            (short) Utility.GetInt("polys", astring, 2)
+                            (short)Utility.GetInt("polys", astring, 0),
+                            (short)Utility.GetInt("polys", astring, 1),
+                            (short)Utility.GetInt("polys", astring, 2)
                         );
                     }
                 }
+
                 if (astring.StartsWith("fog"))
                 {
                     World.Fog = new Color3(
@@ -94,6 +98,7 @@ public class Stage : IRenderable
                         (short)Utility.GetInt("fog", astring, 2)
                     );
                 }
+
                 if (astring.StartsWith("texture"))
                 {
                     World.HasTexture = true;
@@ -105,6 +110,7 @@ public class Stage : IRenderable
                         Utility.GetInt("texture", astring, 3)
                     ];
                 }
+
                 if (astring.StartsWith("clouds"))
                 {
                     if (astring.Contains("false", StringComparison.OrdinalIgnoreCase))
@@ -114,7 +120,8 @@ public class Stage : IRenderable
                     else
                     {
                         World.HasClouds = true;
-                        World.Clouds = [
+                        World.Clouds =
+                        [
                             Utility.GetInt("clouds", astring, 0),
                             Utility.GetInt("clouds", astring, 1),
                             Utility.GetInt("clouds", astring, 2),
@@ -123,10 +130,12 @@ public class Stage : IRenderable
                         ];
                     }
                 }
+
                 if (astring.StartsWith("cloudcoverage"))
                 {
                     World.CloudCoverage = Utility.GetFloat("cloudcoverage", astring, 0);
                 }
+
                 if (astring.StartsWith("density"))
                 {
                     // Medium.Fogd = (Utility.GetInt("density", astring, 0) + 1) * 2 - 1;
@@ -139,14 +148,17 @@ public class Stage : IRenderable
                     //     Medium.Fogd = 30;
                     // }
                 }
+
                 if (astring.StartsWith("fadefrom"))
                 {
                     World.FadeFrom = Utility.GetInt("fadefrom", astring, 0);
                 }
+
                 if (astring.StartsWith("lightson"))
                 {
                     World.LightsOn = true;
                 }
+
                 if (astring.StartsWith("mountains"))
                 {
                     // Check for mountains(false) first
@@ -159,10 +171,21 @@ public class Stage : IRenderable
                         World.MountainSeed = Utility.GetInt("mountains", astring, 0);
                     }
                 }
+
                 if (astring.StartsWith("mountaincoverage"))
                 {
                     World.MountainCoverage = Utility.GetFloat("mountaincoverage", astring, 0);
                 }
+
+                if (astring.StartsWith("lightdir"))
+                {
+                    World.LightDirection = new Vector3(
+                        Utility.GetFloat("lightdir", astring, 0),
+                        Utility.GetFloat("lightdir", astring, 1),
+                        Utility.GetFloat("lightdir", astring, 2)
+                    );
+                }
+
                 if (astring.StartsWith("set"))
                 {
                     var setindex = Utility.GetInt("set", astring, 0);
