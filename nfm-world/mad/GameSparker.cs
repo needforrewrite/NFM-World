@@ -500,4 +500,10 @@ public class GameSparker
         SettingsMenu.Render();
         ModelEditor?.Render();
     }
+
+    public static void WindowSizeChanged(int width, int height)
+    {
+        camera.Width = width;
+        camera.Height = height;
+    }
 }

@@ -186,6 +186,14 @@ public unsafe class Program : Game
 
         _skia = new MonoGameSkia(GraphicsDevice);
         // IBackend.Backend = new DummyBackend();
+        Window.AllowUserResizing = true;
+        Window.ClientSizeChanged += (sender, args) =>
+        {
+            var viewport = new Viewport(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height);
+            GraphicsDevice.Viewport = viewport;
+            _skia.RemakeRenderTarget(Window.ClientBounds.Width, Window.ClientBounds.Height);
+            GameSparker.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
+        };
     }
 
     protected override void Update(GameTime gameTime)

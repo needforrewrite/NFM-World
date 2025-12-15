@@ -443,6 +443,19 @@ public class MonoGameSkia
 
         _backend = (SkiaSharpBackend)(IBackend.Backend = new SkiaSharpBackend(_canvas));
     }
+    
+    public void RemakeRenderTarget(int width, int height) 
+    {
+        _canvas.Dispose();
+        _surface.Dispose();
+        _renderTarget.Dispose();
+        
+        _renderTarget = new GRBackendRenderTarget(width, height, 0, 8, new GRGlFramebufferInfo(0, (uint)0x8058));
+        _surface = SKSurface.Create(SkiaGlManager.SkiaGrContext, _renderTarget, GRSurfaceOrigin.BottomLeft, SKColorType.Rgba8888);
+        _canvas = _surface.Canvas;
+
+        _backend = (SkiaSharpBackend)(IBackend.Backend = new SkiaSharpBackend(_canvas));
+    }
 
     public void Render()
     {
