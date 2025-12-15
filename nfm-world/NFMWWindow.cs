@@ -27,6 +27,7 @@ public unsafe class Program : Game
     public static Effect _polyShader { get; private set; }
     public static Effect _skyShader { get; private set; }
     public static Effect _groundShader { get; private set; }
+    public static Effect _mountainsShader { get; private set; }
     public static RenderTarget2D shadowRenderTarget { get; private set; }
     private ImGuiRenderer _imguiRenderer;
 
@@ -226,6 +227,7 @@ public unsafe class Program : Game
         _polyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Poly.fxc"));
         _skyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Sky.fxc"));
         _groundShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Ground.fxc"));
+        _mountainsShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Mountains.fxc"));
         
         var originalOut = Console.Out;
         GameSparker.Writer = new DevConsoleWriter(GameSparker.devConsole, originalOut);

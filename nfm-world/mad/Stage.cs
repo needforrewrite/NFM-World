@@ -20,7 +20,7 @@ public class Stage : IRenderable
     public Ground ground;
     public GroundPolys? polys;
     public GroundPolys? clouds;
-    public GroundPolys? mountains;
+    public Mountains mountains;
 
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos

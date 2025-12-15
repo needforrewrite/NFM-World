@@ -765,7 +765,7 @@ public class Environment
         return new GroundPolys(graphicsDevice, polys.ToArray());
     }
     
-    public static GroundPolys MakeMountains(
+    public static Mountains MakeMountains(
         int maxl, int maxr, int maxb, int maxt, // newmountains
         GraphicsDevice graphicsDevice
     )
@@ -929,6 +929,6 @@ public class Environment
 
         #endregion
 
-        return new GroundPolys(graphicsDevice, polys.ToArray());
+        return new Mountains(graphicsDevice, polys.ToArray());
     }
 }
