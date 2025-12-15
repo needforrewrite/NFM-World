@@ -70,7 +70,7 @@ public class GameSparker
     public static UnlimitedArray<Mesh> stage_parts;
     
     public static Stage current_stage = null!;
-    private static Scene current_scene;
+    public static Scene current_scene;
 
     public static FollowCamera PlayerFollowCamera = new();
     

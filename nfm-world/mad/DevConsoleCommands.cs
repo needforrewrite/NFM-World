@@ -182,7 +182,9 @@ namespace NFMWorld.Mad
 
         private static void ResetCar(DevConsole console)
         {
+            GameSparker.current_scene.Renderables.Remove(GameSparker.cars_in_race[GameSparker.playerCarIndex]);
             GameSparker.cars_in_race[GameSparker.playerCarIndex] = new Car(new Stat(GameSparker.playerCarID), GameSparker.playerCarID,  GameSparker.cars[GameSparker.playerCarID], 0, 0);
+            GameSparker.current_scene.Renderables.Add(GameSparker.cars_in_race[GameSparker.playerCarIndex]);
             console.Log("Position reset");
         }
 
@@ -251,9 +253,10 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            GameSparker.cars_in_race.Clear();
+            GameSparker.current_scene.Renderables.Remove(GameSparker.cars_in_race[GameSparker.playerCarIndex]);
             GameSparker.playerCarID = id;
-            GameSparker.cars_in_race[GameSparker.playerCarIndex] = new Car(new Stat(id), id,  GameSparker.cars[id], 0, 0);
+            GameSparker.cars_in_race[GameSparker.playerCarIndex] = new Car(new Stat(GameSparker.playerCarID), GameSparker.playerCarID,  GameSparker.cars[GameSparker.playerCarID], 0, 0);
+            GameSparker.current_scene.Renderables.Add(GameSparker.cars_in_race[GameSparker.playerCarIndex]);
             
             console.Log($"Switched to car '{carId}'");
         }
