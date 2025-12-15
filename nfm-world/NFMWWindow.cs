@@ -424,7 +424,7 @@ public unsafe class Program : Game
         {
             GraphicsDevice.BlendState = BlendState.Opaque;
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-            GameSparker.ModelEditor.RenderModel(GameSparker.camera);
+            GameSparker.ModelEditor.RenderModel(GameSparker.camera, GameSparker.lightCamera);
         }
         
         // // Render ImGui

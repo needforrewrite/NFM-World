@@ -176,7 +176,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            GameSparker.cars_in_race[0].Mad.Speed = speed;
+            GameSparker.cars_in_race[GameSparker.playerCarIndex].Mad.Speed = speed;
             console.Log($"Set player car speed to {speed}");
         }
 

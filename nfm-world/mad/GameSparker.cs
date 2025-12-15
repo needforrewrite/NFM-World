@@ -370,6 +370,7 @@ public class GameSparker
         // Initialize SettingsMenu writer
         SettingsMenu.Writer = Writer;
         
+        
         // load user config
         SettingsMenu.LoadConfig();
 
@@ -390,6 +391,7 @@ public class GameSparker
     {
         CurrentState = GameState.ModelViewer;
         MainMenu = null;
+        ModelEditor.Writer = Writer;
         ModelEditor?.Open();
     }
     

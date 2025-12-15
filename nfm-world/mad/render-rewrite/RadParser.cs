@@ -33,11 +33,20 @@ public class RadParser
     {
         var parser = new RadParser();
         var lines = radFile.AsSpan().Split("\n");
+        int lineNumber = 0;
         foreach (var lineRange in lines)
         {
+            lineNumber++;
             var line = radFile.AsSpan(lineRange).Trim();
             if (line.IsEmpty) continue;
-            parser.ParseLine(line);
+            try
+            {
+                parser.ParseLine(line);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error parsing line {lineNumber}: '{line.ToString()}'\n{ex.Message}", ex);
+            }
         }
 
         return new Rad3d(
@@ -95,7 +104,7 @@ public class RadParser
         else if (line.StartsWith("moment(")) _stats = _stats with { Moment = BracketParser.GetNumber<float>(line) };
         else if (line.StartsWith("comprad(")) _stats = _stats with { Comprad = BracketParser.GetNumber<float>(line) };
         else if (line.StartsWith("push(")) _stats = _stats with { Push = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("revpush(")) _stats = _stats with { Revpush = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("revpush(")) _stats = _stats with { Revpush = BracketParser.GetNumber<float>(line) };
         else if (line.StartsWith("lift(")) _stats = _stats with { Lift = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("revlift(")) _stats = _stats with { Revlift = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("powerloss(")) _stats = _stats with { Powerloss = BracketParser.GetNumber<int>(line) };
@@ -363,7 +372,7 @@ public readonly record struct CarStats
     [JsonPropertyName("moment")] public float Moment { get; init; }
     [JsonPropertyName("comprad")] public float Comprad { get; init; }
     [JsonPropertyName("push")] public int Push { get; init; }
-    [JsonPropertyName("revpush")] public int Revpush { get; init; }
+    [JsonPropertyName("revpush")] public float Revpush { get; init; }
     [JsonPropertyName("lift")] public int Lift { get; init; }
     [JsonPropertyName("revlift")] public int Revlift { get; init; }
     [JsonPropertyName("powerloss")] public int Powerloss { get; init; }
@@ -395,7 +404,7 @@ public readonly record struct CarStats
         float Moment = -1,
         float Comprad = -1,
         int Push = -1,
-        int Revpush = -1,
+        float Revpush = -1,
         int Lift = -1,
         int Revlift = -1,
         int Powerloss = -1,
