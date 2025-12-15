@@ -168,11 +168,6 @@ public class RadParser
             ));
         }
 
-        if (line.StartsWith("swits("))
-        {
-            Console.WriteLine(line);
-        }
-
         if (_boxes.Count > 0)
         {
             ref var currentBox = ref _boxes.GetValueRef(^1);
