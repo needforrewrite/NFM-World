@@ -375,16 +375,22 @@ public class ModelEditorPhase : BasePhase
                 break;
         }
     }
-    
-    public void HandleMouseMove(int x, int y)
+
+    public override void MouseMoved(int x, int y, bool imguiWantsMouse)
     {
+        base.MouseMoved(x, y, imguiWantsMouse);
+
+        if (imguiWantsMouse) return;
+    
         if (!_isOpen) return;
         _mouseX = x;
         _mouseY = y;
     }
-    
-    public void HandleMouseDown(int x, int y)
+
+    public override void MousePressed(int x, int y, bool imguiWantsMouse)
     {
+        base.MousePressed(x, y, imguiWantsMouse);
+        if (imguiWantsMouse) return;
         if (!_isOpen) return;
     }
     
