@@ -75,9 +75,9 @@ public class SettingsMenu
         _isOpen = true;
         
         // Load current game settings
-        _fov = GameSparker.camera.Fov;
-        _followY = GameSparker.PlayerFollowCamera.FollowYOffset;
-        _followZ = GameSparker.PlayerFollowCamera.FollowZOffset;
+        _fov = InRacePhase.camera.Fov;
+        _followY = InRacePhase.PlayerFollowCamera.FollowYOffset;
+        _followZ = InRacePhase.PlayerFollowCamera.FollowZOffset;
     }
 
     public void Close()
@@ -85,7 +85,7 @@ public class SettingsMenu
         _isOpen = false;
     }
 
-    public void Render()
+    public void RenderImgui()
     {
         if (!_isOpen)
             return;
@@ -423,9 +423,9 @@ public class SettingsMenu
         }
 
         // Apply camera settings
-        GameSparker.camera.Fov = _fov;
-        GameSparker.PlayerFollowCamera.FollowYOffset = _followY;
-        GameSparker.PlayerFollowCamera.FollowZOffset = _followZ;
+        InRacePhase.camera.Fov = _fov;
+        InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
+        InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
         
         // Save config to file
         SaveConfig();
@@ -615,9 +615,9 @@ public class SettingsMenu
             }
             
             // Apply loaded camera settings immediately
-            GameSparker.camera.Fov = _fov;
-            GameSparker.PlayerFollowCamera.FollowYOffset = _followY;
-            GameSparker.PlayerFollowCamera.FollowZOffset = _followZ;
+            InRacePhase.camera.Fov = _fov;
+            InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
+            InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
             
             Writer?.WriteLine($"Config loaded from {configPath}", "debug");
         }

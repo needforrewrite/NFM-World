@@ -1,9 +1,9 @@
+﻿using NFMWorld.Mad.UI;
 using NFMWorld.Util;
-using ImGuiNET;
 
-namespace NFMWorld.Mad.UI;
+namespace NFMWorld.Mad;
 
-public class MainMenu
+public class MainMenuPhase : BasePhase
 {
     private enum MenuState
     {
@@ -28,14 +28,21 @@ public class MainMenu
     private readonly Font _titleFont;
     private readonly Font _buttonFont;
     private MenuState _currentMenuState = MenuState.Main;
+    public SettingsMenu SettingsMenu = new();
 
-    public MainMenu()
+    public MainMenuPhase()
     {
         // Create title and button fonts
         _titleFont = new Font("Arial", 1, 48); // Large title
         _buttonFont = new Font("Arial", 1, 24); // Button text
 
         BuildMainMenu();
+        
+        // load user config
+        SettingsMenu.LoadConfig();
+        
+        // Initialize SettingsMenu writer
+        SettingsMenu.Writer = GameSparker.Writer;
     }
 
     private void BuildMainMenu()
@@ -87,13 +94,15 @@ public class MainMenu
         });
     }
 
-    public void UpdateMouse(int x, int y)
+    public override void MouseMoved(int x, int y, bool imguiWantsMouse)
     {
+        base.MouseMoved(x, y, imguiWantsMouse);
+        
         _mouseX = x;
         _mouseY = y;
 
         // Don't process mouse if ImGui is capturing it
-        if (ImGui.GetIO().WantCaptureMouse)
+        if (imguiWantsMouse)
         {
             // Clear all hover states when ImGui is active
             for (int i = 0; i < _buttons.Count; i++)
@@ -119,10 +128,12 @@ public class MainMenu
         }
     }
 
-    public void HandleClick(int x, int y)
+    public override void MousePressed(int x, int y, bool imguiWantsMouse)
     {
+        base.MousePressed(x, y, imguiWantsMouse);
+        
         // Don't process clicks if ImGui is capturing the mouse
-        if (ImGui.GetIO().WantCaptureMouse)
+        if (imguiWantsMouse)
             return;
 
         foreach (var button in _buttons)
@@ -141,8 +152,10 @@ public class MainMenu
                y >= button.Y && y <= button.Y + button.Height;
     }
 
-    public void Render()
+    public override void Render()
     {
+        base.Render();
+        
         // Clear to dark purple background
         G.SetColor(new Color(15, 0, 35));
         G.FillRect(0, 0, 1920, 1080);
@@ -254,7 +267,7 @@ public class MainMenu
 
     private void OnSettingsClicked()
     {
-        GameSparker.SettingsMenu.Open();
+        SettingsMenu.Open();
     }
 
     private void OnClickUnavailable()
@@ -270,5 +283,25 @@ public class MainMenu
                 System.Environment.Exit(0);
             }
         });
+    }
+
+    public override void KeyPressed(Keys key, bool imguiWantsKeyboard)
+    {
+        base.KeyPressed(key, imguiWantsKeyboard);
+
+        if (imguiWantsKeyboard) return;
+        
+        // Handle key capture for settings menu
+        if (SettingsMenu.IsOpen && SettingsMenu.IsCapturingKey())
+        {
+            SettingsMenu.HandleKeyCapture(key);
+        }
+        return;
+    }
+
+    public override void RenderImgui()
+    {
+        base.RenderImgui();
+        SettingsMenu.RenderImgui();
     }
 }

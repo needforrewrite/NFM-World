@@ -20,9 +20,9 @@ namespace NFMWorld.Mad.UI
             if (_isOpen)
             {
                 // init values from Medium
-                _fov = GameSparker.camera.Fov;
-                _followY = GameSparker.PlayerFollowCamera.FollowYOffset;
-                _followZ = GameSparker.PlayerFollowCamera.FollowZOffset;
+                _fov = InRacePhase.camera.Fov;
+                _followY = InRacePhase.PlayerFollowCamera.FollowYOffset;
+                _followZ = InRacePhase.PlayerFollowCamera.FollowZOffset;
             }
         }
 
@@ -40,7 +40,7 @@ namespace NFMWorld.Mad.UI
                 ImGui.Text("Field of View:");
                 if (ImGui.SliderFloat("##FOV", ref _fov, 70.0f, 120.0f, "%.1f°"))
                 {
-                    GameSparker.camera.Fov = _fov;
+                    InRacePhase.camera.Fov = _fov;
                 }
                 
                 ImGui.Spacing();
@@ -51,7 +51,7 @@ namespace NFMWorld.Mad.UI
                 ImGui.Text("Follow Y Offset:");
                 if (ImGui.SliderInt("##FollowY", ref _followY, -160, 500))
                 {
-                    GameSparker.PlayerFollowCamera.FollowYOffset = _followY;
+                    InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
                 }
                 
                 ImGui.Spacing();
@@ -60,7 +60,7 @@ namespace NFMWorld.Mad.UI
                 ImGui.Text("Follow Z Offset:");
                 if (ImGui.SliderInt("##FollowZ", ref _followZ, -500, 500))
                 {
-                    GameSparker.PlayerFollowCamera.FollowZOffset = _followZ;
+                    InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
                 }
                 
                 ImGui.Spacing();
@@ -73,9 +73,9 @@ namespace NFMWorld.Mad.UI
                     _fov = 90.0f;
                     _followY = 0;
                     _followZ = 0;
-                    GameSparker.camera.Fov = _fov;
-                    GameSparker.PlayerFollowCamera.FollowYOffset = _followY;
-                    GameSparker.PlayerFollowCamera.FollowZOffset = _followZ;
+                    InRacePhase.camera.Fov = _fov;
+                    InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
+                    InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
                 }
             }
             ImGui.End();

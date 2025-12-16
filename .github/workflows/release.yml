@@ -46,7 +46,7 @@ jobs:
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
 
       - name: Create and push tag
-        if: steps.check_branch.outputs.is_master == 'true'
+        # if: steps.check_branch.outputs.is_master == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
