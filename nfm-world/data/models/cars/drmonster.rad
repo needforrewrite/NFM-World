@@ -21,6 +21,8 @@ dammult(0.52)
 maxmag(18000)
 dishandle(0.95)
 outdam(1.0)
+name(Dr Monstaa)
+enginsignature(3)
 
 idiv(182)
 shadow()

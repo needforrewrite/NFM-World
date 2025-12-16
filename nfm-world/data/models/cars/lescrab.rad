@@ -21,6 +21,8 @@ dammult(0.8)
 maxmag(6000)
 dishandle(0.77)
 outdam(0.5)
+name(La Vita Crab)
+enginsignature(1)
 
 div(17)
 shadow()

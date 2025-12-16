@@ -21,6 +21,8 @@ dammult(0.61)
 maxmag(13000)
 dishandle(0.87)
 outdam(0.77)
+name(Might Eight)
+enginsignature(1)
 
 idiv(160)
 shadow()

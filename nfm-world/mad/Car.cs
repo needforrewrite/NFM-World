@@ -8,11 +8,29 @@ public class Car : Mesh
 
     public Car(GraphicsDevice device, Rad3d rad) : base(device, rad)
     {
-        Stats = rad.Stats;
+        string? invalidStat = rad.Stats.Validate();
+        if (invalidStat != null)
+        {
+            Stats = CarStats.Default;
+        }
+        else
+        {
+
+            Stats = rad.Stats;
+        }
     }
 
     public Car(Car baseCar, Vector3 position, Euler rotation) : base(baseCar, position, rotation)
     {
-        Stats = baseCar.Stats;
+        string? invalidStat = baseCar.Stats.Validate();
+        if (invalidStat != null)
+        {
+            Stats = CarStats.Default;
+        }
+        else
+        {
+
+            Stats = baseCar.Stats;
+        }
     }
 }

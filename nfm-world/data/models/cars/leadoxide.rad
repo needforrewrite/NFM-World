@@ -21,6 +21,8 @@ dammult(0.72)
 maxmag(17200)
 dishandle(0.6)
 outdam(0.82)
+name(Lead Oxide)
+enginsignature(2)
 
 div(17)
 shadow()
