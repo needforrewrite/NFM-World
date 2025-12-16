@@ -14,6 +14,7 @@ public class Submesh(
 )
 {
     private readonly PolyEffect _material = new(Program._polyShader);
+    public readonly PolyType PolyType = polyType;
 
     public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap, Matrix matrixWorld)
     {
@@ -27,8 +28,8 @@ public class Submesh(
         _material.World?.SetValue(matrixWorld);
         _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
         _material.SnapColor?.SetValue(World.Snap.ToXnaVector3());
-        _material.IsFullbright?.SetValue(polyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn);
-        _material.UseBaseColor?.SetValue(polyType is PolyType.Glass);
+        _material.IsFullbright?.SetValue(PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn);
+        _material.UseBaseColor?.SetValue(PolyType is PolyType.Glass);
         _material.BaseColor?.SetValue(World.Sky.ToXnaVector3());
         _material.LightDirection?.SetValue(World.LightDirection.ToXna());
         _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
@@ -37,12 +38,13 @@ public class Submesh(
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
         _material.GetsShadowed?.SetValue(supermesh.GetsShadowed);
-        _material.Alpha?.SetValue(polyType is PolyType.Glass ? 0.1f : 1f);
+        _material.Alpha?.SetValue(PolyType is PolyType.Glass ? 0.2f : 1f);
 
-        if (polyType is PolyType.Glass)
+        if (PolyType is PolyType.Glass)
         {
             // Disable z-write for transparent glass
             graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
+            graphicsDevice.BlendState = BlendState.AlphaBlend;
         }
 
         if (isCreateShadowMap)
@@ -86,5 +88,6 @@ public class Submesh(
         
         graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
         graphicsDevice.DepthStencilState = DepthStencilState.Default;
+        graphicsDevice.BlendState = BlendState.Opaque;
     }
 }
