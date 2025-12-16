@@ -287,9 +287,11 @@ public class ModelEditorPhase : BasePhase
         
         _cameraPosition = new Vector3(x, y, -z);
     }
-    
-    public void HandleKeyPress(Keys key)
+
+    public override void KeyPressed(Keys key, bool imguiWantsKeyboard)
     {
+        base.KeyPressed(key, imguiWantsKeyboard);
+        if (imguiWantsKeyboard) return;
         if (!_isOpen) return;
         
         switch (key)
@@ -328,9 +330,13 @@ public class ModelEditorPhase : BasePhase
                 break;
         }
     }
-    
-    public void HandleKeyRelease(Keys key)
+
+    public override void KeyReleased(Keys key, bool imguiWantsKeyboard)
     {
+        base.KeyReleased(key, imguiWantsKeyboard);
+        
+        if (imguiWantsKeyboard) return;
+        
         if (!_isOpen) return;
         
         switch (key)
