@@ -277,6 +277,8 @@ public class RadParser
                 );
                 _points.Add(transformedPoint);
             }
+            
+            else if (line.StartsWith("noOutline")) _noOutline = true;
 
             else if (line.StartsWith("</p>"))
             {
