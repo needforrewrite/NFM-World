@@ -16,7 +16,6 @@ namespace NFMWorld.Mad;
 public class Mesh : Transform, IRenderable
 {
     public Color3[] Colors;
-    public CarStats Stats;
     public Rad3dWheelDef[] Wheels;
     public Rad3dRimsDef? Rims;
     public Rad3dBoxDef[] Boxes;
@@ -31,7 +30,7 @@ public class Mesh : Transform, IRenderable
     protected Submesh?[] Submeshes;
     protected LineMesh? LineMesh;
     
-    protected readonly PolygonTriangulator.TriangulationResult[] Triangulation;
+    public readonly PolygonTriangulator.TriangulationResult[] Triangulation;
 
     // Stores "brokenness" phase for damageable meshes
     public readonly float[] Bfase;
@@ -53,7 +52,6 @@ public class Mesh : Transform, IRenderable
     public Mesh(GraphicsDevice graphicsDevice, Rad3d rad)
     {
         Colors = rad.Colors;
-        Stats = rad.Stats;
         Wheels = rad.Wheels;
         Rims = rad.Rims;
         Boxes = rad.Boxes;
@@ -79,7 +77,6 @@ public class Mesh : Transform, IRenderable
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
     {
         Colors = baseMesh.Colors;
-        Stats = baseMesh.Stats;
         Wheels = baseMesh.Wheels;
         Rims = baseMesh.Rims;
         Boxes = baseMesh.Boxes;

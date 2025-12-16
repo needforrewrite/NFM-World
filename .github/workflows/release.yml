@@ -15,12 +15,19 @@ jobs:
       tag_name: ${{ steps.tag.outputs.tag_name }}
       short_sha: ${{ steps.tag.outputs.short_sha }}
       is_master: ${{ steps.check_branch.outputs.is_master }}
+      branch_name: ${{ steps.branch.outputs.branch_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
-        
+
+      - name: Extract branch name
+        id: branch
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+
       - name: Check if master branch
         id: check_branch
         run: |
@@ -244,7 +251,6 @@ jobs:
   release:
     needs: [prepare, build-windows, build-linux]
     runs-on: ubuntu-latest
-    if: needs.prepare.outputs.is_master == 'true'
 
     steps:
       - name: Download all artifacts
@@ -276,7 +282,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
-          name: Build ${{ needs.prepare.outputs.short_sha }}
+          name: Build ${{ needs.prepare.outputs.branch_name }} - ${{ needs.prepare.outputs.short_sha }}
+          # prerelease: ${{ needs.prepare.outputs.is_master != 'true' }}
           files: |
             artifacts/*.zip
             artifacts/*.tar.gz

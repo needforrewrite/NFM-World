@@ -11,7 +11,7 @@ public class Mad
     internal int Capcnt;
     internal bool BadLanding;
     private readonly bool[] _caught = new bool[8];
-    internal Stat Stat;
+    internal CarStats Stat;
     internal int Clear;
     internal int Cn;
     internal int Cntdest;
@@ -104,13 +104,13 @@ public class Mad
     internal bool Wtouch;
     private int _xtpower;
 
-    internal Mad(Stat stat, int i)
+    internal Mad(CarStats stat, int i)
     {
         Stat = stat;
         Im = i;
     }
 
-    public void SetStat(Stat stat)
+    public void SetStat(CarStats stat)
     {
         Stat = stat;
     }
@@ -345,7 +345,7 @@ public class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 
         // part 2: the bigger the bounce stat, the bigger the bounce
-        rebound += CarDefine.Bounce[Cn];
+        rebound += Stat.Bounce;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
 
@@ -376,7 +376,7 @@ public class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
 //            rebound = 0;
-        rebound += CarDefine.Bounce[Cn] - 0.2F;
+        rebound += Stat.Bounce - 0.2F;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
         Regz(wi, -1 * Scz[wi] * rebound * Trackers.Dam[ti] /** checkpoints.dam*/, conto);
@@ -389,7 +389,7 @@ public class Mad
         rebound = Math.Min(rebound, maxAngleRebound);
 //        if (wasMtouch)
 //            rebound = 0;
-        rebound += CarDefine.Bounce[Cn] - 0.2F;
+        rebound += Stat.Bounce - 0.2F;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
         Regx(wi, -1 * Scx[wi] * rebound * Trackers.Dam[ti]/* * checkpoints.dam*/, conto);
@@ -1241,7 +1241,7 @@ public class Mad
                             4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
                     float bumpLift = surfaceType == 3 ? -100F : -150F;
                     float rng = 0.55F;
-                    Scy[k] = bumpLift * rng * Speed / CarDefine.Swits[Cn, 2] * (CarDefine.Bounce[Cn] - 0.3F);
+                    Scy[k] = bumpLift * rng * Speed / Stat.Swits[2] * (Stat.Bounce - 0.3F);
                 }
             }
 

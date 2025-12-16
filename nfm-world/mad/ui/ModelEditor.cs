@@ -4,6 +4,9 @@ using Stride.Core.Mathematics;
 using System.Text;
 using Vector3 = Stride.Core.Mathematics.Vector3;
 using Microsoft.Xna.Framework.Graphics;
+using XnaMatrix = Microsoft.Xna.Framework.Matrix;
+using XnaVector3 = Microsoft.Xna.Framework.Vector3;
+using Microsoft.Xna.Framework;
 
 namespace NFMWorld.Mad.UI;
 
@@ -53,6 +56,22 @@ public class ModelEditor
     // Rotation speeds
     private const float ROTATION_SPEED = 3.5f;
     private const float HEIGHT_SPEED = 5.0f;
+    
+    // Mouse and selection state
+    private int _mouseX;
+    private int _mouseY;
+    private int _selectedPolygonIndex = -1; // -1 means no selection
+    private bool _mouseDownThisFrame = false;
+    
+    // Text editor highlighting
+    private int _textEditorSelectionStart = -1;
+    private int _textEditorSelectionEnd = -1;
+    
+    // Polygon editor window
+    private bool _showPolygonEditor = false;
+    private string _polygonEditorContent = "";
+    private bool _polygonEditorDirty = false;
+    private int _polygonEditorLastSelectedIndex = -1; // Track which polygon is being edited
     
     public ModelEditor()
     {
@@ -338,6 +357,327 @@ public class ModelEditor
         }
     }
     
+    public void HandleMouseMove(int x, int y)
+    {
+        if (!_isOpen) return;
+        _mouseX = x;
+        _mouseY = y;
+    }
+    
+    public void HandleMouseDown(int x, int y)
+    {
+        if (!_isOpen) return;
+        _mouseDownThisFrame = true;
+    }
+    
+    private void ProcessMouseClick()
+    {
+        if (!_mouseDownThisFrame || _currentModel == null) return;
+        
+        var io = ImGui.GetIO();
+        
+        // Don't process clicks if ImGui wants the mouse
+        if (io.WantCaptureMouse) return;
+        
+        // Perform ray casting to find clicked polygon
+        var pickedIndex = PerformRayPicking(_mouseX, _mouseY);
+        
+        if (pickedIndex >= 0)
+        {
+            _selectedPolygonIndex = pickedIndex;
+        }
+        else
+        {
+            // Clicked on background, deselect
+            _selectedPolygonIndex = -1;
+        }
+    }
+    
+    private int PerformRayPicking(int screenX, int screenY)
+    {
+        if (_currentModel == null) return -1;
+        
+        var viewport = GameSparker._graphicsDevice.Viewport;
+        
+        // Set up the model's transform exactly as RenderModel does
+        var originalPosition = _currentModel.Position;
+        var originalRotation = _currentModel.Rotation;
+        
+        _currentModel.Position = _modelPosition;
+        _currentModel.Rotation = new Euler(
+            AngleSingle.FromDegrees(_modelRotation.Y),  // Yaw
+            AngleSingle.FromDegrees(-_modelRotation.X), // Pitch (negated)
+            AngleSingle.FromDegrees(_modelRotation.Z)   // Roll
+        );
+        
+        // Get the ACTUAL MatrixWorld that will be used for rendering
+        var modelWorld = _currentModel.MatrixWorld;
+        
+        // Restore transform
+        _currentModel.Position = originalPosition;
+        _currentModel.Rotation = originalRotation;
+        
+        // Set up camera exactly as RenderModel does
+        // Use GameSparker.camera's actual Width/Height (not viewport, which might differ)
+        var tempCamera = new PerspectiveCamera
+        {
+            Position = _cameraPosition,
+            LookAt = Vector3.Zero,
+            Up = -Vector3.UnitY,
+            Width = GameSparker.camera.Width,
+            Height = GameSparker.camera.Height,
+            Fov = GameSparker.camera.Fov,  // Use actual FOV from settings
+            Near = GameSparker.camera.Near,
+            Far = GameSparker.camera.Far
+        };
+        
+        // Call OnBeforeRender to compute the View and Projection matrices
+        tempCamera.OnBeforeRender();
+        
+        var view = tempCamera.ViewMatrix;
+        var projection = tempCamera.ProjectionMatrix;
+        
+        // Unproject screen coordinates to world space ray
+        var nearPoint = viewport.Unproject(
+            new XnaVector3(screenX, screenY, 0f),
+            projection,
+            view,
+            XnaMatrix.Identity
+        );
+        
+        var farPoint = viewport.Unproject(
+            new XnaVector3(screenX, screenY, 1f),
+            projection,
+            view,
+            XnaMatrix.Identity
+        );
+        
+        var rayOrigin = nearPoint;
+        var rayDirection = XnaVector3.Normalize(farPoint - nearPoint);
+        
+        // Test against all polygons
+        float closestDistance = float.MaxValue;
+        int closestPolyIndex = -1;
+        
+        for (int i = 0; i < _currentModel.Polys.Length; i++)
+        {
+            var poly = _currentModel.Polys[i];
+            var triangulation = _currentModel.Triangulation[i];
+            
+            // Test each triangle in this polygon
+            for (int t = 0; t < triangulation.Triangles.Length; t += 3)
+            {
+                var i0 = triangulation.Triangles[t];
+                var i1 = triangulation.Triangles[t + 1];
+                var i2 = triangulation.Triangles[t + 2];
+                
+                // Transform vertices by the model's world matrix
+                var v0 = XnaVector3.Transform(poly.Points[i0].ToXna(), modelWorld);
+                var v1 = XnaVector3.Transform(poly.Points[i1].ToXna(), modelWorld);
+                var v2 = XnaVector3.Transform(poly.Points[i2].ToXna(), modelWorld);
+                
+                if (RayIntersectsTriangle(rayOrigin, rayDirection, v0, v1, v2, out float distance))
+                {
+                    if (distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        closestPolyIndex = i;
+                    }
+                }
+            }
+        }
+        
+        return closestPolyIndex;
+    }
+    
+    // Möller–Trumbore ray-triangle intersection algorithm
+    private bool RayIntersectsTriangle(
+        XnaVector3 rayOrigin,
+        XnaVector3 rayDirection,
+        XnaVector3 v0,
+        XnaVector3 v1,
+        XnaVector3 v2,
+        out float distance)
+    {
+        distance = 0;
+        const float EPSILON = 0.000001f;  // Smaller epsilon for better accuracy
+        
+        var edge1 = v1 - v0;
+        var edge2 = v2 - v0;
+        var h = XnaVector3.Cross(rayDirection, edge2);
+        var a = XnaVector3.Dot(edge1, h);
+        
+        // Check if ray is parallel to triangle (with smaller tolerance)
+        if (a > -EPSILON && a < EPSILON)
+            return false;
+        
+        var f = 1.0f / a;
+        var s = rayOrigin - v0;
+        var u = f * XnaVector3.Dot(s, h);
+        
+        // Allow slightly outside bounds for edge cases
+        if (u < -EPSILON || u > 1.0f + EPSILON)
+            return false;
+        
+        var q = XnaVector3.Cross(s, edge1);
+        var v = f * XnaVector3.Dot(rayDirection, q);
+        
+        // Allow slightly outside bounds for edge cases
+        if (v < -EPSILON || u + v > 1.0f + EPSILON)
+            return false;
+        
+        distance = f * XnaVector3.Dot(edge2, q);
+        
+        // Only accept intersections in front of the ray
+        return distance > EPSILON;
+    }
+    
+    private void FlipSelectedPolygonVertexOrder()
+    {
+        if (_selectedPolygonIndex < 0 || _currentModel == null) return;
+        
+        var poly = _currentModel.Polys[_selectedPolygonIndex];
+        Array.Reverse(poly.Points);
+        
+        // Rebuild the mesh with the flipped polygon
+        _currentModel.RebuildMesh();
+        
+        // Update the text content to reflect the change
+        UpdateTextContentFromModel();
+    }
+    
+    private void RemoveSelectedPolygon()
+    {
+        if (_selectedPolygonIndex < 0 || _currentModel == null) return;
+        
+        var polyList = _currentModel.Polys.ToList();
+        polyList.RemoveAt(_selectedPolygonIndex);
+        _currentModel.Polys = polyList.ToArray();
+        
+        // Rebuild the mesh
+        _currentModel.RebuildMesh();
+        
+        // Update the text content to reflect the change
+        UpdateTextContentFromModel();
+        
+        // Clear selection
+        _selectedPolygonIndex = -1;
+    }
+    
+    private void JumpToSelectedPolygonInText()
+    {
+        if (_selectedPolygonIndex < 0 || _currentModel == null) return;
+        
+        // // Expand the text editor if not already visible
+        // if (!_textEditorExpanded)
+        // {
+        //     _textEditorExpanded = true;
+        // }
+        
+        // Find the polygon in the text by searching for <p> tags and counting
+        int polygonCount = 0;
+        int selectionStart = -1;
+        int selectionEnd = -1;
+        
+        for (int i = 0; i < _modelTextContent.Length; i++)
+        {
+            // Check if we're at the start of a <p> tag
+            if (i + 3 <= _modelTextContent.Length && 
+                _modelTextContent.Substring(i, 3) == "<p>")
+            {
+                if (polygonCount == _selectedPolygonIndex)
+                {
+                    // Found the start of our target polygon
+                    selectionStart = i;
+                    
+                    // Now find the closing </p> tag
+                    int searchPos = i + 3;
+                    while (searchPos + 4 <= _modelTextContent.Length)
+                    {
+                        if (_modelTextContent.Substring(searchPos, 4) == "</p>")
+                        {
+                            selectionEnd = searchPos + 4; // Include the closing tag
+                            break;
+                        }
+                        searchPos++;
+                    }
+                    
+                    // If we didn't find a closing tag, select until the next <p> or end of file
+                    if (selectionEnd == -1)
+                    {
+                        searchPos = i + 3;
+                        while (searchPos + 3 <= _modelTextContent.Length)
+                        {
+                            if (_modelTextContent.Substring(searchPos, 3) == "<p>")
+                            {
+                                selectionEnd = searchPos;
+                                break;
+                            }
+                            searchPos++;
+                        }
+                        if (selectionEnd == -1)
+                        {
+                            selectionEnd = _modelTextContent.Length;
+                        }
+                    }
+                    
+                    break;
+                }
+                polygonCount++;
+            }
+        }
+        
+        // Store selection range for future use (currently just for debugging)
+        _textEditorSelectionStart = selectionStart;
+        _textEditorSelectionEnd = selectionEnd;
+        
+        // Extract the polygon code and open the editor window
+        if (selectionStart >= 0 && selectionEnd >= 0 && selectionEnd <= _modelTextContent.Length)
+        {
+            _polygonEditorContent = _modelTextContent.Substring(selectionStart, selectionEnd - selectionStart);
+            _showPolygonEditor = true;
+            _polygonEditorDirty = false;
+            _polygonEditorLastSelectedIndex = _selectedPolygonIndex; // Remember which polygon we're editing
+        }
+        
+        // Debug output
+        if (GameSparker.Writer != null && selectionStart >= 0)
+        {
+            GameSparker.Writer.WriteLine($"Polygon {_selectedPolygonIndex + 1}: selection range {selectionStart}-{selectionEnd}", "info");
+        }
+    }
+    
+    private void UpdateTextContentFromModel()
+    {
+        if (_currentModel == null) return;
+        
+        // Don't regenerate from scratch - this would lose comments and formatting
+        // Instead, this method should only be called when we've done structural changes
+        // like removing/flipping polygons, and we accept losing the original formatting
+        
+        var sb = new StringBuilder();
+        sb.AppendLine("// Modified in Model Editor");
+        sb.AppendLine();
+        
+        foreach (var poly in _currentModel.Polys)
+        {
+            sb.AppendLine("<p>");
+            sb.AppendLine($"c({poly.Color.R},{poly.Color.G},{poly.Color.B})");
+            sb.AppendLine();
+            
+            foreach (var point in poly.Points)
+            {
+                sb.AppendLine($"p({point.X:F0},{point.Y:F0},{point.Z:F0})");
+            }
+            
+            sb.AppendLine("</p>");
+            sb.AppendLine();
+        }
+        
+        _modelTextContent = sb.ToString();
+        _textEditorDirty = true;
+    }
+    
     public void Update()
     {
         if (!_isOpen) return;
@@ -373,6 +713,10 @@ public class ModelEditor
             _modelPosition.Y -= HEIGHT_SPEED;
         
         UpdateCameraPosition();
+        
+        // Process mouse clicks for polygon selection
+        ProcessMouseClick();
+        _mouseDownThisFrame = false;
     }
     
     public void Render()
@@ -401,7 +745,27 @@ public class ModelEditor
                 
                 if (ImGui.MenuItem("Exit"))
                 {
-                    GameSparker.ExitModelViewer();
+                    if (_currentModelPath != null)
+                    {
+                        if (_textEditorDirty)
+                        {
+                            GameSparker.MessageWindow.ShowCustom("Unsaved changes", "Are you sure you want to exit without saving first?",
+                                new[] { "Save", "Don't Save", "Cancel" },
+                                result => {
+                                    if (result == MessageWindow.MessageResult.Custom1) {
+                                        System.IO.File.WriteAllText(_currentModelPath, _modelTextContent);
+                                        ExitModelViewer();
+                                    }
+                                    if (result == MessageWindow.MessageResult.Custom2) {
+                                        ExitModelViewer();
+                                    }
+                            });
+                        } else {
+                            ExitModelViewer();
+                        }
+                    } else {
+                        ExitModelViewer();
+                    }
                 }
                 
                 ImGui.EndMenu();
@@ -421,7 +785,7 @@ public class ModelEditor
             ImGui.Begin("##Toolbar", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | 
                         ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar);
             
-            if (ImGui.Button(_textEditorExpanded ? "Hide Text Editor" : "Show Text Editor"))
+            if (ImGui.Button(_textEditorExpanded ? "Hide Code Editor" : "Show Code Editor"))
             {
                 _textEditorExpanded = !_textEditorExpanded;
             }
@@ -505,6 +869,50 @@ public class ModelEditor
                 ImGui.Text(_textEditorDirty ? "(Modified)" : "");
             }
             
+            // Polygon selection info and controls (always visible when model is loaded)
+            if (_currentModel != null)
+            {
+                ImGui.Separator();
+                
+                if (_selectedPolygonIndex >= 0 && _selectedPolygonIndex < _currentModel.Polys.Length)
+                {
+                    ImGui.Text($"[ Piece {_selectedPolygonIndex + 1} of {_currentModel.Polys.Length} ({_currentModel.Polys.Length}) selected ]");
+                    ImGui.SameLine();
+                    
+                    if (ImGui.Button("Edit Polygon"))
+                    {
+                        JumpToSelectedPolygonInText();
+                    }
+                    ImGui.SameLine();
+                    
+                    if (ImGui.Button("Flip Vertex Order"))
+                    {
+                        FlipSelectedPolygonVertexOrder();
+                    }
+                    ImGui.SameLine();
+                    
+                    if (ImGui.Button("Remove Polygon"))
+                    {
+                        RemoveSelectedPolygon();
+                    }
+                    ImGui.SameLine();
+                    
+                    if (ImGui.Button("X"))
+                    {
+                        _selectedPolygonIndex = -1; // Deselect
+                    }
+                }
+                else
+                {
+                    ImGui.Text("Click on a polygon in the 3D view to select it");
+                    if (_mouseX > 0 || _mouseY > 0)
+                    {
+                        ImGui.SameLine();
+                        ImGui.TextDisabled($"(Mouse: {_mouseX}, {_mouseY})");
+                    }
+                }
+            }
+            
             toolbarHeight = ImGui.GetWindowHeight();
             ImGui.End();
         }
@@ -523,10 +931,10 @@ public class ModelEditor
             // Text editor
             var editorHeight = topPanelHeight - toolbarHeight - 10;
             
+            var flags = ImGuiInputTextFlags.AllowTabInput;
             var textChanged = ImGui.InputTextMultiline("##TextEditor", ref _modelTextContent, 200000, 
-                new System.Numerics.Vector2(-1, -1), 
-                ImGuiInputTextFlags.AllowTabInput);
-            
+                new System.Numerics.Vector2(-1, -1), flags);
+                
             if (textChanged)
             {
                 _textEditorDirty = true;
@@ -598,7 +1006,7 @@ public class ModelEditor
             if (ImGui.BeginTabItem("Render"))
             {
                 bool showTrackers = GameSparker.devRenderTrackers;
-                if (ImGui.Checkbox("Display Trackers", ref showTrackers))
+                if (ImGui.Checkbox("Display Collision", ref showTrackers))
                 {
                     GameSparker.devRenderTrackers = showTrackers;
                 }
@@ -606,7 +1014,7 @@ public class ModelEditor
                 ImGui.TextDisabled("(?)");
                 if (ImGui.IsItemHovered())
                 {
-                    ImGui.SetTooltip("Show collision/tracking boxes on models");
+                    ImGui.SetTooltip("Show collision boxes for stage scenery");
                 }
                 
                 ImGui.EndTabItem();
@@ -805,6 +1213,167 @@ public class ModelEditor
             
             ImGui.End();
         }
+        
+        // Polygon Editor Window
+        RenderPolygonEditorWindow();
+    }
+    
+    private void RenderPolygonEditorWindow()
+    {
+        if (!_showPolygonEditor) return;
+        
+        // Check if user selected a different polygon while editor is open
+        if (_selectedPolygonIndex >= 0 && _selectedPolygonIndex != _polygonEditorLastSelectedIndex)
+        {
+            // Update the editor content to the newly selected polygon
+            JumpToSelectedPolygonInText();
+            return; // JumpToSelectedPolygonInText will refresh the window
+        }
+        
+        var io = ImGui.GetIO();
+        var displaySize = io.DisplaySize;
+        
+        ImGui.SetNextWindowPos(new System.Numerics.Vector2(displaySize.X / 2 - 300, displaySize.Y / 2 - 250), ImGuiCond.FirstUseEver);
+        ImGui.SetNextWindowSize(new System.Numerics.Vector2(100, 400), ImGuiCond.FirstUseEver);
+        
+        if (ImGui.Begin($"Edit Polygon", ref _showPolygonEditor, ImGuiWindowFlags.None))
+        {
+            ImGui.Text($"Editing polygon {_selectedPolygonIndex + 1} of {_currentModel?.Polys.Length ?? 0}");
+            ImGui.Separator();
+            
+            // Calculate available space for text editor
+            var contentRegionAvail = ImGui.GetContentRegionAvail();
+            
+            // Reserve space for the bottom controls (special flags + buttons)
+            var bottomControlsHeight = 120f; // Space for flags section + buttons
+            var textEditorHeight = contentRegionAvail.Y - bottomControlsHeight;
+            
+            // Main text editor
+            var flags = ImGuiInputTextFlags.AllowTabInput;
+            var textChanged = ImGui.InputTextMultiline("##PolygonCode", ref _polygonEditorContent, 50000,
+                new System.Numerics.Vector2(-1, textEditorHeight), flags);
+            
+            if (textChanged)
+            {
+                _polygonEditorDirty = true;
+            }
+            
+            ImGui.Spacing();
+            
+            // Special flags section
+            ImGui.Text("Special Flags:");
+            ImGui.SameLine();
+            ImGui.TextDisabled("(?)");
+            if (ImGui.IsItemHovered())
+            {
+                ImGui.SetTooltip("Insert special polygon flags");
+            }
+            
+            if (ImGui.Button("gr(-18)"))
+            {
+                Insert("gr(-18)");
+            }
+            
+            // ImGui.SameLine();
+            
+            // if (ImGui.Button("TODO poly fx"))
+            // {
+            //     Insert("something_else");
+            // }
+            
+            // ImGui.SameLine();
+            
+            // if (ImGui.Button("TODO poly fx"))
+            // {
+            //     Insert("fs(-1)");
+            // }
+            
+            ImGui.Spacing();
+            ImGui.Separator();
+            
+            // Action buttons
+            var buttonWidth = (contentRegionAvail.X - 10f) / 2f; // Split width for 2 buttons with spacing
+            
+            
+            
+            if (ImGui.Button("Apply Changes", new System.Numerics.Vector2(buttonWidth, 30)))
+            {
+                ApplyPolygonEditorChanges();
+            }
+            
+            ImGui.SameLine();
+            
+            if (ImGui.Button("Cancel", new System.Numerics.Vector2(buttonWidth, 30)))
+            {
+                _showPolygonEditor = false;
+            }
+
+            if (_polygonEditorDirty)
+            {
+                ImGui.TextColored(new System.Numerics.Vector4(1, 1, 0, 1), "(Modified)");
+            }
+        }
+        
+        ImGui.End();
+    }
+    
+    private void Insert(string command)
+    {
+        // Find the c(...) line in the polygon editor content
+        var lines = _polygonEditorContent.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            var trimmed = lines[i].Trim();
+            if (trimmed.StartsWith("c(") && trimmed.EndsWith(")"))
+            {
+                // Insert the command on the next line
+                lines[i] = lines[i] + "\n" + command;
+                _polygonEditorContent = string.Join("\n", lines);
+                _polygonEditorDirty = true;
+                break;
+            }
+        }
+    }
+    
+    private void ApplyPolygonEditorChanges()
+    {
+        if (_textEditorSelectionStart < 0 || _textEditorSelectionEnd < 0) return;
+        
+        // Replace the polygon code in the main text content
+        var before = _modelTextContent.Substring(0, _textEditorSelectionStart);
+        var after = _modelTextContent.Substring(_textEditorSelectionEnd);
+        
+        _modelTextContent = before + _polygonEditorContent + after;
+        _textEditorDirty = true;
+        
+        // Try to reload the model with the new code
+        try
+        {
+            _currentModel = new Mesh(GameSparker._graphicsDevice, _modelTextContent);
+            //_showPolygonEditor = false;
+            _polygonEditorDirty = false;
+            
+            if (GameSparker.Writer != null)
+            {
+                GameSparker.Writer.WriteLine($"Polygon {_selectedPolygonIndex + 1} updated successfully", "info");
+            }
+        }
+        catch (Exception ex)
+        {
+            var err = $"Error parsing updated polygon:\n{ex.Message}";
+            GameSparker.MessageWindow.ShowMessage("Parse Error", err);
+            if (GameSparker.Writer != null)
+            {
+                GameSparker.Writer.WriteLine(err, "error");
+            }
+        }
+    }
+
+    public void ExitModelViewer()
+    {
+        _textEditorDirty = false;
+        _showPolygonEditor = false;
+        GameSparker.ExitModelViewer();
     }
     
     public void RenderModel(PerspectiveCamera camera, Camera lightCamera)
@@ -834,12 +1403,63 @@ public class ModelEditor
         
         // TODO maybe cache this scene instead of making it every time
         var scene = new Scene(GameSparker._graphicsDevice, [_currentModel], camera, lightCamera);
-        
-        // Render the model with lighting
         scene.Render(false);
+        
+        // Render selected polygon overlay with transparency
+        if (_selectedPolygonIndex >= 0 && _selectedPolygonIndex < _currentModel.Polys.Length)
+        {
+            RenderSelectionOverlay(camera, lightCamera);
+        }
         
         // Restore original transform
         _currentModel.Position = originalPosition;
         _currentModel.Rotation = originalRotation;
+    }
+    
+    private void RenderSelectionOverlay(PerspectiveCamera camera, Camera lightCamera)
+    {
+        if (_currentModel == null || _selectedPolygonIndex < 0) return;
+        
+        // Create a temporary mesh with only the selected polygon
+        var selectedPoly = _currentModel.Polys[_selectedPolygonIndex];
+        
+        // Make it bright cyan/yellow with semi-transparency for visibility
+        var highlightPoly = selectedPoly with { 
+            Color = new Color3(255, 255, 0),
+            PolyType = PolyType.Flat  // Ensure it renders as flat/solid
+        };
+        
+        var overlayPolys = new Rad3dPoly[] { highlightPoly };
+        
+        // Create a temporary mesh for the overlay
+        var overlayMesh = new Mesh(
+            GameSparker._graphicsDevice,
+            new Rad3d(overlayPolys, false)
+        );
+        
+        // Match the main model's transform
+        overlayMesh.Position = _currentModel.Position;
+        overlayMesh.Rotation = _currentModel.Rotation;
+        
+        // Save current blend state
+        var oldBlendState = GameSparker._graphicsDevice.BlendState;
+        var oldDepthStencilState = GameSparker._graphicsDevice.DepthStencilState;
+        
+        // Enable alpha blending and disable depth write (but keep depth test)
+        GameSparker._graphicsDevice.BlendState = BlendState.AlphaBlend;
+        var depthRead = new DepthStencilState
+        {
+            DepthBufferEnable = true,
+            DepthBufferWriteEnable = false,  // Don't write to depth, just read
+            DepthBufferFunction = CompareFunction.LessEqual
+        };
+        GameSparker._graphicsDevice.DepthStencilState = depthRead;
+        
+        // Render the overlay
+        overlayMesh.Render(camera, lightCamera, false);
+        
+        // Restore previous states
+        GameSparker._graphicsDevice.BlendState = oldBlendState;
+        GameSparker._graphicsDevice.DepthStencilState = oldDepthStencilState;
     }
 }
