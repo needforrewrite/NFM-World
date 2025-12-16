@@ -21,6 +21,8 @@ dammult(0.45)
 maxmag(7200)
 dishandle(0.55)
 outdam(0.8)
+name(Wow Caninaro)
+enginsignature(2)
 
 div(19)
 shadow()

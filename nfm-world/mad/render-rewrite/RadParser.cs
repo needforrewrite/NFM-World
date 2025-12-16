@@ -115,7 +115,6 @@ public class RadParser
         else if (line.StartsWith("maxmag(")) _stats = _stats with { Maxmag = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("dishandle(")) _stats = _stats with { Dishandle = BracketParser.GetNumber<float>(line) };
         else if (line.StartsWith("outdam(")) _stats = _stats with { Outdam = BracketParser.GetNumber<float>(line) };
-        else if (line.StartsWith("cclass(")) _stats = _stats with { Cclass = BracketParser.GetNumber<sbyte>(line) };
         else if (line.StartsWith("name(")) _stats = _stats with { Name = BracketParser.GetString(line) };
         else if (line.StartsWith("enginsignature(")) _stats = _stats with { Enginsignature = BracketParser.GetNumber<sbyte>(line) };
 
@@ -166,11 +165,6 @@ public class RadParser
                 NotWall: false,
                 Color: new Color3()
             ));
-        }
-
-        if (line.StartsWith("swits("))
-        {
-            Console.WriteLine(line);
         }
 
         if (_boxes.Count > 0)

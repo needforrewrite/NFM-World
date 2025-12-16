@@ -21,6 +21,8 @@ dammult(0.25)
 maxmag(45000)
 dishandle(0.42)
 outdam(1.0)
+name(M A S H E E N)
+enginsignature(4)
 
 idiv(295)
 iwid(117)

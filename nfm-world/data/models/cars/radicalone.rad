@@ -21,6 +21,8 @@ dammult(0.38)
 maxmag(5800)
 dishandle(1.0)
 outdam(0.85)
+name(Radical One)
+enginsignature(0)
 
 div(16)
 shadow()

@@ -23,6 +23,9 @@ name(Marauder)
 engine(0)
 flipy(-100)
 shadow()
+msquash(20)
+name(Marauder)
+enginsignature(4)
 
 idiv(90)
 

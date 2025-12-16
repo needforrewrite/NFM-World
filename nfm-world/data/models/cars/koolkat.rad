@@ -21,6 +21,8 @@ dammult(0.6)
 maxmag(17000)
 dishandle(0.72)
 outdam(0.76)
+name(Kool Kat)
+enginsignature(2)
 
 idiv(180)
 shadow()

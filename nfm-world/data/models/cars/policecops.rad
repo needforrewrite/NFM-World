@@ -21,6 +21,8 @@ dammult(0.41)
 maxmag(11000)
 dishandle(0.8)
 outdam(0.62)
+name(Sword of Justice)
+enginsignature(0)
 
 idiv(170)
 shadow()

@@ -21,6 +21,8 @@ dammult(0.67)
 maxmag(19000)
 dishandle(0.95)
 outdam(0.79)
+name(High Rider)
+enginsignature(3)
 
 idiv(139)
 shadow()
