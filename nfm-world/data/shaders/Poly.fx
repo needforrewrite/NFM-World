@@ -57,6 +57,7 @@ struct VertexShaderInput
 	float3 Normal : NORMAL0;
 	float3 Color : COLOR0;
 	float3 Centroid : POSITION1;
+	float DecalOffset : TEXCOORD0;
 };
 
 struct VertexShaderOutput
@@ -70,8 +71,13 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 {
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
-	float3 viewPos = mul(float4(input.Position, 1), WorldView).xyz;
-	output.Position = mul(float4(input.Position, 1), WorldViewProj);
+	// Apply decal offset to prevent Z-fighting
+	// DecalOffset is negative to pull away from surface, positive to push into it
+	// Multiply by the sign to control direction
+	float3 offsetPosition = input.Position - input.Normal * input.DecalOffset * 0.1;
+
+	float3 viewPos = mul(float4(offsetPosition, 1), WorldView).xyz;
+	output.Position = mul(float4(offsetPosition, 1), WorldViewProj);
 
 	float3 color = input.Color;
 
@@ -85,13 +91,13 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     {
         // Translate vertex around centroid by a random factor between -15 and 15 units
 
-        float3 direction = normalize(input.Position - input.Centroid);
+        float3 direction = normalize(offsetPosition - input.Centroid);
         float3 randomScale = float3(
             15.0 - Random(input.Centroid.x + RandomFloat) * 30.0,
             15.0 - Random(input.Centroid.y + RandomFloat) * 30.0,
             15.0 - Random(input.Centroid.z + RandomFloat) * 30.0
         );
-        float3 scaledPosition = input.Position + direction * randomScale;
+        float3 scaledPosition = offsetPosition + direction * randomScale;
         output.Position = mul(float4(scaledPosition, 1), WorldViewProj);
     }
 
@@ -135,7 +141,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     output.Color = float4(color, Alpha);
 
     // Save the vertices postion in world space (for shadow mapping)
-    output.WorldPos = mul(float4(input.Position, 1), World);
+    output.WorldPos = mul(float4(offsetPosition, 1), World);
 
 	return output;
 }
@@ -167,7 +173,11 @@ struct CreateShadowMap_VSOut
 CreateShadowMap_VSOut CreateShadowMapVS(in VertexShaderInput input)
 {
     CreateShadowMap_VSOut output = (CreateShadowMap_VSOut)0;
-    output.Position = mul(float4(input.Position, 1), WorldViewProj);
+    
+    // Apply decal offset to prevent Z-fighting in shadow maps too
+    float3 offsetPosition = input.Position - input.Normal * input.DecalOffset * 0.1;
+    
+    output.Position = mul(float4(offsetPosition, 1), WorldViewProj);
     output.Depth = output.Position.z / output.Position.w;
     return output;
 }
