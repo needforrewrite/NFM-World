@@ -243,7 +243,7 @@ public class RadParser
 
         if (line.StartsWith("<p>"))
         {
-            _polys.Add(new Rad3dPoly(new Color3(), null, PolyType.Flat, LineType.Flat, []));
+            _polys.Add(new Rad3dPoly(new Color3(), null, PolyType.Flat, LineType.Flat, 0.0f, []));
             _noOutline = false;
         }
 
@@ -266,6 +266,16 @@ public class RadParser
             else if (line.StartsWith("light")) poly = poly with { PolyType = PolyType.Light };
             else if (line.StartsWith("gr(-18)")) poly = poly with { LineType = LineType.Charged };
             else if (line.StartsWith("gr(-13)")) poly = poly with { PolyType = PolyType.Finish };
+            else if (line.StartsWith("decal"))
+            {
+                // Parse decal with optional value: decal or decal(value)
+                float decalValue = -1.0f; // default (no offset)
+                if (line.Length > 5 && line[5] == '(')
+                {
+                    decalValue = BracketParser.GetNumber<float>(line);
+                }
+                poly = poly with { DecalOffset = decalValue };
+            }
 
             else if (line.StartsWith("p("))
             {
@@ -365,6 +375,7 @@ public readonly record struct Rad3dPoly(
     [property: JsonPropertyName("colnum")] int? ColNum,
     [property: JsonPropertyName("polyType")] PolyType PolyType,
     [property: JsonPropertyName("lineType")] LineType? LineType,
+    [property: JsonPropertyName("decalOffset")] float DecalOffset,
     [property: JsonPropertyName("p")] Vector3[] Points
 );
 

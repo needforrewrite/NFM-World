@@ -124,10 +124,11 @@ public class Mesh : Transform, IRenderable
             var (data, indices) = submeshes[(int)poly.PolyType];
             
             var baseIndex = data.Count;
+            float decalOffset = poly.DecalOffset; // Use the decal offset value from polygon
             foreach (var point in poly.Points)
             {
                 var color = poly.Color.ToXna();
-                data.Add(new VertexPositionNormalColorCentroid(point.ToXna(), result.PlaneNormal.ToXna(), result.Centroid.ToXna(), color));
+                data.Add(new VertexPositionNormalColorCentroid(point.ToXna(), result.PlaneNormal.ToXna(), result.Centroid.ToXna(), color, decalOffset));
             }
 
             for (var index = 0; index < result.Triangles.Length; index += 3)
@@ -198,14 +199,16 @@ public class Mesh : Transform, IRenderable
         Microsoft.Xna.Framework.Vector3 Position,
         Microsoft.Xna.Framework.Vector3 Normal,
         Microsoft.Xna.Framework.Vector3 Centroid,
-        Microsoft.Xna.Framework.Color Color)
+        Microsoft.Xna.Framework.Color Color,
+        float DecalOffset)
     {
         /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />
         public static readonly VertexDeclaration VertexDeclaration = new(
 	        new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
 	        new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
 	        new VertexElement(24, VertexElementFormat.Vector3, VertexElementUsage.Position, 1),
-	        new VertexElement(36, VertexElementFormat.Color, VertexElementUsage.Color, 0)
+	        new VertexElement(36, VertexElementFormat.Color, VertexElementUsage.Color, 0),
+	        new VertexElement(40, VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0)
 	    );
     }
 
