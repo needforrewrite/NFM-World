@@ -11,6 +11,7 @@
     <InformationalVersion>NFM-World dev</InformationalVersion>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <TieredCompilation>false</TieredCompilation>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
     <PropertyGroup>
         <ApplicationManifest>app.manifest</ApplicationManifest>
