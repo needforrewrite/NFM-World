@@ -15,7 +15,7 @@ public class InGameCar : IRenderable
 
     public InGameCar(int im, Car car, int x, int z)
     {
-        CarRef = car;
+        CarRef = new Car(car, new Vector3(0f, 250f, 0f), Euler.Identity);
         Mad = new Mad(car.Stats, im);
         Mad.Reseto(im, CarRef);
         Control = new Control();
