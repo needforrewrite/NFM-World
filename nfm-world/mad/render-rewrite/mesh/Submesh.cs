@@ -39,6 +39,7 @@ public class Submesh(
         _material.DepthBias?.SetValue(0.00005f);
         _material.GetsShadowed?.SetValue(supermesh.GetsShadowed);
         _material.Alpha?.SetValue(PolyType is PolyType.Glass ? 0.2f : 1f);
+        _material.ChargedBlinkAmount?.SetValue(0.0f);
 
         if (PolyType is PolyType.Glass)
         {

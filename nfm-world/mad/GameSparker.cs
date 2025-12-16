@@ -437,6 +437,7 @@ public class GameSparker
             return;
         }
         
+        World.GameTick();
         cars_in_race[playerCarIndex].Drive();
         switch (currentViewMode)
         {

@@ -29,6 +29,8 @@ public class PolyEffect(Effect effect)
     public EffectParameter? Expand { get; } = effect.Parameters["Expand"];
     public EffectParameter? RandomFloat { get; } = effect.Parameters["RandomFloat"];
     public EffectParameter? Darken { get; } = effect.Parameters["Darken"];
+    
+    public EffectParameter? ChargedBlinkAmount { get; } = effect.Parameters["ChargedBlinkAmount"];
 
     /// <inheritdoc cref="Effect.Parameters"/>
     public EffectParameterCollection Parameters => effect.Parameters;

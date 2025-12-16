@@ -288,7 +288,7 @@ public class RadParser
                     {
                         poly = poly with { LineType = LineType.Colored };
                     }
-                    else
+                    else if (poly.LineType == LineType.Flat)
                     {
                         poly = poly with { LineType = null };
                     }
