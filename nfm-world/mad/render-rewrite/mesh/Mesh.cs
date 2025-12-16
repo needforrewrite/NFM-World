@@ -243,11 +243,17 @@ public class Mesh : Transform, IRenderable
 
         foreach (var submesh in Submeshes)
         {
-            submesh?.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
+            if (submesh != null && submesh.PolyType != PolyType.Glass)
+            {
+                submesh.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
+            }
         }
         if (!isCreateShadowMap) LineMesh?.Render(camera, lightCamera, matrixWorld);
 
         if (!isCreateShadowMap) Flames.Render(camera);
+        
+        // Render glass (translucency) last
+        Submeshes[(int)PolyType.Glass]?.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
     }
 
     public void RebuildMesh()
