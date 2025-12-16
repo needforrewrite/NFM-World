@@ -123,7 +123,7 @@ public readonly record struct CarStats
     /// Validates the car stats by checking they are all defined. Sends error to console if not valid.
     /// </summary>
     /// <returns>the first invalid property name if any, or null if all are valid</returns>
-    public string? Validate()
+    public string? Validate(string fileName)
     {
         if(Swits[0] == int.MinValue) return ValidateFail(nameof(Swits));
         else if(Acelf[0] == float.NegativeInfinity) return ValidateFail(nameof(Acelf));
@@ -149,9 +149,15 @@ public readonly record struct CarStats
         else if(Dishandle == float.NegativeInfinity) return ValidateFail(nameof(Dishandle));
         else if(Outdam == float.NegativeInfinity) return ValidateFail(nameof(Outdam));
         else if(Enginsignature == sbyte.MinValue) return ValidateFail(nameof(Enginsignature));
-        else if(Name == "") return ValidateFail(nameof(Name));
+        else if(Name == "") return ValidateFailName(nameof(Name), fileName);
 
         return null;
+    }
+
+    private string ValidateFailName(string property, string fileName)
+    {
+        GameSparker.Writer.WriteLine($"Car stat {property} for car '{fileName}' was invalid or undefined. Falling back to Tornado Shark stats for all stats.", "error");
+        return property;
     }
 
     private string ValidateFail(string property)
