@@ -16,88 +16,6 @@ public class CollisionDebugMesh : Transform
     {
         #region Debug boxes
         
-        Span<float> albx = stackalloc float[boxes.Length * 4];
-        Span<float> alby = stackalloc float[boxes.Length * 4];
-        Span<float> albz = stackalloc float[boxes.Length * 4];
-        Span<float> arbx = stackalloc float[boxes.Length * 4];
-        Span<float> arby = stackalloc float[boxes.Length * 4];
-        Span<float> arbz = stackalloc float[boxes.Length * 4];
-        Span<float> afbx = stackalloc float[boxes.Length * 4];
-        Span<float> afby = stackalloc float[boxes.Length * 4];
-        Span<float> afbz = stackalloc float[boxes.Length * 4];
-        Span<float> abbx = stackalloc float[boxes.Length * 4];
-        Span<float> abby = stackalloc float[boxes.Length * 4];
-        Span<float> abbz = stackalloc float[boxes.Length * 4];
-        
-        var lbx = Span2D<float>.Create(albx, boxes.Length, 4);
-        var lby = Span2D<float>.Create(alby, boxes.Length, 4);
-        var lbz = Span2D<float>.Create(albz, boxes.Length, 4);
-        var rbx = Span2D<float>.Create(arbx, boxes.Length, 4);
-        var rby = Span2D<float>.Create(arby, boxes.Length, 4);
-        var rbz = Span2D<float>.Create(arbz, boxes.Length, 4);
-        var fbx = Span2D<float>.Create(afbx, boxes.Length, 4);
-        var fby = Span2D<float>.Create(afby, boxes.Length, 4);
-        var fbz = Span2D<float>.Create(afbz, boxes.Length, 4);
-        var bbx = Span2D<float>.Create(abbx, boxes.Length, 4);
-        var bby = Span2D<float>.Create(abby, boxes.Length, 4);
-        var bbz = Span2D<float>.Create(abbz, boxes.Length, 4);
-        
-        for(var i = 0; i < boxes.Length; i++)
-        {
-            // right box
-            rbx[i,0] = boxes[i].Translation.X + boxes[i].Radius.X;
-            rby[i,0] = boxes[i].Translation.Y + boxes[i].Radius.Y;
-            rbz[i,0] = boxes[i].Translation.Z + boxes[i].Radius.Z;
-            rbx[i,1] = boxes[i].Translation.X + boxes[i].Radius.X;
-            rby[i,1] = boxes[i].Translation.Y + boxes[i].Radius.Y;
-            rbz[i,1] = boxes[i].Translation.Z - boxes[i].Radius.Z;
-            rbx[i,2] = boxes[i].Translation.X + boxes[i].Radius.X;
-            rby[i,2] = boxes[i].Translation.Y - boxes[i].Radius.Y;
-            rbz[i,2] = boxes[i].Translation.Z - boxes[i].Radius.Z;
-            rbx[i,3] = boxes[i].Translation.X + boxes[i].Radius.X;
-            rby[i,3] = boxes[i].Translation.Y - boxes[i].Radius.Y;
-            rbz[i,3] = boxes[i].Translation.Z + boxes[i].Radius.Z;
-            // left box
-            lbx[i,0] = boxes[i].Translation.X - boxes[i].Radius.X;
-            lby[i,0] = boxes[i].Translation.Y + boxes[i].Radius.Y;
-            lbz[i,0] = boxes[i].Translation.Z + boxes[i].Radius.Z;
-            lbx[i,1] = boxes[i].Translation.X - boxes[i].Radius.X;
-            lby[i,1] = boxes[i].Translation.Y + boxes[i].Radius.Y;
-            lbz[i,1] = boxes[i].Translation.Z - boxes[i].Radius.Z;
-            lbx[i,2] = boxes[i].Translation.X - boxes[i].Radius.X;
-            lby[i,2] = boxes[i].Translation.Y - boxes[i].Radius.Y;
-            lbz[i,2] = boxes[i].Translation.Z - boxes[i].Radius.Z;
-            lbx[i,3] = boxes[i].Translation.X - boxes[i].Radius.X;
-            lby[i,3] = boxes[i].Translation.Y - boxes[i].Radius.Y;
-            lbz[i,3] = boxes[i].Translation.Z + boxes[i].Radius.Z;
-            // front box
-            fbx[i,0] = boxes[i].Translation.X - boxes[i].Radius.X;
-            fby[i,0] = boxes[i].Translation.Y + boxes[i].Radius.Y;
-            fbz[i,0] = boxes[i].Translation.Z + boxes[i].Radius.Z;
-            fbx[i,1] = boxes[i].Translation.X + boxes[i].Radius.X;
-            fby[i,1] = boxes[i].Translation.Y + boxes[i].Radius.Y;
-            fbz[i,1] = boxes[i].Translation.Z + boxes[i].Radius.Z;
-            fbx[i,2] = boxes[i].Translation.X + boxes[i].Radius.X;
-            fby[i,2] = boxes[i].Translation.Y - boxes[i].Radius.Y;
-            fbz[i,2] = boxes[i].Translation.Z + boxes[i].Radius.Z;
-            fbx[i,3] = boxes[i].Translation.X - boxes[i].Radius.X;
-            fby[i,3] = boxes[i].Translation.Y - boxes[i].Radius.Y;
-            fbz[i,3] = boxes[i].Translation.Z + boxes[i].Radius.Z;
-            // back box
-            bbx[i,0] = boxes[i].Translation.X - boxes[i].Radius.X;
-            bby[i,0] = boxes[i].Translation.Y + boxes[i].Radius.Y;
-            bbz[i,0] = boxes[i].Translation.Z - boxes[i].Radius.Z;
-            bbx[i,1] = boxes[i].Translation.X + boxes[i].Radius.X;
-            bby[i,1] = boxes[i].Translation.Y + boxes[i].Radius.Y;
-            bbz[i,1] = boxes[i].Translation.Z - boxes[i].Radius.Z;
-            bbx[i,2] = boxes[i].Translation.X + boxes[i].Radius.X;
-            bby[i,2] = boxes[i].Translation.Y - boxes[i].Radius.Y;
-            bbz[i,2] = boxes[i].Translation.Z - boxes[i].Radius.Z;
-            bbx[i,3] = boxes[i].Translation.X - boxes[i].Radius.X;
-            bby[i,3] = boxes[i].Translation.Y - boxes[i].Radius.Y;
-            bbz[i,3] = boxes[i].Translation.Z - boxes[i].Radius.Z;
-        }
-        
         // disp 0
         const int linesPerPolygon = 16;
         
@@ -116,16 +34,6 @@ public class CollisionDebugMesh : Transform
             foreach (var vert in verts)
             {
                 data.Add(new VertexPositionColor(vert.ToXna(), color.ToXna()));
-            }
-        }
-        
-        void DrawPolygon3D(Span<float> px, Span<float> py, Span<float> pz, int pn, Color3 color, float mult = 1)
-        {
-            for (var i = 0; i < pn; i++)
-            {
-                var p0 = new Vector3(px[i], py[i], pz[i]);
-                var p1 = new Vector3(px[(i + 1) % pn], py[(i + 1) % pn], pz[(i + 1) % pn]);
-                AddLine(p0, p1, color, mult);
             }
         }
         
