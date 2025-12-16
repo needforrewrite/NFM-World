@@ -283,7 +283,7 @@ jobs:
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
           name: Build ${{ needs.prepare.outputs.branch_name }} - ${{ needs.prepare.outputs.short_sha }}
-          prerelease: ${{ needs.prepare.outputs.is_master != 'true' }}
+          # prerelease: ${{ needs.prepare.outputs.is_master != 'true' }}
           files: |
             artifacts/*.zip
             artifacts/*.tar.gz
