@@ -21,6 +21,8 @@ dammult(0.45)
 maxmag(10700)
 dishandle(0.4)
 outdam(0.95)
+name(EL King)
+enginsignature(4)
 
 div(19)
 shadow()

@@ -21,6 +21,8 @@ dammult(0.7)
 maxmag(15000)
 dishandle(0.9)
 outdam(0.76)
+name(MAX Revenge)
+enginsignature(3)
 
 idiv(147)
 shadow()

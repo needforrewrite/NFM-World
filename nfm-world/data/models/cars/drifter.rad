@@ -21,6 +21,8 @@ dammult(0.58)
 maxmag(18000)
 dishandle(0.45)
 outdam(0.72)
+name(Drifter X)
+enginsignature(1)
 
 idiv(157)
 shadow()

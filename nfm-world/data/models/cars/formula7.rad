@@ -21,6 +21,8 @@ dammult(0.8)
 maxmag(4200)
 dishandle(0.6)
 outdam(0.35)
+name(Formula 7)
+enginsignature(1)
 
 idiv(170)
 iwid(105)

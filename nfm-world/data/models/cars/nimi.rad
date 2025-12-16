@@ -21,6 +21,8 @@ dammult(0.42)
 maxmag(6000)
 dishandle(0.62)
 outdam(0.42)
+name(Nimi)
+enginsignature(0)
 
 div(19)
 shadow()
