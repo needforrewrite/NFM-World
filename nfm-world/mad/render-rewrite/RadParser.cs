@@ -24,6 +24,7 @@ public class RadParser
     private List<Vector3> _points = new();
     private bool _road;
     private bool _castsShadow;
+    private float? _groundTranslation;
 
     private RadParser()
     {
@@ -55,9 +56,28 @@ public class RadParser
             Wheels: parser._wheels.ToArray(),
             Rims: parser._rims,
             Boxes: parser._boxes.ToArray(),
-            Polys: parser._polys.ToArray(),
+            Polys: FixGround(parser._polys.ToArray(), parser._groundTranslation),
             CastsShadow: parser._castsShadow
         );
+    }
+
+    private static Rad3dPoly[] FixGround(Rad3dPoly[] polys, float? groundTranslation)
+    {
+        if (groundTranslation != null)
+        {
+            for (var i = 0; i < polys.Length; i++)
+            {
+                for (var j = 0; j < polys[i].Points.Length; j++)
+                {
+                    polys[i].Points[j] = polys[i].Points[j] with
+                    {
+                        Y = polys[i].Points[j].Y - groundTranslation.Value
+                    };
+                }
+            }
+        }
+
+        return polys;
     }
 
     private void ParseLine(ReadOnlySpan<char> line)
@@ -121,10 +141,16 @@ public class RadParser
         else if (line.StartsWith("w("))
         {
             var (cx, (cy, (cz, (rotates, (width, (height, _)))))) = BracketParser.GetNumbers(line, stackalloc int[6]);
+            if (_groundTranslation == null)
+            {
+                // based on Rad3dWheelDef.Ground calculation
+                _groundTranslation = (cy * idiv * scaleY) + 13.0F * ((height * idiv) / 10f);
+            }
             _wheels.Add(new Rad3dWheelDef(
                 Position: new Vector3(
                     cx * idiv * iwid * scaleX,
-                    cy * idiv * scaleY,
+                    // based on Rad3dWheelDef.Ground calculation
+                    -(13.0F * ((height * idiv) / 10f)),
                     cz * idiv * scaleZ
                 ),
                 Rotates: rotates,

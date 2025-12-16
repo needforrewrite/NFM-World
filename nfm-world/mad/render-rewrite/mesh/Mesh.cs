@@ -24,7 +24,6 @@ public class Mesh : Transform, IRenderable
     // visually wasted
     public bool Wasted;
 
-    public int GroundAt;
     protected readonly GraphicsDevice GraphicsDevice;
 
     protected Submesh?[] Submeshes;
@@ -57,7 +56,6 @@ public class Mesh : Transform, IRenderable
         Boxes = rad.Boxes;
         Polys = rad.Polys;
 
-        GroundAt = rad.Wheels.FirstOrDefault().Ground;
         GraphicsDevice = graphicsDevice;
 
         Triangulation = Array.ConvertAll(Polys,
@@ -82,7 +80,6 @@ public class Mesh : Transform, IRenderable
         Boxes = baseMesh.Boxes;
         // make a copy of points for damageable meshes
         Polys = Array.ConvertAll(baseMesh.Polys, poly => poly with { Points = [..poly.Points] });
-        GroundAt = baseMesh.GroundAt;
         GraphicsDevice = baseMesh.GraphicsDevice;
 
         Triangulation = baseMesh.Triangulation;

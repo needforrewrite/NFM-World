@@ -38,7 +38,7 @@ public class ContO
         set => _mesh.Rotation = _mesh.Rotation with { Zy = AngleSingle.FromDegrees(value) };
     }
 
-    public int Grat => _mesh.GroundAt;
+    public int Grat => 0;
     
     // wheel rotation
     public float Wzy
