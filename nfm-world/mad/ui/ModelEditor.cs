@@ -284,7 +284,7 @@ public class ModelEditorPhase : BasePhase
         System.IO.File.WriteAllText(filePath, radContent);
         
         // Load the new model
-        LoadModel(filePath);
+        LoadModel(filePath, _openInNewTab);
         
         // Refresh list
         RefreshUserModels();
@@ -1336,6 +1336,10 @@ public class ModelEditorPhase : BasePhase
             ImGui.Separator();
             ImGui.Spacing();
             
+            ImGui.Checkbox("Open in New Tab", ref _openInNewTab);
+            
+            ImGui.Spacing();
+            
             ImGui.Checkbox("Import Reference Model", ref _importReference);
             
             if (_importReference)
@@ -1571,7 +1575,33 @@ public class ModelEditorPhase : BasePhase
             
             if (ImGui.Button("Cancel", new System.Numerics.Vector2(buttonWidth, 30)))
             {
-                tab.ShowPolygonEditor = false;
+                if (tab.PolygonEditorDirty)
+                {
+                    // Ask user if they want to save changes
+                    GameSparker.MessageWindow.ShowCustom("Unsaved changes",
+                        "Apply changes to polygon before closing?",
+                        new[] { "Apply", "Discard", "Cancel" },
+                        result => {
+                            if (result == MessageWindow.MessageResult.Custom1)
+                            {
+                                // Apply changes
+                                ApplyPolygonEditorChanges();
+                                tab.ShowPolygonEditor = false;
+                            }
+                            else if (result == MessageWindow.MessageResult.Custom2)
+                            {
+                                // Discard changes and close
+                                tab.ShowPolygonEditor = false;
+                                tab.PolygonEditorDirty = false;
+                            }
+                            // Custom3 (Cancel) - do nothing, keep editor open
+                        });
+                }
+                else
+                {
+                    // No changes, just close
+                    tab.ShowPolygonEditor = false;
+                }
             }
 
             if (tab.PolygonEditorDirty)
@@ -1608,7 +1638,28 @@ public class ModelEditorPhase : BasePhase
     private void ApplyPolygonEditorChanges()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.TextEditorSelectionStart < 0 || tab.TextEditorSelectionEnd < 0) return;
+        if (tab == null || tab.TextEditorSelectionStart < 0 || tab.TextEditorSelectionEnd < 0)
+        {
+            GameSparker.MessageWindow.ShowMessage("Error", "Invalid selection range. Please select a polygon again.");
+            return;
+        }
+        
+        // Validate selection indices are within bounds
+        if (tab.TextEditorSelectionStart >= tab.TextContent.Length || 
+            tab.TextEditorSelectionEnd > tab.TextContent.Length ||
+            tab.TextEditorSelectionStart >= tab.TextEditorSelectionEnd)
+        {
+            var err = $"Selection range is out of sync with text content. Start: {tab.TextEditorSelectionStart}, End: {tab.TextEditorSelectionEnd}, Length: {tab.TextContent.Length}";
+            GameSparker.MessageWindow.ShowMessage("Parse Error", err);
+            if (GameSparker.Writer != null)
+                GameSparker.Writer.WriteLine(err, "error");
+            
+            // Invalidate selection so user is forced to reselect
+            tab.TextEditorSelectionStart = -1;
+            tab.TextEditorSelectionEnd = -1;
+            tab.ShowPolygonEditor = false;
+            return;
+        }
         
         // Replace the polygon code in the main text content
         var before = tab.TextContent.Substring(0, tab.TextEditorSelectionStart);
@@ -1622,6 +1673,11 @@ public class ModelEditorPhase : BasePhase
         {
             tab.Model = new Mesh(GameSparker._graphicsDevice, tab.TextContent);
             tab.PolygonEditorDirty = false;
+            
+            // CRITICAL: Invalidate the selection indices since the text content has changed
+            // This prevents index out of bounds errors when editing consecutive polygons
+            tab.TextEditorSelectionStart = -1;
+            tab.TextEditorSelectionEnd = -1;
             
             if (GameSparker.Writer != null)
                 GameSparker.Writer.WriteLine($"Polygon {tab.SelectedPolygonIndex + 1} updated successfully", "info");
