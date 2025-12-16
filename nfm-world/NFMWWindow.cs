@@ -31,8 +31,8 @@ public unsafe class Program : Game
     public static RenderTarget2D shadowRenderTarget { get; private set; }
     private ImGuiRenderer _imguiRenderer;
 
-    private int _lastFrameTime;
-    private int _lastTickTime;
+    internal static int _lastFrameTime;
+    internal static int _lastTickTime;
     private KeyboardState oldKeyState;
     private MouseState oldMouseState;
     private MonoGameSkia _skia;
@@ -194,6 +194,7 @@ public unsafe class Program : Game
             GraphicsDevice.Viewport = viewport;
             _skia.RemakeRenderTarget(Window.ClientBounds.Width, Window.ClientBounds.Height);
             GameSparker.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
+            GameSparker.CurrentPhase.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
         };
     }
 
@@ -211,7 +212,10 @@ public unsafe class Program : Game
 
         var tick = Stopwatch.StartNew();
 
+        GameSparker.CurrentPhase.BeginGameTick();
         GameSparker.GameTick();
+        GameSparker.CurrentPhase.GameTick();
+        GameSparker.CurrentPhase.EndGameTick();
 
         _lastTickTime = (int)tick.ElapsedMilliseconds;
     }
@@ -237,9 +241,6 @@ public unsafe class Program : Game
         _groundShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Ground.fxc"));
         _mountainsShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Mountains.fxc"));
         
-        var originalOut = Console.Out;
-        GameSparker.Writer = new DevConsoleWriter(GameSparker.devConsole, originalOut);
-        Console.SetOut(GameSparker.Writer);
         GameSparker.Load(this);
 
         // Create floating point render target
@@ -392,14 +393,7 @@ public unsafe class Program : Game
 
         if (newState.X != oldMouseState.X || newState.Y != oldMouseState.Y)
         {
-            if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
-            {
-                GameSparker.MainMenu.UpdateMouse(newState.X, newState.Y);
-            }
-            else if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer && GameSparker.ModelEditor != null)
-            {
-                GameSparker.ModelEditor.HandleMouseMove(newState.X, newState.Y);
-            }
+            GameSparker.CurrentPhase.MouseMoved(newState.X, newState.Y, ImGui.GetIO().WantCaptureMouse);
         }
 
         oldMouseState = newState;
@@ -412,38 +406,16 @@ public unsafe class Program : Game
         var t = Stopwatch.StartNew();
         
         // Render based on game state
-        if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
-        {
-            GameSparker.MainMenu.Render();
-        }
-        else if (GameSparker.CurrentState == GameSparker.GameState.InGame)
-        {
-            GameSparker.Render();
-        
-            G.SetColor(new Color(0, 0, 0));
-            G.DrawString($"Render: {_lastFrameTime}ms", 100, 100);
-            G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
-            G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
-        }
-        else if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer)
-        {
-            // Clear with a gradient background (sky blue to tan)
-            GraphicsDevice.Clear(new Microsoft.Xna.Framework.Color(135, 206, 235));
-        }
+        GameSparker.CurrentPhase.Render();
         
         _skia.Render();
-        
-        // Render 3D model in model viewer state (after Skia)
-        if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer && GameSparker.ModelEditor != null)
-        {
-            GraphicsDevice.BlendState = BlendState.Opaque;
-            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-            GameSparker.ModelEditor.RenderModel(GameSparker.camera, GameSparker.lightCamera);
-        }
+
+        GameSparker.CurrentPhase.RenderAfterSkia();
         
         // // Render ImGui
         _imguiRenderer.BeginLayout(gameTime);
         GameSparker.RenderImgui();
+        GameSparker.CurrentPhase.RenderImgui();
         _imguiRenderer.EndLayout();
 
         base.Draw(gameTime);
@@ -470,19 +442,12 @@ public unsafe class Program : Game
 
     private void MouseUp(int x, int y)
     {
-        if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
-        {
-            GameSparker.MainMenu.HandleClick(x, y);
-        }
+        GameSparker.CurrentPhase.MouseReleased(x, y, ImGui.GetIO().WantCaptureMouse);
     }
 
     private void MouseDown(int x, int y)
     {
-        if (GameSparker.CurrentState == GameSparker.GameState.ModelViewer && GameSparker.ModelEditor != null)
-        {
-            GameSparker.ModelEditor.HandleMouseDown(x, y);
-        }
-        // Currently not needed for other states, but could be used for button press effects
+        GameSparker.CurrentPhase.MousePressed(x, y, ImGui.GetIO().WantCaptureMouse);
     }
 
     private void HandleKeyPress(Keys key, bool isDown)
@@ -490,10 +455,12 @@ public unsafe class Program : Game
         if (isDown)
         {
             GameSparker.KeyPressed(key);
+            GameSparker.CurrentPhase.KeyPressed(key, ImGui.GetIO().WantCaptureKeyboard);
         }
         else
         {
             GameSparker.KeyReleased(key);
+            GameSparker.CurrentPhase.KeyReleased(key, ImGui.GetIO().WantCaptureKeyboard);
         }
     }
 }

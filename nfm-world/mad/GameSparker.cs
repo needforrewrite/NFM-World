@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using NFMWorld.Mad.Interp;
 using NFMWorld.Util;
@@ -14,16 +15,8 @@ namespace NFMWorld.Mad;
 
 public class GameSparker
 {
-    private static SpriteBatch _spriteBatch;
     public static GraphicsDevice _graphicsDevice;
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
-
-    public static PerspectiveCamera camera = new();
-    public static OrthoCamera lightCamera = new()
-    {
-        Width = 8192,
-        Height = 8192
-    };
 
     public static readonly string version = GetVersionString();
 
@@ -50,18 +43,21 @@ public class GameSparker
         return "NFM-World dev";
     }
 
-    public enum GameState
+    public static BasePhase CurrentPhase
     {
-        Menu,
-        InGame,
-        ModelViewer
+        get;
+        set
+        {
+            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
+            field?.Exit();
+            field = value;
+            value.Enter();
+        }
     }
-
-    public static GameState CurrentState = GameState.Menu;
-    public static MainMenu? MainMenu = null;
+    public static MainMenuPhase? MainMenu;
+    public static InRacePhase? InRace;
     public static MessageWindow MessageWindow = new();
-    public static SettingsMenu SettingsMenu = new();
-    public static ModelEditor? ModelEditor = null;
+    public static ModelEditorPhase? ModelEditor;
 
     private static DirectionalLight light;
     
@@ -69,11 +65,6 @@ public class GameSparker
     public static UnlimitedArray<Car> cars;
     public static UnlimitedArray<Mesh> stage_parts;
     
-    public static Stage current_stage = null!;
-    public static Scene current_scene;
-
-    public static FollowCamera PlayerFollowCamera = new();
-
     public static bool devRenderTrackers = false;
     
     public static DevConsole devConsole = new();
@@ -92,22 +83,16 @@ public class GameSparker
         "tree5", "tree6", "tree7", "tree8", "cac1", "cac2", "cac3", "8sroad", "8soffroad"
     };
 
-    public static DevConsoleWriter Writer = null!;
+    public static DevConsoleWriter Writer;
 
-    // View modes
-    public enum ViewMode
+    static GameSparker()
     {
-        Follow,
-        Around,
-        Watch
+        var originalOut = Console.Out;
+        Writer = new DevConsoleWriter(devConsole, originalOut);
+        Console.SetOut(Writer);
     }
-    private static ViewMode currentViewMode = ViewMode.Follow;
-    /////////////////////////////////
 
-    public static UnlimitedArray<InGameCar> cars_in_race = [];
-    public static int playerCarIndex = 0;
-    public static int playerCarID = 14;
-    public static int _stagePartCount = 0;
+    /////////////////////////////////
 
     public static Dictionary<Keys, bool> DebugKeyStates = new();
 
@@ -119,90 +104,6 @@ public class GameSparker
         if (key == Keys.F1)
         {
             devConsole.Toggle();
-            return;
-        }
-
-        if (CurrentState == GameState.Menu)
-        {
-            // Handle key capture for settings menu
-            if (SettingsMenu.IsOpen && SettingsMenu.IsCapturingKey())
-            {
-                SettingsMenu.HandleKeyCapture(key);
-            }
-            return;
-        }
-        
-        if (CurrentState == GameState.ModelViewer)
-        {
-            if (ModelEditor != null)
-            {
-                ModelEditor.HandleKeyPress(key);
-            }
-            return;
-        }
-
-        if (!devConsole.IsOpen()) {
-            var bindings = SettingsMenu.Bindings;
-            
-            if (key == bindings.Accelerate)
-            {
-                cars_in_race[playerCarIndex].Control.Up = true;
-            }
-            if (key == bindings.Brake)
-            {
-                cars_in_race[playerCarIndex].Control.Down = true;
-            }
-            if (key == bindings.TurnRight)
-            {
-                cars_in_race[playerCarIndex].Control.Right = true;
-            }
-            if (key == bindings.TurnLeft)
-            {
-                cars_in_race[playerCarIndex].Control.Left = true;
-            }
-            if (key == bindings.Handbrake)
-            {
-                cars_in_race[playerCarIndex].Control.Handb = true;
-            }
-            if (key == bindings.Enter)
-            {
-                cars_in_race[playerCarIndex].Control.Enter = true;
-            }
-            if (key == bindings.LookBack)
-            {
-                cars_in_race[playerCarIndex].Control.Lookback = -1;
-            }
-            if (key == bindings.LookLeft)
-            {
-                cars_in_race[playerCarIndex].Control.Lookback = 3;
-            }
-            if (key == bindings.LookRight)
-            {
-                cars_in_race[playerCarIndex].Control.Lookback = 2;
-            }
-            if (key == bindings.ToggleMusic)
-            {
-                cars_in_race[playerCarIndex].Control.Mutem = !cars_in_race[playerCarIndex].Control.Mutem;
-            }
-
-            if (key == bindings.ToggleSFX)
-            {
-                cars_in_race[playerCarIndex].Control.Mutes = !cars_in_race[playerCarIndex].Control.Mutes;
-            }
-
-            if (key == bindings.ToggleArrace)
-            {
-                cars_in_race[playerCarIndex].Control.Arrace = !cars_in_race[playerCarIndex].Control.Arrace;
-            }
-
-            if (key == bindings.ToggleRadar)
-            {
-                cars_in_race[playerCarIndex].Control.Radar = !cars_in_race[playerCarIndex].Control.Radar;
-            }
-            if (key == bindings.CycleView)
-            {
-                currentViewMode = (ViewMode)(((int)currentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
-            }
         }
     }
 
@@ -210,53 +111,6 @@ public class GameSparker
     {
         DebugKeyStates[key] = false;
         
-        if (CurrentState == GameState.Menu)
-        {
-            return;
-        }
-        
-        if (CurrentState == GameState.ModelViewer)
-        {
-            if (ModelEditor != null)
-            {
-                ModelEditor.HandleKeyRelease(key);
-            }
-            return;
-        }
-        
-        var bindings = SettingsMenu.Bindings;
-        
-        if (cars_in_race[playerCarIndex].Control.Multion < 2)
-        {
-            if (key == bindings.Accelerate)
-            {
-                cars_in_race[playerCarIndex].Control.Up = false;
-            }
-            if (key == bindings.Brake)
-            {
-                cars_in_race[playerCarIndex].Control.Down = false;
-            }
-            if (key == bindings.TurnRight)
-            {
-                cars_in_race[playerCarIndex].Control.Right = false;
-            }
-            if (key == bindings.TurnLeft)
-            {
-                cars_in_race[playerCarIndex].Control.Left = false;
-            }
-            if (key == bindings.Handbrake)
-            {
-                cars_in_race[playerCarIndex].Control.Handb = false;
-            }
-        }
-        if (key == Keys.Escape)
-        {
-            cars_in_race[playerCarIndex].Control.Exit = false;
-        }
-        if (key == bindings.LookBack || key == bindings.LookLeft || key == bindings.LookRight)
-        {
-            cars_in_race[playerCarIndex].Control.Lookback = 0;
-        }
     }
 
     public static List<string> GetAvailableStages()
@@ -348,7 +202,7 @@ public class GameSparker
     public static void Load(Game game)
     {
         _graphicsDevice = game.GraphicsDevice;
-        _spriteBatch = new SpriteBatch(game.GraphicsDevice);
+
         timer = new MicroStopwatch();
         timer.Start();
         
@@ -364,19 +218,13 @@ public class GameSparker
         });
 
         // init menu
-        CurrentState = GameState.Menu;
-        MainMenu = new MainMenu();
-        
-        // Initialize ModelEditor after cars are loaded
-        ModelEditor = new ModelEditor();
-        
-        // Initialize SettingsMenu writer
-        SettingsMenu.Writer = Writer;
-        
-        
-        // load user config
-        SettingsMenu.LoadConfig();
+        MainMenu = new MainMenuPhase();
+        InRace = new InRacePhase(_graphicsDevice);
+        CurrentPhase = MainMenu;
 
+        // Initialize ModelEditor after cars are loaded
+        ModelEditor = new ModelEditorPhase(_graphicsDevice);
+        
         for (var i = 0; i < StageRads.Length; i++) {
             if (stage_parts[i] == null) {
                 throw new Exception("No valid ContO (Stage Part) has been assigned to ID " + i + " (" + StageRads[i] + ")");
@@ -392,115 +240,40 @@ public class GameSparker
 
     public static void StartModelViewer()
     {
-        CurrentState = GameState.ModelViewer;
-        MainMenu = null;
-        ModelEditor?.Open();
+        CurrentPhase = ModelEditor;
     }
     
     public static void ExitModelViewer()
     {
-        CurrentState = GameState.Menu;
-        MainMenu = new MainMenu();
-        ModelEditor?.Close();
+        CurrentPhase = MainMenu;
         devRenderTrackers = false;
     }
 
     public static void StartGame()
     {
         // temp
-        CurrentState = GameState.InGame;
+        CurrentPhase = InRace;
         MainMenu = null;
 
-        current_stage = new Stage("nfm2/15_dwm", _graphicsDevice);
-        cars_in_race[playerCarIndex] = new InGameCar(14, cars[14], 0, 0);
-        current_scene = new Scene(
-            _graphicsDevice,
-            [current_stage, ..cars_in_race],
-            camera,
-            lightCamera
-        );
-        
         Console.WriteLine("Game started!");
     }
 
     public static void GameTick()
     {
         FrameTrace.ClearMessages();
-        // only tick game logic when actually in-game
-        if (CurrentState != GameState.InGame)
-        {
-            // Update model editor in ModelViewer state
-            if (CurrentState == GameState.ModelViewer && ModelEditor != null)
-            {
-                ModelEditor.Update();
-            }
-            return;
-        }
-        
-        cars_in_race[playerCarIndex].Drive();
-        switch (currentViewMode)
-        {
-            case ViewMode.Follow:
-                PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].CarRef, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
-                break;
-            case ViewMode.Around:
-                // Medium.Around(cars_in_race[playerCarIndex].Conto, true);
-                break;
-        }
-        // camera.Position = new Vector3(0, 10000, 0);
-        // camera.LookAt = new Vector3(1, 250, 0);
-        
-        foreach (var element in current_stage.pieces)
-        {
-            element.GameTick();
-        }
     }
 
     public static void Render()
     {
-        // only render game when in-game state
-        if (CurrentState != GameState.InGame)
-        {
-            return;
-        }
-
-        lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
-        lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0); // 0,0,0 causes shadows to break
-
-        current_scene.Render(true);
-
-        // DISPLAY SHADOW MAP
-        _spriteBatch.Begin(0, BlendState.Opaque, SamplerState.PointClamp);
-        _spriteBatch.Draw(Program.shadowRenderTarget, new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Microsoft.Xna.Framework.Color.White);
-        _spriteBatch.End();
-
-        _graphicsDevice.Textures[0] = null;
-        _graphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
-
-        FrameTrace.RenderMessages();
-    }
-
-    private static void RenderInternal(bool isCreateShadowMap = false)
-    {
-        current_stage.Render(camera, lightCamera, isCreateShadowMap);
-        
-        foreach (var car in cars_in_race)
-        {
-            car.Render(camera, lightCamera, isCreateShadowMap);
-        }
     }
 
     public static void RenderImgui()
     {
         devConsole.Render();
         MessageWindow.Render();
-        SettingsMenu.Render();
-        ModelEditor?.Render();
     }
 
     public static void WindowSizeChanged(int width, int height)
     {
-        camera.Width = width;
-        camera.Height = height;
     }
 }
