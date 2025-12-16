@@ -1051,7 +1051,6 @@ public class ModelEditorPhase : BasePhase
                             tab.TextEditorDirty = false;
                             // Reload model
                             tab.Model = new Mesh(GameSparker._graphicsDevice, tab.TextContent);
-                            ResetTabView(tab);
                             tab.TextEditorExpanded = false;
                         }
                     }
@@ -1566,7 +1565,7 @@ public class ModelEditorPhase : BasePhase
             
             
             
-            if (ImGui.Button("Apply Changes", new System.Numerics.Vector2(buttonWidth, 30)))
+            if (ImGui.Button("Apply", new System.Numerics.Vector2(buttonWidth, 30)))
             {
                 ApplyPolygonEditorChanges();
             }
@@ -1603,6 +1602,11 @@ public class ModelEditorPhase : BasePhase
                     tab.ShowPolygonEditor = false;
                 }
             }
+            else
+            {
+                // Update the state if not closing
+                tab.ShowPolygonEditor = isOpen;
+            }
 
             if (tab.PolygonEditorDirty)
             {
@@ -1610,7 +1614,6 @@ public class ModelEditorPhase : BasePhase
             }
         }
         
-        tab.ShowPolygonEditor = isOpen;
         ImGui.End();
     }
     
