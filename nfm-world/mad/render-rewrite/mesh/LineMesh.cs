@@ -13,12 +13,16 @@ public class LineMesh
     private readonly VertexBuffer _lineVertexBuffer;
     private readonly IndexBuffer _lineIndexBuffer;
     private readonly int _lineTriangleCount;
+    private readonly LineType _lineType;
 
     public LineMesh(
         Mesh supermesh,
         GraphicsDevice graphicsDevice,
-        IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>>lines)
+        IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>> lines,
+        LineType lineType
+    )
     {
+        _lineType = lineType;
         var data = new List<Mesh.VertexPositionNormalColorCentroid>(8 * lines.Count);
         var indices = new List<int>(12 * 3 * lines.Count);
 
@@ -34,8 +38,12 @@ public class LineMesh
             var poly = line.Value.Poly;
             var centroid = line.Value.Centroid;
             var normal = line.Value.Normal;
-            var color = poly.LineType == LineType.Colored ? (poly.Color - new Color3(10, 10, 10)).ToXna() : Color.Black;            
-            
+            var color = poly.LineType == LineType.Colored
+                ? (poly.Color - new Color3(10, 10, 10)).ToXna()
+                : poly.LineType == LineType.Charged
+                    ? poly.Color.ToXna()
+                    : Color.Black;
+
             LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness, in verts, in inds);
             indices.AddRange(inds);
             foreach (var vert in verts)
@@ -43,15 +51,17 @@ public class LineMesh
                 data.Add(new Mesh.VertexPositionNormalColorCentroid(vert.ToXna(), normal.ToXna(), centroid.ToXna(), color));
             }
         }
-	    
-        var lineVertexBuffer = new VertexBuffer(graphicsDevice, Mesh.VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
+
+        var lineVertexBuffer = new VertexBuffer(graphicsDevice,
+            Mesh.VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
         lineVertexBuffer.SetData(data.ToArray());
-	    
-        var lineIndexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+
+        var lineIndexBuffer =
+            new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
         lineIndexBuffer.SetData(indices.ToArray());
-	    
+
         var lineTriangleCount = indices.Count / 3;
-        
+
         _supermesh = supermesh;
         _graphicsDevice = graphicsDevice;
         _lineVertexBuffer = lineVertexBuffer;
@@ -64,7 +74,7 @@ public class LineMesh
         _graphicsDevice.SetVertexBuffer(_lineVertexBuffer);
         _graphicsDevice.Indices = _lineIndexBuffer;
         _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
-        
+
         // If a parameter is null that means the HLSL compiler optimized it out.
         _material.World?.SetValue(matrixWorld);
         _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
@@ -72,6 +82,8 @@ public class LineMesh
         _material.IsFullbright?.SetValue(false);
         _material.UseBaseColor?.SetValue(false);
         _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
+        _material.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
+
         _material.LightDirection?.SetValue(World.LightDirection.ToXna());
         _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
         _material.FogDistance?.SetValue(World.FadeFrom);
@@ -92,7 +104,7 @@ public class LineMesh
         _material.Expand?.SetValue(_supermesh.Flames.Expand);
         _material.Darken?.SetValue(_supermesh.Flames.Darken);
         _material.RandomFloat?.SetValue(URandom.Single());
-        
+
         if (lightCamera != null)
         {
             _material.LightViewProj?.SetValue(lightCamera.ViewProjectionMatrix);
@@ -101,7 +113,7 @@ public class LineMesh
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();
-    
+
             _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineTriangleCount);
         }
     }
