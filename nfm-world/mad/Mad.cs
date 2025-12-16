@@ -399,6 +399,52 @@ public class Mad
     int Mtcount = 0;
     int py = 0;
 
+    internal void D2(Control control, ContO conto)
+    {
+        Pzy++;
+        conto.Xz = 270;
+
+        int bottomy = conto.Grat;
+
+        var wheelx = new float[4];
+        var wheelz = new float[4];
+        var wheely = new float[4];
+
+        for (var i24 = 0; i24 < 4; i24++)
+        {
+            wheelx[i24] = conto.Keyx[i24] + conto.X;
+            wheely[i24] = bottomy + conto.Y;
+            wheelz[i24] = conto.Z + conto.Keyz[i24];
+            //Scy[i24] += 7.0F * _tickRate;
+        }
+
+        UMath.Rot(wheelx, wheely, conto.X, conto.Y, Pxy, 4);
+        UMath.Rot(wheely, wheelz, conto.Y, conto.Z, Pzy, 4);
+        UMath.Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
+
+        int xneg = 1;
+
+        // car sliding fix by jacher: do not adjust to tickrate
+        conto.X = (int) ((wheelx[0] - conto.Keyx[0] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[0] * UMath.Sin(conto.Xz) + 
+            wheelx[1] - conto.Keyx[1] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[1] * UMath.Sin(conto.Xz) + 
+            wheelx[2] - conto.Keyx[2] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[2] * UMath.Sin(conto.Xz) + 
+            wheelx[3] - conto.Keyx[3] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz)) / 4.0F 
+            + bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz));
+            
+        conto.Z = (int) (
+            (wheelz[0] - xneg * conto.Keyz[0] * UMath.Cos(conto.Xz) - conto.Keyx[0] * UMath.Sin(conto.Xz)
+            + wheelz[1] - xneg * conto.Keyz[1] * UMath.Cos(conto.Xz) - conto.Keyx[1] * UMath.Sin(conto.Xz) 
+            + wheelz[2] - xneg * conto.Keyz[2] * UMath.Cos(conto.Xz) - conto.Keyx[2] * UMath.Sin(conto.Xz) 
+            + wheelz[3] - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz) - conto.Keyx[3] * UMath.Sin(conto.Xz)) / 4.0F 
+            + bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz));
+
+        int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy));
+        conto.Y = newy;
+
+        conto.Zy = Pzy;
+        conto.Xy = Pxy;
+    }
+
     internal void Drive(Control control, ContO conto)
     {
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_fxz:0.00}, cxz: {Cxz:0.00}");
