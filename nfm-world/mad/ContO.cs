@@ -72,8 +72,33 @@ public class ContO
     public ContO(Mesh mesh)
     {
         _mesh = mesh;
-        Keyx = mesh.Wheels.Select(e => (int)e.Position.X).ToArray();
-        Keyz = mesh.Wheels.Select(e => (int)e.Position.Z).ToArray();
+
+        Keyx = new int[4];
+        Keyz = new int[4];
+        int totz = 0;
+        int totx = 0;
+        for (int i = 0; i < 4; i++)
+        {
+            totz += Math.Abs((int)mesh.Wheels[i].Position.Z);
+            totx += Math.Abs((int)mesh.Wheels[i].Position.X);
+        }
+
+        totz /= 4;
+        totx /= 4;
+        
+        // -x,+z
+        // +x,+z
+        // -x,-z
+        // +x,-z
+        
+        Keyx[0] = -totx;
+        Keyz[0] = totz;
+        Keyx[1] = totx;
+        Keyz[1] = totz;
+        Keyx[2] = -totx;
+        Keyz[2] = -totz;
+        Keyx[3] = totx;
+        Keyz[3] = -totz;
     }
 
     public static implicit operator ContO(Mesh mesh) => new ContO(mesh);

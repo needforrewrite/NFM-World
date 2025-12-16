@@ -419,7 +419,7 @@ public class Mad
         }
 
         UMath.Rot(wheelx, wheely, conto.X, conto.Y, Pxy, 4);
-        UMath.Rot(wheely, wheelz, conto.Y, conto.Z, Pzy, 4);
+        UMath.Rot(wheelz, wheely, conto.Z, conto.Y, Pzy, 4);
         UMath.Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
 
         int xneg = 1;
