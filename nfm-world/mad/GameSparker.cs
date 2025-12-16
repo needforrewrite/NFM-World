@@ -259,6 +259,7 @@ public class GameSparker
 
     public static void GameTick()
     {
+        World.GameTick();
         FrameTrace.ClearMessages();
     }
 

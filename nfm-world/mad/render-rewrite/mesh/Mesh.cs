@@ -28,7 +28,7 @@ public class Mesh : Transform, IRenderable
     protected readonly GraphicsDevice GraphicsDevice;
 
     protected Submesh?[] Submeshes;
-    protected LineMesh? LineMesh;
+    protected LineMesh?[]? LineMeshes;
     
     public readonly PolygonTriangulator.TriangulationResult[] Triangulation;
 
@@ -114,7 +114,17 @@ public class Mesh : Transform, IRenderable
             submeshes[i] = ([], []);
         }
         
-        var lines = new OrderedDictionary<(Vector3 point0, Vector3 point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>(LineEqualityComparer.Instance);
+        var lines = new OrderedDictionary<
+            (Vector3 point0, Vector3 point1),
+            (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)
+        >[(int)(LineType.MaxValue + 1)];
+        for (var i = 0; i < lines.Length; i++)
+        {
+            lines[i] = new OrderedDictionary<
+                (Vector3 point0, Vector3 point1),
+                (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)
+            >(LineEqualityComparer.Instance);
+        }
         
         for (var i = 0; i < Polys.Length; i++)
         {
@@ -146,7 +156,7 @@ public class Mesh : Transform, IRenderable
                 {
                     var p0 = poly.Points[j];
                     var p1 = poly.Points[(j + 1) % poly.Points.Length];
-                    lines.TryAdd((p0, p1), (poly, result.Centroid, result.PlaneNormal));
+                    lines[(int)poly.LineType].TryAdd((p0, p1), (poly, result.Centroid, result.PlaneNormal));
                 }
             }
         }
@@ -169,9 +179,12 @@ public class Mesh : Transform, IRenderable
             Submeshes[i] = new Submesh(type, this, GraphicsDevice, vertexBuffer, indexBuffer, indices.Count / 3);
         }
 
-        if (lines.Count > 0)
+        LineMeshes = new LineMesh[lines.Length];
+        for (var i = 0; i < lines.Length; i++)
         {
-            LineMesh = new LineMesh(this, GraphicsDevice, lines);
+            var lineDict = lines[i];
+            if (lineDict.Count == 0) continue;
+            LineMeshes[i] = new LineMesh(this, GraphicsDevice, lineDict, (LineType)i);
         }
     }
 
@@ -251,7 +264,17 @@ public class Mesh : Transform, IRenderable
                 submesh.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
             }
         }
-        if (!isCreateShadowMap) LineMesh?.Render(camera, lightCamera, matrixWorld);
+
+        if (!isCreateShadowMap)
+        {
+            if (LineMeshes != null)
+            {
+                foreach (var lineMesh in LineMeshes)
+                {
+                    lineMesh?.Render(camera, lightCamera, matrixWorld);
+                }
+            }
+        }
 
         if (!isCreateShadowMap) Flames.Render(camera);
         

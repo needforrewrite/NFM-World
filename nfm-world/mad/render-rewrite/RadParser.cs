@@ -287,6 +287,8 @@ public class RadParser
                 );
                 _points.Add(transformedPoint);
             }
+            
+            else if (line.StartsWith("noOutline")) _noOutline = true;
 
             else if (line.StartsWith("</p>"))
             {
@@ -298,7 +300,7 @@ public class RadParser
                     {
                         poly = poly with { LineType = LineType.Colored };
                     }
-                    else
+                    else if (poly.LineType == LineType.Flat)
                     {
                         poly = poly with { LineType = null };
                     }

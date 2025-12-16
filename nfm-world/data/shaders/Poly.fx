@@ -40,6 +40,9 @@ bool Expand;
 float RandomFloat;
 float Darken; // set below 1.0f to adjust brightness
 
+// Charged line blink
+float ChargedBlinkAmount;
+
 texture ShadowMap;
 sampler ShadowMapSampler = sampler_state
 {
@@ -123,6 +126,13 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 
 	// Apply snap
 	color += (color * (SnapColor * 255.0 / 100.0));
+
+    if (ChargedBlinkAmount > 0.0f)
+    {
+        color.r = (25.5 * ChargedBlinkAmount) / 255.0;
+        color.g = (128.0 + 12.8 * ChargedBlinkAmount) / 255.0;
+        color.b = 1.0;
+    }
 
     VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
 

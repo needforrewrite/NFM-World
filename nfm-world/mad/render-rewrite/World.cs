@@ -50,4 +50,39 @@ public static class World
         FogDensity = 0.857f;
         LightDirection = new Vector3(0, 1, 0);
     }
+
+    private static int _tick = 0;
+    
+    public static bool ChargedPolyBlink;
+    public static float ChargeAmount;
+    public static int ChargedBlinkCountdown;
+    public static void GameTick()
+    {
+        if (_tick == 2) // delay all operations by 3 ticks because of the adjusted tickrate
+        {
+            if (ChargedBlinkCountdown > 0)
+            {
+                ChargedPolyBlink = false;
+                ChargedBlinkCountdown--;
+            }
+            else
+            {
+                if (ChargedPolyBlink)
+                {
+                    ChargedPolyBlink = false;
+                }
+                else
+                {
+                    ChargedPolyBlink = true;
+                    ChargeAmount = URandom.Single() * 15.0F - 6.0F;
+                }
+
+                _tick = 0;
+            }
+        }
+        else
+        {
+            _tick++;
+        }
+    }
 }
