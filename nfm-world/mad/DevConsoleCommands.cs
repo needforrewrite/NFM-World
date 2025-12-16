@@ -379,6 +379,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
+            GameSparker.MainMenu = new MainMenuPhase();
             GameSparker.CurrentPhase = GameSparker.MainMenu;
             console.Log("Returned to main menu.");
         }

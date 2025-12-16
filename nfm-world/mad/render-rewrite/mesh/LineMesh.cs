@@ -48,7 +48,7 @@ public class LineMesh
             indices.AddRange(inds);
             foreach (var vert in verts)
             {
-                data.Add(new Mesh.VertexPositionNormalColorCentroid(vert.ToXna(), normal.ToXna(), centroid.ToXna(), color));
+                data.Add(new Mesh.VertexPositionNormalColorCentroid(vert.ToXna(), normal.ToXna(), centroid.ToXna(), color, 0.0f));
             }
         }
 

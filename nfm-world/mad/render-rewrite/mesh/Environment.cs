@@ -316,7 +316,7 @@ public class Environment
                 points.Add(new Vector3(px, py, pz));
             }
 
-            var poly = new Rad3dPoly(color, null, PolyType.Flat, null, points.ToArray());
+            var poly = new Rad3dPoly(color, null, PolyType.Flat, null, 0.0f, points.ToArray());
             verts.Add(poly);
         }
 
@@ -341,7 +341,7 @@ public class Environment
                 points.Add(new Vector3(px, py, pz));
             }
 
-            var poly = new Rad3dPoly(color, null, PolyType.Flat, null, points.ToArray());
+            var poly = new Rad3dPoly(color, null, PolyType.Flat, null, 0.0f, points.ToArray());
             verts.Add(poly);
         }
 
@@ -676,7 +676,7 @@ public class Environment
                     points.Add(new Vector3(px[m, l], py[m, l], pz[m, l]));
                 }
 
-                polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, points.ToArray()));
+                polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, 0.0f, points.ToArray()));
             }
 
             for (int j = 0; j < 12; j++)
@@ -743,7 +743,7 @@ public class Environment
                     points.Add(new Vector3(px[mx, lx], py[mx, lx], pz[mx, lx]));
                 }
 
-                polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, points.ToArray()));
+                polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, 0.0f, points.ToArray()));
             }
 
             {
@@ -756,7 +756,7 @@ public class Environment
                     points.Add(new Vector3(px[0, j], py[0, j], pz[0, j]));
                 }
 
-                polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, points.ToArray()));
+                polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, 0.0f, points.ToArray()));
             }
         }
 
@@ -923,7 +923,7 @@ public class Environment
                     points.Add(new Vector3(mx[l], my[l], mz[l]));
                 }
 
-                polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, points.ToArray()));
+                polys.Add(new Rad3dPoly(color, null, PolyType.Flat, null, 0.0f, points.ToArray()));
             }
         }
 

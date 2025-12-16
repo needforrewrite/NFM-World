@@ -47,7 +47,7 @@ public class InRacePhase : BasePhase
         base.Enter();
         
         current_stage = new Stage("nfm2/15_dwm", _graphicsDevice);
-        cars_in_race[playerCarIndex] = new InGameCar(14, GameSparker.cars[14], 0, 0);
+        cars_in_race[playerCarIndex] = new InGameCar(playerCarID, GameSparker.cars[playerCarID], 0, 0);
         current_scene = new Scene(
             _graphicsDevice,
             [current_stage, ..cars_in_race],

@@ -318,6 +318,7 @@ public class WheelMeshBuilder
                 null,
                 PolyType.Flat,
                 noOutline ? null : LineType.Flat,
+                0.0f,
                 verts
             ));
         }
