@@ -10,8 +10,9 @@ using Microsoft.Xna.Framework;
 
 namespace NFMWorld.Mad.UI;
 
-public class ModelEditor
+public class ModelEditorPhase : BasePhase
 {
+    private readonly GraphicsDevice _graphicsDevice;
     private bool _isOpen = false;
     private string[] _userModelNames = [];
     private string? _currentModelPath = null;
@@ -61,7 +62,6 @@ public class ModelEditor
     private int _mouseX;
     private int _mouseY;
     private int _selectedPolygonIndex = -1; // -1 means no selection
-    private bool _mouseDownThisFrame = false;
     
     // Text editor highlighting
     private int _textEditorSelectionStart = -1;
@@ -73,8 +73,17 @@ public class ModelEditor
     private bool _polygonEditorDirty = false;
     private int _polygonEditorLastSelectedIndex = -1; // Track which polygon is being edited
     
-    public ModelEditor()
+    // 3D
+    public static PerspectiveCamera camera = new();
+    public static OrthoCamera lightCamera = new()
     {
+        Width = 8192,
+        Height = 8192
+    };
+    
+    public ModelEditorPhase(GraphicsDevice graphicsDevice)
+    {
+        _graphicsDevice = graphicsDevice;
         RefreshUserModels();
     }
     
@@ -106,27 +115,29 @@ public class ModelEditor
     }
     
     public bool IsOpen => _isOpen;
-    
-    public void Open()
+
+    public override void Enter()
     {
+        base.Enter();
+
         _isOpen = true;
         
         // render an empty stage for 1 frame to init shaders
         _modelViewerStage = new Stage("empty", GameSparker._graphicsDevice);
         World.Snap = new Color3(100, 100, 100);
         
-        GameSparker.camera.Position = new Vector3(0, -800, -800);
-        GameSparker.camera.LookAt = Vector3.Zero;
-        GameSparker.lightCamera.Position = GameSparker.camera.Position + new Vector3(0, -5000, 0);
-        GameSparker.lightCamera.LookAt = GameSparker.camera.Position + new Vector3(1f, 0, 0);
+        camera.Position = new Vector3(0, -800, -800);
+        camera.LookAt = Vector3.Zero;
+        lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
+        lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0);
         
-        GameSparker.camera.OnBeforeRender();
-        GameSparker.lightCamera.OnBeforeRender();
+        camera.OnBeforeRender();
+        lightCamera.OnBeforeRender();
         
         GameSparker._graphicsDevice.BlendState = BlendState.Opaque;
         GameSparker._graphicsDevice.DepthStencilState = DepthStencilState.Default;
         
-        _modelViewerStage.Render(GameSparker.camera, GameSparker.lightCamera, false);
+        _modelViewerStage.Render(camera, lightCamera, false);
         
         _currentModel = null;
         _currentModelPath = null;
@@ -134,9 +145,11 @@ public class ModelEditor
         
         ResetView();
     }
-    
-    public void Close()
+
+    public override void Exit()
     {
+        base.Exit();
+
         _isOpen = false;
         _currentModel = null;
         _currentModelPath = null;
@@ -367,12 +380,11 @@ public class ModelEditor
     public void HandleMouseDown(int x, int y)
     {
         if (!_isOpen) return;
-        _mouseDownThisFrame = true;
     }
     
     private void ProcessMouseClick()
     {
-        if (!_mouseDownThisFrame || _currentModel == null) return;
+        if (!MouseDownThisFrame || _currentModel == null) return;
         
         var io = ImGui.GetIO();
         
@@ -424,11 +436,11 @@ public class ModelEditor
             Position = _cameraPosition,
             LookAt = Vector3.Zero,
             Up = -Vector3.UnitY,
-            Width = GameSparker.camera.Width,
-            Height = GameSparker.camera.Height,
-            Fov = GameSparker.camera.Fov,  // Use actual FOV from settings
-            Near = GameSparker.camera.Near,
-            Far = GameSparker.camera.Far
+            Width = camera.Width,
+            Height = camera.Height,
+            Fov = camera.Fov,  // Use actual FOV from settings
+            Near = camera.Near,
+            Far = camera.Far
         };
         
         // Call OnBeforeRender to compute the View and Projection matrices
@@ -677,9 +689,11 @@ public class ModelEditor
         _modelTextContent = sb.ToString();
         _textEditorDirty = true;
     }
-    
-    public void Update()
+
+    public override void GameTick()
     {
+        base.GameTick();
+
         if (!_isOpen) return;
         
         // Apply movement
@@ -716,11 +730,19 @@ public class ModelEditor
         
         // Process mouse clicks for polygon selection
         ProcessMouseClick();
-        _mouseDownThisFrame = false;
     }
-    
-    public void Render()
+
+    public override void Render()
     {
+        base.Render();
+
+        _graphicsDevice.Clear(new Microsoft.Xna.Framework.Color(135, 206, 235));
+    }
+
+    public override void RenderImgui()
+    {
+        base.RenderImgui();
+        
         if (!_isOpen) return;
         
         var io = ImGui.GetIO();
@@ -810,10 +832,7 @@ public class ModelEditor
                     {
                         var err = $"Error saving/reloading model:\n{ex.Message}";
                         GameSparker.MessageWindow.ShowMessage("Error", err);
-                        if (GameSparker.Writer != null)
-                        {
-                            GameSparker.Writer.WriteLine(err, "error");
-                        }
+                        GameSparker.Writer.WriteLine(err, "error");
                     }
                 }
                 
@@ -1353,19 +1372,13 @@ public class ModelEditor
             //_showPolygonEditor = false;
             _polygonEditorDirty = false;
             
-            if (GameSparker.Writer != null)
-            {
-                GameSparker.Writer.WriteLine($"Polygon {_selectedPolygonIndex + 1} updated successfully", "info");
-            }
+            GameSparker.Writer.WriteLine($"Polygon {_selectedPolygonIndex + 1} updated successfully", "info");
         }
         catch (Exception ex)
         {
             var err = $"Error parsing updated polygon:\n{ex.Message}";
             GameSparker.MessageWindow.ShowMessage("Parse Error", err);
-            if (GameSparker.Writer != null)
-            {
-                GameSparker.Writer.WriteLine(err, "error");
-            }
+            GameSparker.Writer.WriteLine(err, "error");
         }
     }
 
@@ -1376,10 +1389,15 @@ public class ModelEditor
         GameSparker.ExitModelViewer();
     }
     
-    public void RenderModel(PerspectiveCamera camera, Camera lightCamera)
+    public override void RenderAfterSkia()
     {
+        base.RenderAfterSkia();
+        
         if (!_isOpen || _currentModel == null) return;
         
+        _graphicsDevice.BlendState = BlendState.Opaque;
+        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+
         // Set up camera with fixed orientation (looking at origin)
         camera.Position = _cameraPosition;
         camera.LookAt = Vector3.Zero; // Always look at origin, not the model position
@@ -1461,5 +1479,13 @@ public class ModelEditor
         // Restore previous states
         GameSparker._graphicsDevice.BlendState = oldBlendState;
         GameSparker._graphicsDevice.DepthStencilState = oldDepthStencilState;
+    }
+    
+    public override void WindowSizeChanged(int width, int height)
+    {
+        base.WindowSizeChanged(width, height);
+        
+        camera.Width = width;
+        camera.Height = height;
     }
 }
