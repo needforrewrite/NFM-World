@@ -100,8 +100,7 @@ public class GameSparker
     {
         DebugKeyStates[key] = true;
         
-        // ideally it would be perfect if it was the tilde key, like in Source Engine games
-        if (key == Keys.F1)
+        if (key == Keys.Oemtilde)
         {
             devConsole.Toggle();
         }
