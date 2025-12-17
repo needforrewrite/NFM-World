@@ -72,6 +72,7 @@ public class ContO
     public ContO(Mesh mesh)
     {
         _mesh = mesh;
+
         Keyx = mesh.Wheels.Select(e => (int)e.Position.X).ToArray();
         Keyz = mesh.Wheels.Select(e => (int)e.Position.Z).ToArray();
     }

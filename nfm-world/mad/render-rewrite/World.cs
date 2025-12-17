@@ -5,6 +5,7 @@ namespace NFMWorld.Mad;
 
 public static class World
 {
+    public static bool IsHyperglidingEnabled = true;
     public static int MountainSeed;
     public static float MountainCoverage;
     public static float CloudCoverage;

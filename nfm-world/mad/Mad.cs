@@ -117,7 +117,7 @@ public class Mad
 
     public bool pointInBox(float px, float py, float pz, float bx, float by, float bz, float szx, float szy, float szz)
     {
-        return px > bx - szx && px < bx + szx && pz > bz - szz && pz < bz + szz && py > by - szy && py < by + Math.Max(szy, 5);
+        return px > bx - szx && px < bx + szx && pz > bz - szz && pz < bz + szz && py > by - szy && py < by + (szy == 0 ? 100 : szy);
     }
 
     /*
@@ -448,7 +448,6 @@ public class Mad
         }
 
 
-        var bottomy = conto.Grat;
         if (zyinv)
         {
             if (xyinv)
@@ -469,9 +468,25 @@ public class Mad
             BadLanding = true;
         }
 
-        if (BadLanding)
+        // maxine: this controls hypergliding. to fix hypergliding, set to 0, then update wheelGround to prevent
+        // car getting stuck in the ground
+        // we multiply it by tickrate because the effect caused by hypergliding is applied every tick
+        int bottomy;
+
+        if (World.IsHyperglidingEnabled)
         {
-            bottomy = Stat.Flipy + Squash;
+            if (BadLanding)
+            {
+                bottomy = (int) ((Stat.Flipy + Squash) * _tickRate);
+            }
+            else
+            {
+                bottomy = (int)(conto.Grat * _tickRate);
+            }
+        }
+        else
+        {
+            bottomy = 0;
         }
 
         control.Zyinv = zyinv;
@@ -1286,15 +1301,30 @@ public class Mad
             Skid = 2;
         }
 
+        // maxine: we counteract the reduced bottomy from hypergliding here
+        int wheelGround;
+        if (World.IsHyperglidingEnabled)
+        {
+            wheelGround = (int)((bottomy * 1 / _tickRate) * (1 - _tickRate));
+            if (!BadLanding)
+            {
+                wheelGround = -wheelGround;
+            }
+        }
+        else
+        {
+            wheelGround = BadLanding ? Stat.Flipy + Squash : -conto.Grat;
+        }
+
         var nGroundedWheels = 0;
         Span<bool> isWheelGrounded = stackalloc bool[4];
-        float groundY = 250f;
+        float groundY = 250 + wheelGround;
         float wheelYThreshold = 5f;
         float f48 = 0.0F;
         for (var i49 = 0; i49 < 4; i49++)
         {
             isWheelGrounded[i49] = false;
-            if (wheely[i49] > 245.0F)
+            if (wheely[i49] > (groundY - 5f))
             {
                 nGroundedWheels++;
                 Wtouch = true;
@@ -1321,15 +1351,15 @@ public class Mad
                     //     0, BadLanding && Mtouch);
                 } // CHK2
 
-                wheely[i49] = 250.0F;
-                f48 += wheely[i49] - 250.0F;
+                wheely[i49] = groundY;
+                f48 += wheely[i49] - groundY;
                 isWheelGrounded[i49] = true;
 
                 bounceRebound(i49, conto);
             }
         }
 
-        OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical);
+        OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical);
 
         // sparks and scrapes
         for (var i79 = 0; i79 < 4; i79++)
@@ -1504,6 +1534,7 @@ public class Mad
         } else
             _cntouch = 0; // CHK12
         //DS-addons: Bad landing hotfix
+        
         int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
         py = conto.Y - newy;
         conto.Y = newy;
@@ -2121,7 +2152,7 @@ public class Mad
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
     private void OmarTrackPieceCollision(Control control, ContO conto, float[] wheelx, float[] wheely, float[] wheelz,
-        float groundY, float wheelYThreshold, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical)
+        float groundY, float wheelYThreshold, int wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical)
     {
         hitVertical = false;
 
@@ -2144,13 +2175,13 @@ public class Mad
                 // find the first piece that I am colliding with, snap wheel to it and stop
                 if ( // CHK3
                     !isWheelTouchingPiece[k] &&
-                    pointInBox(wheelx[k], wheely[k], wheelz[k], Trackers.X[j], Trackers.Y[j], Trackers.Z[j], Trackers.Radx[j], Trackers.Rady[j], Trackers.Radz[j])
+                    pointInBox(wheelx[k], wheely[k] - wheelGround, wheelz[k], Trackers.X[j], Trackers.Y[j], Trackers.Z[j], Trackers.Radx[j], Trackers.Rady[j], Trackers.Radz[j])
                    )
                 {
                     // ignore y == groundY because those are likely road pieces, which could make us break the loop early and miss a ramp
                     // this is also the reason why on the ground road and ramp ordering does not matter
                     // but when using floating pieces, you have to make sure the ramp comes first in the code
-                    if (Trackers.Xy[j] == 0 && Trackers.Zy[j] == 0 && Trackers.Y[j] != groundY && wheely[k] > Trackers.Y[j] - wheelYThreshold)
+                    if (Trackers.Xy[j] == 0 && Trackers.Zy[j] == 0 && Trackers.Y[j] != groundY - wheelGround && wheely[k] - wheelGround > Trackers.Y[j] - wheelYThreshold)
                     {
                         ++nGroundedWheels;
                         Wtouch = true;
@@ -2169,7 +2200,7 @@ public class Mad
                             // conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_59 * CarDefine.Simag[Cn], 0, BadLanding && Mtouch);
                         }
 
-                        wheely[k] = Trackers.Y[j]; // snap wheel to the surface
+                        wheely[k] = Trackers.Y[j] + wheelGround; // snap wheel to the surface
 
                         // sparks and scrape
                         if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
@@ -2321,8 +2352,8 @@ public class Mad
                         // from (tz, ty) to (wz, wy) but rotated by (zy + 90) degrees around (tz, ty)
                         // https://www.geogebra.org/geometry/vhaznznv
                         // let's call this rotated vector (rz, ry)
-                        float ry = Trackers.Y[j] + ((wheely[k] - Trackers.Y[j]) * UMath.Cos(pAngle) - (wheelz[k] - Trackers.Z[j]) * UMath.Sin(pAngle));
-                        float rz = Trackers.Z[j] + ((wheely[k] - Trackers.Y[j]) * UMath.Sin(pAngle) + (wheelz[k] - Trackers.Z[j]) * UMath.Cos(pAngle));
+                        float ry = Trackers.Y[j] + wheelGround + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Cos(pAngle) - (wheelz[k] - Trackers.Z[j]) * UMath.Sin(pAngle));
+                        float rz = Trackers.Z[j] + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Sin(pAngle) + (wheelz[k] - Trackers.Z[j]) * UMath.Cos(pAngle));
 
                         // commenting this whole if and its body out makes us phase through ramps
                         // making this always true makes us snap to ramps even when we are airborne
@@ -2384,8 +2415,8 @@ public class Mad
                         // it seems the intention with this whole block was to rotate the t -> w vector, manipulate it
                         // then rotate back. If the surface being intersected is not ramping us up, then no changes are
                         // made to the vector and the rotation back just reverses the previous operation, making no changes
-                        wheely[k] = Trackers.Y[j] + ((ry - Trackers.Y[j]) * UMath.Cos(-pAngle) - (rz - Trackers.Z[j]) * UMath.Sin(-pAngle));
-                        wheelz[k] = Trackers.Z[j] + ((ry - Trackers.Y[j]) * UMath.Sin(-pAngle) + (rz - Trackers.Z[j]) * UMath.Cos(-pAngle));
+                        wheely[k] = Trackers.Y[j] + wheelGround + ((ry - Trackers.Y[j] - wheelGround) * UMath.Cos(-pAngle) - (rz - Trackers.Z[j]) * UMath.Sin(-pAngle));
+                        wheelz[k] = Trackers.Z[j] + ((ry - Trackers.Y[j] - wheelGround) * UMath.Sin(-pAngle) + (rz - Trackers.Z[j]) * UMath.Cos(-pAngle));
 
                         isWheelTouchingPiece[k] = true;
                     } // CHK9
@@ -2393,8 +2424,8 @@ public class Mad
                     {
                         int pAngle = 90 + Trackers.Xy[j];
 
-                        float ry = Trackers.Y[j] + ((wheely[k] - Trackers.Y[j]) * UMath.Cos(pAngle) - (wheelx[k] - Trackers.X[j]) * UMath.Sin(pAngle));
-                        float rx = Trackers.X[j] + ((wheely[k] - Trackers.Y[j]) * UMath.Sin(pAngle) + (wheelx[k] - Trackers.X[j]) * UMath.Cos(pAngle));
+                        float ry = Trackers.Y[j] + wheelGround + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Cos(pAngle) - (wheelx[k] - Trackers.X[j]) * UMath.Sin(pAngle));
+                        float rx = Trackers.X[j] + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Sin(pAngle) + (wheelx[k] - Trackers.X[j]) * UMath.Cos(pAngle));
                         if (rx > Trackers.X[j] /*&& rx < Trackers.X[j] + 200*/)
                         {
                             float maxXy = 50;
@@ -2427,8 +2458,8 @@ public class Mad
                             }
                         }
 
-                        wheely[k] = Trackers.Y[j] + ((ry - Trackers.Y[j]) * UMath.Cos(-pAngle) - (rx - Trackers.X[j]) * UMath.Sin(-pAngle));
-                        wheelx[k] = Trackers.X[j] + ((ry - Trackers.Y[j]) * UMath.Sin(-pAngle) + (rx - Trackers.X[j]) * UMath.Cos(-pAngle));
+                        wheely[k] = Trackers.Y[j] + wheelGround + ((ry - Trackers.Y[j] - wheelGround) * UMath.Cos(-pAngle) - (rx - Trackers.X[j]) * UMath.Sin(-pAngle));
+                        wheelx[k] = Trackers.X[j] + ((ry - Trackers.Y[j] - wheelGround) * UMath.Sin(-pAngle) + (rx - Trackers.X[j]) * UMath.Cos(-pAngle));
 
                         isWheelTouchingPiece[k] = true;
                     }
