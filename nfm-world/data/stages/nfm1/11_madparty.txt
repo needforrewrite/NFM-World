@@ -13,6 +13,7 @@ name(The Mad Party)
 
 soundtrack(nfm1,stage11.zipo)
 soundtrackfreqmul(0.89)
+soundtracktempomul(11.6)
 
 nlaps(10)
 

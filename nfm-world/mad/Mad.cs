@@ -7,6 +7,11 @@ public class Mad
 {
     private static readonly float _tickRate = GameSparker.PHYSICS_MULTIPLIER;
 
+    public event EventHandler<(float f, int i)> SfxPlayCrash;
+    public event EventHandler<(int i, float f)> SfxPlaySkid;
+    public event EventHandler<(int i, int i2, int i3)> SfxPlayScrape;
+    public event EventHandler<(int i, int i2, int i3)> SfxPlayGscrape;
+
     internal bool Btab;
     internal int Capcnt;
     internal bool BadLanding;

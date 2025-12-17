@@ -13,7 +13,7 @@ internal class RadicalMusic : IRadicalMusic
     private bool _readable;
     private readonly int _music;
 
-    public RadicalMusic(File file)
+    public RadicalMusic(File file, double tempomul)
     {
 #if USE_BASS
         try
@@ -39,7 +39,7 @@ internal class RadicalMusic : IRadicalMusic
                 zipStream.Entries.First().Open().CopyTo(resultStream);
                 var arr = resultStream.ToArray();
 
-                if ((_music = Bass.MusicLoad(arr, 0, arr.Length, BassFlags.Loop)) == 0)
+                if ((_music = Bass.MusicLoad(arr, 0, arr.Length, BassFlags.Loop | BassFlags.Decode)) == 0)
                 {
                     // it ain't playable
                     throw new Exception(SoundClip.GetBassError(Bass.LastError));
@@ -56,6 +56,8 @@ internal class RadicalMusic : IRadicalMusic
             }
 
             Bass.Configure(Configuration.PlaybackBufferLength, 1000);
+            _music = BassFx.TempoCreate(_music, BassFlags.Loop);
+            Bass.ChannelSetAttribute(_music, ChannelAttribute.Tempo, tempomul);
 
             _readable = true;
             //SetVolume(GameSparker.Volume);

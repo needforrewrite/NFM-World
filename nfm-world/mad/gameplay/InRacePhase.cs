@@ -60,6 +60,13 @@ public class InRacePhase : BasePhase
         );
     }
 
+    public override void Exit()
+    {
+        base.Exit();
+
+        GameSparker.CurrentMusic?.Unload();
+    }
+
     public static void LoadStage(string stageName, GraphicsDevice graphicsDevice)
     {
         current_stage = new Stage(stageName, graphicsDevice);
@@ -68,7 +75,7 @@ public class InRacePhase : BasePhase
 
         if(!current_stage.musicPath.IsNullOrEmpty())
         {
-            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{current_stage.musicPath}"));
+            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{current_stage.musicPath}"), current_stage.musicTempoMul);
             GameSparker.CurrentMusic.SetFreqMultiplier(current_stage.musicFreqMul);
             GameSparker.CurrentMusic.Play();   
         }

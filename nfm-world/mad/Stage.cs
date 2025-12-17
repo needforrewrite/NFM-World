@@ -21,6 +21,7 @@ public class Stage : IRenderable
     public string musicPath = "";
     // soundtrackfreqmul(mul)
     public double musicFreqMul = 1.0d;
+    public double musicTempoMul = 0d;
 
     public Sky sky;
     public Ground ground;
@@ -354,6 +355,11 @@ public class Stage : IRenderable
                 {
                     float mul = Utility.GetFloat("soundtrackfreqmul", line, 0);
                     musicFreqMul = mul;
+                }
+                if(line.StartsWith("soundtracktempomul"))
+                {
+                    float mul = Utility.GetFloat("soundtracktempomul", line, 0);
+                    musicTempoMul = mul;
                 }
 
                 // stage walls
