@@ -399,52 +399,6 @@ public class Mad
     int Mtcount = 0;
     int py = 0;
 
-    internal void D2(Control control, ContO conto)
-    {
-        Pzy++;
-        conto.Xz = 0;
-
-        int bottomy = conto.Grat;
-
-        var wheelx = new float[4];
-        var wheelz = new float[4];
-        var wheely = new float[4];
-
-        for (var i24 = 0; i24 < 4; i24++)
-        {
-            wheelx[i24] = conto.Keyx[i24] + conto.X;
-            wheely[i24] = conto.Y;
-            wheelz[i24] = conto.Z + conto.Keyz[i24];
-            //Scy[i24] += 7.0F * _tickRate;
-        }
-
-        UMath.Rot(wheelx, wheely, conto.X, conto.Y, Pxy, 4);
-        UMath.Rot(wheelz, wheely, conto.Z, conto.Y, Pzy, 4);
-        UMath.Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
-
-        int xneg = 1;
-
-        // car sliding fix by jacher: do not adjust to tickrate
-        conto.X = (int) ((wheelx[0] - conto.Keyx[0] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[0] * UMath.Sin(conto.Xz) + 
-            wheelx[1] - conto.Keyx[1] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[1] * UMath.Sin(conto.Xz) + 
-            wheelx[2] - conto.Keyx[2] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[2] * UMath.Sin(conto.Xz) + 
-            wheelx[3] - conto.Keyx[3] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz)) / 4.0F
-            + bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz));
-            
-        conto.Z = (int) (
-            (wheelz[0] - xneg * conto.Keyz[0] * UMath.Cos(conto.Xz) - conto.Keyx[0] * UMath.Sin(conto.Xz)
-            + wheelz[1] - xneg * conto.Keyz[1] * UMath.Cos(conto.Xz) - conto.Keyx[1] * UMath.Sin(conto.Xz) 
-            + wheelz[2] - xneg * conto.Keyz[2] * UMath.Cos(conto.Xz) - conto.Keyx[2] * UMath.Sin(conto.Xz) 
-            + wheelz[3] - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz) - conto.Keyx[3] * UMath.Sin(conto.Xz)) / 4.0F
-            + bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz));
-
-        int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy));
-        conto.Y = newy;
-
-        conto.Zy = Pzy;
-        conto.Xy = Pxy;
-    }
-
     internal void Drive(Control control, ContO conto)
     {
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_fxz:0.00}, cxz: {Cxz:0.00}");
@@ -1055,7 +1009,7 @@ public class Mad
         for (var i24 = 0; i24 < 4; i24++)
         {
             wheelx[i24] = conto.Keyx[i24] + conto.X;
-            wheely[i24] = bottomy + conto.Y;
+            wheely[i24] = conto.Y;
             wheelz[i24] = conto.Z + conto.Keyz[i24];
             Scy[i24] += 7.0F * _tickRate;
         }
@@ -1333,9 +1287,11 @@ public class Mad
             Skid = 2;
         }
 
+        var wheelGround = BadLanding ? roofy : -bottomy;
+
         var nGroundedWheels = 0;
         Span<bool> isWheelGrounded = stackalloc bool[4];
-        float groundY = BadLanding ? 250 + roofy : 250f;
+        float groundY = 250 + wheelGround;
         float wheelYThreshold = 5f;
         float f48 = 0.0F;
         for (var i49 = 0; i49 < 4; i49++)
@@ -1376,7 +1332,7 @@ public class Mad
             }
         }
 
-        OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical);
+        OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical);
 
         // sparks and scrapes
         for (var i79 = 0; i79 < 4; i79++)
@@ -1552,7 +1508,7 @@ public class Mad
             _cntouch = 0; // CHK12
         //DS-addons: Bad landing hotfix
         
-        int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
+        int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F + airy);
         py = conto.Y - newy;
         conto.Y = newy;
         //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) / 4.0F - (float) i_10 * UMath.Cos(this.Pzy) * UMath.Cos(this.Pxy) + f_12);
@@ -1570,14 +1526,14 @@ public class Mad
             wheelx[1] - conto.Keyx[1] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[1] * UMath.Sin(conto.Xz) + 
             wheelx[2] - conto.Keyx[2] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[2] * UMath.Sin(conto.Xz) + 
             wheelx[3] - conto.Keyx[3] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz)) / 4.0F 
-            + bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz) + airx);
+            + airx);
             
         conto.Z = (int) (
             (wheelz[0] - xneg * conto.Keyz[0] * UMath.Cos(conto.Xz) - conto.Keyx[0] * UMath.Sin(conto.Xz)
             + wheelz[1] - xneg * conto.Keyz[1] * UMath.Cos(conto.Xz) - conto.Keyx[1] * UMath.Sin(conto.Xz) 
             + wheelz[2] - xneg * conto.Keyz[2] * UMath.Cos(conto.Xz) - conto.Keyx[2] * UMath.Sin(conto.Xz) 
             + wheelz[3] - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz) - conto.Keyx[3] * UMath.Sin(conto.Xz)) / 4.0F 
-            + bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz) + airz);
+            + airz);
 
         if (Math.Abs(Speed) > 10.0F || !Mtouch)
         {
@@ -2169,7 +2125,7 @@ public class Mad
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
     private void OmarTrackPieceCollision(Control control, ContO conto, float[] wheelx, float[] wheely, float[] wheelz,
-        float groundY, float wheelYThreshold, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical)
+        float groundY, float wheelYThreshold, int wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical)
     {
         hitVertical = false;
 
@@ -2198,7 +2154,7 @@ public class Mad
                     // ignore y == groundY because those are likely road pieces, which could make us break the loop early and miss a ramp
                     // this is also the reason why on the ground road and ramp ordering does not matter
                     // but when using floating pieces, you have to make sure the ramp comes first in the code
-                    if (Trackers.Xy[j] == 0 && Trackers.Zy[j] == 0 && Trackers.Y[j] != groundY && wheely[k] > Trackers.Y[j] - wheelYThreshold)
+                    if (Trackers.Xy[j] == 0 && Trackers.Zy[j] == 0 && Trackers.Y[j] != groundY - wheelGround && wheely[k] > Trackers.Y[j] - wheelYThreshold)
                     {
                         ++nGroundedWheels;
                         Wtouch = true;
@@ -2217,7 +2173,7 @@ public class Mad
                             // conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_59 * CarDefine.Simag[Cn], 0, BadLanding && Mtouch);
                         }
 
-                        wheely[k] = Trackers.Y[j]; // snap wheel to the surface
+                        wheely[k] = Trackers.Y[j] + wheelGround; // snap wheel to the surface
 
                         // sparks and scrape
                         if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
@@ -2369,8 +2325,8 @@ public class Mad
                         // from (tz, ty) to (wz, wy) but rotated by (zy + 90) degrees around (tz, ty)
                         // https://www.geogebra.org/geometry/vhaznznv
                         // let's call this rotated vector (rz, ry)
-                        float ry = Trackers.Y[j] + ((wheely[k] - Trackers.Y[j]) * UMath.Cos(pAngle) - (wheelz[k] - Trackers.Z[j]) * UMath.Sin(pAngle));
-                        float rz = Trackers.Z[j] + ((wheely[k] - Trackers.Y[j]) * UMath.Sin(pAngle) + (wheelz[k] - Trackers.Z[j]) * UMath.Cos(pAngle));
+                        float ry = Trackers.Y[j] + wheelGround + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Cos(pAngle) - (wheelz[k] - Trackers.Z[j]) * UMath.Sin(pAngle));
+                        float rz = Trackers.Z[j] + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Sin(pAngle) + (wheelz[k] - Trackers.Z[j]) * UMath.Cos(pAngle));
 
                         // commenting this whole if and its body out makes us phase through ramps
                         // making this always true makes us snap to ramps even when we are airborne
@@ -2432,8 +2388,8 @@ public class Mad
                         // it seems the intention with this whole block was to rotate the t -> w vector, manipulate it
                         // then rotate back. If the surface being intersected is not ramping us up, then no changes are
                         // made to the vector and the rotation back just reverses the previous operation, making no changes
-                        wheely[k] = Trackers.Y[j] + ((ry - Trackers.Y[j]) * UMath.Cos(-pAngle) - (rz - Trackers.Z[j]) * UMath.Sin(-pAngle));
-                        wheelz[k] = Trackers.Z[j] + ((ry - Trackers.Y[j]) * UMath.Sin(-pAngle) + (rz - Trackers.Z[j]) * UMath.Cos(-pAngle));
+                        wheely[k] = Trackers.Y[j] + wheelGround + ((ry - Trackers.Y[j] - wheelGround) * UMath.Cos(-pAngle) - (rz - Trackers.Z[j]) * UMath.Sin(-pAngle));
+                        wheelz[k] = Trackers.Z[j] + ((ry - Trackers.Y[j] - wheelGround) * UMath.Sin(-pAngle) + (rz - Trackers.Z[j]) * UMath.Cos(-pAngle));
 
                         isWheelTouchingPiece[k] = true;
                     } // CHK9
@@ -2441,8 +2397,8 @@ public class Mad
                     {
                         int pAngle = 90 + Trackers.Xy[j];
 
-                        float ry = Trackers.Y[j] + ((wheely[k] - Trackers.Y[j]) * UMath.Cos(pAngle) - (wheelx[k] - Trackers.X[j]) * UMath.Sin(pAngle));
-                        float rx = Trackers.X[j] + ((wheely[k] - Trackers.Y[j]) * UMath.Sin(pAngle) + (wheelx[k] - Trackers.X[j]) * UMath.Cos(pAngle));
+                        float ry = Trackers.Y[j] + wheelGround + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Cos(pAngle) - (wheelx[k] - Trackers.X[j]) * UMath.Sin(pAngle));
+                        float rx = Trackers.X[j] + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Sin(pAngle) + (wheelx[k] - Trackers.X[j]) * UMath.Cos(pAngle));
                         if (rx > Trackers.X[j] /*&& rx < Trackers.X[j] + 200*/)
                         {
                             float maxXy = 50;
@@ -2475,8 +2431,8 @@ public class Mad
                             }
                         }
 
-                        wheely[k] = Trackers.Y[j] + ((ry - Trackers.Y[j]) * UMath.Cos(-pAngle) - (rx - Trackers.X[j]) * UMath.Sin(-pAngle));
-                        wheelx[k] = Trackers.X[j] + ((ry - Trackers.Y[j]) * UMath.Sin(-pAngle) + (rx - Trackers.X[j]) * UMath.Cos(-pAngle));
+                        wheely[k] = Trackers.Y[j] + wheelGround + ((ry - Trackers.Y[j] - wheelGround) * UMath.Cos(-pAngle) - (rx - Trackers.X[j]) * UMath.Sin(-pAngle));
+                        wheelx[k] = Trackers.X[j] + ((ry - Trackers.Y[j] - wheelGround) * UMath.Sin(-pAngle) + (rx - Trackers.X[j]) * UMath.Cos(-pAngle));
 
                         isWheelTouchingPiece[k] = true;
                     }

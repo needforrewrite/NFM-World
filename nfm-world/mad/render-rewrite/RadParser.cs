@@ -97,7 +97,7 @@ public class RadParser
             {
                 Position = new Vector3(
                     wheel.Position.X - (wheelXTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    wheel.Position.Y - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
+                    wheel.Position.Y, // - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
                     wheel.Position.Z - (wheelZTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER))
                 )
             };
@@ -111,7 +111,7 @@ public class RadParser
                 var point = poly.Points[j];
                 poly.Points[j] = new Vector3(
                     point.X - (wheelXTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    point.Y - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
+                    point.Y, // - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
                     point.Z - (wheelZTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER))
                 );
             }
