@@ -12,7 +12,9 @@ name(Paninaro| Caninaro| Let's fly!)
 
 nlaps(4)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
 
 set(10,0,0,0)p
 set(10,0,5600,0)p

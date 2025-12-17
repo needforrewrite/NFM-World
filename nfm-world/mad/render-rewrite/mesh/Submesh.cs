@@ -15,6 +15,9 @@ public class Submesh(
 {
     private readonly PolyEffect _material = new(Program._polyShader);
     public readonly PolyType PolyType = polyType;
+    
+    // Static override for alpha - used by model editor reference overlay
+    public static float? AlphaOverride = null;
 
     public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap, Matrix matrixWorld)
     {
@@ -38,7 +41,7 @@ public class Submesh(
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
         _material.GetsShadowed?.SetValue(supermesh.GetsShadowed);
-        _material.Alpha?.SetValue(PolyType is PolyType.Glass ? 0.2f : 1f);
+        _material.Alpha?.SetValue(AlphaOverride ?? (PolyType is PolyType.Glass ? 0.2f : 1f));
         _material.ChargedBlinkAmount?.SetValue(0.0f);
 
         if (PolyType is PolyType.Glass)

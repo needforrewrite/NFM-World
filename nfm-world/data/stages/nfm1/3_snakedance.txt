@@ -9,7 +9,9 @@ fadefrom(6000)
 name(Do The Snake Dance)
 nlaps(7)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
 
 set(10,0,0,0)p
 set(10,0,5600,0)

@@ -11,7 +11,9 @@ name(When In Danger Just Chill Out)
 
 nlaps(3)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
 
 set(10,0,0,0)p
 

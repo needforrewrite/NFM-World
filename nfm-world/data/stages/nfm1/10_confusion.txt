@@ -12,7 +12,9 @@ fadefrom(6000)
 
 nlaps(2)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
 noarrow()
 
 set(15,0,0,0)p

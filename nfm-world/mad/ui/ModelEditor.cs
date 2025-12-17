@@ -32,6 +32,14 @@ public class ModelEditorTab
     // Selection state
     public int SelectedPolygonIndex { get; set; } = -1;
     
+    // Mouse drag state for camera control
+    public bool IsDragging { get; set; } = false;
+    public int DragStartX { get; set; } = 0;
+    public int DragStartY { get; set; } = 0;
+    public float DragStartCameraYaw { get; set; } = 0f;
+    public float DragStartCameraPitch { get; set; } = 0f;
+    public Vector3 DragStartModelPosition { get; set; } = Vector3.Zero;
+    
     // Text editor highlighting
     public int TextEditorSelectionStart { get; set; } = -1;
     public int TextEditorSelectionEnd { get; set; } = -1;
@@ -41,6 +49,11 @@ public class ModelEditorTab
     public string PolygonEditorContent { get; set; } = "";
     public bool PolygonEditorDirty { get; set; } = false;
     public int PolygonEditorLastSelectedIndex { get; set; } = -1;
+    
+    // Reference car overlay for scaling
+    public bool ShowReferenceOverlay { get; set; } = false;
+    public int ReferenceCarIndex { get; set; } = 0;
+    public float ReferenceOpacity { get; set; } = 0.5f;
     
     public string GetDisplayName()
     {
@@ -91,6 +104,9 @@ public class ModelEditorPhase : BasePhase
     // Mouse state (shared)
     private int _mouseX;
     private int _mouseY;
+    private bool _isLeftButtonDown = false;
+    private bool _isRightButtonDown = false;
+    private bool _isShiftPressed = false;
     
     // 3D
     public static PerspectiveCamera camera = new();
@@ -411,7 +427,7 @@ public class ModelEditorPhase : BasePhase
     
     private void UpdateTabCameraPosition(ModelEditorTab tab)
     {
-        // Position camera in orbit around the origin (not following model height)
+        // Position camera in orbit around the origin
         // Camera orbits at the specified distance
         var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
         var pitchRad = MathUtil.DegreesToRadians(tab.CameraPitch);
@@ -516,8 +532,55 @@ public class ModelEditorPhase : BasePhase
         base.MouseMoved(x, y, imguiWantsMouse);
 
         if (imguiWantsMouse) return;
+        if (!GameSparker._game.IsActive) return;
     
         if (!_isOpen) return;
+        
+        var tab = ActiveTab;
+        if (tab != null && tab.IsDragging)
+        {
+            // Calculate mouse delta
+            int deltaX = x - tab.DragStartX;
+            int deltaY = y - tab.DragStartY;
+            
+            if (_isShiftPressed)
+            {
+                // Pan mode: move model position
+                // Calculate pan based on camera orientation
+                var sensitivity = 1.5f;
+                var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
+                var pitchRad = MathUtil.DegreesToRadians(tab.CameraPitch);
+                
+                // Camera right vector (for horizontal panning)
+                var rightX = (float)Math.Cos(yawRad);
+                var rightZ = (float)Math.Sin(yawRad);
+                
+                // Camera up vector (for vertical panning)
+                var upX = -(float)(Math.Sin(pitchRad) * Math.Sin(yawRad));
+                var upY = (float)Math.Cos(pitchRad);
+                var upZ = -(float)(Math.Sin(pitchRad) * Math.Cos(yawRad));
+                
+                // Update model position based on pan (inverted for intuitive control)
+                var panX = (-rightX * deltaX + upX * deltaY) * sensitivity;
+                var panY = upY * deltaY * sensitivity;
+                var panZ = (-rightZ * deltaX + upZ * deltaY) * sensitivity;
+                
+                tab.ModelPosition = tab.DragStartModelPosition + new Vector3(panX, panY, panZ);
+            }
+            else
+            {
+                // Orbit mode: rotate camera around target
+                var sensitivity = 0.3f;
+                tab.CameraYaw = tab.DragStartCameraYaw + deltaX * sensitivity;
+                tab.CameraPitch = tab.DragStartCameraPitch - deltaY * sensitivity;
+                
+                // Clamp pitch to avoid gimbal lock
+                tab.CameraPitch = Math.Clamp(tab.CameraPitch, -89f, 89f);
+                
+                UpdateTabCameraPosition(tab);
+            }
+        }
+        
         _mouseX = x;
         _mouseY = y;
     }
@@ -526,31 +589,98 @@ public class ModelEditorPhase : BasePhase
     {
         base.MousePressed(x, y, imguiWantsMouse);
         if (imguiWantsMouse) return;
+        if (!GameSparker._game.IsActive) return;
         if (!_isOpen) return;
+        
+        var tab = ActiveTab;
+        if (tab != null)
+        {
+            // Check which button was pressed
+            var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+            _isLeftButtonDown = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            
+            // Check shift state
+            var keyboardState = Microsoft.Xna.Framework.Input.Keyboard.GetState();
+            _isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || 
+                             keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift);
+            
+            // Start dragging for camera control with left or right mouse button
+            if (_isLeftButtonDown || _isRightButtonDown)
+            {
+                tab.IsDragging = true;
+                tab.DragStartX = x;
+                tab.DragStartY = y;
+                tab.DragStartCameraYaw = tab.CameraYaw;
+                tab.DragStartCameraPitch = tab.CameraPitch;
+                tab.DragStartModelPosition = tab.ModelPosition;
+            }
+        }
+    }
+    
+    public override void MouseScrolled(int delta, bool imguiWantsMouse)
+    {
+        base.MouseScrolled(delta, imguiWantsMouse);
+        if (imguiWantsMouse) return;
+        if (!GameSparker._game.IsActive) return;
+        if (!_isOpen) return;
+        
+        var tab = ActiveTab;
+        if (tab != null)
+        {
+            // Zoom in/out by adjusting camera distance
+            var zoomSpeed = 0.25f;
+            tab.CameraDistance -= delta * zoomSpeed;
+            
+            // Clamp to reasonable values
+            tab.CameraDistance = Math.Clamp(tab.CameraDistance, 100f, 10000f);
+            
+            UpdateTabCameraPosition(tab);
+        }
+    }
+
+    public override void MouseReleased(int x, int y, bool imguiWantsMouse)
+    {
+        base.MouseReleased(x, y, imguiWantsMouse);
+        
+        var tab = ActiveTab;
+        if (tab != null)
+        {
+            // Check if this was a click (not a drag)
+            bool wasClick = tab.IsDragging && 
+                           GameSparker._game.IsActive &&
+                           Math.Abs(x - tab.DragStartX) < 5 && 
+                           Math.Abs(y - tab.DragStartY) < 5;
+            
+            // Stop dragging
+            tab.IsDragging = false;
+            
+            // Update button states
+            var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+            _isLeftButtonDown = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            
+            // Process click for polygon selection only if it was a simple click, not a drag
+            if (wasClick && !imguiWantsMouse && tab.Model != null)
+            {
+                var pickedIndex = PerformRayPicking(x, y, tab);
+                
+                if (pickedIndex >= 0)
+                {
+                    tab.SelectedPolygonIndex = pickedIndex;
+                }
+                else
+                {
+                    // Clicked on background, deselect
+                    tab.SelectedPolygonIndex = -1;
+                }
+            }
+        }
     }
     
     private void ProcessMouseClick()
     {
-        var tab = ActiveTab;
-        if (!MouseDownThisFrame || tab == null || tab.Model == null) return;
-        
-        var io = ImGui.GetIO();
-        
-        // Don't process clicks if ImGui wants the mouse
-        if (io.WantCaptureMouse) return;
-        
-        // Perform ray casting to find clicked polygon
-        var pickedIndex = PerformRayPicking(_mouseX, _mouseY, tab);
-        
-        if (pickedIndex >= 0)
-        {
-            tab.SelectedPolygonIndex = pickedIndex;
-        }
-        else
-        {
-            // Clicked on background, deselect
-            tab.SelectedPolygonIndex = -1;
-        }
+        // This method is no longer needed as click detection moved to MouseReleased
     }
     
     private int PerformRayPicking(int screenX, int screenY, ModelEditorTab tab)
@@ -881,9 +1011,6 @@ public class ModelEditorPhase : BasePhase
         tab.ModelRotation = rot;
         
         UpdateTabCameraPosition(tab);
-        
-        // Process mouse clicks for polygon selection
-        ProcessMouseClick();
     }
 
     public override void Render()
@@ -1186,11 +1313,10 @@ public class ModelEditorPhase : BasePhase
                 var activeTab = ActiveTab;
                 if (activeTab != null)
                 {
-                    ImGui.Columns(2, "ControlColumns", false);
+                    ImGui.Columns(3, "ControlColumns", false);
                     
-                    // Left column
+                    // Left column - Keyboard controls
                     ImGui.Text("Keyboard Controls:");
-                    ImGui.Spacing();
                     ImGui.Text("W/S: Move Forward/Back");
                     ImGui.Text("A/D: Rotate Yaw");
                     ImGui.Text("Up/Down: Rotate Pitch");
@@ -1199,13 +1325,21 @@ public class ModelEditorPhase : BasePhase
                     
                     ImGui.NextColumn();
                     
-                    // Right column
+                    // Middle column - Mouse controls
+                    ImGui.Text("Mouse Controls:");
+                    ImGui.Text("Drag: Orbit camera");
+                    ImGui.Text("Shift+Drag: Pan model");
+                    ImGui.Text("Scroll Wheel: Zoom in/out");
+                    ImGui.Text("Click: Select polygon");
+                    
+                    ImGui.NextColumn();
+                    
+                    // Right column - Sliders
                     float rotX = activeTab.ModelRotation.X;
                     float rotY = activeTab.ModelRotation.Y;
                     float rotZ = activeTab.ModelRotation.Z;
                     float posY = activeTab.ModelPosition.Y;
                     
-                    ImGui.Text("Rotation Controls:");
                     if (ImGui.SliderFloat("X (Pitch)", ref rotX, -180f, 180f))
                     {
                         var rot = activeTab.ModelRotation;
@@ -1238,8 +1372,6 @@ public class ModelEditorPhase : BasePhase
                         activeTab.CameraDistance = camDist;
                         UpdateTabCameraPosition(activeTab);
                     }
-                    
-                    ImGui.Spacing();
                     
                     if (ImGui.Button("Reset View"))
                     {
@@ -1276,7 +1408,56 @@ public class ModelEditorPhase : BasePhase
             
             if (ImGui.BeginTabItem("Scale & Align"))
             {
-                ImGui.Text("Scale & Align not yet implemented");
+                var activeTab = ActiveTab;
+                if (activeTab != null)
+                {
+                    ImGui.Text("Reference Car Overlay:");
+                    ImGui.Spacing();
+                    
+                    bool showOverlay = activeTab.ShowReferenceOverlay;
+                    if (ImGui.Checkbox("Show Reference Car", ref showOverlay))
+                    {
+                        activeTab.ShowReferenceOverlay = showOverlay;
+                    }
+                    
+                    if (activeTab.ShowReferenceOverlay)
+                    {
+                        ImGui.Spacing();
+                        
+                        // Car selection dropdown
+                        var carRads = GameSparker.CarRads;
+                        int selectedCar = activeTab.ReferenceCarIndex;
+                        
+                        if (ImGui.BeginCombo("Reference Car", selectedCar < carRads.Length ? carRads[selectedCar] : ""))
+                        {
+                            for (int i = 0; i < carRads.Length; i++)
+                            {
+                                bool isSelected = (selectedCar == i);
+                                if (ImGui.Selectable(carRads[i], isSelected))
+                                {
+                                    activeTab.ReferenceCarIndex = i;
+                                }
+                                
+                                if (isSelected)
+                                    ImGui.SetItemDefaultFocus();
+                            }
+                            ImGui.EndCombo();
+                        }
+                        
+                        ImGui.Spacing();
+                        
+                        // Opacity slider
+                        float opacity = activeTab.ReferenceOpacity;
+                        if (ImGui.SliderFloat("Overlay Opacity", ref opacity, 0.1f, 1.0f))
+                        {
+                            activeTab.ReferenceOpacity = opacity;
+                        }
+                    }
+                }
+                else
+                {
+                    ImGui.Text("No model loaded");
+                }
                 ImGui.EndTabItem();
             }
             
@@ -1721,7 +1902,7 @@ public class ModelEditorPhase : BasePhase
         var originalPosition = tab.Model.Position;
         var originalRotation = tab.Model.Rotation;
         
-        // Apply our transform
+        // Apply our transform to the main model
         tab.Model.Position = tab.ModelPosition;
         // Euler constructor is (yaw, pitch, roll)
         tab.Model.Rotation = new Euler(
@@ -1730,9 +1911,81 @@ public class ModelEditorPhase : BasePhase
             AngleSingle.FromDegrees(tab.ModelRotation.Z)   // Roll (Z-axis rotation)
         );
         
-        // TODO maybe cache this scene instead of making it every time
-        var scene = new Scene(GameSparker._graphicsDevice, [tab.Model], camera, lightCamera);
+        // Prepare list of models to render
+        var modelsToRender = new List<IRenderable>();
+        
+        // Add the main model
+        modelsToRender.Add(tab.Model);
+        
+        // Render main model first
+        var scene = new Scene(GameSparker._graphicsDevice, modelsToRender.ToArray(), camera, lightCamera);
         scene.Render(false);
+        
+        // Render reference car overlay with transparency (rendered separately after main model)
+        if (tab.ShowReferenceOverlay && tab.ReferenceCarIndex >= 0 && tab.ReferenceCarIndex < GameSparker.cars.Count)
+        {
+            var referenceCar = GameSparker.cars[tab.ReferenceCarIndex];
+            if (referenceCar != null)
+            {
+                // Store original state
+                var originalRefPosition = referenceCar.Position;
+                var originalRefRotation = referenceCar.Rotation;
+                var previousBlendState = _graphicsDevice.BlendState;
+                var previousDepthState = _graphicsDevice.DepthStencilState;
+                
+                // Store original PolyTypes and set all to Glass for alpha blending
+                var originalPolyTypes = new PolyType[referenceCar.Polys.Length];
+                for (int i = 0; i < referenceCar.Polys.Length; i++)
+                {
+                    originalPolyTypes[i] = referenceCar.Polys[i].PolyType;
+                    referenceCar.Polys[i] = referenceCar.Polys[i] with { PolyType = PolyType.Glass };
+                }
+                
+                // Rebuild mesh to apply the polytype changes
+                referenceCar.RebuildMesh();
+                
+                // Position reference car at same location as main model
+                referenceCar.Position = tab.ModelPosition;
+                referenceCar.Rotation = new Euler(
+                    AngleSingle.FromDegrees(tab.ModelRotation.Y),
+                    AngleSingle.FromDegrees(-tab.ModelRotation.X),
+                    AngleSingle.FromDegrees(tab.ModelRotation.Z)
+                );
+                
+                // Enable alpha blending
+                _graphicsDevice.BlendState = BlendState.AlphaBlend;
+                
+                // Clear depth buffer and disable depth testing so reference car always renders in front
+                _graphicsDevice.Clear(ClearOptions.DepthBuffer, Microsoft.Xna.Framework.Color.Transparent, 1.0f, 0);
+                var depthOff = new DepthStencilState
+                {
+                    DepthBufferEnable = false,
+                    DepthBufferWriteEnable = false
+                };
+                _graphicsDevice.DepthStencilState = depthOff;
+                
+                // Set alpha override for all submesh rendering
+                Submesh.AlphaOverride = tab.ReferenceOpacity;
+                
+                referenceCar.Render(camera, lightCamera, false);
+                
+                // Clear alpha override
+                Submesh.AlphaOverride = null;
+                
+                // Restore original PolyTypes
+                for (int i = 0; i < referenceCar.Polys.Length; i++)
+                {
+                    referenceCar.Polys[i] = referenceCar.Polys[i] with { PolyType = originalPolyTypes[i] };
+                }
+                referenceCar.RebuildMesh();
+                
+                // Restore states
+                _graphicsDevice.BlendState = previousBlendState;
+                _graphicsDevice.DepthStencilState = previousDepthState;
+                referenceCar.Position = originalRefPosition;
+                referenceCar.Rotation = originalRefRotation;
+            }
+        }
         
         // Render selected polygon overlay with transparency
         if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)

@@ -9,7 +9,9 @@ fadefrom(5000)
 name(Grapefruit Power)
 nlaps(1)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
 
 set(15,0,0,0)p
 set(15,0,5600,180)p

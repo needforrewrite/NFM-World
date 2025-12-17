@@ -12,7 +12,9 @@ name(He Is Coming For You Next)
 
 nlaps(9)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
 
 set(10,0,0,0)p
 set(10,0,5600,0)p
