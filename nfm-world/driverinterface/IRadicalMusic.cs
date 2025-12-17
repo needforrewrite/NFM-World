@@ -6,4 +6,5 @@ public interface IRadicalMusic
     void Unload();
     void Play();
     void SetVolume(float vol);
+    public void SetFreqMultiplier(double multiplier);
 }

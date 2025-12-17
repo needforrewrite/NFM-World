@@ -8,7 +8,7 @@ fadefrom(8000)
 density(8)
 mountains(0)
 nlaps(1)
-soundtrack(dbl_mornjung.s3m,183,159)
+soundtrack(custom,dbl_mornjung.s3m)
 lightson()
 
 aerial()

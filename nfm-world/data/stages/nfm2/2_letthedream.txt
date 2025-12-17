@@ -11,6 +11,9 @@ polys(201,204,177)
 fadefrom(5000)
 density(3)
 
+soundtrack(nfm2,stage2.radq)
+soundtrackfreqmul(1.11)
+
 nlaps(3)
 
 

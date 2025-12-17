@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace NFMWorld.Mad;
 
@@ -137,5 +138,21 @@ public static class Utility
         var angle = (int) (Math.Atan2(tY - y, tX - x) * 0.0174532925199433D);
 
         return angle < 0 ? angle + 360 : angle;
+    }
+
+    public static string GetString(string prefix, string source, int i) {
+        int var = 0;
+        string part = "";
+        for (int k = prefix.Length + 1; k < source.Length; k++) {
+            string strChar = new StringBuilder().Append("").Append(source.ToCharArray()[k]).ToString();
+            if (",".Equals(strChar) || ")".Equals(strChar)) {
+                var++;
+                k++;
+            }
+            if (var == i) {
+                part = new StringBuilder().Append(part).Append(source.ToCharArray()[k]).ToString();
+            }
+        }
+        return part;
     }
 }

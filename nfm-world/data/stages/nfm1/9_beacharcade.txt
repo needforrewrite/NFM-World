@@ -14,6 +14,9 @@ nlaps(3)
 
 detail(0)
 
+soundtrack(nfm1,stage9.zipo)
+soundtrackfreqmul(1.01)
+
 set(10,0,0,0)p
 set(10,0,5600,0)p
 set(22,0,8960,180)p

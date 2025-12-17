@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Mad;
 using NFMWorld.Util;
+using Stride.Core.Extensions;
 using Stride.Core.Mathematics;
 using Color3 = NFMWorld.Mad.Color3;
 using Environment = System.Environment;
@@ -15,6 +16,11 @@ public class Stage : IRenderable
     public UnlimitedArray<Mesh> pieces = [];
 
     public int stagePartCount => pieces.Count;
+
+    // soundtrack(folder,fileName)
+    public string musicPath = "";
+    // soundtrackfreqmul(mul)
+    public double musicFreqMul = 1.0d;
 
     public Sky sky;
     public Ground ground;
@@ -332,9 +338,22 @@ public class Stage : IRenderable
                 {
                     //CheckPoints.Pubt = Utility.GetInt("publish", astring, 0);
                 }
-                if (line.StartsWith("soundtrack"))
+                if (line.StartsWith("soundtrack("))
                 {
-                    
+                    string folder = Utility.GetString("soundtrack", line, 0);
+                    string fileName = Utility.GetString("soundtrack", line, 1);
+
+                    if(folder.Contains(".") || folder.Contains("/") || fileName.Contains("..") || fileName.Contains("/"))
+                    {
+                        throw new Exception("Invalid folder or file name in soundtrack() directive");
+                    }
+
+                    musicPath = $"{folder}/{fileName}";
+                }
+                if(line.StartsWith("soundtrackfreqmul"))
+                {
+                    float mul = Utility.GetFloat("soundtrackfreqmul", line, 0);
+                    musicFreqMul = mul;
                 }
 
                 // stage walls
@@ -448,6 +467,12 @@ public class Stage : IRenderable
                     Trackers.Nt++;
                 }
             }
+
+            if(musicPath.IsNullOrEmpty())
+            {
+                GameSparker.Writer.WriteLine("No music is defined for this stage!", "error");
+            }
+
             // Medium.Newpolys(maxl, maxr - maxl, maxb, maxt - maxb, stagePartCount);
             // Medium.Newmountains(maxl, maxr, maxb, maxt);
             // Medium.Newclouds(maxl, maxr, maxb, maxt);

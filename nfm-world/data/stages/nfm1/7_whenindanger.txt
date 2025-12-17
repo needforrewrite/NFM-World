@@ -15,6 +15,9 @@ detail(0)
 
 set(10,0,0,0)p
 
+soundtrack(nfm1,stage7.zipo)
+soundtrackfreqmul(1.07)
+
 set(10,0,5600,0)p
 set(10,0,11200,0)p
 set(27,0,12200,0)pr
