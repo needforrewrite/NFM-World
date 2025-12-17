@@ -84,15 +84,21 @@ public class RadParser
         wheelXTranslation /= 4f;
         wheelZTranslation /= 4f;
         
+        // maxine: this code is incredibly crucial!
+        // in theory we should be moving the car to the wheel center, because otherwise the car drifts off of its center
+        // on every tick when rotated around, however doing this breaks hypergliding. as we want to retain vanilla
+        // behavior at high tickrate, we instead move it by x/y/z * phyiscs_multiplier, which restores
+        // behavior at vanilla tickrate speeds.
+        
         for (var i = 0; i < rad3d.Wheels.Length; i++)
         {
             var wheel = rad3d.Wheels[i];
             rad3d.Wheels[i] = wheel with
             {
                 Position = new Vector3(
-                    wheel.Position.X - wheelXTranslation,
-                    wheel.Position.Y - groundTranslation,
-                    wheel.Position.Z - wheelZTranslation
+                    wheel.Position.X - (wheelXTranslation * GameSparker.PHYSICS_MULTIPLIER),
+                    wheel.Position.Y - (groundTranslation * GameSparker.PHYSICS_MULTIPLIER),
+                    wheel.Position.Z - (wheelZTranslation * GameSparker.PHYSICS_MULTIPLIER)
                 )
             };
         }
@@ -104,9 +110,9 @@ public class RadParser
             {
                 var point = poly.Points[j];
                 poly.Points[j] = new Vector3(
-                    point.X - wheelXTranslation,
-                    point.Y - groundTranslation,
-                    point.Z - wheelZTranslation
+                    point.X - (wheelXTranslation * GameSparker.PHYSICS_MULTIPLIER),
+                    point.Y - (groundTranslation * GameSparker.PHYSICS_MULTIPLIER),
+                    point.Z - (wheelZTranslation * GameSparker.PHYSICS_MULTIPLIER)
                 );
             }
         }
@@ -384,8 +390,8 @@ public readonly record struct Rad3dWheelDef(
     [property: JsonPropertyName("h")] float Height
 )
 {
-    public int Sparkat { get; } = (int) ((Height / 10f) * 24.0F);
-    public int Ground { get; } = (int) (Position.Y + 13.0F * (Height / 10f));
+    public int Sparkat => (int) ((Height / 10f) * 24.0F);
+    public int Ground => (int) (Position.Y + 13.0F * (Height / 10f));
 }
 
 public readonly record struct Rad3dRimsDef(

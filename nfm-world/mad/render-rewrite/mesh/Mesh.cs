@@ -43,6 +43,7 @@ public class Mesh : Transform, IRenderable
 
     public Euler TurningWheelAngle { get; set; }
     public Euler WheelAngle { get; set; }
+    public int GroundAt;
 
     public Mesh(GraphicsDevice graphicsDevice, string code) : this(graphicsDevice, RadParser.ParseRad(code))
     {
@@ -55,6 +56,7 @@ public class Mesh : Transform, IRenderable
         Rims = rad.Rims;
         Boxes = rad.Boxes;
         Polys = rad.Polys;
+        GroundAt = rad.Wheels.FirstOrDefault().Ground;
 
         GraphicsDevice = graphicsDevice;
 
@@ -81,6 +83,7 @@ public class Mesh : Transform, IRenderable
         // make a copy of points for damageable meshes
         Polys = Array.ConvertAll(baseMesh.Polys, poly => poly with { Points = [..poly.Points] });
         GraphicsDevice = baseMesh.GraphicsDevice;
+        GroundAt = baseMesh.GroundAt;
 
         Triangulation = baseMesh.Triangulation;
 
