@@ -471,10 +471,22 @@ public class Mad
         // maxine: this controls hypergliding. to fix hypergliding, set to 0, then update wheelGround to prevent
         // car getting stuck in the ground
         // we multiply it by tickrate because the effect caused by hypergliding is applied every tick
-        var bottomy = (int)(conto.Grat * _tickRate);
-        if (BadLanding)
+        int bottomy;
+
+        if (World.IsHyperglidingEnabled)
         {
-            bottomy = (int) ((Stat.Flipy + Squash) * _tickRate);
+            if (BadLanding)
+            {
+                bottomy = (int) ((Stat.Flipy + Squash) * _tickRate);
+            }
+            else
+            {
+                bottomy = (int)(conto.Grat * _tickRate);
+            }
+        }
+        else
+        {
+            bottomy = 0;
         }
 
         control.Zyinv = zyinv;
@@ -1290,10 +1302,18 @@ public class Mad
         }
 
         // maxine: we counteract the reduced bottomy from hypergliding here
-        var wheelGround = (int)((bottomy*1/_tickRate)*(1-_tickRate));
-        if (!BadLanding)
+        int wheelGround;
+        if (World.IsHyperglidingEnabled)
         {
-            wheelGround = -wheelGround;
+            wheelGround = (int)((bottomy * 1 / _tickRate) * (1 - _tickRate));
+            if (!BadLanding)
+            {
+                wheelGround = -wheelGround;
+            }
+        }
+        else
+        {
+            wheelGround = BadLanding ? Stat.Flipy + Squash : -conto.Grat;
         }
 
         var nGroundedWheels = 0;
