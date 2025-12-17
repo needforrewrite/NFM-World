@@ -24,8 +24,7 @@ public class RadParser
     private List<Vector3> _points = new();
     private bool _road;
     private bool _castsShadow;
-    private float? _groundTranslation;
-
+    
     private RadParser()
     {
     }
@@ -50,34 +49,69 @@ public class RadParser
             }
         }
 
-        return new Rad3d(
+        return RepositionCar(new Rad3d(
             Colors: parser._colors.Keys.ToArray(),
             Stats: parser._stats,
             Wheels: parser._wheels.ToArray(),
             Rims: parser._rims,
             Boxes: parser._boxes.ToArray(),
-            Polys: FixGround(parser._polys.ToArray(), parser._groundTranslation),
+            Polys: parser._polys.ToArray(),
             CastsShadow: parser._castsShadow
-        );
+        ));
     }
 
-    private static Rad3dPoly[] FixGround(Rad3dPoly[] polys, float? groundTranslation)
+    private static Rad3d RepositionCar(Rad3d rad3d)
     {
-        if (groundTranslation != null)
+        if (rad3d.Wheels is { Length: < 4 }) return rad3d;
+
+        // reposition car so that ground is at y=0 and the wheel x and z are equidistant from the origin
+        float groundTranslation = float.MaxValue;
+        float wheelXTranslation = 0;
+        float wheelZTranslation = 0;
+        for (var i = 0; i < 4; i++)
         {
-            for (var i = 0; i < polys.Length; i++)
+            var wheel = rad3d.Wheels[i];
+            var groundY = wheel.Ground;
+            if (groundY < groundTranslation)
             {
-                for (var j = 0; j < polys[i].Points.Length; j++)
-                {
-                    polys[i].Points[j] = polys[i].Points[j] with
-                    {
-                        Y = polys[i].Points[j].Y - groundTranslation.Value
-                    };
-                }
+                groundTranslation = groundY;
+            }
+
+            wheelXTranslation += wheel.Position.X;
+            wheelZTranslation += wheel.Position.Z;
+        }
+
+        wheelXTranslation /= 4f;
+        wheelZTranslation /= 4f;
+        
+        for (var i = 0; i < rad3d.Wheels.Length; i++)
+        {
+            var wheel = rad3d.Wheels[i];
+            rad3d.Wheels[i] = wheel with
+            {
+                Position = new Vector3(
+                    wheel.Position.X - wheelXTranslation,
+                    wheel.Position.Y - groundTranslation,
+                    wheel.Position.Z - wheelZTranslation
+                )
+            };
+        }
+
+        for (var i = 0; i < rad3d.Polys.Length; i++)
+        {
+            var poly = rad3d.Polys[i];
+            for (var j = 0; j < poly.Points.Length; j++)
+            {
+                var point = poly.Points[j];
+                poly.Points[j] = new Vector3(
+                    point.X - wheelXTranslation,
+                    point.Y - groundTranslation,
+                    point.Z - wheelZTranslation
+                );
             }
         }
 
-        return polys;
+        return rad3d;
     }
 
     private void ParseLine(ReadOnlySpan<char> line)
@@ -141,16 +175,10 @@ public class RadParser
         else if (line.StartsWith("w("))
         {
             var (cx, (cy, (cz, (rotates, (width, (height, _)))))) = BracketParser.GetNumbers(line, stackalloc int[6]);
-            if (_groundTranslation == null)
-            {
-                // based on Rad3dWheelDef.Ground calculation
-                _groundTranslation = (cy * idiv * scaleY) + 13.0F * ((height * idiv) / 10f);
-            }
             _wheels.Add(new Rad3dWheelDef(
                 Position: new Vector3(
                     cx * idiv * iwid * scaleX,
-                    // based on Rad3dWheelDef.Ground calculation
-                    -(13.0F * ((height * idiv) / 10f)),
+                    cy * idiv * scaleY,
                     cz * idiv * scaleZ
                 ),
                 Rotates: rotates,
