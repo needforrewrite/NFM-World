@@ -517,8 +517,9 @@ public class Mad
 
         if (BadLanding)
         {
-            bottomy = Stat.Flipy + Squash;
         }
+
+        var roofy = (Stat.Flipy * 2) + Squash;
 
         control.Zyinv = zyinv;
         //
@@ -1334,13 +1335,13 @@ public class Mad
 
         var nGroundedWheels = 0;
         Span<bool> isWheelGrounded = stackalloc bool[4];
-        float groundY = 250f;
+        float groundY = BadLanding ? 250 + roofy : 250f;
         float wheelYThreshold = 5f;
         float f48 = 0.0F;
         for (var i49 = 0; i49 < 4; i49++)
         {
             isWheelGrounded[i49] = false;
-            if (wheely[i49] > 245.0F)
+            if (wheely[i49] > (groundY - 5f))
             {
                 nGroundedWheels++;
                 Wtouch = true;
@@ -1367,8 +1368,8 @@ public class Mad
                     //     0, BadLanding && Mtouch);
                 } // CHK2
 
-                wheely[i49] = 250.0F;
-                f48 += wheely[i49] - 250.0F;
+                wheely[i49] = groundY;
+                f48 += wheely[i49] - groundY;
                 isWheelGrounded[i49] = true;
 
                 bounceRebound(i49, conto);
@@ -1550,6 +1551,7 @@ public class Mad
         } else
             _cntouch = 0; // CHK12
         //DS-addons: Bad landing hotfix
+        
         int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
         py = conto.Y - newy;
         conto.Y = newy;
