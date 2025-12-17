@@ -13,6 +13,7 @@ name(Dances with Monsters)
 
 nlaps(3)
 
+fix(41,0,0,250,0)
 set(47,0,0,0)p
 set(10,0,5600,0)p
 set(22,0,8960,180)p
