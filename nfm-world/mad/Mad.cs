@@ -117,7 +117,7 @@ public class Mad
 
     public bool pointInBox(float px, float py, float pz, float bx, float by, float bz, float szx, float szy, float szz)
     {
-        return px > bx - szx && px < bx + szx && pz > bz - szz && pz < bz + szz && py > by - szy && py < by + Math.Max(szy, 5);
+        return px > bx - szx && px < bx + szx && pz > bz - szz && pz < bz + szz && py > by - szy && py < by + Math.Max(szy, 50);
     }
 
     /*
@@ -2148,13 +2148,13 @@ public class Mad
                 // find the first piece that I am colliding with, snap wheel to it and stop
                 if ( // CHK3
                     !isWheelTouchingPiece[k] &&
-                    pointInBox(wheelx[k], wheely[k], wheelz[k], Trackers.X[j], Trackers.Y[j], Trackers.Z[j], Trackers.Radx[j], Trackers.Rady[j], Trackers.Radz[j])
+                    pointInBox(wheelx[k], wheely[k] - wheelGround, wheelz[k], Trackers.X[j], Trackers.Y[j], Trackers.Z[j], Trackers.Radx[j], Trackers.Rady[j], Trackers.Radz[j])
                    )
                 {
                     // ignore y == groundY because those are likely road pieces, which could make us break the loop early and miss a ramp
                     // this is also the reason why on the ground road and ramp ordering does not matter
                     // but when using floating pieces, you have to make sure the ramp comes first in the code
-                    if (Trackers.Xy[j] == 0 && Trackers.Zy[j] == 0 && Trackers.Y[j] != groundY - wheelGround && wheely[k] > Trackers.Y[j] - wheelYThreshold)
+                    if (Trackers.Xy[j] == 0 && Trackers.Zy[j] == 0 && Trackers.Y[j] != groundY - wheelGround && wheely[k] - wheelGround > Trackers.Y[j] - wheelYThreshold)
                     {
                         ++nGroundedWheels;
                         Wtouch = true;
