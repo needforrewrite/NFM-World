@@ -19,6 +19,7 @@ noarrow()
 
 soundtrack(nfm1,stage10.zipo)
 soundtrackfreqmul(0.99)
+soundtracktempomul(11.6)
 
 set(15,0,0,0)p
 set(15,0,5600,0)p
