@@ -17,6 +17,9 @@ clouds(false)
 polys(false)
 noarrow()
 
+soundtrack(nfm1,stage10.zipo)
+soundtrackfreqmul(0.99)
+
 set(15,0,0,0)p
 set(15,0,5600,0)p
 set(15,0,11200,0)

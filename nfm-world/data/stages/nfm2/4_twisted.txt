@@ -12,6 +12,8 @@ density(4)
 name(Twisted Revenge)
 nlaps(10)
 
+soundtrack(nfm2,stage4.radq)
+
 set(47,0,0,0)p
 set(10,0,5600,0)p
 set(10,0,11200,0)

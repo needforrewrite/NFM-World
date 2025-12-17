@@ -17,6 +17,9 @@ mountains(false)
 clouds(false)
 polys(false)
 
+soundtrack(nfm1,stage8.zipo)
+soundtrackfreqmul(1.01)
+
 set(15,0,0,0)p
 set(15,0,5600,0)p
 set(15,0,11200,0)

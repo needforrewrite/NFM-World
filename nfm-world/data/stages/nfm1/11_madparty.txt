@@ -11,6 +11,9 @@ density(6)
 
 name(The Mad Party)
 
+soundtrack(nfm1,stage11.zipo)
+soundtrackfreqmul(0.89)
+
 nlaps(10)
 
 set(48,0,0,0)p

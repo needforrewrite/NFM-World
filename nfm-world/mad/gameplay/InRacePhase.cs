@@ -1,6 +1,9 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using ManagedBass;
+using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.DriverInterface;
 using NFMWorld.Mad.UI;
 using NFMWorld.Util;
+using Stride.Core.Extensions;
 using Stride.Core.Mathematics;
 using Color = NFMWorld.Util.Color;
 
@@ -45,8 +48,9 @@ public class InRacePhase : BasePhase
     public override void Enter()
     {
         base.Enter();
-        
-        current_stage = new Stage("nfm2/15_dwm", _graphicsDevice);
+
+        LoadStage("nfm2/15_dwm", _graphicsDevice);
+
         cars_in_race[playerCarIndex] = new InGameCar(playerCarID, GameSparker.cars[playerCarID], 0, 0);
         current_scene = new Scene(
             _graphicsDevice,
@@ -54,6 +58,20 @@ public class InRacePhase : BasePhase
             camera,
             lightCamera
         );
+    }
+
+    public static void LoadStage(string stageName, GraphicsDevice graphicsDevice)
+    {
+        current_stage = new Stage(stageName, graphicsDevice);
+
+        GameSparker.CurrentMusic?.Unload();
+
+        if(!current_stage.musicPath.IsNullOrEmpty())
+        {
+            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{current_stage.musicPath}"));
+            GameSparker.CurrentMusic.SetFreqMultiplier(current_stage.musicFreqMul);
+            GameSparker.CurrentMusic.Play();   
+        }
     }
 
     public override void GameTick()

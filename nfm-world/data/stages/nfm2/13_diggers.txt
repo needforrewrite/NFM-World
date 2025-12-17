@@ -12,6 +12,8 @@ density(3)
 name(Digger's Revenge)
 nlaps(2)
 
+soundtrack(nfm2,stage13.radq)
+soundtrackfreqmul(1.05)
 
 set(47,0,0,0)p
 set(14,0,4550,-90)pt

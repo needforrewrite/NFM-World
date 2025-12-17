@@ -12,6 +12,9 @@ density(4)
 name(Centrifugal Rush| Under Water?)
 nlaps(5)
 
+soundtrack(nfm2,stage5.radq)
+soundtrackfreqmul(1.03)
+
 set(47,0,0,0)p
 set(10,0,5600,180)
 chk(40,0,4600,0)

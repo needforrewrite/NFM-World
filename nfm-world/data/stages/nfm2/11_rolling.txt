@@ -12,6 +12,8 @@ density(3)
 name(Rolling with the Big Boys)
 nlaps(3)
 
+soundtrack(nfm2,stage11.radq)
+soundtrackfreqmul(1.01)
 
 set(47,0,0,0)p
 set(10,0,5600,0)p

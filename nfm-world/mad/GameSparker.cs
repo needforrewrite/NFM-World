@@ -10,6 +10,8 @@ using Stride.Core.Mathematics;
 using Path = System.IO.Path;
 using Vector3 = Stride.Core.Mathematics.Vector3;
 using NFMWorld.Mad.UI;
+using NFMWorld.SkiaDriver;
+using NFMWorld.DriverInterface;
 
 namespace NFMWorld.Mad;
 
@@ -55,6 +57,9 @@ public class GameSparker
             value.Enter();
         }
     }
+
+    public static IRadicalMusic? CurrentMusic;
+
     public static MainMenuPhase? MainMenu;
     public static InRacePhase? InRace;
     public static MessageWindow MessageWindow = new();

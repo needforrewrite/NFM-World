@@ -11,6 +11,10 @@ polys(207,198,155)
 fadefrom(8000)
 density(8)
 
+wall(thewall2)
+
+soundtrack(nfm2,stage1.radq)
+
 nlaps(3)
 
 set(47,0,0,0)p
