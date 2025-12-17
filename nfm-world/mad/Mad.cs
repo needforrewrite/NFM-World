@@ -448,7 +448,7 @@ public class Mad
         }
 
 
-        var bottomy = conto.Grat;
+        var bottomy = 0;
         if (zyinv)
         {
             if (xyinv)
@@ -471,9 +471,11 @@ public class Mad
 
         if (BadLanding)
         {
+            // maxine: this controls hypergliding. to fix hypergliding, set to 0, then update wheelGround to prevent
+            // car getting stuck in the ground
+            // we multiply it by tickrate because the effect caused by hypergliding is applied every tick
+            bottomy = (int) ((Stat.Flipy + Squash) * _tickRate);
         }
-
-        var roofy = (Stat.Flipy * 2) + Squash;
 
         control.Zyinv = zyinv;
         //
@@ -1009,7 +1011,7 @@ public class Mad
         for (var i24 = 0; i24 < 4; i24++)
         {
             wheelx[i24] = conto.Keyx[i24] + conto.X;
-            wheely[i24] = conto.Y;
+            wheely[i24] = bottomy + conto.Y;
             wheelz[i24] = conto.Z + conto.Keyz[i24];
             Scy[i24] += 7.0F * _tickRate;
         }
@@ -1287,7 +1289,8 @@ public class Mad
             Skid = 2;
         }
 
-        var wheelGround = BadLanding ? roofy : -bottomy;
+        // maxine: we counteract the reduced bottomy from hypergliding here
+        var wheelGround = BadLanding ? ((int) ((Stat.Flipy + Squash) * (1-_tickRate))) : -conto.Grat;
 
         var nGroundedWheels = 0;
         Span<bool> isWheelGrounded = stackalloc bool[4];
@@ -1508,7 +1511,7 @@ public class Mad
             _cntouch = 0; // CHK12
         //DS-addons: Bad landing hotfix
         
-        int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F + airy);
+        int newy = (int) ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
         py = conto.Y - newy;
         conto.Y = newy;
         //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) / 4.0F - (float) i_10 * UMath.Cos(this.Pzy) * UMath.Cos(this.Pxy) + f_12);
@@ -1526,14 +1529,14 @@ public class Mad
             wheelx[1] - conto.Keyx[1] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[1] * UMath.Sin(conto.Xz) + 
             wheelx[2] - conto.Keyx[2] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[2] * UMath.Sin(conto.Xz) + 
             wheelx[3] - conto.Keyx[3] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz)) / 4.0F 
-            + airx);
+            + bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz) + airx);
             
         conto.Z = (int) (
             (wheelz[0] - xneg * conto.Keyz[0] * UMath.Cos(conto.Xz) - conto.Keyx[0] * UMath.Sin(conto.Xz)
             + wheelz[1] - xneg * conto.Keyz[1] * UMath.Cos(conto.Xz) - conto.Keyx[1] * UMath.Sin(conto.Xz) 
             + wheelz[2] - xneg * conto.Keyz[2] * UMath.Cos(conto.Xz) - conto.Keyx[2] * UMath.Sin(conto.Xz) 
             + wheelz[3] - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz) - conto.Keyx[3] * UMath.Sin(conto.Xz)) / 4.0F 
-            + airz);
+            + bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz) + airz);
 
         if (Math.Abs(Speed) > 10.0F || !Mtouch)
         {
