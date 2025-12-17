@@ -20,7 +20,7 @@ public class Stage : IRenderable
     public Ground ground;
     public GroundPolys? polys;
     public GroundPolys? clouds;
-    public Mountains mountains;
+    public Mountains? mountains;
 
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
@@ -190,7 +190,7 @@ public class Stage : IRenderable
                 {
                     var setindex = Utility.GetInt("set", line, 0);
                     setindex -= indexOffset;
-                    var setheight = World.Ground - GameSparker.stage_parts[setindex].GroundAt;
+                    var setheight = World.Ground;
                     
                     var hasCustomY = line.Split(',').Length >= 5;
                     if (hasCustomY)
@@ -246,7 +246,7 @@ public class Stage : IRenderable
                         ymult = 1; // default to inverted Y for stupid rollercoaster chks for compatibility reasons
                     }
 
-                    var chkheight = World.Ground - GameSparker.stage_parts[chkindex].GroundAt;
+                    var chkheight = World.Ground;
 
                     // Check if optional Y coordinate is provided (5 parameters instead of 4)
                     var hasCustomY = line.Split(',').Length >= 5;
@@ -491,7 +491,7 @@ public class Stage : IRenderable
         var mesh = pieces[stagePartCount] = new Mesh(
             GameSparker.stage_parts[model],
             new Vector3(x,
-            250 - GameSparker.stage_parts[model].GroundAt - y,
+            250 - y,
             z), 
             new Euler(AngleSingle.FromDegrees(r), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
         );

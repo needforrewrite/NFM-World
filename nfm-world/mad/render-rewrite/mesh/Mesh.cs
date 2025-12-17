@@ -24,7 +24,6 @@ public class Mesh : Transform, IRenderable
     // visually wasted
     public bool Wasted;
 
-    public int GroundAt;
     protected readonly GraphicsDevice GraphicsDevice;
 
     protected Submesh?[] Submeshes;
@@ -44,6 +43,7 @@ public class Mesh : Transform, IRenderable
 
     public Euler TurningWheelAngle { get; set; }
     public Euler WheelAngle { get; set; }
+    public int GroundAt;
 
     public Mesh(GraphicsDevice graphicsDevice, string code) : this(graphicsDevice, RadParser.ParseRad(code))
     {
@@ -56,8 +56,8 @@ public class Mesh : Transform, IRenderable
         Rims = rad.Rims;
         Boxes = rad.Boxes;
         Polys = rad.Polys;
-
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
+
         GraphicsDevice = graphicsDevice;
 
         Triangulation = Array.ConvertAll(Polys,
@@ -82,8 +82,8 @@ public class Mesh : Transform, IRenderable
         Boxes = baseMesh.Boxes;
         // make a copy of points for damageable meshes
         Polys = Array.ConvertAll(baseMesh.Polys, poly => poly with { Points = [..poly.Points] });
-        GroundAt = baseMesh.GroundAt;
         GraphicsDevice = baseMesh.GraphicsDevice;
+        GroundAt = baseMesh.GroundAt;
 
         Triangulation = baseMesh.Triangulation;
 

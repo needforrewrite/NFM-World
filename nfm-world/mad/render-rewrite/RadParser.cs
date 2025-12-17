@@ -24,7 +24,7 @@ public class RadParser
     private List<Vector3> _points = new();
     private bool _road;
     private bool _castsShadow;
-
+    
     private RadParser()
     {
     }
@@ -49,7 +49,7 @@ public class RadParser
             }
         }
 
-        return new Rad3d(
+        return RepositionCar(new Rad3d(
             Colors: parser._colors.Keys.ToArray(),
             Stats: parser._stats,
             Wheels: parser._wheels.ToArray(),
@@ -57,7 +57,67 @@ public class RadParser
             Boxes: parser._boxes.ToArray(),
             Polys: parser._polys.ToArray(),
             CastsShadow: parser._castsShadow
-        );
+        ));
+    }
+
+    private static Rad3d RepositionCar(Rad3d rad3d)
+    {
+        if (rad3d.Wheels is { Length: < 4 }) return rad3d;
+
+        // reposition car so that ground is at y=0 and the wheel x and z are equidistant from the origin
+        float groundTranslation = float.MaxValue;
+        float wheelXTranslation = 0;
+        float wheelZTranslation = 0;
+        for (var i = 0; i < 4; i++)
+        {
+            var wheel = rad3d.Wheels[i];
+            var groundY = wheel.Ground;
+            if (groundY < groundTranslation)
+            {
+                groundTranslation = groundY;
+            }
+
+            wheelXTranslation += wheel.Position.X;
+            wheelZTranslation += wheel.Position.Z;
+        }
+
+        wheelXTranslation /= 4f;
+        wheelZTranslation /= 4f;
+        
+        // maxine: this code is incredibly crucial!
+        // in theory we should be moving the car to the wheel center, because otherwise the car drifts off of its center
+        // on every tick when rotated around, however doing this breaks hypergliding. as we want to retain vanilla
+        // behavior at high tickrate, we instead move it by x/y/z * phyiscs_multiplier, which restores
+        // behavior at vanilla tickrate speeds.
+        
+        for (var i = 0; i < rad3d.Wheels.Length; i++)
+        {
+            var wheel = rad3d.Wheels[i];
+            rad3d.Wheels[i] = wheel with
+            {
+                Position = new Vector3(
+                    wheel.Position.X - (wheelXTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
+                    wheel.Position.Y, // - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
+                    wheel.Position.Z - (wheelZTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER))
+                )
+            };
+        }
+
+        for (var i = 0; i < rad3d.Polys.Length; i++)
+        {
+            var poly = rad3d.Polys[i];
+            for (var j = 0; j < poly.Points.Length; j++)
+            {
+                var point = poly.Points[j];
+                poly.Points[j] = new Vector3(
+                    point.X - (wheelXTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
+                    point.Y, // - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
+                    point.Z - (wheelZTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER))
+                );
+            }
+        }
+
+        return rad3d;
     }
 
     private void ParseLine(ReadOnlySpan<char> line)
@@ -330,8 +390,8 @@ public readonly record struct Rad3dWheelDef(
     [property: JsonPropertyName("h")] float Height
 )
 {
-    public int Sparkat { get; } = (int) ((Height / 10f) * 24.0F);
-    public int Ground { get; } = (int) (Position.Y + 13.0F * (Height / 10f));
+    public int Sparkat => (int) ((Height / 10f) * 24.0F);
+    public int Ground => (int) (Position.Y + 13.0F * (Height / 10f));
 }
 
 public readonly record struct Rad3dRimsDef(
