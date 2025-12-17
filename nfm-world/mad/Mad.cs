@@ -1290,7 +1290,11 @@ public class Mad
         }
 
         // maxine: we counteract the reduced bottomy from hypergliding here
-        var wheelGround = BadLanding ? ((int) ((Stat.Flipy + Squash) * (1-_tickRate))) : -(int) (conto.Grat * (1-_tickRate));
+        var wheelGround = (int)((bottomy*1/_tickRate)*(1-_tickRate));
+        if (!BadLanding)
+        {
+            wheelGround = -wheelGround;
+        }
 
         var nGroundedWheels = 0;
         Span<bool> isWheelGrounded = stackalloc bool[4];
