@@ -448,7 +448,6 @@ public class Mad
         }
 
 
-        var bottomy = 0;
         if (zyinv)
         {
             if (xyinv)
@@ -469,11 +468,12 @@ public class Mad
             BadLanding = true;
         }
 
+        // maxine: this controls hypergliding. to fix hypergliding, set to 0, then update wheelGround to prevent
+        // car getting stuck in the ground
+        // we multiply it by tickrate because the effect caused by hypergliding is applied every tick
+        var bottomy = (int)(conto.Grat * _tickRate);
         if (BadLanding)
         {
-            // maxine: this controls hypergliding. to fix hypergliding, set to 0, then update wheelGround to prevent
-            // car getting stuck in the ground
-            // we multiply it by tickrate because the effect caused by hypergliding is applied every tick
             bottomy = (int) ((Stat.Flipy + Squash) * _tickRate);
         }
 
@@ -1290,7 +1290,7 @@ public class Mad
         }
 
         // maxine: we counteract the reduced bottomy from hypergliding here
-        var wheelGround = BadLanding ? ((int) ((Stat.Flipy + Squash) * (1-_tickRate))) : -conto.Grat;
+        var wheelGround = BadLanding ? ((int) ((Stat.Flipy + Squash) * (1-_tickRate))) : -(int) (conto.Grat * (1-_tickRate));
 
         var nGroundedWheels = 0;
         Span<bool> isWheelGrounded = stackalloc bool[4];
