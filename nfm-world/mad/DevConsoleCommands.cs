@@ -1,4 +1,5 @@
 using System;
+using NFMWorld.DriverInterface;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
 
@@ -273,7 +274,9 @@ namespace NFMWorld.Mad
             InRacePhase.playerCarID = id;
             InRacePhase.cars_in_race[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarID,  GameSparker.cars[InRacePhase.playerCarID], 0, 0);
             InRacePhase.current_scene.Renderables.Add(InRacePhase.cars_in_race[InRacePhase.playerCarIndex]);
-            
+        
+            IBackend.Backend.StopAllSounds();
+
             console.Log($"Switched to car '{carId}'");
         }
         
@@ -381,6 +384,8 @@ namespace NFMWorld.Mad
 
             GameSparker.MainMenu = new MainMenuPhase();
             GameSparker.CurrentPhase = GameSparker.MainMenu;
+            IBackend.Backend.StopAllSounds();
+            
             console.Log("Returned to main menu.");
         }
     }
