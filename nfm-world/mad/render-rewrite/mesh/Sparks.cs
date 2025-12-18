@@ -142,6 +142,8 @@ public class Sparks
                         _rz[i] = Srz + 10 - (int) (URandom.Single() * 20.0F);
                     }
                     var i243 = (int) Math.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz);
+                    i243 = Math.Max(i243, 1); // prevent division by zero
+
                     var f = 0.2F + 0.4F * URandom.Single();
                     var f244 = URandom.Single() * URandom.Single() * URandom.Single();
                     var f245 = 1.0F;
