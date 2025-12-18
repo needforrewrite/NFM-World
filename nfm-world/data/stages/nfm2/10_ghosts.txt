@@ -12,6 +12,8 @@ lightson()
 
 name(Ghosts and Magic)
 
+soundtrack(nfm2,stage10.radq)
+soundtrackfreqmul(1.10)
 
 nlaps(3)
 

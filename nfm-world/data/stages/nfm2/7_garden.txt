@@ -12,6 +12,9 @@ density(5)
 name(The Garden of the King)
 nlaps(9)
 
+soundtrack(nfm2,stage7.radq)
+soundtrackfreqmul(1.07)
+
 set(47,0,0,0)p
 set(10,0,5600,0)p
 set(10,0,11200,0)p

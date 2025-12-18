@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace NFMWorld.Mad;
 
@@ -12,11 +13,11 @@ public static class Utility
         {
             if (i++ == index)
             {
-                return (int)float.Parse(line[range]);
+                return (int)float.Parse(line[range], CultureInfo.InvariantCulture);
             }
         }
 
-        return (int)float.Parse("");
+        return (int)float.Parse("", CultureInfo.InvariantCulture);
     }
 
     public static int GetInt(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
@@ -27,11 +28,11 @@ public static class Utility
         {
             if (i++ == index)
             {
-                return int.Parse(line[range]);
+                return int.Parse(line[range], CultureInfo.InvariantCulture);
             }
         }
 
-        return int.Parse("");
+        return int.Parse("", CultureInfo.InvariantCulture);
     }
 
     public static string GetString(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
@@ -57,11 +58,11 @@ public static class Utility
         {
             if (i++ == index)
             {
-                return float.Parse(line[range]);
+                return float.Parse(line[range], CultureInfo.InvariantCulture);
             }
         }
 
-        return float.Parse("");
+        return float.Parse("", CultureInfo.InvariantCulture);
     }
 
     private const float Epsilon = 0.0000001F;
@@ -152,5 +153,21 @@ public static class Utility
         var angle = (int) (Math.Atan2(tY - y, tX - x) * 0.0174532925199433D);
 
         return angle < 0 ? angle + 360 : angle;
+    }
+
+    public static string GetString(string prefix, string source, int i) {
+        int var = 0;
+        string part = "";
+        for (int k = prefix.Length + 1; k < source.Length; k++) {
+            string strChar = new StringBuilder().Append("").Append(source.ToCharArray()[k]).ToString();
+            if (",".Equals(strChar) || ")".Equals(strChar)) {
+                var++;
+                k++;
+            }
+            if (var == i) {
+                part = new StringBuilder().Append(part).Append(source.ToCharArray()[k]).ToString();
+            }
+        }
+        return part;
     }
 }

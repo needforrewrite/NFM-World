@@ -13,6 +13,9 @@ density(3)
 
 nlaps(1)
 
+soundtrack(nfm2,stage6.radq)
+soundtrackfreqmul(1.05)
+
 set(23,0,-2800,0)
 set(47,0,0,0)p
 set(10,0,5600,180)p

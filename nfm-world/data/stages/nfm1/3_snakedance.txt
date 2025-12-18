@@ -13,6 +13,14 @@ mountains(false)
 clouds(false)
 polys(false)
 
+soundtrack(nfm1,stage3.zipo)
+soundtrackfreqmul(0.94)
+soundtracktempomul(11.6)
+
+soundtrack(nfm1,stage3.zipo)
+soundtrackfreqmul(0.94)
+soundtracktempomul(11.6)
+
 set(10,0,0,0)p
 set(10,0,5600,0)
 chk(40,0,5600,0)

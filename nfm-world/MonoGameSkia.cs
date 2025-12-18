@@ -489,9 +489,9 @@ public class MonoGameSkia
 
 internal class SkiaSharpBackend(SKCanvas canvas) : IBackend
 {
-    public IRadicalMusic LoadMusic(File file)
+    public IRadicalMusic LoadMusic(File file, double tempomul)
     {
-        return new RadicalMusic(file);
+        return new RadicalMusic(file, tempomul);
     }
 
     public IImage LoadImage(File file)
