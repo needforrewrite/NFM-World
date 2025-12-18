@@ -38,6 +38,7 @@ public class Mesh : Transform, IRenderable
     private readonly CollisionDebugMesh? _collisionDebugMesh;
     internal readonly Flames Flames;
     internal readonly Dust Dust;
+    internal readonly Chips Chips;
 
     public bool CastsShadow { get; set; }
     public bool GetsShadowed { get; set; } = true;
@@ -74,6 +75,7 @@ public class Mesh : Transform, IRenderable
         _collisionDebugMesh = rad.Boxes.Length > 0 ? new CollisionDebugMesh(rad.Boxes) : null;
         Flames = new Flames(this, graphicsDevice);
         Dust = new Dust(this, graphicsDevice);
+        Chips = new Chips(this, graphicsDevice);
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -102,6 +104,7 @@ public class Mesh : Transform, IRenderable
         _collisionDebugMesh = baseMesh._collisionDebugMesh;
         Flames = new Flames(this, GraphicsDevice);
         Dust = new Dust(this, GraphicsDevice);
+        Chips = new Chips(this, GraphicsDevice);
     }
 
     [MemberNotNull(nameof(Submeshes))]
@@ -232,6 +235,7 @@ public class Mesh : Transform, IRenderable
     {
         Flames.GameTick();
         Dust.GameTick();
+        Chips.GameTick();
         base.GameTick();
     }
 
@@ -284,6 +288,7 @@ public class Mesh : Transform, IRenderable
         {
             Flames.Render(camera);
             Dust.Render(camera);
+            Chips.Render(camera);
         }
         
         // Render glass (translucency) last
@@ -298,5 +303,17 @@ public class Mesh : Transform, IRenderable
     public void AddDust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
     {
         Dust.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, onRoof, wheelGround);
+	}
+
+    public void Chip(int polyIdx, float breakFactor)
+    {
+        Chips.AddChip(polyIdx, breakFactor);
+    }
+
+    public void ChipWasted()
+    {
+        Chips.ChipWasted();
+        // breakFactor = 2.0f
+        // bfase = -7
     }
 }

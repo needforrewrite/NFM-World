@@ -64,6 +64,11 @@ public class Flames
                     Darken = 0.5f;
                 }
 
+                if (_embos == 12)
+                {
+                    _mesh.ChipWasted();
+                }
+
                 if (_embos == 13)
                 {
                     Darken = 0.4f;

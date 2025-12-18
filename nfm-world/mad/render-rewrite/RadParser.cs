@@ -503,4 +503,51 @@ public readonly record struct Color3(
         var (r, g, b) = Colors.HSBtoRGB(hue, saturation, brightness);
         return new Color3(r, g, b);
     }
+
+    private const double Factor = 0.7;
+    public Color3 Darker()
+    {
+        return new Color3(
+            (short) Math.Max((int) (R * Factor), 0),
+            (short) Math.Max((int) (G * Factor), 0),
+            (short) Math.Max((int) (B * Factor), 0)
+        );
+    }
+    public Color3 Brighter()
+    {
+        var r = R;
+        var g = G;
+        var b = B;
+
+        /* From 2D group:
+         * 1. black.brighter() should return grey
+         * 2. applying brighter to blue will always return blue, brighter
+         * 3. non pure color (non zero rgb) will eventually return white
+         */
+        const int i = (int) (1.0 / (1.0 - Factor));
+        if (r == 0 && g == 0 && b == 0)
+        {
+            return new Color3(i, i, i);
+        }
+        if (r is > 0 and < i)
+        {
+            r = i;
+        }
+
+        if (g is > 0 and < i)
+        {
+            g = i;
+        }
+
+        if (b is > 0 and < i)
+        {
+            b = i;
+        }
+
+        return new Color3(
+            (short) Math.Min((int) (r / Factor), 255),
+            (short) Math.Min((int) (g / Factor), 255),
+            (short) Math.Min((int) (b / Factor), 255)
+        );
+    }
 }
