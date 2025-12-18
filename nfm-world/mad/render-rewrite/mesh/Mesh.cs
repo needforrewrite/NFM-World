@@ -39,6 +39,7 @@ public class Mesh : Transform, IRenderable
     internal readonly Flames Flames;
     internal readonly Dust Dust;
     internal readonly Chips Chips;
+    internal readonly Sparks Sparks;
 
     public bool CastsShadow { get; set; }
     public bool GetsShadowed { get; set; } = true;
@@ -76,6 +77,7 @@ public class Mesh : Transform, IRenderable
         Flames = new Flames(this, graphicsDevice);
         Dust = new Dust(this, graphicsDevice);
         Chips = new Chips(this, graphicsDevice);
+        Sparks = new Sparks(this, graphicsDevice);
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -105,6 +107,7 @@ public class Mesh : Transform, IRenderable
         Flames = new Flames(this, GraphicsDevice);
         Dust = new Dust(this, GraphicsDevice);
         Chips = new Chips(this, GraphicsDevice);
+        Sparks = new Sparks(this, GraphicsDevice);
     }
 
     [MemberNotNull(nameof(Submeshes))]
@@ -236,6 +239,7 @@ public class Mesh : Transform, IRenderable
         Flames.GameTick();
         Dust.GameTick();
         Chips.GameTick();
+        Sparks.GameTick();
         base.GameTick();
     }
 
@@ -289,6 +293,7 @@ public class Mesh : Transform, IRenderable
             Flames.Render(camera);
             Dust.Render(camera);
             Chips.Render(camera);
+            Sparks.Render(camera);
         }
         
         // Render glass (translucency) last
@@ -315,5 +320,10 @@ public class Mesh : Transform, IRenderable
         Chips.ChipWasted();
         // breakFactor = 2.0f
         // bfase = -7
+	}
+
+    public void Spark(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)
+    {
+        Sparks.AddSpark(wheelx, wheely, wheelz, scx, scy, scz, type, wheelGround);
     }
 }

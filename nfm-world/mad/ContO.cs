@@ -95,5 +95,10 @@ public class ContO
     public void Dust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
     {
         _mesh.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, onRoof, wheelGround);
+	}
+
+    public void Spark(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)
+    {
+        _mesh.Spark(wheelx, wheely, wheelz, scx, scy, scz, type, wheelGround);
     }
 }
