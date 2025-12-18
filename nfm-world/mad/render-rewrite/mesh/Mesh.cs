@@ -191,7 +191,7 @@ public class Mesh : Transform, IRenderable
     /// <summary>
     /// Equality comparer that considers two lines equal if they have the same endpoints, regardless of order.
     /// </summary>
-    private struct LineEqualityComparer : IEqualityComparer<(Vector3 Point0, Vector3 Point1)>
+    private class LineEqualityComparer : IEqualityComparer<(Vector3 Point0, Vector3 Point1)>
     {
         public static LineEqualityComparer Instance { get; } = new();
 
