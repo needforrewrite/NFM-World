@@ -163,8 +163,7 @@ public class ModelEditorPhase : BasePhase
         _isOpen = true;
         
         // render an empty stage for 1 frame to init shaders
-        _modelViewerStage = new Stage("empty", GameSparker._graphicsDevice);
-        World.Snap = new Color3(100, 100, 100);
+        InRacePhase.LoadStage("empty", GameSparker._graphicsDevice);
         
         camera.Position = new Vector3(0, -800, -800);
         camera.LookAt = Vector3.Zero;
@@ -173,8 +172,6 @@ public class ModelEditorPhase : BasePhase
         
         GameSparker._graphicsDevice.BlendState = BlendState.Opaque;
         GameSparker._graphicsDevice.DepthStencilState = DepthStencilState.Default;
-        
-        _modelViewerStage.Render(camera, null);
         
         RefreshUserModels();
     }
