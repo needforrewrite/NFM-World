@@ -37,6 +37,7 @@ public class Mesh : Transform, IRenderable
     private readonly Mesh[] _wheels;
     private readonly CollisionDebugMesh? _collisionDebugMesh;
     internal readonly Flames Flames;
+    internal readonly Chips Chips;
 
     public bool CastsShadow { get; set; }
     public bool GetsShadowed { get; set; } = true;
@@ -72,6 +73,7 @@ public class Mesh : Transform, IRenderable
         _wheels = Array.ConvertAll(Wheels, wheel => new WheelMeshBuilder(wheel, Rims).BuildMesh(graphicsDevice, this));
         _collisionDebugMesh = rad.Boxes.Length > 0 ? new CollisionDebugMesh(rad.Boxes) : null;
         Flames = new Flames(this, graphicsDevice);
+        Chips = new Chips(this, graphicsDevice);
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -99,6 +101,7 @@ public class Mesh : Transform, IRenderable
         _wheels = baseMesh._wheels;
         _collisionDebugMesh = baseMesh._collisionDebugMesh;
         Flames = new Flames(this, GraphicsDevice);
+        Chips = new Chips(this, GraphicsDevice);
     }
 
     [MemberNotNull(nameof(Submeshes))]
@@ -228,6 +231,7 @@ public class Mesh : Transform, IRenderable
     public override void GameTick()
     {
         Flames.GameTick();
+        Chips.GameTick();
         base.GameTick();
     }
 
@@ -276,7 +280,11 @@ public class Mesh : Transform, IRenderable
             }
         }
 
-        if (!isCreateShadowMap) Flames.Render(camera);
+        if (!isCreateShadowMap)
+        {
+            Flames.Render(camera);
+            Chips.Render(camera);
+        }
         
         // Render glass (translucency) last
         Submeshes[(int)PolyType.Glass]?.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
@@ -285,5 +293,17 @@ public class Mesh : Transform, IRenderable
     public void RebuildMesh()
     {
         BuildMesh(GraphicsDevice);
+    }
+
+    public void Chip(int polyIdx, float breakFactor)
+    {
+        Chips.AddChip(polyIdx, breakFactor);
+    }
+
+    public void ChipWasted()
+    {
+        Chips.ChipWasted();
+        // breakFactor = 2.0f
+        // bfase = -7
     }
 }
