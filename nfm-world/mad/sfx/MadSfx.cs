@@ -359,6 +359,7 @@ public class MadSfx
 
     private void SfxPlayCrash(object? sender, (float f, int i) crashData)
     {
+        crashData.f *= 1/GameSparker.PHYSICS_MULTIPLIER;
 #if USE_BASS
         if (bfcrash == 0)
         {
