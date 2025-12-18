@@ -12,12 +12,24 @@ public class InRacePhase : BasePhase
     private readonly SpriteBatch _spriteBatch;
 
     public static PerspectiveCamera camera = new();
-    public static OrthoCamera lightCamera = new()
-    {
-        Width = 8192,
-        Height = 8192
-    };
-    
+    public static Camera[] lightCameras = [
+        new OrthoCamera()
+        {
+            Width = 3000,
+            Height = 3000
+        },
+        new OrthoCamera()
+        {
+            Width = 16384,
+            Height = 16384
+        },
+        new OrthoCamera()
+        {
+            Width = 65536,
+            Height = 65536
+        }
+    ];
+
     public static Stage current_stage = null!;
     public static Scene current_scene;
 
@@ -52,7 +64,7 @@ public class InRacePhase : BasePhase
             _graphicsDevice,
             [current_stage, ..cars_in_race],
             camera,
-            lightCamera
+            lightCameras
         );
     }
 
@@ -83,14 +95,19 @@ public class InRacePhase : BasePhase
     {
         base.Render();
 
-        lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
-        lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0); // 0,0,0 causes shadows to break
+        foreach (var lightCamera in lightCameras)
+        {
+            lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
+            lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0); // 0,0,0 causes shadows to break
+        }
 
         current_scene.Render(true);
 
         // DISPLAY SHADOW MAP
         _spriteBatch.Begin(0, BlendState.Opaque, SamplerState.PointClamp);
-        _spriteBatch.Draw(Program.shadowRenderTarget, new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Microsoft.Xna.Framework.Color.White);
+        _spriteBatch.Draw(Program.shadowRenderTargets[0], new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Microsoft.Xna.Framework.Color.White);
+        _spriteBatch.Draw(Program.shadowRenderTargets[1], new Microsoft.Xna.Framework.Rectangle(0, 128, 128, 128), Microsoft.Xna.Framework.Color.White);
+        _spriteBatch.Draw(Program.shadowRenderTargets[2], new Microsoft.Xna.Framework.Rectangle(0, 256, 128, 128), Microsoft.Xna.Framework.Color.White);
         _spriteBatch.End();
 
         _graphicsDevice.Textures[0] = null;

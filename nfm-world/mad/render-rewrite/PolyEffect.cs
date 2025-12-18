@@ -4,6 +4,7 @@ namespace NFMWorld.Mad;
 
 public class PolyEffect(Effect effect)
 {
+    public Effect UnderlyingEffect => effect;
     public EffectParameter? World { get; } = effect.Parameters["World"];
     public EffectParameter? WorldInverseTranspose { get; } = effect.Parameters["WorldInverseTranspose"];
     public EffectParameter? View { get; } = effect.Parameters["View"];

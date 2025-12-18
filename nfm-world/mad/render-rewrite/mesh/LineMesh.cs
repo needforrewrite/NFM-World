@@ -69,7 +69,7 @@ public class LineMesh
         _lineTriangleCount = lineTriangleCount;
     }
 
-    public void Render(Camera camera, Camera? lightCamera, Matrix matrixWorld)
+    public void Render(Camera camera, Lighting? lighting, Matrix matrixWorld)
     {
         _graphicsDevice.SetVertexBuffer(_lineVertexBuffer);
         _graphicsDevice.Indices = _lineIndexBuffer;
@@ -105,10 +105,7 @@ public class LineMesh
         _material.Darken?.SetValue(_supermesh.Flames.Darken);
         _material.RandomFloat?.SetValue(URandom.Single());
 
-        if (lightCamera != null)
-        {
-            _material.LightViewProj?.SetValue(lightCamera.ViewProjectionMatrix);
-        }
+        lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
 
         foreach (var pass in _material.CurrentTechnique.Passes)
         {

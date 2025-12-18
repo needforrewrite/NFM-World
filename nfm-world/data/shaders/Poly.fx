@@ -31,8 +31,6 @@ float3 CameraPosition;
 float Alpha;
 
 // Lighting
-matrix LightViewProj;
-float DepthBias = 0.25f;
 bool GetsShadowed;
 
 // Damage
@@ -43,13 +41,6 @@ float Darken; // set below 1.0f to adjust brightness
 // Charged line blink
 float ChargedBlinkAmount;
 
-texture ShadowMap;
-sampler ShadowMapSampler = sampler_state
-{
-    Texture = <ShadowMap>;
-    AddressU = Clamp;
-    AddressV = Clamp;
-};
 
 struct VertexShaderInput
 {
@@ -152,11 +143,8 @@ float4 MainPS(VertexShaderOutput input) : COLOR
 
     if (GetsShadowed == true)
     {
-        // Find the position of this pixel in light space
-        float4 lightingPosition = mul(input.WorldPos, LightViewProj);
-
         float3 diffuseRGB = diffuse.xyz;
-        PS_ApplyShadowing(diffuseRGB, lightingPosition, ShadowMapSampler, DepthBias);
+        PS_ApplyShadowing(diffuseRGB, input.WorldPos);
         diffuse = float4(diffuseRGB, diffuse.w);
     }
 
@@ -173,10 +161,10 @@ struct CreateShadowMap_VSOut
 CreateShadowMap_VSOut CreateShadowMapVS(in VertexShaderInput input)
 {
     CreateShadowMap_VSOut output = (CreateShadowMap_VSOut)0;
-    
+
     // Apply decal offset to prevent Z-fighting in shadow maps too
     float3 offsetPosition = input.Position - input.Normal * input.DecalOffset * 0.1;
-    
+
     output.Position = mul(float4(offsetPosition, 1), WorldViewProj);
     output.Depth = output.Position.z / output.Position.w;
     return output;

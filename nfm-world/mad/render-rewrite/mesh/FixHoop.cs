@@ -176,10 +176,10 @@ public class FixHoop : Mesh
         }
     }
 
-    public override void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
+    public override void Render(Camera camera, Lighting? lighting = null)
     {
-        base.Render(camera, lightCamera, isCreateShadowMap);
-        if (!isCreateShadowMap)
+        base.Render(camera, lighting);
+        if (lighting?.IsCreateShadowMap != true)
         {
             RenderFixHoop(camera);
         }

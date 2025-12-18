@@ -231,7 +231,7 @@ public class Mesh : Transform, IRenderable
         base.GameTick();
     }
 
-    public virtual void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
+    public virtual void Render(Camera camera, Lighting? lighting = null)
     {
         var matrixWorld = MatrixWorld;
 
@@ -247,10 +247,10 @@ public class Mesh : Transform, IRenderable
             {
                 wheel.Rotation = WheelAngle;
             }
-            wheel.Render(camera, lightCamera, isCreateShadowMap);
+            wheel.Render(camera, lighting);
         }
 
-        if (_collisionDebugMesh != null && !isCreateShadowMap)
+        if (_collisionDebugMesh != null && lighting?.IsCreateShadowMap != true)
         {
             _collisionDebugMesh.Parent = this;
             if (GameSparker.devRenderTrackers)
@@ -261,25 +261,25 @@ public class Mesh : Transform, IRenderable
         {
             if (submesh != null && submesh.PolyType != PolyType.Glass)
             {
-                submesh.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
+                submesh.Render(camera, lighting, matrixWorld);
             }
         }
 
-        if (!isCreateShadowMap)
+        if (lighting?.IsCreateShadowMap != true)
         {
             if (LineMeshes != null)
             {
                 foreach (var lineMesh in LineMeshes)
                 {
-                    lineMesh?.Render(camera, lightCamera, matrixWorld);
+                    lineMesh?.Render(camera, lighting, matrixWorld);
                 }
             }
         }
 
-        if (!isCreateShadowMap) Flames.Render(camera);
+        if (lighting?.IsCreateShadowMap != true) Flames.Render(camera);
         
         // Render glass (translucency) last
-        Submeshes[(int)PolyType.Glass]?.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
+        Submeshes[(int)PolyType.Glass]?.Render(camera, lighting, matrixWorld);
     }
 
     public void RebuildMesh()

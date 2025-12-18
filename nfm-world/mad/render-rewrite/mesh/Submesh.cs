@@ -19,9 +19,9 @@ public class Submesh(
     // Static override for alpha - used by model editor reference overlay
     public static float? AlphaOverride = null;
 
-    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap, Matrix matrixWorld)
+    public void Render(Camera camera, Lighting? lighting, Matrix matrixWorld)
     {
-        if (isCreateShadowMap && !(supermesh.CastsShadow || supermesh.Position.Y < World.Ground)) return;
+        if (lighting?.IsCreateShadowMap == true && !(supermesh.CastsShadow || supermesh.Position.Y < World.Ground)) return;
 
         graphicsDevice.SetVertexBuffer(vertexBuffer);
         graphicsDevice.Indices = indexBuffer;
@@ -51,13 +51,13 @@ public class Submesh(
             graphicsDevice.BlendState = BlendState.AlphaBlend;
         }
 
-        if (isCreateShadowMap)
+        if (lighting?.IsCreateShadowMap == true)
         {
-            _material.View?.SetValue(lightCamera!.ViewMatrix);
-            _material.Projection?.SetValue(lightCamera!.ProjectionMatrix);
-            _material.WorldView?.SetValue(matrixWorld * lightCamera!.ViewMatrix);
-            _material.WorldViewProj?.SetValue(matrixWorld * lightCamera!.ViewMatrix * lightCamera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(lightCamera!.Position.ToXna());
+            _material.View?.SetValue(lighting.CascadeLightCamera.ViewMatrix);
+            _material.Projection?.SetValue(lighting.CascadeLightCamera.ProjectionMatrix);
+            _material.WorldView?.SetValue(matrixWorld * lighting.CascadeLightCamera.ViewMatrix);
+            _material.WorldViewProj?.SetValue(matrixWorld * lighting.CascadeLightCamera.ViewMatrix * lighting.CascadeLightCamera.ProjectionMatrix);
+            _material.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position.ToXna());
         }
         else
         {
@@ -68,16 +68,9 @@ public class Submesh(
             _material.CameraPosition?.SetValue(camera.Position.ToXna());
         }
 
-        if (lightCamera != null)
-        {
-            _material.LightViewProj?.SetValue(lightCamera.ViewProjectionMatrix);
-        }
-
-        _material.CurrentTechnique = isCreateShadowMap ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
-        if (!isCreateShadowMap)
-        {
-            _material.ShadowMap?.SetValue(Program.shadowRenderTarget);
-        }
+        _material.CurrentTechnique = lighting?.IsCreateShadowMap == true ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
+        
+        lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
 
         _material.Expand?.SetValue(supermesh.Flames.Expand);
         _material.Darken?.SetValue(supermesh.Flames.Darken);

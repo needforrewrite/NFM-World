@@ -34,6 +34,21 @@ public static class Utility
         return int.Parse("");
     }
 
+    public static string GetString(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
+    {
+        line = line[(prefix.Length + 1)..];
+        var i = 0;
+        foreach (var range in line.SplitAny(',', ')'))
+        {
+            if (i++ == index)
+            {
+                return new string(line[range]);
+            }
+        }
+
+        return "";
+    }
+
     public static float GetFloat(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
     {
         line = line[(prefix.Length + 1)..];

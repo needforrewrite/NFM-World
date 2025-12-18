@@ -16,10 +16,6 @@ float3 FogColor;
 float FogDistance;
 float FogDensity;
 
-// Lighting
-matrix LightViewProj;
-float DepthBias = 0.25f;
-
 texture ShadowMap;
 sampler ShadowMapSampler = sampler_state
 {
@@ -59,10 +55,7 @@ float4 PixelShaderFunction(VertexShaderOutput input) : COLOR
 {
     float3 diffuse = input.Color.xyz;
 
-    // Find the position of this pixel in light space
-    float4 lightingPosition = mul(float4(input.WorldPos.xyz, 1), LightViewProj);
-
-    PS_ApplyShadowing(diffuse, lightingPosition, ShadowMapSampler, DepthBias);
+    PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1));
     return float4(diffuse, input.Color.w);
 }
 

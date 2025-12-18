@@ -248,7 +248,7 @@ namespace NFMWorld.Mad
                 GameSparker._graphicsDevice,
                 [InRacePhase.current_stage, ..InRacePhase.cars_in_race],
                 InRacePhase.camera,
-                InRacePhase.lightCamera
+                InRacePhase.lightCameras
             );
         }
 
