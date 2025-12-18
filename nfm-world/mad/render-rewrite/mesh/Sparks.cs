@@ -53,9 +53,9 @@ public class Sparks
     {
         if (type != 1)
         {
-            Srx = (int) (wheelx - _sprkat * UMath.Sin(_mesh.Rotation.Xz.Degrees));
-            Sry = (int) (wheely - wheelGround - _sprkat * UMath.Cos(_mesh.Rotation.Zy.Degrees) * UMath.Cos(_mesh.Rotation.Xy.Degrees));
-            Srz = (int) (wheelz + _sprkat * UMath.Cos(_mesh.Rotation.Xz.Degrees));
+            Srx = (wheelx - _sprkat * UMath.Sin(_mesh.Rotation.Xz.Degrees));
+            Sry = (wheely - wheelGround - _sprkat * UMath.Cos(_mesh.Rotation.Zy.Degrees) * UMath.Cos(_mesh.Rotation.Xy.Degrees));
+            Srz = (wheelz + _sprkat * UMath.Cos(_mesh.Rotation.Xz.Degrees));
             Sprk = 1;
         }
         else
@@ -131,18 +131,19 @@ public class Sparks
                 {
                     if (Sprk < 5)
                     {
-                        _rx[i] = Srx + 3 - (int) (URandom.Single() * 6.7);
-                        _ry[i] = Sry + 3 - (int) (URandom.Single() * 6.7);
-                        _rz[i] = Srz + 3 - (int) (URandom.Single() * 6.7);
+                        _rx[i] = Srx + 3 - (URandom.Single() * 6.7F);
+                        _ry[i] = Sry + 3 - (URandom.Single() * 6.7F);
+                        _rz[i] = Srz + 3 - (URandom.Single() * 6.7F);
                     }
                     else
                     {
-                        _rx[i] = Srx + 10 - (int) (URandom.Single() * 20.0F);
-                        _ry[i] = Sry - (int) (URandom.Single() * 4.0F);
-                        _rz[i] = Srz + 10 - (int) (URandom.Single() * 20.0F);
+                        _rx[i] = Srx + 10 - (URandom.Single() * 20.0F);
+                        _ry[i] = Sry - (URandom.Single() * 4.0F);
+                        _rz[i] = Srz + 10 - (URandom.Single() * 20.0F);
                     }
-                    var i243 = (int) Math.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz);
-                    i243 = Math.Max(i243, 1); // prevent division by zero
+                    var i243 = MathF.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz);
+                    if (float.IsNaN(i243) || float.IsInfinity(i243)) i243 = 1.0F;
+                    i243 = Math.Clamp(i243, 1, 100); // prevent division by zero
 
                     var f = 0.2F + 0.4F * URandom.Single();
                     var f244 = URandom.Single() * URandom.Single() * URandom.Single();

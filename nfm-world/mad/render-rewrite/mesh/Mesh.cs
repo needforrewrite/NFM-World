@@ -293,7 +293,7 @@ public class Mesh : Transform, IRenderable
             Flames.Render(camera);
             Dust.Render(camera);
             Chips.Render(camera);
-            // Sparks.Render(camera);
+            Sparks.Render(camera);
         }
         
         // Render glass (translucency) last
