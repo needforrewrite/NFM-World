@@ -27,7 +27,7 @@ public class InGameCar : IRenderable
     {
         CarRef.GameTick();
         Mad.Drive(Control, CarRef);
-        Sfx.Tick();
+        Sfx.Tick(Control, Mad, CarRef.Stats);
     }
 
     public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
