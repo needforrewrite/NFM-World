@@ -33,13 +33,43 @@ void VS_ApplyFog(
 	color = color * float3(f, f, f) + FogColor * float3(1.0 - f, 1.0 - f, 1.0 - f);
 }
 
-void PS_ApplyShadowing(
+matrix LightViewProj0;
+texture ShadowMap0;
+sampler ShadowMapSampler0 = sampler_state
+{
+    Texture = <ShadowMap0>;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+matrix LightViewProj1;
+texture ShadowMap1;
+sampler ShadowMapSampler1 = sampler_state
+{
+    Texture = <ShadowMap1>;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+matrix LightViewProj2;
+texture ShadowMap2;
+sampler ShadowMapSampler2 = sampler_state
+{
+    Texture = <ShadowMap2>;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+float DepthBias = 0.25f;
+
+void applyShadowingSingle(
     inout float3 diffuse,
-    in float4 lightingPosition,
-    in sampler ShadowMapSampler,
-    in float DepthBias
+    in float4 worldPos,
+    in matrix lightViewProj,
+    in sampler shadowMapSampler,
+    out bool isInLight
 )
 {
+    // Find the position of this pixel in light space
+    float4 lightingPosition = mul(worldPos, lightViewProj);
+
     // Find the position in the shadow map for this pixel
     float2 shadowTexCoord = 0.5 * lightingPosition.xy /
                             lightingPosition.w + float2( 0.5, 0.5 );
@@ -51,7 +81,7 @@ void PS_ApplyShadowing(
         lightingPosition.z > 0.0)
     {
         // Get the current depth stored in the shadow map
-        float shadowdepth = tex2D(ShadowMapSampler, shadowTexCoord).r;
+        float shadowdepth = tex2D(shadowMapSampler, shadowTexCoord).r;
 
         // Calculate the current pixel depth
         // The bias is used to prevent floating point errors that occur when
@@ -63,6 +93,31 @@ void PS_ApplyShadowing(
         {
             // Shadow the pixel by lowering the intensity
             diffuse = diffuse * float3(0.5, 0.5, 0.5);
+        }
+
+        isInLight = true;
+    } else {
+        isInLight = false;
+    }
+}
+
+void PS_ApplyShadowing(
+    inout float3 diffuse,
+    in float4 worldPos
+)
+{
+    bool isInLight0 = false;
+    applyShadowingSingle(diffuse, worldPos, LightViewProj0, ShadowMapSampler0, isInLight0);
+
+    if (isInLight0 == false)
+    {
+        bool isInLight1 = false;
+        applyShadowingSingle(diffuse, worldPos, LightViewProj1, ShadowMapSampler1, isInLight1);
+
+        if (isInLight1 == false)
+        {
+            bool isInLight2 = false;
+            applyShadowingSingle(diffuse, worldPos, LightViewProj2, ShadowMapSampler2, isInLight2);
         }
     }
 }

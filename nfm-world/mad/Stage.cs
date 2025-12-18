@@ -502,17 +502,17 @@ public class Stage : IRenderable
         return mesh;
     }
 
-    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
+    public void Render(Camera camera, Lighting? lighting = null)
     {
-        sky.Render(camera, lightCamera, isCreateShadowMap);
-        ground.Render(camera, lightCamera, isCreateShadowMap);
-        polys?.Render(camera, lightCamera, isCreateShadowMap);
-        clouds?.Render(camera, lightCamera, isCreateShadowMap);
-        mountains?.Render(camera, lightCamera, isCreateShadowMap);
+        sky.Render(camera, lighting);
+        ground.Render(camera, lighting);
+        polys?.Render(camera, lighting);
+        clouds?.Render(camera, lighting);
+        mountains?.Render(camera, lighting);
 
         foreach (var piece in pieces)
         {
-            piece.Render(camera, lightCamera, isCreateShadowMap);
+            piece.Render(camera, lighting);
         }
     }
 }

@@ -6,7 +6,6 @@ using Vector3 = Stride.Core.Mathematics.Vector3;
 using Microsoft.Xna.Framework.Graphics;
 using XnaMatrix = Microsoft.Xna.Framework.Matrix;
 using XnaVector3 = Microsoft.Xna.Framework.Vector3;
-using Microsoft.Xna.Framework;
 
 namespace NFMWorld.Mad.UI;
 
@@ -110,11 +109,6 @@ public class ModelEditorPhase : BasePhase
     
     // 3D
     public static PerspectiveCamera camera = new();
-    public static OrthoCamera lightCamera = new()
-    {
-        Width = 8192,
-        Height = 8192
-    };
     
     public ModelEditorPhase(GraphicsDevice graphicsDevice)
     {
@@ -165,16 +159,13 @@ public class ModelEditorPhase : BasePhase
         
         camera.Position = new Vector3(0, -800, -800);
         camera.LookAt = Vector3.Zero;
-        lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
-        lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0);
         
         camera.OnBeforeRender();
-        lightCamera.OnBeforeRender();
         
         GameSparker._graphicsDevice.BlendState = BlendState.Opaque;
         GameSparker._graphicsDevice.DepthStencilState = DepthStencilState.Default;
         
-        _modelViewerStage.Render(camera, lightCamera, false);
+        _modelViewerStage.Render(camera, null);
         
         RefreshUserModels();
     }
@@ -1894,10 +1885,6 @@ public class ModelEditorPhase : BasePhase
         camera.Position = tab.CameraPosition;
         camera.LookAt = Vector3.Zero; // Always look at origin, not the model position
         
-        // Set up light camera (positioned above and to the side for good lighting)
-        lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
-        lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0);
-        
         // Store original transform
         var originalPosition = tab.Model.Position;
         var originalRotation = tab.Model.Rotation;
@@ -1918,7 +1905,7 @@ public class ModelEditorPhase : BasePhase
         modelsToRender.Add(tab.Model);
         
         // Render main model first
-        var scene = new Scene(GameSparker._graphicsDevice, modelsToRender.ToArray(), camera, lightCamera);
+        var scene = new Scene(GameSparker._graphicsDevice, modelsToRender.ToArray(), camera, []);
         scene.Render(false);
         
         // Render reference car overlay with transparency (rendered separately after main model)
@@ -1967,7 +1954,7 @@ public class ModelEditorPhase : BasePhase
                 // Set alpha override for all submesh rendering
                 Submesh.AlphaOverride = tab.ReferenceOpacity;
                 
-                referenceCar.Render(camera, lightCamera, false);
+                referenceCar.Render(camera);
                 
                 // Clear alpha override
                 Submesh.AlphaOverride = null;
@@ -1990,7 +1977,7 @@ public class ModelEditorPhase : BasePhase
         // Render selected polygon overlay with transparency
         if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)
         {
-            RenderSelectionOverlay(camera, lightCamera, tab);
+            RenderSelectionOverlay(tab);
         }
         
         // Restore original transform
@@ -1998,7 +1985,7 @@ public class ModelEditorPhase : BasePhase
         tab.Model.Rotation = originalRotation;
     }
     
-    private void RenderSelectionOverlay(PerspectiveCamera camera, Camera lightCamera, ModelEditorTab tab)
+    private void RenderSelectionOverlay(ModelEditorTab tab)
     {
         if (tab.Model == null || tab.SelectedPolygonIndex < 0) return;
         
@@ -2038,7 +2025,7 @@ public class ModelEditorPhase : BasePhase
         GameSparker._graphicsDevice.DepthStencilState = depthRead;
         
         // Render the overlay
-        overlayMesh.Render(camera, lightCamera, false);
+        overlayMesh.Render(camera);
         
         // Restore previous states
         GameSparker._graphicsDevice.BlendState = oldBlendState;

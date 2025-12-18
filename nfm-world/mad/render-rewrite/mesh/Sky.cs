@@ -65,9 +65,9 @@ public class Sky : Transform, IRenderable
         }
     }
     
-    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
+    public void Render(Camera camera, Lighting? lighting = null)
     {
-        if (isCreateShadowMap) return;
+        if (lighting?.IsCreateShadowMap == true) return;
 
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;

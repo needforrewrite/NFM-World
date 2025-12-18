@@ -27,8 +27,8 @@ public class InGameCar : IRenderable
         Mad.Drive(Control, CarRef);
     }
 
-    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
+    public void Render(Camera camera, Lighting? lighting = null)
     {
-        CarRef.Render(camera, lightCamera, isCreateShadowMap);
+        CarRef.Render(camera, lighting);
     }
 }

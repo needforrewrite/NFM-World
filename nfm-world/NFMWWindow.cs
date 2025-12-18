@@ -28,7 +28,7 @@ public unsafe class Program : Game
     public static Effect _skyShader { get; private set; }
     public static Effect _groundShader { get; private set; }
     public static Effect _mountainsShader { get; private set; }
-    public static RenderTarget2D shadowRenderTarget { get; private set; }
+    public static RenderTarget2D[] shadowRenderTargets { get; private set; }
     private ImGuiRenderer _imguiRenderer;
 
     internal static int _lastFrameTime;
@@ -36,6 +36,7 @@ public unsafe class Program : Game
     private KeyboardState oldKeyState;
     private MouseState oldMouseState;
     private MonoGameSkia _skia;
+    public const int NumCascades = 3;
 
     private static bool loaded;
     private const int FrameDelay = (int) (1000 / 21.3f);
@@ -213,17 +214,15 @@ public unsafe class Program : Game
     private Program()
     {
         _graphics = new GraphicsDeviceManager(this);
+        _graphics.GraphicsProfile = GraphicsProfile.HiDef;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
         IsFixedTimeStep = true;
         TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / 63f);
-        _graphics.GraphicsProfile = GraphicsProfile.HiDef;
         _graphics.PreferredBackBufferWidth = 1280;
         _graphics.PreferredBackBufferHeight = 720;
-        _graphics.ApplyChanges();
-        
-        GraphicsDevice.PresentationParameters.MultiSampleCount = 8;
+        _graphics.PreferMultiSampling = false;
         _graphics.ApplyChanges();
 
         _skia = new MonoGameSkia(GraphicsDevice);
@@ -285,13 +284,28 @@ public unsafe class Program : Game
         GameSparker.Load(this);
 
         // Create floating point render target
-        shadowRenderTarget = new RenderTarget2D(
-            GraphicsDevice,
-            2048,
-            2048,
-            false,
-            SurfaceFormat.Single,
-            DepthFormat.Depth24);
+        shadowRenderTargets = new RenderTarget2D[3];
+        for (int i = NumCascades - 1; i >= 0; i--)
+        {
+            shadowRenderTargets[i] = new RenderTarget2D(
+                GraphicsDevice,
+                2048,
+                2048,
+                false,
+                SurfaceFormat.Single,
+                DepthFormat.Depth24,
+                0,
+                RenderTargetUsage.DiscardContents,
+                false);
+        }
+        
+        // Clear all render targets AFTER creating them all
+        for (int i = 0; i < NumCascades; i++)
+        {
+            GraphicsDevice.SetRenderTarget(shadowRenderTargets[i]);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Microsoft.Xna.Framework.Color.White, 1.0f, 0);
+            GraphicsDevice.SetRenderTarget(null);
+        }
         
         _imguiRenderer.RebuildFontAtlas();
 

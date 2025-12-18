@@ -54,9 +54,9 @@ public class Mountains : Transform, IRenderable
         _material = Program._mountainsShader;
     }
 
-    public void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
+    public void Render(Camera camera, Lighting? lighting = null)
     {
-        if (isCreateShadowMap) return;
+        if (lighting?.IsCreateShadowMap == true) return;
 
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.Indices = _indexBuffer;
@@ -68,12 +68,8 @@ public class Mountains : Transform, IRenderable
         _material.Parameters["FogColor"]?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
         _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
         _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
-        if (lightCamera != null)
-        {
-            _material.Parameters["LightViewProj"]?.SetValue(lightCamera.ViewProjectionMatrix);
-        }
-        
-        _material.Parameters["ShadowMap"]?.SetValue(Program.shadowRenderTarget);
+
+        lighting.SetShadowMapParameters(_material);
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();
