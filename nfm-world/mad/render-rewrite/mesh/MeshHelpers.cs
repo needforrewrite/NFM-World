@@ -6,6 +6,17 @@ public class MeshHelpers
 {
     internal static PolygonTriangulator.TriangulationResult TriangulateIfNeeded(System.Numerics.Vector3[] verts)
     {
+        if (verts.Length <= 2)
+        {
+            return new PolygonTriangulator.TriangulationResult
+            {
+                PlaneNormal = System.Numerics.Vector3.Zero,
+                Centroid = verts.Length == 0 ? System.Numerics.Vector3.Zero : verts[0],
+                Triangles = [],
+                RegionCount = 1
+            };
+        }
+        
         if (verts.Length <= 3)
         {
             // Compute triangle normal
