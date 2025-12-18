@@ -69,7 +69,7 @@ public class Dust
                 var f207 = URandom.Single();
                 Sx[_ust] = ((f + _mesh.Position.X * f207) / (1.0F + f207));
                 Sz[_ust] = ((f200 + _mesh.Position.Z * f207) / (1.0F + f207));
-                Sy[_ust] = ((f199 + _mesh.Position.Y * f207) / (1.0F + f207));
+                Sy[_ust] = ((f199 + (_mesh.Position.Y - wheelGround) * f207) / (1.0F + f207));
             }
             else
             {
