@@ -86,7 +86,7 @@ public class LineMesh
 
         _material.LightDirection?.SetValue(World.LightDirection.ToXna());
         _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
-        _material.FogDistance?.SetValue(World.FadeFrom / 2f);
+        _material.FogDistance?.SetValue(World.FadeFrom);
         _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
