@@ -4,3 +4,6 @@
 [submodule "MonoGame.ImGuiNet"]
 	path = MonoGame.ImGuiNet
 	url = https://github.com/tsMezotic/MonoGame.ImGuiNet
+[submodule "soft-float-starter-pack"]
+	path = soft-float-starter-pack
+	url = https://github.com/Kimbatt/soft-float-starter-pack

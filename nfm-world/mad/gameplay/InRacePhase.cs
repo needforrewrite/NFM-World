@@ -64,7 +64,7 @@ public class InRacePhase : BasePhase
         switch (currentViewMode)
         {
             case ViewMode.Follow:
-                PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].CarRef, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
+                PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].CarRef, (float)cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
                 break;
             case ViewMode.Around:
                 // Medium.Around(cars_in_race[playerCarIndex].Conto, true);

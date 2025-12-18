@@ -1,5 +1,6 @@
 using System;
 using NFMWorld.Util;
+using SoftFloat;
 using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad
@@ -183,7 +184,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            InRacePhase.cars_in_race[InRacePhase.playerCarIndex].Mad.Speed = speed;
+            InRacePhase.cars_in_race[InRacePhase.playerCarIndex].Mad.Speed = (sfloat)speed;
             console.Log($"Set player car speed to {speed}");
         }
 

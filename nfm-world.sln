@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HoleyDiver.UnitTest", "Hole
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monogame.ImGuiNet", "MonoGame.ImGuiNet\MonoGame.ImGuiNet\Monogame.ImGuiNet.csproj", "{BD4D3CDA-EB9F-48FB-99D4-D497F3636873}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoftFloat", "soft-float-starter-pack\SoftFloat\SoftFloat.csproj", "{92F86999-EB29-4921-A1E6-A0BC52ADCCB4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{BD4D3CDA-EB9F-48FB-99D4-D497F3636873}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD4D3CDA-EB9F-48FB-99D4-D497F3636873}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD4D3CDA-EB9F-48FB-99D4-D497F3636873}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92F86999-EB29-4921-A1E6-A0BC52ADCCB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92F86999-EB29-4921-A1E6-A0BC52ADCCB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92F86999-EB29-4921-A1E6-A0BC52ADCCB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92F86999-EB29-4921-A1E6-A0BC52ADCCB4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
