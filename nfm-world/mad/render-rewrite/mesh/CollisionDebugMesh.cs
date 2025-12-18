@@ -67,9 +67,13 @@ public class CollisionDebugMesh : Transform
                 (0, 3, true), (1, 2, true), (5, 6, true), (4, 7, true)
             };
 
+            // Check if this is a selected box (yellow color = 255,255,0)
+            bool isSelected = box.Color.R == 255 && box.Color.G == 255 && box.Color.B == 0;
+            
             var normalColor = box.Radius.Y <= 1 ? new Color3(255, 0, 0) : new Color3(255, 255, 255);
             var solidSideColor = new Color3(0, 255, 0);
             var flatColor = new Color3(0, 0, 255);
+            var selectedColor = new Color3(255, 255, 0); // Yellow for selection
 
             // Determine which faces are solid
             bool leftSolid = box.Xy == 90;
@@ -86,18 +90,26 @@ public class CollisionDebugMesh : Transform
                 // Determine color based on which face the edge belongs to
                 var edgeColor = normalColor;
                 
-                // Check which face(s) this edge belongs to
-                bool isLeft = p0.X < center.X && p1.X < center.X;
-                bool isRight = p0.X > center.X && p1.X > center.X;
-                bool isFront = p0.Z > center.Z && p1.Z > center.Z;
-                bool isBack = p0.Z < center.Z && p1.Z < center.Z;
+                // If this box is selected, override all colors with yellow
+                if (isSelected)
+                {
+                    edgeColor = selectedColor;
+                }
+                else
+                {
+                    // Check which face(s) this edge belongs to
+                    bool isLeft = p0.X < center.X && p1.X < center.X;
+                    bool isRight = p0.X > center.X && p1.X > center.X;
+                    bool isFront = p0.Z > center.Z && p1.Z > center.Z;
+                    bool isBack = p0.Z < center.Z && p1.Z < center.Z;
 
-                if (isLeft && leftSolid) edgeColor = solidSideColor;
-                else if (isRight && rightSolid) edgeColor = solidSideColor;
-                else if (isFront && frontSolid) edgeColor = solidSideColor;
-                else if (isBack && backSolid) edgeColor = solidSideColor;
+                    if (isLeft && leftSolid) edgeColor = solidSideColor;
+                    else if (isRight && rightSolid) edgeColor = solidSideColor;
+                    else if (isFront && frontSolid) edgeColor = solidSideColor;
+                    else if (isBack && backSolid) edgeColor = solidSideColor;
+                }
 
-                AddLine(p0, p1, edgeColor, edgeColor == solidSideColor ? 2f : 1f);
+                AddLine(p0, p1, edgeColor, edgeColor == solidSideColor || isSelected ? 2f : 1f);
 
                 // Add flat representation if applicable
                 if (isFlat && !isVertical)
@@ -114,7 +126,9 @@ public class CollisionDebugMesh : Transform
                     var rotatedP0 = Vector3.TransformCoordinate(translatedP0, rotationMatrix) + center;
                     var rotatedP1 = Vector3.TransformCoordinate(translatedP1, rotationMatrix) + center;
 
-                    AddLine(rotatedP0, rotatedP1, flatColor, 2f);
+                    // Use yellow if selected, otherwise blue for flat plane
+                    var flatEdgeColor = isSelected ? selectedColor : flatColor;
+                    AddLine(rotatedP0, rotatedP1, flatEdgeColor, 2f);
                 }
             }
         }

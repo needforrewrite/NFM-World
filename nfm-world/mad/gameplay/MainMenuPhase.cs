@@ -28,7 +28,6 @@ public class MainMenuPhase : BasePhase
     private readonly Font _titleFont;
     private readonly Font _buttonFont;
     private MenuState _currentMenuState = MenuState.Main;
-    public SettingsMenu SettingsMenu = new();
 
     public MainMenuPhase()
     {
@@ -37,12 +36,6 @@ public class MainMenuPhase : BasePhase
         _buttonFont = new Font("Arial", 1, 24); // Button text
 
         BuildMainMenu();
-        
-        // load user config
-        SettingsMenu.LoadConfig();
-        
-        // Initialize SettingsMenu writer
-        SettingsMenu.Writer = GameSparker.Writer;
     }
 
     private void BuildMainMenu()
@@ -267,7 +260,7 @@ public class MainMenuPhase : BasePhase
 
     private void OnSettingsClicked()
     {
-        SettingsMenu.Open();
+        GameSparker.SettingsMenu.Open();
     }
 
     private void OnClickUnavailable()
@@ -292,9 +285,9 @@ public class MainMenuPhase : BasePhase
         if (imguiWantsKeyboard) return;
         
         // Handle key capture for settings menu
-        if (SettingsMenu.IsOpen && SettingsMenu.IsCapturingKey())
+        if (GameSparker.SettingsMenu.IsOpen && GameSparker.SettingsMenu.IsCapturingKey())
         {
-            SettingsMenu.HandleKeyCapture(key);
+            GameSparker.SettingsMenu.HandleKeyCapture(key);
         }
         return;
     }
@@ -302,6 +295,5 @@ public class MainMenuPhase : BasePhase
     public override void RenderImgui()
     {
         base.RenderImgui();
-        SettingsMenu.RenderImgui();
     }
 }
