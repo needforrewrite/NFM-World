@@ -1097,6 +1097,21 @@ public class Mad
             }
         } //
 
+        // maxine: we counteract the reduced bottomy from hypergliding here
+        int wheelGround;
+        if (World.IsHyperglidingEnabled)
+        {
+            wheelGround = (int)((bottomy * 1 / _tickRate) * (1 - _tickRate));
+            if (!BadLanding)
+            {
+                wheelGround = -wheelGround;
+            }
+        }
+        else
+        {
+            wheelGround = BadLanding ? Stat.Flipy + Squash : -conto.Grat;
+        }
+
         if (Mtouch)
         {
             // Jacher: 1/_tickrate for traction; Txz is set on previous tick so we need to scale
@@ -1220,8 +1235,8 @@ public class Mad
 
                         if (UMath.Random() > 0.65)
                         {
-                            // conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                            //     f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch);
+                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
+                                f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
                             if ( /*Im == XTGraphics.Im &&*/ !BadLanding)
                             {
                                 //XTPart2.Skidf(Im, i32,
@@ -1233,14 +1248,14 @@ public class Mad
                     {
                         if (surfaceType == 1 && UMath.Random() > 0.8)
                         {
-                            // conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                            //     1.1F * Stat.Simag, (int)_tilt, BadLanding && Mtouch);
+                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
+                                1.1F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
                         }
 
                         if ((surfaceType == 2 || surfaceType == 3) && UMath.Random() > 0.6)
                         {
-                            // conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                            //     1.15F * Stat.Simag, (int)_tilt, BadLanding && Mtouch);
+                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
+                                1.15F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
                         }
                     }
                 }
@@ -1301,21 +1316,6 @@ public class Mad
             Skid = 2;
         }
 
-        // maxine: we counteract the reduced bottomy from hypergliding here
-        int wheelGround;
-        if (World.IsHyperglidingEnabled)
-        {
-            wheelGround = (int)((bottomy * 1 / _tickRate) * (1 - _tickRate));
-            if (!BadLanding)
-            {
-                wheelGround = -wheelGround;
-            }
-        }
-        else
-        {
-            wheelGround = BadLanding ? Stat.Flipy + Squash : -conto.Grat;
-        }
-
         var nGroundedWheels = 0;
         Span<bool> isWheelGrounded = stackalloc bool[4];
         float groundY = 250 + wheelGround;
@@ -1346,9 +1346,9 @@ public class Mad
                         f50 += 1.2f;
                     }
 
-                    // conto.Dust(i49, wheelx[i49], wheely[i49], wheelz[i49], (int)Scx[i49], (int)Scz[i49],
-                    //     f50 * Stat.Simag,
-                    //     0, BadLanding && Mtouch);
+                    conto.Dust(i49, wheelx[i49], wheely[i49], wheelz[i49], (int)Scx[i49], (int)Scz[i49],
+                        f50 * Stat.Simag,
+                        0, BadLanding && Mtouch, wheelGround);
                 } // CHK2
 
                 wheely[i49] = groundY;
@@ -2197,7 +2197,7 @@ public class Mad
                                 f_59 += 1.1f;
                             else
                                 f_59 += 1.2f;
-                            // conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_59 * CarDefine.Simag[Cn], 0, BadLanding && Mtouch);
+                            conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_59 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
                         }
 
                         wheely[k] = Trackers.Y[j] + wheelGround; // snap wheel to the surface
@@ -2407,7 +2407,7 @@ public class Mad
                             if (!wasMtouch && surfaceType != 0)
                             {
                                 float f_73 = 1.4F;
-                                // conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_73 * CarDefine.Simag[Cn], 0, BadLanding && Mtouch);
+                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_73 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
                             }
                         }
 
@@ -2454,7 +2454,7 @@ public class Mad
                             if (!wasMtouch && surfaceType != 0)
                             {
                                 float f_78 = 1.4F;
-                                // conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_78 * CarDefine.Simag[Cn], 0, BadLanding && Mtouch);
+                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_78 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
                             }
                         }
 
