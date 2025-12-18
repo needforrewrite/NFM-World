@@ -54,6 +54,15 @@ public class ModelEditorTab
     public int ReferenceCarIndex { get; set; } = 0;
     public float ReferenceOpacity { get; set; } = 0.5f;
     
+    // Model type (car or stage scenery)
+    public enum ModelTypeEnum { Car, Stage }
+    public ModelTypeEnum ModelType { get; set; } = ModelTypeEnum.Car;
+    
+    // Collision editing (for stage scenery)
+    public enum EditModeEnum { Polygon, Collision }
+    public EditModeEnum EditMode { get; set; } = EditModeEnum.Polygon;
+    public int SelectedCollisionIndex { get; set; } = -1;
+    
     public string GetDisplayName()
     {
         if (ModelPath == null) return "Untitled";
@@ -305,10 +314,8 @@ public class ModelEditorPhase : BasePhase
     private string CreateEmptyRadFile()
     {
         // Create a minimal valid .rad file
-        return @"//NFM Model File
-//Created with NFM World Model Editor
+        return @"// Created with NFM World Model Editor
 
-// Add your model data here
 ";
     }
     
@@ -387,6 +394,22 @@ public class ModelEditorPhase : BasePhase
         tab.ModelPath = filePath;
         tab.TextContent = radContent;
         tab.TextEditorDirty = false;
+        
+        // Determine model type from file path - normalize path separators for comparison
+        var normalizedPath = filePath.Replace('\\', '/').ToLowerInvariant();
+        if (normalizedPath.Contains("/cars/"))
+        {
+            tab.ModelType = ModelEditorTab.ModelTypeEnum.Car;
+        }
+        else if (normalizedPath.Contains("/stage/"))
+        {
+            tab.ModelType = ModelEditorTab.ModelTypeEnum.Stage;
+        }
+        else
+        {
+            // Default to car if we can't determine from path
+            tab.ModelType = ModelEditorTab.ModelTypeEnum.Car;
+        }
         
         // Try to parse the model, but keep the file loaded even if it fails
         try
@@ -651,19 +674,36 @@ public class ModelEditorPhase : BasePhase
             _isLeftButtonDown = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
             _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
             
-            // Process click for polygon selection only if it was a simple click, not a drag
+            // Process click for polygon/collision selection only if it was a simple click, not a drag
             if (wasClick && !imguiWantsMouse && tab.Model != null)
             {
-                var pickedIndex = PerformRayPicking(x, y, tab);
-                
-                if (pickedIndex >= 0)
+                if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
                 {
-                    tab.SelectedPolygonIndex = pickedIndex;
+                    var pickedIndex = PerformRayPicking(x, y, tab);
+                    
+                    if (pickedIndex >= 0)
+                    {
+                        tab.SelectedPolygonIndex = pickedIndex;
+                    }
+                    else
+                    {
+                        // Clicked on background, deselect
+                        tab.SelectedPolygonIndex = -1;
+                    }
                 }
-                else
+                else if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
                 {
-                    // Clicked on background, deselect
-                    tab.SelectedPolygonIndex = -1;
+                    var pickedIndex = PerformCollisionPicking(x, y, tab);
+                    
+                    if (pickedIndex >= 0)
+                    {
+                        tab.SelectedCollisionIndex = pickedIndex;
+                    }
+                    else
+                    {
+                        // Clicked on background, deselect
+                        tab.SelectedCollisionIndex = -1;
+                    }
                 }
             }
         }
@@ -813,6 +853,138 @@ public class ModelEditorPhase : BasePhase
         return distance > EPSILON;
     }
     
+    private int PerformCollisionPicking(int screenX, int screenY, ModelEditorTab tab)
+    {
+        if (tab.Model == null || tab.Model.Boxes.Length == 0) return -1;
+        
+        var viewport = GameSparker._graphicsDevice.Viewport;
+        
+        // Set up camera exactly as RenderModel does
+        var tempCamera = new PerspectiveCamera
+        {
+            Position = tab.CameraPosition,
+            LookAt = Vector3.Zero,
+            Up = -Vector3.UnitY,
+            Width = camera.Width,
+            Height = camera.Height,
+            Fov = camera.Fov,
+            Near = camera.Near,
+            Far = camera.Far
+        };
+        
+        tempCamera.OnBeforeRender();
+        
+        var view = tempCamera.ViewMatrix;
+        var projection = tempCamera.ProjectionMatrix;
+        
+        // Unproject screen coordinates to world space ray
+        var nearPoint = viewport.Unproject(
+            new XnaVector3(screenX, screenY, 0f),
+            projection,
+            view,
+            XnaMatrix.Identity
+        );
+        
+        var farPoint = viewport.Unproject(
+            new XnaVector3(screenX, screenY, 1f),
+            projection,
+            view,
+            XnaMatrix.Identity
+        );
+        
+        var rayOrigin = nearPoint;
+        var rayDirection = XnaVector3.Normalize(farPoint - nearPoint);
+        
+        // Test against all collision boxes
+        float closestDistance = float.MaxValue;
+        int closestBoxIndex = -1;
+        
+        for (int i = 0; i < tab.Model.Boxes.Length; i++)
+        {
+            var box = tab.Model.Boxes[i];
+            
+            // Check if ray intersects this box
+            if (RayIntersectsBox(rayOrigin, rayDirection, box, out float distance))
+            {
+                if (distance < closestDistance)
+                {
+                    closestDistance = distance;
+                    closestBoxIndex = i;
+                }
+            }
+        }
+        
+        return closestBoxIndex;
+    }
+    
+    private bool RayIntersectsBox(XnaVector3 rayOrigin, XnaVector3 rayDirection, Rad3dBoxDef box, out float distance)
+    {
+        distance = float.MaxValue;
+        
+        // Convert box to axis-aligned bounding box in world space
+        var center = new XnaVector3(box.Translation.X, box.Translation.Y, box.Translation.Z);
+        var radius = new XnaVector3(box.Radius.X, box.Radius.Y, box.Radius.Z);
+        
+        // Simple AABB ray intersection (ignoring rotation for now - can be enhanced later)
+        var min = center - radius;
+        var max = center + radius;
+        
+        float tmin = (min.X - rayOrigin.X) / rayDirection.X;
+        float tmax = (max.X - rayOrigin.X) / rayDirection.X;
+        
+        if (tmin > tmax)
+        {
+            var temp = tmin;
+            tmin = tmax;
+            tmax = temp;
+        }
+        
+        float tymin = (min.Y - rayOrigin.Y) / rayDirection.Y;
+        float tymax = (max.Y - rayOrigin.Y) / rayDirection.Y;
+        
+        if (tymin > tymax)
+        {
+            var temp = tymin;
+            tymin = tymax;
+            tymax = temp;
+        }
+        
+        if ((tmin > tymax) || (tymin > tmax))
+            return false;
+        
+        if (tymin > tmin)
+            tmin = tymin;
+        
+        if (tymax < tmax)
+            tmax = tymax;
+        
+        float tzmin = (min.Z - rayOrigin.Z) / rayDirection.Z;
+        float tzmax = (max.Z - rayOrigin.Z) / rayDirection.Z;
+        
+        if (tzmin > tzmax)
+        {
+            var temp = tzmin;
+            tzmin = tzmax;
+            tzmax = temp;
+        }
+        
+        if ((tmin > tzmax) || (tzmin > tmax))
+            return false;
+        
+        if (tzmin > tmin)
+            tmin = tzmin;
+        
+        if (tzmax < tmax)
+            tmax = tzmax;
+        
+        // Check if intersection is in front of ray
+        if (tmax < 0)
+            return false;
+        
+        distance = tmin > 0 ? tmin : tmax;
+        return true;
+    }
+    
     private void FlipSelectedPolygonVertexOrder()
     {
         var tab = ActiveTab;
@@ -922,6 +1094,84 @@ public class ModelEditorPhase : BasePhase
         if (GameSparker.Writer != null && selectionStart >= 0)
         {
             GameSparker.Writer.WriteLine($"Polygon {tab.SelectedPolygonIndex + 1}: selection range {selectionStart}-{selectionEnd}", "info");
+        }
+    }
+    
+    private void JumpToSelectedCollisionInText()
+    {
+        var tab = ActiveTab;
+        if (tab == null || tab.SelectedCollisionIndex < 0 || tab.Model == null) return;
+        
+        // Find the collision box in the text by searching for <track> tags and counting
+        int collisionCount = 0;
+        int selectionStart = -1;
+        int selectionEnd = -1;
+        
+        for (int i = 0; i < tab.TextContent.Length; i++)
+        {
+            // Check if we're at the start of a <track> tag
+            if (i + 7 <= tab.TextContent.Length && 
+                tab.TextContent.Substring(i, 7) == "<track>")
+            {
+                if (collisionCount == tab.SelectedCollisionIndex)
+                {
+                    // Found the start of our target collision
+                    selectionStart = i;
+                    
+                    // Now find the closing </track> tag
+                    int searchPos = i + 7;
+                    while (searchPos + 8 <= tab.TextContent.Length)
+                    {
+                        if (tab.TextContent.Substring(searchPos, 8) == "</track>")
+                        {
+                            selectionEnd = searchPos + 8; // Include the closing tag
+                            break;
+                        }
+                        searchPos++;
+                    }
+                    
+                    // If we didn't find a closing tag, select until the next <track> or end of file
+                    if (selectionEnd == -1)
+                    {
+                        searchPos = i + 7;
+                        while (searchPos + 7 <= tab.TextContent.Length)
+                        {
+                            if (tab.TextContent.Substring(searchPos, 7) == "<track>")
+                            {
+                                selectionEnd = searchPos;
+                                break;
+                            }
+                            searchPos++;
+                        }
+                        if (selectionEnd == -1)
+                        {
+                            selectionEnd = tab.TextContent.Length;
+                        }
+                    }
+                    
+                    break;
+                }
+                collisionCount++;
+            }
+        }
+        
+        // Store selection range for future use
+        tab.TextEditorSelectionStart = selectionStart;
+        tab.TextEditorSelectionEnd = selectionEnd;
+        
+        // Extract the collision code and open the editor window
+        if (selectionStart >= 0 && selectionEnd >= 0 && selectionEnd <= tab.TextContent.Length)
+        {
+            tab.PolygonEditorContent = tab.TextContent.Substring(selectionStart, selectionEnd - selectionStart);
+            tab.ShowPolygonEditor = true;
+            tab.PolygonEditorDirty = false;
+            tab.PolygonEditorLastSelectedIndex = tab.SelectedCollisionIndex; // Remember which collision we're editing
+        }
+        
+        // Debug output
+        if (GameSparker.Writer != null && selectionStart >= 0)
+        {
+            GameSparker.Writer.WriteLine($"Collision {tab.SelectedCollisionIndex + 1}: selection range {selectionStart}-{selectionEnd}", "info");
         }
     }
     
@@ -1214,47 +1464,110 @@ public class ModelEditorPhase : BasePhase
                 ImGui.Text(tab.TextEditorDirty ? "(Modified)" : "");
             }
             
-            // Polygon selection info and controls (always visible when model is loaded)
+            // Polygon/Collision selection info and controls (always visible when model is loaded)
             if (tab.Model != null)
             {
                 ImGui.Separator();
                 
-                if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)
+                // Edit mode toggle for stage scenery
+                if (tab.ModelType == ModelEditorTab.ModelTypeEnum.Stage)
                 {
-                    ImGui.Text($"[ Piece {tab.SelectedPolygonIndex + 1} of {tab.Model.Polys.Length} selected ]");
+                    ImGui.Text("Edit Mode:");
                     ImGui.SameLine();
                     
-                    if (ImGui.Button("Edit Polygon"))
+                    int editMode = tab.EditMode == ModelEditorTab.EditModeEnum.Polygon ? 0 : 1;
+                    if (ImGui.RadioButton("Polygon", editMode == 0))
                     {
-                        JumpToSelectedPolygonInText();
+                        tab.EditMode = ModelEditorTab.EditModeEnum.Polygon;
+                        tab.SelectedCollisionIndex = -1;
                     }
                     ImGui.SameLine();
-                    
-                    // currently unstable and i cba rn
-                    // if (ImGui.Button("Flip Vertex Order"))
-                    // {
-                    //     FlipSelectedPolygonVertexOrder();
-                    // }
-                    // ImGui.SameLine();
-                    
-                    // if (ImGui.Button("Remove Polygon"))
-                    // {
-                    //     RemoveSelectedPolygon();
-                    // }
-                    // ImGui.SameLine();
-                    
-                    if (ImGui.Button("X"))
+                    if (ImGui.RadioButton("Collision", editMode == 1))
                     {
-                        tab.SelectedPolygonIndex = -1; // Deselect
+                        tab.EditMode = ModelEditorTab.EditModeEnum.Collision;
+                        tab.SelectedPolygonIndex = -1;
+                    }
+                    ImGui.SameLine();
+                    ImGui.TextDisabled($"({tab.Model.Boxes.Length} collision boxes)");
+                }
+                
+                // Polygon editing UI
+                if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
+                {
+                    if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)
+                    {
+                        ImGui.Text($"[ Piece {tab.SelectedPolygonIndex + 1} of {tab.Model.Polys.Length} selected ]");
+                        ImGui.SameLine();
+                        
+                        if (ImGui.Button("Edit Polygon"))
+                        {
+                            JumpToSelectedPolygonInText();
+                        }
+                        ImGui.SameLine();
+                        
+                        // currently unstable and i cba rn
+                        // if (ImGui.Button("Flip Vertex Order"))
+                        // {
+                        //     FlipSelectedPolygonVertexOrder();
+                        // }
+                        // ImGui.SameLine();
+                        
+                        // if (ImGui.Button("Remove Polygon"))
+                        // {
+                        //     RemoveSelectedPolygon();
+                        // }
+                        // ImGui.SameLine();
+                        
+                        if (ImGui.Button("X"))
+                        {
+                            tab.SelectedPolygonIndex = -1; // Deselect
+                        }
+                    }
+                    else
+                    {
+                        ImGui.Text("Click on a polygon in the 3D view to select it");
+                        if (_mouseX > 0 || _mouseY > 0)
+                        {
+                            ImGui.SameLine();
+                            ImGui.TextDisabled($"(Mouse: {_mouseX}, {_mouseY})");
+                        }
                     }
                 }
-                else
+                // Collision editing UI
+                else if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
                 {
-                    ImGui.Text("Click on a polygon in the 3D view to select it");
-                    if (_mouseX > 0 || _mouseY > 0)
+                    if (tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Model.Boxes.Length)
                     {
+                        var box = tab.Model.Boxes[tab.SelectedCollisionIndex];
+                        ImGui.Text($"[ Collision {tab.SelectedCollisionIndex + 1} of {tab.Model.Boxes.Length} selected ]");
                         ImGui.SameLine();
-                        ImGui.TextDisabled($"(Mouse: {_mouseX}, {_mouseY})");
+                        
+                        if (ImGui.Button("Edit Collision"))
+                        {
+                            JumpToSelectedCollisionInText();
+                        }
+                        ImGui.SameLine();
+                        
+                        if (ImGui.Button("X"))
+                        {
+                            tab.SelectedCollisionIndex = -1; // Deselect
+                        }
+                        
+                        // Display collision properties
+                        ImGui.Text($"Angle: xy={box.Xy:F0}° zy={box.Zy:F0}°");
+                        ImGui.SameLine();
+                        ImGui.Text($"| Radius: [{box.Radius.X:F0}, {box.Radius.Y:F0}, {box.Radius.Z:F0}]");
+                        ImGui.SameLine();
+                        ImGui.Text($"| Offset: [{box.Translation.X:F0}, {box.Translation.Y:F0}, {box.Translation.Z:F0}]");
+                    }
+                    else
+                    {
+                        ImGui.Text("Click on a collision box in the 3D view to select it");
+                        if (_mouseX > 0 || _mouseY > 0)
+                        {
+                            ImGui.SameLine();
+                            ImGui.TextDisabled($"(Mouse: {_mouseX}, {_mouseY})");
+                        }
                     }
                 }
             }
@@ -1299,9 +1612,10 @@ public class ModelEditorPhase : BasePhase
         // Sub-tabs for bottom panel
         if (ImGui.BeginTabBar("ControlTabs"))
         {
+            var activeTab = ActiveTab;
+            
             if (ImGui.BeginTabItem("3D Controls"))
             {
-                var activeTab = ActiveTab;
                 if (activeTab != null)
                 {
                     ImGui.Columns(3, "ControlColumns", false);
@@ -1399,7 +1713,6 @@ public class ModelEditorPhase : BasePhase
             
             if (ImGui.BeginTabItem("Scale & Align"))
             {
-                var activeTab = ActiveTab;
                 if (activeTab != null)
                 {
                     ImGui.Text("Reference Car Overlay:");
@@ -1452,28 +1765,44 @@ public class ModelEditorPhase : BasePhase
                 ImGui.EndTabItem();
             }
             
-            if (ImGui.BeginTabItem("Wheels"))
+            // Wheels tab - only for cars
+            if (activeTab != null && activeTab.ModelType == ModelEditorTab.ModelTypeEnum.Car)
             {
-                ImGui.Text("Wheel editing not yet implemented");
-                ImGui.EndTabItem();
+                if (ImGui.BeginTabItem("Wheels"))
+                {
+                    ImGui.Text("Wheel editing not yet implemented");
+                    ImGui.EndTabItem();
+                }
             }
             
-            if (ImGui.BeginTabItem("Stats & Class"))
+            // Stats & Class tab - only for cars
+            if (activeTab != null && activeTab.ModelType == ModelEditorTab.ModelTypeEnum.Car)
             {
-                ImGui.Text("Stats & Class not yet implemented");
-                ImGui.EndTabItem();
+                if (ImGui.BeginTabItem("Stats & Class"))
+                {
+                    ImGui.Text("Stats & Class not yet implemented");
+                    ImGui.EndTabItem();
+                }
             }
             
-            if (ImGui.BeginTabItem("Physics"))
+            // Physics tab - only for cars
+            if (activeTab != null && activeTab.ModelType == ModelEditorTab.ModelTypeEnum.Car)
             {
-                ImGui.Text("Physics not yet implemented");
-                ImGui.EndTabItem();
+                if (ImGui.BeginTabItem("Physics"))
+                {
+                    ImGui.Text("Physics not yet implemented");
+                    ImGui.EndTabItem();
+                }
             }
             
-            if (ImGui.BeginTabItem("Test Drive"))
+            // Test Drive tab - only for cars
+            if (activeTab != null && activeTab.ModelType == ModelEditorTab.ModelTypeEnum.Car)
             {
-                ImGui.Text("Test Drive not yet implemented");
-                ImGui.EndTabItem();
+                if (ImGui.BeginTabItem("Test Drive"))
+                {
+                    ImGui.Text("Test Drive not yet implemented");
+                    ImGui.EndTabItem();
+                }
             }
             
             ImGui.EndTabBar();
@@ -1653,12 +1982,21 @@ public class ModelEditorPhase : BasePhase
         var tab = ActiveTab;
         if (tab == null || !tab.ShowPolygonEditor) return;
         
-        // Check if user selected a different polygon while editor is open
-        if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex != tab.PolygonEditorLastSelectedIndex)
+        // Determine if we're editing a polygon or collision
+        bool editingCollision = tab.EditMode == ModelEditorTab.EditModeEnum.Collision;
+        
+        // Check if user selected a different polygon/collision while editor is open
+        if (!editingCollision && tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex != tab.PolygonEditorLastSelectedIndex)
         {
             // Update the editor content to the newly selected polygon
             JumpToSelectedPolygonInText();
             return; // JumpToSelectedPolygonInText will refresh the window
+        }
+        else if (editingCollision && tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex != tab.PolygonEditorLastSelectedIndex)
+        {
+            // Update the editor content to the newly selected collision
+            JumpToSelectedCollisionInText();
+            return;
         }
         
         var io = ImGui.GetIO();
@@ -1668,9 +2006,17 @@ public class ModelEditorPhase : BasePhase
         ImGui.SetNextWindowSize(new System.Numerics.Vector2(600, 400), ImGuiCond.FirstUseEver);
         
         bool isOpen = tab.ShowPolygonEditor;
-        if (ImGui.Begin($"Edit Polygon", ref isOpen, ImGuiWindowFlags.None))
+        string windowTitle = editingCollision ? "Edit Collision" : "Edit Polygon";
+        if (ImGui.Begin(windowTitle, ref isOpen, ImGuiWindowFlags.None))
         {
-            ImGui.Text($"Editing polygon {tab.SelectedPolygonIndex + 1} of {tab.Model?.Polys.Length ?? 0}");
+            if (editingCollision)
+            {
+                ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Model?.Boxes.Length ?? 0}");
+            }
+            else
+            {
+                ImGui.Text($"Editing polygon {tab.SelectedPolygonIndex + 1} of {tab.Model?.Polys.Length ?? 0}");
+            }
             ImGui.Separator();
             
             // Calculate available space for text editor
@@ -1700,34 +2046,49 @@ public class ModelEditorPhase : BasePhase
             ImGui.TextDisabled("(?)");
             if (ImGui.IsItemHovered())
             {
-                ImGui.SetTooltip("Insert special polygon flags");
+                var tooltip = editingCollision 
+                    ? "Special flags for collision behavior" 
+                    : "Special flags which may change appearance or behavior";
+                ImGui.SetTooltip(tooltip);
             }
             
-            if (ImGui.Button("gr(-18)"))
+            if (editingCollision)
             {
-                Insert("gr(-18)");
+                // Collision-specific flags
+                if (ImGui.Button("dam()"))
+                {
+                    Insert("dam()");
+                }
+                
+                ImGui.SameLine();
+                
+                if (ImGui.Button("notwall()"))
+                {
+                    Insert("notwall()");
+                }
             }
-            
-            ImGui.SameLine();
-            
-            if (ImGui.Button("decal"))
+            else
             {
-                Insert("decal");
+                // Polygon-specific flags
+                if (ImGui.Button("gr(-18)"))
+                {
+                    Insert("gr(-18)");
+                }
+                
+                ImGui.SameLine();
+                
+                if (ImGui.Button("decal"))
+                {
+                    Insert("decal");
+                }
+
+                ImGui.SameLine();
+                
+                if (ImGui.Button("noOutline()"))
+                {
+                    Insert("noOutline()");
+                }
             }
-            
-            // ImGui.SameLine();
-            
-            // if (ImGui.Button("TODO poly fx"))
-            // {
-            //     Insert("something_else");
-            // }
-            
-            // ImGui.SameLine();
-            
-            // if (ImGui.Button("TODO poly fx"))
-            // {
-            //     Insert("fs(-1)");
-            // }
             
             ImGui.Spacing();
             ImGui.Separator();
@@ -1836,7 +2197,33 @@ public class ModelEditorPhase : BasePhase
             return;
         }
         
-        // Replace the polygon code in the main text content
+        // Check if content is empty or whitespace (user is removing the element)
+        bool editingCollision = tab.EditMode == ModelEditorTab.EditModeEnum.Collision;
+        int editedIndex = editingCollision ? tab.SelectedCollisionIndex : tab.SelectedPolygonIndex;
+        
+        if (string.IsNullOrWhiteSpace(tab.PolygonEditorContent))
+        {
+            var itemType = editingCollision ? "collision" : "polygon";
+            GameSparker.MessageWindow.ShowCustom("Remove Element",
+                $"Are you sure you want to remove this {itemType}?\n\nThis will delete {itemType} {editedIndex + 1} from the model.",
+                new[] { "Remove", "Cancel" },
+                result => {
+                    if (result == MessageWindow.MessageResult.Custom1)
+                    {
+                        // User confirmed removal
+                        PerformApplyChanges(tab, editingCollision, editedIndex, removeElement: true);
+                    }
+                });
+            return;
+        }
+        
+        // Normal apply
+        PerformApplyChanges(tab, editingCollision, editedIndex, removeElement: false);
+    }
+    
+    private void PerformApplyChanges(ModelEditorTab tab, bool editingCollision, int editedIndex, bool removeElement)
+    {
+        // Replace the polygon/collision code in the main text content
         var before = tab.TextContent.Substring(0, tab.TextEditorSelectionStart);
         var after = tab.TextContent.Substring(tab.TextEditorSelectionEnd);
         
@@ -1849,17 +2236,55 @@ public class ModelEditorPhase : BasePhase
             tab.Model = new Mesh(GameSparker._graphicsDevice, tab.TextContent);
             tab.PolygonEditorDirty = false;
             
-            // CRITICAL: Invalidate the selection indices since the text content has changed
-            // This prevents index out of bounds errors when editing consecutive polygons
-            tab.TextEditorSelectionStart = -1;
-            tab.TextEditorSelectionEnd = -1;
-            
-            if (GameSparker.Writer != null)
-                GameSparker.Writer.WriteLine($"Polygon {tab.SelectedPolygonIndex + 1} updated successfully", "info");
+            if (removeElement)
+            {
+                // Element was removed, close editor and deselect
+                tab.ShowPolygonEditor = false;
+                if (editingCollision)
+                {
+                    tab.SelectedCollisionIndex = -1;
+                }
+                else
+                {
+                    tab.SelectedPolygonIndex = -1;
+                }
+                
+                if (GameSparker.Writer != null)
+                {
+                    var itemType = editingCollision ? "Collision" : "Polygon";
+                    GameSparker.Writer.WriteLine($"{itemType} {editedIndex + 1} removed successfully", "info");
+                }
+            }
+            else
+            {
+                // Re-select the same polygon/collision and update selection range
+                // This allows the user to continue editing without having to reselect
+                if (editingCollision)
+                {
+                    tab.SelectedCollisionIndex = editedIndex;
+                    // Find the updated collision in the text
+                    JumpToSelectedCollisionInText();
+                }
+                else
+                {
+                    tab.SelectedPolygonIndex = editedIndex;
+                    // Find the updated polygon in the text
+                    JumpToSelectedPolygonInText();
+                }
+                
+                // Keep the editor window open with updated content
+                tab.ShowPolygonEditor = true;
+                
+                if (GameSparker.Writer != null)
+                {
+                    var itemType = editingCollision ? "Collision" : "Polygon";
+                    GameSparker.Writer.WriteLine($"{itemType} {editedIndex + 1} updated successfully", "info");
+                }
+            }
         }
         catch (Exception ex)
         {
-            var err = $"Error parsing updated polygon:\n{ex.Message}";
+            var err = $"Error parsing updated code:\n{ex.Message}";
             GameSparker.MessageWindow.ShowMessage("Parse Error", err);
             if (GameSparker.Writer != null)
                 GameSparker.Writer.WriteLine(err, "error");
@@ -1975,9 +2400,17 @@ public class ModelEditorPhase : BasePhase
         }
         
         // Render selected polygon overlay with transparency
-        if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)
+        if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon && 
+            tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)
         {
             RenderSelectionOverlay(tab);
+        }
+        
+        // Render selected collision box overlay
+        if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision && 
+            tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Model.Boxes.Length)
+        {
+            RenderCollisionSelectionOverlay(camera, tab);
         }
         
         // Restore original transform
@@ -2030,6 +2463,27 @@ public class ModelEditorPhase : BasePhase
         // Restore previous states
         GameSparker._graphicsDevice.BlendState = oldBlendState;
         GameSparker._graphicsDevice.DepthStencilState = oldDepthStencilState;
+    }
+    
+    private void RenderCollisionSelectionOverlay(PerspectiveCamera camera, ModelEditorTab tab)
+    {
+        if (tab.Model == null || tab.SelectedCollisionIndex < 0) return;
+        
+        // Create a highlighted collision box mesh for the selected collision
+        var selectedBox = tab.Model.Boxes[tab.SelectedCollisionIndex];
+        var highlightedBox = selectedBox with { 
+            Color = new Color3(255, 255, 0) // Yellow highlight
+        };
+        
+        var highlightBoxes = new Rad3dBoxDef[] { highlightedBox };
+        var highlightMesh = new CollisionDebugMesh(highlightBoxes);
+        
+        // Match the main model's transform
+        highlightMesh.Position = tab.Model.Position;
+        highlightMesh.Rotation = tab.Model.Rotation;
+        
+        // Render with highlighting
+        highlightMesh.Render(camera);
     }
     
     public override void WindowSizeChanged(int width, int height)

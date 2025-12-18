@@ -75,6 +75,8 @@ public class GameSparker
     
     public static DevConsole devConsole = new();
 
+    public static SettingsMenu SettingsMenu = new();
+
     public static readonly string[] CarRads = {
         "2000tornados", "formula7", "canyenaro", "lescrab", "nimi", "maxrevenge", "leadoxide", "koolkat", "drifter",
         "policecops", "mustang", "king", "audir8", "masheen", "radicalone", "drmonster", "marauder"
@@ -227,6 +229,8 @@ public class GameSparker
 
         // init menu
         MainMenu = new MainMenuPhase();
+        SettingsMenu.LoadConfig();
+
         InRace = new InRacePhase(_graphicsDevice);
         CurrentPhase = MainMenu;
 
@@ -261,7 +265,6 @@ public class GameSparker
     {
         // temp
         CurrentPhase = InRace;
-        MainMenu = null;
 
         Console.WriteLine("Game started!");
     }
@@ -280,6 +283,7 @@ public class GameSparker
     {
         devConsole.Render();
         MessageWindow.Render();
+        SettingsMenu.Render();
     }
 
     public static void WindowSizeChanged(int width, int height)

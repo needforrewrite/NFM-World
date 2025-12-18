@@ -13,8 +13,6 @@ namespace NFMWorld.Mad.UI;
 public class SettingsMenu
 {
     private bool _isOpen;
-
-    public static DevConsoleWriter Writer = null!;
     private int _selectedTab = 0;
     
     private readonly string[] _tabNames = { "Keyboard", "Video", "Audio", "Game" };
@@ -86,7 +84,7 @@ public class SettingsMenu
         _isOpen = false;
     }
 
-    public void RenderImgui()
+    public void Render()
     {
         if (!_isOpen)
             return;
@@ -192,7 +190,7 @@ public class SettingsMenu
             {
                 // Clear the conflicting binding by setting it to None
                 prop.SetValue(Bindings, Keys.None);
-                Writer?.WriteLine($"Cleared {prop.Name} (was {key})", "debug");
+                GameSparker.Writer?.WriteLine($"Cleared {prop.Name} (was {key})", "debug");
             }
         }
 
@@ -201,7 +199,7 @@ public class SettingsMenu
         if (property != null)
         {
             property.SetValue(Bindings, key);
-            Writer?.WriteLine($"Bound {_capturingAction} to {key}", "debug");
+            GameSparker.Writer?.WriteLine($"Bound {_capturingAction} to {key}", "debug");
         }
 
         _capturingAction = null;
@@ -490,11 +488,11 @@ public class SettingsMenu
                 cfgWriter.WriteLine($"key_cycleview {(int)Bindings.CycleView}");
             }
             
-            Writer?.WriteLine($"Config saved to {configPath}", "debug");
+            GameSparker.Writer?.WriteLine($"Config saved to {configPath}", "debug");
         }
         catch (Exception ex)
         {
-            Writer?.WriteLine($"Error saving config: {ex.Message}", "error");
+            GameSparker.Writer?.WriteLine($"Error saving config: {ex.Message}", "error");
         }
     }
     
@@ -506,7 +504,7 @@ public class SettingsMenu
             
             if (!System.IO.File.Exists(configPath))
             {
-                Writer?.WriteLine("No config file found, using defaults.", "warning");
+                GameSparker.Writer?.WriteLine("No config file found, using defaults.", "warning");
                 return;
             }
             
@@ -615,7 +613,7 @@ public class SettingsMenu
                 }
                 catch (Exception ex)
                 {
-                    Writer?.WriteLine($"Error parsing config line '{line}': {ex.Message}", "error");
+                    GameSparker.Writer?.WriteLine($"Error parsing config line '{line}': {ex.Message}", "error");
                 }
             }
             
@@ -627,11 +625,11 @@ public class SettingsMenu
             IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
             IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
 
-            Writer?.WriteLine($"Config loaded from {configPath}", "debug");
+            GameSparker.Writer?.WriteLine($"Config loaded from {configPath}", "debug");
         }
         catch (Exception ex)
         {
-            Writer?.WriteLine($"Error loading config: {ex.Message}", "error");
+            GameSparker.Writer?.WriteLine($"Error loading config: {ex.Message}", "error");
         }
     }
 }

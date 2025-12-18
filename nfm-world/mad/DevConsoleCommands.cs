@@ -40,7 +40,7 @@ namespace NFMWorld.Mad
             //ui
             console.RegisterCommand("ui_open_devcam", (c, args) => ToggleCameraSettings(c));
             console.RegisterCommand("ui_open_devmsg", ShowMessageTest);
-            console.RegisterCommand("ui_open_settings", (c, args) => GameSparker.MainMenu.SettingsMenu.Open());
+            console.RegisterCommand("ui_open_settings", (c, args) => GameSparker.SettingsMenu.Open());
 
             //cheats
             //console.RegisterCommand("sv_cheats", SVCheats);
@@ -382,7 +382,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            GameSparker.MainMenu = new MainMenuPhase();
+            //GameSparker.MainMenu = new MainMenuPhase();
             GameSparker.CurrentPhase = GameSparker.MainMenu;
             IBackend.Backend.StopAllSounds();
             
