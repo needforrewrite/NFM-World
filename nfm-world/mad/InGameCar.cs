@@ -7,6 +7,7 @@ public class InGameCar : IRenderable
     public Car CarRef;
     public Mad Mad;
     public Control Control;
+    public MadSfx Sfx;
 
     public CarStats Stats
     {
@@ -19,12 +20,14 @@ public class InGameCar : IRenderable
         Mad = new Mad(car.Stats, im);
         Mad.Reseto(im, CarRef);
         Control = new Control();
+        Sfx = new MadSfx(Mad);
     }
 
     public void Drive()
     {
         CarRef.GameTick();
         Mad.Drive(Control, CarRef);
+        Sfx.Tick(Control, Mad, CarRef.Stats);
     }
 
     public void Render(Camera camera, Lighting? lighting = null)

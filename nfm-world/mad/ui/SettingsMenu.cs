@@ -3,6 +3,7 @@ using System.Numerics;
 using System.IO;
 using System.Globalization;
 using NFMWorld.Util;
+using NFMWorld.DriverInterface;
 
 namespace NFMWorld.Mad.UI;
 
@@ -426,7 +427,11 @@ public class SettingsMenu
         InRacePhase.camera.Fov = _fov;
         InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
         InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
-        
+
+        IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
+        GameSparker.CurrentMusic?.SetVolume(_musicVolume * _masterVolume);
+        IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
+
         // Save config to file
         SaveConfig();
     }
@@ -619,6 +624,9 @@ public class SettingsMenu
             InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
             InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
             
+            IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
+            IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
+
             Writer?.WriteLine($"Config loaded from {configPath}", "debug");
         }
         catch (Exception ex)

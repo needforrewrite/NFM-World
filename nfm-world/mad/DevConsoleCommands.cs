@@ -239,7 +239,7 @@ namespace NFMWorld.Mad
             }
 
             var stageName = args[0];
-            InRacePhase.current_stage = new Stage(stageName, GameSparker._graphicsDevice);
+            InRacePhase.LoadStage(stageName, GameSparker._graphicsDevice);
             console.Log($"Switched to stage '{stageName}'");
 
             InRacePhase.cars_in_race.Clear();

@@ -64,10 +64,10 @@ internal class SoundClip : ISoundClip
         
     public static void SetAllVolumes(float vol)
     {
-        //foreach (var s in SoundPool)
-        //{
-        //    Bass.ChannelSetAttribute(s._chan, ChannelAttribute.Volume, vol);
-        //}
+        foreach (var s in SoundPool)
+        {
+            Bass.ChannelSetAttribute(s._chan, ChannelAttribute.Volume, vol);
+        }
     }
         
     public static string GetBassError(Errors error)
