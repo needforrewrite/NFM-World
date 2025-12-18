@@ -37,6 +37,7 @@ public class Mesh : Transform, IRenderable
     private readonly Mesh[] _wheels;
     private readonly CollisionDebugMesh? _collisionDebugMesh;
     internal readonly Flames Flames;
+    internal readonly Sparks Sparks;
 
     public bool CastsShadow { get; set; }
     public bool GetsShadowed { get; set; } = true;
@@ -72,6 +73,7 @@ public class Mesh : Transform, IRenderable
         _wheels = Array.ConvertAll(Wheels, wheel => new WheelMeshBuilder(wheel, Rims).BuildMesh(graphicsDevice, this));
         _collisionDebugMesh = rad.Boxes.Length > 0 ? new CollisionDebugMesh(rad.Boxes) : null;
         Flames = new Flames(this, graphicsDevice);
+        Sparks = new Sparks(this, graphicsDevice);
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -99,6 +101,7 @@ public class Mesh : Transform, IRenderable
         _wheels = baseMesh._wheels;
         _collisionDebugMesh = baseMesh._collisionDebugMesh;
         Flames = new Flames(this, GraphicsDevice);
+        Sparks = new Sparks(this, GraphicsDevice);
     }
 
     [MemberNotNull(nameof(Submeshes))]
@@ -228,6 +231,7 @@ public class Mesh : Transform, IRenderable
     public override void GameTick()
     {
         Flames.GameTick();
+        Sparks.GameTick();
         base.GameTick();
     }
 
@@ -276,7 +280,11 @@ public class Mesh : Transform, IRenderable
             }
         }
 
-        if (!isCreateShadowMap) Flames.Render(camera);
+        if (!isCreateShadowMap)
+        {
+            Flames.Render(camera);
+            Sparks.Render(camera);
+        }
         
         // Render glass (translucency) last
         Submeshes[(int)PolyType.Glass]?.Render(camera, lightCamera, isCreateShadowMap, matrixWorld);
@@ -285,5 +293,10 @@ public class Mesh : Transform, IRenderable
     public void RebuildMesh()
     {
         BuildMesh(GraphicsDevice);
+    }
+
+    public void Spark(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)
+    {
+        Sparks.AddSpark(wheelx, wheely, wheelz, scx, scy, scz, type, wheelGround);
     }
 }

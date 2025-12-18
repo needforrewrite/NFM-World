@@ -1359,7 +1359,7 @@ public class Mad
             }
         }
 
-        OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical);
+        OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded);
 
         // sparks and scrapes
         for (var i79 = 0; i79 < 4; i79++)
@@ -2152,7 +2152,7 @@ public class Mad
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
     private void OmarTrackPieceCollision(Control control, ContO conto, float[] wheelx, float[] wheely, float[] wheelz,
-        float groundY, float wheelYThreshold, int wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical)
+        float groundY, float wheelYThreshold, int wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded)
     {
         hitVertical = false;
 
@@ -2166,11 +2166,11 @@ public class Mad
             {
                 // the part below just makes sparks and scrape noises
                 // this looks wrong though? there is no rady check
-                //                if (isWheelGrounded[k] && Capsized && (Trackers.skd[j] == 0 || Trackers.skd[j] == 1) && wheelx[k] > (float) (Trackers.X[j] - Trackers.radx[j]) && wheelx[k] < (float) (Trackers.X[j] + Trackers.radx[j]) && wheelz[k] > (float) (Trackers.Z[j] - Trackers.radz[j]) && wheelz[k] < (float) (Trackers.Z[j] + Trackers.radz[j])) {
-                //                    conto.sprk(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1);
-                //                    if (this.im == this.xt.im)
-                //                        this.xt.gscrape((int) Scx[k], (int) Scy[k], (int) Scz[k]);
-                //                }
+                if (isWheelGrounded[k] && BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1) && wheelx[k] > (float) (Trackers.X[j] - Trackers.Radx[j]) && wheelx[k] < (float) (Trackers.X[j] + Trackers.Radx[j]) && wheelz[k] > (float) (Trackers.Z[j] - Trackers.Radz[j]) && wheelz[k] < (float) (Trackers.Z[j] + Trackers.Radz[j])) {
+                    conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
+                    // if (this.im == this.xt.im)
+                    //     this.xt.gscrape((int) Scx[k], (int) Scy[k], (int) Scz[k]);
+                }
 
                 // find the first piece that I am colliding with, snap wheel to it and stop
                 if ( // CHK3
@@ -2205,7 +2205,7 @@ public class Mad
                         // sparks and scrape
                         if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
                         {
-                            // conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
                             //if (Im == /*this.xt.im*/ 0)
                             //this.xt.gscrape((int)Scx[k], (int)Scy[k], (int)Scz[k]);
                         }
@@ -2236,7 +2236,7 @@ public class Mad
                             _crank[0, k]++;
                         if (_crank[0, k] > 1)
                         {
-                            // conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
                             //if (Im == /*this.xt.im*/ 0)
                             //    this.xt.scrape((int)Scx[k], (int)Scy[k], (int)Scz[k]);
                         }
@@ -2267,7 +2267,7 @@ public class Mad
                             _crank[1, k]++;
                         if (_crank[1, k] > 1)
                         {
-                            // conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
                             //if (this.im == this.xt.im)
                             //    this.xt.scrape((int)Scx[k], (int)Scy[k], (int)Scz[k]);
                         }
@@ -2297,7 +2297,7 @@ public class Mad
                             _crank[2, k]++;
                         if (_crank[2, k] > 1)
                         {
-                            // conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
                             //if (this.im == this.xt.im)
                             //    this.xt.scrape((int)Scx[k], (int)Scy[k], (int)Scz[k]);
                         }
@@ -2327,7 +2327,7 @@ public class Mad
                             _crank[3, k]++;
                         if (_crank[3, k] > 1)
                         {
-                            // conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
                             //if (this.im == this.xt.im)
                             //    this.xt.scrape((int)Scx[k], (int)Scy[k], (int)Scz[k]);
                         }
@@ -2398,7 +2398,7 @@ public class Mad
                             // sparks and scrapes
                             if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
                             {
-                                // conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1);
+                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
                                 //if (this.im == this.xt.im)
                                 //    this.xt.gscrape((int)Scx[k], (int)Scy[k], (int)Scz[k]);
                             }
@@ -2446,7 +2446,7 @@ public class Mad
 
                             if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
                             {
-                                // conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1);
+                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
                                 //if (this.im == this.xt.im)
                                 //    this.xt.gscrape((int)Scx[k], (int)Scy[k], (int)Scz[k]);
                             }

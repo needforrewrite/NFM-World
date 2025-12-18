@@ -91,4 +91,9 @@ public class ContO
     {
         MeshDamage.DamageZ(stat, _mesh, wheelnum, amount);
     }
+
+    public void Spark(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)
+    {
+        _mesh.Spark(wheelx, wheely, wheelz, scx, scy, scz, type, wheelGround);
+    }
 }
