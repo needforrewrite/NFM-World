@@ -110,6 +110,11 @@ jobs:
           } else {
             Write-Warning "bass.dll not found, skipping"
           }
+          if (Test-Path "nfm-world/skiadriver/bass_fx.dll") {
+            Copy-Item -Path "nfm-world/skiadriver/bass_fx.dll" -Destination "./publish/${{ matrix.rid }}/"
+          } else {
+            Write-Warning "bass_fx.dll not found, skipping"
+          }
           if (Test-Path "nfm-world/nimpellerdriver/impeller.dll") {
             Copy-Item -Path "nfm-world/nimpellerdriver/impeller.dll" -Destination "./publish/${{ matrix.rid }}/"
           } else {
@@ -235,6 +240,11 @@ jobs:
             cp nfm-world/skiadriver/libbass.so ./publish/${{ matrix.rid }}/
           else
             echo "Warning: libbass.so not found, skipping"
+          fi
+          if [ -f "nfm-world/skiadriver/libbass_fx.so" ]; then
+            cp nfm-world/skiadriver/libbass_fx.so ./publish/${{ matrix.rid }}/
+          else
+            echo "Warning: libbass_fx.so not found, skipping"
           fi
           if [ -f "nfm-world/nimpellerdriver/libimpeller.so" ]; then
             cp nfm-world/nimpellerdriver/libimpeller.so ./publish/${{ matrix.rid }}/
