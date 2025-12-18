@@ -25,7 +25,7 @@ internal class RadicalMusic : IRadicalMusic
             {
                 byte[] f = System.IO.File.ReadAllBytes(file.Path);
 
-                if ((_music = Bass.CreateStream(f, 0, f.Length, BassFlags.Loop)) == 0)
+                if ((_music = Bass.CreateStream(f, 0, f.Length, BassFlags.Loop | BassFlags.Decode)) == 0)
                 {
                     // it ain't playable
                     throw new Exception(SoundClip.GetBassError(Bass.LastError));
@@ -48,7 +48,7 @@ internal class RadicalMusic : IRadicalMusic
             {
                 byte[] f = System.IO.File.ReadAllBytes(file.Path);
 
-                if ((_music = Bass.MusicLoad(f, 0, f.Length, BassFlags.Loop)) == 0)
+                if ((_music = Bass.MusicLoad(f, 0, f.Length, BassFlags.Loop | BassFlags.Decode)) == 0)
                 {
                     // it ain't playable
                     throw new Exception(SoundClip.GetBassError(Bass.LastError));
