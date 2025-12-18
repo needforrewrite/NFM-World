@@ -34,8 +34,6 @@ internal class Trackers
             LoadTracker(element);
         }
         
-        Console.WriteLine(Nt);
-        
         Sx = sx;
         Sz = sz;
         Ncx = ncx / 3000;
