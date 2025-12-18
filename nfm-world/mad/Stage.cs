@@ -138,15 +138,15 @@ public class Stage : IRenderable
 
                 if (line.StartsWith("density"))
                 {
-                    // Medium.Fogd = (Utility.GetInt("density", astring, 0) + 1) * 2 - 1;
-                    // if (Medium.Fogd < 1)
-                    // {
-                    //     Medium.Fogd = 1;
-                    // }
-                    // if (Medium.Fogd > 30)
-                    // {
-                    //     Medium.Fogd = 30;
-                    // }
+                    World.FogDensity = (Utility.GetInt("density", line, 0) + 1) * 2 - 1;
+                    if (World.FogDensity < 1)
+                    {
+                        World.FogDensity = 1;
+                    }
+                    if (World.FogDensity > 30)
+                    {
+                        World.FogDensity = 30;
+                    }
                 }
 
                 if (line.StartsWith("fadefrom"))
