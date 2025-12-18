@@ -66,7 +66,7 @@ public class MadSfx
 
     private void StopAirs()
     {
-        for (int i271 = 0; i271 < 4; i271++)
+        for (int i271 = 0; i271 < 6; i271++)
         {
             SfxLibrary.air[i271].Stop();
         }

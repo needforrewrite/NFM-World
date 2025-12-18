@@ -60,8 +60,6 @@ internal class RadicalMusic : IRadicalMusic
             Bass.ChannelSetAttribute(_music, ChannelAttribute.Tempo, tempomul);
 
             _readable = true;
-            //SetVolume(GameSparker.Volume);
-            SetVolume(1.0f);   
         } catch(Exception e)
         {
             GameSparker.Writer.WriteLine("Error loading music " + file.Path + ": " + e.ToString());
@@ -104,9 +102,16 @@ internal class RadicalMusic : IRadicalMusic
     public void SetVolume(float vol)
     {
 #if USE_BASS
+        IRadicalMusic.CurrentVolume = vol;
         if (!_readable) return;
         Bass.ChannelSetAttribute(_music, ChannelAttribute.Volume, vol);
 #endif
+    }
+
+    public float GetVolume()
+    {
+        if (!_readable) return 0f;
+        return (float)Bass.ChannelGetAttribute(_music, ChannelAttribute.Volume);
     }
 
     public void SetFreqMultiplier(double multiplier)

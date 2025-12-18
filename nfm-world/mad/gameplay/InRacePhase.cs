@@ -75,8 +75,11 @@ public class InRacePhase : BasePhase
 
         if(!current_stage.musicPath.IsNullOrEmpty())
         {
+            Console.WriteLine(IRadicalMusic.CurrentVolume);
             GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{current_stage.musicPath}"), current_stage.musicTempoMul);
+            Console.WriteLine(IRadicalMusic.CurrentVolume);
             GameSparker.CurrentMusic.SetFreqMultiplier(current_stage.musicFreqMul);
+            GameSparker.CurrentMusic.SetVolume(IRadicalMusic.CurrentVolume);
             GameSparker.CurrentMusic.Play();   
         }
     }

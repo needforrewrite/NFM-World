@@ -2536,7 +2536,7 @@ public class Mad
                 f += 100.0F;
             }
             Shakedam = (int)((Math.Abs(f) + Shakedam) / 2.0F);
-            if (/*Im == XTGraphics.Im*/ _colidim)
+            if (/*Im == XTGraphics.Im*/true && _colidim)
             {
                 SfxPlayCrash(this, ((int)f, 0));
                 //XTGraphics.Acrash(Im, f, 0);
@@ -2617,7 +2617,7 @@ public class Mad
                 Shakedam = (int)((Math.Abs(f) + Shakedam) / 2.0F);
             }
             
-            if (/*Im == XTGraphics.Im ||*/ _colidim)
+            if (/*Im == XTGraphics.Im ||*/true && _colidim)
             {
                 SfxPlayCrash(this, ((int)f, i99 * i98));
                 //XTGraphics.Acrash(Im, f, i99 * i98);
@@ -2702,7 +2702,7 @@ public class Mad
             }
             Shakedam = (int)((Math.Abs(f) + Shakedam) / 2.0F);
             
-            if (/*Im == XTGraphics.Im ||*/ _colidim)
+            if (/*Im == XTGraphics.Im ||*/true && _colidim)
             {
                 SfxPlayCrash(this, ((int)f, 0));
                 //XTGraphics.Acrash(Im, f, 0);
