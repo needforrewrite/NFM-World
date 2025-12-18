@@ -209,6 +209,8 @@ public class GameSparker
         _game = game;
         _graphicsDevice = game.GraphicsDevice;
 
+        SfxLibrary.LoadSounds();
+
         timer = new MicroStopwatch();
         timer.Start();
         
