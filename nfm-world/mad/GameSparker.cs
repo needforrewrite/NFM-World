@@ -17,6 +17,7 @@ namespace NFMWorld.Mad;
 
 public class GameSparker
 {
+    public static Game _game;
     public static GraphicsDevice _graphicsDevice;
     public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
 
@@ -205,7 +206,10 @@ public class GameSparker
 
     public static void Load(Game game)
     {
+        _game = game;
         _graphicsDevice = game.GraphicsDevice;
+
+        SfxLibrary.LoadSounds();
 
         timer = new MicroStopwatch();
         timer.Start();

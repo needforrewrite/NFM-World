@@ -69,5 +69,9 @@
             <MgfxInputFiles Include="data\shaders\**\*.fx" />
         </ItemGroup>
         <Exec Command="mgfxc @(MgfxInputFiles->'%(FullPath)') .\data\shaders\%(RecursiveDir)%(Filename).fxc /Profile:OpenGL" />
+        <ItemGroup>
+            <MgfxOutputFiles Include="data\shaders\**\*.fxc" />
+        </ItemGroup>
+        <Copy SourceFiles="@(MgfxOutputFiles)" DestinationFolder="$(OutDir)\data\shaders" />
     </Target>
 </Project>

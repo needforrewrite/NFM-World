@@ -12,7 +12,12 @@ name(Paninaro| Caninaro| Let's fly!)
 
 nlaps(4)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
+
+soundtrack(nfm1,stage6.zipo)
+soundtrackfreqmul(1.01)
 
 soundtrack(nfm1,stage6.zipo)
 soundtrackfreqmul(1.01)

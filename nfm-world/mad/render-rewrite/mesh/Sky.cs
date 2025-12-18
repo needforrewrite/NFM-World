@@ -18,7 +18,7 @@ public class Sky : Transform, IRenderable
         var skyline = -300;
 
         var layers = new LinkedList<(Vector3 Position, Vector3 Color)>();
-        layers.AddLast((new Vector3(0, skyline - 700, 0), World.Sky.Snap(World.Snap).ToVector3()));
+        layers.AddLast((new Vector3(0, skyline - 700, 7000), World.Sky.Snap(World.Snap).ToVector3()));
 
         var col = World.Sky.Snap(World.Snap).ToVector3();
         for (var i = 0; i < 16; ++i) {
@@ -29,9 +29,9 @@ public class Sky : Transform, IRenderable
         col = World.Sky.Snap(World.Snap).ToVector3();
         for (var i = 1; i < 20; ++i) {
             col = new Vector3(0.991f, 0.991f, 0.998f) * col;
-            layers.AddFirst((new Vector3(0, skyline - 700 - i * 70, 0), col));
+            layers.AddFirst((new Vector3(0, skyline - 700 - i * 70, 7000), col));
         }
-        layers.AddLast((new Vector3(0, 250, 0), World.Fog.ToVector3()));
+        layers.AddLast((new Vector3(0, 250, 7000), World.Fog.ToVector3()));
 
         var data = new List<VertexPositionColor>();
 
@@ -73,6 +73,12 @@ public class Sky : Transform, IRenderable
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
 
         _graphicsDevice.DepthStencilState = DepthStencilState.None;
+        
+        var col = World.Sky.Snap(World.Snap).ToVector3();
+        for (var i = 1; i < 20; ++i) {
+            col = new Vector3(0.991f, 0.991f, 0.998f) * col;
+        }
+        _graphicsDevice.Clear(new Microsoft.Xna.Framework.Color(col.ToXna()));
         
         // Extract camera rotation from view direction
         var viewDirection = Vector3.Normalize(camera.LookAt - camera.Position);

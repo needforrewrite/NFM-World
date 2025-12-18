@@ -69,15 +69,15 @@ public class MainMenuPhase : BasePhase
         _buttons.Clear();
         
         // Initialize submenu buttons
-        int buttonWidth = 230;
+        int buttonWidth = 235;
         int buttonHeight = 35;
         int startX = 100;
         int startY = 390;
         int spacing = 40;
 
         AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "MODEL EDITOR", OnModelEditorClicked);
-        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "STAGE MAKER", OnClickUnavailable);
-        AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "CAMPAIGN MAKER", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "STAGE EDITOR", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "CAMPAIGN EDITOR", OnClickUnavailable);
         AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "BACK", OnBackClicked);
     }
 

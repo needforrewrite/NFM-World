@@ -438,6 +438,12 @@ public unsafe class Program : Game
             GameSparker.CurrentPhase.MouseMoved(newState.X, newState.Y, ImGui.GetIO().WantCaptureMouse);
         }
 
+        if (newState.ScrollWheelValue != oldMouseState.ScrollWheelValue)
+        {
+            var delta = newState.ScrollWheelValue - oldMouseState.ScrollWheelValue;
+            GameSparker.CurrentPhase.MouseScrolled(delta, ImGui.GetIO().WantCaptureMouse);
+        }
+
         oldMouseState = newState;
     }
 

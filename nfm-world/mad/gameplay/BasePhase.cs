@@ -58,6 +58,10 @@ public abstract class BasePhase
     {
     }
 
+    public virtual void MouseScrolled(int delta, bool imguiWantsMouse)
+    {
+    }
+
     public virtual void WindowSizeChanged(int width, int height)
     {
     }

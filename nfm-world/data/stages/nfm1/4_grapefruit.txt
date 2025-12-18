@@ -9,7 +9,12 @@ fadefrom(5000)
 name(Grapefruit Power)
 nlaps(1)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
+
+soundtrack(nfm1,stage4.zipo)
+soundtrackfreqmul(1.07)
 
 soundtrack(nfm1,stage4.zipo)
 soundtrackfreqmul(1.07)

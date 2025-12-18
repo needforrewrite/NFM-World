@@ -10,7 +10,13 @@ fadefrom(5000)
 name(Contrary To Popular Belief)
 nlaps(4)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
+
+soundtrack(nfm1,stage2.zipo)
+soundtrackfreqmul(0.89)
+soundtracktempomul(11.6)
 
 soundtrack(nfm1,stage2.zipo)
 soundtrackfreqmul(0.89)

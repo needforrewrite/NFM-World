@@ -12,7 +12,7 @@ public static class World
     public static bool HasPolys;
     public static bool HasClouds;
     public static bool HasTexture;
-    public static float FogDensity = 0.857f; // TODO ASSIGN
+    public static float FogDensity = 6;
     public static Vector3 LightDirection = new Vector3(0, 1, 0);
     public static int FadeFrom;
     public static float BlackPoint = 0.37f;
