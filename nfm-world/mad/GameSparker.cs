@@ -210,11 +210,11 @@ public class GameSparker
         cars = [];
         stage_parts = [];
 
-        FileUtil.LoadFiles("./data/models/cars", CarRads, (ais, id) => {
-            cars[id] = new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)));
+        FileUtil.LoadFiles("./data/models/cars", CarRads, (ais, id, fileName) => {
+            cars[id] = new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName);
         });
 
-        FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id) => {
+        FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id, _) => {
             stage_parts[id] = new Mesh(game.GraphicsDevice, Encoding.UTF8.GetString(ais));
         });
 
