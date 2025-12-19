@@ -64,7 +64,7 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
     public class NvgGraphics(NvgContext context, FontSystem fontSystem) : IGraphics
     {
-        private Paint _paint = new Paint();
+        private Microsoft.Xna.Framework.Color _color = new();
         private DynamicSpriteFont _font = fontSystem.GetFont(18);
 
         public void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos)
@@ -74,7 +74,7 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
         public void SetColor(Color c)
         {
-            _paint.InnerColor = new Microsoft.Xna.Framework.Color(c.R, c.G, c.B, c.A);
+            _color = new Microsoft.Xna.Framework.Color(c.R, c.G, c.B, c.A);
         }
 
         public void FillPolygon(Span<int> x, Span<int> y, int n)
@@ -89,23 +89,24 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
         public void FillRect(int x1, int y1, int width, int height)
         {
-            context.FillPaint(_paint);
+            context.BeginPath();
             context.Rect(x1, y1, width, height);
+            context.FillColor(_color);
             context.Fill();
         }
 
         public void DrawLine(int x1, int y1, int x2, int y2)
         {
-            context.StrokePaint(_paint);
             context.BeginPath();
             context.MoveTo(x1, y1);
             context.LineTo(x2, y2);
+            context.StrokeColor(_color);
             context.Stroke();
         }
 
         public void SetAlpha(float f)
         {
-            _paint.InnerColor.A = (byte)(255 * f);
+            _color.A = (byte)(255 * f);
         }
 
         public void DrawImage(IImage image, int x, int y)
@@ -114,7 +115,7 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
         public void SetFont(Font font)
         {
-            // TODO
+            _font = fontSystem.GetFont(font.Size);
         }
 
         public IFontMetrics GetFontMetrics()
@@ -124,7 +125,8 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
         public void DrawString(string text, int x, int y)
         {
-            context.Text(_font, text, x, y);
+            context.FillColor(_color);
+            context.Text(_font, text, x, y - _font.FontSize);
         }
 
         public void FillOval(int p0, int p1, int p2, int p3)
@@ -144,8 +146,9 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
         public void DrawRect(int x1, int y1, int width, int height)
         {
-            context.StrokePaint(_paint);
+            context.BeginPath();
             context.Rect(x1, y1, width, height);
+            context.StrokeColor(_color);
             context.Stroke();
         }
 
