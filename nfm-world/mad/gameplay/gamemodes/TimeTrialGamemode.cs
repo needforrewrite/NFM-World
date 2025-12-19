@@ -35,6 +35,7 @@ public class TimeTrialGamemode : BaseGamemode
 
     public override void GameTick(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
+        FrameTrace.AddMessage($"contox: {carsInRace[0].CarRef.Position.X:0.00}, contoz: {carsInRace[0].CarRef.Position.Z:0.00}, contoy: {carsInRace[0].CarRef.Position.Y:0.00}");
         switch (_currentState)
         {
             case TimeTrialState.NotStarted:
