@@ -22,9 +22,9 @@ public class ContO
         get => (int) _mesh.Position.Z;
         set => _mesh.Position = _mesh.Position with { Z = value };
     }
-    public float Xz 
+    public int Xz 
     {
-        get => _mesh.Rotation.Xz.Degrees;
+        get => (int) _mesh.Rotation.Xz.Degrees;
         set => _mesh.Rotation = _mesh.Rotation with { Xz = AngleSingle.FromDegrees(value) };
     }
     public float Xy 

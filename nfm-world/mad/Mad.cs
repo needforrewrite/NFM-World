@@ -680,11 +680,11 @@ public class Mad
                 Pzy = QuantizeTowardsZero((Pzy + (Dcomp - Ucomp) * UMath.Cos(Pxy) * _tickRate), _tickRate); //
                 if (zyinv)
                 {
-                    conto.Xz = QuantizeTowardsZero(conto.Xz + ((Dcomp - Ucomp) * UMath.Sin(Pxy) * _tickRate), _tickRate);
+                    conto.Xz = (int)MathF.Round(QuantizeTowardsZero(conto.Xz + ((Dcomp - Ucomp) * UMath.Sin(Pxy) * _tickRate), _tickRate));
                 }
                 else
                 {
-                    conto.Xz = QuantizeTowardsZero(conto.Xz - ((Dcomp - Ucomp) * UMath.Sin(Pxy) * _tickRate), _tickRate);
+                    conto.Xz = (int)MathF.Round(QuantizeTowardsZero(conto.Xz - ((Dcomp - Ucomp) * UMath.Sin(Pxy) * _tickRate), _tickRate));
                 }
 
                 Pxy = QuantizeTowardsZero((Pxy + (Rcomp - Lcomp) * _tickRate), _tickRate);
@@ -872,11 +872,11 @@ public class Mad
                     Pzy = QuantizeTowardsZero((Pzy + ((Dcomp - Ucomp) * UMath.Cos(Pxy)) * _tickRate), _tickRate);
                     if (zyinv)
                     {
-                        conto.Xz = QuantizeTowardsZero(conto.Xz + (((Dcomp - Ucomp) * UMath.Sin(Pxy)) * _tickRate), _tickRate);
+                        conto.Xz = (int) MathF.Round(QuantizeTowardsZero(conto.Xz + (((Dcomp - Ucomp) * UMath.Sin(Pxy)) * _tickRate), _tickRate));
                     }
                     else
                     {
-                        conto.Xz = QuantizeTowardsZero(conto.Xz - (((Dcomp - Ucomp) * UMath.Sin(Pxy)) * _tickRate), _tickRate);
+                        conto.Xz = (int) MathF.Round(QuantizeTowardsZero(conto.Xz - (((Dcomp - Ucomp) * UMath.Sin(Pxy)) * _tickRate), _tickRate));
                     }
 
                     Pxy = QuantizeTowardsZero((Pxy + (Rcomp - Lcomp) * _tickRate), _tickRate);
@@ -980,7 +980,7 @@ public class Mad
                     _fxz = conto.Wxz / i21;
                 }
 
-                conto.Xz += conto.Wxz / i21 * _tickRate;
+                conto.Xz = (int)MathF.Round(conto.Xz + (conto.Wxz / i21 * _tickRate));
             }
 
             Wtouch = false;
@@ -988,7 +988,7 @@ public class Mad
         }
         else
         {
-            conto.Xz += _fxz * _tickRate;
+            conto.Xz = (int)MathF.Round(conto.Xz + (_fxz * _tickRate));
         } //
 
         if (Speed > 30.0F || Speed < -100.0F)
@@ -1424,7 +1424,7 @@ public class Mad
         }
 
         // I think this line, among other things, is responsible for causing flatspins after glitching on the edge of a ramp
-        conto.Xz += _tickRate * _forca * (Scz[0] * _nmlt - Scz[1] * _pmlt + Scz[2] * _pmlt - Scz[3] * _nmlt + Scx[0] * _pmlt + Scx[1] * _nmlt - Scx[2] * _nmlt - Scx[3] * _pmlt);
+        conto.Xz = (int) MathF.Round(conto.Xz + (_tickRate * _forca * (Scz[0] * _nmlt - Scz[1] * _pmlt + Scz[2] * _pmlt - Scz[3] * _nmlt + Scx[0] * _pmlt + Scx[1] * _nmlt - Scx[2] * _nmlt - Scx[3] * _pmlt)));
 
         if (Math.Abs(i_82) > Math.Abs(i_81))
         {
