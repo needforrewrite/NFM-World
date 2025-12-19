@@ -1425,6 +1425,19 @@ public class Mad
 
         // I think this line, among other things, is responsible for causing flatspins after glitching on the edge of a ramp
         conto.Xz += _tickRate * _forca * (Scz[0] * _nmlt - Scz[1] * _pmlt + Scz[2] * _pmlt - Scz[3] * _nmlt + Scx[0] * _pmlt + Scx[1] * _nmlt - Scx[2] * _nmlt - Scx[3] * _pmlt);
+        
+        // maxine: angle assist to make hypergliding easier
+        var assistxz = conto.Xz;
+        while (assistxz < 0)
+        {
+            assistxz += 360F;
+        }
+
+        assistxz %= 90f;
+        if (assistxz is > 89.5f or < 0.5f)
+        {
+            conto.Xz = (float)Math.Round(conto.Xz / 90.0F) * 90.0F;
+        }
 
         if (Math.Abs(i_82) > Math.Abs(i_81))
         {
