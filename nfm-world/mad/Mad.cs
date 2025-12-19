@@ -1625,6 +1625,8 @@ public class Mad
             offset += wheelZTranslation * -forwardVector;
         }
 
+        offset += new Vector3(airx, 0, airz);
+
         conto.X = (int)(centerPos.X + offset.X);
         conto.Z = (int)(centerPos.Z + offset.Z);
         
