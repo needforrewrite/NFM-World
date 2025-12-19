@@ -1243,7 +1243,7 @@ public class Mad
                         if (UMath.Random() > 0.65)
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                                f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
+                                f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch, (int)wheelGround);
                             if ( /*Im == XTGraphics.Im &&*/ !BadLanding)
                             {
                                 SfxPlaySkid(this, (surfaceType, (float)Math.Sqrt(Scx[j] * Scx[j] + Scz[j] * Scz[j])));
@@ -1257,13 +1257,13 @@ public class Mad
                         if (surfaceType == 1 && UMath.Random() > 0.8)
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                                1.1F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
+                                1.1F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, (int)wheelGround);
                         }
 
                         if ((surfaceType == 2 || surfaceType == 3) && UMath.Random() > 0.6)
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                                1.15F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
+                                1.15F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, (int)wheelGround);
                         }
                     }
                 }
@@ -1356,7 +1356,7 @@ public class Mad
 
                     conto.Dust(i49, wheelx[i49], wheely[i49], wheelz[i49], (int)Scx[i49], (int)Scz[i49],
                         f50 * Stat.Simag,
-                        0, BadLanding && Mtouch, wheelGround);
+                        0, BadLanding && Mtouch, (int)wheelGround);
                 } // CHK2
 
                 wheely[i49] = groundY;
@@ -2199,7 +2199,7 @@ public class Mad
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
     private void OmarTrackPieceCollision(Control control, ContO conto, float[] wheelx, float[] wheely, float[] wheelz,
-        float groundY, float wheelYThreshold, int wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded)
+        float groundY, float wheelYThreshold, float wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded)
     {
         hitVertical = false;
 
@@ -2214,7 +2214,7 @@ public class Mad
                 // the part below just makes sparks and scrape noises
                 // this looks wrong though? there is no rady check
                 if (isWheelGrounded[k] && BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1) && wheelx[k] > (float) (Trackers.X[j] - Trackers.Radx[j]) && wheelx[k] < (float) (Trackers.X[j] + Trackers.Radx[j]) && wheelz[k] > (float) (Trackers.Z[j] - Trackers.Radz[j]) && wheelz[k] < (float) (Trackers.Z[j] + Trackers.Radz[j])) {
-                    conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
+                    conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
                     SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                 }
 
@@ -2243,7 +2243,7 @@ public class Mad
                                 f_59 += 1.1f;
                             else
                                 f_59 += 1.2f;
-                            conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_59 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
+                            conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_59 * Stat.Simag, 0, BadLanding && Mtouch, (int)wheelGround);
                         }
 
                         wheely[k] = Trackers.Y[j] + wheelGround; // snap wheel to the surface
@@ -2251,7 +2251,7 @@ public class Mad
                         // sparks and scrape
                         if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
                             //if (Im == /*this.xt.im*/ 0)
                             SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2282,7 +2282,7 @@ public class Mad
                             _crank[0, k]++;
                         if (_crank[0, k] > 1)
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
                             //if (Im == /*this.xt.im*/ 0)
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2313,7 +2313,7 @@ public class Mad
                             _crank[1, k]++;
                         if (_crank[1, k] > 1)
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
                             //if (this.im == this.xt.im)
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2343,7 +2343,7 @@ public class Mad
                             _crank[2, k]++;
                         if (_crank[2, k] > 1)
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
                             //if (this.im == this.xt.im)
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2373,7 +2373,7 @@ public class Mad
                             _crank[3, k]++;
                         if (_crank[3, k] > 1)
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
+                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
                             //if (this.im == this.xt.im)
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2444,7 +2444,7 @@ public class Mad
                             // sparks and scrapes
                             if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
                             {
-                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
+                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
                                 //if (this.im == this.xt.im)
                                 SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
@@ -2453,7 +2453,7 @@ public class Mad
                             if (!wasMtouch && surfaceType != 0)
                             {
                                 float f_73 = 1.4F;
-                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_73 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
+                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_73 * Stat.Simag, 0, BadLanding && Mtouch, (int)wheelGround);
                             }
                         }
 
@@ -2492,7 +2492,7 @@ public class Mad
 
                             if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
                             {
-                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
+                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
                                 //if (this.im == this.xt.im)
                                 SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
@@ -2500,7 +2500,7 @@ public class Mad
                             if (!wasMtouch && surfaceType != 0)
                             {
                                 float f_78 = 1.4F;
-                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_78 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
+                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_78 * Stat.Simag, 0, BadLanding && Mtouch, (int)wheelGround);
                             }
                         }
 
