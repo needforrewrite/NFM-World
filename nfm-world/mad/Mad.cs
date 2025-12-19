@@ -1027,9 +1027,9 @@ public class Mad
         var wheelpos = new Vector3[4];
         
         var euler = new Euler(
-            AngleSingle.FromDegrees(conto.Xz).ToWrappedPositive(),
-            AngleSingle.FromDegrees(Pzy).ToWrapped(),
-            AngleSingle.FromDegrees(Pxy).ToWrapped()
+            AngleSingle.FromDegrees(conto.Xz),
+            AngleSingle.FromDegrees(Pzy),
+            AngleSingle.FromDegrees(Pxy)
         );
         
         for (var i24 = 0; i24 < 4; i24++)
@@ -1603,12 +1603,27 @@ public class Mad
             (wheelpos[0].Y + wheelpos[1].Y + wheelpos[2].Y + wheelpos[3].Y) / 4.0F,
             (wheelpos[0].Z + wheelpos[1].Z + wheelpos[2].Z + wheelpos[3].Z) / 4.0F
         );
+        
+        // calculate forward vector of the car based on euler2
+        var forwardVector = Vector3.Transform(new Vector3(0, 0, 1), Matrix.CreateFromEuler(euler2));
+        var rightVector = Vector3.Transform(new Vector3(1, 0, 0), Matrix.CreateFromEuler(euler2));
+        
+        float wheelXTranslation = 0;
+        float wheelZTranslation = 0;
+        var offset = new Vector3();
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                wheelXTranslation += conto.Keyx[i];
+                wheelZTranslation += conto.Keyz[i];
+            }
 
-        var offset = new Vector3(
-            bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz) + airx,
-            0,
-            bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz) + airz
-        );
+            wheelXTranslation /= 4f;
+            wheelZTranslation /= 4f;
+
+            offset += wheelXTranslation * rightVector;
+            offset += wheelZTranslation * forwardVector;
+        }
 
         conto.X = (int)(centerPos.X + offset.X);
         conto.Z = (int)(centerPos.Z + offset.Z);
