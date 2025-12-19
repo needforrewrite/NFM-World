@@ -1603,6 +1603,7 @@ public class Mad
         // calculate forward vector of the car based on euler2
         var forwardVector = Vector3.Transform(new Vector3(0, 0, 1), Matrix.CreateFromEuler(euler2));
         var rightVector = Vector3.Transform(new Vector3(1, 0, 0), Matrix.CreateFromEuler(euler2));
+        var upVector = Vector3.Transform(new Vector3(0, -1, 0), Matrix.CreateFromEuler(euler2));
         
         // calculate translation based on wheel origin
         float wheelXTranslation = 0;
@@ -1620,6 +1621,7 @@ public class Mad
 
             offset += wheelXTranslation * -rightVector;
             offset += wheelZTranslation * -forwardVector;
+            offset += bottomy * upVector;
         }
 
         offset += new Vector3(airx, 0, airz);
