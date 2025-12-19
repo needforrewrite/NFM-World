@@ -12,7 +12,7 @@ nlaps(4)
 
 name(Quake Ownage)
 
-soundtrack(custom,quake.zip)
+soundtrack(custom,quake.mod)
 
 set(47,0,0,0)p
 set(10,0,5600,0)p

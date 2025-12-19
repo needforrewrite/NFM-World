@@ -11,7 +11,7 @@ mountains(92876)
 nlaps(3)
 name(The Evil Clown)
 
-soundtrack(custom,jensz.zip)
+soundtrack(custom,jensz.mod)
 
 set(48,0,0,0)p
 set(15,0,5600,0)

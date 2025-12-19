@@ -12,7 +12,7 @@ nlaps(11)
 
 name(Rocket Arena)
 
-soundtrack(custom,the_logic.zip)
+soundtrack(custom,the_logic.mod)
 
 set(47,0,0,0)p
 set(54,700,567,180)

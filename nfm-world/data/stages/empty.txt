@@ -7,5 +7,6 @@ ground(205,200,200)
 
 fadefrom(1000)
 density(5)
+nlaps(-1)
 
 mountains(false)
