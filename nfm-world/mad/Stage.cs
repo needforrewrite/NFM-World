@@ -2,10 +2,6 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Mad;
 using NFMWorld.Util;
 using Stride.Core.Extensions;
-using Stride.Core.Mathematics;
-using Color3 = NFMWorld.Mad.Color3;
-using Environment = System.Environment;
-using Random = NFMWorld.Util.Random;
 
 /**
     Represents a stage. Holds all information relating to track pices, scenery, etc.

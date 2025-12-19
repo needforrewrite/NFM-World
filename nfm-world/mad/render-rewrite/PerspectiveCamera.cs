@@ -8,8 +8,8 @@ public class PerspectiveCamera : Camera
     
     public override void OnBeforeRender()
     {
-        ProjectionMatrix = Microsoft.Xna.Framework.Matrix.CreatePerspectiveFieldOfView(MathUtil.DegreesToRadians(Fov), Width / (float)Height, Near, Far);
-        ViewMatrix = Microsoft.Xna.Framework.Matrix.CreateLookAt(Position.ToXna(), LookAt.ToXna(), Up.ToXna());
+        ProjectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathUtil.DegreesToRadians(Fov), Width / (float)Height, Near, Far);
+        ViewMatrix = Matrix.CreateLookAt(Position, LookAt, Up);
         ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
     }
 }

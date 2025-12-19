@@ -17,8 +17,7 @@ public class GroundPolys : Transform, IRenderable
         _graphicsDevice = graphicsDevice;
         
         var triangulation = Array.ConvertAll(polys,
-            poly => MeshHelpers.TriangulateIfNeeded(Array.ConvertAll(poly.Points,
-                input => (System.Numerics.Vector3)input)));
+            poly => MeshHelpers.TriangulateIfNeeded(poly.Points));
 
         var data = new List<VertexPositionColor>();
         var indices = new List<int>();
@@ -31,8 +30,8 @@ public class GroundPolys : Transform, IRenderable
             var baseIndex = data.Count;
             foreach (var point in poly.Points)
             {
-                var color = poly.Color.ToXna();
-                data.Add(new VertexPositionColor(point.ToXna(), color));
+                var color = poly.Color;
+                data.Add(new VertexPositionColor(point, color));
             }
 
             for (var index = 0; index < result.Triangles.Length; index += 3)

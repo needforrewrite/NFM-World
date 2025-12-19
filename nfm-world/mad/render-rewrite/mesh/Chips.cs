@@ -1,6 +1,4 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using Stride.Core.Mathematics;
-using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
@@ -125,9 +123,9 @@ public class Chips
                 // NFMM doesn't have this but it looks much better with it
                 chip.Color = chip.Color.Snap(World.Snap);
             
-                _triangles[tri++] = new VertexPositionColor(chip.V0.ToXna(), chip.Color.ToXna());
-                _triangles[tri++] = new VertexPositionColor(chip.V1.ToXna(), chip.Color.ToXna());
-                _triangles[tri++] = new VertexPositionColor(chip.V2.ToXna(), chip.Color.ToXna());
+                _triangles[tri++] = new VertexPositionColor(chip.V0, chip.Color.ToXna());
+                _triangles[tri++] = new VertexPositionColor(chip.V1, chip.Color.ToXna());
+                _triangles[tri++] = new VertexPositionColor(chip.V2, chip.Color.ToXna());
                 _triangleCount++;
 
                 chip.State++;

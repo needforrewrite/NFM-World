@@ -1,8 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
-using Matrix = Microsoft.Xna.Framework.Matrix;
-using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
@@ -182,14 +180,14 @@ public class Sparks
                 _rz[i] = (_rz[i] + _vrz[i]);
                 var start = new Vector3(_rx[i], _ry[i], _rz[i]);
                 var end = new Vector3(_rx[i] + _vrx[i], _ry[i] + _vry[i], _rz[i] + _vrz[i]);
-                var color = new Color3(255, (short)(197 - 30 * _rtg[i]), 0).ToXna();
+                var color = new Color3(255, (short)(197 - 30 * _rtg[i]), 0);
                 // TODO apply fog to color
                 
                 // draw line
                 LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, 1f, verts, inds);
                 for (var v = 0; v < LineMeshHelpers.VerticesPerLine; v++)
                 {
-                    _lineVertices[_vertexCount + v] = new VertexPositionColor(verts[v].ToXna(), color);
+                    _lineVertices[_vertexCount + v] = new VertexPositionColor(verts[v], color);
                 }
                 for (var t = 0; t < LineMeshHelpers.IndicesPerLine; t++)
                 {

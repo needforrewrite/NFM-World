@@ -1,6 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
@@ -34,7 +33,7 @@ public class Submesh(
         _material.IsFullbright?.SetValue(PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn);
         _material.UseBaseColor?.SetValue(PolyType is PolyType.Glass);
         _material.BaseColor?.SetValue(World.Sky.ToXnaVector3());
-        _material.LightDirection?.SetValue(World.LightDirection.ToXna());
+        _material.LightDirection?.SetValue(World.LightDirection);
         _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
         _material.FogDistance?.SetValue(World.FadeFrom);
         _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
@@ -57,7 +56,7 @@ public class Submesh(
             _material.Projection?.SetValue(lighting.CascadeLightCamera.ProjectionMatrix);
             _material.WorldView?.SetValue(matrixWorld * lighting.CascadeLightCamera.ViewMatrix);
             _material.WorldViewProj?.SetValue(matrixWorld * lighting.CascadeLightCamera.ViewMatrix * lighting.CascadeLightCamera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position.ToXna());
+            _material.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position);
         }
         else
         {
@@ -65,7 +64,7 @@ public class Submesh(
             _material.Projection?.SetValue(camera.ProjectionMatrix);
             _material.WorldView?.SetValue(matrixWorld * camera.ViewMatrix);
             _material.WorldViewProj?.SetValue(matrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(camera.Position.ToXna());
+            _material.CameraPosition?.SetValue(camera.Position);
         }
 
         _material.CurrentTechnique = lighting?.IsCreateShadowMap == true ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];

@@ -1,8 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
-using Matrix = Microsoft.Xna.Framework.Matrix;
-using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
@@ -37,7 +35,7 @@ public class FixHoop : Mesh
         {
             PrepareLine(i);
         }
-        _fixhoopEffect.World = Matrix.CreateTranslation(Position.ToXna());
+        _fixhoopEffect.World = Matrix.CreateTranslation(Position);
         _fixhoopEffect.View = camera.ViewMatrix;
         _fixhoopEffect.Projection = camera.ProjectionMatrix;
         
@@ -134,14 +132,14 @@ public class FixHoop : Mesh
         var color = new Color3((short)r,(short) g, (short)b);
 
         int startVertIdx = idx * 8;
-        _vertices[startVertIdx + 0] = new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(x[0], y[0], z[0]), color.ToXna());
-        _vertices[startVertIdx + 1] = new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(x[1], y[1], z[1]), color.ToXna());
-        _vertices[startVertIdx + 2] = new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(x[2], y[2], z[2]), color.ToXna());
-        _vertices[startVertIdx + 3] = new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(x[3], y[3], z[3]), color.ToXna());
-        _vertices[startVertIdx + 4] = new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(x[4], y[4], z[4]), color.ToXna());
-        _vertices[startVertIdx + 5] = new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(x[5], y[5], z[5]), color.ToXna());
-        _vertices[startVertIdx + 6] = new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(x[6], y[6], z[6]), color.ToXna());
-        _vertices[startVertIdx + 7] = new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(x[7], y[7], z[7]), color.ToXna());
+        _vertices[startVertIdx + 0] = new VertexPositionColor(new Vector3(x[0], y[0], z[0]), color.ToXna());
+        _vertices[startVertIdx + 1] = new VertexPositionColor(new Vector3(x[1], y[1], z[1]), color.ToXna());
+        _vertices[startVertIdx + 2] = new VertexPositionColor(new Vector3(x[2], y[2], z[2]), color.ToXna());
+        _vertices[startVertIdx + 3] = new VertexPositionColor(new Vector3(x[3], y[3], z[3]), color.ToXna());
+        _vertices[startVertIdx + 4] = new VertexPositionColor(new Vector3(x[4], y[4], z[4]), color.ToXna());
+        _vertices[startVertIdx + 5] = new VertexPositionColor(new Vector3(x[5], y[5], z[5]), color.ToXna());
+        _vertices[startVertIdx + 6] = new VertexPositionColor(new Vector3(x[6], y[6], z[6]), color.ToXna());
+        _vertices[startVertIdx + 7] = new VertexPositionColor(new Vector3(x[7], y[7], z[7]), color.ToXna());
         
         // vertices represents an outline of a polygon with 8 vertices
         // we need to create indices for 4 triangles to fill the shape

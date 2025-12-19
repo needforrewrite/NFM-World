@@ -1,6 +1,5 @@
 using System.Text.Json.Serialization;
 using NFMWorld.Mad;
-using Stride.Core.Mathematics;
 
 public readonly record struct CarStats
 {
@@ -126,7 +125,7 @@ public readonly record struct CarStats
     public string? Validate(string fileName)
     {
         if(Swits[0] == int.MinValue) return ValidateFail(nameof(Swits));
-        else if(Acelf[0] == float.NegativeInfinity) return ValidateFail(nameof(Acelf));
+        else if(Acelf.AsSpan()[0] == float.NegativeInfinity) return ValidateFail(nameof(Acelf));
         else if(Handb == int.MinValue) return ValidateFail(nameof(Handb));
         else if(Airs == float.NegativeInfinity) return ValidateFail(nameof(Airs));
         else if(Airc == float.NegativeInfinity) return ValidateFail(nameof(Airc));

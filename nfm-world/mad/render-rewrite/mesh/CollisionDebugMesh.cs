@@ -1,7 +1,4 @@
-﻿using CommunityToolkit.HighPerformance;
-using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Util;
-using Stride.Core.Mathematics;
+﻿using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
 
@@ -34,7 +31,7 @@ public class CollisionDebugMesh : Transform
             indices.AddRange(inds);
             foreach (var vert in verts)
             {
-                data.Add(new VertexPositionColor(vert.ToXna(), color.ToXna()));
+                data.Add(new VertexPositionColor(vert, color.ToXna()));
             }
         }
         
@@ -124,8 +121,8 @@ public class CollisionDebugMesh : Transform
                     var rotationMatrix = Matrix.CreateFromEuler(angle);
                     var translatedP0 = flatP0 - center;
                     var translatedP1 = flatP1 - center;
-                    var rotatedP0 = Vector3.TransformCoordinate(translatedP0, rotationMatrix) + center;
-                    var rotatedP1 = Vector3.TransformCoordinate(translatedP1, rotationMatrix) + center;
+                    var rotatedP0 = Vector3.Transform(translatedP0, rotationMatrix) + center;
+                    var rotatedP1 = Vector3.Transform(translatedP1, rotationMatrix) + center;
 
                     // Use yellow if selected, otherwise blue for flat plane
                     var flatEdgeColor = isSelected ? selectedColor : flatColor;

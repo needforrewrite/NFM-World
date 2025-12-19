@@ -1,0 +1,93 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Compile Include="..\FNA\src\BoundingBox.cs">
+        <Link>BoundingBox.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\BoundingFrustum.cs">
+        <Link>BoundingFrustum.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\BoundingSphere.cs">
+        <Link>BoundingSphere.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\ContainmentType.cs">
+        <Link>ContainmentType.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\BoundingBoxConverter.cs">
+        <Link>Design\BoundingBoxConverter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\BoundingSphereConverter.cs">
+        <Link>Design\BoundingSphereConverter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\MathTypeConverter.cs">
+        <Link>Design\MathTypeConverter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\MatrixConverter.cs">
+        <Link>Design\MatrixConverter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\PlaneConverter.cs">
+        <Link>Design\PlaneConverter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\PointConverter.cs">
+        <Link>Design\PointConverter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\QuaternionConverter.cs">
+        <Link>Design\QuaternionConverter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\RayConverter.cs">
+        <Link>Design\RayConverter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\RectangleConverter.cs">
+        <Link>Design\RectangleConverter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\Vector2Converter.cs">
+        <Link>Design\Vector2Converter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\Vector3Converter.cs">
+        <Link>Design\Vector3Converter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Design\Vector4Converter.cs">
+        <Link>Design\Vector4Converter.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\MathHelper.cs">
+        <Link>MathHelper.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Matrix.cs">
+        <Link>Matrix.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Plane.cs">
+        <Link>Plane.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\PlaneIntersectionType.cs">
+        <Link>PlaneIntersectionType.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Point.cs">
+        <Link>Point.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Quaternion.cs">
+        <Link>Quaternion.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Ray.cs">
+        <Link>Ray.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Rectangle.cs">
+        <Link>Rectangle.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Vector2.cs">
+        <Link>Vector2.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Vector3.cs">
+        <Link>Vector3.cs</Link>
+      </Compile>
+      <Compile Include="..\FNA\src\Vector4.cs">
+        <Link>Vector4.cs</Link>
+      </Compile>
+    </ItemGroup>
+
+</Project>

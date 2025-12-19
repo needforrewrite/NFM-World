@@ -181,7 +181,7 @@ public static class MeshDamage
                                 mesh.Polys[i].Points[j].Z // z
                             ) < stat.Clrad)
                         {
-                            breakFactor = damageFactor / 20.0f * Util.Random.Single();
+                            breakFactor = damageFactor / 20.0f * Random.Single();
                             mesh.Polys[i].Points[j].Z += breakFactor * UMath.Sin(zy); // z
                             mesh.Polys[i].Points[j].X -= breakFactor * UMath.Sin(xy); // x
                         }
@@ -321,7 +321,7 @@ public static class MeshDamage
                             mesh.Polys[i].Points[j].Z // z
                         ) < stat.Clrad)
                     {
-                        breakFactor = damageFactor / 20.0f * Util.Random.Single();
+                        breakFactor = damageFactor / 20.0f * Random.Single();
                         mesh.Polys[i].Points[j].Z += breakFactor * UMath.Cos(mesh.Rotation.Xz.Degrees) *
                                                      UMath.Cos(mesh.Rotation.Zy.Degrees); // z
                         mesh.Polys[i].Points[j].X += breakFactor * UMath.Sin(mesh.Rotation.Xz.Degrees) *

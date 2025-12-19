@@ -5,11 +5,6 @@ using System.Runtime.InteropServices;
 using HoleyDiver;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Color = Stride.Core.Mathematics.Color;
-using Matrix = Microsoft.Xna.Framework.Matrix;
-using Vector3 = Stride.Core.Mathematics.Vector3;
-using Stride.Core.Mathematics;
-using Vector2 = Stride.Core.Mathematics.Vector2;
 
 namespace NFMWorld.Mad;
 
@@ -64,8 +59,7 @@ public class Mesh : Transform, IRenderable
         GraphicsDevice = graphicsDevice;
 
         Triangulation = Array.ConvertAll(Polys,
-            poly => MeshHelpers.TriangulateIfNeeded(Array.ConvertAll(poly.Points,
-                input => (System.Numerics.Vector3)input)));
+            poly => MeshHelpers.TriangulateIfNeeded(poly.Points));
         BuildMesh(graphicsDevice);
 
         CastsShadow = rad.CastsShadow;
@@ -146,8 +140,8 @@ public class Mesh : Transform, IRenderable
             float decalOffset = poly.DecalOffset; // Use the decal offset value from polygon
             foreach (var point in poly.Points)
             {
-                var color = poly.Color.ToXna();
-                data.Add(new VertexPositionNormalColorCentroid(point.ToXna(), result.PlaneNormal.ToXna(), result.Centroid.ToXna(), color, decalOffset));
+                var color = poly.Color;
+                data.Add(new VertexPositionNormalColorCentroid(point, result.PlaneNormal, result.Centroid, color, decalOffset));
             }
 
             for (var index = 0; index < result.Triangles.Length; index += 3)
@@ -218,10 +212,10 @@ public class Mesh : Transform, IRenderable
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public readonly record struct VertexPositionNormalColorCentroid(
-        Microsoft.Xna.Framework.Vector3 Position,
-        Microsoft.Xna.Framework.Vector3 Normal,
-        Microsoft.Xna.Framework.Vector3 Centroid,
-        Microsoft.Xna.Framework.Color Color,
+        Vector3 Position,
+        Vector3 Normal,
+        Vector3 Centroid,
+        Color Color,
         float DecalOffset)
     {
         /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />

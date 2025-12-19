@@ -2,10 +2,7 @@ using ImGuiNET;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
 using System.Text;
-using Vector3 = Stride.Core.Mathematics.Vector3;
 using Microsoft.Xna.Framework.Graphics;
-using XnaMatrix = Microsoft.Xna.Framework.Matrix;
-using XnaVector3 = Microsoft.Xna.Framework.Vector3;
 
 namespace NFMWorld.Mad.UI;
 
@@ -757,21 +754,21 @@ public class ModelEditorPhase : BasePhase
         
         // Unproject screen coordinates to world space ray
         var nearPoint = viewport.Unproject(
-            new XnaVector3(screenX, screenY, 0f),
+            new Vector3(screenX, screenY, 0f),
             projection,
             view,
-            XnaMatrix.Identity
+            Matrix.Identity
         );
         
         var farPoint = viewport.Unproject(
-            new XnaVector3(screenX, screenY, 1f),
+            new Vector3(screenX, screenY, 1f),
             projection,
             view,
-            XnaMatrix.Identity
+            Matrix.Identity
         );
         
         var rayOrigin = nearPoint;
-        var rayDirection = XnaVector3.Normalize(farPoint - nearPoint);
+        var rayDirection = Vector3.Normalize(farPoint - nearPoint);
         
         // Test against all polygons
         float closestDistance = float.MaxValue;
@@ -790,9 +787,9 @@ public class ModelEditorPhase : BasePhase
                 var i2 = triangulation.Triangles[t + 2];
                 
                 // Transform vertices by the model's world matrix
-                var v0 = XnaVector3.Transform(poly.Points[i0].ToXna(), modelWorld);
-                var v1 = XnaVector3.Transform(poly.Points[i1].ToXna(), modelWorld);
-                var v2 = XnaVector3.Transform(poly.Points[i2].ToXna(), modelWorld);
+                var v0 = Vector3.Transform(poly.Points[i0], modelWorld);
+                var v1 = Vector3.Transform(poly.Points[i1], modelWorld);
+                var v2 = Vector3.Transform(poly.Points[i2], modelWorld);
                 
                 if (RayIntersectsTriangle(rayOrigin, rayDirection, v0, v1, v2, out float distance))
                 {
@@ -810,11 +807,11 @@ public class ModelEditorPhase : BasePhase
     
     // Möller–Trumbore ray-triangle intersection algorithm
     private bool RayIntersectsTriangle(
-        XnaVector3 rayOrigin,
-        XnaVector3 rayDirection,
-        XnaVector3 v0,
-        XnaVector3 v1,
-        XnaVector3 v2,
+        Vector3 rayOrigin,
+        Vector3 rayDirection,
+        Vector3 v0,
+        Vector3 v1,
+        Vector3 v2,
         out float distance)
     {
         distance = 0;
@@ -822,8 +819,8 @@ public class ModelEditorPhase : BasePhase
         
         var edge1 = v1 - v0;
         var edge2 = v2 - v0;
-        var h = XnaVector3.Cross(rayDirection, edge2);
-        var a = XnaVector3.Dot(edge1, h);
+        var h = Vector3.Cross(rayDirection, edge2);
+        var a = Vector3.Dot(edge1, h);
         
         // Check if ray is parallel to triangle (with smaller tolerance)
         if (a > -EPSILON && a < EPSILON)
@@ -831,20 +828,20 @@ public class ModelEditorPhase : BasePhase
         
         var f = 1.0f / a;
         var s = rayOrigin - v0;
-        var u = f * XnaVector3.Dot(s, h);
+        var u = f * Vector3.Dot(s, h);
         
         // Allow slightly outside bounds for edge cases
         if (u < -EPSILON || u > 1.0f + EPSILON)
             return false;
         
-        var q = XnaVector3.Cross(s, edge1);
-        var v = f * XnaVector3.Dot(rayDirection, q);
+        var q = Vector3.Cross(s, edge1);
+        var v = f * Vector3.Dot(rayDirection, q);
         
         // Allow slightly outside bounds for edge cases
         if (v < -EPSILON || u + v > 1.0f + EPSILON)
             return false;
         
-        distance = f * XnaVector3.Dot(edge2, q);
+        distance = f * Vector3.Dot(edge2, q);
         
         // Only accept intersections in front of the ray
         return distance > EPSILON;
@@ -876,21 +873,21 @@ public class ModelEditorPhase : BasePhase
         
         // Unproject screen coordinates to world space ray
         var nearPoint = viewport.Unproject(
-            new XnaVector3(screenX, screenY, 0f),
+            new Vector3(screenX, screenY, 0f),
             projection,
             view,
-            XnaMatrix.Identity
+            Matrix.Identity
         );
         
         var farPoint = viewport.Unproject(
-            new XnaVector3(screenX, screenY, 1f),
+            new Vector3(screenX, screenY, 1f),
             projection,
             view,
-            XnaMatrix.Identity
+            Matrix.Identity
         );
         
         var rayOrigin = nearPoint;
-        var rayDirection = XnaVector3.Normalize(farPoint - nearPoint);
+        var rayDirection = Vector3.Normalize(farPoint - nearPoint);
         
         // Test against all collision boxes
         float closestDistance = float.MaxValue;
@@ -914,13 +911,13 @@ public class ModelEditorPhase : BasePhase
         return closestBoxIndex;
     }
     
-    private bool RayIntersectsBox(XnaVector3 rayOrigin, XnaVector3 rayDirection, Rad3dBoxDef box, out float distance)
+    private bool RayIntersectsBox(Vector3 rayOrigin, Vector3 rayDirection, Rad3dBoxDef box, out float distance)
     {
         distance = float.MaxValue;
         
         // Convert box to axis-aligned bounding box in world space
-        var center = new XnaVector3(box.Translation.X, box.Translation.Y, box.Translation.Z);
-        var radius = new XnaVector3(box.Radius.X, box.Radius.Y, box.Radius.Z);
+        var center = new Vector3(box.Translation.X, box.Translation.Y, box.Translation.Z);
+        var radius = new Vector3(box.Radius.X, box.Radius.Y, box.Radius.Z);
         
         // Simple AABB ray intersection (ignoring rotation for now - can be enhanced later)
         var min = center - radius;

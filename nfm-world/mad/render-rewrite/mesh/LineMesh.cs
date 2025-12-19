@@ -1,7 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Vector3 = Stride.Core.Mathematics.Vector3;
-using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
@@ -40,16 +38,16 @@ public class LineMesh
             var centroid = line.Value.Centroid;
             var normal = line.Value.Normal;
             var color = poly.LineType == LineType.Colored
-                ? (poly.Color - new Color3(10, 10, 10)).ToXna()
+                ? (poly.Color - new Color3(10, 10, 10))
                 : poly.LineType == LineType.Charged
-                    ? poly.Color.ToXna()
+                    ? poly.Color
                     : Color.Black;
 
             LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness, in verts, in inds);
             indices.AddRange(inds);
             foreach (var vert in verts)
             {
-                data.Add(new Mesh.VertexPositionNormalColorCentroid(vert.ToXna(), normal.ToXna(), centroid.ToXna(), color, 0.0f));
+                data.Add(new Mesh.VertexPositionNormalColorCentroid(vert, normal, centroid, color, 0.0f));
             }
         }
 
@@ -87,7 +85,7 @@ public class LineMesh
         _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
         _material.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
 
-        _material.LightDirection?.SetValue(World.LightDirection.ToXna());
+        _material.LightDirection?.SetValue(World.LightDirection);
         _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
         _material.FogDistance?.SetValue(World.FadeFrom);
         _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
@@ -100,7 +98,7 @@ public class LineMesh
         _material.Projection?.SetValue(camera.ProjectionMatrix);
         _material.WorldView?.SetValue(matrixWorld * camera.ViewMatrix);
         _material.WorldViewProj?.SetValue(matrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
-        _material.CameraPosition?.SetValue(camera.Position.ToXna());
+        _material.CameraPosition?.SetValue(camera.Position);
 
         _material.CurrentTechnique = _material.Techniques["Basic"];
 
