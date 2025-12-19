@@ -1604,6 +1604,7 @@ public class Mad
         var forwardVector = Vector3.Transform(new Vector3(0, 0, 1), Matrix.CreateFromEuler(euler2));
         var rightVector = Vector3.Transform(new Vector3(1, 0, 0), Matrix.CreateFromEuler(euler2));
         
+        // calculate translation based on wheel origin
         float wheelXTranslation = 0;
         float wheelZTranslation = 0;
         var offset = new Vector3();
