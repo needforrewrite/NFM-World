@@ -3,7 +3,6 @@ disp(20)
 disline(5)
 stonecold()
 grounded(130)
-road()
 
 tracks(6)
 
@@ -94,7 +93,8 @@ p(-600,-800,-67)
 
 <p>
 c(37,37,218)
-decal(-2)
+
+decal(-2)
 p(940,0,0)
 p(740,0,-67)
 p(600,-800,-67)
