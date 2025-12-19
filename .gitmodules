@@ -13,6 +13,3 @@
 [submodule "NvgSharp"]
 	path = NvgSharp
 	url = https://github.com/rds1983/NvgSharp
-[submodule "soft-float-starter-pack"]
-	path = soft-float-starter-pack
-	url = https://github.com/Kimbatt/soft-float-starter-pack
