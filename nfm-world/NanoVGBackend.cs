@@ -64,17 +64,30 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
     public class NvgGraphics(NvgContext context, FontSystem fontSystem) : IGraphics
     {
-        private Microsoft.Xna.Framework.Color _color = new();
+        private Paint _paint = new();
         private DynamicSpriteFont _font = fontSystem.GetFont(18);
 
         public void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos)
         {
-            throw new NotImplementedException(); // TODO
+            if (colors.Length > 2)
+            {
+                throw new NotImplementedException("Only two-color gradients are supported currently.");
+            }
+
+            if (colorPos != null)
+            {
+                throw new NotImplementedException("Custom color positions are not supported currently.");
+            }
+            
+            var gradientPaint = context.LinearGradient(x, y, x + width, y + height, 
+                new Microsoft.Xna.Framework.Color(colors[0].R, colors[0].G, colors[0].B, colors[0].A), 
+                new Microsoft.Xna.Framework.Color(colors[1].R, colors[1].G, colors[1].B, colors[1].A));
+            _paint = gradientPaint;
         }
 
         public void SetColor(Color c)
         {
-            _color = new Microsoft.Xna.Framework.Color(c.R, c.G, c.B, c.A);
+            _paint = new Paint(new Microsoft.Xna.Framework.Color(c.R, c.G, c.B, c.A));
         }
 
         public void FillPolygon(Span<int> x, Span<int> y, int n)
@@ -91,7 +104,7 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
         {
             context.BeginPath();
             context.Rect(x1, y1, width, height);
-            context.FillColor(_color);
+            context.FillPaint(_paint);
             context.Fill();
         }
 
@@ -100,13 +113,14 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
             context.BeginPath();
             context.MoveTo(x1, y1);
             context.LineTo(x2, y2);
-            context.StrokeColor(_color);
+            context.StrokePaint(_paint);
             context.Stroke();
         }
 
         public void SetAlpha(float f)
         {
-            _color.A = (byte)(255 * f);
+            _paint.InnerColor.A = (byte)(255 * f);
+            _paint.OuterColor.A = (byte)(255 * f);
         }
 
         public void DrawImage(IImage image, int x, int y)
@@ -125,7 +139,7 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
         public void DrawString(string text, int x, int y)
         {
-            context.FillColor(_color);
+            context.FillPaint(_paint);
             context.Text(_font, text, x, y - _font.FontSize);
         }
 
@@ -148,7 +162,7 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
         {
             context.BeginPath();
             context.Rect(x1, y1, width, height);
-            context.StrokeColor(_color);
+            context.StrokePaint(_paint);
             context.Stroke();
         }
 
