@@ -11,6 +11,7 @@
     <InformationalVersion>NFM-World dev</InformationalVersion>
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <TieredCompilation>false</TieredCompilation>
+      <PublishAot>true</PublishAot>
   </PropertyGroup>
     <PropertyGroup>
         <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -51,6 +52,13 @@
         </ItemGroup>
         <Copy SourceFiles="@(DllFiles)" DestinationFolder="$(OutDir)" />
     </Target>
+    
+    <Target Name="CopyCustomContentWindows_Publish" AfterTargets="Publish" Condition="'$(OS)' == 'Windows_NT'">
+        <ItemGroup>
+            <DllFiles Include="skiadriver/*.dll" />
+        </ItemGroup>
+        <Copy SourceFiles="@(DllFiles)" DestinationFolder="$(PublishDir)" />
+    </Target>
 
     <!-- linux builds -->
     <Target Name="CopyCustomContentLinux" AfterTargets="AfterBuild" Condition="'$(OS)' != 'Windows_NT'">
@@ -59,6 +67,14 @@
             <SoFiles Include="skiadriver/*.so.0" />
         </ItemGroup>
         <Copy SourceFiles="@(SoFiles)" DestinationFolder="$(OutDir)" />
+    </Target>
+
+    <Target Name="CopyCustomContentLinux_Publish" AfterTargets="Publish" Condition="'$(OS)' != 'Windows_NT'">
+        <ItemGroup>
+            <SoFiles Include="skiadriver/*.so" />
+            <SoFiles Include="skiadriver/*.so.0" />
+        </ItemGroup>
+        <Copy SourceFiles="@(SoFiles)" DestinationFolder="$(PublishDir)" />
     </Target>
     
     <!-- Run mgfxc if on Windows -->
@@ -136,4 +152,11 @@
     <ItemGroup>
         <CompileShader Include="data/shaders/*.fx" />
     </ItemGroup>
+
+    <Target Name="CopyShadersOnPublish" AfterTargets="Publish">
+        <ItemGroup>
+            <SoFiles Include="$(OutputPath)/data/shaders/*.fxb" />
+        </ItemGroup>
+        <Copy SourceFiles="@(SoFiles)" DestinationFolder="$(PublishDir)/data/shaders" />
+    </Target>
 </Project>
