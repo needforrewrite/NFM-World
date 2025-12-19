@@ -3,7 +3,7 @@
 	url = https://github.com/AvaloniaUI/NImpeller
 [submodule "MonoGame.ImGuiNet"]
 	path = MonoGame.ImGuiNet
-	url = https://github.com/tsMezotic/MonoGame.ImGuiNet
+	url = https://github.com/uwx/FNA.ImGuiNet
 [submodule "FNA"]
 	path = FNA
 	url = https://github.com/FNA-XNA/FNA
@@ -12,4 +12,4 @@
 	url = https://github.com/FontStashSharp/FontStashSharp
 [submodule "NvgSharp"]
 	path = NvgSharp
-	url = https://github.com/rds1983/NvgSharp
+	url = https://github.com/uwx/NvgSharp
