@@ -15,12 +15,15 @@ public static class SfxLibrary
     public static ISoundClip? wastd;
     public static ISoundClip? firewasted;
 
+    public static ISoundClip[] countdown = new ISoundClip[4];
+
+    public static ISoundClip? checkpoint;
+
 
     public static ISoundClip? tires;
 
     public static void LoadSounds()
     {
-#if USE_BASS
         crash[0] = IBackend.Backend.GetSound("data/sound/crash1.wav");
         crash[1] = IBackend.Backend.GetSound("data/sound/crash2.wav");
         crash[2] = IBackend.Backend.GetSound("data/sound/crash3.wav");
@@ -62,7 +65,13 @@ public static class SfxLibrary
         air[3] = IBackend.Backend.GetSound("data/sound/air3.wav");
         air[4] = IBackend.Backend.GetSound("data/sound/air4.wav");
         air[5] = IBackend.Backend.GetSound("data/sound/air5.wav");
-#endif
+
+        countdown[0] = IBackend.Backend.GetSound("data/sound/count/go.wav");
+        countdown[1] = IBackend.Backend.GetSound("data/sound/count/one.wav");
+        countdown[2] = IBackend.Backend.GetSound("data/sound/count/two.wav");
+        countdown[3] = IBackend.Backend.GetSound("data/sound/count/three.wav");
+
+        checkpoint = IBackend.Backend.GetSound("data/sound/checkpoint.wav");
     }
 
     private static string GetEngineSignature(int engine)

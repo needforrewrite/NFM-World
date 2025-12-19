@@ -65,6 +65,7 @@ public class RadParser
         if (rad3d.Wheels is { Length: < 4 }) return rad3d;
 
         // reposition car so that ground is at y=0 and the wheel x and z are equidistant from the origin
+        // this fixes masheen bouncing on the big ramp
         float groundTranslation = float.MaxValue;
         float wheelXTranslation = 0;
         float wheelZTranslation = 0;
@@ -96,9 +97,9 @@ public class RadParser
             rad3d.Wheels[i] = wheel with
             {
                 Position = new Vector3(
-                    wheel.Position.X - (wheelXTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    wheel.Position.Y, // - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    wheel.Position.Z - (wheelZTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER))
+                    wheel.Position.X - (wheelXTranslation),
+                    wheel.Position.Y,// - (groundTranslation),
+                    wheel.Position.Z - (wheelZTranslation)
                 )
             };
         }
@@ -110,9 +111,9 @@ public class RadParser
             {
                 var point = poly.Points[j];
                 poly.Points[j] = new Vector3(
-                    point.X - (wheelXTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    point.Y, // - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    point.Z - (wheelZTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER))
+                    point.X - (wheelXTranslation),
+                    point.Y,// - (groundTranslation),
+                    point.Z - (wheelZTranslation)
                 );
             }
         }

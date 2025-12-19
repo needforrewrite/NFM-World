@@ -8,7 +8,7 @@ fadefrom(5990)
 density(5)
 mountains(74065)
 nlaps(4)
-soundtrack(custom,enemyTerritory,mp3)
+soundtrack(custom,enemyTerritory.mp3)
 name(Riot Coliseum)
 
 set(48,0,0,0)p
