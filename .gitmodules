@@ -6,7 +6,7 @@
 	url = https://github.com/uwx/FNA.ImGuiNet
 [submodule "FNA"]
 	path = FNA
-	url = https://github.com/FNA-XNA/FNA
+	url = https://github.com/uwx/FNA
 [submodule "FontStashSharp"]
 	path = FontStashSharp
 	url = https://github.com/FontStashSharp/FontStashSharp
