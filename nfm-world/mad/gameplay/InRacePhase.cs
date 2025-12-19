@@ -33,7 +33,7 @@ public class InRacePhase : BasePhase
         }
     ];
 
-    public static Stage current_stage = null!;
+    public static Stage CurrentStage = null!;
     public static Scene current_scene;
 
     public InRacePhase(GraphicsDevice graphicsDevice)
@@ -42,7 +42,7 @@ public class InRacePhase : BasePhase
         _spriteBatch = new SpriteBatch(graphicsDevice);
     }
     
-    public static UnlimitedArray<InGameCar> cars_in_race = [];
+    public static UnlimitedArray<InGameCar> CarsInRace = [];
     public static int playerCarIndex = 0;
     public static int playerCarID = 14;
 
@@ -57,38 +57,45 @@ public class InRacePhase : BasePhase
     }
     private static ViewMode currentViewMode = ViewMode.Follow;
     
+    private static BaseGamemode gamemode = null!;
+
     public override void Enter()
     {
         base.Enter();
 
+        gamemode = new TimeTrialGamemode();
+
         LoadStage("nfm2/15_dwm", _graphicsDevice);
 
-        cars_in_race[playerCarIndex] = new InGameCar(playerCarID, GameSparker.cars[playerCarID], 0, 0);
+        CarsInRace[playerCarIndex] = new InGameCar(playerCarID, GameSparker.cars[playerCarID], 0, 0);
         current_scene = new Scene(
             _graphicsDevice,
-            [current_stage, ..cars_in_race],
+            [CurrentStage, ..CarsInRace],
             camera,
             lightCameras
         );
+
+        gamemode.Enter();
     }
 
     public override void Exit()
     {
         base.Exit();
+        gamemode.Exit();
 
         GameSparker.CurrentMusic?.Unload();
     }
 
     public static void LoadStage(string stageName, GraphicsDevice graphicsDevice)
     {
-        current_stage = new Stage(stageName, graphicsDevice);
+        CurrentStage = new Stage(stageName, graphicsDevice);
 
         GameSparker.CurrentMusic?.Unload();
 
-        if(!current_stage.musicPath.IsNullOrEmpty())
+        if(!CurrentStage.musicPath.IsNullOrEmpty())
         {
-            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{current_stage.musicPath}"), current_stage.musicTempoMul);
-            GameSparker.CurrentMusic.SetFreqMultiplier(current_stage.musicFreqMul);
+            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{CurrentStage.musicPath}"), CurrentStage.musicTempoMul);
+            GameSparker.CurrentMusic.SetFreqMultiplier(CurrentStage.musicFreqMul);
             GameSparker.CurrentMusic.SetVolume(IRadicalMusic.CurrentVolume);
             GameSparker.CurrentMusic.Play();   
         }
@@ -98,20 +105,21 @@ public class InRacePhase : BasePhase
     {
         base.GameTick();
         
-        cars_in_race[playerCarIndex].Drive();
+        gamemode.GameTick(CarsInRace, CurrentStage);
+
         switch (currentViewMode)
         {
             case ViewMode.Follow:
-                PlayerFollowCamera.Follow(camera, cars_in_race[playerCarIndex].CarRef, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
+                PlayerFollowCamera.Follow(camera, CarsInRace[playerCarIndex].CarRef, CarsInRace[playerCarIndex].Mad.Cxz, CarsInRace[playerCarIndex].Control.Lookback);
                 break;
             case ViewMode.Around:
-                // Medium.Around(cars_in_race[playerCarIndex].Conto, true);
+                // Medium.Around(CarsInRace[playerCarIndex].Conto, true);
                 break;
         }
         // camera.Position = new Vector3(0, 10000, 0);
         // camera.LookAt = new Vector3(1, 250, 0);
         
-        foreach (var element in current_stage.pieces)
+        foreach (var element in CurrentStage.pieces)
         {
             element.GameTick();
         }
@@ -144,7 +152,9 @@ public class InRacePhase : BasePhase
         G.SetColor(new Color(0, 0, 0));
         G.DrawString($"Render: {Program._lastFrameTime}ms", 100, 100);
         G.DrawString($"Tick: {Program._lastTickTime}ms", 100, 120);
-        G.DrawString($"Power: {cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
+        G.DrawString($"Power: {CarsInRace[0]?.Mad?.Power:0.00}", 100, 140);
+
+        gamemode.Render(CarsInRace, CurrentStage);
     }
 
     public override void KeyPressed(Keys key, bool imguiWantsKeyboard)
@@ -157,63 +167,65 @@ public class InRacePhase : BasePhase
         
         if (key == bindings.Accelerate)
         {
-            cars_in_race[playerCarIndex].Control.Up = true;
+            CarsInRace[playerCarIndex].Control.Up = true;
         }
         if (key == bindings.Brake)
         {
-            cars_in_race[playerCarIndex].Control.Down = true;
+            CarsInRace[playerCarIndex].Control.Down = true;
         }
         if (key == bindings.TurnRight)
         {
-            cars_in_race[playerCarIndex].Control.Right = true;
+            CarsInRace[playerCarIndex].Control.Right = true;
         }
         if (key == bindings.TurnLeft)
         {
-            cars_in_race[playerCarIndex].Control.Left = true;
+            CarsInRace[playerCarIndex].Control.Left = true;
         }
         if (key == bindings.Handbrake)
         {
-            cars_in_race[playerCarIndex].Control.Handb = true;
+            CarsInRace[playerCarIndex].Control.Handb = true;
         }
         if (key == bindings.Enter)
         {
-            cars_in_race[playerCarIndex].Control.Enter = true;
+            CarsInRace[playerCarIndex].Control.Enter = true;
         }
         if (key == bindings.LookBack)
         {
-            cars_in_race[playerCarIndex].Control.Lookback = -1;
+            CarsInRace[playerCarIndex].Control.Lookback = -1;
         }
         if (key == bindings.LookLeft)
         {
-            cars_in_race[playerCarIndex].Control.Lookback = 3;
+            CarsInRace[playerCarIndex].Control.Lookback = 3;
         }
         if (key == bindings.LookRight)
         {
-            cars_in_race[playerCarIndex].Control.Lookback = 2;
+            CarsInRace[playerCarIndex].Control.Lookback = 2;
         }
         if (key == bindings.ToggleMusic)
         {
-            cars_in_race[playerCarIndex].Control.Mutem = !cars_in_race[playerCarIndex].Control.Mutem;
+            CarsInRace[playerCarIndex].Control.Mutem = !CarsInRace[playerCarIndex].Control.Mutem;
         }
 
         if (key == bindings.ToggleSFX)
         {
-            cars_in_race[playerCarIndex].Control.Mutes = !cars_in_race[playerCarIndex].Control.Mutes;
+            CarsInRace[playerCarIndex].Control.Mutes = !CarsInRace[playerCarIndex].Control.Mutes;
         }
 
         if (key == bindings.ToggleArrace)
         {
-            cars_in_race[playerCarIndex].Control.Arrace = !cars_in_race[playerCarIndex].Control.Arrace;
+            CarsInRace[playerCarIndex].Control.Arrace = !CarsInRace[playerCarIndex].Control.Arrace;
         }
 
         if (key == bindings.ToggleRadar)
         {
-            cars_in_race[playerCarIndex].Control.Radar = !cars_in_race[playerCarIndex].Control.Radar;
+            CarsInRace[playerCarIndex].Control.Radar = !CarsInRace[playerCarIndex].Control.Radar;
         }
         if (key == bindings.CycleView)
         {
             currentViewMode = (ViewMode)(((int)currentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
         }
+
+        gamemode.KeyPressed(key);
     }
 
     public override void KeyReleased(Keys key, bool imguiWantsKeyboard)
@@ -224,37 +236,39 @@ public class InRacePhase : BasePhase
         
         var bindings = SettingsMenu.Bindings;
         
-        if (cars_in_race[playerCarIndex].Control.Multion < 2)
+        if (CarsInRace[playerCarIndex].Control.Multion < 2)
         {
             if (key == bindings.Accelerate)
             {
-                cars_in_race[playerCarIndex].Control.Up = false;
+                CarsInRace[playerCarIndex].Control.Up = false;
             }
             if (key == bindings.Brake)
             {
-                cars_in_race[playerCarIndex].Control.Down = false;
+                CarsInRace[playerCarIndex].Control.Down = false;
             }
             if (key == bindings.TurnRight)
             {
-                cars_in_race[playerCarIndex].Control.Right = false;
+                CarsInRace[playerCarIndex].Control.Right = false;
             }
             if (key == bindings.TurnLeft)
             {
-                cars_in_race[playerCarIndex].Control.Left = false;
+                CarsInRace[playerCarIndex].Control.Left = false;
             }
             if (key == bindings.Handbrake)
             {
-                cars_in_race[playerCarIndex].Control.Handb = false;
+                CarsInRace[playerCarIndex].Control.Handb = false;
             }
         }
         if (key == Keys.Escape)
         {
-            cars_in_race[playerCarIndex].Control.Exit = false;
+            CarsInRace[playerCarIndex].Control.Exit = false;
         }
         if (key == bindings.LookBack || key == bindings.LookLeft || key == bindings.LookRight)
         {
-            cars_in_race[playerCarIndex].Control.Lookback = 0;
+            CarsInRace[playerCarIndex].Control.Lookback = 0;
         }
+
+        gamemode.KeyReleased(key);
     }
 
     public override void WindowSizeChanged(int width, int height)
