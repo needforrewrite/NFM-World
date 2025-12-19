@@ -58,8 +58,7 @@ public class Mesh : Transform, IRenderable
 
         GraphicsDevice = graphicsDevice;
 
-        Triangulation = Array.ConvertAll(Polys,
-            poly => MeshHelpers.TriangulateIfNeeded(poly.Points));
+        Triangulation = Array.ConvertAll(Polys, poly => MeshHelpers.TriangulateIfNeeded(poly.Points));
         BuildMesh(graphicsDevice);
 
         CastsShadow = rad.CastsShadow;
