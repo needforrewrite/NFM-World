@@ -15,6 +15,8 @@ public class Stage : IRenderable
 {
     public UnlimitedArray<Mesh> pieces = [];
 
+    public int nlaps = 3;
+
     public int stagePartCount => pieces.Count;
 
     // soundtrack(folder,fileName)
@@ -255,23 +257,25 @@ public class Stage : IRenderable
 
                     var chkheight = World.Ground;
 
+                    AngleSingle rotation = AngleSingle.FromDegrees(Utility.GetInt("chk", line, 3));
+
                     // Check if optional Y coordinate is provided (5 parameters instead of 4)
                     var hasCustomY = line.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
                         chkheight = Utility.GetInt("chk", line, 4) * ymult;
-                        pieces[stagePartCount] = new Mesh(
+                        pieces[stagePartCount] = new CheckPoint(
                             GameSparker.stage_parts[chkindex],
                             new Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
-                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("chk", line, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
+                            new Euler(rotation, AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
                         );
                     }
                     else
                     {
-                        pieces[stagePartCount] = new Mesh(
+                        pieces[stagePartCount] = new CheckPoint(
                             GameSparker.stage_parts[chkindex],
                             new Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
-                            new Euler(AngleSingle.FromDegrees(Utility.GetInt("chk", line, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
+                            new Euler(rotation, AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
                     }
                     
@@ -325,7 +329,7 @@ public class Stage : IRenderable
                 // }
                 if (line.StartsWith("nlaps"))
                 {
-                    //CheckPoints.Nlaps = Utility.GetInt("nlaps", astring, 0);
+                    nlaps = Utility.GetInt("nlaps", line, 0);
                 }
                 if (line.StartsWith("name"))
                 {
