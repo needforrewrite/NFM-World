@@ -83,10 +83,10 @@ public static class Extensions
                     (byte)Math.Clamp(color3.B, (short)0, (short)255)
                 );
 
-        public Vector3 ToXnaVector3()
+        public Vector3 ToVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
         
-        public Stride.Core.Mathematics.Vector3 ToVector3()
+        public Stride.Core.Mathematics.Vector3 ToStrideVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
     }
 

@@ -42,7 +42,7 @@ public class Ground : Transform, IRenderable
         _material.Parameters["WorldViewProj"]?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         
         _material.Parameters["DepthBias"]?.SetValue(0.00005f);
-        _material.Parameters["FogColor"]?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
+        _material.Parameters["FogColor"]?.SetValue(World.Fog.Snap(World.Snap).ToVector3());
         _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
         _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
         

@@ -29,12 +29,12 @@ public class Submesh(
         // If a parameter is null that means the HLSL compiler optimized it out.
         _material.World?.SetValue(matrixWorld);
         _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
-        _material.SnapColor?.SetValue(World.Snap.ToXnaVector3());
+        _material.SnapColor?.SetValue(World.Snap.ToVector3());
         _material.IsFullbright?.SetValue(PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn);
         _material.UseBaseColor?.SetValue(PolyType is PolyType.Glass);
-        _material.BaseColor?.SetValue(World.Sky.ToXnaVector3());
+        _material.BaseColor?.SetValue(World.Sky.ToVector3());
         _material.LightDirection?.SetValue(World.LightDirection);
-        _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
+        _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToVector3());
         _material.FogDistance?.SetValue(World.FadeFrom);
         _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));

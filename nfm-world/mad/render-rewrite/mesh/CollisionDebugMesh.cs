@@ -31,7 +31,7 @@ public class CollisionDebugMesh : Transform
             indices.AddRange(inds);
             foreach (var vert in verts)
             {
-                data.Add(new VertexPositionColor(vert, color.ToXna()));
+                data.Add(new VertexPositionColor(vert, color));
             }
         }
         
