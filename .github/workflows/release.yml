@@ -41,7 +41,8 @@ jobs:
         id: tag
         run: |
           SHORT_SHA=$(git rev-parse --short=8 HEAD)
-          TAG_NAME="build-${SHORT_SHA}"
+          DATETIME=$(date -u +"%Y%m%dT%H%M%SZ")
+          TAG_NAME="build-${DATETIME}-${SHORT_SHA}"
           echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
 
