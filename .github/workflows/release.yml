@@ -103,24 +103,6 @@ jobs:
             -p:InformationalVersion="${{ steps.version.outputs.info_version }}" `
             -o ./publish/${{ matrix.rid }}
 
-      - name: Copy native libraries
-        run: |
-          if (Test-Path "nfm-world/skiadriver/bass.dll") {
-            Copy-Item -Path "nfm-world/skiadriver/bass.dll" -Destination "./publish/${{ matrix.rid }}/"
-          } else {
-            Write-Warning "bass.dll not found, skipping"
-          }
-          if (Test-Path "nfm-world/skiadriver/bass_fx.dll") {
-            Copy-Item -Path "nfm-world/skiadriver/bass_fx.dll" -Destination "./publish/${{ matrix.rid }}/"
-          } else {
-            Write-Warning "bass_fx.dll not found, skipping"
-          }
-          if (Test-Path "nfm-world/nimpellerdriver/impeller.dll") {
-            Copy-Item -Path "nfm-world/nimpellerdriver/impeller.dll" -Destination "./publish/${{ matrix.rid }}/"
-          } else {
-            Write-Warning "impeller.dll not found, skipping"
-          }
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -233,24 +215,6 @@ jobs:
             -p:Version="${{ steps.version.outputs.semantic_version }}" \
             -p:InformationalVersion="${{ steps.version.outputs.info_version }}" \
             -o ./publish/${{ matrix.rid }}
-
-      - name: Copy native libraries
-        run: |
-          if [ -f "nfm-world/skiadriver/libbass.so" ]; then
-            cp nfm-world/skiadriver/libbass.so ./publish/${{ matrix.rid }}/
-          else
-            echo "Warning: libbass.so not found, skipping"
-          fi
-          if [ -f "nfm-world/skiadriver/libbass_fx.so" ]; then
-            cp nfm-world/skiadriver/libbass_fx.so ./publish/${{ matrix.rid }}/
-          else
-            echo "Warning: libbass_fx.so not found, skipping"
-          fi
-          if [ -f "nfm-world/nimpellerdriver/libimpeller.so" ]; then
-            cp nfm-world/nimpellerdriver/libimpeller.so ./publish/${{ matrix.rid }}/
-          else
-            echo "Warning: libimpeller.so not found, skipping"
-          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
