@@ -190,7 +190,7 @@ public class TimeTrialGamemode : BaseGamemode
         if (!writtenTime)
         {
             writtenTime = true;
-            if(thisRunCheckpointMS[thisRunCheckpointMS.Count - 1] < bestTimeCheckpointMS[bestTimeCheckpointMS.Count - 1] || !loadedBestTimes) 
+            if(!loadedBestTimes || thisRunCheckpointMS[thisRunCheckpointMS.Count - 1] < bestTimeCheckpointMS[bestTimeCheckpointMS.Count - 1] ) 
             {
                 newBest = true;
                 // if new best, save it
@@ -209,15 +209,15 @@ public class TimeTrialGamemode : BaseGamemode
         }
 
         G.SetColor(new NFMWorld.Util.Color(128, 255, 128));
-        G.DrawString($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 300, 200);
+        G.DrawString($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds:D2}", 300, 200);
+
         if(loadedBestTimes || newBest)
         {
-            long bestTimeMs = newBest ? thisRunCheckpointMS[thisRunCheckpointMS.Count - 1] : bestTimeCheckpointMS[bestTimeCheckpointMS.Count - 1];
+            long bestTimeMs = Math.Min(thisRunCheckpointMS[thisRunCheckpointMS.Count - 1], loadedBestTimes ? bestTimeCheckpointMS[bestTimeCheckpointMS.Count - 1] : long.MaxValue);
 
             TimeSpan t = TimeSpan.FromMilliseconds(bestTimeMs);
 
-            string time = string.Format("{1:D2}:{2:D2}:{2:D2}",
-                        t.Hours, 
+            string time = string.Format("{0:D2}:{1:D2}:{2:D2}",
                         t.Minutes, 
                         t.Seconds, 
                         t.Milliseconds);
