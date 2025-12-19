@@ -79,11 +79,9 @@ public class TimeTrialGamemode : BaseGamemode
                 currentCheckpoint++;
                 if (currentCheckpoint >= currentStage.checkpoints.Count)
                 {
+                    SfxLibrary.checkpoint?.Play();
                     currentCheckpoint = 0;
                     currentLap++;
-                    // For Time Trial, we can consider finishing after one lap
-                    _currentState = TimeTrialState.Finished;
-                    raceTimer.Stop();
                 }
             }
         } else // None
@@ -93,6 +91,7 @@ public class TimeTrialGamemode : BaseGamemode
                         Math.Abs(carPos.Z - nextCheckpoint.Position.Z) < 700 &&
                         Math.Abs(carPos.Y - nextCheckpoint.Position.Y + 350) < 450)
             {
+                SfxLibrary.checkpoint?.Play();
                 currentCheckpoint++;
                 if (currentCheckpoint >= currentStage.checkpoints.Count)
                 {
