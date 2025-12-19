@@ -210,6 +210,7 @@ public class Sparks
                 }
             }
         }
+        Sprk = 0;
     }
 
     public void Render(Camera camera)
