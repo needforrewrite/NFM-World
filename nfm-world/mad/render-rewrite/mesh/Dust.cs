@@ -16,8 +16,8 @@ public class Dust
     private float[] Sy = new float[20];
     private float[] Sz = new float[20];
     private float[] Osmag = new float[20];
-    private int[] Scx = new int[20];
-    private int[] Scz = new int[20];
+    private float[] Scx = new float[20];
+    private float[] Scz = new float[20];
     private int[] Stg = new int[20];
     private float[] _sbln = new float[20];
     private int[,] _srgb = new int[20, 3];
@@ -41,49 +41,49 @@ public class Dust
         };
     }
     
-    public void AddDust(int i, float f, float f199, float f200, int i201, int i202, float f203, int i204, bool aabool, int wheelGround)
+    public void AddDust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
     {
-        var bool205 = false;
-        if (i204 > 5 && (i == 0 || i == 2))
+        var noDust = false;
+        if (tilt > 5 && wheelidx is 0 or 2)
         {
-            bool205 = true;
+            noDust = true;
         }
-        if (i204 < -5 && (i == 1 || i == 3))
+        if (tilt < -5 && wheelidx is 1 or 3)
         {
-            bool205 = true;
+            noDust = true;
         }
-        var f206 = (float) ((Math.Sqrt(i201 * i201 + i202 * i202) - 40.0) / 160.0);
-        if (f206 > 1.0F)
+        var dist = (float) ((Math.Sqrt(scx * scx + scz * scz) - 40.0) / 160.0);
+        if (dist > 1.0F)
         {
-            f206 = 1.0F;
+            dist = 1.0F;
         }
-        if (f206 > 0.2 && !bool205)
+        if (dist > 0.2 && !noDust)
         {
             _ust++;
             if (_ust == 20)
             {
                 _ust = 0;
             }
-            if (!aabool)
+            if (!onRoof)
             {
-                var f207 = URandom.Single();
-                Sx[_ust] = ((f + _mesh.Position.X * f207) / (1.0F + f207));
-                Sz[_ust] = ((f200 + _mesh.Position.Z * f207) / (1.0F + f207));
-                Sy[_ust] = ((f199 + (_mesh.Position.Y - wheelGround) * f207) / (1.0F + f207));
+                var rand = URandom.Single();
+                Sx[_ust] = ((wheelx + _mesh.Position.X * rand) / (1.0F + rand));
+                Sz[_ust] = ((wheelz + _mesh.Position.Z * rand) / (1.0F + rand));
+                Sy[_ust] = ((wheely + (_mesh.Position.Y - wheelGround) * rand) / (1.0F + rand));
             }
             else
             {
-                Sx[_ust] = ((f + (_mesh.Position.X + i201)) / 2.0F);
-                Sz[_ust] = ((f200 + (_mesh.Position.Z + i202)) / 2.0F);
-                Sy[_ust] = f199;
+                Sx[_ust] = ((wheelx + (_mesh.Position.X + scx)) / 2.0F);
+                Sz[_ust] = ((wheelz + (_mesh.Position.Z + scz)) / 2.0F);
+                Sy[_ust] = wheely;
             }
-            if (Sy[i] > 250)
+            if (Sy[wheelidx] > 250)
             {
-                Sy[i] = 250;
+                Sy[wheelidx] = 250;
             }
-            Osmag[_ust] = f203 * f206;
-            Scx[_ust] = i201;
-            Scz[_ust] = i202;
+            Osmag[_ust] = simag * dist;
+            Scx[_ust] = scx;
+            Scz[_ust] = scz;
             Stg[_ust] = 1;
         }
     }
@@ -92,33 +92,32 @@ public class Dust
     {
         _vertexCount = 0;
         _indexCount = 0;
-        for (var i137 = 0; i137 < 20; i137++)
+        for (var dust = 0; dust < 20; dust++)
         {
-            if (Stg[i137] != 0)
+            if (Stg[dust] != 0)
             {
-                TickDust(i137);
+                TickDust(dust);
             }
         }
     }
 
-    private void TickDust(int i)
+    private void TickDust(int dust)
     {
-        int[] ais;
-        if (Stg[i] == 1)
+        Span<int> baseColor = stackalloc int[3];
+        if (Stg[dust] == 1)
         {
-            _sbln[i] = 0.6F;
-            var bool208 = false;
-            ais = new int[3];
-            for (var i209 = 0; i209 < 3; i209++)
+            _sbln[dust] = 0.6F;
+            var trackersColor = false;
+            for (var i = 0; i < 3; i++)
             {
-                ais[i209] = (int) (255.0F + 255.0F * (World.Snap[i209] / 100.0F));
-                if (ais[i209] > 255)
+                baseColor[i] = (int) (255.0F + 255.0F * (World.Snap[i] / 100.0F));
+                if (baseColor[i] > 255)
                 {
-                    ais[i209] = 255;
+                    baseColor[i] = 255;
                 }
-                if (ais[i209] < 0)
+                if (baseColor[i] < 0)
                 {
-                    ais[i209] = 0;
+                    baseColor[i] = 0;
                 }
             }
             var i210 = (_mesh.Position.X - Trackers.Sx) / 3000;
@@ -142,34 +141,34 @@ public class Dust
             for (var i213 = 0; i213 < Trackers.Nt; i213++)
             {
                 if (Math.Abs(Trackers.Zy[i213]) != 90 && Math.Abs(Trackers.Xy[i213]) != 90 &&
-                    Math.Abs(Sx[i] - Trackers.X[i213]) < Trackers.Radx[i213] &&
-                    Math.Abs(Sz[i] - Trackers.Z[i213]) < Trackers.Radz[i213])
+                    Math.Abs(Sx[dust] - Trackers.X[i213]) < Trackers.Radx[i213] &&
+                    Math.Abs(Sz[dust] - Trackers.Z[i213]) < Trackers.Radz[i213])
                 {
                     if (Trackers.Skd[i213] == 0)
                     {
-                        _sbln[i] = 0.2F;
+                        _sbln[dust] = 0.2F;
                     }
                     if (Trackers.Skd[i213] == 1)
                     {
-                        _sbln[i] = 0.4F;
+                        _sbln[dust] = 0.4F;
                     }
                     if (Trackers.Skd[i213] == 2)
                     {
-                        _sbln[i] = 0.45F;
+                        _sbln[dust] = 0.45F;
                     }
                     for (var i214 = 0; i214 < 3; i214++)
                     {
-                        _srgb[i, i214] = (Trackers.C[i213][i214] + ais[i214]) / 2;
+                        _srgb[dust, i214] = (Trackers.C[i213][i214] + baseColor[i214]) / 2;
                     }
-                    bool208 = true;
+                    trackersColor = true;
                 }
             }
-            if (!bool208)
+            if (!trackersColor)
             {
                 for (var i215 = 0; i215 < 3; i215++)
                 {
                     // TODO this should be Medium.Crgrnd
-                    _srgb[i, i215] = (World.GroundColor.Snap(World.Snap)[i215] + ais[i215]) / 2;
+                    _srgb[dust, i215] = (World.GroundColor.Snap(World.Snap)[i215] + baseColor[i215]) / 2;
                 }
             }
             var f = 0.1f + URandom.Single();
@@ -177,38 +176,38 @@ public class Dust
             {
                 f = 1.0F;
             }
-            Scx[i] = (int) (Scx[i] * f);
-            Scz[i] = (int) (Scx[i] * f);
+            Scx[dust] = (Scx[dust] * f);
+            Scz[dust] = (Scx[dust] * f);
             for (var i216 = 0; i216 < 8; i216++)
             {
-                _smag[i, i216] = Osmag[i] * URandom.Single() * 50.0F;
+                _smag[dust, i216] = Osmag[dust] * URandom.Single() * 50.0F;
             }
-            for (var i217 = 0; i217 < 8; i217++)
+            for (var vert = 0; vert < 8; vert++)
             {
-                var i218 = i217 - 1;
-                if (i218 == -1)
+                var lastVert = vert - 1;
+                if (lastVert == -1)
                 {
-                    i218 = 7;
+                    lastVert = 7;
                 }
-                var i219 = i217 + 1;
-                if (i219 == 8)
+                var nextVert = vert + 1;
+                if (nextVert == 8)
                 {
-                    i219 = 0;
+                    nextVert = 0;
                 }
-                _smag[i, i217] = ((_smag[i, i218] + _smag[i, i219]) / 2.0F + _smag[i, i217]) / 2.0F;
+                _smag[dust, vert] = ((_smag[dust, lastVert] + _smag[dust, nextVert]) / 2.0F + _smag[dust, vert]) / 2.0F;
             }
-            _smag[i, 6] = _smag[i, 7];
+            _smag[dust, 6] = _smag[dust, 7];
         }
 
         var baseIndex = _vertexCount;
             
-        var i231 = _srgb[i, 0];
-        var i232 = _srgb[i, 1];
-        var i233 = _srgb[i, 2];
+        var r = _srgb[dust, 0];
+        var g = _srgb[dust, 1];
+        var b = _srgb[dust, 2];
         // TODO apply fog here
             
-        var color = new Color3((short)i231, (short)i232, (short)i233);
-        var alpha = _sbln[i] - Stg[i] * (_sbln[i] / 8.0F);
+        var color = new Color3((short)r, (short)g, (short)b);
+        var alpha = _sbln[dust] - Stg[dust] * (_sbln[dust] / 8.0F);
 
         var xnaColor = new Color(color.R / 255f, color.G / 255f, color.B / 255f, alpha);
 
@@ -218,65 +217,65 @@ public class Dust
         // ais[0] = Xs((int) (i220 + _smag[i, 0] * 0.9238F * 1.5F), i221);
         // is223[0] = Ys((int) (i222 + _smag[i, 0] * 0.3826F * 1.5F), i221);
         _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
-            Sx[i] + _smag[i, 0] * 0.9238F * 1.5F,
-            Sy[i] - _smag[i, 7],
-            Sz[i] + _smag[i, 0] * 0.3826F * 1.5F
+            Sx[dust] + _smag[dust, 0] * 0.9238F * 1.5F,
+            Sy[dust] - _smag[dust, 7],
+            Sz[dust] + _smag[dust, 0] * 0.3826F * 1.5F
         ), xnaColor));
         
         // ais[1] = Xs((int) (i220 + _smag[i, 1] * 0.9238F * 1.5F), i221);
         // is223[1] = Ys((int) (i222 - _smag[i, 1] * 0.3826F * 1.5F), i221);
         _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
-            Sx[i] + _smag[i, 1] * 0.9238F * 1.5F,
-            Sy[i] - _smag[i, 7],
-            Sz[i] - _smag[i, 1] * 0.3826F * 1.5F
+            Sx[dust] + _smag[dust, 1] * 0.9238F * 1.5F,
+            Sy[dust] - _smag[dust, 7],
+            Sz[dust] - _smag[dust, 1] * 0.3826F * 1.5F
         ), xnaColor));
         
         // ais[2] = Xs((int) (i220 + _smag[i, 2] * 0.3826F), i221);
         // is223[2] = Ys((int) (i222 - _smag[i, 2] * 0.9238F), i221);
         _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
-            Sx[i] + _smag[i, 2] * 0.3826F,
-            Sy[i] - _smag[i, 7],
-            Sz[i] - _smag[i, 2] * 0.9238F
+            Sx[dust] + _smag[dust, 2] * 0.3826F,
+            Sy[dust] - _smag[dust, 7],
+            Sz[dust] - _smag[dust, 2] * 0.9238F
         ), xnaColor));
         
         // ais[3] = Xs((int) (i220 - _smag[i, 3] * 0.3826F), i221);
         // is223[3] = Ys((int) (i222 - _smag[i, 3] * 0.9238F), i221);
         _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
-            Sx[i] - _smag[i, 3] * 0.3826F,
-            Sy[i] - _smag[i, 7],
-            Sz[i] - _smag[i, 3] * 0.9238F
+            Sx[dust] - _smag[dust, 3] * 0.3826F,
+            Sy[dust] - _smag[dust, 7],
+            Sz[dust] - _smag[dust, 3] * 0.9238F
         ), xnaColor));
         
         // ais[4] = Xs((int) (i220 - _smag[i, 4] * 0.9238F * 1.5F), i221);
         // is223[4] = Ys((int) (i222 - _smag[i, 4] * 0.3826F * 1.5F), i221);
         _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
-            Sx[i] - _smag[i, 4] * 0.9238F * 1.5F,
-            Sy[i] - _smag[i, 7],
-            Sz[i] - _smag[i, 4] * 0.3826F * 1.5F
+            Sx[dust] - _smag[dust, 4] * 0.9238F * 1.5F,
+            Sy[dust] - _smag[dust, 7],
+            Sz[dust] - _smag[dust, 4] * 0.3826F * 1.5F
         ), xnaColor));
         
         // ais[5] = Xs((int) (i220 - _smag[i, 5] * 0.9238F * 1.5F), i221);
         // is223[5] = Ys((int) (i222 + _smag[i, 5] * 0.3826F * 1.5F), i221);
         _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
-            Sx[i] - _smag[i, 5] * 0.9238F * 1.5F,
-            Sy[i] - _smag[i, 7],
-            Sz[i] + _smag[i, 5] * 0.3826F * 1.5F
+            Sx[dust] - _smag[dust, 5] * 0.9238F * 1.5F,
+            Sy[dust] - _smag[dust, 7],
+            Sz[dust] + _smag[dust, 5] * 0.3826F * 1.5F
         ), xnaColor));
         
         // ais[6] = Xs((int) (i220 - _smag[i, 6] * 0.3826F * 1.7F), i221);
         // is223[6] = Ys((int) (i222 + _smag[i, 6] * 0.9238F), i221);
         _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
-            Sx[i] - _smag[i, 6] * 0.3826F * 1.7F,
-            Sy[i] - _smag[i, 7],
-            Sz[i] + _smag[i, 6] * 0.9238F
+            Sx[dust] - _smag[dust, 6] * 0.3826F * 1.7F,
+            Sy[dust] - _smag[dust, 7],
+            Sz[dust] + _smag[dust, 6] * 0.9238F
         ), xnaColor));
         
         // ais[7] = Xs((int) (i220 + _smag[i, 7] * 0.3826F * 1.7F), i221);
         // is223[7] = Ys((int) (i222 + _smag[i, 7] * 0.9238F), i221);
         _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
-            Sx[i] + _smag[i, 7] * 0.3826F * 1.7F,
-            Sy[i] - _smag[i, 7],
-            Sz[i] + _smag[i, 7] * 0.9238F
+            Sx[dust] + _smag[dust, 7] * 0.3826F * 1.7F,
+            Sy[dust] - _smag[dust, 7],
+            Sz[dust] + _smag[dust, 7] * 0.9238F
         ), xnaColor));
             
         // make indices of polygon
@@ -299,21 +298,21 @@ public class Dust
         _indices[_indexCount++] = baseIndex + 6;
         _indices[_indexCount++] = baseIndex + 7;
             
-        Sx[i] += Scx[i] / (Stg[i] + 1);
-        Sz[i] += Scz[i] / (Stg[i] + 1);
-        for (var i224 = 0; i224 < 7; i224++)
+        Sx[dust] += Scx[dust] / (Stg[dust] + 1);
+        Sz[dust] += Scz[dust] / (Stg[dust] + 1);
+        for (var vert = 0; vert < 7; vert++)
         {
-            _smag[i, i224] += 5.0F + URandom.Single() * 15.0F;
+            _smag[dust, vert] += 5.0F + URandom.Single() * 15.0F;
         }
-        _smag[i, 7] = _smag[i, 6];
+        _smag[dust, 7] = _smag[dust, 6];
 
-        if (Stg[i] == 7)
+        if (Stg[dust] == 7)
         {
-            Stg[i] = 0;
+            Stg[dust] = 0;
         }
         else
         {
-            Stg[i]++;
+            Stg[dust]++;
         }
     }
 
