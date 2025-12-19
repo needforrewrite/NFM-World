@@ -48,6 +48,10 @@ public class Mesh : Transform, IRenderable
     public Euler WheelAngle { get; set; }
     public int GroundAt;
 
+    // for checkpoints
+    public bool Finish = false;
+    public bool Glow = false;
+
     public Mesh(GraphicsDevice graphicsDevice, string code) : this(graphicsDevice, RadParser.ParseRad(code))
     {
     }
@@ -271,9 +275,12 @@ public class Mesh : Transform, IRenderable
 
         foreach (var submesh in Submeshes)
         {
-            if (submesh != null && submesh.PolyType != PolyType.Glass)
+            if (submesh != null && (submesh.PolyType != PolyType.Glass))
             {
-                submesh.Render(camera, lighting, matrixWorld);
+                if(submesh.PolyType != PolyType.Finish || (submesh.PolyType == PolyType.Finish && Finish))
+                {
+                    submesh.Render(camera, lighting, matrixWorld);   
+                }
             }
         }
 

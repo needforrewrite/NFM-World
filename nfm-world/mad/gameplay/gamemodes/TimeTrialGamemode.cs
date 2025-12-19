@@ -102,6 +102,14 @@ public class TimeTrialGamemode : BaseGamemode
             }
         }
 
+        if(currentCheckpoint == currentStage.checkpoints.Count - 1 && currentLap == currentStage.nlaps)
+        {
+            currentStage.checkpoints[currentStage.checkpoints.Count - 1].Finish = true;
+        } else
+        {
+            currentStage.checkpoints[currentStage.checkpoints.Count - 1].Finish = false;
+        }
+
         if(currentLap > currentStage.nlaps)
         {
             _currentState = TimeTrialState.Finished;
