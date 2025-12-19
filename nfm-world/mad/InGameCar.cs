@@ -39,5 +39,6 @@ public class InGameCar : IRenderable
     {
         Mad.Reseto(Mad.Im, CarRef);
         CarRef.Position = new Vector3(0f, World.Ground - CarRef.GroundAt, 0f);
+        CarRef.Rotation = Euler.Identity;
     }
 }

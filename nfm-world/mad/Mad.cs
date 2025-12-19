@@ -1,10 +1,13 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
 
 public class Mad
 {
+    public Boolean Halted = false;
+
     private static readonly float _tickRate = GameSparker.PHYSICS_MULTIPLIER;
 
     public event EventHandler<(float f, int i)> SfxPlayCrash;
@@ -1156,7 +1159,7 @@ public class Mad
             var speedx = -(int)(Speed * UMath.Sin(conto.Xz) * UMath.Cos(Pzy));
             var speedz = (int)(Speed * UMath.Cos(conto.Xz) * UMath.Cos(Pzy));
             var speedy = -(int)(Speed * UMath.Sin(Pzy));
-            if (BadLanding || Wasted /*|| CheckPoints.Haltall*/)
+            if (BadLanding || Wasted || Halted)
             {
                 speedx = 0;
                 speedz = 0;

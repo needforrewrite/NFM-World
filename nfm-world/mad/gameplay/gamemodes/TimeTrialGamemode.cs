@@ -53,7 +53,7 @@ public class TimeTrialGamemode : BaseGamemode
                 TimeTrialInRace(carsInRace, currentStage);
                 break;
             case TimeTrialState.Finished:
-                TimeTrialFinished();
+                TimeTrialFinished(carsInRace);
                 break;
         }
     }
@@ -77,9 +77,9 @@ public class TimeTrialGamemode : BaseGamemode
                         Math.Abs(carsInRace[0].CarRef.Position.Y - nextCheckpoint.Position.Y + 350) < 450)
             {
                 currentCheckpoint++;
+                SfxLibrary.checkpoint?.Play();
                 if (currentCheckpoint >= currentStage.checkpoints.Count)
                 {
-                    SfxLibrary.checkpoint?.Play();
                     currentCheckpoint = 0;
                     currentLap++;
                 }
@@ -108,11 +108,14 @@ public class TimeTrialGamemode : BaseGamemode
         }
     }
 
-    private void TimeTrialFinished()
+    private void TimeTrialFinished(UnlimitedArray<InGameCar> carsInRace)
     {
         G.SetColor(new NFMWorld.Util.Color(128, 255, 128));
         G.DrawString($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 100, 200);
         G.DrawString($"Press R to restart", 100, 250);
+
+        carsInRace[0].Mad.Halted = true;
+        carsInRace[0].Drive();
     }
 
     private void CountdownTick()
@@ -122,7 +125,7 @@ public class TimeTrialGamemode : BaseGamemode
         {
             _countdownTime--;
             SfxLibrary.countdown[_countdownTime].Play();
-            _innerCountdownTicks = (int)(20 * (1 / GameSparker.PHYSICS_MULTIPLIER));
+            _innerCountdownTicks = (int)(10 * (1 / GameSparker.PHYSICS_MULTIPLIER));
             if (_countdownTime <= 0)
             {
                 _currentState = TimeTrialState.InProgress;
