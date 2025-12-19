@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NvgSharp.Text.FNA.Core", "N
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FontStashSharp.FNA.Core", "FontStashSharp\src\XNA\FontStashSharp.FNA.Core.csproj", "{6863D1A0-7981-45A9-8C14-4B34F264C25D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FNA.Math", "FNA.Math\FNA.Math.csproj", "{0C978E31-6DD9-4CE4-929F-9AD943318B74}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,5 +62,9 @@ Global
 		{6863D1A0-7981-45A9-8C14-4B34F264C25D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6863D1A0-7981-45A9-8C14-4B34F264C25D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6863D1A0-7981-45A9-8C14-4B34F264C25D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
