@@ -240,6 +240,7 @@ public unsafe class Program : Game
     protected override void Update(GameTime gameTime)
     {
         base.Update(gameTime);
+        FPSCounter.Update(gameTime);
         
         UpdateInput();
         UpdateMouse();
@@ -484,6 +485,8 @@ public unsafe class Program : Game
         
         // Render based on game state
         GameSparker.CurrentPhase.Render();
+        
+        FPSCounter.Render();
         
         _nvg.Render();
 
