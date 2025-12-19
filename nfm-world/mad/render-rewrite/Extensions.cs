@@ -29,6 +29,19 @@ public static class Extensions
 
         public static AngleSingle FromDegrees(float degrees)
             => Unsafe.BitCast<float, AngleSingle>(MathUtil.DegreesToRadians(degrees));
+
+        public AngleSingle ToWrapped()
+        {
+            var x = angle;
+            x.Wrap();
+            return x;
+        }
+        public AngleSingle ToWrappedPositive()
+        {
+            var x = angle;
+            x.WrapPositive();
+            return x;
+        }
     }
 
     extension(System.Numerics.Vector3 vector3)
@@ -259,5 +272,12 @@ public static class Extensions2
         
         public static Vector3 FromSpan(ReadOnlySpan<float> span)
             => new(span[0], span[1], span[2]);
+
+        public static Vector3 RotateAroundPivot(in Vector3 point, in Vector3 pivot, in Matrix matrix)
+        {
+            var dir = point - pivot; // get point direction relative to pivot
+            dir = Vector3.Transform(dir, matrix); // rotate it
+            return dir + pivot; // calculate rotated point
+        }
     }
 }

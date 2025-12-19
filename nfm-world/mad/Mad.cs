@@ -1024,20 +1024,27 @@ public class Mad
             }
         }
 
-        var wheelx = new float[4];
-        var wheelz = new float[4];
-        var wheely = new float[4];
+        var wheelpos = new Vector3[4];
+        
+        var euler = new Euler(
+            AngleSingle.FromDegrees(conto.Xz).ToWrappedPositive(),
+            AngleSingle.FromDegrees(Pzy).ToWrapped(),
+            AngleSingle.FromDegrees(Pxy).ToWrapped()
+        );
+        
         for (var i24 = 0; i24 < 4; i24++)
         {
-            wheelx[i24] = conto.Keyx[i24] + conto.X;
-            wheely[i24] = bottomy + conto.Y;
-            wheelz[i24] = conto.Z + conto.Keyz[i24];
+            wheelpos[i24] = new Vector3(
+                conto.Keyx[i24] + conto.X,
+                bottomy + conto.Y,
+                conto.Z + conto.Keyz[i24]
+            );
+            
+            wheelpos[i24] = Vector3.RotateAroundPivot(wheelpos[i24], new Vector3(conto.X, conto.Y, conto.Z), Matrix.CreateFromEuler(euler));
+            
             Scy[i24] += 7.0F * _tickRate;
         }
 
-        UMath.Rot(wheelx, wheely, conto.X, conto.Y, Pxy, 4);
-        UMath.Rot(wheely, wheelz, conto.Y, conto.Z, Pzy, 4);
-        UMath.Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
         var wasMtouch = false;
         var i26 = (int)((Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4.0F);
         var i27 = (int)((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4.0F);
@@ -1066,9 +1073,9 @@ public class Mad
 
         for (var i29 = 0; i29 < 4; i29++)
         {
-            wheely[i29] += Scy[i29] * _tickRate;
-            wheelx[i29] += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4.0F * _tickRate;
-            wheelz[i29] += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4.0F * _tickRate;
+            wheelpos[i29].Y += Scy[i29] * _tickRate;
+            wheelpos[i29].X += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4.0F * _tickRate;
+            wheelpos[i29].Z += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4.0F * _tickRate;
         } //
 
         var i30 = (conto.X - Trackers.Sx) / 3000;
@@ -1242,7 +1249,7 @@ public class Mad
 
                         if (UMath.Random() > 0.65)
                         {
-                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
+                            conto.Dust(j, wheelpos[j].X, wheelpos[j].Y, wheelpos[j].Z, (int)Scx[j], (int)Scz[j],
                                 f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
                             if ( /*Im == XTGraphics.Im &&*/ !BadLanding)
                             {
@@ -1256,13 +1263,13 @@ public class Mad
                     {
                         if (surfaceType == 1 && UMath.Random() > 0.8)
                         {
-                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
+                            conto.Dust(j, wheelpos[j].X, wheelpos[j].Y, wheelpos[j].Z, (int)Scx[j], (int)Scz[j],
                                 1.1F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
                         }
 
                         if ((surfaceType == 2 || surfaceType == 3) && UMath.Random() > 0.6)
                         {
-                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
+                            conto.Dust(j, wheelpos[j].X, wheelpos[j].Y, wheelpos[j].Z, (int)Scx[j], (int)Scz[j],
                                 1.15F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
                         }
                     }
@@ -1332,7 +1339,7 @@ public class Mad
         for (var i49 = 0; i49 < 4; i49++)
         {
             isWheelGrounded[i49] = false;
-            if (wheely[i49] > (groundY - 5f))
+            if (wheelpos[i49].Y > (groundY - 5f))
             {
                 nGroundedWheels++;
                 Wtouch = true;
@@ -1354,20 +1361,20 @@ public class Mad
                         f50 += 1.2f;
                     }
 
-                    conto.Dust(i49, wheelx[i49], wheely[i49], wheelz[i49], (int)Scx[i49], (int)Scz[i49],
+                    conto.Dust(i49, wheelpos[i49].X, wheelpos[i49].Y, wheelpos[i49].Z, (int)Scx[i49], (int)Scz[i49],
                         f50 * Stat.Simag,
                         0, BadLanding && Mtouch, wheelGround);
                 } // CHK2
 
-                wheely[i49] = groundY;
-                f48 += wheely[i49] - groundY;
+                wheelpos[i49].Y = groundY;
+                f48 += wheelpos[i49].Y - groundY;
                 isWheelGrounded[i49] = true;
 
                 bounceRebound(i49, conto);
             }
         }
 
-        OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded);
+        OmarTrackPieceCollision(control, conto, wheelpos, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded);
 
         // sparks and scrapes
         for (var i79 = 0; i79 < 4; i79++)
@@ -1389,28 +1396,28 @@ public class Mad
         if (Scy[2] != Scy[0])
         {
             float sgn = Scy[2] < Scy[0] ? -1 : 1;
-            float ratio = Hypot3(wheelz[0] - wheelz[2], wheely[0] - wheely[2], wheelx[0] - wheelx[2]) / (Math.Abs(conto.Keyz[0]) + Math.Abs(conto.Keyz[2]));
+            float ratio = Hypot3(wheelpos[0].Z - wheelpos[2].Z, wheelpos[0].Y - wheelpos[2].Y, wheelpos[0].X - wheelpos[2].X) / (Math.Abs(conto.Keyz[0]) + Math.Abs(conto.Keyz[2]));
             i_81 = ratio >= 1 ? sgn : (float)dAcos(ratio) * sgn; // the d > 1 ? 0 part was different in the original code, but this I think makes more sense
         }
         float i_82 = 0;
         if (Scy[3] != Scy[1])
         {
             float sgn = Scy[3] < Scy[1] ? -1 : 1;
-            float ratio = Hypot3(wheelz[1] - wheelz[3], wheely[1] - wheely[3], wheelx[1] - wheelx[3]) / (Math.Abs(conto.Keyz[1]) + Math.Abs(conto.Keyz[3]));
+            float ratio = Hypot3(wheelpos[1].Z - wheelpos[3].Z, wheelpos[1].Y - wheelpos[3].Y, wheelpos[1].X - wheelpos[3].X) / (Math.Abs(conto.Keyz[1]) + Math.Abs(conto.Keyz[3]));
             i_82 = ratio >= 1 ? sgn : (float)dAcos(ratio) * sgn;
         }
         float i_83 = 0;
         if (Scy[1] != Scy[0])
         {
             float sgn = Scy[1] < Scy[0] ? -1 : 1;
-            float ratio = Hypot3(wheelz[0] - wheelz[1], wheely[0] - wheely[1], wheelx[0] - wheelx[1]) / (Math.Abs(conto.Keyx[0]) + Math.Abs(conto.Keyx[1]));
+            float ratio = Hypot3(wheelpos[0].Z - wheelpos[1].Z, wheelpos[0].Y - wheelpos[1].Y, wheelpos[0].X - wheelpos[1].X) / (Math.Abs(conto.Keyx[0]) + Math.Abs(conto.Keyx[1]));
             i_83 = ratio >= 1 ? sgn : (float)dAcos(ratio) * sgn;
         }
         float i_84 = 0;
         if (Scy[3] != Scy[2])
         {
             float sgn = Scy[3] < Scy[2] ? -1 : 1;
-            float ratio = Hypot3(wheelz[2] - wheelz[3], wheely[2] - wheely[3], wheelx[2] - wheelx[3]) / (Math.Abs(conto.Keyx[2]) + Math.Abs(conto.Keyx[3]));
+            float ratio = Hypot3(wheelpos[2].Z - wheelpos[3].Z, wheelpos[2].Y - wheelpos[3].Y, wheelpos[2].X - wheelpos[3].X) / (Math.Abs(conto.Keyx[2]) + Math.Abs(conto.Keyx[3]));
             i_84 = ratio >= 1 ? sgn : (float)dAcos(ratio) * sgn;
         }
 
@@ -1566,7 +1573,7 @@ public class Mad
             _cntouch = 0; // CHK12
                           //DS-addons: Bad landing hotfix
 
-        int newy = (int)((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4.0F - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
+        int newy = (int)((wheelpos[0].Y + wheelpos[1].Y + wheelpos[2].Y + wheelpos[3].Y) / 4.0F - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
         py = conto.Y - newy;
         conto.Y = newy;
         //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) / 4.0F - (float) i_10 * UMath.Cos(this.Pzy) * UMath.Cos(this.Pxy) + f_12);
@@ -1578,21 +1585,34 @@ public class Mad
 
         FrameTrace.AddMessage($"x: {airx:0.00}, z: {airz:0.00}, sum: {UMath.Sin(Pxy):0.00}, sum2: {UMath.Sin(Pzy):0.00}");
 
+        var euler2 = new Euler(
+            AngleSingle.FromDegrees(conto.Xz),
+            AngleSingle.FromDegrees(Pzy),
+            AngleSingle.FromDegrees(Pxy)
+        );
+        
+        // for (var i24 = 0; i24 < 4; i24++)
+        // {
+        //     wheelpos[i24] = Vector3.RotateAroundPivot(wheelpos[i24], new Vector3(conto.X, conto.Y, conto.Z), -euler);
+        // }
+        
         // CHK13
         // car sliding fix by jacher: do not adjust to tickrate
-        conto.X = (int)((wheelx[0] - conto.Keyx[0] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[0] * UMath.Sin(conto.Xz) +
-            wheelx[1] - conto.Keyx[1] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[1] * UMath.Sin(conto.Xz) +
-            wheelx[2] - conto.Keyx[2] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[2] * UMath.Sin(conto.Xz) +
-            wheelx[3] - conto.Keyx[3] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz)) / 4.0F
-            + bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz) + airx);
+        var centerPos = new Vector3(
+            (wheelpos[0].X + wheelpos[1].X + wheelpos[2].X + wheelpos[3].X) / 4.0F,
+            (wheelpos[0].Y + wheelpos[1].Y + wheelpos[2].Y + wheelpos[3].Y) / 4.0F,
+            (wheelpos[0].Z + wheelpos[1].Z + wheelpos[2].Z + wheelpos[3].Z) / 4.0F
+        );
 
-        conto.Z = (int)(
-            (wheelz[0] - xneg * conto.Keyz[0] * UMath.Cos(conto.Xz) - conto.Keyx[0] * UMath.Sin(conto.Xz)
-            + wheelz[1] - xneg * conto.Keyz[1] * UMath.Cos(conto.Xz) - conto.Keyx[1] * UMath.Sin(conto.Xz)
-            + wheelz[2] - xneg * conto.Keyz[2] * UMath.Cos(conto.Xz) - conto.Keyx[2] * UMath.Sin(conto.Xz)
-            + wheelz[3] - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz) - conto.Keyx[3] * UMath.Sin(conto.Xz)) / 4.0F
-            + bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz) + airz);
+        var offset = new Vector3(
+            bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz) + airx,
+            0,
+            bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz) + airz
+        );
 
+        conto.X = (int)(centerPos.X + offset.X);
+        conto.Z = (int)(centerPos.Z + offset.Z);
+        
         if (Math.Abs(Speed) > 10.0F || !Mtouch)
         {
             if (Math.Abs(Pxy - conto.Xy) >= 4)
@@ -2182,7 +2202,7 @@ public class Mad
 
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
-    private void OmarTrackPieceCollision(Control control, ContO conto, float[] wheelx, float[] wheely, float[] wheelz,
+    private void OmarTrackPieceCollision(Control control, ContO conto, Span<Vector3> wheelpos,
         float groundY, float wheelYThreshold, int wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded)
     {
         hitVertical = false;
@@ -2197,21 +2217,21 @@ public class Mad
             {
                 // the part below just makes sparks and scrape noises
                 // this looks wrong though? there is no rady check
-                if (isWheelGrounded[k] && BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1) && wheelx[k] > (float) (Trackers.X[j] - Trackers.Radx[j]) && wheelx[k] < (float) (Trackers.X[j] + Trackers.Radx[j]) && wheelz[k] > (float) (Trackers.Z[j] - Trackers.Radz[j]) && wheelz[k] < (float) (Trackers.Z[j] + Trackers.Radz[j])) {
-                    conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
+                if (isWheelGrounded[k] && BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1) && wheelpos[k].X > (float) (Trackers.X[j] - Trackers.Radx[j]) && wheelpos[k].X < (float) (Trackers.X[j] + Trackers.Radx[j]) && wheelpos[k].Z > (float) (Trackers.Z[j] - Trackers.Radz[j]) && wheelpos[k].Z < (float) (Trackers.Z[j] + Trackers.Radz[j])) {
+                    conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 1, wheelGround);
                     SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                 }
 
                 // find the first piece that I am colliding with, snap wheel to it and stop
                 if ( // CHK3
                     !isWheelTouchingPiece[k] &&
-                    pointInBox(wheelx[k], wheely[k] - wheelGround, wheelz[k], Trackers.X[j], Trackers.Y[j], Trackers.Z[j], Trackers.Radx[j], Trackers.Rady[j], Trackers.Radz[j])
+                    pointInBox(wheelpos[k].X, wheelpos[k].Y - wheelGround, wheelpos[k].Z, Trackers.X[j], Trackers.Y[j], Trackers.Z[j], Trackers.Radx[j], Trackers.Rady[j], Trackers.Radz[j])
                    )
                 {
                     // ignore y == groundY because those are likely road pieces, which could make us break the loop early and miss a ramp
                     // this is also the reason why on the ground road and ramp ordering does not matter
                     // but when using floating pieces, you have to make sure the ramp comes first in the code
-                    if (Trackers.Xy[j] == 0 && Trackers.Zy[j] == 0 && Trackers.Y[j] != groundY - wheelGround && wheely[k] - wheelGround > Trackers.Y[j] - wheelYThreshold)
+                    if (Trackers.Xy[j] == 0 && Trackers.Zy[j] == 0 && Trackers.Y[j] != groundY - wheelGround && wheelpos[k].Y - wheelGround > Trackers.Y[j] - wheelYThreshold)
                     {
                         ++nGroundedWheels;
                         Wtouch = true;
@@ -2227,15 +2247,15 @@ public class Mad
                                 f_59 += 1.1f;
                             else
                                 f_59 += 1.2f;
-                            conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_59 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
+                            conto.Dust(k, wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, (int)Scx[k], (int)Scz[k], f_59 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
                         }
 
-                        wheely[k] = Trackers.Y[j] + wheelGround; // snap wheel to the surface
+                        wheelpos[k].Y = Trackers.Y[j] + wheelGround; // snap wheel to the surface
 
                         // sparks and scrape
                         if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
+                            conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 1, wheelGround);
                             //if (Im == /*this.xt.im*/ 0)
                             SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2249,15 +2269,15 @@ public class Mad
                     // result in a collision
                     // I don't know why the radz 287 part is there, this smells like there is some
                     // particular piece with radz 287 with special behavior
-                    if (Trackers.Zy[j] == -90 && wheelz[k] < Trackers.Z[j] + Trackers.Radz[j] && (Scz[k] < 0.0F /*|| Trackers.radz[j] == 287*/))
+                    if (Trackers.Zy[j] == -90 && wheelpos[k].Z < Trackers.Z[j] + Trackers.Radz[j] && (Scz[k] < 0.0F /*|| Trackers.radz[j] == 287*/))
                     {
                         // this next part looks like we are moving all wheels away from the wall
                         for (int l = 0; l < 4 /* nwheels */; l++)
                         {
-                            if (k != l && wheelz[l] >= Trackers.Z[j] + Trackers.Radz[j])
-                                wheelz[l] -= wheelz[k] - (Trackers.Z[j] + Trackers.Radz[j]);
+                            if (k != l && wheelpos[l].Z >= Trackers.Z[j] + Trackers.Radz[j])
+                                wheelpos[l].Z -= wheelpos[k].Z - (Trackers.Z[j] + Trackers.Radz[j]);
                         }
-                        wheelz[k] = Trackers.Z[j] + Trackers.Radz[j];
+                        wheelpos[k].Z = Trackers.Z[j] + Trackers.Radz[j];
 
                         // sparks and scrapes
                         if (Trackers.Skd[j] != 2)
@@ -2266,7 +2286,7 @@ public class Mad
                             _crank[0, k]++;
                         if (_crank[0, k] > 1)
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
+                            conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 0, wheelGround);
                             //if (Im == /*this.xt.im*/ 0)
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2280,15 +2300,15 @@ public class Mad
                         if (!Trackers.Notwall[j])
                             control.Wall = j;
                     }
-                    if (Trackers.Zy[j] == 90 && wheelz[k] > Trackers.Z[j] - Trackers.Radz[j] && (Scz[k] > 0.0F /*|| Trackers.radz[j] == 287*/))
+                    if (Trackers.Zy[j] == 90 && wheelpos[k].Z > Trackers.Z[j] - Trackers.Radz[j] && (Scz[k] > 0.0F /*|| Trackers.radz[j] == 287*/))
                     {
                         //
                         for (int l = 0; l < 4 /* nwheels */; l++)
                         {
-                            if (k != l && wheelz[l] <= Trackers.Z[j] - Trackers.Radz[j])
-                                wheelz[l] -= wheelz[k] - (Trackers.Z[j] - Trackers.Radz[j]);
+                            if (k != l && wheelpos[l].Z <= Trackers.Z[j] - Trackers.Radz[j])
+                                wheelpos[l].Z -= wheelpos[k].Z - (Trackers.Z[j] - Trackers.Radz[j]);
                         }
-                        wheelz[k] = Trackers.Z[j] - Trackers.Radz[j];
+                        wheelpos[k].Z = Trackers.Z[j] - Trackers.Radz[j];
 
                         //
                         if (Trackers.Skd[j] != 2)
@@ -2297,7 +2317,7 @@ public class Mad
                             _crank[1, k]++;
                         if (_crank[1, k] > 1)
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
+                            conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 0, wheelGround);
                             //if (this.im == this.xt.im)
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2310,15 +2330,15 @@ public class Mad
                         if (!Trackers.Notwall[j])
                             control.Wall = j;
                     } // CHK6
-                    if (Trackers.Xy[j] == -90 && wheelx[k] < Trackers.X[j] + Trackers.Radx[j] && (Scx[k] < 0.0F /*|| Trackers.radx[j] == 287*/))
+                    if (Trackers.Xy[j] == -90 && wheelpos[k].X < Trackers.X[j] + Trackers.Radx[j] && (Scx[k] < 0.0F /*|| Trackers.radx[j] == 287*/))
                     {
                         //
                         for (int l = 0; l < 4 /* nwheels */; l++)
                         {
-                            if (k != l && wheelx[l] >= Trackers.X[j] + Trackers.Radx[j])
-                                wheelx[l] -= wheelx[k] - (Trackers.X[j] + Trackers.Radx[j]);
+                            if (k != l && wheelpos[l].X >= Trackers.X[j] + Trackers.Radx[j])
+                                wheelpos[l].X -= wheelpos[k].X - (Trackers.X[j] + Trackers.Radx[j]);
                         }
-                        wheelx[k] = Trackers.X[j] + Trackers.Radx[j];
+                        wheelpos[k].X = Trackers.X[j] + Trackers.Radx[j];
 
                         //
                         if (Trackers.Skd[j] != 2)
@@ -2327,7 +2347,7 @@ public class Mad
                             _crank[2, k]++;
                         if (_crank[2, k] > 1)
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
+                            conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 0, wheelGround);
                             //if (this.im == this.xt.im)
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2340,15 +2360,15 @@ public class Mad
                         if (!Trackers.Notwall[j])
                             control.Wall = j;
                     } // CHK7
-                    if (Trackers.Xy[j] == 90 && wheelx[k] > Trackers.X[j] - Trackers.Radx[j] && (Scx[k] > 0.0F /*|| Trackers.radx[j] == 287*/))
+                    if (Trackers.Xy[j] == 90 && wheelpos[k].X > Trackers.X[j] - Trackers.Radx[j] && (Scx[k] > 0.0F /*|| Trackers.radx[j] == 287*/))
                     {
                         //
                         for (int l = 0; l < 4 /* nwheels */; l++)
                         {
-                            if (k != l && wheelx[l] <= Trackers.X[j] - Trackers.Radx[j])
-                                wheelx[l] -= wheelx[k] - (Trackers.X[j] - Trackers.Radx[j]);
+                            if (k != l && wheelpos[l].X <= Trackers.X[j] - Trackers.Radx[j])
+                                wheelpos[l].X -= wheelpos[k].X - (Trackers.X[j] - Trackers.Radx[j]);
                         }
-                        wheelx[k] = Trackers.X[j] - Trackers.Radx[j];
+                        wheelpos[k].X = Trackers.X[j] - Trackers.Radx[j];
 
                         //
                         if (Trackers.Skd[j] != 2)
@@ -2357,7 +2377,7 @@ public class Mad
                             _crank[3, k]++;
                         if (_crank[3, k] > 1)
                         {
-                            conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, wheelGround);
+                            conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 0, wheelGround);
                             //if (this.im == this.xt.im)
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
@@ -2382,8 +2402,8 @@ public class Mad
                         // from (tz, ty) to (wz, wy) but rotated by (zy + 90) degrees around (tz, ty)
                         // https://www.geogebra.org/geometry/vhaznznv
                         // let's call this rotated vector (rz, ry)
-                        float ry = Trackers.Y[j] + wheelGround + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Cos(pAngle) - (wheelz[k] - Trackers.Z[j]) * UMath.Sin(pAngle));
-                        float rz = Trackers.Z[j] + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Sin(pAngle) + (wheelz[k] - Trackers.Z[j]) * UMath.Cos(pAngle));
+                        float ry = Trackers.Y[j] + wheelGround + ((wheelpos[k].Y - Trackers.Y[j] - wheelGround) * UMath.Cos(pAngle) - (wheelpos[k].Z - Trackers.Z[j]) * UMath.Sin(pAngle));
+                        float rz = Trackers.Z[j] + ((wheelpos[k].Y - Trackers.Y[j] - wheelGround) * UMath.Sin(pAngle) + (wheelpos[k].Z - Trackers.Z[j]) * UMath.Cos(pAngle));
 
                         // commenting this whole if and its body out makes us phase through ramps
                         // making this always true makes us snap to ramps even when we are airborne
@@ -2428,7 +2448,7 @@ public class Mad
                             // sparks and scrapes
                             if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
                             {
-                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
+                                conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 1, wheelGround);
                                 //if (this.im == this.xt.im)
                                 SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
@@ -2437,7 +2457,7 @@ public class Mad
                             if (!wasMtouch && surfaceType != 0)
                             {
                                 float f_73 = 1.4F;
-                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_73 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
+                                conto.Dust(k, wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, (int)Scx[k], (int)Scz[k], f_73 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
                             }
                         }
 
@@ -2445,8 +2465,8 @@ public class Mad
                         // it seems the intention with this whole block was to rotate the t -> w vector, manipulate it
                         // then rotate back. If the surface being intersected is not ramping us up, then no changes are
                         // made to the vector and the rotation back just reverses the previous operation, making no changes
-                        wheely[k] = Trackers.Y[j] + wheelGround + ((ry - Trackers.Y[j] - wheelGround) * UMath.Cos(-pAngle) - (rz - Trackers.Z[j]) * UMath.Sin(-pAngle));
-                        wheelz[k] = Trackers.Z[j] + ((ry - Trackers.Y[j] - wheelGround) * UMath.Sin(-pAngle) + (rz - Trackers.Z[j]) * UMath.Cos(-pAngle));
+                        wheelpos[k].Y = Trackers.Y[j] + wheelGround + ((ry - Trackers.Y[j] - wheelGround) * UMath.Cos(-pAngle) - (rz - Trackers.Z[j]) * UMath.Sin(-pAngle));
+                        wheelpos[k].Z = Trackers.Z[j] + ((ry - Trackers.Y[j] - wheelGround) * UMath.Sin(-pAngle) + (rz - Trackers.Z[j]) * UMath.Cos(-pAngle));
 
                         isWheelTouchingPiece[k] = true;
                     } // CHK9
@@ -2454,8 +2474,8 @@ public class Mad
                     {
                         int pAngle = 90 + Trackers.Xy[j];
 
-                        float ry = Trackers.Y[j] + wheelGround + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Cos(pAngle) - (wheelx[k] - Trackers.X[j]) * UMath.Sin(pAngle));
-                        float rx = Trackers.X[j] + ((wheely[k] - Trackers.Y[j] - wheelGround) * UMath.Sin(pAngle) + (wheelx[k] - Trackers.X[j]) * UMath.Cos(pAngle));
+                        float ry = Trackers.Y[j] + wheelGround + ((wheelpos[k].Y - Trackers.Y[j] - wheelGround) * UMath.Cos(pAngle) - (wheelpos[k].X - Trackers.X[j]) * UMath.Sin(pAngle));
+                        float rx = Trackers.X[j] + ((wheelpos[k].Y - Trackers.Y[j] - wheelGround) * UMath.Sin(pAngle) + (wheelpos[k].X - Trackers.X[j]) * UMath.Cos(pAngle));
                         if (rx > Trackers.X[j] /*&& rx < Trackers.X[j] + 200*/)
                         {
                             float maxXy = 50;
@@ -2476,7 +2496,7 @@ public class Mad
 
                             if (BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1))
                             {
-                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, wheelGround);
+                                conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 1, wheelGround);
                                 //if (this.im == this.xt.im)
                                 SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
@@ -2484,12 +2504,12 @@ public class Mad
                             if (!wasMtouch && surfaceType != 0)
                             {
                                 float f_78 = 1.4F;
-                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], f_78 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
+                                conto.Dust(k, wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, (int)Scx[k], (int)Scz[k], f_78 * Stat.Simag, 0, BadLanding && Mtouch, wheelGround);
                             }
                         }
 
-                        wheely[k] = Trackers.Y[j] + wheelGround + ((ry - Trackers.Y[j] - wheelGround) * UMath.Cos(-pAngle) - (rx - Trackers.X[j]) * UMath.Sin(-pAngle));
-                        wheelx[k] = Trackers.X[j] + ((ry - Trackers.Y[j] - wheelGround) * UMath.Sin(-pAngle) + (rx - Trackers.X[j]) * UMath.Cos(-pAngle));
+                        wheelpos[k].Y = Trackers.Y[j] + wheelGround + ((ry - Trackers.Y[j] - wheelGround) * UMath.Cos(-pAngle) - (rx - Trackers.X[j]) * UMath.Sin(-pAngle));
+                        wheelpos[k].X = Trackers.X[j] + ((ry - Trackers.Y[j] - wheelGround) * UMath.Sin(-pAngle) + (rx - Trackers.X[j]) * UMath.Cos(-pAngle));
 
                         isWheelTouchingPiece[k] = true;
                     }
