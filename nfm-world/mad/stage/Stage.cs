@@ -14,6 +14,7 @@ using Random = NFMWorld.Util.Random;
 public class Stage : IRenderable
 {
     public UnlimitedArray<Mesh> pieces = [];
+    public UnlimitedArray<CheckPoint> checkpoints = [];
 
     public int nlaps = 3;
 
@@ -269,6 +270,7 @@ public class Stage : IRenderable
                             new Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
                             new Euler(rotation, AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
                         );
+                        checkpoints[checkpoints.Count] = (CheckPoint)pieces[stagePartCount - 1];
                     }
                     else
                     {
@@ -277,6 +279,7 @@ public class Stage : IRenderable
                             new Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
                             new Euler(rotation, AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
+                        checkpoints[checkpoints.Count] = (CheckPoint)pieces[stagePartCount - 1];
                     }
                     
                     // CheckPoints.X[CheckPoints.N] = Utility.GetInt("chk", astring, 1);

@@ -13,9 +13,9 @@ public abstract class BaseGamemode
         
     }
 
-    public virtual void GameTick(UnlimitedArray<InGameCar> CarsInRace, Stage CurrentStage)
+    public virtual void GameTick(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
-        
+
     }
 
     public virtual void KeyPressed(Keys key)
@@ -24,6 +24,11 @@ public abstract class BaseGamemode
     }
 
     public virtual void KeyReleased(Keys key)
+    {
+        
+    }
+
+    public virtual void Render(UnlimitedArray<InGameCar> CarsInRace, Stage CurrentStage)
     {
         
     }

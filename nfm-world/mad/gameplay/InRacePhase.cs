@@ -105,7 +105,8 @@ public class InRacePhase : BasePhase
     {
         base.GameTick();
         
-        CarsInRace[playerCarIndex].Drive();
+        gamemode.GameTick(CarsInRace, CurrentStage);
+
         switch (currentViewMode)
         {
             case ViewMode.Follow:
@@ -152,6 +153,8 @@ public class InRacePhase : BasePhase
         G.DrawString($"Render: {Program._lastFrameTime}ms", 100, 100);
         G.DrawString($"Tick: {Program._lastTickTime}ms", 100, 120);
         G.DrawString($"Power: {CarsInRace[0]?.Mad?.Power:0.00}", 100, 140);
+
+        gamemode.Render(CarsInRace, CurrentStage);
     }
 
     public override void KeyPressed(Keys key, bool imguiWantsKeyboard)
@@ -221,6 +224,8 @@ public class InRacePhase : BasePhase
         {
             currentViewMode = (ViewMode)(((int)currentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
         }
+
+        gamemode.KeyPressed(key);
     }
 
     public override void KeyReleased(Keys key, bool imguiWantsKeyboard)
@@ -262,6 +267,8 @@ public class InRacePhase : BasePhase
         {
             CarsInRace[playerCarIndex].Control.Lookback = 0;
         }
+
+        gamemode.KeyReleased(key);
     }
 
     public override void WindowSizeChanged(int width, int height)

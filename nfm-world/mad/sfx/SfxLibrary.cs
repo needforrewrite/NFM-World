@@ -15,6 +15,8 @@ public static class SfxLibrary
     public static ISoundClip? wastd;
     public static ISoundClip? firewasted;
 
+    public static ISoundClip[] countdown = new ISoundClip[4];
+
 
     public static ISoundClip? tires;
 
@@ -61,6 +63,11 @@ public static class SfxLibrary
         air[3] = IBackend.Backend.GetSound("data/sound/air3.wav");
         air[4] = IBackend.Backend.GetSound("data/sound/air4.wav");
         air[5] = IBackend.Backend.GetSound("data/sound/air5.wav");
+
+        countdown[0] = IBackend.Backend.GetSound("data/sound/go.wav");
+        countdown[1] = IBackend.Backend.GetSound("data/sound/one.wav");
+        countdown[2] = IBackend.Backend.GetSound("data/sound/two.wav");
+        countdown[3] = IBackend.Backend.GetSound("data/sound/three.wav");
     }
 
     private static string GetEngineSignature(int engine)

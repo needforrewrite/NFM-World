@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Mad;
 using Stride.Core.Mathematics;
 
-public class CheckPoint : Mesh
+public class CheckPoint(Mesh mesh, Vector3 position, Euler rotation) : Mesh(mesh, position, rotation)
 {
     public enum CheckPointRotation 
     {
@@ -10,10 +10,14 @@ public class CheckPoint : Mesh
         RightAngle = 2
     }
 
-    public CheckPointRotation CheckPointRot { get; set; } = CheckPointRotation.None;
-
-    public CheckPoint(Mesh mesh, Vector3 position, Euler rotation) : base(mesh, position, rotation)
+    public CheckPointRotation CheckPointRot
     {
-        CheckPointRot = rotation.Yaw.Degrees % 180 == 0 ? CheckPointRotation.None : CheckPointRotation.RightAngle;
+        get
+        {
+            if (Rotation.Yaw == AngleSingle.ZeroAngle || Rotation.Yaw == AngleSingle.StraightAngle)
+                return CheckPointRotation.None;
+            else
+                return CheckPointRotation.RightAngle;
+        } 
     }
 }
