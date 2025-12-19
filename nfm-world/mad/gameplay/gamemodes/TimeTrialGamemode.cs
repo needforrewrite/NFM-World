@@ -13,6 +13,9 @@ public class TimeTrialGamemode : BaseGamemode
         Finished
     }
 
+    private UnlimitedArray<long> thisRunCheckpointMS = new UnlimitedArray<long>();
+    private UnlimitedArray<long> bestTimeCheckpointMS = new UnlimitedArray<long>();
+
     private int _countdownTime = 3;
     // Amount of ticks until we decrease countdown by 1
     private int _innerCountdownTicks = 0;
@@ -20,17 +23,54 @@ public class TimeTrialGamemode : BaseGamemode
 
     private int currentCheckpoint = 0;
     private int currentLap = 0;
+    private bool writtenTime;
 
     private Stopwatch raceTimer = new Stopwatch();
+    private bool loadedBestTimes = false;
 
     public override void Enter()
     {
-
+        Reset();
     }
 
     public override void Exit()
     {
         // Cleanup for Time Trial mode
+    }
+
+    public override void Reset()
+    {
+        base.Reset();
+
+        _currentState = TimeTrialState.NotStarted;
+        _countdownTime = 4;
+        _innerCountdownTicks = 0; // Tick down immediately
+        currentCheckpoint = 0;
+        currentLap = 1;
+        raceTimer.Reset();
+        writtenTime = false;
+        bestTimeCheckpointMS = [];
+        thisRunCheckpointMS = [];
+    }
+
+    private void LoadBestSplits(Stage currentStage)
+    {
+        if(System.IO.File.Exists("data/tts/" + currentStage.Name))
+        {
+            using(StreamReader reader = new("data/tts/" + currentStage.Name))
+            {
+                string? line;
+                while((line = reader.ReadLine()) != null)
+                {
+                    long l = long.Parse(line ?? "");
+
+                    bestTimeCheckpointMS[bestTimeCheckpointMS.Count] = l;
+                }
+            }
+
+            if(bestTimeCheckpointMS.Count == currentStage.checkpoints.Count * currentStage.nlaps)
+                    loadedBestTimes = true;
+        }
     }
 
     public override void GameTick(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
@@ -39,13 +79,10 @@ public class TimeTrialGamemode : BaseGamemode
         switch (_currentState)
         {
             case TimeTrialState.NotStarted:
-                _currentState = TimeTrialState.Countdown;
-                _countdownTime = 4;
-                _innerCountdownTicks = 0; // Tick down immediately
-                currentCheckpoint = 0;
-                currentLap = 1;
-                raceTimer.Reset();
+                carsInRace[0].Mad.Halted = false;
                 carsInRace[0].ResetPosition();
+                _currentState = TimeTrialState.Countdown;
+                LoadBestSplits(currentStage);
                 break;
             case TimeTrialState.Countdown:
                 CountdownTick();
@@ -54,7 +91,7 @@ public class TimeTrialGamemode : BaseGamemode
                 TimeTrialInRace(carsInRace, currentStage);
                 break;
             case TimeTrialState.Finished:
-                TimeTrialFinished(carsInRace);
+                TimeTrialFinished(carsInRace, currentStage);
                 break;
         }
     }
@@ -63,12 +100,37 @@ public class TimeTrialGamemode : BaseGamemode
     {
         carsInRace[0].Drive();
 
+        if (currentStage.checkpoints.Count == 0)
+        {
+            // lol
+            return;
+        }
+
         G.SetColor(new NFMWorld.Util.Color(0, 0, 0));
         G.DrawString($"Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 100, 200);
         G.DrawString($"Lap: {currentLap}/{currentStage.nlaps}", 100, 250);
 
         CheckPoint nextCheckpoint = currentStage.checkpoints[currentCheckpoint];
         Vector3 carPos = carsInRace[0].CarRef.Position;
+
+        if((currentCheckpoint != 0 || currentLap != 1) && loadedBestTimes)
+        {
+            long diff = thisRunCheckpointMS[thisRunCheckpointMS.Count - 1] - bestTimeCheckpointMS[thisRunCheckpointMS.Count - 1];
+            if(diff > 0)
+            {
+                G.SetColor(new NFMWorld.Util.Color(255, 128, 128));
+            } else if (diff < 0)
+            {
+                G.SetColor(new NFMWorld.Util.Color(128, 255, 128));
+            }
+
+            long diffSeconds = Math.Abs(diff/1000);
+            long diffMs = Math.Abs(diff%1000);
+
+            string fmt = $"{(diff > 0 ? "+" : "-")}{diffSeconds}s {diffMs}ms";
+
+            G.DrawString("This Split: " + fmt, 100, 350);
+        }
 
         if (nextCheckpoint.CheckPointRot == CheckPoint.CheckPointRotation.None)
         {
@@ -77,6 +139,7 @@ public class TimeTrialGamemode : BaseGamemode
                         Math.Abs(carsInRace[0].CarRef.Position.X - nextCheckpoint.Position.X) < 700 &&
                         Math.Abs(carsInRace[0].CarRef.Position.Y - nextCheckpoint.Position.Y + 350) < 450)
             {
+                thisRunCheckpointMS[thisRunCheckpointMS.Count] = raceTimer.ElapsedMilliseconds;
                 currentCheckpoint++;
                 SfxLibrary.checkpoint?.Play();
                 if (currentCheckpoint >= currentStage.checkpoints.Count)
@@ -85,13 +148,15 @@ public class TimeTrialGamemode : BaseGamemode
                     currentLap++;
                 }
             }
-        } else // None
+        }
+        else // None
         {
             if (Math.Abs(carPos.X - nextCheckpoint.Position.X) <
                         60.0F + Math.Abs(carsInRace[0].Mad.Scx[0] + carsInRace[0].Mad.Scx[1] + carsInRace[0].Mad.Scx[2] + carsInRace[0].Mad.Scx[3]) / 4.0F &&
                         Math.Abs(carPos.Z - nextCheckpoint.Position.Z) < 700 &&
                         Math.Abs(carPos.Y - nextCheckpoint.Position.Y + 350) < 450)
             {
+                thisRunCheckpointMS[thisRunCheckpointMS.Count] = raceTimer.ElapsedMilliseconds;
                 SfxLibrary.checkpoint?.Play();
                 currentCheckpoint++;
                 if (currentCheckpoint >= currentStage.checkpoints.Count)
@@ -102,26 +167,64 @@ public class TimeTrialGamemode : BaseGamemode
             }
         }
 
-        if(currentCheckpoint == currentStage.checkpoints.Count - 1 && currentLap == currentStage.nlaps)
+        if (currentCheckpoint == currentStage.checkpoints.Count - 1 && currentLap == currentStage.nlaps)
         {
             currentStage.checkpoints[currentStage.checkpoints.Count - 1].Finish = true;
-        } else
+        }
+        else
         {
             currentStage.checkpoints[currentStage.checkpoints.Count - 1].Finish = false;
         }
 
-        if(currentLap > currentStage.nlaps)
+        if (currentLap > currentStage.nlaps)
         {
             _currentState = TimeTrialState.Finished;
             raceTimer.Stop();
         }
     }
 
-    private void TimeTrialFinished(UnlimitedArray<InGameCar> carsInRace)
+    private void TimeTrialFinished(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
+        bool newBest = false;
+
+        if (!writtenTime)
+        {
+            writtenTime = true;
+            if(thisRunCheckpointMS[thisRunCheckpointMS.Count - 1] < bestTimeCheckpointMS[bestTimeCheckpointMS.Count - 1] || !loadedBestTimes) 
+            {
+                newBest = true;
+                // if new best, save it
+                if (!Directory.Exists("data/tts"))
+                {
+                    Directory.CreateDirectory("data/tts");
+                }
+
+                using (StreamWriter outputFile = new StreamWriter("data/tts/" + currentStage.Name))
+                {
+                    foreach (long time in thisRunCheckpointMS) {
+                        outputFile.WriteLine(time.ToString());
+                    }
+                }
+            }
+        }
+
         G.SetColor(new NFMWorld.Util.Color(128, 255, 128));
-        G.DrawString($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 100, 200);
-        G.DrawString($"Press R to restart", 100, 250);
+        G.DrawString($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 300, 200);
+        if(loadedBestTimes || newBest)
+        {
+            long bestTimeMs = newBest ? thisRunCheckpointMS[thisRunCheckpointMS.Count - 1] : bestTimeCheckpointMS[bestTimeCheckpointMS.Count - 1];
+
+            TimeSpan t = TimeSpan.FromMilliseconds(bestTimeMs);
+
+            string time = string.Format("{1:D2}:{2:D2}:{2:D2}",
+                        t.Hours, 
+                        t.Minutes, 
+                        t.Seconds, 
+                        t.Milliseconds);
+
+            G.DrawString("Best time: " + time, 300, 225);
+        }
+        G.DrawString($"Press R to restart", 300, 250);
 
         carsInRace[0].Mad.Halted = true;
         carsInRace[0].Drive();
@@ -151,8 +254,7 @@ public class TimeTrialGamemode : BaseGamemode
         // Handle key presses specific to Time Trial mode
         if (key == Keys.R)
         {
-            // Reset
-            _currentState = TimeTrialState.NotStarted;
+            Reset();
         }
     }
 
