@@ -1598,11 +1598,7 @@ public class Mad
         
         // CHK13
         // car sliding fix by jacher: do not adjust to tickrate
-        var centerPos = new Vector3(
-            (wheelpos[0].X + wheelpos[1].X + wheelpos[2].X + wheelpos[3].X) / 4.0F,
-            (wheelpos[0].Y + wheelpos[1].Y + wheelpos[2].Y + wheelpos[3].Y) / 4.0F,
-            (wheelpos[0].Z + wheelpos[1].Z + wheelpos[2].Z + wheelpos[3].Z) / 4.0F
-        );
+        var centerPos = (wheelpos[0] + wheelpos[1] + wheelpos[2] + wheelpos[3]) / 4.0F;
         
         // calculate forward vector of the car based on euler2
         var forwardVector = Vector3.Transform(new Vector3(0, 0, 1), Matrix.CreateFromEuler(euler2));
