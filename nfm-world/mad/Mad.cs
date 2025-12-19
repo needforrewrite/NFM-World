@@ -1621,8 +1621,8 @@ public class Mad
             wheelXTranslation /= 4f;
             wheelZTranslation /= 4f;
 
-            offset += wheelXTranslation * rightVector;
-            offset += wheelZTranslation * forwardVector;
+            offset += wheelXTranslation * -rightVector;
+            offset += wheelZTranslation * -forwardVector;
         }
 
         conto.X = (int)(centerPos.X + offset.X);
