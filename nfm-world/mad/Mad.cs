@@ -478,17 +478,17 @@ public class Mad
         // maxine: this controls hypergliding. to fix hypergliding, set to 0, then update wheelGround to prevent
         // car getting stuck in the ground
         // we multiply it by tickrate because the effect caused by hypergliding is applied every tick
-        int bottomy;
+        float bottomy;
 
         if (World.IsHyperglidingEnabled)
         {
             if (BadLanding)
             {
-                bottomy = (int)((Stat.Flipy + Squash) * _tickRate);
+                bottomy = (float)((Stat.Flipy + Squash) * _tickRate);
             }
             else
             {
-                bottomy = (int)(conto.Grat * _tickRate);
+                bottomy = (float)(conto.Grat * _tickRate);
             }
         }
         else
