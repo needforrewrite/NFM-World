@@ -66,10 +66,10 @@ public static class SfxLibrary
         air[4] = IBackend.Backend.GetSound("data/sound/air4.wav");
         air[5] = IBackend.Backend.GetSound("data/sound/air5.wav");
 
-        countdown[0] = IBackend.Backend.GetSound("data/sound/go.wav");
-        countdown[1] = IBackend.Backend.GetSound("data/sound/one.wav");
-        countdown[2] = IBackend.Backend.GetSound("data/sound/two.wav");
-        countdown[3] = IBackend.Backend.GetSound("data/sound/three.wav");
+        countdown[0] = IBackend.Backend.GetSound("data/sound/count/go.wav");
+        countdown[1] = IBackend.Backend.GetSound("data/sound/count/one.wav");
+        countdown[2] = IBackend.Backend.GetSound("data/sound/count/two.wav");
+        countdown[3] = IBackend.Backend.GetSound("data/sound/count/three.wav");
 
         checkpoint = IBackend.Backend.GetSound("data/sound/checkpoint.wav");
     }
