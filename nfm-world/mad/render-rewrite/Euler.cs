@@ -98,13 +98,13 @@ public struct Euler(AngleSingle yaw, AngleSingle pitch, AngleSingle roll) : IEqu
     public static bool operator ==(Euler a, Euler b) => a.Yaw == b.Yaw && a.Pitch == b.Pitch && a.Roll == b.Roll;
     public static bool operator !=(Euler a, Euler b) => !(a == b);
 
-    public static Vector3 operator *(Euler rotation, Vector3 vector) => ((Quaternion)rotation) * vector;
+    public static Vector3 operator *(Euler rotation, Vector3 vector) => Vector3.Transform(vector, rotation);
 
     public static implicit operator Vector3(Euler euler)
         => new(euler.Yaw.Radians, euler.Pitch.Radians, euler.Roll.Radians);
 
     public static implicit operator Quaternion(Euler euler)
-        => Quaternion.RotationYawPitchRoll(euler.Yaw.Radians, euler.Pitch.Radians, euler.Roll.Radians);
+        => Quaternion.CreateFromYawPitchRoll(euler.Yaw.Radians, euler.Pitch.Radians, euler.Roll.Radians);
 
     public bool Equals(Euler other) => Yaw.Equals(other.Yaw) && Pitch.Equals(other.Pitch) && Roll.Equals(other.Roll);
     public override bool Equals(object? obj) => obj is Euler other && Equals(other);

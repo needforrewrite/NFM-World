@@ -10,14 +10,14 @@ public class Mountains : Transform, IRenderable
     private readonly IndexBuffer _indexBuffer;
     private readonly Effect _material;
     private readonly int _triangleCount;
+    private readonly int _vertexCount;
 
     public Mountains(GraphicsDevice graphicsDevice, Rad3dPoly[] polys)
     {
         _graphicsDevice = graphicsDevice;
         
         var triangulation = Array.ConvertAll(polys,
-            poly => MeshHelpers.TriangulateIfNeeded(Array.ConvertAll(poly.Points,
-                input => (System.Numerics.Vector3)input)));
+            poly => MeshHelpers.TriangulateIfNeeded(poly.Points));
 
         var data = new List<VertexPositionColor>();
         var indices = new List<int>();
@@ -30,8 +30,8 @@ public class Mountains : Transform, IRenderable
             var baseIndex = data.Count;
             foreach (var point in poly.Points)
             {
-                var color = poly.Color.ToXna();
-                data.Add(new VertexPositionColor(point.ToXna(), color));
+                var color = poly.Color;
+                data.Add(new VertexPositionColor(point, color));
             }
 
             for (var index = 0; index < result.Triangles.Length; index += 3)
@@ -50,6 +50,7 @@ public class Mountains : Transform, IRenderable
         _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
         _indexBuffer.SetData(indices.ToArray());
         _triangleCount = indices.Count / 3;
+        _vertexCount = data.Count;
 
         _material = Program._mountainsShader;
     }
@@ -65,7 +66,7 @@ public class Mountains : Transform, IRenderable
         _material.Parameters["WorldViewProj"]?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         
         _material.Parameters["DepthBias"]?.SetValue(0.00005f);
-        _material.Parameters["FogColor"]?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
+        _material.Parameters["FogColor"]?.SetValue(World.Fog.Snap(World.Snap).ToVector3());
         _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
         _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
 
@@ -74,7 +75,7 @@ public class Mountains : Transform, IRenderable
         {
             pass.Apply();
     
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _triangleCount);
+            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _vertexCount, 0, _triangleCount);
         }
         _graphicsDevice.DepthStencilState = DepthStencilState.Default;
     }

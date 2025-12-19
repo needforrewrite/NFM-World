@@ -721,7 +721,7 @@ public class Mad
                         if (i16 != 2)
                         {
                             //
-                            Speed -= (Stat.Acelf[i16] / 2.0F + f15 * Stat.Acelf[i16] / 196.0F) * _tickRate;
+                            Speed -= (Stat.Acelf.AsSpan()[i16] / 2.0F + f15 * Stat.Acelf.AsSpan()[i16] / 196.0F) * _tickRate;
                         }
                         else
                         {
@@ -749,7 +749,7 @@ public class Mad
 
                         if (i18 != 3)
                         {
-                            Speed += (Stat.Acelf[i18] / 2.0F + f15 * Stat.Acelf[i18] / 196.0F) * _tickRate;
+                            Speed += (Stat.Acelf.AsSpan()[i18] / 2.0F + f15 * Stat.Acelf.AsSpan()[i18] / 196.0F) * _tickRate;
                         }
                         else
                         {

@@ -3,8 +3,6 @@ using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad;
 
-using URandom = Util.Random;
-
 public class Flames
 {
     private int _embos;
@@ -206,7 +204,7 @@ public class Flames
                     b = 0;
                 }
 
-                var outerColor = new Color3((short)r, (short)g, (short)b).ToXna();
+                var outerColor = new Color3((short)r, (short)g, (short)b);
                 
                 // inner flame
                 
@@ -273,17 +271,17 @@ public class Flames
                     b = 0;
                 }
                 
-                var innerColor = new Color3((short)r, (short)g, (short)b).ToXna();
+                var innerColor = new Color3((short)r, (short)g, (short)b);
                 
                 // We build the outer flame out of two triangles, so that it doesn't overlap with the inner flame.
                 // These triangles share a vertex with the inner flame's center triangle.
                 var triBase = i * 9;
-                var outer0 = new Microsoft.Xna.Framework.Vector3(outerX[0], outerY[0], outerZ[0]); // anchor left
-                var outer1 = new Microsoft.Xna.Framework.Vector3(outerX[1], outerY[1], outerZ[1]); // anchor right
-                var outer2 = new Microsoft.Xna.Framework.Vector3(outerX[2], outerY[2], outerZ[2]); // top
-                var inner0 = new Microsoft.Xna.Framework.Vector3(innerX[0], innerY[0], innerZ[0]); // anchor left
-                var inner1 = new Microsoft.Xna.Framework.Vector3(innerX[1], innerY[1], innerZ[1]); // anchor right
-                var inner2 = new Microsoft.Xna.Framework.Vector3(innerX[2], innerY[2], innerZ[2]); // top
+                var outer0 = new Vector3(outerX[0], outerY[0], outerZ[0]); // anchor left
+                var outer1 = new Vector3(outerX[1], outerY[1], outerZ[1]); // anchor right
+                var outer2 = new Vector3(outerX[2], outerY[2], outerZ[2]); // top
+                var inner0 = new Vector3(innerX[0], innerY[0], innerZ[0]); // anchor left
+                var inner1 = new Vector3(innerX[1], innerY[1], innerZ[1]); // anchor right
+                var inner2 = new Vector3(innerX[2], innerY[2], innerZ[2]); // top
                 
                 // cutout of the outer flame
                 _triangles[triBase + 0] = new VertexPositionColor(outer0, outerColor);

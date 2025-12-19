@@ -1,10 +1,9 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Util;
-using Vector3 = Stride.Core.Mathematics.Vector3;
 
 namespace NFMWorld.Mad;
 
-using URandom = NFMWorld.Util.Random;
+using URandom = Util.Random;
 
 public class Environment
 {

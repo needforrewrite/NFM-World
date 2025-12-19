@@ -1,6 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Stride.Core.Mathematics;
-using Matrix = Microsoft.Xna.Framework.Matrix;
+﻿using System.Numerics;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
 
@@ -43,12 +42,12 @@ public class Sky : Transform, IRenderable
                 (new Vector3(-1e5f, -layersArr[i + 1].Position.Y, -layersArr[i + 1].Position.Z), layersArr[i + 1].Color),
                 (new Vector3(1e5f, -layersArr[i + 1].Position.Y, -layersArr[i + 1].Position.Z), layersArr[i + 1].Color),
             ];
-            data.Add(new VertexPositionColor(vertices[0].Position.ToXna(), new Microsoft.Xna.Framework.Color(vertices[0].Color.ToXna())));
-            data.Add(new VertexPositionColor(vertices[1].Position.ToXna(), new Microsoft.Xna.Framework.Color(vertices[1].Color.ToXna())));
-            data.Add(new VertexPositionColor(vertices[2].Position.ToXna(), new Microsoft.Xna.Framework.Color(vertices[2].Color.ToXna())));
-            data.Add(new VertexPositionColor(vertices[1].Position.ToXna(), new Microsoft.Xna.Framework.Color(vertices[1].Color.ToXna())));
-            data.Add(new VertexPositionColor(vertices[2].Position.ToXna(), new Microsoft.Xna.Framework.Color(vertices[2].Color.ToXna())));
-            data.Add(new VertexPositionColor(vertices[3].Position.ToXna(), new Microsoft.Xna.Framework.Color(vertices[3].Color.ToXna())));
+            data.Add(new VertexPositionColor(vertices[0].Position, new Microsoft.Xna.Framework.Color(vertices[0].Color)));
+            data.Add(new VertexPositionColor(vertices[1].Position, new Microsoft.Xna.Framework.Color(vertices[1].Color)));
+            data.Add(new VertexPositionColor(vertices[2].Position, new Microsoft.Xna.Framework.Color(vertices[2].Color)));
+            data.Add(new VertexPositionColor(vertices[1].Position, new Microsoft.Xna.Framework.Color(vertices[1].Color)));
+            data.Add(new VertexPositionColor(vertices[2].Position, new Microsoft.Xna.Framework.Color(vertices[2].Color)));
+            data.Add(new VertexPositionColor(vertices[3].Position, new Microsoft.Xna.Framework.Color(vertices[3].Color)));
         }
 
         var vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None);
@@ -78,21 +77,21 @@ public class Sky : Transform, IRenderable
         for (var i = 1; i < 20; ++i) {
             col = new Vector3(0.991f, 0.991f, 0.998f) * col;
         }
-        _graphicsDevice.Clear(new Microsoft.Xna.Framework.Color(col.ToXna()));
+        _graphicsDevice.Clear(new Microsoft.Xna.Framework.Color(col));
         
         // Extract camera rotation from view direction
         var viewDirection = Vector3.Normalize(camera.LookAt - camera.Position);
         
         // Calculate yaw from view direction
-        var yaw = (float)System.Math.Atan2(viewDirection.X, viewDirection.Z);
+        var yaw = (float)Math.Atan2(viewDirection.X, viewDirection.Z);
         
         // Create rotation: first rotate by negative yaw, then apply full camera rotation
-        var yawRotation = Quaternion.RotationY(-yaw);
-        var fullRotation = Quaternion.RotationYawPitchRoll(yaw, 0, 0);
+        var yawRotation = Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw);
+        var fullRotation = Quaternion.CreateFromYawPitchRoll(yaw, 0, 0);
         var combinedRotation = yawRotation * fullRotation;
-        combinedRotation.Invert();
+        combinedRotation = Quaternion.Inverse(combinedRotation);
         
-        var viewMatrix = Matrix.CreateFromQuaternion(combinedRotation.ToXna());
+        var viewMatrix = Matrix.CreateFromQuaternion(combinedRotation);
         
         _material.Parameters["WorldViewProj"]?.SetValue(viewMatrix * camera.ProjectionMatrix);
         foreach (var pass in _material.CurrentTechnique.Passes)

@@ -1,6 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using URandom = NFMWorld.Util.Random;
 
 namespace NFMWorld.Mad;
 
@@ -10,8 +9,8 @@ public class Submesh(
     GraphicsDevice graphicsDevice,
     VertexBuffer vertexBuffer,
     IndexBuffer indexBuffer,
-    int triangleCount
-)
+    int triangleCount,
+    int vertexCount)
 {
     private readonly PolyEffect _material = new(Program._polyShader);
     public readonly PolyType PolyType = polyType;
@@ -30,12 +29,12 @@ public class Submesh(
         // If a parameter is null that means the HLSL compiler optimized it out.
         _material.World?.SetValue(matrixWorld);
         _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
-        _material.SnapColor?.SetValue(World.Snap.ToXnaVector3());
+        _material.SnapColor?.SetValue(World.Snap.ToVector3());
         _material.IsFullbright?.SetValue(PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn);
         _material.UseBaseColor?.SetValue(PolyType is PolyType.Glass);
-        _material.BaseColor?.SetValue(World.Sky.ToXnaVector3());
-        _material.LightDirection?.SetValue(World.LightDirection.ToXna());
-        _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToXnaVector3());
+        _material.BaseColor?.SetValue(World.Sky.ToVector3());
+        _material.LightDirection?.SetValue(World.LightDirection);
+        _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToVector3());
         _material.FogDistance?.SetValue(World.FadeFrom);
         _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
@@ -57,7 +56,7 @@ public class Submesh(
             _material.Projection?.SetValue(lighting.CascadeLightCamera.ProjectionMatrix);
             _material.WorldView?.SetValue(matrixWorld * lighting.CascadeLightCamera.ViewMatrix);
             _material.WorldViewProj?.SetValue(matrixWorld * lighting.CascadeLightCamera.ViewMatrix * lighting.CascadeLightCamera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position.ToXna());
+            _material.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position);
         }
         else
         {
@@ -65,7 +64,7 @@ public class Submesh(
             _material.Projection?.SetValue(camera.ProjectionMatrix);
             _material.WorldView?.SetValue(matrixWorld * camera.ViewMatrix);
             _material.WorldViewProj?.SetValue(matrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(camera.Position.ToXna());
+            _material.CameraPosition?.SetValue(camera.Position);
         }
 
         _material.CurrentTechnique = lighting?.IsCreateShadowMap == true ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
@@ -80,7 +79,7 @@ public class Submesh(
         {
             pass.Apply();
     
-            graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, triangleCount);
+            graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, vertexCount, 0, triangleCount);
         }
         
         graphicsDevice.RasterizerState = RasterizerState.CullClockwise;

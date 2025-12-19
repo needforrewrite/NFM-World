@@ -1,7 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using Color = Microsoft.Xna.Framework.Color;
-using Matrix = Microsoft.Xna.Framework.Matrix;
-using URandom = NFMWorld.Util.Random;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
 
@@ -216,7 +214,7 @@ public class Dust
         
         // ais[0] = Xs((int) (i220 + _smag[i, 0] * 0.9238F * 1.5F), i221);
         // is223[0] = Ys((int) (i222 + _smag[i, 0] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
+        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
             Sx[dust] + _smag[dust, 0] * 0.9238F * 1.5F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] + _smag[dust, 0] * 0.3826F * 1.5F
@@ -224,7 +222,7 @@ public class Dust
         
         // ais[1] = Xs((int) (i220 + _smag[i, 1] * 0.9238F * 1.5F), i221);
         // is223[1] = Ys((int) (i222 - _smag[i, 1] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
+        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
             Sx[dust] + _smag[dust, 1] * 0.9238F * 1.5F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] - _smag[dust, 1] * 0.3826F * 1.5F
@@ -232,7 +230,7 @@ public class Dust
         
         // ais[2] = Xs((int) (i220 + _smag[i, 2] * 0.3826F), i221);
         // is223[2] = Ys((int) (i222 - _smag[i, 2] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
+        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
             Sx[dust] + _smag[dust, 2] * 0.3826F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] - _smag[dust, 2] * 0.9238F
@@ -240,7 +238,7 @@ public class Dust
         
         // ais[3] = Xs((int) (i220 - _smag[i, 3] * 0.3826F), i221);
         // is223[3] = Ys((int) (i222 - _smag[i, 3] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
+        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
             Sx[dust] - _smag[dust, 3] * 0.3826F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] - _smag[dust, 3] * 0.9238F
@@ -248,7 +246,7 @@ public class Dust
         
         // ais[4] = Xs((int) (i220 - _smag[i, 4] * 0.9238F * 1.5F), i221);
         // is223[4] = Ys((int) (i222 - _smag[i, 4] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
+        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
             Sx[dust] - _smag[dust, 4] * 0.9238F * 1.5F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] - _smag[dust, 4] * 0.3826F * 1.5F
@@ -256,7 +254,7 @@ public class Dust
         
         // ais[5] = Xs((int) (i220 - _smag[i, 5] * 0.9238F * 1.5F), i221);
         // is223[5] = Ys((int) (i222 + _smag[i, 5] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
+        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
             Sx[dust] - _smag[dust, 5] * 0.9238F * 1.5F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] + _smag[dust, 5] * 0.3826F * 1.5F
@@ -264,7 +262,7 @@ public class Dust
         
         // ais[6] = Xs((int) (i220 - _smag[i, 6] * 0.3826F * 1.7F), i221);
         // is223[6] = Ys((int) (i222 + _smag[i, 6] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
+        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
             Sx[dust] - _smag[dust, 6] * 0.3826F * 1.7F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] + _smag[dust, 6] * 0.9238F
@@ -272,7 +270,7 @@ public class Dust
         
         // ais[7] = Xs((int) (i220 + _smag[i, 7] * 0.3826F * 1.7F), i221);
         // is223[7] = Ys((int) (i222 + _smag[i, 7] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Microsoft.Xna.Framework.Vector3(
+        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
             Sx[dust] + _smag[dust, 7] * 0.3826F * 1.7F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] + _smag[dust, 7] * 0.9238F

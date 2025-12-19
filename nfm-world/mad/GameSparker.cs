@@ -8,7 +8,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Stride.Core.Mathematics;
 using Path = System.IO.Path;
-using Vector3 = Stride.Core.Mathematics.Vector3;
 using NFMWorld.Mad.UI;
 using NFMWorld.SkiaDriver;
 using NFMWorld.DriverInterface;
