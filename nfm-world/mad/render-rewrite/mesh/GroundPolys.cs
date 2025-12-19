@@ -10,6 +10,7 @@ public class GroundPolys : Transform, IRenderable
     private readonly IndexBuffer _indexBuffer;
     private readonly Effect _material;
     private readonly int _triangleCount;
+    private readonly int _vertexCount;
 
     public GroundPolys(GraphicsDevice graphicsDevice, Rad3dPoly[] polys)
     {
@@ -50,6 +51,7 @@ public class GroundPolys : Transform, IRenderable
         _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
         _indexBuffer.SetData(indices.ToArray());
         _triangleCount = indices.Count / 3;
+        _vertexCount = data.Count;
 
         _material = Program._groundShader;
     }
@@ -75,7 +77,7 @@ public class GroundPolys : Transform, IRenderable
         {
             pass.Apply();
     
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _triangleCount);
+            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _vertexCount, 0, _triangleCount);
         }
         _graphicsDevice.DepthStencilState = DepthStencilState.Default;
     }

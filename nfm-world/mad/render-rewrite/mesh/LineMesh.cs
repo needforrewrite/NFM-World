@@ -14,6 +14,7 @@ public class LineMesh
     private readonly IndexBuffer _lineIndexBuffer;
     private readonly int _lineTriangleCount;
     private readonly LineType _lineType;
+    private readonly int _lineVertexCount;
 
     public LineMesh(
         Mesh supermesh,
@@ -60,6 +61,7 @@ public class LineMesh
             new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
         lineIndexBuffer.SetData(indices.ToArray());
 
+        var lineVertexCount = data.Count;
         var lineTriangleCount = indices.Count / 3;
 
         _supermesh = supermesh;
@@ -67,6 +69,7 @@ public class LineMesh
         _lineVertexBuffer = lineVertexBuffer;
         _lineIndexBuffer = lineIndexBuffer;
         _lineTriangleCount = lineTriangleCount;
+        _lineVertexCount = lineVertexCount;
     }
 
     public void Render(Camera camera, Lighting? lighting, Matrix matrixWorld)
@@ -111,7 +114,7 @@ public class LineMesh
         {
             pass.Apply();
 
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineTriangleCount);
+            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineVertexCount, 0, _lineTriangleCount);
         }
     }
 }

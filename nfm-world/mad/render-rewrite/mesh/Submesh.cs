@@ -10,8 +10,8 @@ public class Submesh(
     GraphicsDevice graphicsDevice,
     VertexBuffer vertexBuffer,
     IndexBuffer indexBuffer,
-    int triangleCount
-)
+    int triangleCount,
+    int vertexCount)
 {
     private readonly PolyEffect _material = new(Program._polyShader);
     public readonly PolyType PolyType = polyType;
@@ -80,7 +80,7 @@ public class Submesh(
         {
             pass.Apply();
     
-            graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, triangleCount);
+            graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, vertexCount, 0, triangleCount);
         }
         
         graphicsDevice.RasterizerState = RasterizerState.CullClockwise;

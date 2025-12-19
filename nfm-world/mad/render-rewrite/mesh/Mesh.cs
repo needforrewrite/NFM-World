@@ -185,7 +185,7 @@ public class Mesh : Transform, IRenderable
             var indexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
             indexBuffer.SetData(indices.ToArray());
 
-            Submeshes[i] = new Submesh(type, this, GraphicsDevice, vertexBuffer, indexBuffer, indices.Count / 3);
+            Submeshes[i] = new Submesh(type, this, GraphicsDevice, vertexBuffer, indexBuffer, indices.Count / 3, data.Count);
         }
 
         LineMeshes = new LineMesh[lines.Length];

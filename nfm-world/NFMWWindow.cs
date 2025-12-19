@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.ImGuiNet;
+using Environment = System.Environment;
 
 namespace NFMWorld;
 
@@ -35,7 +36,7 @@ public unsafe class Program : Game
     internal static int _lastTickTime;
     private KeyboardState oldKeyState;
     private MouseState oldMouseState;
-    private MonoGameSkia _skia;
+    private NanoVGRenderer _nvg;
     public const int NumCascades = 3;
 
     private static bool loaded;
@@ -223,16 +224,14 @@ public unsafe class Program : Game
         _graphics.PreferredBackBufferWidth = 1280;
         _graphics.PreferredBackBufferHeight = 720;
         _graphics.PreferMultiSampling = false;
-        _graphics.ApplyChanges();
 
-        _skia = new MonoGameSkia(GraphicsDevice);
         // IBackend.Backend = new DummyBackend();
         Window.AllowUserResizing = true;
         Window.ClientSizeChanged += (sender, args) =>
         {
             var viewport = new Viewport(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height);
             GraphicsDevice.Viewport = viewport;
-            _skia.RemakeRenderTarget(Window.ClientBounds.Width, Window.ClientBounds.Height);
+            // _skia.RemakeRenderTarget(Window.ClientBounds.Width, Window.ClientBounds.Height);
             GameSparker.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
             GameSparker.CurrentPhase.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
         };
@@ -271,15 +270,32 @@ public unsafe class Program : Game
         oldKeyState = Keyboard.GetState();
         oldMouseState = Mouse.GetState();
         
+        _nvg = new NanoVGRenderer(GraphicsDevice);
+        
         base.Initialize();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+            foreach (var shadowRenderTarget in shadowRenderTargets)
+            {
+                shadowRenderTarget.Dispose();
+            }
+            _nvg.Dispose();
+            _imguiRenderer.Dispose();
+        }
     }
 
     protected override void LoadContent()
     {
-        _polyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Poly.fxc"));
-        _skyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Sky.fxc"));
-        _groundShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Ground.fxc"));
-        _mountainsShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Mountains.fxc"));
+        _polyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Poly.fxb"));
+        _skyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Sky.fxb"));
+        _groundShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Ground.fxb"));
+        _mountainsShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Mountains.fxb"));
         
         GameSparker.Load(this);
 
@@ -295,8 +311,7 @@ public unsafe class Program : Game
                 SurfaceFormat.Single,
                 DepthFormat.Depth24,
                 0,
-                RenderTargetUsage.DiscardContents,
-                false);
+                RenderTargetUsage.DiscardContents);
         }
         
         // Clear all render targets AFTER creating them all
@@ -470,7 +485,7 @@ public unsafe class Program : Game
         // Render based on game state
         GameSparker.CurrentPhase.Render();
         
-        _skia.Render();
+        _nvg.Render();
 
         GameSparker.CurrentPhase.RenderAfterSkia();
         
@@ -486,6 +501,12 @@ public unsafe class Program : Game
 
     public static void Main()
     {
+        // TODO figure out why SDL ProcessExit doesn't work properly
+        AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
+        {
+            Process.GetCurrentProcess().Kill();
+        };
+
         var program = new Program();
         program.Run();
     }

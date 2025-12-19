@@ -4,3 +4,15 @@
 [submodule "MonoGame.ImGuiNet"]
 	path = MonoGame.ImGuiNet
 	url = https://github.com/tsMezotic/MonoGame.ImGuiNet
+[submodule "FNA"]
+	path = FNA
+	url = https://github.com/FNA-XNA/FNA
+[submodule "FontStashSharp"]
+	path = FontStashSharp
+	url = https://github.com/FontStashSharp/FontStashSharp
+[submodule "NvgSharp"]
+	path = NvgSharp
+	url = https://github.com/rds1983/NvgSharp
+[submodule "soft-float-starter-pack"]
+	path = soft-float-starter-pack
+	url = https://github.com/Kimbatt/soft-float-starter-pack
