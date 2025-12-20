@@ -7,6 +7,10 @@ public abstract class BasePhase
 {
     protected bool MouseDownThisFrame { get; private set; }
 
+    public virtual void RecreateScene()
+    {
+    }
+
     public virtual void BeginGameTick()
     {
     }

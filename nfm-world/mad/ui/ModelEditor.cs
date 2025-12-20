@@ -2370,13 +2370,8 @@ public class ModelEditorPhase : BasePhase
                 };
                 _graphicsDevice.DepthStencilState = depthOff;
                 
-                // Set alpha override for all submesh rendering
-                Submesh.AlphaOverride = tab.ReferenceOpacity;
-                
+                referenceCar.alphaOverride = tab.ReferenceOpacity;
                 referenceCar.Render(camera);
-                
-                // Clear alpha override
-                Submesh.AlphaOverride = null;
                 
                 // Restore original PolyTypes
                 for (int i = 0; i < referenceCar.Polys.Length; i++)
