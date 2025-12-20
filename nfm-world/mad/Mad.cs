@@ -1650,32 +1650,35 @@ public class Mad
             var f87 = (Speed / Stat.Swits[2] * 14.0F * (Stat.Bounce - 0.4f));
             if (control.Left && _tilt < f87 && _tilt >= 0.0F)
             {
-                _tilt += 0.4f;
+                _tilt += 0.4f * _tickRate;
             }
             else if (control.Right && _tilt > -f87 && _tilt <= 0.0F)
             {
-                _tilt -= 0.4f;
+                _tilt -= 0.4f * _tickRate;
             }
             else if (Math.Abs(_tilt) > 3.0 * (Stat.Bounce - 0.4))
             {
                 if (_tilt > 0.0F)
                 {
-                    _tilt -= 3.0f * (Stat.Bounce - 0.3f);
+                    _tilt -= 3.0f * (Stat.Bounce - 0.3f) * _tickRate;
                 }
                 else
                 {
-                    _tilt += 3.0f * (Stat.Bounce - 0.3f);
+                    _tilt += 3.0f * (Stat.Bounce - 0.3f) * _tickRate;
                 }
             }
             else
             {
                 _tilt = 0.0F;
             }
-            conto.Xy += (int)_tilt;
+            conto.Xy += _tilt * _tickRate;
+            FrameTrace.AddMessage("y before tilt: " + conto.Y);
             if (Gtouch)
             {
-                conto.Y -= (int)(_tilt / 1.5f);
+                conto.Y -= (int)((_tilt / 1.5f) * _tickRate);
             }
+            FrameTrace.AddMessage("y after tilt: " + conto.Y);
+            FrameTrace.AddMessage("tilt: " + _tilt);
         }
         else if (_tilt != 0.0F)
         {
