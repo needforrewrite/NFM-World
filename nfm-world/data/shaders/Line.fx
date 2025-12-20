@@ -68,7 +68,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 {
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
-    float distanceToCamera = length(CameraPosition - mul(float4(input.Position, 1), World).xyz);
+    float distanceToCamera = mul(float4(input.Position, 1), WorldViewProj).z;
 
     float3 position = input.Position + input.Right * HalfThickness * distanceToCamera + input.Up * HalfThickness * distanceToCamera;
 
