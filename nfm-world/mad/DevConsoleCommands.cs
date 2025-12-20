@@ -191,7 +191,7 @@ namespace NFMWorld.Mad
         private static void ResetCar(DevConsole console)
         {
             InRacePhase.current_scene.Renderables.Remove(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarID,  GameSparker.cars[InRacePhase.playerCarID], 0, 0);
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex,  GameSparker.cars[InRacePhase.playerCarID], 0, 0);
             InRacePhase.current_scene.Renderables.Add(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
             console.Log("Position reset");
         }
