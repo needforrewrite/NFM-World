@@ -10,7 +10,7 @@ namespace NFMWorld.Mad.UI;
 /// <summary>
 /// Settings menu with tabs, similar to Half-Life 1 style
 /// </summary>
-public class SettingsMenu
+public class SettingsMenu(Program game)
 {
     private bool _isOpen;
     private int _selectedTab = 0;
@@ -47,7 +47,8 @@ public class SettingsMenu
     private readonly string[] _resolutions = { "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440" };
     private int _selectedDisplayMode = 1;
     private readonly string[] _displayModes = { "Fullscreen", "Windowed", "Borderless" };
-    private bool _vsync = false;
+    private bool _vsync = true;
+    private int _fpsLimit = 63;
     private float _brightness = 0.5f;
     private float _gamma = 0.5f;
 
@@ -232,9 +233,13 @@ public class SettingsMenu
         ImGui.Spacing();
         ImGui.Checkbox("Wait for vertical sync", ref _vsync);
         
+        ImGui.Text("FPS Limit");
+        float sliderWidth = ImGui.GetContentRegionAvail().X;
+        ImGui.SetNextItemWidth(sliderWidth);
+        ImGui.SliderInt("##FPSLimit", ref _fpsLimit, 0, 240, "%d FPS (0 = Unlimited)");
+        
         ImGui.Spacing();
         ImGui.Text("Brightness");
-        float sliderWidth = ImGui.GetContentRegionAvail().X;
         ImGui.SetNextItemWidth(sliderWidth);
         ImGui.SliderFloat("##Brightness", ref _brightness, 0.0f, 1.0f, "%.2f");
         float startX = ImGui.GetCursorPosX();
@@ -365,7 +370,7 @@ public class SettingsMenu
 
         if (ImGui.Button("OK", new Vector2(buttonWidth, 30)))
         {
-            ApplySettings();
+            ApplySettingsAndSave();
             _isOpen = false;
         }
 
@@ -380,7 +385,7 @@ public class SettingsMenu
 
         if (ImGui.Button("Apply", new Vector2(buttonWidth, 30)))
         {
-            ApplySettings();
+            ApplySettingsAndSave();
         }
 
         if (_capturingAction != null)
@@ -402,23 +407,34 @@ public class SettingsMenu
         }
     }
 
-    private void ApplySettings()
+    private void ApplySettingsAndSave()
     {
         // Here you would actually apply the settings to the game
         // For now, just show a confirmation message
         _settingMessage = "Settings applied successfully!";
         
+        ApplySettings();
+
+        // Save config to file
+        SaveConfig();
+    }
+
+    private void ApplySettings()
+    {
         // Apply audio settings
         if (_muteAll)
         {
             // Mute all sounds
+            IBackend.Backend.SetAllVolumes(0);
+            GameSparker.CurrentMusic?.SetVolume(0);
+            IRadicalMusic.CurrentVolume = 0;
         }
         else
         {
             // Apply volume settings
-            // GameSparker.SetMasterVolume(_masterVolume);
-            // GameSparker.SetMusicVolume(_musicVolume);
-            // GameSparker.SetEffectsVolume(_effectsVolume);
+            IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
+            GameSparker.CurrentMusic?.SetVolume(_musicVolume * _masterVolume);
+            IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
         }
 
         // Apply camera settings
@@ -426,14 +442,19 @@ public class SettingsMenu
         InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
         InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
 
-        IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
-        GameSparker.CurrentMusic?.SetVolume(_musicVolume * _masterVolume);
-        IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
-
-        // Save config to file
-        SaveConfig();
+        game._graphics.SynchronizeWithVerticalRetrace = _vsync;
+        if (_fpsLimit != 0)
+        {
+            game.TargetElapsedTime = TimeSpan.FromMilliseconds(1000d / _fpsLimit);
+            game.IsFixedTimeStep = true;
+        }
+        else
+        {
+            game.IsFixedTimeStep = false;
+        }
+        game._graphics.ApplyChanges();
     }
-    
+
     private void SaveConfig()
     {
         try
@@ -453,6 +474,7 @@ public class SettingsMenu
                 cfgWriter.WriteLine($"video_resolution {_selectedResolution}");
                 cfgWriter.WriteLine($"video_displaymode {_selectedDisplayMode}");
                 cfgWriter.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
+                cfgWriter.WriteLine($"video_fps {_fpsLimit}");
                 cfgWriter.WriteLine($"video_brightness {_brightness.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"video_gamma {_gamma.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine();
@@ -487,6 +509,7 @@ public class SettingsMenu
                 cfgWriter.WriteLine($"key_togglearrace {(int)Bindings.ToggleArrace}");
                 cfgWriter.WriteLine($"key_toggleradar {(int)Bindings.ToggleRadar}");
                 cfgWriter.WriteLine($"key_cycleview {(int)Bindings.CycleView}");
+                cfgWriter.WriteLine();
             }
             
             GameSparker.Writer?.WriteLine($"Config saved to {configPath}", "debug");
@@ -540,6 +563,9 @@ public class SettingsMenu
                             break;
                         case "video_vsync":
                             _vsync = int.Parse(value) != 0;
+                            break;
+                        case "video_fps":
+                            _fpsLimit = int.Parse(value);
                             break;
                         case "video_brightness":
                             _brightness = float.Parse(value, CultureInfo.InvariantCulture);
@@ -621,14 +647,9 @@ public class SettingsMenu
                 }
             }
             
-            // Apply loaded camera settings immediately
-            InRacePhase.camera.Fov = _fov;
-            InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
-            InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
+            // Apply loaded settings immediately
+            ApplySettings();
             
-            IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
-            IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
-
             GameSparker.Writer?.WriteLine($"Config loaded from {configPath}", "debug");
         }
         catch (Exception ex)
