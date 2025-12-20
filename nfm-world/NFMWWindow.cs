@@ -219,6 +219,7 @@ public unsafe class Program : Game
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
+        _graphics.SynchronizeWithVerticalRetrace = false;
         IsFixedTimeStep = true;
         TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / 63f);
         _graphics.PreferredBackBufferWidth = 1280;
