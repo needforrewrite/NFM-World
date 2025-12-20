@@ -80,7 +80,7 @@ public class LineMesh
         _material.World?.SetValue(matrixWorld);
         _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
         _material.SnapColor?.SetValue(World.Snap.ToVector3());
-        _material.IsFullbright?.SetValue(false);
+        _material.IsFullbright?.SetValue(_supermesh.Glow);
         _material.UseBaseColor?.SetValue(false);
         _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
         _material.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);

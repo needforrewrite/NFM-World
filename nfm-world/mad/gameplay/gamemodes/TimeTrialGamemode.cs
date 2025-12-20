@@ -177,6 +177,16 @@ public class TimeTrialGamemode : BaseGamemode
             currentStage.checkpoints[currentStage.checkpoints.Count - 1].Finish = false;
         }
 
+        if (currentCheckpoint > 0)
+        {
+            currentStage.checkpoints[currentCheckpoint - 1].Glow = false;
+        }
+
+        if (currentCheckpoint < currentStage.checkpoints.Count)
+        {
+            currentStage.checkpoints[currentCheckpoint].Glow = true;
+        }
+
         if (currentLap > currentStage.nlaps)
         {
             _currentState = TimeTrialState.Finished;

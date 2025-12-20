@@ -30,7 +30,7 @@ public class Submesh(
         _material.World?.SetValue(matrixWorld);
         _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
         _material.SnapColor?.SetValue(World.Snap.ToVector3());
-        _material.IsFullbright?.SetValue(PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn);
+        _material.IsFullbright?.SetValue((PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn) || supermesh.Glow);
         _material.UseBaseColor?.SetValue(PolyType is PolyType.Glass);
         _material.BaseColor?.SetValue(World.Sky.ToVector3());
         _material.LightDirection?.SetValue(World.LightDirection);
