@@ -243,7 +243,6 @@ namespace NFMWorld.Mad
             InRacePhase.LoadStage(stageName, GameSparker._graphicsDevice);
             console.Log($"Switched to stage '{stageName}'");
 
-            InRacePhase.gamemode.Reset();
             InRacePhase.CarsInRace.Clear();
             InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex,  GameSparker.cars[InRacePhase.playerCarID], 0, 0);
             InRacePhase.current_scene = new Scene(
@@ -252,6 +251,7 @@ namespace NFMWorld.Mad
                 InRacePhase.camera,
                 InRacePhase.lightCameras
             );
+            InRacePhase.gamemode.Reset();
         }
 
         private static void SwitchCar(DevConsole console, string[] args)
@@ -275,6 +275,7 @@ namespace NFMWorld.Mad
             InRacePhase.playerCarID = id;
             InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex,  GameSparker.cars[InRacePhase.playerCarID], 0, 0);
             InRacePhase.current_scene.Renderables.Add(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
+            InRacePhase.gamemode.Reset();
         
             IBackend.Backend.StopAllSounds();
 

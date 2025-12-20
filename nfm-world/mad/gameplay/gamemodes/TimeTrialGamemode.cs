@@ -51,6 +51,7 @@ public class TimeTrialGamemode : BaseGamemode
         writtenTime = false;
         bestTimeCheckpointMS = [];
         thisRunCheckpointMS = [];
+        loadedBestTimes = false;
     }
 
     private void LoadBestSplits(Stage currentStage)
@@ -81,8 +82,8 @@ public class TimeTrialGamemode : BaseGamemode
             case TimeTrialState.NotStarted:
                 carsInRace[0].Mad.Halted = false;
                 carsInRace[0].ResetPosition();
-                _currentState = TimeTrialState.Countdown;
                 LoadBestSplits(currentStage);
+                _currentState = TimeTrialState.Countdown;
                 break;
             case TimeTrialState.Countdown:
                 CountdownTick();
