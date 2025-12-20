@@ -23,7 +23,7 @@ namespace NFMWorld;
 /// </summary>
 public unsafe class Program : Game
 {
-    private GraphicsDeviceManager _graphics;
+    public GraphicsDeviceManager _graphics;
     public static SpriteBatch _spriteBatch { get; private set; }
     public static Effect _polyShader { get; private set; }
     public static Effect _skyShader { get; private set; }
@@ -34,6 +34,7 @@ public unsafe class Program : Game
 
     internal static int _lastFrameTime;
     internal static int _lastTickTime;
+    internal static int _lastTickCount;
     private KeyboardState oldKeyState;
     private MouseState oldMouseState;
     private NanoVGRenderer _nvg;
@@ -215,11 +216,11 @@ public unsafe class Program : Game
     private Program()
     {
         _graphics = new GraphicsDeviceManager(this);
-        _graphics.GraphicsProfile = GraphicsProfile.HiDef;
+        _graphics.GraphicsProfile = GraphicsProfile.Reach;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
-        _graphics.SynchronizeWithVerticalRetrace = false;
+        _graphics.SynchronizeWithVerticalRetrace = true;
         IsFixedTimeStep = false;
         TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / 63f);
         _graphics.PreferredBackBufferWidth = 1280;
@@ -253,11 +254,16 @@ public unsafe class Program : Game
 
         var tick = Stopwatch.StartNew();
 
-        GameSparker.CurrentPhase.BeginGameTick();
-        GameSparker.GameTick();
-        GameSparker.CurrentPhase.GameTick();
-        GameSparker.CurrentPhase.EndGameTick();
+        var timesToTick = TimeStep.Update(gameTime);
+        for (int i = 0; i < timesToTick; i++)
+        {
+            GameSparker.CurrentPhase.BeginGameTick();
+            GameSparker.GameTick();
+            GameSparker.CurrentPhase.GameTick();
+            GameSparker.CurrentPhase.EndGameTick();
+        }
 
+        _lastTickCount = timesToTick;
         _lastTickTime = (int)tick.ElapsedMilliseconds;
     }
 

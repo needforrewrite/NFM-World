@@ -16,9 +16,10 @@ namespace NFMWorld.Mad;
 
 public class GameSparker
 {
-    public static Game _game;
+    public const float TargetTps = 63f;
+    public static Program _game;
     public static GraphicsDevice _graphicsDevice;
-    public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
+    public static readonly float PHYSICS_MULTIPLIER = 21.4f/TargetTps;
 
     public static readonly string version = GetVersionString();
 
@@ -74,7 +75,7 @@ public class GameSparker
     
     public static DevConsole devConsole = new();
 
-    public static SettingsMenu SettingsMenu = new();
+    public static SettingsMenu SettingsMenu;
 
     public static readonly string[] CarRads = {
         "2000tornados", "formula7", "canyenaro", "lescrab", "nimi", "maxrevenge", "leadoxide", "koolkat", "drifter",
@@ -205,7 +206,7 @@ public class GameSparker
         return -1;
     }
 
-    public static void Load(Game game)
+    public static void Load(Program game)
     {
         _game = game;
         _graphicsDevice = game.GraphicsDevice;
@@ -227,6 +228,7 @@ public class GameSparker
         });
 
         // init menu
+        SettingsMenu = new SettingsMenu(game);
         MainMenu = new MainMenuPhase();
         SettingsMenu.LoadConfig();
 
