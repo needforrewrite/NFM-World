@@ -75,6 +75,8 @@ public class Submesh(
         _material.Darken?.SetValue(supermesh.Flames.Darken);
         _material.RandomFloat?.SetValue(URandom.Single());
         
+        _material.Glow?.SetValue(false);
+        
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();

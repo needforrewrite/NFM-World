@@ -319,6 +319,7 @@ public class RadParser
             else if (line.StartsWith("lightB")) poly = poly with { PolyType = PolyType.BrakeLight };
             else if (line.StartsWith("lightR")) poly = poly with { PolyType = PolyType.ReverseLight };
             else if (line.StartsWith("light")) poly = poly with { PolyType = PolyType.Light };
+            else if (line.StartsWith("gr(-10)")) poly = poly with { LineType = LineType.BrightColored };
             else if (line.StartsWith("gr(-18)")) poly = poly with { LineType = LineType.Charged };
             else if (line.StartsWith("gr(-13)")) poly = poly with { PolyType = PolyType.Finish };
             else if (line.StartsWith("decal"))
@@ -351,13 +352,16 @@ public class RadParser
                 _points.Clear();
                 if (_stonecold || _noOutline)
                 {
-                    if (_road)
+                    if (poly.LineType == LineType.Flat)
                     {
-                        poly = poly with { LineType = LineType.Colored };
-                    }
-                    else if (poly.LineType == LineType.Flat)
-                    {
-                        poly = poly with { LineType = null };
+                        if (_road)
+                        {
+                            poly = poly with { LineType = LineType.Colored };
+                        }
+                        else
+                        {
+                            poly = poly with { LineType = null };
+                        }
                     }
                 }
             }

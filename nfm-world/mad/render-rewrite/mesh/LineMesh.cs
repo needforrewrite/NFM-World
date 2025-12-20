@@ -37,11 +37,13 @@ public class LineMesh
             var poly = line.Value.Poly;
             var centroid = line.Value.Centroid;
             var normal = line.Value.Normal;
-            var color = poly.LineType == LineType.Colored
-                ? (poly.Color - new Color3(10, 10, 10))
-                : poly.LineType == LineType.Charged
-                    ? poly.Color
-                    : Color.Black;
+            var color = poly.LineType switch
+            {
+                LineType.Colored => (poly.Color - new Color3(10, 10, 10)),
+                LineType.Charged => poly.Color,
+                LineType.BrightColored => poly.Color,
+                _ => Color.Black
+            };
 
             LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness, in verts, in inds);
             indices.AddRange(inds);
@@ -105,6 +107,8 @@ public class LineMesh
         _material.Expand?.SetValue(_supermesh.Flames.Expand);
         _material.Darken?.SetValue(_supermesh.Flames.Darken);
         _material.RandomFloat?.SetValue(URandom.Single());
+
+        _material.Glow?.SetValue(_supermesh.Glow);
 
         lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
 

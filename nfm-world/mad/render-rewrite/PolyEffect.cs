@@ -30,6 +30,7 @@ public class PolyEffect(Effect effect)
     public EffectParameter? Expand { get; } = effect.Parameters["Expand"];
     public EffectParameter? RandomFloat { get; } = effect.Parameters["RandomFloat"];
     public EffectParameter? Darken { get; } = effect.Parameters["Darken"];
+    public EffectParameter? Glow { get; } = effect.Parameters["Glow"];
     
     public EffectParameter? ChargedBlinkAmount { get; } = effect.Parameters["ChargedBlinkAmount"];
 

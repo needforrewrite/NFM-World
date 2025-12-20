@@ -41,6 +41,8 @@ float Darken; // set below 1.0f to adjust brightness
 // Charged line blink
 float ChargedBlinkAmount;
 
+// Next checkpoint line glow
+bool Glow;
 
 struct VertexShaderInput
 {
@@ -100,6 +102,12 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
             hsv.z = Darken;
             color = hsv2rgb(hsv);
         }
+    }
+
+    if (Glow == true) {
+        color = color * 1.6;
+        // clamp to 1.0
+        color = min(color, float3(1.0, 1.0, 1.0));
     }
 
 	// Apply diffuse lighting
