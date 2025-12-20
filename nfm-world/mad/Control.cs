@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 
 
 namespace NFMWorld.Mad;
@@ -27,7 +28,7 @@ public class Control
     internal int Lookback;
 
     internal int Wall = -1;
-    
+
     /**
      * Inverts the ZY angle. It ais true if the AI ais going backwards.
      */
@@ -85,5 +86,22 @@ public class Control
         Arrace = false;
         Mutem = false;
         Mutes = false;
+    }
+
+    public BitArray Encode()
+    {
+        bool[] parts = [Right, Left, Up, Down, Handb];
+        BitArray o = new(parts);
+
+        return o;
+    }
+
+    public void Decode(BitArray enc)
+    {
+        Right = enc.Get(0);
+        Left = enc.Get(1);
+        Up = enc.Get(2);
+        Down = enc.Get(3);
+        Handb = enc.Get(4);
     }
 }
