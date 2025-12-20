@@ -33,14 +33,35 @@ public class TimeTrialGamemode : BaseGamemode
     private bool playback;
     private UnlimitedArray<BitArray> inputs = [];
     private int tick = 0;
-    public static bool PlaybackOnReset = false;
+    public static bool PlaybackOnReset = true;
 
-    public override void Enter()
+    public override void Enter(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
         Reset();
+        
+        carsInRace[0] = new InGameCar(0, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0);
+
+        // ghost
+        carsInRace[1] = new InGameCar(carsInRace[0], 0);
+        carsInRace[1].Sfx.Mute = true;
+
+        LoadBestSplits(currentStage);
+        if(playback) LoadDemoForPlayback(currentStage);
+
+        if(!playback)
+        {
+            carsInRace[1].CarRef.alphaOverride = 0.0f;
+        } else
+        {
+            carsInRace[1].CarRef.alphaOverride = 0.5f;
+        }
+
+        GameSparker.CurrentPhase.RecreateScene();
+
+        _currentState = TimeTrialState.Countdown;
     }
 
-    public override void Exit()
+    public override void Exit(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
         // Cleanup for Time Trial mode
     }
@@ -94,11 +115,7 @@ public class TimeTrialGamemode : BaseGamemode
         switch (_currentState)
         {
             case TimeTrialState.NotStarted:
-                carsInRace[0].Mad.Halted = false;
-                carsInRace[0].ResetPosition();
-                LoadBestSplits(currentStage);
-                if(playback) LoadDemoForPlayback(currentStage);
-                _currentState = TimeTrialState.Countdown;
+                Enter(carsInRace, currentStage);
                 break;
             case TimeTrialState.Countdown:
                 CountdownTick();
@@ -116,11 +133,18 @@ public class TimeTrialGamemode : BaseGamemode
     {
         if(playback)
         {
-            carsInRace[0].Control.Decode(inputs[tick]);
-        } else
-        {
-            RecordControl(carsInRace[0].Control);
+            if(tick < inputs.Count)
+            {
+                carsInRace[1].Control.Decode(inputs[tick]);   
+            } else
+            {
+                carsInRace[1].Control.Reset();
+            }
+            
+            carsInRace[1].Drive();
         }
+        
+        RecordControl(carsInRace[0].Control);
         carsInRace[0].Drive();
 
         if (currentStage.checkpoints.Count == 0)

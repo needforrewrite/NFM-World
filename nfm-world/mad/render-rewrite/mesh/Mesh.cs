@@ -49,6 +49,7 @@ public class Mesh : Transform, IRenderable
     
     public string FileName;
     public Mesh? ClonedMesh;
+    public float? alphaOverride;
 
     public Mesh(GraphicsDevice graphicsDevice, Rad3d rad, string fileName)
     {
