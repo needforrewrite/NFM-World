@@ -7,7 +7,7 @@ public class Car : Mesh
 {
     public CarStats Stats;
 
-    public Car(GraphicsDevice device, Rad3d rad, string fileName) : base(device, rad)
+    public Car(GraphicsDevice device, Rad3d rad, string fileName) : base(device, rad, fileName)
     {
         string? invalidStat = rad.Stats.Validate(fileName);
         if (invalidStat != null)

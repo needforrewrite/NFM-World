@@ -44,7 +44,7 @@ public class InRacePhase : BasePhase
     
     public static UnlimitedArray<InGameCar> CarsInRace = [];
     public static int playerCarIndex = 0;
-    public static int playerCarID = 14;
+    public static string playerCarName = "radicalone";
 
     public static FollowCamera PlayerFollowCamera = new();
 
@@ -67,7 +67,7 @@ public class InRacePhase : BasePhase
 
         LoadStage("nfm2/15_dwm", _graphicsDevice);
 
-        CarsInRace[playerCarIndex] = new InGameCar(playerCarIndex, GameSparker.cars[playerCarID], 0, 0);
+        CarsInRace[playerCarIndex] = new InGameCar(playerCarIndex, GameSparker.GetCar(playerCarName).Car, 0, 0);
         current_scene = new Scene(
             _graphicsDevice,
             [CurrentStage, ..CarsInRace],

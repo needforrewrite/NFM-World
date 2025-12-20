@@ -30,13 +30,13 @@ public class Stage : IRenderable
     public GroundPolys? clouds;
     public Mountains? mountains;
 
+    private const int indexOffset = 10;
+
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
      */
     public Stage(string stageName, GraphicsDevice graphicsDevice)
     {
-        int indexOffset = 10;
-
         World.ResetValues();
         Trackers.Nt = 0;
         // Medium.Noelec = 0;
@@ -196,8 +196,8 @@ public class Stage : IRenderable
 
                 if (line.StartsWith("set"))
                 {
-                    var setindex = Utility.GetInt("set", line, 0);
-                    setindex -= indexOffset;
+                    if (!TryGetPieceToPlace(Utility.GetString("set", line, 0), out var mesh)) continue;
+
                     var setheight = World.Ground;
                     
                     var hasCustomY = line.Split(',').Length >= 5;
@@ -207,7 +207,7 @@ public class Stage : IRenderable
                     }
 
                     pieces[stagePartCount] = new Mesh(
-                        GameSparker.stage_parts[setindex],
+                        mesh,
                         new Vector3(Utility.GetInt("set", line, 1), setheight, Utility.GetInt("set", line, 2)),
                         new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", line, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
                     if (line.Contains(")p"))     //AI tags
@@ -246,11 +246,12 @@ public class Stage : IRenderable
                 }
                 if (line.StartsWith("chk"))
                 {
-                    var chkindex = Utility.GetInt("chk", line, 0);
-                    chkindex -= indexOffset;
-
                     var ymult = -1;
-                    if (chkindex == GameSparker.GetModel("aircheckpoint")) {
+                    
+                    if (!TryGetPieceToPlace(Utility.GetString("chk", line, 0), out var mesh)) continue;
+
+                    if (mesh.FileName == "aircheckpoint")
+                    {
                         ymult = 1; // default to inverted Y for stupid rollercoaster chks for compatibility reasons
                     }
 
@@ -264,7 +265,7 @@ public class Stage : IRenderable
                     {
                         chkheight = Utility.GetInt("chk", line, 4) * ymult;
                         pieces[stagePartCount] = new CheckPoint(
-                            GameSparker.stage_parts[chkindex],
+                            mesh,
                             new Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
                             new Euler(rotation, AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)
                         );
@@ -273,7 +274,7 @@ public class Stage : IRenderable
                     else
                     {
                         pieces[stagePartCount] = new CheckPoint(
-                            GameSparker.stage_parts[chkindex],
+                            mesh,
                             new Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
                             new Euler(rotation, AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
@@ -298,10 +299,10 @@ public class Stage : IRenderable
                 }
                 if (line.StartsWith("fix"))
                 {
-                    var fixindex = Utility.GetInt("fix", line, 0);
-                    fixindex -= indexOffset;
+                    if (!TryGetPieceToPlace(Utility.GetString("set", line, 0), out var mesh)) continue;
+
                     pieces[stagePartCount] = new FixHoop(
-                        GameSparker.stage_parts[fixindex],
+                        mesh,
                         new Vector3(Utility.GetInt("fix", line, 1), Utility.GetInt("fix", line, 3), Utility.GetInt("fix", line, 2)),
                         new Euler(AngleSingle.FromDegrees(Utility.GetInt("fix", line, 4)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                     );
@@ -368,7 +369,7 @@ public class Stage : IRenderable
                 }
 
                 // stage walls
-                var wall = GameSparker.GetModel("thewall");
+                var wall = GameSparker.GetStagePart("thewall");
                 if (line.StartsWith("maxr"))
                 {
                     var n = Utility.GetInt("maxr", line, 0);
@@ -378,7 +379,7 @@ public class Stage : IRenderable
                     for (var q = 0; q < n; q++)
                     {
                         pieces[stagePartCount] = new Mesh(
-                            GameSparker.stage_parts[wall],
+                            wall.Mesh,
                             new Vector3(o, World.Ground, q * 4800 + p),
                             Euler.Identity                        
                         );
@@ -405,7 +406,7 @@ public class Stage : IRenderable
                     for (var q = 0; q < n; q++)
                     {
                         pieces[stagePartCount] = new Mesh(
-                            GameSparker.stage_parts[wall],
+                            wall.Mesh,
                             new Vector3(o, World.Ground, q * 4800 + p),
                             new Euler(AngleSingle.FromDegrees(180), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
@@ -432,7 +433,7 @@ public class Stage : IRenderable
                     for (var q = 0; q < n; q++)
                     {
                         pieces[stagePartCount] = new Mesh(
-                            GameSparker.stage_parts[wall],
+                            wall.Mesh,
                             new Vector3(q * 4800 + p, World.Ground, o),
                             new Euler(AngleSingle.FromDegrees(90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
@@ -459,7 +460,7 @@ public class Stage : IRenderable
                     for (var q = 0; q < n; q++)
                     {
                         pieces[stagePartCount] = new Mesh(
-                            GameSparker.stage_parts[wall],
+                            wall.Mesh,
                             new Vector3(q * 4800 + p, World.Ground, o),
                             new Euler(AngleSingle.FromDegrees(-90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
                         );
@@ -515,17 +516,45 @@ public class Stage : IRenderable
         ground = new Ground(graphicsDevice);
     }
 
+    private static bool TryGetPieceToPlace(string setstring, out Mesh mesh)
+    {
+        if (int.TryParse(setstring, out var setindex))
+        {
+            setindex -= indexOffset;
+            mesh = GameSparker.stage_parts[setindex];
+            if (mesh == null!)
+            {
+                GameSparker.Writer.WriteLine($"Stage part '{setstring}' not found.", "error");
+                mesh = GameSparker.error_mesh;
+                return true;
+            }
+        }
+        else
+        {
+            var stagePart = GameSparker.GetStagePart(setstring);
+            mesh = stagePart.Mesh;
+            if (stagePart.Id == -1)
+            {
+                GameSparker.Writer.WriteLine($"Stage part '{setstring}' not found.", "error");
+                mesh = GameSparker.error_mesh;
+                return true;
+            }
+        }
+
+        return true;
+    }
+
     public Mesh? CreateObject(string objectName, int x, int y, int z, int r)
     {
-        var model = GameSparker.GetModel(objectName);
-        if (model == -1)
+        var part = GameSparker.GetStagePart(objectName);
+        if (part.Id == -1)
         {
             GameSparker.devConsole.Log($"Object '{objectName}' not found.", "warning");
-            return null;
+            part = (-1, GameSparker.error_mesh);
         }
 
         var mesh = pieces[stagePartCount] = new Mesh(
-            GameSparker.stage_parts[model],
+            part.Mesh,
             new Vector3(x,
             250 - y,
             z), 

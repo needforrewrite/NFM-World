@@ -408,7 +408,7 @@ public class ModelEditorPhase : BasePhase
         // Try to parse the model, but keep the file loaded even if it fails
         try
         {
-            tab.Model = new Mesh(GameSparker._graphicsDevice, radContent);
+            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(radContent), "editing");
             ResetTabView(tab);
         }
         catch (Exception parseEx)
@@ -1389,7 +1389,7 @@ public class ModelEditorPhase : BasePhase
                             System.IO.File.WriteAllText(tab.ModelPath, tab.TextContent);
                             tab.TextEditorDirty = false;
                             // Reload model
-                            tab.Model = new Mesh(GameSparker._graphicsDevice, tab.TextContent);
+                            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing");
                         }
                     }
                     catch (Exception ex)
@@ -1412,7 +1412,7 @@ public class ModelEditorPhase : BasePhase
                             System.IO.File.WriteAllText(tab.ModelPath, tab.TextContent);
                             tab.TextEditorDirty = false;
                             // Reload model
-                            tab.Model = new Mesh(GameSparker._graphicsDevice, tab.TextContent);
+                            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing");
                             tab.TextEditorExpanded = false;
                         }
                     }
@@ -2227,7 +2227,7 @@ public class ModelEditorPhase : BasePhase
         // Try to reload the model with the new code
         try
         {
-            tab.Model = new Mesh(GameSparker._graphicsDevice, tab.TextContent);
+            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing");
             tab.PolygonEditorDirty = false;
             
             if (removeElement)
@@ -2430,7 +2430,8 @@ public class ModelEditorPhase : BasePhase
         // Create a temporary mesh for the overlay
         var overlayMesh = new Mesh(
             GameSparker._graphicsDevice,
-            new Rad3d(overlayPolys, false)
+            new Rad3d(overlayPolys, false),
+            "overlay"
         );
         
         // Match the main model's transform
