@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Runtime.CompilerServices;
 using Stride.Core.Mathematics;
 
@@ -10,19 +11,20 @@ public static class UMath
     {
         return value == int.MinValue ? int.MaxValue : Math.Abs(value);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static int Mod(int x, int m) {
+    internal static int Mod(int x, int m)
+    {
         var r = x % m;
-        return r<0 ? r + m : r;
+        return r < 0 ? r + m : r;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static float Sin(int deg)
     {
         return float.Sin(deg * ((float)Math.PI / 180));
     }
-        
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static float Cos(int deg)
     {
@@ -64,7 +66,7 @@ public static class UMath
     {
         return deg.Sin;
     }
-        
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static float Cos(SinCosFloat deg)
     {
@@ -82,7 +84,7 @@ public static class UMath
     {
         return (deg.Sin, deg.Cos);
     }
-    
+
     internal static bool RandomBoolean()
     {
         return URandom.Boolean();
@@ -99,7 +101,7 @@ public static class UMath
         {
             for (var i = 0; i < 3; i++)
             {
-                Rand[i] = (int) (10.0f * URandom.Single());
+                Rand[i] = (int)(10.0f * URandom.Single());
                 Diup[i] = URandom.Boolean();
             }
             _cntrn = 20;
@@ -135,21 +137,21 @@ public static class UMath
         }
         return Rand[_trn] / 10.0F;
     }
-    
+
     internal static void Rot(Span<int> a, Span<int> b, int offA, int offB, int angle, int len)
     {
         if (angle != 0)
         {
             var (sin, cos) = SinCos(angle);
-            
+
             for (var i = 0; i < len; i++)
             {
                 var pa = a[i];
                 var pb = b[i];
                 var oa = (pa - offA);
                 var ob = (pb - offB);
-                a[i] = offA + (int) (oa * cos - ob * sin);
-                b[i] = offB + (int) (oa * sin + ob * cos);
+                a[i] = offA + (int)(oa * cos - ob * sin);
+                b[i] = offB + (int)(oa * sin + ob * cos);
             }
         }
     }
@@ -159,15 +161,15 @@ public static class UMath
         if (angle != 0)
         {
             var (sin, cos) = SinCos(angle);
-            
+
             for (var i = 0; i < len; i++)
             {
                 var pa = a[i];
                 var pb = b[i];
                 var oa = (pa - offA);
                 var ob = (pb - offB);
-                a[i] = offA + (int) (oa * cos - ob * sin);
-                b[i] = offB + (int) (oa * sin + ob * cos);
+                a[i] = offA + (int)(oa * cos - ob * sin);
+                b[i] = offB + (int)(oa * sin + ob * cos);
             }
         }
     }
@@ -185,18 +187,18 @@ public static class UMath
                 var pb = b[i];
                 var oa = (pa - offA);
                 var ob = (pb - offB);
-                a[i] = offA + (int) (oa * cos - ob * sin);
-                b[i] = offB + (int) (oa * sin + ob * cos);
+                a[i] = offA + (int)(oa * cos - ob * sin);
+                b[i] = offB + (int)(oa * sin + ob * cos);
             }
         }
     }
-    
+
     internal static void Rot(Span<float> a, Span<float> b, float offA, float offB, float angle, int len)
     {
         if (angle != 0)
         {
             var (sin, cos) = SinCos(angle);
-            
+
             for (var i = 0; i < len; i++)
             {
                 var pa = a[i];
@@ -213,14 +215,26 @@ public static class UMath
     {
         return (value - a) / (b - a);
     }
-    
+
     public static int Py(int x1, int x2, int y1, int y2)
     {
         return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
     }
-    
+
     public static float Py(float x1, float x2, float y1, float y2)
     {
         return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+    }
+
+    public static int getIntFromBitArray(BitArray bitArray)
+    {
+
+        if (bitArray.Length > 32)
+            throw new ArgumentException("Argument length shall be at most 32 bits.");
+
+        int[] array = new int[1];
+        bitArray.CopyTo(array, 0);
+        return array[0];
+
     }
 }

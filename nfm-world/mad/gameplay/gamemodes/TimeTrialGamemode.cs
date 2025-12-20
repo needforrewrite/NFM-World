@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 using NFMWorld.Mad;
 using NFMWorld.Util;
@@ -23,10 +24,16 @@ public class TimeTrialGamemode : BaseGamemode
 
     private int currentCheckpoint = 0;
     private int currentLap = 0;
-    private bool writtenTime;
+    private bool writtenData;
 
     private Stopwatch raceTimer = new Stopwatch();
     private bool loadedBestTimes = false;
+
+    // demo playback and recording
+    private bool playback;
+    private UnlimitedArray<BitArray> inputs = [];
+    private int tick = 0;
+    public static bool PlaybackOnReset = false;
 
     public override void Enter()
     {
@@ -48,10 +55,17 @@ public class TimeTrialGamemode : BaseGamemode
         currentCheckpoint = 0;
         currentLap = 1;
         raceTimer.Reset();
-        writtenTime = false;
+        writtenData = false;
+
+        // splits and best time
         bestTimeCheckpointMS = [];
         thisRunCheckpointMS = [];
         loadedBestTimes = false;
+
+        // demos
+        inputs = [];
+        tick = 0;
+        playback = PlaybackOnReset;
     }
 
     private void LoadBestSplits(Stage currentStage)
@@ -83,6 +97,7 @@ public class TimeTrialGamemode : BaseGamemode
                 carsInRace[0].Mad.Halted = false;
                 carsInRace[0].ResetPosition();
                 LoadBestSplits(currentStage);
+                if(playback) LoadDemoForPlayback(currentStage);
                 _currentState = TimeTrialState.Countdown;
                 break;
             case TimeTrialState.Countdown:
@@ -99,6 +114,13 @@ public class TimeTrialGamemode : BaseGamemode
 
     private void TimeTrialInRace(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
+        if(playback)
+        {
+            carsInRace[0].Control.Decode(inputs[tick]);
+        } else
+        {
+            RecordControl(carsInRace[0].Control);
+        }
         carsInRace[0].Drive();
 
         if (currentStage.checkpoints.Count == 0)
@@ -182,15 +204,17 @@ public class TimeTrialGamemode : BaseGamemode
             _currentState = TimeTrialState.Finished;
             raceTimer.Stop();
         }
+
+        tick++;
     }
 
     private void TimeTrialFinished(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
         bool newBest = false;
 
-        if (!writtenTime)
+        if (!writtenData)
         {
-            writtenTime = true;
+            writtenData = true;
             if(!loadedBestTimes || thisRunCheckpointMS[thisRunCheckpointMS.Count - 1] < bestTimeCheckpointMS[bestTimeCheckpointMS.Count - 1] ) 
             {
                 newBest = true;
@@ -204,6 +228,22 @@ public class TimeTrialGamemode : BaseGamemode
                 {
                     foreach (long time in thisRunCheckpointMS) {
                         outputFile.WriteLine(time.ToString());
+                    }
+                }
+            }
+
+            if(!playback)
+            {
+                if(!Directory.Exists("data/tts/demo"))
+                {
+                    Directory.CreateDirectory("data/tts/demo");
+                }
+
+
+                using (BinaryWriter outputFile = new BinaryWriter(System.IO.File.OpenWrite("data/tts/demo/" + currentStage.Name)))
+                {
+                    foreach (BitArray enc in inputs) {
+                        outputFile.Write(UMath.getIntFromBitArray(enc));
                     }
                 }
             }
@@ -248,6 +288,34 @@ public class TimeTrialGamemode : BaseGamemode
 
         G.SetColor(new NFMWorld.Util.Color(0, 0, 0));
         G.DrawString($"Starting in {_countdownTime}", 400, 300);
+    }
+
+    private void LoadDemoForPlayback(Stage currentStage)
+    {
+        if(System.IO.File.Exists("data/tts/demo/" + currentStage.Name))
+        {
+            using(BinaryReader reader = new(System.IO.File.OpenRead("data/tts/demo/" + currentStage.Name)))
+            {
+                int entry;
+                while(reader.BaseStream.Position < reader.BaseStream.Length)
+                {
+                    entry = entry = reader.ReadInt32();
+                    BitArray ba = new([entry]);
+
+                    inputs[inputs.Count] = ba;
+                }
+            }
+        } else
+        {
+            GameSparker.Writer.WriteLine("Demo for stage " + currentStage.Name + " does not exist!");
+            playback = false;
+        }
+    }
+
+    private void RecordControl(Control control)
+    {
+        BitArray enc = control.Encode();
+        inputs[inputs.Count] = enc;
     }
 
     public override void KeyPressed(Keys key)
