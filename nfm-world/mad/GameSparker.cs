@@ -231,6 +231,9 @@ public class GameSparker
         timer.Start();
         
         cars = [];
+        vendor_cars = [];
+        user_cars = [];
+        
         stage_parts = [];
         vendor_stage_parts = [];
         user_stage_parts = [];
