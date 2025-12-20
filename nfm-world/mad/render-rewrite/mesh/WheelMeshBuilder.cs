@@ -46,7 +46,7 @@ public class WheelMeshBuilder
 
     public Mesh BuildMesh(GraphicsDevice graphicsDevice, Transform parent)
     {
-        return new Mesh(graphicsDevice, new Rad3d(_planes.ToArray(), true))
+        return new Mesh(graphicsDevice, new Rad3d(_planes.ToArray(), true), "wheelMesh")
         {
             Position = _wheelDef.Position,
             Parent = parent

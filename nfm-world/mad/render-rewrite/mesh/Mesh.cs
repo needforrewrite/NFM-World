@@ -46,12 +46,11 @@ public class Mesh : Transform, IRenderable
     // for checkpoints
     public bool Finish = false;
     public bool Glow = false;
+    
+    public string FileName;
+    public Mesh? ClonedMesh;
 
-    public Mesh(GraphicsDevice graphicsDevice, string code) : this(graphicsDevice, RadParser.ParseRad(code))
-    {
-    }
-
-    public Mesh(GraphicsDevice graphicsDevice, Rad3d rad)
+    public Mesh(GraphicsDevice graphicsDevice, Rad3d rad, string fileName)
     {
         Colors = rad.Colors;
         Wheels = rad.Wheels;
@@ -75,6 +74,8 @@ public class Mesh : Transform, IRenderable
         Dust = new Dust(this, graphicsDevice);
         Chips = new Chips(this, graphicsDevice);
         Sparks = new Sparks(this, graphicsDevice);
+
+        FileName = fileName;
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -105,6 +106,9 @@ public class Mesh : Transform, IRenderable
         Dust = new Dust(this, GraphicsDevice);
         Chips = new Chips(this, GraphicsDevice);
         Sparks = new Sparks(this, GraphicsDevice);
+
+        FileName = baseMesh.FileName;
+        ClonedMesh = baseMesh;
     }
 
     [MemberNotNull(nameof(Submeshes))]
