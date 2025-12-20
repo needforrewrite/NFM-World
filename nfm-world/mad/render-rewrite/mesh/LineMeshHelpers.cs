@@ -24,6 +24,11 @@ public class LineMeshHelpers
     {
         var lineDir = Vector3.Normalize(p1 - p0);
         
+        if (lineDir == Vector3.Zero)
+        {
+            Console.WriteLine($"Degenerate line!!!!\n{System.Environment.StackTrace}");
+        }
+        
         // Choose an initial perpendicular vector that's not parallel to lineDir
         var perpendicular = Math.Abs(lineDir.Y) > 0.99f ? Vector3.UnitX : Vector3.UnitY;
 
