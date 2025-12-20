@@ -522,6 +522,12 @@ public class Stage : IRenderable
         {
             setindex -= indexOffset;
             mesh = GameSparker.stage_parts[setindex];
+            if (mesh == null!)
+            {
+                GameSparker.Writer.WriteLine($"Stage part '{setstring}' not found.", "error");
+                mesh = GameSparker.error_mesh;
+                return true;
+            }
         }
         else
         {
@@ -530,7 +536,8 @@ public class Stage : IRenderable
             if (stagePart.Id == -1)
             {
                 GameSparker.Writer.WriteLine($"Stage part '{setstring}' not found.", "error");
-                return false;
+                mesh = GameSparker.error_mesh;
+                return true;
             }
         }
 
@@ -543,7 +550,7 @@ public class Stage : IRenderable
         if (part.Id == -1)
         {
             GameSparker.devConsole.Log($"Object '{objectName}' not found.", "warning");
-            return null;
+            part = (-1, GameSparker.error_mesh);
         }
 
         var mesh = pieces[stagePartCount] = new Mesh(

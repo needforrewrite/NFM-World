@@ -74,6 +74,7 @@ public class GameSparker
     public static UnlimitedArray<Mesh> stage_parts;
     public static UnlimitedArray<Mesh> vendor_stage_parts;
     public static UnlimitedArray<Mesh> user_stage_parts;
+    public static Mesh error_mesh;
     
     public static bool devRenderTrackers = false;
     
@@ -275,6 +276,12 @@ public class GameSparker
                 Console.WriteLine($"Error loading user stage part '{fileName}': {ex.Message}\n{ex.StackTrace}");
             }
         });
+
+        error_mesh = new Mesh(
+            game.GraphicsDevice,
+            RadParser.ParseRad(Encoding.UTF8.GetString(System.IO.File.ReadAllBytes("./data/models/error.rad"))),
+            "error.rad"
+        );
 
         // init menu
         SettingsMenu = new SettingsMenu(game);
