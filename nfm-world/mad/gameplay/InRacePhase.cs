@@ -57,7 +57,7 @@ public class InRacePhase : BasePhase
     }
     private static ViewMode currentViewMode = ViewMode.Follow;
     
-    private static BaseGamemode gamemode = null!;
+    public static BaseGamemode gamemode = null!;
 
     public override void Enter()
     {
@@ -67,7 +67,7 @@ public class InRacePhase : BasePhase
 
         LoadStage("nfm2/15_dwm", _graphicsDevice);
 
-        CarsInRace[playerCarIndex] = new InGameCar(playerCarID, GameSparker.cars[playerCarID], 0, 0);
+        CarsInRace[playerCarIndex] = new InGameCar(playerCarIndex, GameSparker.cars[playerCarID], 0, 0);
         current_scene = new Scene(
             _graphicsDevice,
             [CurrentStage, ..CarsInRace],

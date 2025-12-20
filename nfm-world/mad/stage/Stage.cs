@@ -22,6 +22,8 @@ public class Stage : IRenderable
     public double musicFreqMul = 1.0d;
     public double musicTempoMul = 0d;
 
+    public string Name = "Unknown";
+
     public Sky sky;
     public Ground ground;
     public GroundPolys? polys;
@@ -332,7 +334,7 @@ public class Stage : IRenderable
                 }
                 if (line.StartsWith("name"))
                 {
-                    //CheckPoints.Name = Getastring("name", astring, 0).Replace('|', ',');
+                    Name = Utility.GetString("name", line, 0);
                 }
                 if (line.StartsWith("stagemaker"))
                 {

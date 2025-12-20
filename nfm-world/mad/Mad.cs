@@ -413,6 +413,7 @@ public class Mad
     {
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_fxz:0.00}, cxz: {Cxz:0.00}");
         FrameTrace.AddMessage($"xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}");
+        FrameTrace.AddMessage($"Travxz: {Travxz}, Travxy: {Travxy}, Travzy: {Travzy}, Surfing: {Surfer}");
 
         var xneg = 1;
         var zneg = 1;
@@ -1976,12 +1977,12 @@ public class Mad
             }
             if (Loop == 2 || Loop == -1)
             {
-                Travxy += (int)(Rcomp - Lcomp);
+                Travxy += (int)((Rcomp - Lcomp) * _tickRate);
                 if (Math.Abs(Travxy) > 135)
                 {
                     Rtab = true;
                 }
-                Travzy += (int)(Ucomp - Dcomp);
+                Travzy += (int)((Ucomp - Dcomp) * _tickRate);
                 if (Travzy > 135)
                 {
                     Ftab = true;
@@ -1993,10 +1994,10 @@ public class Mad
             }
             if (_lxz != conto.Xz)
             {
-                Travxz += _lxz - conto.Xz;
+                Travxz += (_lxz - conto.Xz) * _tickRate;
                 _lxz = conto.Xz;
             }
-            if (_srfcnt < 10)
+            if (_srfcnt < (10 * 1/_tickRate))
             {
                 if (control.Wall != -1)
                 {
@@ -2296,8 +2297,9 @@ public class Mad
                         Skid = 2;
                         hitVertical = true;
                         isWheelTouchingPiece[k] = true;
-                        if (!Trackers.Notwall[j])
+                        if (!Trackers.Notwall[j]) {
                             control.Wall = j;
+                        }
                     }
                     if (Trackers.Zy[j] == 90 && wheelz[k] > Trackers.Z[j] - Trackers.Radz[j] && (Scz[k] > 0.0F /*|| Trackers.radz[j] == 287*/))
                     {
@@ -2326,8 +2328,9 @@ public class Mad
                         Skid = 2;
                         hitVertical = true;
                         isWheelTouchingPiece[k] = true;
-                        if (!Trackers.Notwall[j])
+                        if (!Trackers.Notwall[j]) {
                             control.Wall = j;
+                        }
                     } // CHK6
                     if (Trackers.Xy[j] == -90 && wheelx[k] < Trackers.X[j] + Trackers.Radx[j] && (Scx[k] < 0.0F /*|| Trackers.radx[j] == 287*/))
                     {
@@ -2356,8 +2359,9 @@ public class Mad
                         Skid = 2;
                         hitVertical = true;
                         isWheelTouchingPiece[k] = true;
-                        if (!Trackers.Notwall[j])
+                        if (!Trackers.Notwall[j]) {
                             control.Wall = j;
+                        }
                     } // CHK7
                     if (Trackers.Xy[j] == 90 && wheelx[k] > Trackers.X[j] - Trackers.Radx[j] && (Scx[k] > 0.0F /*|| Trackers.radx[j] == 287*/))
                     {

@@ -32,4 +32,9 @@ public abstract class BaseGamemode
     {
         
     }
+
+    public virtual void Reset()
+    {
+        
+    }
 }
