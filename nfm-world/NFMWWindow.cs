@@ -220,7 +220,7 @@ public unsafe class Program : Game
         IsMouseVisible = true;
 
         _graphics.SynchronizeWithVerticalRetrace = false;
-        IsFixedTimeStep = true;
+        IsFixedTimeStep = false;
         TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / 63f);
         _graphics.PreferredBackBufferWidth = 1280;
         _graphics.PreferredBackBufferHeight = 720;
