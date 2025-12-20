@@ -8,23 +8,26 @@ tracks(5)
 
 <track>
 c(191,159,100)
-radx(4)
+radx(5)
+rady(5)
 radz(40)
-tx(12)
+tx(13)
 skid(2)
 </track>
 
 <track>
 c(191,159,100)
-radx(4)
+radx(5)
+rady(5)
 radz(40)
-tx(-12)
+tx(-13)
 skid(2)
 </track>
 
 <track>
 c(171,171,84)
 radx(12)
+rady(5)
 radz(28)
 skid(3)
 </track>
@@ -32,6 +35,7 @@ skid(3)
 <track>
 c(194,181,109)
 radx(12)
+rady(5)
 radz(12)
 tz(32)
 skid(2)
@@ -40,10 +44,12 @@ skid(2)
 <track>
 c(194,181,109)
 radx(12)
+rady(5)
 radz(12)
 tz(-32)
 skid(2)
 </track>
+
 
 
 //

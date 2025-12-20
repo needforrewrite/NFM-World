@@ -9,23 +9,26 @@ tracks(3)
 <track>
 c(217,188,128)
 radx(10)
-radz(42)
+rady(5)
+radz(40)
 skid(2)
 </track>
 
 <track>
 c(191,159,100)
-radx(4)
+radx(5)
+rady(5)
 radz(40)
-tx(12)
+tx(13)
 skid(2)
 </track>
 
 <track>
 c(191,159,100)
-radx(4)
+radx(5)
+rady(5)
 radz(40)
-tx(-12)
+tx(-13)
 skid(2)
 </track>
 

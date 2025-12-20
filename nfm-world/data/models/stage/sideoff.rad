@@ -9,6 +9,7 @@ tracks(3)
 <track>
 c(217,188,128)
 radx(150)
+rady(50)
 radz(420)
 skid(2)
 </track>
@@ -16,6 +17,7 @@ skid(2)
 <track>
 c(206,177,121)
 radx(54)
+rady(50)
 radz(400)
 tx(170)
 skid(4)
@@ -24,6 +26,7 @@ skid(4)
 <track>
 c(206,177,121)
 radx(54)
+rady(50)
 radz(400)
 tx(-170)
 skid(4)

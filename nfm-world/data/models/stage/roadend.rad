@@ -1,18 +1,21 @@
-div(700)
+div(350)
 disp(50)
 disline(4)
 stonecold()
-grounded(30000)
+grounded(189)
 road()
 
 tracks(1)
 
 <track>
 c(147,147,147)
-radx(10)
-radz(12)
-tz(-12)
+radx(24)
+rady(10)
+radz(27)
+tz(-27)
 </track>
+
+div(700)
 
 <p>
 c(150,150,150)

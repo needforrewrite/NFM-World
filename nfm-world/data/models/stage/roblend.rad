@@ -4,25 +4,29 @@ disline(4)
 stonecold()
 grounded(30000)
 
+
 tracks(7)
 
 <track>
 c(169,159,139)
-radx(10)
+radx(12)
+rady(5)
 radz(17)
 skid(1)
 </track>
 
 <track>
 c(155,151,142)
-radx(10)
+radx(12)
+rady(5)
 radz(13)
 tz(28)
 </track>
 
 <track>
 c(199,177,132)
-radx(10)
+radx(12)
+rady(5)
 radz(13)
 tz(-28)
 skid(2)
@@ -32,37 +36,42 @@ skid(2)
 
 <track>
 c(183,175,160)
-radx(4)
+radx(5)
+rady(5)
 radz(17)
-tx(12)
+tx(13)
 skid(1)
 </track>
 
 <track>
 c(188,164,120)
-radx(4)
+radx(5)
+rady(5)
 radz(13)
-tx(12)
+tx(13)
 tz(-28)
 skid(2)
 </track>
 
 <track>
 c(183,175,160)
-radx(4)
+radx(5)
+rady(5)
 radz(17)
-tx(-12)
+tx(-13)
 skid(1)
 </track>
 
 <track>
 c(188,164,120)
-radx(4)
+radx(5)
+rady(5)
 radz(13)
-tx(-12)
+tx(-13)
 tz(-28)
 skid(2)
 </track>
+
 
 
 <p>

@@ -11,9 +11,11 @@ tracks(1)
 c(177,171,160)
 skid(1)
 radz(550)
+rady(500)
 radx(1400)
 tz(-550)
 </track>
+
 
 
 <p>

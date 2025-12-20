@@ -8,8 +8,9 @@ tracks(1)
 
 <track>
 c(155,151,142)
-radx(10)
-radz(9)
+radx(12)
+rady(5)
+radz(8)
 skid(1)
 </track>
 

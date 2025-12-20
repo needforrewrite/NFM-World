@@ -10,7 +10,8 @@ tracks(1)
 <track>
 c(167,160,146)
 skid(1)
-radx(10)
+radx(12)
+rady(5)
 radz(40)
 </track>
 

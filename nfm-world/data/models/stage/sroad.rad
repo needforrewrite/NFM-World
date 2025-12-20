@@ -10,12 +10,14 @@ tracks(3)
 <track>
 c(147,147,147)
 radx(10)
+rady(5)
 radz(40)
 </track>
 
 <track>
 c(180,180,180)
 radx(1)
+rady(5)
 radz(40)
 tx(11)
 </track>
@@ -23,6 +25,7 @@ tx(11)
 <track>
 c(180,180,180)
 radx(1)
+rady(5)
 radz(40)
 tx(-11)
 </track>

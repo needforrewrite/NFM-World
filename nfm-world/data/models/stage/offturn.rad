@@ -1,44 +1,65 @@
-div(700)
+div(350)
 disp(60)
 disline(4)
 stonecold()
-grounded(2000)
+grounded(189)
 
-tracks(4)
+tracks(6)
 
 <track>
-c(217,188,128)
-skid(2)
+c(191,159,100)
 radx(10)
-radz(9)
-tz(-16)
+rady(10)
+radz(34)
+tx(40)
 </track>
 
 <track>
 c(191,159,100)
-skid(2)
-radx(2)
-radz(9)
-tz(-16)
-tx(-11)
+radx(16)
+rady(10)
+radz(31)
+tx(34)
+tz(-3)
 </track>
 
 <track>
-c(217,188,128)
-skid(2)
-radx(9)
+c(191,159,100)
+radx(27)
+rady(10)
+radz(27)
+tx(23)
+tz(-7)
+</track>
+
+<track>
+c(191,159,100)
+radx(34)
+rady(10)
+radz(19)
+tx(16)
+tz(-15)
+</track>
+
+<track>
+c(191,159,100)
+radx(4)
+rady(10)
+radz(9)
+tx(-22)
+tz(-21)
+</track>
+
+<track>
+c(191,159,100)
+radx(36)
+rady(10)
 radz(10)
-tx(16)
+tx(2)
+tz(-40)
 </track>
 
-<track>
-c(191,159,100)
-skid(2)
-radx(9)
-radz(2)
-tx(16)
-tz(11)
-</track>
+div(700)
 
 
 <p>
@@ -247,20 +268,6 @@ p(25,0,12)
 p(25,0,17)
 p(15,0,14)
 </p>
-
-
-//lines & cateyes
-
-div(10)
-
-
-
-
-
-
-
-
-
 
 
 
