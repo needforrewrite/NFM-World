@@ -2001,7 +2001,6 @@ public class Mad
             {
                 if (control.Wall != -1)
                 {
-                    Console.WriteLine("we be surfing (wall: " + control.Wall + ")");
                     Surfer = true;
                 }
                 _srfcnt++;
@@ -2051,7 +2050,6 @@ public class Mad
                         {
                             Powerup += 30.0F;
                         }
-                        Console.WriteLine(Travxy + ": travxy, " + Travzy + ": travzy");
                         Power += Powerup;
                         /*if (Im == XTGraphics.Im && (int) Powerup > Record.Powered && Record.Wasted == 0 &&
                             (Powerup > 60.0F || CheckPoints.Stage == 1 || CheckPoints.Stage == 2))
@@ -2300,7 +2298,6 @@ public class Mad
                         hitVertical = true;
                         isWheelTouchingPiece[k] = true;
                         if (!Trackers.Notwall[j]) {
-                            Console.WriteLine("1: j = " + j);
                             control.Wall = j;
                         }
                     }
@@ -2332,7 +2329,6 @@ public class Mad
                         hitVertical = true;
                         isWheelTouchingPiece[k] = true;
                         if (!Trackers.Notwall[j]) {
-                            Console.WriteLine("2: j = " + j);
                             control.Wall = j;
                         }
                     } // CHK6
@@ -2364,7 +2360,6 @@ public class Mad
                         hitVertical = true;
                         isWheelTouchingPiece[k] = true;
                         if (!Trackers.Notwall[j]) {
-                            Console.WriteLine("3: j = " + j);
                             control.Wall = j;
                         }
                     } // CHK7

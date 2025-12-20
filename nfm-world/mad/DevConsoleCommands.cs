@@ -245,7 +245,7 @@ namespace NFMWorld.Mad
 
             InRacePhase.gamemode.Reset();
             InRacePhase.CarsInRace.Clear();
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarID,  GameSparker.cars[InRacePhase.playerCarID], 0, 0);
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex,  GameSparker.cars[InRacePhase.playerCarID], 0, 0);
             InRacePhase.current_scene = new Scene(
                 GameSparker._graphicsDevice,
                 [InRacePhase.CurrentStage, ..InRacePhase.CarsInRace],
@@ -273,7 +273,7 @@ namespace NFMWorld.Mad
 
             InRacePhase.current_scene.Renderables.Remove(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
             InRacePhase.playerCarID = id;
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarID,  GameSparker.cars[InRacePhase.playerCarID], 0, 0);
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex,  GameSparker.cars[InRacePhase.playerCarID], 0, 0);
             InRacePhase.current_scene.Renderables.Add(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
         
             IBackend.Backend.StopAllSounds();
