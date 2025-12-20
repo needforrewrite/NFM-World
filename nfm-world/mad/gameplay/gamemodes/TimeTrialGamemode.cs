@@ -50,7 +50,7 @@ public class TimeTrialGamemode : BaseGamemode
 
         if(!playback)
         {
-            carsInRace[1].CarRef.alphaOverride = 0.0f;
+            carsInRace.RemoveAt(1);
         } else
         {
             carsInRace[1].CarRef.alphaOverride = 0.05f;
