@@ -69,7 +69,11 @@ public class GameSparker
     
     private static MicroStopwatch timer;
     public static UnlimitedArray<Car> cars;
+    public static UnlimitedArray<Car> vendor_cars;
+    public static UnlimitedArray<Car> user_cars;
     public static UnlimitedArray<Mesh> stage_parts;
+    public static UnlimitedArray<Mesh> vendor_stage_parts;
+    public static UnlimitedArray<Mesh> user_stage_parts;
     
     public static bool devRenderTrackers = false;
     
@@ -172,38 +176,48 @@ public class GameSparker
         return stages;
     }
 
-    public static int GetModel(string input, bool forCar = false)
+    public static (int Id, Car Car) GetCar(string name)
     {
-        // Combine all model arrays
-        string[][] allModels = new string[][]
-        {
-            forCar ? CarRads : StageRads
-        };
+        IReadOnlyList<Car>[] arrays = [cars, vendor_cars, user_cars];
 
-        int modelId = 0;
-
-        for (int i = 0; i < allModels.Length; i++)
+        var total = 0;
+        foreach (var t in arrays)
         {
-            for (int j = 0; j < allModels[i].Length; j++)
+            foreach (var car in t)
             {
-                if (string.Equals(input, allModels[i][j], StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(car.FileName, name, StringComparison.OrdinalIgnoreCase))
                 {
-                    int offset = 0;
-
-                    // Calculate offset based on previous arrays
-                    for (int k = 0; k < i; k++)
-                    {
-                        offset += allModels[k].Length;
-                    }
-
-                    modelId = j + offset;
-                    return modelId;
+                    return (total, car);
                 }
+
+                total++;
             }
         }
 
-        Debug.WriteLine("No results for GetModel");
-        return -1;
+        Debug.WriteLine("No results for GetCar");
+        return (-1, null!);
+    }
+
+    public static (int Id, Mesh Mesh) GetStagePart(string name)
+    {
+        IReadOnlyList<Mesh>[] arrays = [stage_parts, vendor_stage_parts, user_stage_parts];
+
+        var total = 0;
+        foreach (var t in arrays)
+        {
+            foreach (var part in t)
+            {
+                if (string.Equals(part.FileName, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return (total, part);
+                }
+
+                total++;
+            }
+        }
+
+        Debug.WriteLine("No results for GetStagePart");
+        return (-1, null!);
     }
 
     public static void Load(Program game)
@@ -218,13 +232,45 @@ public class GameSparker
         
         cars = [];
         stage_parts = [];
+        vendor_stage_parts = [];
+        user_stage_parts = [];
 
-        FileUtil.LoadFiles("./data/models/cars", CarRads, (ais, id, fileName) => {
+        FileUtil.LoadFiles("./data/models/nfmm/cars", CarRads, (ais, id, fileName) => {
             cars[id] = new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName);
         });
 
-        FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id, _) => {
-            stage_parts[id] = new Mesh(game.GraphicsDevice, Encoding.UTF8.GetString(ais));
+        FileUtil.LoadFiles("./data/models/nfmm/stage", StageRads, (ais, id, fileName) => {
+            stage_parts[id] = new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName);
+        });
+        
+        FileUtil.LoadFiles("./data/models/nfmw/cars", (ais, fileName) => {
+            vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName));
+        });
+        
+        FileUtil.LoadFiles("./data/models/nfmw/stage", (ais, fileName) => {
+            vendor_stage_parts.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName));
+        });
+        
+        FileUtil.LoadFiles("./data/models/user/cars", (ais, fileName) => {
+            try
+            {
+                user_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading user car '{fileName}': {ex.Message}\n{ex.StackTrace}");
+            }
+        });
+        
+        FileUtil.LoadFiles("./data/models/user/stage", (ais, fileName) => {
+            try
+            {
+                user_stage_parts.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading user stage part '{fileName}': {ex.Message}\n{ex.StackTrace}");
+            }
         });
 
         // init menu
