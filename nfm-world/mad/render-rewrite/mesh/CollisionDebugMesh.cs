@@ -4,7 +4,7 @@ namespace NFMWorld.Mad;
 
 public class CollisionDebugMesh : Transform
 {
-    private BasicEffect lineEffect;
+    private LineEffect _material;
     private int lineTriangleCount;
     private IndexBuffer? lineIndexBuffer;
     private VertexBuffer? lineVertexBuffer;
@@ -17,22 +17,18 @@ public class CollisionDebugMesh : Transform
         // disp 0
         const int linesPerPolygon = 16;
         
-        var data = new List<VertexPositionColor>(LineMeshHelpers.VerticesPerLine * linesPerPolygon * boxes.Length);
+        var data = new List<LineMesh.LineMeshVertexAttribute>(LineMeshHelpers.VerticesPerLine * linesPerPolygon * boxes.Length);
         var indices = new List<int>(LineMeshHelpers.IndicesPerLine * linesPerPolygon * boxes.Length);
         void AddLine(Vector3 p0, Vector3 p1, Color3 color, float mult = 1)
         {
-            const float halfThickness = 2f;
             // Create two quads for each line segment to give it some thickness
             
-            Span<Vector3> verts = stackalloc Vector3[LineMeshHelpers.VerticesPerLine];
+            Span<LineMesh.LineMeshVertexAttribute> verts = stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
             Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
-            // LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness * mult, in verts, in inds); TODO
+            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, default, default, color, 0f, in verts, in inds);
             indices.AddRange(inds);
-            foreach (var vert in verts)
-            {
-                data.Add(new VertexPositionColor(vert, color));
-            }
+            data.AddRange(verts);
         }
         
         for (var i = 0; i < boxes.Length; i++)
@@ -131,7 +127,7 @@ public class CollisionDebugMesh : Transform
             }
         }
 
-        lineVertexBuffer = new VertexBuffer(GameSparker._graphicsDevice, VertexPositionColor.VertexDeclaration, data.Count, BufferUsage.None);
+        lineVertexBuffer = new VertexBuffer(GameSparker._graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None);
         lineVertexBuffer.SetData(data.ToArray());
 	    
         lineIndexBuffer = new IndexBuffer(GameSparker._graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
@@ -139,12 +135,9 @@ public class CollisionDebugMesh : Transform
 	    
         lineTriangleCount = indices.Count / 3;
         lineVertexCount = data.Count;
-        
-        lineEffect = new BasicEffect(GameSparker._graphicsDevice)
-        {
-            VertexColorEnabled = true
-        };
-        
+
+        _material = new LineEffect(Program._lineShader);
+
         #endregion
     }
 
@@ -153,10 +146,40 @@ public class CollisionDebugMesh : Transform
         GameSparker._graphicsDevice.SetVertexBuffer(lineVertexBuffer);
         GameSparker._graphicsDevice.Indices = lineIndexBuffer;
 
-        lineEffect.World = MatrixWorld;
-        lineEffect.View = camera.ViewMatrix;
-        lineEffect.Projection = camera.ProjectionMatrix;
-        foreach (var pass in lineEffect.CurrentTechnique.Passes)
+        // If a parameter is null that means the HLSL compiler optimized it out.
+        _material.World?.SetValue(MatrixWorld);
+        _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(MatrixWorld)));
+        _material.SnapColor?.SetValue(new Color3(100, 100, 100).ToVector3());
+        _material.IsFullbright?.SetValue(true);
+        _material.UseBaseColor?.SetValue(false);
+        _material.BaseColor?.SetValue(new Vector3(0, 0, 0));
+        _material.ChargedBlinkAmount?.SetValue(0.0f);
+        _material.HalfThickness?.SetValue(World.OutlineThickness);
+
+        _material.LightDirection?.SetValue(World.LightDirection);
+        _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToVector3());
+        _material.FogDistance?.SetValue(World.FadeFrom);
+        _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
+        _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
+        _material.DepthBias?.SetValue(0.00005f);
+        _material.GetsShadowed?.SetValue(false);
+        _material.Alpha?.SetValue(1f);
+
+        _material.View?.SetValue(camera.ViewMatrix);
+        _material.Projection?.SetValue(camera.ProjectionMatrix);
+        _material.WorldView?.SetValue(MatrixWorld * camera.ViewMatrix);
+        _material.WorldViewProj?.SetValue(MatrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
+        _material.CameraPosition?.SetValue(camera.Position);
+
+        _material.CurrentTechnique = _material.Techniques["Basic"];
+
+        _material.Expand?.SetValue(false);
+        _material.Darken?.SetValue(1.0f);
+        _material.RandomFloat?.SetValue(URandom.Single());
+
+        _material.Glow?.SetValue(false);
+        
+        foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();
     
