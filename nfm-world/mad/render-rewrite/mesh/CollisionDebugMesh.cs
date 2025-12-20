@@ -27,7 +27,7 @@ public class CollisionDebugMesh : Transform
             Span<Vector3> verts = stackalloc Vector3[LineMeshHelpers.VerticesPerLine];
             Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
-            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness * mult, in verts, in inds);
+            // LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness * mult, in verts, in inds); TODO
             indices.AddRange(inds);
             foreach (var vert in verts)
             {

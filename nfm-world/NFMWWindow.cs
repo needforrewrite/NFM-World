@@ -26,6 +26,7 @@ public unsafe class Program : Game
     public GraphicsDeviceManager _graphics;
     public static SpriteBatch _spriteBatch { get; private set; }
     public static Effect _polyShader { get; private set; }
+    public static Effect _lineShader { get; private set; }
     public static Effect _skyShader { get; private set; }
     public static Effect _groundShader { get; private set; }
     public static Effect _mountainsShader { get; private set; }
@@ -301,6 +302,7 @@ public unsafe class Program : Game
     protected override void LoadContent()
     {
         _polyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Poly.fxb"));
+        _lineShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Line.fxb"));
         _skyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Sky.fxb"));
         _groundShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Ground.fxb"));
         _mountainsShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Mountains.fxb"));

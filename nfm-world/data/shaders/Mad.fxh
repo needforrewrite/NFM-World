@@ -1,3 +1,84 @@
+// All components are in the range [0…1], including hue.
+float3 rgb2hsv(float3 c)
+{
+    float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+    float4 p = lerp(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g));
+    float4 q = lerp(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r));
+
+    float d = q.x - min(q.w, q.y);
+    float e = 1.0e-10;
+    return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+// All components are in the range [0…1], including hue.
+float3 hsv2rgb(float3 c)
+{
+    float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+void VS_ColorCorrect(inout float3 color)
+{
+    // float3 hsv = rgb2hsv(color);
+    // hsv.z *= 0.9;
+    // color = hsv2rgb(hsv);
+}
+
+// Get uniquely looking random float between 0 and 1 from float input without using bitwise operations (not supported in vs_3_0)
+float Random(float input)
+{
+    return frac(sin(input * 12.9898) * 43758.5453);
+}
+
+void VS_DecalOffset(
+    inout float3 position,
+    in float3 normal,
+    in float decalOffset
+) {
+    // DecalOffset is negative to pull away from surface, positive to push into it
+    // Multiply by the sign to control direction
+    position = position - normal * decalOffset * 0.1;
+}
+
+void VS_Expand(
+    inout float3 position,
+    in float3 acentroid,
+    in float randomFloat
+) {
+    // Translate vertex around centroid by a random factor between -15 and 15 units
+
+    float3 direction = normalize(position - acentroid);
+    float3 randomScale = float3(
+        15.0 - Random(acentroid.x + randomFloat) * 30.0,
+        15.0 - Random(acentroid.y + randomFloat) * 30.0,
+        15.0 - Random(acentroid.z + randomFloat) * 30.0
+    );
+    position = position + direction * randomScale;
+}
+
+void VS_Darken(
+    inout float3 color,
+    in float darken
+) {
+    float3 hsv = rgb2hsv(color);
+    if (hsv.z > darken)
+    {
+        hsv.z = darken;
+        color = hsv2rgb(hsv);
+    }
+}
+
+void VS_Snap(
+    inout float3 color,
+    in float3 snapColor
+)
+{
+    color += (color * (snapColor * 255.0 / 100.0));
+    // clamp to 1.0
+    color = min(color, float3(1.0, 1.0, 1.0));
+}
+
 void VS_ApplyPolygonDiffuse(
     inout float3 color,
     in float3 CentroidWorld,
@@ -120,37 +201,4 @@ void PS_ApplyShadowing(
             applyShadowingSingle(diffuse, worldPos, LightViewProj2, ShadowMapSampler2, isInLight2);
         }
     }
-}
-
-// All components are in the range [0…1], including hue.
-float3 rgb2hsv(float3 c)
-{
-    float4 K = float4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
-    float4 p = lerp(float4(c.bg, K.wz), float4(c.gb, K.xy), step(c.b, c.g));
-    float4 q = lerp(float4(p.xyw, c.r), float4(c.r, p.yzx), step(p.x, c.r));
-
-    float d = q.x - min(q.w, q.y);
-    float e = 1.0e-10;
-    return float3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
-}
-
-// All components are in the range [0…1], including hue.
-float3 hsv2rgb(float3 c)
-{
-    float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-    float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
-    return c.z * lerp(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
-
-void VS_ColorCorrect(inout float3 color)
-{
-    // float3 hsv = rgb2hsv(color);
-    // hsv.z *= 0.9;
-    // color = hsv2rgb(hsv);
-}
-
-// Get uniquely looking random float between 0 and 1 from float input without using bitwise operations (not supported in vs_3_0)
-float Random(float input)
-{
-    return frac(sin(input * 12.9898) * 43758.5453);
 }

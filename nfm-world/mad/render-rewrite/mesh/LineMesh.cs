@@ -1,11 +1,12 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System.Runtime.InteropServices;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
 
 public class LineMesh
 {
-    private readonly PolyEffect _material = new(Program._polyShader);
+    private readonly LineEffect _material = new(Program._lineShader);
     private readonly Mesh _supermesh;
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _lineVertexBuffer;
@@ -22,11 +23,11 @@ public class LineMesh
     )
     {
         _lineType = lineType;
-        var data = new List<Mesh.VertexPositionNormalColorCentroid>(8 * lines.Count);
-        var indices = new List<int>(12 * 3 * lines.Count);
+        var data = new List<LineMeshVertexAttribute>(LineMeshHelpers.VerticesPerLine * lines.Count);
+        var indices = new List<int>(LineMeshHelpers.IndicesPerLine * lines.Count);
 
         const float halfThickness = 1f;
-        Span<Vector3> verts = stackalloc Vector3[LineMeshHelpers.VerticesPerLine];
+        Span<LineMeshVertexAttribute> verts = stackalloc LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
         Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
         foreach (var line in lines)
@@ -45,16 +46,13 @@ public class LineMesh
                 _ => Color.Black
             };
 
-            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, halfThickness, in verts, in inds);
+            LineMeshHelpers.CreateLineMesh(p0, p1, data.Count, normal, centroid, color, 0.0f, in verts, in inds);
             indices.AddRange(inds);
-            foreach (var vert in verts)
-            {
-                data.Add(new Mesh.VertexPositionNormalColorCentroid(vert, normal, centroid, color, 0.0f));
-            }
+            data.AddRange(verts);
         }
 
         var lineVertexBuffer = new VertexBuffer(graphicsDevice,
-            Mesh.VertexPositionNormalColorCentroid.VertexDeclaration, data.Count, BufferUsage.None);
+            LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None);
         lineVertexBuffer.SetData(data.ToArray());
 
         var lineIndexBuffer =
@@ -86,6 +84,7 @@ public class LineMesh
         _material.UseBaseColor?.SetValue(false);
         _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
         _material.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
+        _material.HalfThickness?.SetValue(0.002f);
 
         _material.LightDirection?.SetValue(World.LightDirection);
         _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToVector3());
@@ -119,4 +118,28 @@ public class LineMesh
             _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineVertexCount, 0, _lineTriangleCount);
         }
     }
+    
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    public readonly record struct LineMeshVertexAttribute(
+        Vector3 Position,
+        Vector3 Normal,
+        Vector3 Centroid,
+        Color Color,
+        float DecalOffset,
+        Vector3 Right,
+        Vector3 Up
+    )
+    {
+        /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />
+        public static readonly VertexDeclaration VertexDeclaration = new(
+            new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
+            new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
+            new VertexElement(24, VertexElementFormat.Vector3, VertexElementUsage.Position, 1),
+            new VertexElement(36, VertexElementFormat.Color, VertexElementUsage.Color, 0),
+            new VertexElement(40, VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0),
+            new VertexElement(44, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 1),
+            new VertexElement(56, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 2)
+        );
+    }
+
 }

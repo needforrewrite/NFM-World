@@ -1,4 +1,5 @@
 ﻿using Stride.Core.Mathematics;
+using Color = Microsoft.Xna.Framework.Color;
 
 namespace NFMWorld.Mad;
 
@@ -9,23 +10,33 @@ public class LineMeshHelpers
     
     // vertices must contain 8 elements
     // indices must contain 36 elements
-    public static void CreateLineMesh(Vector3 p0, Vector3 p1, int baseIndex, float halfThickness, in Span<Vector3> outVerts, in Span<int> outIndices)
+    public static void CreateLineMesh(
+        Vector3 p0,
+        Vector3 p1,
+        int baseIndex,
+        Vector3 normal,
+        Vector3 centroid,
+        Color color,
+        float decalOffset,
+        in Span<LineMesh.LineMeshVertexAttribute> outVerts,
+        in Span<int> outIndices
+    )
     {
         var lineDir = Vector3.Normalize(p1 - p0);
         
         // Choose an initial perpendicular vector that's not parallel to lineDir
         var perpendicular = Math.Abs(lineDir.Y) > 0.99f ? Vector3.UnitX : Vector3.UnitY;
 
-        var right = Vector3.Normalize(Vector3.Cross(lineDir, perpendicular)) * halfThickness;
-        var up = Vector3.Normalize(Vector3.Cross(right, lineDir)) * halfThickness;
-        var v0 = p0 - right - up;
-        var v1 = p0 + right - up;
-        var v2 = p0 + right + up;
-        var v3 = p0 - right + up;
-        var v4 = p1 - right - up;
-        var v5 = p1 + right - up;
-        var v6 = p1 + right + up;
-        var v7 = p1 - right + up;
+        var right = Vector3.Normalize(Vector3.Cross(lineDir, perpendicular));
+        var up = Vector3.Normalize(Vector3.Cross(right, lineDir));
+        var v0 = new LineMesh.LineMeshVertexAttribute(p0, normal, centroid, color, decalOffset, -right, -up);
+        var v1 = new LineMesh.LineMeshVertexAttribute(p0, normal, centroid, color, decalOffset, right, -up);
+        var v2 = new LineMesh.LineMeshVertexAttribute(p0, normal, centroid, color, decalOffset, right, up);
+        var v3 = new LineMesh.LineMeshVertexAttribute(p0, normal, centroid, color, decalOffset, -right, up);
+        var v4 = new LineMesh.LineMeshVertexAttribute(p1, normal, centroid, color, decalOffset, -right, -up);
+        var v5 = new LineMesh.LineMeshVertexAttribute(p1, normal, centroid, color, decalOffset, right, -up);
+        var v6 = new LineMesh.LineMeshVertexAttribute(p1, normal, centroid, color, decalOffset, right, up);
+        var v7 = new LineMesh.LineMeshVertexAttribute(p1, normal, centroid, color, decalOffset, -right, up);
         outVerts[0] = v0;
         outVerts[1] = v1;
         outVerts[2] = v2;

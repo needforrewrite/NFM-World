@@ -184,7 +184,7 @@ public class Sparks
                 // TODO apply fog to color
                 
                 // draw line
-                LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, 1f, verts, inds);
+                // LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, 1f, verts, inds); TODO
                 for (var v = 0; v < LineMeshHelpers.VerticesPerLine; v++)
                 {
                     _lineVertices[_vertexCount + v] = new VertexPositionColor(verts[v], color);
