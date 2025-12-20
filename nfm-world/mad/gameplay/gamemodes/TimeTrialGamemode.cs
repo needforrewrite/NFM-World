@@ -31,9 +31,10 @@ public class TimeTrialGamemode : BaseGamemode
 
     // demo playback and recording
     private bool playback;
-    private UnlimitedArray<BitArray> inputs = [];
+    private UnlimitedArray<BitArray> playbackInputs = [];
     private int tick = 0;
     public static bool PlaybackOnReset = true;
+    private UnlimitedArray<BitArray> recordedInputs = [];
 
     public override void Enter(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
@@ -84,9 +85,10 @@ public class TimeTrialGamemode : BaseGamemode
         loadedBestTimes = false;
 
         // demos
-        inputs = [];
+        playbackInputs = [];
         tick = 0;
         playback = PlaybackOnReset;
+        recordedInputs = [];
     }
 
     private void LoadBestSplits(Stage currentStage)
@@ -133,9 +135,9 @@ public class TimeTrialGamemode : BaseGamemode
     {
         if(playback)
         {
-            if(tick < inputs.Count)
+            if(tick < playbackInputs.Count)
             {
-                carsInRace[1].Control.Decode(inputs[tick]);   
+                carsInRace[1].Control.Decode(playbackInputs[tick]);   
             } else
             {
                 carsInRace[1].Control.Reset();
@@ -278,7 +280,7 @@ public class TimeTrialGamemode : BaseGamemode
 
                 using (BinaryWriter outputFile = new BinaryWriter(System.IO.File.OpenWrite("data/tts/demo/" + currentStage.Name)))
                 {
-                    foreach (BitArray enc in inputs) {
+                    foreach (BitArray enc in recordedInputs) {
                         outputFile.Write(UMath.getIntFromBitArray(enc));
                     }
                 }
@@ -338,7 +340,7 @@ public class TimeTrialGamemode : BaseGamemode
                     entry = entry = reader.ReadInt32();
                     BitArray ba = new([entry]);
 
-                    inputs[inputs.Count] = ba;
+                    playbackInputs[playbackInputs.Count] = ba;
                 }
             }
         } else
@@ -351,7 +353,7 @@ public class TimeTrialGamemode : BaseGamemode
     private void RecordControl(Control control)
     {
         BitArray enc = control.Encode();
-        inputs[inputs.Count] = enc;
+        recordedInputs[recordedInputs.Count] = enc;
     }
 
     public override void KeyPressed(Keys key)
