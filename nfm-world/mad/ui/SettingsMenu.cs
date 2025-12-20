@@ -41,8 +41,8 @@ public class SettingsMenu
     private int _selectedBindingIndex = -1;
 
     // Video settings
-    private int _selectedRenderer = 0;
-    private readonly string[] _renderers = { "SkiaSharp" };
+    private int _selectedRenderer = 1;
+    private readonly string[] _renderers = { "OpenGL", "Vulkan" };
     private int _selectedResolution = 2;
     private readonly string[] _resolutions = { "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440" };
     private int _selectedDisplayMode = 1;
@@ -220,8 +220,8 @@ public class SettingsMenu
         ImGui.Text("Video Settings");
         ImGui.Spacing();
 
-        // ImGui.Text("Renderer");
-        // ImGui.Combo("##Renderer", ref _selectedRenderer, _renderers, _renderers.Length);
+        ImGui.Text("Renderer");
+        ImGui.Combo("##Renderer", ref _selectedRenderer, _renderers, _renderers.Length);
         
         ImGui.Text("Resolution");
         ImGui.Combo("##Resolution", ref _selectedResolution, _resolutions, _resolutions.Length);
@@ -449,6 +449,7 @@ public class SettingsMenu
                 
                 // Video settings
                 cfgWriter.WriteLine("// Video Settings");
+                cfgWriter.WriteLine($"video_renderer {_selectedRenderer}");
                 cfgWriter.WriteLine($"video_resolution {_selectedResolution}");
                 cfgWriter.WriteLine($"video_displaymode {_selectedDisplayMode}");
                 cfgWriter.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
@@ -528,6 +529,9 @@ public class SettingsMenu
                     switch (key)
                     {
                         // Video settings
+                        case "video_renderer":
+                            _selectedRenderer = int.Parse(value);
+                            break;
                         case "video_resolution":
                             _selectedResolution = int.Parse(value);
                             break;

@@ -148,7 +148,7 @@ namespace NFMWorld.Mad
                 // output log
                 if (ImGui.BeginChild("ScrollingRegion", new System.Numerics.Vector2(0, -ImGui.GetFrameHeightWithSpacing()), ImGuiChildFlags.None, ImGuiWindowFlags.None))
                 {
-                    foreach (var (message, level) in _outputLog)
+                    foreach (var (message, level) in _outputLog.ToArray())
                     {
                         // Set color based on log level
                         switch (level)
