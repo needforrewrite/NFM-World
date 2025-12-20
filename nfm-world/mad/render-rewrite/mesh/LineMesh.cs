@@ -84,7 +84,7 @@ public class LineMesh
         _material.UseBaseColor?.SetValue(false);
         _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
         _material.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
-        _material.HalfThickness?.SetValue(0.002f);
+        _material.HalfThickness?.SetValue(World.OutlineThickness);
 
         _material.LightDirection?.SetValue(World.LightDirection);
         _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToVector3());
