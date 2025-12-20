@@ -268,10 +268,8 @@ public class TimeTrialGamemode : BaseGamemode
                         outputFile.WriteLine(time.ToString());
                     }
                 }
-            }
 
-            if(!playback)
-            {
+                // save demo if new best time
                 if(!Directory.Exists("data/tts/demo"))
                 {
                     Directory.CreateDirectory("data/tts/demo");
