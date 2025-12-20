@@ -261,6 +261,7 @@ public class Mesh : Transform, IRenderable
             {
                 wheel.Rotation = WheelAngle;
             }
+            wheel.alphaOverride = alphaOverride;
             wheel.Render(camera, lighting);
         }
 
@@ -273,7 +274,8 @@ public class Mesh : Transform, IRenderable
 
         foreach (var submesh in Submeshes)
         {
-            if (submesh != null && (submesh.PolyType != PolyType.Glass))
+            // we care about the order of drawn submeshes only if we dont have an alpha override
+            if (submesh != null && (submesh.PolyType != PolyType.Glass) && alphaOverride == null)
             {
                 if(submesh.PolyType != PolyType.Finish || (submesh.PolyType == PolyType.Finish && Finish))
                 {
@@ -301,8 +303,18 @@ public class Mesh : Transform, IRenderable
             Sparks.Render(camera);
         }
         
-        // Render glass (translucency) last
-        Submeshes[(int)PolyType.Glass]?.Render(camera, lighting, matrixWorld);
+        if(alphaOverride != null)
+        {
+            foreach (var submesh in Submeshes)
+            {
+                if(submesh != null && (submesh.PolyType != PolyType.Finish || (submesh.PolyType == PolyType.Finish && Finish)))
+                {
+                    submesh.Render(camera, lighting, matrixWorld);   
+                }   
+            }
+        } else
+            // Render glass (translucency) last if it is the only translucent thing
+            Submeshes[(int)PolyType.Glass]?.Render(camera, lighting, matrixWorld);
     }
 
     public void RebuildMesh()

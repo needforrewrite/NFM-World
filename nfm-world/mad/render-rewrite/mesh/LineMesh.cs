@@ -111,6 +111,13 @@ public class LineMesh
 
         lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
 
+        if (_supermesh.alphaOverride != null)
+        {
+            // Disable z-write for transparent glass
+            _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
+            _graphicsDevice.BlendState = BlendState.NonPremultiplied;
+        }
+
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();

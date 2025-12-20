@@ -37,9 +37,10 @@ public class Submesh(
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
         _material.GetsShadowed?.SetValue(supermesh.GetsShadowed);
+        Console.WriteLine(supermesh.alphaOverride);
         _material.Alpha?.SetValue(supermesh.alphaOverride ?? (PolyType is PolyType.Glass ? 0.7f : 1f));
 
-        if (PolyType is PolyType.Glass)
+        if (PolyType is PolyType.Glass || supermesh.alphaOverride != null)
         {
             // Disable z-write for transparent glass
             graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;

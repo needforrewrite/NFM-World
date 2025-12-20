@@ -53,7 +53,7 @@ public class TimeTrialGamemode : BaseGamemode
             carsInRace[1].CarRef.alphaOverride = 0.0f;
         } else
         {
-            carsInRace[1].CarRef.alphaOverride = 0.5f;
+            carsInRace[1].CarRef.alphaOverride = 0.05f;
         }
 
         GameSparker.CurrentPhase.RecreateScene();
