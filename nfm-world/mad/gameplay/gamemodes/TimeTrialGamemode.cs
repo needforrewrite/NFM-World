@@ -170,11 +170,25 @@ public class TimeTrialGamemode : BaseGamemode
 
         if (currentCheckpoint == currentStage.checkpoints.Count - 1 && currentLap == currentStage.nlaps)
         {
-            currentStage.checkpoints[currentStage.checkpoints.Count - 1].Finish = true;
+            currentStage.checkpoints[^1].Finish = true;
         }
         else
         {
-            currentStage.checkpoints[currentStage.checkpoints.Count - 1].Finish = false;
+            currentStage.checkpoints[^1].Finish = false;
+        }
+
+        if (currentCheckpoint > 0)
+        {
+            currentStage.checkpoints[currentCheckpoint - 1].Glow = false;
+        }
+        else
+        {
+            currentStage.checkpoints[^1].Glow = false;
+        }
+
+        if (currentCheckpoint < currentStage.checkpoints.Count)
+        {
+            currentStage.checkpoints[currentCheckpoint].Glow = true;
         }
 
         if (currentLap > currentStage.nlaps)

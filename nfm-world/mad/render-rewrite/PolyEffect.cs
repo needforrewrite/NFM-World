@@ -23,16 +23,12 @@ public class PolyEffect(Effect effect)
     public EffectParameter? EnvironmentLight { get; } = effect.Parameters["EnvironmentLight"];
     public EffectParameter? DepthBias { get; } = effect.Parameters["DepthBias"];
 
-    public EffectParameter? LightViewProj { get; } = effect.Parameters["LightViewProj"];
-    public EffectParameter? ShadowMap { get; } = effect.Parameters["ShadowMap"];
     public EffectParameter? GetsShadowed { get; } = effect.Parameters["GetsShadowed"];
     public EffectParameter? Alpha { get; } = effect.Parameters["Alpha"];
     public EffectParameter? Expand { get; } = effect.Parameters["Expand"];
     public EffectParameter? RandomFloat { get; } = effect.Parameters["RandomFloat"];
     public EffectParameter? Darken { get; } = effect.Parameters["Darken"];
     
-    public EffectParameter? ChargedBlinkAmount { get; } = effect.Parameters["ChargedBlinkAmount"];
-
     /// <inheritdoc cref="Effect.Parameters"/>
     public EffectParameterCollection Parameters => effect.Parameters;
 

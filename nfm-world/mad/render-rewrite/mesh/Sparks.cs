@@ -25,24 +25,19 @@ public class Sparks
     private float[] _vry = new float[100];
     private float[] _vrz = new float[100];
     
-    private VertexPositionColor[] _lineVertices = new VertexPositionColor[100 * LineMeshHelpers.VerticesPerLine];
+    private LineMesh.LineMeshVertexAttribute[] _lineVertices = new LineMesh.LineMeshVertexAttribute[100 * LineMeshHelpers.VerticesPerLine];
     private int[] _lineIndices = new int[100 * LineMeshHelpers.IndicesPerLine];
     private int _vertexCount;
     private int _triangleCount;
-    private readonly BasicEffect _effect;
+    private readonly LineEffect _material;
     private int _sparkCount;
 
     public Sparks(Mesh mesh, GraphicsDevice graphicsDevice)
     {
         _mesh = mesh;
         _graphicsDevice = graphicsDevice;
-        
-        _effect = new BasicEffect(graphicsDevice)
-        {
-            LightingEnabled = false,
-            TextureEnabled = false,
-            VertexColorEnabled = true
-        };
+
+        _material = new LineEffect(Program._lineShader);
 
         _sprkat = _mesh.Wheels.FirstOrDefault().Sparkat;
     }
@@ -118,7 +113,7 @@ public class Sparks
             return;
         }
 
-        Span<Vector3> verts = stackalloc Vector3[LineMeshHelpers.VerticesPerLine];
+        Span<LineMesh.LineMeshVertexAttribute> verts = stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
         Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
         for (var i = 0; i < 100; i++)
@@ -184,10 +179,10 @@ public class Sparks
                 // TODO apply fog to color
                 
                 // draw line
-                LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, 1f, verts, inds);
+                LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, default, default, color, 0f, verts, inds);
                 for (var v = 0; v < LineMeshHelpers.VerticesPerLine; v++)
                 {
-                    _lineVertices[_vertexCount + v] = new VertexPositionColor(verts[v], color);
+                    _lineVertices[_vertexCount + v] = verts[v];
                 }
                 for (var t = 0; t < LineMeshHelpers.IndicesPerLine; t++)
                 {
@@ -217,12 +212,41 @@ public class Sparks
     {
         if (_vertexCount == 0 || _triangleCount == 0) return;
         
-        _effect.World = Matrix.Identity;
-        _effect.View = camera.ViewMatrix;
-        _effect.Projection = camera.ProjectionMatrix;
-        
+        // If a parameter is null that means the HLSL compiler optimized it out.
+        _material.World?.SetValue(Matrix.Identity);
+        _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(Matrix.Identity)));
+        _material.SnapColor?.SetValue(new Color3(100, 100, 100).ToVector3());
+        _material.IsFullbright?.SetValue(true);
+        _material.UseBaseColor?.SetValue(false);
+        _material.BaseColor?.SetValue(new Vector3(0, 0, 0));
+        _material.ChargedBlinkAmount?.SetValue(0.0f);
+        _material.HalfThickness?.SetValue(World.OutlineThickness);
+
+        _material.LightDirection?.SetValue(World.LightDirection);
+        _material.FogColor?.SetValue(World.Fog.Snap(World.Snap).ToVector3());
+        _material.FogDistance?.SetValue(World.FadeFrom);
+        _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
+        _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
+        _material.DepthBias?.SetValue(0.00005f);
+        _material.GetsShadowed?.SetValue(false);
+        _material.Alpha?.SetValue(1f);
+
+        _material.View?.SetValue(camera.ViewMatrix);
+        _material.Projection?.SetValue(camera.ProjectionMatrix);
+        _material.WorldView?.SetValue(camera.ViewMatrix);
+        _material.WorldViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
+        _material.CameraPosition?.SetValue(camera.Position);
+
+        _material.CurrentTechnique = _material.Techniques["Basic"];
+
+        _material.Expand?.SetValue(false);
+        _material.Darken?.SetValue(1.0f);
+        _material.RandomFloat?.SetValue(URandom.Single());
+
+        _material.Glow?.SetValue(false);
+
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        foreach (var pass in _effect.CurrentTechnique.Passes)
+        foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();
 
@@ -234,7 +258,7 @@ public class Sparks
                 _lineIndices,
                 0,
                 _triangleCount,
-                VertexPositionColor.VertexDeclaration
+                LineMesh.LineMeshVertexAttribute.VertexDeclaration
             );
         }
         _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;

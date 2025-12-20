@@ -4,6 +4,7 @@ using System.IO;
 using System.Globalization;
 using NFMWorld.Util;
 using NFMWorld.DriverInterface;
+using SDL3;
 
 namespace NFMWorld.Mad.UI;
 
@@ -42,7 +43,7 @@ public class SettingsMenu(Program game)
 
     // Video settings
     private int _selectedRenderer = 1;
-    private readonly string[] _renderers = { "OpenGL", "Vulkan" };
+    private readonly string[] _renderers = { "OpenGL", "SDL_GPU", "D3D11"};
     private int _selectedResolution = 2;
     private readonly string[] _resolutions = { "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440" };
     private int _selectedDisplayMode = 1;
@@ -51,6 +52,7 @@ public class SettingsMenu(Program game)
     private int _fpsLimit = 63;
     private float _brightness = 0.5f;
     private float _gamma = 0.5f;
+    private float _lineWidth = 0.002f;
 
     // Audio settings
     private float _masterVolume = 1.0f;
@@ -257,6 +259,9 @@ public class SettingsMenu(Program game)
         ImGui.TextDisabled("High");
 
         ImGui.Spacing();
+        ImGui.Text("Outline Width");
+        ImGui.SetNextItemWidth(sliderWidth);
+        ImGui.SliderFloat("##LineWidth", ref _lineWidth, 0.001f, 0.005f, "%.4f");
         // ImGui.TextColored(new Vector4(1.0f, 0.8f, 0.4f, 1.0f), 
         //     "Note: changing some video options will cause the game to exit and restart.");
     }
@@ -413,13 +418,13 @@ public class SettingsMenu(Program game)
         // For now, just show a confirmation message
         _settingMessage = "Settings applied successfully!";
         
-        ApplySettings();
+        ApplySettings(out var requireRestart);
 
         // Save config to file
         SaveConfig();
     }
 
-    private void ApplySettings()
+    private void ApplySettings(out bool requireRestart)
     {
         // Apply audio settings
         if (_muteAll)
@@ -442,7 +447,25 @@ public class SettingsMenu(Program game)
         InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
         InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
 
-        game._graphics.SynchronizeWithVerticalRetrace = _vsync;
+        bool graphicsChanged = false;
+        requireRestart = false;
+        if (game._graphics.SynchronizeWithVerticalRetrace != _vsync)
+        {
+            game._graphics.SynchronizeWithVerticalRetrace = _vsync;
+            graphicsChanged = true;
+        }
+        
+        if (_renderers[_selectedRenderer] != SDL.SDL_GetHint("FNA3D_FORCE_DRIVER"))
+        {
+            SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", _renderers[_selectedRenderer]); // TODO this only ever gets executed too late to do anything.
+            requireRestart = true;
+        }
+
+        if (graphicsChanged)
+        {
+            game._graphics.ApplyChanges();
+        }
+
         if (_fpsLimit != 0)
         {
             game.TargetElapsedTime = TimeSpan.FromMilliseconds(1000d / _fpsLimit);
@@ -452,7 +475,8 @@ public class SettingsMenu(Program game)
         {
             game.IsFixedTimeStep = false;
         }
-        game._graphics.ApplyChanges();
+
+        World.OutlineThickness = _lineWidth;
     }
 
     private void SaveConfig()
@@ -477,6 +501,7 @@ public class SettingsMenu(Program game)
                 cfgWriter.WriteLine($"video_fps {_fpsLimit}");
                 cfgWriter.WriteLine($"video_brightness {_brightness.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"video_gamma {_gamma.ToString("F2", CultureInfo.InvariantCulture)}");
+                cfgWriter.WriteLine($"video_linewidth {_lineWidth.ToString("F4", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine();
                 
                 // Audio settings
@@ -573,6 +598,9 @@ public class SettingsMenu(Program game)
                         case "video_gamma":
                             _gamma = float.Parse(value, CultureInfo.InvariantCulture);
                             break;
+                        case "video_linewidth":
+                            _lineWidth = float.Parse(value, CultureInfo.InvariantCulture);
+                            break;
                         
                         // Audio settings
                         case "audio_mute":
@@ -648,7 +676,7 @@ public class SettingsMenu(Program game)
             }
             
             // Apply loaded settings immediately
-            ApplySettings();
+            ApplySettings(out _);
             
             GameSparker.Writer?.WriteLine($"Config loaded from {configPath}", "debug");
         }
