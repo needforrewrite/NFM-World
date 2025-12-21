@@ -273,7 +273,7 @@ namespace NFMWorld.Mad
                 InRacePhase.camera,
                 InRacePhase.lightCameras
             );
-            InRacePhase.gamemode.Reset();
+            InRacePhase.gamemode.Enter(InRacePhase.CarsInRace, InRacePhase.CurrentStage, InRacePhase.current_scene);
         }
 
         private static void SwitchCar(DevConsole console, string[] args)
