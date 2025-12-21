@@ -266,15 +266,14 @@ namespace NFMWorld.Mad
             InRacePhase.LoadStage(stageName, GameSparker._graphicsDevice);
             console.Log($"Switched to stage '{stageName}'");
 
-            InRacePhase.CarsInRace.Clear();
             InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
             InRacePhase.current_scene = new Scene(
                 GameSparker._graphicsDevice,
-                [InRacePhase.CurrentStage, ..InRacePhase.CarsInRace],
+                [InRacePhase.CurrentStage, new ListRenderable(InRacePhase.CarsInRace)],
                 InRacePhase.camera,
                 InRacePhase.lightCameras
             );
-            InRacePhase.gamemode.Reset();
+            InRacePhase.gamemode.Enter(InRacePhase.CarsInRace, InRacePhase.CurrentStage, InRacePhase.current_scene);
         }
 
         private static void SwitchCar(DevConsole console, string[] args)
