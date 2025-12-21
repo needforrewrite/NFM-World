@@ -14,7 +14,7 @@ public static class MeshDamage
     {
         var wheel = mesh.Wheels[wheelIdx];
 
-        damageFactor *= stat.Dammult;
+        damageFactor *= (float)stat.Dammult;
         if (Math.Abs(damageFactor) > 100.0f)
         {
             if (damageFactor > 100.0f)
@@ -114,7 +114,7 @@ public static class MeshDamage
     {
         var wheel = mesh.Wheels[wheelIdx];
 
-        damageFactor *= stat.Dammult;
+        damageFactor *= (float)stat.Dammult;
         if (Math.Abs(damageFactor) > 100.0f)
         {
             if (damageFactor > 100.0f)
@@ -296,7 +296,7 @@ public static class MeshDamage
     {
         var wheel = mesh.Wheels[wheelIdx];
 
-        damageFactor *= stat.Dammult;
+        damageFactor *= (float)stat.Dammult;
         if (Math.Abs(damageFactor) > 100.0f)
         {
             if (damageFactor > 100.0f)

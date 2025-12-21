@@ -1,4 +1,5 @@
 using NFMWorld.Mad;
+using SoftFloat;
 
 public class MadSfx
 {
@@ -76,10 +77,10 @@ public class MadSfx
     {
         if (/*(fase == 0 || fase == 7001) && starcnt < 35 && cntwis != 8 && !mutes*/true)
         {
-            bool bool1 = control.Up && mad.Speed > 0.0F || control.Down && mad.Speed < 10.0F;
-            bool bool257 = mad.Skid == 1 && control.Handb || Math.Abs(mad.Scz[0] - (mad.Scz[1] + mad.Scz[0] + mad.Scz[2] + mad.Scz[3]) / 4.0F) > 1.0F || Math.Abs(mad.Scx[0] - (mad.Scx[1] + mad.Scx[0] + mad.Scx[2] + mad.Scx[3]) / 4.0F) > 1.0F;
+            bool bool1 = control.Up && mad.Speed > (sfloat)0.0F || control.Down && mad.Speed < (sfloat)10.0F;
+            bool bool257 = mad.Skid == 1 && control.Handb || sfloat.Abs(mad.Scz[0] - (mad.Scz[1] + mad.Scz[0] + mad.Scz[2] + mad.Scz[3]) / (sfloat)4.0F) > (sfloat)1.0F || sfloat.Abs(mad.Scx[0] - (mad.Scx[1] + mad.Scx[0] + mad.Scx[2] + mad.Scx[3]) / (sfloat)4.0F) > (sfloat)1.0F;
             bool bool258 = false;
-            if (control.Up && mad.Speed < 10.0F)
+            if (control.Up && mad.Speed < (sfloat)10.0F)
             {
                 bool257 = true;
                 bool1 = true;
@@ -91,11 +92,11 @@ public class MadSfx
                 {
                     if (!bool257)
                     {
-                        if (mad.Power != 98.0F)
+                        if (mad.Power != (sfloat)98.0F)
                         {
-                            if (Math.Abs(mad.Speed) > 0.0F && Math.Abs(mad.Speed) <= stats.Swits[0])
+                            if (sfloat.Abs(mad.Speed) > (sfloat)0.0F && sfloat.Abs(mad.Speed) <= stats.Swits[0])
                             {
-                                int i259 = (int)(3.0F * Math.Abs(mad.Speed) / stats.Swits[0]);
+                                int i259 = (int)((sfloat)3.0F * sfloat.Abs(mad.Speed) / stats.Swits[0]);
                                 if (i259 == 2)
                                 {
                                     if (pwait == 0)
@@ -113,9 +114,9 @@ public class MadSfx
                                 }
                                 SparkEng(i259, mad.Cn, stats);
                             }
-                            if (Math.Abs(mad.Speed) > stats.Swits[0] && Math.Abs(mad.Speed) <= stats.Swits[1])
+                            if (sfloat.Abs(mad.Speed) > stats.Swits[0] && sfloat.Abs(mad.Speed) <= stats.Swits[1])
                             {
-                                int i260 = (int)(3.0F * (Math.Abs(mad.Speed) - stats.Swits[0]) / (stats.Swits[1] - stats.Swits[0]));
+                                int i260 = (int)((sfloat)3.0F * (sfloat.Abs(mad.Speed) - stats.Swits[0]) / (stats.Swits[1] - stats.Swits[0]));
                                 if (i260 == 2)
                                 {
                                     if (pwait == 0)
@@ -133,9 +134,9 @@ public class MadSfx
                                 }
                                 SparkEng(i260, mad.Cn, stats);
                             }
-                            if (Math.Abs(mad.Speed) > stats.Swits[1] && Math.Abs(mad.Speed) <= stats.Swits[2])
+                            if (sfloat.Abs(mad.Speed) > stats.Swits[1] && sfloat.Abs(mad.Speed) <= stats.Swits[2])
                             {
-                                int i261 = (int)(3.0F * (Math.Abs(mad.Speed) - stats.Swits[1]) / (stats.Swits[2] - stats.Swits[1]));
+                                int i261 = (int)((sfloat)3.0F * (sfloat.Abs(mad.Speed) - stats.Swits[1]) / (stats.Swits[2] - stats.Swits[1]));
                                 SparkEng(i261, mad.Cn, stats);
                             }
                         }
@@ -144,7 +145,7 @@ public class MadSfx
                             int i262 = 2;
                             if (pwait == 0)
                             {
-                                if (Math.Abs(mad.Speed) > stats.Swits[1])
+                                if (sfloat.Abs(mad.Speed) > stats.Swits[1])
                                 {
                                     i262 = 3;
                                 }

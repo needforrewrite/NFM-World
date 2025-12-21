@@ -13,13 +13,13 @@ public static class BracketParser
     }
 
     public static T GetNumber<T>(ReadOnlySpan<char> line)
-        where T : INumberBase<T>
+        where T : ISpanParsable<T>
     {
-        return T.Parse(GetLineSlice(line), NumberStyles.Number, CultureInfo.InvariantCulture);
+        return T.Parse(GetLineSlice(line), CultureInfo.InvariantCulture);
     }
     
     public static Span<T> GetNumbers<T>(ReadOnlySpan<char> line, Span<T> n)
-        where T : INumberBase<T>
+        where T : ISpanParsable<T>
     {
         // Console.WriteLine(line);
         var lineSlice = GetLineSlice(line);
@@ -30,7 +30,7 @@ public static class BracketParser
             if (i >= n.Length)
                 break;
             // Console.WriteLine($"{i},{lineSlice[range]}");
-            n[i] = T.Parse(lineSlice[range], NumberStyles.Number, CultureInfo.InvariantCulture);
+            n[i] = T.Parse(lineSlice[range], CultureInfo.InvariantCulture);
             i++;
         }
 

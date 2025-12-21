@@ -24,13 +24,14 @@
 
 using System;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace SoftFloat
 {
     // Internal representation is identical to IEEE binary32 floating point numbers
     [DebuggerDisplay("{ToStringInv()}")]
-    public struct sfloat : IEquatable<sfloat>, IComparable<sfloat>, IComparable, IFormattable
+    public partial struct sfloat : IEquatable<sfloat>, IComparable<sfloat>, IComparable, IFormattable
     {
         /// <summary>
         /// Raw byte representation of an sfloat number
@@ -971,5 +972,8 @@ namespace SoftFloat
         public static sfloat operator /(int f1, sfloat f2) => (sfloat)f1 / f2;
         public static sfloat operator %(sfloat f1, int f2) => f1 % (sfloat)f2;
         public static sfloat operator %(int f1, sfloat f2) => (sfloat)f1 % f2;
+        
+        public static sfloat operator --(sfloat f) => f + MinusOne;
+        public static sfloat operator ++(sfloat f) => f + One;
     }
 }

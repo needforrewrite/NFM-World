@@ -1,4 +1,5 @@
-﻿using Stride.Core.Mathematics;
+﻿using SoftFloat;
+using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad;
 
@@ -22,39 +23,39 @@ public class ContO
         get => (int) _mesh.Position.Z;
         set => _mesh.Position = _mesh.Position with { Z = value };
     }
-    public float Xz 
+    public sfloat Xz 
     {
-        get => _mesh.Rotation.Xz.Degrees;
-        set => _mesh.Rotation = _mesh.Rotation with { Xz = AngleSingle.FromDegrees(value) };
+        get => (sfloat)_mesh.Rotation.Xz.Degrees;
+        set => _mesh.Rotation = _mesh.Rotation with { Xz = AngleSingle.FromDegrees((float)value) };
     }
-    public float Xy 
+    public sfloat Xy 
     {
-        get => _mesh.Rotation.Xy.Degrees;
-        set => _mesh.Rotation = _mesh.Rotation with { Xy = AngleSingle.FromDegrees(value) };
+        get => (sfloat)_mesh.Rotation.Xy.Degrees;
+        set => _mesh.Rotation = _mesh.Rotation with { Xy = AngleSingle.FromDegrees((float)value) };
     }
-    public float Zy 
+    public sfloat Zy 
     {
-        get => _mesh.Rotation.Zy.Degrees;
-        set => _mesh.Rotation = _mesh.Rotation with { Zy = AngleSingle.FromDegrees(value) };
+        get => (sfloat)_mesh.Rotation.Zy.Degrees;
+        set => _mesh.Rotation = _mesh.Rotation with { Zy = AngleSingle.FromDegrees((float)value) };
     }
 
     public int Grat => _mesh.GroundAt;
     
     // wheel rotation
-    public float Wzy
+    public sfloat Wzy
     {
-        get => _mesh.TurningWheelAngle.Zy.Degrees;
+        get => (sfloat)_mesh.TurningWheelAngle.Zy.Degrees;
         set
         {
-            _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Zy = AngleSingle.FromDegrees(value) };
-            _mesh.WheelAngle = _mesh.WheelAngle with { Zy = AngleSingle.FromDegrees(value) };
+            _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Zy = AngleSingle.FromDegrees((float)value) };
+            _mesh.WheelAngle = _mesh.WheelAngle with { Zy = AngleSingle.FromDegrees((float)value) };
         }
     }
 
-    public float Wxz
+    public sfloat Wxz
     {
-        get => _mesh.TurningWheelAngle.Xz.Degrees;
-        set => _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Xz = AngleSingle.FromDegrees(value) };
+        get => (sfloat)_mesh.TurningWheelAngle.Xz.Degrees;
+        set => _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Xz = AngleSingle.FromDegrees((float)value) };
     }
     
     // wheel position
@@ -79,26 +80,26 @@ public class ContO
 
     public static implicit operator ContO(Mesh mesh) => new ContO(mesh);
 
-    public void DamageX(CarStats stat, int wheelnum, float amount)
+    public void DamageX(CarStats stat, int wheelnum, sfloat amount)
     {
-        MeshDamage.DamageX(stat, _mesh, wheelnum, amount);
+        MeshDamage.DamageX(stat, _mesh, wheelnum, (float)amount);
     }
-    public void DamageY(CarStats stat, int wheelnum, float amount, bool mtouch, int nbsq, int squash)
+    public void DamageY(CarStats stat, int wheelnum, sfloat amount, bool mtouch, int nbsq, int squash)
     {
-        MeshDamage.DamageY(stat, _mesh, wheelnum, amount, mtouch, ref nbsq, ref squash);
+        MeshDamage.DamageY(stat, _mesh, wheelnum, (float)amount, mtouch, ref nbsq, ref squash);
     }
-    public void DamageZ(CarStats stat, int wheelnum, float amount)
+    public void DamageZ(CarStats stat, int wheelnum, sfloat amount)
     {
-        MeshDamage.DamageZ(stat, _mesh, wheelnum, amount);
+        MeshDamage.DamageZ(stat, _mesh, wheelnum, (float)amount);
     }
 
-    public void Dust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
+    public void Dust(int wheelidx, sfloat wheelx, sfloat wheely, sfloat wheelz, int scx, int scz, sfloat simag, int tilt, bool onRoof, int wheelGround)
     {
-        _mesh.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, onRoof, wheelGround);
+        _mesh.AddDust(wheelidx, (float)wheelx, (float)wheely, (float)wheelz, scx, scz, (float)simag, tilt, onRoof, wheelGround);
 	}
 
-    public void Spark(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)
+    public void Spark(sfloat wheelx, sfloat wheely, sfloat wheelz, sfloat scx, sfloat scy, sfloat scz, int type, int wheelGround)
     {
-        _mesh.Spark(wheelx, wheely, wheelz, scx, scy, scz, type, wheelGround);
+        _mesh.Spark((float)wheelx, (float)wheely, (float)wheelz, (float)scx, (float)scy, (float)scz, type, wheelGround);
     }
 }
