@@ -93,7 +93,7 @@ public class LineMesh
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
         _material.GetsShadowed?.SetValue(_supermesh.GetsShadowed);
-        _material.Alpha?.SetValue(1f);
+        _material.Alpha?.SetValue(_supermesh.alphaOverride ?? 1f);
 
         _material.View?.SetValue(camera.ViewMatrix);
         _material.Projection?.SetValue(camera.ProjectionMatrix);
@@ -110,6 +110,13 @@ public class LineMesh
         _material.Glow?.SetValue(_supermesh.Glow);
 
         lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
+
+        if (_supermesh.alphaOverride != null)
+        {
+            // Disable z-write for transparent glass
+            _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
+            _graphicsDevice.BlendState = BlendState.NonPremultiplied;
+        }
 
         foreach (var pass in _material.CurrentTechnique.Passes)
         {

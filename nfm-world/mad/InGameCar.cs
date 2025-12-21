@@ -11,6 +11,15 @@ public class InGameCar : IRenderable
 
     public CarStats Stats => CarRef.Stats;
 
+    public InGameCar(InGameCar copy, int im, bool isClientPlayer)
+    {
+        CarRef = new Car(copy.CarRef, new Vector3(0f, World.Ground - copy.CarRef.GroundAt, 0f), Euler.Identity);
+        Mad = new Mad(copy.Stats, im, isClientPlayer);
+        Mad.Reseto(im, CarRef);
+        Control = new Control();
+        Sfx = new MadSfx(Mad);
+    }
+
     public InGameCar(int im, Car car, int x, int z, bool isClientPlayer)
     {
         CarRef = new Car(car, new Vector3(x, World.Ground - car.GroundAt, z), Euler.Identity);

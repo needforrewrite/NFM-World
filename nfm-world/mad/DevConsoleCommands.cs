@@ -42,6 +42,8 @@ namespace NFMWorld.Mad
             console.RegisterCommand("ui_open_devmsg", ShowMessageTest);
             console.RegisterCommand("ui_open_settings", (c, args) => GameSparker.SettingsMenu.Open());
 
+            console.RegisterCommand("demo_playback", DemoPlayback);
+
             //cheats
             //console.RegisterCommand("sv_cheats", SVCheats);
             //console.RegisterCommand("god", Godmode);
@@ -61,6 +63,13 @@ namespace NFMWorld.Mad
             // map command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("map", (args, position) => 
                 position == 0 ? GameSparker.GetAvailableStages() : new List<string>());
+        }
+
+        private static void DemoPlayback(DevConsole console, string[] args)
+        {
+            TimeTrialGamemode.PlaybackOnReset = !TimeTrialGamemode.PlaybackOnReset;
+            console.Log("Playback set to " + TimeTrialGamemode.PlaybackOnReset + ", for maps with a saved demo file.");
+            console.Log("Restart the time trial for changes to take effect.");
         }
 
         private static void WastePlayer(DevConsole console, string[] args)
