@@ -27,14 +27,19 @@ public class GameOrchestrator
     {
         while (_lobbyIsRunning)
         {
-            foreach (var (id, client) in _connectedClients)
-            {
-                var packet = GetLobbyState(id);
+            UpdateLobbyStates();
 
-                _transport.SendPacketToClient(id, packet);
-            }
-            
             Thread.Sleep(1000);
+        }
+    }
+
+    private void UpdateLobbyStates()
+    {
+        foreach (var (id, client) in _connectedClients)
+        {
+            var packet = GetLobbyState(id);
+
+            _transport.SendPacketToClient(id, packet);
         }
     }
 
@@ -81,11 +86,28 @@ public class GameOrchestrator
         {
             State = ClientState.Connecting
         });
+        
+        UpdateLobbyStates();
     }
 
     private void TransportOnClientDisconnected(object? sender, uint clientIndex)
     {
-        _connectedClients.TryRemove(clientIndex, out _);
+        if (_connectedClients.TryRemove(clientIndex, out var client))
+        {
+            BroadcastSystemMessage($"{client.Name} has left...");
+
+            UpdateLobbyStates();
+        }
+    }
+
+    private void BroadcastSystemMessage(string message)
+    {
+        _transport.BroadcastPacket(new S2C_LobbyChatMessage
+        {
+            Message = message,
+            Sender = "<System>",
+            SenderClientId = uint.MaxValue
+        });
     }
 
     private void TransportOnClientConnected(object? sender, uint clientIndex)
@@ -94,6 +116,8 @@ public class GameOrchestrator
         {
             clientInfo.State = ClientState.Connected;
         }
+        
+        UpdateLobbyStates();
     }
 
     private void TransportOnPacketReceived(object? sender, (uint ClientIndex, IPacketClientToServer Packet) e)
