@@ -4,6 +4,10 @@ namespace NFMWorld.Mad;
 
 public static class World
 {
+    /// <summary>
+    /// Adds extra collision radius and damage to compensate for lag.
+    /// </summary>
+    public static bool UseMultiplayerCollisionModifiers = true;
     public static float OutlineThickness = 0.002f;
     public static bool IsHyperglidingEnabled = true;
     public static int MountainSeed;

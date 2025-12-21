@@ -189,7 +189,7 @@ namespace NFMWorld.Mad
         {
             var originalCar = InRacePhase.CarsInRace[InRacePhase.playerCarIndex];
             InRacePhase.current_scene.Renderables.Remove(originalCar);
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, (Car) originalCar.CarRef.ClonedMesh!, 0, 0);
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, (Car) originalCar.CarRef.ClonedMesh!, 0, 0, true);
             InRacePhase.current_scene.Renderables.Add(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
             console.Log("Position reset");
         }
@@ -242,7 +242,7 @@ namespace NFMWorld.Mad
             console.Log($"Switched to stage '{stageName}'");
 
             InRacePhase.CarsInRace.Clear();
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0);
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
             InRacePhase.current_scene = new Scene(
                 GameSparker._graphicsDevice,
                 [InRacePhase.CurrentStage, ..InRacePhase.CarsInRace],
@@ -271,7 +271,7 @@ namespace NFMWorld.Mad
 
             InRacePhase.current_scene.Renderables.Remove(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
             InRacePhase.playerCarName = car.FileName;
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, car, 0, 0);
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, car, 0, 0, true);
             InRacePhase.current_scene.Renderables.Add(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
             InRacePhase.gamemode.Reset();
         
