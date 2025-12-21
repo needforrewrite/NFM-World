@@ -34,6 +34,18 @@ namespace NFMWorld.Mad
             console.RegisterCommand("r_blackpoint", SetBlackPoint);
             console.RegisterCommand("r_whitepoint", SetWhitePoint);
             console.RegisterCommand("r_displaytrackers", (c, args) => GameSparker.devRenderTrackers = !GameSparker.devRenderTrackers);
+            
+            // gamemode
+            console.RegisterCommand("go_tt", (c, args) =>
+            {
+                InRacePhase.gamemode = new TimeTrialGamemode();
+                GameSparker.CurrentPhase = GameSparker.InRace;
+            });
+            console.RegisterCommand("go_sbox", (c, args) =>
+            {
+                InRacePhase.gamemode = new SandboxGamemode();
+                GameSparker.CurrentPhase = GameSparker.InRace;
+            });
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 

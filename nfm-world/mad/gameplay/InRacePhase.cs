@@ -57,13 +57,11 @@ public class InRacePhase : BasePhase
     }
     private static ViewMode currentViewMode = ViewMode.Follow;
     
-    public static BaseGamemode gamemode = null!;
+    public static BaseGamemode gamemode = new SandboxGamemode();
 
     public override void Enter()
     {
         base.Enter();
-
-        gamemode = new SandboxGamemode();
 
         LoadStage("nfm2/15_dwm", _graphicsDevice);
 
