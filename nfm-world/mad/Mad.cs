@@ -455,7 +455,7 @@ public class Mad
     }
 
     int Mtcount = 0;
-    int py = 0;;
+    int py = 0;
 
     internal void Drive(Control control, ContO conto)
     {
@@ -2225,7 +2225,7 @@ public class Mad
 
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
-    private void OmarTrackPieceCollision(Control control, ContO conto, float[] wheelx, float[] wheely, float[] wheelz,
+    private void OmarTrackPieceCollision(Control control, ContO conto, Span<float> wheelx, Span<float> wheely, Span<float> wheelz,
         float groundY, float wheelYThreshold, float wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded)
     {
         hitVertical = false;
