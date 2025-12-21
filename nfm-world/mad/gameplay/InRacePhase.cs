@@ -161,7 +161,7 @@ public class InRacePhase : BasePhase
         
         G.SetColor(new Color(0, 0, 0));
         G.DrawString($"Render: {Program._lastFrameTime}ms", 100, 100);
-        G.DrawString($"Tick: {Program._lastTickTime}ms", 100, 120);
+        G.DrawString($"Tick: {Program._lastTickTime}μs", 100, 120);
         G.DrawString($"Power: {CarsInRace[0]?.Mad?.Power:0.00}", 100, 140);
         G.DrawString($"Ticks executed last frame: {Program._lastTickCount}", 100, 160);
 
