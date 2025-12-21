@@ -22,7 +22,7 @@ public class Stage : IRenderable
     public double musicFreqMul = 1.0d;
     public double musicTempoMul = 0d;
 
-    public string Name = "Unknown";
+    public string Name = "hogan rewish";
 
     public Sky sky;
     public Ground ground;
@@ -30,7 +30,9 @@ public class Stage : IRenderable
     public GroundPolys? clouds;
     public Mountains? mountains;
 
-    private const int indexOffset = 10;
+    public static int indexOffset = 10;
+    private bool swapYandRot = false;
+    private bool reverseChkY = false;
 
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
@@ -47,6 +49,9 @@ public class Stage : IRenderable
         var maxt = 0;
         var maxb = 100;
         var line = "";
+        swapYandRot = false;
+        indexOffset = 10;
+        reverseChkY = false;
         try
         {
             //var customStagePath = "stages/" + CheckPoints.Stage + ".txt";
@@ -194,6 +199,21 @@ public class Stage : IRenderable
                     );
                 }
 
+                if (line.StartsWith("modeloffset"))
+                {
+                    indexOffset = Utility.GetInt("modeloffset", line, 0);
+                }
+
+                if (line.StartsWith("swapRotY"))
+                {
+                    swapYandRot = true;
+                }
+
+                if (line.StartsWith("reverseChkY"))
+                {
+                    reverseChkY = true;
+                }
+
                 if (line.StartsWith("set"))
                 {
                     if (!TryGetPieceToPlace(Utility.GetString("set", line, 0), out var mesh)) continue;
@@ -203,13 +223,27 @@ public class Stage : IRenderable
                     var hasCustomY = line.Split(',').Length >= 5;
                     if (hasCustomY)
                     {
-                        setheight = Utility.GetInt("set", line, 4) * -1;
+                        if(swapYandRot)
+                        {
+                            setheight = Utility.GetInt("set", line, 3);
+                        }
+                        else
+                        {
+                            setheight = Utility.GetInt("set", line, 4) * -1;
+                        }
+                    }
+
+                    var rotPlace = 3;
+
+                    if (swapYandRot)
+                    {
+                        rotPlace = 4;
                     }
 
                     pieces[stagePartCount] = new Mesh(
                         mesh,
                         new Vector3(Utility.GetInt("set", line, 1), setheight, Utility.GetInt("set", line, 2)),
-                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", line, 3)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
+                        new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", line, rotPlace)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
                     if (line.Contains(")p"))     //AI tags
                     {
                         // CheckPoints.X[CheckPoints.N] = Utility.GetInt("set", astring, 1);
@@ -250,20 +284,37 @@ public class Stage : IRenderable
                     
                     if (!TryGetPieceToPlace(Utility.GetString("chk", line, 0), out var mesh)) continue;
 
-                    if (mesh.FileName == "aircheckpoint")
+                    if (mesh.FileName == "aircheckpoint" || reverseChkY)
                     {
                         ymult = 1; // default to inverted Y for stupid rollercoaster chks for compatibility reasons
                     }
 
                     var chkheight = World.Ground;
 
-                    AngleSingle rotation = AngleSingle.FromDegrees(Utility.GetInt("chk", line, 3));
+                    var rotPlace = 3;
+                    if (swapYandRot)
+                    {
+                        rotPlace = 4;
+                    }
+
+                    AngleSingle rotation = AngleSingle.FromDegrees(Utility.GetInt("chk", line, rotPlace));
 
                     // Check if optional Y coordinate is provided (5 parameters instead of 4)
                     var hasCustomY = line.Split(',').Length >= 5;
+
+
                     if (hasCustomY)
                     {
-                        chkheight = Utility.GetInt("chk", line, 4) * ymult;
+
+                        if(swapYandRot)
+                        {
+                            chkheight = Utility.GetInt("chk", line, 3) * ymult;
+                        }
+                        else
+                        {
+                            chkheight = Utility.GetInt("chk", line, 4) * ymult;
+                        }
+
                         pieces[stagePartCount] = new CheckPoint(
                             mesh,
                             new Vector3(Utility.GetInt("chk", line, 1), chkheight, Utility.GetInt("chk", line, 2)),
