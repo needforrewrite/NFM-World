@@ -40,6 +40,7 @@ public unsafe class Program : Game
     private KeyboardState oldKeyState;
     private MouseState oldMouseState;
     private NanoVGRenderer _nvg;
+    private TimeStep _tickTimeStep = new((1000f / GameSparker.TargetTps) / 1000f);
     public const int NumCascades = 3;
 
     private static bool loaded;
@@ -257,7 +258,7 @@ public unsafe class Program : Game
         var tick = new MicroStopwatch();
         tick.Start();
 
-        var timesToTick = TimeStep.Update(gameTime);
+        var timesToTick = _tickTimeStep.Update(gameTime);
         for (int i = 0; i < timesToTick; i++)
         {
             GameSparker.CurrentPhase.BeginGameTick();

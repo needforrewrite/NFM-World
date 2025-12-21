@@ -8,7 +8,7 @@ public class Mad
 {
     public Boolean Halted = false;
 
-    private static readonly float _tickRate = GameSparker.PHYSICS_MULTIPLIER;
+    private const float _tickRate = GameSparker.PHYSICS_MULTIPLIER;
 
     public event EventHandler<(float f, int i)> SfxPlayCrash;
     public event EventHandler<(int i, float f)> SfxPlaySkid;
@@ -24,6 +24,10 @@ public class Mad
     internal int Cn;
     internal int Cntdest;
     private int _cntouch;
+    
+    /// <summary>
+    /// Is colliding with the client player car
+    /// </summary>
     private bool _colidim;
     private readonly int[,] _crank = new int[4, 4];
     internal float Cxz;
@@ -112,10 +116,13 @@ public class Mad
     internal bool Wtouch;
     private int _xtpower;
 
-    internal Mad(CarStats stat, int i)
+    private bool IsClientPlayer;
+
+    internal Mad(CarStats stat, int im, bool isClientPlayer)
     {
         Stat = stat;
-        Im = i;
+        Im = im;
+        IsClientPlayer = isClientPlayer;
     }
 
     public void SetStat(CarStats stat)
@@ -128,218 +135,261 @@ public class Mad
         return px > bx - szx && px < bx + szx && pz > bz - szz && pz < bz + szz && py > by - szy && py < by + (szy == 0 ? 100 : szy);
     }
 
-    /*
-        internal void Colide(ContO conto, Mad mad118, ContO conto119)
-        {
-            var fs = new float[4];
-            var fs120 = new float[4];
-            var fs121 = new float[4];
-            var fs122 = new float[4];
-            var fs123 = new float[4];
-            var fs124 = new float[4];
-            for (var i1 = 0; i1 < 4; i1++)
-            {
-                fs[i1] = conto.X + conto.Keyx[i1];
-                if (Capsized)
-                {
-                    fs120[i1] = conto.Y + Stat.Flipy + Squash;
-                }
-                else
-                {
-                    fs120[i1] = conto.Y + conto.Grat;
-                }
-                fs121[i1] = conto.Z + conto.Keyz[i1];
-                fs122[i1] = conto119.X + conto119.Keyx[i1];
-                if (Capsized)
-                {
-                    fs123[i1] = conto119.Y + mad118.Stat.Flipy + mad118.Squash;
-                }
-                else
-                {
-                    fs123[i1] = conto119.Y + conto119.Grat;
-                }
-                fs124[i1] = conto119.Z + conto119.Keyz[i1];
-            }
-            Rot(fs, fs120, conto.X, conto.Y, conto.Xy, 4);
-            Rot(fs120, fs121, conto.Y, conto.Z, conto.Zy, 4);
-            Rot(fs, fs121, conto.X, conto.Z, conto.Xz, 4);
-            Rot(fs122, fs123, conto119.X, conto119.Y, conto119.Xy, 4);
-            Rot(fs123, fs124, conto119.Y, conto119.Z, conto119.Zy, 4);
-            Rot(fs122, fs124, conto119.X, conto119.Z, conto119.Xz, 4);
-            if (Rpy(conto.X, conto119.X, conto.Y, conto119.Y, conto.Z, conto119.Z) <
-                (conto.MaxR * conto.MaxR + conto119.MaxR * conto119.MaxR) * 1.5)
-            {
-                if (!_caught[mad118.Im] && (Speed != 0.0F || mad118.Speed != 0.0F))
-                {
-                    if (Math.Abs(Power * Speed * Stat.Moment) !=
-                        Math.Abs(mad118.Power * mad118.Speed * mad118.Stat.Moment))
-                    {
-                        _dominate[mad118.Im] = Math.Abs(Power * Speed * Stat.Moment) >
-                                               Math.Abs(mad118.Power * mad118.Speed * mad118.Stat.Moment);
-                    }
-                    else
-                    {
-                        _dominate[mad118.Im] = Stat.Moment > mad118.Stat.Moment;
-                    }
+    internal void Colide(ContO conto, Mad othermad, ContO otherconto)
+    {
+        var random = new URandom(conto.X + otherconto.X);
+        
+        Span<float> wheelx = stackalloc float[4];
+        Span<float> wheely = stackalloc float[4];
+        Span<float> wheelz = stackalloc float[4];
+        Span<float> otherwheelx = stackalloc float[4];
+        Span<float> otherwheely = stackalloc float[4];
+        Span<float> otherwheelz = stackalloc float[4];
+        
+        // No hypergliding fixes are needed here because this is only called during collisions
+        // however we need this code or else sparks will come out of the wrong place
+        var bottomy = GetBottomY(this, conto);
+        var otherbottomy = GetBottomY(othermad, otherconto);
 
-                    _caught[mad118.Im] = true;
-                }
-            }
-            else if (_caught[mad118.Im])
+        var wheelGround = GetWheelGround(this, conto, bottomy);
+        var otherWheelGround = GetWheelGround(othermad, otherconto, otherbottomy);
+
+        for (var i1 = 0; i1 < 4; i1++)
+        {
+            wheelx[i1] = conto.X + conto.Keyx[i1];
+            wheely[i1] = conto.Y + bottomy;
+            wheelz[i1] = conto.Z + conto.Keyz[i1];
+            otherwheelx[i1] = otherconto.X + otherconto.Keyx[i1];
+            otherwheely[i1] = otherconto.Y + bottomy;
+            otherwheelz[i1] = otherconto.Z + otherconto.Keyz[i1];
+        }
+        UMath.Rot(wheelx, wheely, conto.X, conto.Y, conto.Xy, 4);
+        UMath.Rot(wheely, wheelz, conto.Y, conto.Z, conto.Zy, 4);
+        UMath.Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
+        UMath.Rot(otherwheelx, otherwheely, otherconto.X, otherconto.Y, otherconto.Xy, 4);
+        UMath.Rot(otherwheely, otherwheelz, otherconto.Y, otherconto.Z, otherconto.Zy, 4);
+        UMath.Rot(otherwheelx, otherwheelz, otherconto.X, otherconto.Z, otherconto.Xz, 4);
+        if (Rpy(conto.X, otherconto.X, conto.Y, otherconto.Y, conto.Z, otherconto.Z) <
+            (conto.MaxR * conto.MaxR + otherconto.MaxR * otherconto.MaxR) * 1.5)
+        {
+            if (!_caught[othermad.Im] && (Speed != 0.0F || othermad.Speed != 0.0F))
             {
-                _caught[mad118.Im] = false;
-            }
-            var i = 0;
-            var i125 = 0;
-            if (_dominate[mad118.Im])
-            {
-                var i126 =
-                    (int) (((Scz[0] - mad118.Scz[0] + Scz[1] - mad118.Scz[1] + Scz[2] - mad118.Scz[2] + Scz[3] -
-                             mad118.Scz[3]) *
-                            (Scz[0] - mad118.Scz[0] + Scz[1] - mad118.Scz[1] + Scz[2] - mad118.Scz[2] + Scz[3] -
-                             mad118.Scz[3]) +
-                            (Scx[0] - mad118.Scx[0] + Scx[1] - mad118.Scx[1] + Scx[2] - mad118.Scx[2] + Scx[3] -
-                             mad118.Scx[3]) * (Scx[0] - mad118.Scx[0] + Scx[1] - mad118.Scx[1] + Scx[2] -
-                                mad118.Scx[2] + Scx[3] - mad118.Scx[3])) / 16.0F);
-                var i127 = 7000;
-                var f = 1.0F;
-                if (XTGraphics.Multion != 0)
+                if (Math.Abs(Math.Abs(Power * Speed * Stat.Moment) - Math.Abs(othermad.Power * othermad.Speed * othermad.Stat.Moment)) > 0.001f)
                 {
-                    i127 = 28000;
-                    f = 1.27F;
+                    _dominate[othermad.Im] = Math.Abs(Power * Speed * Stat.Moment) > Math.Abs(othermad.Power * othermad.Speed * othermad.Stat.Moment);
                 }
-                for (var i128 = 0; i128 < 4; i128++)
+                else
                 {
-                    for (var i129 = 0; i129 < 4; i129++)
+                    _dominate[othermad.Im] = Stat.Moment > othermad.Stat.Moment;
+                }
+
+                _caught[othermad.Im] = true;
+            }
+        }
+        else if (_caught[othermad.Im])
+        {
+            _caught[othermad.Im] = false;
+        }
+        var totalOtherDamage = 0;
+        var totalOwnDamage = 0;
+        if (_dominate[othermad.Im])
+        {
+            var impactMagnitude =
+                (int) (((Scz[0] - othermad.Scz[0] + Scz[1] - othermad.Scz[1] + Scz[2] - othermad.Scz[2] + Scz[3] - othermad.Scz[3]) *
+                        (Scz[0] - othermad.Scz[0] + Scz[1] - othermad.Scz[1] + Scz[2] - othermad.Scz[2] + Scz[3] - othermad.Scz[3]) +
+                        (Scx[0] - othermad.Scx[0] + Scx[1] - othermad.Scx[1] + Scx[2] - othermad.Scx[2] + Scx[3] - othermad.Scx[3]) *
+                        (Scx[0] - othermad.Scx[0] + Scx[1] - othermad.Scx[1] + Scx[2] - othermad.Scx[2] + Scx[3] - othermad.Scx[3])) / 16.0F);
+            var impactExtraRdius = 7000;
+            var damageMult = 1.0F;
+            if (World.UseMultiplayerCollisionModifiers)
+            {
+                impactExtraRdius = 28000;
+                damageMult = 1.27F;
+            }
+            for (var wheel = 0; wheel < 4; wheel++)
+            {
+                for (var otherwheel = 0; otherwheel < 4; otherwheel++)
+                {
+                    if (Rpy(wheelx[wheel], otherwheelx[otherwheel], wheely[wheel], otherwheely[otherwheel], wheelz[wheel], otherwheelz[otherwheel]) <
+                        (impactMagnitude + impactExtraRdius) * (othermad.Stat.Comprad + Stat.Comprad))
                     {
-                        if (Rpy(fs[i128], fs122[i129], fs120[i128], fs123[i129], fs121[i128], fs124[i129]) <
-                            (i126 + i127) * (mad118.Stat.Comprad + Stat.Comprad))
+                        if (Math.Abs(Scx[wheel] * Stat.Moment) > Math.Abs(othermad.Scx[otherwheel] * othermad.Stat.Moment))
                         {
-                            if (Math.Abs(Scx[i128] * Stat.Moment) > Math.Abs(mad118.Scx[i129] * mad118.Stat.Moment))
+                            var f130 = othermad.Scx[otherwheel] * Stat.Revpush;
+                            if (f130 > 300.0F)
                             {
-                                var f130 = mad118.Scx[i129] * Stat.Revpush;
-                                if (f130 > 300.0F)
-                                {
-                                    f130 = 300.0F;
-                                }
-                                if (f130 < -300.0F)
-                                {
-                                    f130 = -300.0F;
-                                }
-                                var f131 = Scx[i128] * Stat.Push;
-                                if (f131 > 300.0F)
-                                {
-                                    f131 = 300.0F;
-                                }
-                                if (f131 < -300.0F)
-                                {
-                                    f131 = -300.0F;
-                                }
-                                mad118.Scx[i129] += f131;
-                                if (Im == XTGraphics.Im)
-                                {
-                                    mad118._colidim = true;
-                                }
-                                i += mad118.Regx(i129, f131 * Stat.Moment * f, conto119);
-                                if (mad118._colidim)
-                                {
-                                    mad118._colidim = false;
-                                }
-                                Scx[i128] -= f130;
-                                i125 += Regx(i128, -f130 * Stat.Moment * f, conto);
-                                Scy[i128] -= Stat.Revlift;
-                                if (Im == XTGraphics.Im)
-                                {
-                                    mad118._colidim = true;
-                                }
-                                i += mad118.Regy(i129, Stat.Revlift * 7, conto119);
-                                if (mad118._colidim)
-                                {
-                                    mad118._colidim = false;
-                                }
-                                if (UMath.RandomBoolean())
-                                {
-                                    conto119.Spark((fs[i128] + fs122[i129]) / 2.0F, (fs120[i128] + fs123[i129]) / 2.0F,
-                                        (fs121[i128] + fs124[i129]) / 2.0F, (mad118.Scx[i129] + Scx[i128]) / 4.0F,
-                                        (mad118.Scy[i129] + Scy[i128]) / 4.0F, (mad118.Scz[i129] + Scz[i128]) / 4.0F,
-                                        2);
-                                }
+                                f130 = 300.0F;
                             }
-                            if (Math.Abs(Scz[i128] * Stat.Moment) > Math.Abs(mad118.Scz[i129] * mad118.Stat.Moment))
+                            if (f130 < -300.0F)
                             {
-                                var f132 = mad118.Scz[i129] * Stat.Revpush;
-                                if (f132 > 300.0F)
-                                {
-                                    f132 = 300.0F;
-                                }
-                                if (f132 < -300.0F)
-                                {
-                                    f132 = -300.0F;
-                                }
-                                var f133 = Scz[i128] * Stat.Push;
-                                if (f133 > 300.0F)
-                                {
-                                    f133 = 300.0F;
-                                }
-                                if (f133 < -300.0F)
-                                {
-                                    f133 = -300.0F;
-                                }
-                                mad118.Scz[i129] += f133;
-                                if (Im == XTGraphics.Im)
-                                {
-                                    mad118._colidim = true;
-                                }
-                                i += mad118.Regz(i129, f133 * Stat.Moment * f, conto119);
-                                if (mad118._colidim)
-                                {
-                                    mad118._colidim = false;
-                                }
-                                Scz[i128] -= f132;
-                                i125 += Regz(i128, -f132 * Stat.Moment * f, conto);
-                                Scy[i128] -= Stat.Revlift;
-                                if (Im == XTGraphics.Im)
-                                {
-                                    mad118._colidim = true;
-                                }
-                                i += mad118.Regy(i129, Stat.Revlift * 7, conto119);
-                                if (mad118._colidim)
-                                {
-                                    mad118._colidim = false;
-                                }
-                                if (UMath.RandomBoolean())
-                                {
-                                    conto119.Spark((fs[i128] + fs122[i129]) / 2.0F, (fs120[i128] + fs123[i129]) / 2.0F,
-                                        (fs121[i128] + fs124[i129]) / 2.0F, (mad118.Scx[i129] + Scx[i128]) / 4.0F,
-                                        (mad118.Scy[i129] + Scy[i128]) / 4.0F, (mad118.Scz[i129] + Scz[i128]) / 4.0F,
-                                        2);
-                                }
+                                f130 = -300.0F;
                             }
-                            if (Im == XTGraphics.Im)
+                            var f131 = Scx[wheel] * Stat.Push;
+                            if (f131 > 300.0F)
                             {
-                                mad118.Lastcolido = 70;
+                                f131 = 300.0F;
                             }
-                            if (mad118.Im == XTGraphics.Im)
+                            if (f131 < -300.0F)
                             {
-                                Lastcolido = 70;
+                                f131 = -300.0F;
                             }
-                            mad118.Scy[i129] -= Stat.Lift;
+                            othermad.Scx[otherwheel] += f131;
+                            if (IsClientPlayer)
+                            {
+                                othermad._colidim = true;
+                            }
+                            totalOtherDamage += othermad.Regx(otherwheel, f131 * Stat.Moment * damageMult, otherconto, random);
+                            if (othermad._colidim)
+                            {
+                                othermad._colidim = false;
+                            }
+                            Scx[wheel] -= f130;
+                            totalOwnDamage += Regx(wheel, -f130 * Stat.Moment * damageMult, conto, random);
+                            Scy[wheel] -= Stat.Revlift;
+                            if (IsClientPlayer)
+                            {
+                                othermad._colidim = true;
+                            }
+                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto, random);
+                            if (othermad._colidim)
+                            {
+                                othermad._colidim = false;
+                            }
+                            if (UMath.RandomBoolean())
+                            {
+                                otherconto.Spark(
+                                    (wheelx[wheel] + otherwheelx[otherwheel]) / 2.0F, 
+                                    (wheely[wheel] + otherwheely[otherwheel]) / 2.0F,
+                                    (wheelz[wheel] + otherwheelz[otherwheel]) / 2.0F, 
+                                    (othermad.Scx[otherwheel] + Scx[wheel]) / 4.0F,
+                                    (othermad.Scy[otherwheel] + Scy[wheel]) / 4.0F,
+                                    (othermad.Scz[otherwheel] + Scz[wheel]) / 4.0F,
+                                    2,
+                                    (wheelGround + otherWheelGround) / 2
+                                );
+                            }
                         }
+                        if (Math.Abs(Scz[wheel] * Stat.Moment) > Math.Abs(othermad.Scz[otherwheel] * othermad.Stat.Moment))
+                        {
+                            var f132 = othermad.Scz[otherwheel] * Stat.Revpush;
+                            if (f132 > 300.0F)
+                            {
+                                f132 = 300.0F;
+                            }
+                            if (f132 < -300.0F)
+                            {
+                                f132 = -300.0F;
+                            }
+                            var f133 = Scz[wheel] * Stat.Push;
+                            if (f133 > 300.0F)
+                            {
+                                f133 = 300.0F;
+                            }
+                            if (f133 < -300.0F)
+                            {
+                                f133 = -300.0F;
+                            }
+                            othermad.Scz[otherwheel] += f133;
+                            if (IsClientPlayer)
+                            {
+                                othermad._colidim = true;
+                            }
+                            totalOtherDamage += othermad.Regz(otherwheel, f133 * Stat.Moment * damageMult, otherconto, random);
+                            if (othermad._colidim)
+                            {
+                                othermad._colidim = false;
+                            }
+                            Scz[wheel] -= f132;
+                            totalOwnDamage += Regz(wheel, -f132 * Stat.Moment * damageMult, conto, random);
+                            Scy[wheel] -= Stat.Revlift;
+                            if (IsClientPlayer)
+                            {
+                                othermad._colidim = true;
+                            }
+                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto, random);
+                            if (othermad._colidim)
+                            {
+                                othermad._colidim = false;
+                            }
+                            if (UMath.RandomBoolean())
+                            {
+                                otherconto.Spark(
+                                    (wheelx[wheel] + otherwheelx[otherwheel]) / 2.0F, 
+                                    (wheely[wheel] + otherwheely[otherwheel]) / 2.0F,
+                                    (wheelz[wheel] + otherwheelz[otherwheel]) / 2.0F,
+                                    (othermad.Scx[otherwheel] + Scx[wheel]) / 4.0F,
+                                    (othermad.Scy[otherwheel] + Scy[wheel]) / 4.0F, 
+                                    (othermad.Scz[otherwheel] + Scz[wheel]) / 4.0F,
+                                    2,
+                                    (wheelGround + otherWheelGround) / 2);
+                            }
+                        }
+                        if (IsClientPlayer)
+                        {
+                            othermad.Lastcolido = 70;
+                        }
+                        if (othermad.IsClientPlayer)
+                        {
+                            Lastcolido = 70;
+                        }
+                        othermad.Scy[otherwheel] -= Stat.Lift;
                     }
                 }
             }
-            if (XTGraphics.Multion == 1)
+        }
+        // if (XTGraphics.Multion == 1)
+        // {
+        //     if (othermad.Im == XTGraphics.Im && i != 0)
+        //     {
+        //         XTGraphics.Dcrashes[Im] += i;
+        //     }
+        //     if (Im == XTGraphics.Im && i125 != 0)
+        //     {
+        //         XTGraphics.Dcrashes[othermad.Im] += i125;
+        //     }
+        // }
+    }
+
+    private static int GetWheelGround(Mad mad, ContO conto, float bottomy)
+    {
+        int wheelGround;
+        if (World.IsHyperglidingEnabled)
+        {
+            wheelGround = (int)((bottomy * 1 / _tickRate) * (1 - _tickRate));
+            if (!mad.BadLanding)
             {
-                if (mad118.Im == XTGraphics.Im && i != 0)
-                {
-                    XTGraphics.Dcrashes[Im] += i;
-                }
-                if (Im == XTGraphics.Im && i125 != 0)
-                {
-                    XTGraphics.Dcrashes[mad118.Im] += i125;
-                }
+                wheelGround = -wheelGround;
             }
-        }*/
+        }
+        else
+        {
+            wheelGround = mad.BadLanding ? mad.Stat.Flipy + mad.Squash : -conto.Grat;
+        }
+
+        return wheelGround;
+    }
+
+    private static float GetBottomY(Mad mad, ContO conto)
+    {
+        float bottomy;
+        if (World.IsHyperglidingEnabled)
+        {
+            if (mad.BadLanding)
+            {
+                bottomy = (float)((mad.Stat.Flipy + mad.Squash) * _tickRate);
+            }
+            else
+            {
+                bottomy = (float)(conto.Grat * _tickRate);
+            }
+        }
+        else
+        {
+            bottomy = 0;
+        }
+
+        return bottomy;
+    }
 
     private void Distruct(ContO conto)
     {
@@ -484,23 +534,7 @@ public class Mad
         // maxine: this controls hypergliding. to fix hypergliding, set to 0, then update wheelGround to prevent
         // car getting stuck in the ground
         // we multiply it by tickrate because the effect caused by hypergliding is applied every tick
-        float bottomy;
-
-        if (World.IsHyperglidingEnabled)
-        {
-            if (BadLanding)
-            {
-                bottomy = (float)((Stat.Flipy + Squash) * _tickRate);
-            }
-            else
-            {
-                bottomy = (float)(conto.Grat * _tickRate);
-            }
-        }
-        else
-        {
-            bottomy = 0;
-        }
+        float bottomy = GetBottomY(this, conto);
 
         control.Zyinv = zyinv;
         //
@@ -1030,9 +1064,9 @@ public class Mad
             }
         }
 
-        var wheelx = new float[4];
-        var wheelz = new float[4];
-        var wheely = new float[4];
+        Span<float> wheelx = stackalloc float[4];
+        Span<float> wheelz = stackalloc float[4];
+        Span<float> wheely = stackalloc float[4];
         for (var i24 = 0; i24 < 4; i24++)
         {
             wheelx[i24] = conto.Keyx[i24] + conto.X;
@@ -1111,19 +1145,7 @@ public class Mad
         } //
 
         // maxine: we counteract the reduced bottomy from hypergliding here
-        int wheelGround;
-        if (World.IsHyperglidingEnabled)
-        {
-            wheelGround = (int)((bottomy * 1 / _tickRate) * (1 - _tickRate));
-            if (!BadLanding)
-            {
-                wheelGround = -wheelGround;
-            }
-        }
-        else
-        {
-            wheelGround = BadLanding ? Stat.Flipy + Squash : -conto.Grat;
-        }
+        int wheelGround = GetWheelGround(this, conto, bottomy);
 
         if (Mtouch)
         {
@@ -2206,7 +2228,7 @@ public class Mad
 
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
-    private void OmarTrackPieceCollision(Control control, ContO conto, float[] wheelx, float[] wheely, float[] wheelz,
+    private void OmarTrackPieceCollision(Control control, ContO conto, Span<float> wheelx, Span<float> wheely, Span<float> wheelz,
         float groundY, float wheelYThreshold, float wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, URandom random)
     {
         hitVertical = false;

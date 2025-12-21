@@ -3,26 +3,25 @@ using NFMWorld.Mad;
 
 namespace NFMWorld;
 
-public class TimeStep
+public class TimeStep(float targetDeltaTime)
 {
-    public const float DeltaTime = (1000f / GameSparker.TargetTps) / 1000f; // in seconds
-    private static double? currentTime;
-    private static double accumulator = 0.0;
+    private double? currentTime;
+    private double accumulator = 0.0;
 
     // Returns the amount of times to tick game logic this frame.
-    public static int Update(GameTime gameTime)
+    public int Update(GameTime gameTime)
     {
         double newTime = gameTime.TotalGameTime.TotalSeconds;
-        double frameTime = currentTime != null ? newTime - currentTime.Value : DeltaTime;
+        double frameTime = currentTime != null ? newTime - currentTime.Value : targetDeltaTime;
         currentTime = newTime;
 
         accumulator += frameTime;
 
         var updateCount = 0;
-        while (accumulator >= DeltaTime)
+        while (accumulator >= targetDeltaTime)
         {
             updateCount++;
-            accumulator -= DeltaTime;
+            accumulator -= targetDeltaTime;
             // t += dt;
         }
 
