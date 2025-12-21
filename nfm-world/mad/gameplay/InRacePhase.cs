@@ -59,6 +59,16 @@ public class InRacePhase : BasePhase
     
     public static BaseGamemode gamemode = null!;
 
+    public override void RecreateScene()
+    {
+        current_scene = new Scene(
+            _graphicsDevice,
+            [CurrentStage, ..CarsInRace],
+            camera,
+            lightCameras
+        );
+    }
+
     public override void Enter()
     {
         base.Enter();
@@ -75,13 +85,13 @@ public class InRacePhase : BasePhase
             lightCameras
         );
 
-        gamemode.Enter();
+        gamemode.Enter(CarsInRace, CurrentStage);
     }
 
     public override void Exit()
     {
         base.Exit();
-        gamemode.Exit();
+        gamemode.Exit(CarsInRace, CurrentStage);
 
         GameSparker.CurrentMusic?.Unload();
     }
@@ -151,7 +161,7 @@ public class InRacePhase : BasePhase
         
         G.SetColor(new Color(0, 0, 0));
         G.DrawString($"Render: {Program._lastFrameTime}ms", 100, 100);
-        G.DrawString($"Tick: {Program._lastTickTime}ms", 100, 120);
+        G.DrawString($"Tick: {Program._lastTickTime}μs", 100, 120);
         G.DrawString($"Power: {CarsInRace[0]?.Mad?.Power:0.00}", 100, 140);
         G.DrawString($"Ticks executed last frame: {Program._lastTickCount}", 100, 160);
 

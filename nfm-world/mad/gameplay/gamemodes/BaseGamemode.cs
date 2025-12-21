@@ -3,12 +3,12 @@ using NFMWorld.Util;
 
 public abstract class BaseGamemode
 {
-    public virtual void Enter()
+    public virtual void Enter(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
         
     }
 
-    public virtual void Exit()
+    public virtual void Exit(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
         
     }
