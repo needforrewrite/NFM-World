@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using EarcutNet;
+using Microsoft.Xna.Framework;
 using Poly2Tri;
 
 namespace HoleyDiver;
@@ -21,132 +22,18 @@ public class PolygonTriangulator
         Vector3 centroid = ComputeCentroid(vertices);
         Vector3 normal = ComputeBestFitPlaneNormal(vertices, centroid);
 
-        var projected2D = ProjectTo2D(vertices, centroid, normal);
+        var vertices2d = ProjectTo2D(vertices, centroid, normal);
 
-        const float epsilon = 1e-5f;
-        var uniqueVertices = new List<Vector2>();
-        var indexMap = new List<int>(projected2D.Count);
-
-        for (int i = 0; i < projected2D.Count; i++)
+        var indexMap = new List<int>(vertices2d.Count);
+        for (int i = 0; i < vertices2d.Count; i++)
         {
-            int found = -1;
-            for (int j = 0; j < uniqueVertices.Count; j++)
-            {
-                if (Vector2.Distance(projected2D[i], uniqueVertices[j]) < epsilon)
-                {
-                    found = j;
-                    break;
-                }
-            }
-
-            if (found >= 0)
-            {
-                indexMap.Add(found);
-            }
-            else
-            {
-                indexMap.Add(uniqueVertices.Count);
-                uniqueVertices.Add(projected2D[i]);
-            }
+            indexMap.Add(i);
         }
 
-        var initialPoly = new List<int>(vertices.Count);
-        for (int i = 0; i < vertices.Count; i++)
-        {
-            initialPoly.Add(indexMap[i]);
-        }
+        List<List<int>> polyLines = ExtractRegions(indexMap, vertices2d);
 
-        var uniqueIndices = new HashSet<int>(initialPoly);
-
-        List<List<int>> polyLines;
-        if (uniqueIndices.Count == initialPoly.Count)
-        {
-            polyLines = [initialPoly];
-        }
-        else
-        {
-            polyLines = ExtractRegions(initialPoly, uniqueVertices);
-        }
-
-        // WORKAROUND: ExtractRegions sometimes produces incomplete outer boundaries
-        // The outer boundary should include all vertices not in holes, in path order
-        if (polyLines.Count > 1)
-        {
-            // Collect all hole vertices
-            var holeVertices = new HashSet<int>();
-            for (int r = 1; r < polyLines.Count; r++)
-            {
-                foreach (var idx in polyLines[r])
-                {
-                    if (idx != -1)  // Skip the hole marker
-                        holeVertices.Add(idx);
-                }
-            }
-
-            // Reconstruct outer polygon from original path, excluding hole vertices
-            var reconstructedOuter = new List<int>();
-            var seenOuter = new HashSet<int>();
-
-            foreach (var idx in initialPoly)
-            {
-                if (!holeVertices.Contains(idx) && !seenOuter.Contains(idx))
-                {
-                    reconstructedOuter.Add(idx);
-                    seenOuter.Add(idx);
-                }
-            }
-
-            if (reconstructedOuter.Count >= 3)
-            {
-                polyLines[0] = reconstructedOuter;
-            }
-        }
-
-        // Separate outer polygon from holes (holes are marked with -1 as first element)
-        List<int>? outerPoly = null;
-        var holePolys = new List<List<int>>();
-
-        foreach (var region in polyLines)
-        {
-            if (region.Count > 0 && region[0] == -1)
-            {
-                // This is a hole - remove the marker
-                holePolys.Add(region.Skip(1).ToList());
-            }
-            else if (outerPoly == null)
-            {
-                outerPoly = region;
-            }
-            else
-            {
-                // Additional outer regions (shouldn't happen with current logic)
-                // Just add them as separate polygons to triangulate
-            }
-        }
-
-        // Remove any hole vertices that are shared with the outer boundary (bridge points)
-        if (outerPoly != null && holePolys.Count > 0)
-        {
-            var outerSet = new HashSet<int>(outerPoly);
-
-            for (int h = 0; h < holePolys.Count; h++)
-            {
-                holePolys[h] = holePolys[h].Where(idx => !outerSet.Contains(idx)).ToList();
-            }
-            // Remove any holes that became too small
-            holePolys.RemoveAll(h => h.Count < 3);
-        }
-
-        if (outerPoly == null || outerPoly.Count < 3)
-        {
-            return new TriangulationResult
-            {
-                Triangles = Array.Empty<int>(),
-                PlaneNormal = normal,
-                Centroid = centroid,
-                RegionCount = 0
-            };
-        }
+        var outerPoly = polyLines[0];
+        var holePolys = polyLines[1..];
 
         // For polygons with holes, we need to include hole vertices in the triangulation
         // Build a complete vertex list and use constrained triangulation
@@ -156,194 +43,57 @@ public class PolygonTriangulator
         // Since simple centroid filtering doesn't work well, let's try adding hole vertices
         // to create a proper constrained triangulation
 
-        if (holePolys.Count > 0)
+        // Use Mapbox Earcut.NET triangulation
+        // var tessellation = Earcut.Tessellate(new double[] {
+        //     0,   0,                 // Vertex 0 (outline)
+        //     100,   0,                 // Vertex 1 (outline)
+        //     100, 100,                 // Vertex 2 (outline)
+        //     0, 100,                 // Vertex 3 (outline)
+        //     20,  20,                 // Vertex 4 (hole)
+        //     80,  20,                 // Vertex 5 (hole)
+        //     80,  80,                 // Vertex 6 (hole)
+        //     20,  80                  // Vertex 7 (hole)
+        // }, new int[] {
+        //     4                        // Index of the first Vertex of the hole
+        // });
+
+        var points = new List<double>();
+        var holes = new List<int>();
+
+        var index = 0;
+        foreach (var point in outerPoly)
         {
-            // Use Poly2Tri constrained Delaunay triangulation for polygons with holes
-            try
-            {
-                // Convert outer polygon to PolygonPoints
-                var outerPoints = new List<PolygonPoint>(outerPoly.Count);
-                foreach (var idx in outerPoly)
-                {
-                    var pt = uniqueVertices[idx];
-                    outerPoints.Add(new PolygonPoint(pt.X, pt.Y));
-                }
-
-                var poly = new Polygon(outerPoints);
-
-                // Add each hole
-                foreach (var hole in holePolys)
-                {
-                    var holePoints = new List<PolygonPoint>(hole.Count);
-                    foreach (var idx in hole)
-                    {
-                        var pt = uniqueVertices[idx];
-                        holePoints.Add(new PolygonPoint(pt.X, pt.Y));
-                    }
-
-                    poly.AddHole(new Polygon(holePoints));
-                }
-
-                // Triangulate using constrained Delaunay
-                DTSweepContext tcx = new DTSweepContext();
-                tcx.PrepareTriangulation(poly);
-                DTSweep.Triangulate(tcx);
-
-                // Extract triangles and map back to original vertex indices
-                foreach (var tri in poly.Triangles)
-                {
-                    var triIndices = new List<int>(3);
-                    for (int i = 0; i < 3; i++)
-                    {
-                        var p = tri.Points[i];
-                        // Find the unique vertex index that matches this point
-                        int uniqueIdx = -1;
-                        for (int j = 0; j < uniqueVertices.Count; j++)
-                        {
-                            if (Math.Abs(uniqueVertices[j].X - p.X) < 1e-5f &&
-                                Math.Abs(uniqueVertices[j].Y - p.Y) < 1e-5f)
-                            {
-                                uniqueIdx = j;
-                                break;
-                            }
-                        }
-
-                        if (uniqueIdx >= 0)
-                        {
-                            // Map to original vertex index
-                            int origIdx = -1;
-                            for (int k = 0; k < indexMap.Count; k++)
-                            {
-                                if (indexMap[k] == uniqueIdx)
-                                {
-                                    origIdx = k;
-                                    break;
-                                }
-                            }
-                            if (origIdx >= 0)
-                            {
-                                triIndices.Add(origIdx);
-                            }
-                        }
-                    }
-
-                    // Only add complete triangles (must have exactly 3 vertices)
-                    if (triIndices.Count == 3)
-                    {
-                        allTriangles.AddRange(triIndices);
-                    }
-                    else
-                    {
-                        Console.WriteLine("Delaunay created degenerate triangle, this should never happen!");
-                    }
-                }
-
-                return new TriangulationResult
-                {
-                    Triangles = allTriangles.ToArray(),
-                    PlaneNormal = normal,
-                    Centroid = centroid,
-                    RegionCount = 1 + holePolys.Count
-                };
-            }
-            catch (Exception ex)
-            {
-                // If Poly2Tri fails, fall back to simple ear-cut with centroid filtering
-                Console.WriteLine($"Poly2Tri triangulation failed: {ex.Message}. Falling back to ear-cut.");
-            }
-
-            // Fallback: use ear-cut with centroid filtering
-            var outerVerts = new List<Vector2>(outerPoly.Count);
-            foreach (var idx in outerPoly)
-                outerVerts.Add(uniqueVertices[idx]);
-
-            var outerTris = EarCutTriangulateSimple(outerVerts);
-
-            // For the outer triangles, filter out any that have centroid inside a hole
-            for (int t = 0; t < outerTris.Count; t += 3)
-            {
-                int i0 = outerPoly[outerTris[t]];
-                int i1 = outerPoly[outerTris[t + 1]];
-                int i2 = outerPoly[outerTris[t + 2]];
-
-                Vector2 triCentroid = (uniqueVertices[i0] + uniqueVertices[i1] + uniqueVertices[i2]) / 3f;
-
-                bool insideHole = false;
-                foreach (var hole in holePolys)
-                {
-                    var holeVerts = new List<Vector2>();
-                    foreach (var idx in hole)
-                        holeVerts.Add(uniqueVertices[idx]);
-
-                    if (PointInPolygon(triCentroid, holeVerts))
-                    {
-                        insideHole = true;
-                        break;
-                    }
-                }
-
-                if (!insideHole)
-                {
-                    // Map back to original indices
-                    for (int vi = 0; vi < 3; vi++)
-                    {
-                        int uniqueIdx = outerPoly[outerTris[t + vi]];
-                        int origIdx = -1;
-                        for (int i = 0; i < indexMap.Count; i++)
-                        {
-                            if (indexMap[i] == uniqueIdx)
-                            {
-                                origIdx = i;
-                                break;
-                            }
-                        }
-                        if (origIdx >= 0)
-                            allTriangles.Add(origIdx);
-                    }
-                }
-            }
-
-            return new TriangulationResult
-            {
-                Triangles = allTriangles.ToArray(),
-                PlaneNormal = normal,
-                Centroid = centroid,
-                RegionCount = 1 + holePolys.Count
-            };
+            points.Add(vertices2d[point].X);
+            points.Add(vertices2d[point].Y);
+            index++;
         }
-
-        // No holes - simple triangulation
-        var outerVertsSimple = new List<Vector2>();
-        foreach (var idx in outerPoly)
-            outerVertsSimple.Add(uniqueVertices[idx]);
-
-        var trisSimple = EarCutTriangulateSimple(outerVertsSimple);
-
-        for (int t = 0; t < trisSimple.Count; t += 3)
+        
+        foreach (var hole in holePolys)
         {
-            for (int vi = 0; vi < 3; vi++)
+            holes.Add(index);
+            foreach (var point in hole)
             {
-                int uniqueIdx = outerPoly[trisSimple[t + vi]];
-                int origIdx = -1;
-                for (int i = 0; i < indexMap.Count; i++)
-                {
-                    if (indexMap[i] == uniqueIdx)
-                    {
-                        origIdx = i;
-                        break;
-                    }
-                }
-                if (origIdx >= 0)
-                    allTriangles.Add(origIdx);
+                points.Add(vertices2d[point].X);
+                points.Add(vertices2d[point].Y);
+                index++;
             }
         }
+        
+        Console.WriteLine($"Triangulating polygon with {outerPoly.Count} outer vertices and {holePolys.Count} holes");
+        Console.WriteLine(string.Join(", ", points));
+        Console.WriteLine(string.Join(", ", holes));
+
+        var tessellation = Earcut.Tessellate(points, holes);
+
+        // tessellation contains a flat list of vertex indices. Each group of three indices forms a triangle.
+        allTriangles.AddRange(tessellation);
 
         return new TriangulationResult
         {
             Triangles = allTriangles.ToArray(),
             PlaneNormal = normal,
             Centroid = centroid,
-            RegionCount = 1
+            RegionCount = 1 + holePolys.Count
         };
     }
 
@@ -444,185 +194,158 @@ public class PolygonTriangulator
 
     private static List<List<int>> ExtractRegions(List<int> polyIndices, List<Vector2> vertices)
     {
-        List<List<int>> polyLines = [[..polyIndices]];
+        // Direct port of Python hole-finding algorithm
+        List<List<int>> polyLines = [polyIndices];
 
-        int safetyLimit = polyIndices.Count * polyIndices.Count;
-        int outerIterations = 0;
-
-        // Keep extracting until no more mirrored sequences are found
-        bool foundMatch = true;
-        while (foundMatch && outerIterations < safetyLimit)
+        while (polyLines[0].Count >= 6)
         {
-            foundMatch = false;
-            outerIterations++;
+            polyLines.Add([]);
 
-            // Process polyLines[0] if it's large enough
-            if (polyLines[0].Count < 4)
-                break;
-
+            int i0 = -1, i1 = -1, le = 0;
             int n = polyLines[0].Count;
-            int bestI0 = -1, bestI1 = -1, bestLength = 0;
 
+            // Find the longest mirrored sequence
             for (int i = 0; i < n; i++)
             {
                 for (int j = 0; j < n; j++)
                 {
-                    if (i == j) continue;
-
                     int k0 = i;
                     int k1 = j;
-                    int matchLength = 0;
-                    int maxMatchIterations = n;
+                    int cle = 0;
 
-                    while (k0 != k1 && polyLines[0][k0] == polyLines[0][k1] && matchLength < maxMatchIterations)
+                    while (k0 != k1 && polyLines[0][k0] == polyLines[0][k1])
                     {
-                        matchLength++;
-
-                        int nextK0 = (k0 + 1) % n;
-                        int nextK1 = (k1 - 1 + n) % n;
-
-                        if (nextK0 == k1 || k0 == nextK1)
-                            break;
-
-                        k0 = nextK0;
-                        k1 = nextK1;
+                        cle++;
+                        k0 = (k0 + 1) % n;
+                        k1 = (k1 - 1 + n) % n;
                     }
 
-                    if (matchLength > bestLength)
+                    if (cle > le)
                     {
-                        bestLength = matchLength;
-                        bestI0 = i;
-                        bestI1 = j;
+                        le = cle;
+                        i0 = i;
+                        i1 = j;
                     }
                 }
             }
 
-            if (bestLength >= 1)
+            if (le >= 1)
             {
-                foundMatch = true;
+                var delete = new bool[n];
 
-                var newRegion = new List<int>();
-                int start = (bestI0 + bestLength - 1) % n;
-                int end = (bestI1 - (bestLength - 1) + n) % n;
-
-                int k = start;
-                int safetyCounter = 0;
-                while (k != end && safetyCounter <= n)
+                // Extract the new region (hole)
+                int k = (i0 + le - 1) % n;
+                int endK = (i1 - (le - 1) + n) % n;
+                while (k != endK)
                 {
-                    newRegion.Add(polyLines[0][k]);
+                    polyLines[^1].Add(polyLines[0][k]);
                     k = (k + 1) % n;
-                    safetyCounter++;
                 }
 
-                if (safetyCounter <= n)
+                // Mark indices to delete from outer
+                k = i0;
+                while (k != i1)
                 {
-                    newRegion.Add(polyLines[0][end]);
-                }
-
-                var toDelete = new bool[n];
-                k = bestI0;
-                safetyCounter = 0;
-                while (k != bestI1 && safetyCounter < n)
-                {
-                    toDelete[k] = true;
+                    delete[k] = true;
                     k = (k + 1) % n;
-                    safetyCounter++;
                 }
 
+                // Delete marked indices in reverse order
                 for (int idx = n - 1; idx >= 0; idx--)
                 {
-                    if (toDelete[idx])
+                    if (delete[idx])
                     {
                         polyLines[0].RemoveAt(idx);
                     }
                 }
 
-                bool poly0Valid = polyLines[0].Count >= 3;
-                bool newRegionValid = newRegion.Count >= 3;
-
-                if (poly0Valid && newRegionValid)
+                if (le == 1)
                 {
-                    var points0 = new List<Vector2>();
-                    var pointsNew = new List<Vector2>();
-
-                    foreach (var idx in polyLines[0])
-                        points0.Add(vertices[idx]);
-                    foreach (var idx in newRegion)
-                        pointsNew.Add(vertices[idx]);
-
-                    bool poly0InsideNew = AllPointsInPolygon(points0, pointsNew);
-                    bool newInsidePoly0 = AllPointsInPolygon(pointsNew, points0);
-
-                    if (poly0InsideNew && !newInsidePoly0)
+                    if (Math.Min(polyLines[0].Count, polyLines[^1].Count) >= 3)
                     {
-                        var temp = polyLines[0];
-                        polyLines[0] = newRegion;
-                        newRegion = temp;
+                        // Check if poly0 is inside the new region (swap if needed)
+                        var points0 = new List<Vector2>();
+                        var pointsNew = new List<Vector2>();
+
+                        foreach (var idx in polyLines[0])
+                            points0.Add(vertices[idx]);
+                        foreach (var idx in polyLines[^1])
+                            pointsNew.Add(vertices[idx]);
+
+                        // If all points of poly0 are inside pointsNew, swap them
+                        if (AllPointsInPolygon(points0, pointsNew))
+                        {
+                            (polyLines[0], polyLines[^1]) = (polyLines[^1], polyLines[0]);
+                        }
                     }
-
-                    polyLines.Add(newRegion);
+                    else
+                    {
+                        if (polyLines[^1].Count < 3)
+                        {
+                            polyLines.RemoveAt(polyLines.Count - 1);
+                        }
+                        else
+                        {
+                            (polyLines[0], polyLines[^1]) = (polyLines[^1], polyLines[0]);
+                            polyLines.RemoveAt(polyLines.Count - 1);
+                        }
+                    }
                 }
-                else if (newRegionValid && !poly0Valid)
-                {
-                    polyLines[0] = newRegion;
-                }
             }
-        }
-
-        // Remove consecutive duplicate indices from all regions
-        for (int ri = 0; ri < polyLines.Count; ri++)
-        {
-            polyLines[ri] = RemoveConsecutiveDuplicates(polyLines[ri]);
-        }
-
-        polyLines.RemoveAll(r => r.Count < 3);
-
-        if (polyLines.Count == 0)
-        {
-            return new List<List<int>>();
-        }
-
-        int outerIdx = 0;
-        float maxArea = 0;
-        for (int i = 0; i < polyLines.Count; i++)
-        {
-            var verts = new List<Vector2>();
-            foreach (var idx in polyLines[i])
-                verts.Add(vertices[idx]);
-
-            float area = Math.Abs(ComputeSignedArea(verts));
-            if (area > maxArea)
+            else
             {
-                maxArea = area;
-                outerIdx = i;
+                polyLines.RemoveAt(polyLines.Count - 1);
+                break;
             }
         }
-
-        if (outerIdx != 0)
-        {
-            var temp = polyLines[0];
-            polyLines[0] = polyLines[outerIdx];
-            polyLines[outerIdx] = temp;
-        }
-
-        var holes = new List<List<int>>();
-        for (int i = 1; i < polyLines.Count; i++)
-        {
-            holes.Add(polyLines[i]);
-        }
-
-        if (holes.Count > 0)
-        {
-            // Mark holes with -1 prefix so they're passed to Poly2Tri as constraints
-            var result = new List<List<int>> { polyLines[0] };
-            foreach (var hole in holes)
-            {
-                var markedHole = new List<int> { -1 };
-                markedHole.AddRange(hole);
-                result.Add(markedHole);
-            }
-            return result;
-        }
+        //
+        // // Remove consecutive duplicate indices from all regions
+        // for (int ri = 0; ri < polyLines.Count; ri++)
+        // {
+        //     polyLines[ri] = RemoveConsecutiveDuplicates(polyLines[ri]);
+        // }
+        //
+        // polyLines.RemoveAll(r => r.Count < 3);
+        //
+        // if (polyLines.Count == 0)
+        // {
+        //     return new List<List<int>>();
+        // }
+        //
+        // // Find the outer polygon (largest area)
+        // int outerIdx = 0;
+        // float maxArea = 0;
+        // for (int i = 0; i < polyLines.Count; i++)
+        // {
+        //     var verts = new List<Vector2>();
+        //     foreach (var idx in polyLines[i])
+        //         verts.Add(vertices[idx]);
+        //
+        //     float area = Math.Abs(ComputeSignedArea(verts));
+        //     if (area > maxArea)
+        //     {
+        //         maxArea = area;
+        //         outerIdx = i;
+        //     }
+        // }
+        //
+        // if (outerIdx != 0)
+        // {
+        //     (polyLines[0], polyLines[outerIdx]) = (polyLines[outerIdx], polyLines[0]);
+        // }
+        //
+        // // Mark holes with -1 prefix so they're passed to Poly2Tri as constraints
+        // if (polyLines.Count > 1)
+        // {
+        //     var result = new List<List<int>> { polyLines[0] };
+        //     for (int i = 1; i < polyLines.Count; i++)
+        //     {
+        //         var markedHole = new List<int> { -1 };
+        //         markedHole.AddRange(polyLines[i]);
+        //         result.Add(markedHole);
+        //     }
+        //     return result;
+        // }
 
         return polyLines;
     }
@@ -1252,44 +975,45 @@ public class Program
     {
         var vertices = new List<Vector3>
         {
-            new Vector3(42.5f,23.800001f,207.40001f),
-            new Vector3(42.5f,-8.5f,207.40001f),
-            new Vector3(27.2f,-20.400002f,207.40001f),
-            new Vector3(13.6f,-23.800001f,207.40001f),
-            new Vector3(-13.6f,-23.800001f,207.40001f),
-            new Vector3(-27.2f,-20.400002f,207.40001f),
-            new Vector3(-42.5f,-8.5f,207.40001f),
-            new Vector3(-42.5f,23.800001f,207.40001f),
-            new Vector3(-35.7f,23.800001f,207.40001f),
-            new Vector3(35.7f,23.800001f,207.40001f),
-            new Vector3(35.7f,11.900001f,207.40001f),
-            new Vector3(-35.7f,11.900001f,207.40001f),
-            new Vector3(-35.7f,-5.1000004f,207.40001f),
-            new Vector3(-23.800001f,-15.3f,207.40001f),
-            new Vector3(-13.6f,-17f,207.40001f),
-            new Vector3(13.6f,-17f,207.40001f),
-            new Vector3(23.800001f,-15.3f,207.40001f),
-            new Vector3(35.7f,-5.1000004f,207.40001f),
-            new Vector3(35.7f,23.800001f,207.40001f),
-            // new Vector3(-40,-54,-103),
-            // new Vector3(-40,-27,-103),
-            // new Vector3(40,-27,-103),
-            // new Vector3(40,-54,-103),
-            // new Vector3(38,-43,-103),
-            // new Vector3(33,-42,-104),
-            // new Vector3(33,-34,-104),
-            // new Vector3(38,-33,-103),
-            // new Vector3(38,-43,-103),
-            // new Vector3(40,-54,-103),
-            // new Vector3(19,-43,-103),
-            // new Vector3(0,-45,-103),
-            // new Vector3(-19,-43,-103),
-            // new Vector3(-40,-54,-103),
-            // new Vector3(-38,-43,-103),
-            // new Vector3(-33,-42,-104),
-            // new Vector3(-33,-34,-104),
-            // new Vector3(-38,-33,-103),
-            // new Vector3(-38,-43,-103),
+            // new Vector3(42.5f,23.800001f,207.40001f),
+            // new Vector3(42.5f,-8.5f,207.40001f),
+            // new Vector3(27.2f,-20.400002f,207.40001f),
+            // new Vector3(13.6f,-23.800001f,207.40001f),
+            // new Vector3(-13.6f,-23.800001f,207.40001f),
+            // new Vector3(-27.2f,-20.400002f,207.40001f),
+            // new Vector3(-42.5f,-8.5f,207.40001f),
+            // new Vector3(-42.5f,23.800001f,207.40001f),
+            // new Vector3(-35.7f,23.800001f,207.40001f),
+            // new Vector3(35.7f,23.800001f,207.40001f),
+            // new Vector3(35.7f,11.900001f,207.40001f),
+            // new Vector3(-35.7f,11.900001f,207.40001f),
+            // new Vector3(-35.7f,-5.1000004f,207.40001f),
+            // new Vector3(-23.800001f,-15.3f,207.40001f),
+            // new Vector3(-13.6f,-17f,207.40001f),
+            // new Vector3(13.6f,-17f,207.40001f),
+            // new Vector3(23.800001f,-15.3f,207.40001f),
+            // new Vector3(35.7f,-5.1000004f,207.40001f),
+            // new Vector3(35.7f,23.800001f,207.40001f),
+            new Vector3(-72,0,103),
+            new Vector3(-72,-3,103),
+            new Vector3(-72,-3,111),
+            new Vector3(-72,31,111),
+            new Vector3(-72,42,111),
+            new Vector3(-72,42,98),
+            new Vector3(-72,42,90),
+            new Vector3(-72,42,29),
+            new Vector3(-72,42,22),
+            new Vector3(-72,42,8),
+            new Vector3(-72,31,8),
+            new Vector3(-72,-3,8),
+            new Vector3(-72,-3,26),
+            new Vector3(-72,20,26),
+            new Vector3(-72,20,97),
+            new Vector3(-72,0,103),
+            new Vector3(-72,-3,103),
+            new Vector3(-72,-3,26),
+            new Vector3(-72,20,26),
+            new Vector3(-72,20,97),
         };
 
         var result = PolygonTriangulator.Triangulate(vertices);
@@ -1301,9 +1025,9 @@ public class Program
         for (int i = 0; i < result.Triangles.Length; i += 3)
         {
             Console.WriteLine("[");
-            Console.WriteLine($"new Vector3({vertices[result.Triangles[i]]}f)".Replace("<", "").Replace(">", "").Replace(",", "f,") + ",");
-            Console.WriteLine($"new Vector3({vertices[result.Triangles[i + 1]]}f)".Replace("<", "").Replace(">", "").Replace(",", "f,") + ",");
-            Console.WriteLine($"new Vector3({vertices[result.Triangles[i + 2]]}f)".Replace("<", "").Replace(">", "").Replace(",", "f,") + ",");
+            Console.WriteLine($"new Vector3({vertices[result.Triangles[i]].X}f, {vertices[result.Triangles[i]].Y}f, {vertices[result.Triangles[i]].Z}f)");
+            Console.WriteLine($"new Vector3({vertices[result.Triangles[i]].X}f, {vertices[result.Triangles[i]].Y}f, {vertices[result.Triangles[i]].Z}f)");
+            Console.WriteLine($"new Vector3({vertices[result.Triangles[i]].X}f, {vertices[result.Triangles[i]].Y}f, {vertices[result.Triangles[i]].Z}f)");
             Console.WriteLine("],");
             Console.WriteLine();
         }
@@ -1314,12 +1038,9 @@ public class Program
             Console.WriteLine($"c({Random.Shared.Next(0, 256)},{Random.Shared.Next(0, 256)},{Random.Shared.Next(0, 256)})");
             Console.WriteLine("gr(40)");
             Console.WriteLine("fs(1)");
-            Console.WriteLine($"p({vertices[result.Triangles[i]]})".Replace("<", "").Replace(">", "")
-                .Replace(", ", ","));
-            Console.WriteLine($"p({vertices[result.Triangles[i + 1]]})".Replace("<", "").Replace(">", "")
-                .Replace(", ", ","));
-            Console.WriteLine($"p({vertices[result.Triangles[i + 2]]})".Replace("<", "").Replace(">", "")
-                .Replace(", ", ","));
+            Console.WriteLine($"p({vertices[result.Triangles[i]].X},{vertices[result.Triangles[i]].Y},{vertices[result.Triangles[i]].Z})");
+            Console.WriteLine($"p({vertices[result.Triangles[i + 1]].X},{vertices[result.Triangles[i + 1]].Y},{vertices[result.Triangles[i + 1]].Z})");
+            Console.WriteLine($"p({vertices[result.Triangles[i + 2]].X},{vertices[result.Triangles[i + 2]].Y},{vertices[result.Triangles[i + 2]].Z})");
             Console.WriteLine("</p>");
             Console.WriteLine();
         }

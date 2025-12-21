@@ -10,3 +10,6 @@
 [submodule "NvgSharp"]
 	path = NvgSharp
 	url = https://github.com/uwx/NvgSharp
+[submodule "earcut.net"]
+	path = earcut.net
+	url = https://github.com/uwx/earcut.net

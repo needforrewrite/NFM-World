@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\earcut.net\src\Earcut.csproj" />
       <ProjectReference Include="..\FNA.Math\FNA.Math.csproj" />
     </ItemGroup>
 

@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FontStashSharp.FNA.Core", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FNA.Math", "FNA.Math\FNA.Math.csproj", "{0C978E31-6DD9-4CE4-929F-9AD943318B74}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Earcut", "earcut.net\src\Earcut.csproj", "{67B3DEC6-6088-4E16-A653-FE59EEEBEE21}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,5 +68,9 @@ Global
 		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67B3DEC6-6088-4E16-A653-FE59EEEBEE21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67B3DEC6-6088-4E16-A653-FE59EEEBEE21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67B3DEC6-6088-4E16-A653-FE59EEEBEE21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67B3DEC6-6088-4E16-A653-FE59EEEBEE21}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
