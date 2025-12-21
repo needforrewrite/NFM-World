@@ -28,8 +28,9 @@ public class TimeTrialGamemode : BaseGamemode
     private Stopwatch raceTimer = new Stopwatch();
     private bool loadedBestTimes = false;
 
-    public override void Enter()
+    public override void Enter(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
     {
+        carsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
         Reset();
     }
 
@@ -74,7 +75,7 @@ public class TimeTrialGamemode : BaseGamemode
         }
     }
 
-    public override void GameTick(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
+    public override void GameTick(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
     {
         FrameTrace.AddMessage($"contox: {carsInRace[0].CarRef.Position.X:0.00}, contoz: {carsInRace[0].CarRef.Position.Z:0.00}, contoy: {carsInRace[0].CarRef.Position.Y:0.00}");
         switch (_currentState)
@@ -278,7 +279,7 @@ public class TimeTrialGamemode : BaseGamemode
         // Handle key releases specific to Time Trial mode
     }
 
-    public override void Render(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
+    public override void Render(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
     {
         // Time Trial specific rendering logic
     }

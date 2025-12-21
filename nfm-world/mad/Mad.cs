@@ -8,7 +8,7 @@ public class Mad
 {
     public Boolean Halted = false;
 
-    private static readonly float _tickRate = GameSparker.PHYSICS_MULTIPLIER;
+    private const float _tickRate = GameSparker.PHYSICS_MULTIPLIER;
 
     public event EventHandler<(float f, int i)> SfxPlayCrash;
     public event EventHandler<(int i, float f)> SfxPlaySkid;
@@ -204,16 +204,16 @@ public class Mad
                 impactExtraRdius = 28000;
                 damageMult = 1.27F;
             }
-            for (var i128 = 0; i128 < 4; i128++)
+            for (var wheel = 0; wheel < 4; wheel++)
             {
-                for (var i129 = 0; i129 < 4; i129++)
+                for (var otherwheel = 0; otherwheel < 4; otherwheel++)
                 {
-                    if (Rpy(wheelx[i128], otherwheelx[i129], wheely[i128], otherwheely[i129], wheelz[i128], otherwheelz[i129]) <
+                    if (Rpy(wheelx[wheel], otherwheelx[otherwheel], wheely[wheel], otherwheely[otherwheel], wheelz[wheel], otherwheelz[otherwheel]) <
                         (impactMagnitude + impactExtraRdius) * (othermad.Stat.Comprad + Stat.Comprad))
                     {
-                        if (Math.Abs(Scx[i128] * Stat.Moment) > Math.Abs(othermad.Scx[i129] * othermad.Stat.Moment))
+                        if (Math.Abs(Scx[wheel] * Stat.Moment) > Math.Abs(othermad.Scx[otherwheel] * othermad.Stat.Moment))
                         {
-                            var f130 = othermad.Scx[i129] * Stat.Revpush;
+                            var f130 = othermad.Scx[otherwheel] * Stat.Revpush;
                             if (f130 > 300.0F)
                             {
                                 f130 = 300.0F;
@@ -222,7 +222,7 @@ public class Mad
                             {
                                 f130 = -300.0F;
                             }
-                            var f131 = Scx[i128] * Stat.Push;
+                            var f131 = Scx[wheel] * Stat.Push;
                             if (f131 > 300.0F)
                             {
                                 f131 = 300.0F;
@@ -231,24 +231,24 @@ public class Mad
                             {
                                 f131 = -300.0F;
                             }
-                            othermad.Scx[i129] += f131;
+                            othermad.Scx[otherwheel] += f131;
                             if (IsClientPlayer)
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regx(i129, f131 * Stat.Moment * damageMult, otherconto);
+                            totalOtherDamage += othermad.Regx(otherwheel, f131 * Stat.Moment * damageMult, otherconto);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
                             }
-                            Scx[i128] -= f130;
-                            totalOwnDamage += Regx(i128, -f130 * Stat.Moment * damageMult, conto);
-                            Scy[i128] -= Stat.Revlift;
+                            Scx[wheel] -= f130;
+                            totalOwnDamage += Regx(wheel, -f130 * Stat.Moment * damageMult, conto);
+                            Scy[wheel] -= Stat.Revlift;
                             if (IsClientPlayer)
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regy(i129, Stat.Revlift * 7, otherconto);
+                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
@@ -256,20 +256,20 @@ public class Mad
                             if (UMath.RandomBoolean())
                             {
                                 otherconto.Spark(
-                                    (wheelx[i128] + otherwheelx[i129]) / 2.0F, 
-                                    (wheely[i128] + otherwheely[i129]) / 2.0F,
-                                    (wheelz[i128] + otherwheelz[i129]) / 2.0F, 
-                                    (othermad.Scx[i129] + Scx[i128]) / 4.0F,
-                                    (othermad.Scy[i129] + Scy[i128]) / 4.0F,
-                                    (othermad.Scz[i129] + Scz[i128]) / 4.0F,
+                                    (wheelx[wheel] + otherwheelx[otherwheel]) / 2.0F, 
+                                    (wheely[wheel] + otherwheely[otherwheel]) / 2.0F,
+                                    (wheelz[wheel] + otherwheelz[otherwheel]) / 2.0F, 
+                                    (othermad.Scx[otherwheel] + Scx[wheel]) / 4.0F,
+                                    (othermad.Scy[otherwheel] + Scy[wheel]) / 4.0F,
+                                    (othermad.Scz[otherwheel] + Scz[wheel]) / 4.0F,
                                     2,
                                     (wheelGround + otherWheelGround) / 2
                                 );
                             }
                         }
-                        if (Math.Abs(Scz[i128] * Stat.Moment) > Math.Abs(othermad.Scz[i129] * othermad.Stat.Moment))
+                        if (Math.Abs(Scz[wheel] * Stat.Moment) > Math.Abs(othermad.Scz[otherwheel] * othermad.Stat.Moment))
                         {
-                            var f132 = othermad.Scz[i129] * Stat.Revpush;
+                            var f132 = othermad.Scz[otherwheel] * Stat.Revpush;
                             if (f132 > 300.0F)
                             {
                                 f132 = 300.0F;
@@ -278,7 +278,7 @@ public class Mad
                             {
                                 f132 = -300.0F;
                             }
-                            var f133 = Scz[i128] * Stat.Push;
+                            var f133 = Scz[wheel] * Stat.Push;
                             if (f133 > 300.0F)
                             {
                                 f133 = 300.0F;
@@ -287,24 +287,24 @@ public class Mad
                             {
                                 f133 = -300.0F;
                             }
-                            othermad.Scz[i129] += f133;
+                            othermad.Scz[otherwheel] += f133;
                             if (IsClientPlayer)
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regz(i129, f133 * Stat.Moment * damageMult, otherconto);
+                            totalOtherDamage += othermad.Regz(otherwheel, f133 * Stat.Moment * damageMult, otherconto);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
                             }
-                            Scz[i128] -= f132;
-                            totalOwnDamage += Regz(i128, -f132 * Stat.Moment * damageMult, conto);
-                            Scy[i128] -= Stat.Revlift;
+                            Scz[wheel] -= f132;
+                            totalOwnDamage += Regz(wheel, -f132 * Stat.Moment * damageMult, conto);
+                            Scy[wheel] -= Stat.Revlift;
                             if (IsClientPlayer)
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regy(i129, Stat.Revlift * 7, otherconto);
+                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
@@ -312,12 +312,12 @@ public class Mad
                             if (UMath.RandomBoolean())
                             {
                                 otherconto.Spark(
-                                    (wheelx[i128] + otherwheelx[i129]) / 2.0F, 
-                                    (wheely[i128] + otherwheely[i129]) / 2.0F,
-                                    (wheelz[i128] + otherwheelz[i129]) / 2.0F,
-                                    (othermad.Scx[i129] + Scx[i128]) / 4.0F,
-                                    (othermad.Scy[i129] + Scy[i128]) / 4.0F, 
-                                    (othermad.Scz[i129] + Scz[i128]) / 4.0F,
+                                    (wheelx[wheel] + otherwheelx[otherwheel]) / 2.0F, 
+                                    (wheely[wheel] + otherwheely[otherwheel]) / 2.0F,
+                                    (wheelz[wheel] + otherwheelz[otherwheel]) / 2.0F,
+                                    (othermad.Scx[otherwheel] + Scx[wheel]) / 4.0F,
+                                    (othermad.Scy[otherwheel] + Scy[wheel]) / 4.0F, 
+                                    (othermad.Scz[otherwheel] + Scz[wheel]) / 4.0F,
                                     2,
                                     (wheelGround + otherWheelGround) / 2);
                             }
@@ -330,7 +330,7 @@ public class Mad
                         {
                             Lastcolido = 70;
                         }
-                        othermad.Scy[i129] -= Stat.Lift;
+                        othermad.Scy[otherwheel] -= Stat.Lift;
                     }
                 }
             }

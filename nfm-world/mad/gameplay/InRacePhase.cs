@@ -63,19 +63,18 @@ public class InRacePhase : BasePhase
     {
         base.Enter();
 
-        gamemode = new TimeTrialGamemode();
+        gamemode = new SandboxGamemode();
 
         LoadStage("nfm2/15_dwm", _graphicsDevice);
 
-        CarsInRace[playerCarIndex] = new InGameCar(playerCarIndex, GameSparker.GetCar(playerCarName).Car, 0, 0);
         current_scene = new Scene(
             _graphicsDevice,
-            [CurrentStage, ..CarsInRace],
+            [CurrentStage, new ListRenderable(CarsInRace)],
             camera,
             lightCameras
         );
 
-        gamemode.Enter();
+        gamemode.Enter(CarsInRace, CurrentStage, current_scene);
     }
 
     public override void Exit()
@@ -105,7 +104,7 @@ public class InRacePhase : BasePhase
     {
         base.GameTick();
         
-        gamemode.GameTick(CarsInRace, CurrentStage);
+        gamemode.GameTick(CarsInRace, CurrentStage, current_scene);
 
         switch (currentViewMode)
         {
@@ -155,7 +154,7 @@ public class InRacePhase : BasePhase
         G.DrawString($"Power: {CarsInRace[0]?.Mad?.Power:0.00}", 100, 140);
         G.DrawString($"Ticks executed last frame: {Program._lastTickCount}", 100, 160);
 
-        gamemode.Render(CarsInRace, CurrentStage);
+        gamemode.Render(CarsInRace, CurrentStage, current_scene);
     }
 
     public override void KeyPressed(Keys key, bool imguiWantsKeyboard)

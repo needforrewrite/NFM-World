@@ -188,9 +188,7 @@ namespace NFMWorld.Mad
         private static void ResetCar(DevConsole console)
         {
             var originalCar = InRacePhase.CarsInRace[InRacePhase.playerCarIndex];
-            InRacePhase.current_scene.Renderables.Remove(originalCar);
             InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, (Car) originalCar.CarRef.ClonedMesh!, 0, 0, true);
-            InRacePhase.current_scene.Renderables.Add(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
             console.Log("Position reset");
         }
 
@@ -269,10 +267,8 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            InRacePhase.current_scene.Renderables.Remove(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
             InRacePhase.playerCarName = car.FileName;
             InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, car, 0, 0, true);
-            InRacePhase.current_scene.Renderables.Add(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
             InRacePhase.gamemode.Reset();
         
             IBackend.Backend.StopAllSounds();

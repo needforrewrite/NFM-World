@@ -38,7 +38,7 @@ public class Flames
     {
         if (_mesh.Wasted)
         {
-            if (_tick == 2) // delay all operations by 3 ticks because of the adjusted tickrate
+            if (++_tick == GameSparker.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
             {
                 if (_embos <= 11)
                 {
@@ -94,10 +94,6 @@ public class Flames
                 }
 
                 _tick = 0;
-            }
-            else
-            {
-                _tick++;
             }
         }
     }

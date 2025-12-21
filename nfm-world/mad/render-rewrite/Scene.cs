@@ -2,6 +2,24 @@
 
 namespace NFMWorld.Mad;
 
+public class ListRenderable(IReadOnlyList<IRenderable?> renderables) : IRenderable
+{
+    public void Render(Camera camera, Lighting? lighting)
+    {
+        foreach (var renderable in renderables)
+        {
+            if (renderable == null)
+            {
+                Console.WriteLine("Null renderable in ListRenderable. Please fix!");
+            }
+            else
+            {
+                renderable.Render(camera, lighting);
+            }
+        }
+    }
+}
+
 public class Scene
 {
     private readonly GraphicsDevice _graphicsDevice;
