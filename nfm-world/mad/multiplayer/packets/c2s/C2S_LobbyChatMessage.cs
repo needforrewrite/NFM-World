@@ -3,12 +3,11 @@ using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
 
-public struct C2S_ChatMessage : IPacketClientToServer<C2S_ChatMessage>
+public struct C2S_LobbyChatMessage : IPacketClientToServer<C2S_LobbyChatMessage>
 {
-    public static OpcodesClientToServer Opcode => OpcodesClientToServer.ChatMessage;
     public required string Message { get; set; } = string.Empty;
 
-    public C2S_ChatMessage()
+    public C2S_LobbyChatMessage()
     {
     }
 
@@ -17,9 +16,9 @@ public struct C2S_ChatMessage : IPacketClientToServer<C2S_ChatMessage>
         writer.WriteString(Message);
     }
 
-    public static C2S_ChatMessage Read(SpanReader data)
+    public static C2S_LobbyChatMessage Read(SpanReader data)
     {
-        return new C2S_ChatMessage
+        return new C2S_LobbyChatMessage
         {
             Message = data.ReadString()
         };

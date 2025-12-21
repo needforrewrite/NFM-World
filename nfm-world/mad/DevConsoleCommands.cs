@@ -107,10 +107,10 @@ namespace NFMWorld.Mad
             
             if (args.Length < 2 || !int.TryParse(args[1], out int port))
             {
-                port = 1;
+                port = 0;
             }
-            
-            Multiplayer.Connect(steamid, port);
+
+            GameSparker.CurrentPhase = new LobbyPhase(new SteamMultiplayerClientTransport(steamid, port));
         }
 
         private static void StartServer(DevConsole console, string[] args)
@@ -298,7 +298,7 @@ namespace NFMWorld.Mad
             InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
             InRacePhase.current_scene = new Scene(
                 GameSparker._graphicsDevice,
-                [InRacePhase.CurrentStage, ..InRacePhase.CarsInRace],
+                [InRacePhase.CurrentStage, new ListRenderable(InRacePhase.CarsInRace)],
                 InRacePhase.camera,
                 InRacePhase.lightCameras
             );

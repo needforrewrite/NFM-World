@@ -79,7 +79,6 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     public string ReadString()
     {
         int length = ReadInt32();
-        _index += sizeof(int);
         string result = new string(MemoryMarshal.Cast<byte, char>(_span.Slice(_index, length * 2)));
         _index += length * 2;
         return result;
@@ -88,7 +87,6 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
     public ReadOnlySpan<char> ReadStringSpan()
     {
         int length = ReadInt32();
-        _index += sizeof(int);
         var result = MemoryMarshal.Cast<byte, char>(_span.Slice(_index, length * 2));
         _index += length * 2;
         return result;

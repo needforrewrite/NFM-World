@@ -4,14 +4,13 @@ using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
 
-public struct S2C_ChatMessage : IPacketServerToClient<S2C_ChatMessage>
+public struct S2C_LobbyChatMessage : IPacketServerToClient<S2C_LobbyChatMessage>
 {
-    public static OpcodesServerToClient Opcode => OpcodesServerToClient.ChatMessage;
     public required string Sender { get; set; } = string.Empty;
-    public required int SenderClientId { get; set; } = 0;
+    public required uint SenderClientId { get; set; } = 0;
     public required string Message { get; set; } = string.Empty;
 
-    public S2C_ChatMessage()
+    public S2C_LobbyChatMessage()
     {
     }
 
@@ -22,12 +21,12 @@ public struct S2C_ChatMessage : IPacketServerToClient<S2C_ChatMessage>
         writer.WriteString(Message);
     }
 
-    public static S2C_ChatMessage Read(SpanReader data)
+    public static S2C_LobbyChatMessage Read(SpanReader data)
     {
-        return new S2C_ChatMessage
+        return new S2C_LobbyChatMessage
         {
             Sender = data.ReadString(),
-            SenderClientId = data.ReadInt32(),
+            SenderClientId = data.ReadUInt32(),
             Message = data.ReadString()
         };
     }

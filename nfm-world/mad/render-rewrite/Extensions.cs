@@ -87,7 +87,10 @@ public static class Extensions
 
         public Vector3 ToVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
-        
+
+        public Microsoft.Xna.Framework.Vector4 ToVector4()
+            => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f, 1.0f);
+
         public Stride.Core.Mathematics.Vector3 ToStrideVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
     }
@@ -189,7 +192,14 @@ public static class Extensions
             where T : unmanaged
         {
             fixed (T* ptr = data)
-                return connection.SendMessage((IntPtr) ptr, data.Length, sendType);
+                return connection.SendMessage((IntPtr) ptr, data.AsBytes().Length, sendType);
+        }
+
+        public unsafe Result SendMessage<T>(ReadOnlySpan<T> data, SendType sendType = SendType.Reliable)
+            where T : unmanaged
+        {
+            fixed (T* ptr = data)
+                return connection.SendMessage((IntPtr) ptr, data.AsBytes().Length, sendType);
         }
     }
 }

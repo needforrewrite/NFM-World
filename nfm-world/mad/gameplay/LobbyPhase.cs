@@ -3,57 +3,54 @@ using Microsoft.Xna.Framework;
 
 namespace NFMWorld.Mad;
 
-public class LobbyPhase : BasePhase
+public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 {
-    // Dummy data structures
-    private class PlayerInfo
+    private struct ChatMessage
     {
-        public required string Name { get; set; }
-        public required string Vehicle { get; set; }
-        public Vector4 Color { get; set; }
-    }
-
-    private class GameSession
-    {
-        public required string StageName { get; set; }
-        public int PlayerCount { get; set; }
-        public int MaxPlayers { get; set; }
-    }
-
-    private class ChatMessage
-    {
+        public required uint PlayerId { get; set; }
         public required string PlayerName { get; set; }
         public required string Message { get; set; }
-        public Vector4 Color { get; set; }
+        public Color3 Color { get; set; }
     }
 
     // Dummy data
-    private List<PlayerInfo> _players = new()
-    {
-        new PlayerInfo { Name = "Player1", Vehicle = "Speedster", Color = new Vector4(1.0f, 0.2f, 0.2f, 1.0f) },
-        new PlayerInfo { Name = "Player2", Vehicle = "Cruiser", Color = new Vector4(0.2f, 0.5f, 1.0f, 1.0f) },
-        new PlayerInfo { Name = "Player3", Vehicle = "Rally", Color = new Vector4(0.2f, 1.0f, 0.2f, 1.0f) },
-        new PlayerInfo { Name = "Player4", Vehicle = "Not Selected", Color = new Vector4(0.5f, 0.5f, 0.5f, 1.0f) },
-    };
+    private List<S2C_LobbyState.PlayerInfo> _players = [];
 
-    private List<GameSession> _activeSessions = new()
-    {
-        new GameSession { StageName = "Desert Circuit", PlayerCount = 3, MaxPlayers = 8 },
-        new GameSession { StageName = "Mountain Pass", PlayerCount = 1, MaxPlayers = 4 },
-        new GameSession { StageName = "City Streets", PlayerCount = 6, MaxPlayers = 8 },
-        new GameSession { StageName = "Coastal Highway", PlayerCount = 2, MaxPlayers = 6 },
-    };
+    private List<S2C_LobbyState.GameSession> _activeSessions = [];
 
-    private List<ChatMessage> _chatMessages = new()
-    {
-        new ChatMessage { PlayerName = "Player1", Message = "Hey everyone!", Color = new Vector4(1.0f, 0.2f, 0.2f, 1.0f) },
-        new ChatMessage { PlayerName = "Player2", Message = "Ready to race?", Color = new Vector4(0.2f, 0.5f, 1.0f, 1.0f) },
-        new ChatMessage { PlayerName = "Player3", Message = "Let's go!", Color = new Vector4(0.2f, 1.0f, 0.2f, 1.0f) },
-    };
+    private List<ChatMessage> _chatMessages = [];
 
     private string _chatInput = "";
     private float _sidebarWidth = 250f;
     private float _gameListHeight = 200f;
+
+    private uint _clientId;
+
+    public override void GameTick()
+    {
+        base.GameTick();
+
+        foreach (var packet in transport.GetNewPackets())
+        {
+            switch (packet)
+            {
+                case S2C_LobbyChatMessage chatMessage:
+                    _chatMessages.Add(new ChatMessage 
+                    {
+                        PlayerId = chatMessage.SenderClientId,
+                        PlayerName = chatMessage.Sender, 
+                        Message = chatMessage.Message,
+                        Color = new Color3(255, 255, 255)
+                    });
+                    break;
+                case S2C_LobbyState lobbyState:
+                    _clientId = lobbyState.PlayerClientId;
+                    _players = lobbyState.Players.ToList();
+                    _activeSessions = lobbyState.ActiveSessions.ToList();
+                    break;
+            }
+        }
+    }
 
     public override void RenderImgui()
     {
@@ -111,7 +108,7 @@ public class LobbyPhase : BasePhase
         
         foreach (var player in _players)
         {
-            ImGui.PushStyleColor(ImGuiCol.Text, player.Color);
+            ImGui.PushStyleColor(ImGuiCol.Text, player.Color.ToVector4());
             ImGui.Text($"• {player.Name}");
             ImGui.PopStyleColor();
             
@@ -230,7 +227,7 @@ public class LobbyPhase : BasePhase
         
         foreach (var msg in _chatMessages)
         {
-            ImGui.PushStyleColor(ImGuiCol.Text, msg.Color);
+            ImGui.PushStyleColor(ImGuiCol.Text, msg.Color.ToVector4());
             ImGui.Text($"{msg.PlayerName}:");
             ImGui.PopStyleColor();
             
@@ -252,13 +249,7 @@ public class LobbyPhase : BasePhase
         {
             if (!string.IsNullOrWhiteSpace(_chatInput))
             {
-                // TODO: Send chat message
-                _chatMessages.Add(new ChatMessage 
-                { 
-                    PlayerName = "You", 
-                    Message = _chatInput,
-                    Color = new Vector4(1.0f, 1.0f, 1.0f, 1.0f)
-                });
+                SendChatMessage(_chatInput);
                 _chatInput = "";
             }
         }
@@ -268,17 +259,19 @@ public class LobbyPhase : BasePhase
         {
             if (!string.IsNullOrWhiteSpace(_chatInput))
             {
-                // TODO: Send chat message
-                _chatMessages.Add(new ChatMessage 
-                { 
-                    PlayerName = "You", 
-                    Message = _chatInput,
-                    Color = new Vector4(1.0f, 1.0f, 1.0f, 1.0f)
-                });
+                SendChatMessage(_chatInput);
                 _chatInput = "";
             }
         }
         
         ImGui.EndChild();
+    }
+
+    private void SendChatMessage(string chatInput)
+    {
+        transport.SendPacketToServer(new C2S_LobbyChatMessage
+        {
+            Message = chatInput
+        });
     }
 }

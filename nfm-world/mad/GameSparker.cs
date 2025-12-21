@@ -348,7 +348,7 @@ public class GameSparker
     public static void StartGame()
     {
         // temp
-        CurrentPhase = new LobbyPhase();
+        CurrentPhase = InRace;
 
         Console.WriteLine("Game started!");
     }
