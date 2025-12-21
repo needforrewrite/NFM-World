@@ -1238,9 +1238,6 @@ public class Mad
 
                 if (Math.Abs(Scy[j] - speedy) > traction * _tickRate)
                 {
-                    // Jacher: decouple this from tickrate
-                    // this reduces bouncing when AB-ing, but at what cost?
-                    // oteek: if decoupled slanted ramps make car bounce for no reason for a bit
                     Scy[j] += traction * Math.Sign(speedy - Scy[j]) * _tickRate;
                 }
                 else
