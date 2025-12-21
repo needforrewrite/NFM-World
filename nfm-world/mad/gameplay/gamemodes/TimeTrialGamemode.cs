@@ -60,6 +60,9 @@ public class TimeTrialGamemode : BaseGamemode
         if (bestTimeSplits.Load())
         {
             this.bestTimeSplits = bestTimeSplits;
+        } else
+        {
+            this.bestTimeSplits = null;
         }
 
         thisRunSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Name);
