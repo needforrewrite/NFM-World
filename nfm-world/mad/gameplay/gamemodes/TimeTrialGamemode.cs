@@ -68,6 +68,11 @@ public class TimeTrialGamemode : BaseGamemode
         thisRunSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Name);
         recordedInputs = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Name);
 
+        foreach(CheckPoint cp in currentStage.checkpoints)
+        {
+            cp.Glow = false;
+        }
+
         _currentState = TimeTrialState.Countdown;
     }
 
