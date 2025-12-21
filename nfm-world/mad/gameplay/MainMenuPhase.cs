@@ -190,7 +190,7 @@ public class MainMenuPhase : BasePhase
                     "CREDITS" => "View game credits.",
                     "QUIT" => "Exit the game.",
                     "MODEL EDITOR" => "View and edit custom models.",
-                    "STAGE MAKER" => "Design your own stages.",
+                    "STAGE EDITOR" => "Design your own stages.",
                     "CAMPAIGN MAKER" => "Build custom campaign modes.",
                     "BACK" => "Return to the main menu.",
                     _ => ""
@@ -256,6 +256,11 @@ public class MainMenuPhase : BasePhase
     private void OnModelEditorClicked()
     {
         GameSparker.StartModelViewer();
+    }
+
+    private void OnStageEditorClicked()
+    {
+        GameSparker.StartStageEditor();
     }
 
     private void OnSettingsClicked()

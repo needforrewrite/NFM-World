@@ -2,6 +2,7 @@ using System;
 using NFMWorld.DriverInterface;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
+using System.Linq;
 
 namespace NFMWorld.Mad
 {
@@ -67,8 +68,13 @@ namespace NFMWorld.Mad
             
             // argument autocompleters
             // car command: only autocomplete first argument (position 0)
-            console.RegisterArgumentAutocompleter("car", (args, position) => 
-                position == 0 ? new List<string>(GameSparker.CarRads) : new List<string>());
+            console.RegisterArgumentAutocompleter("car", (args, position) =>
+            position == 0
+                ? GameSparker.CarRads
+                    .Concat(GameSparker.vendor_cars.Select(car => car.FileName))
+                    .Concat(GameSparker.user_cars.Select(car => car.FileName))
+                    .ToList()
+                : new List<string>());
             
             // create command: only autocomplete first argument (position 0) - the stage/road name
             console.RegisterArgumentAutocompleter("create", (args, position) => 
