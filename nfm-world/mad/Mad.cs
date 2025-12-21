@@ -137,6 +137,8 @@ public class Mad
 
     internal void Colide(ContO conto, Mad othermad, ContO otherconto)
     {
+        var random = new URandom(conto.X + otherconto.X);
+        
         Span<float> wheelx = stackalloc float[4];
         Span<float> wheely = stackalloc float[4];
         Span<float> wheelz = stackalloc float[4];
@@ -236,19 +238,19 @@ public class Mad
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regx(otherwheel, f131 * Stat.Moment * damageMult, otherconto);
+                            totalOtherDamage += othermad.Regx(otherwheel, f131 * Stat.Moment * damageMult, otherconto, random);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
                             }
                             Scx[wheel] -= f130;
-                            totalOwnDamage += Regx(wheel, -f130 * Stat.Moment * damageMult, conto);
+                            totalOwnDamage += Regx(wheel, -f130 * Stat.Moment * damageMult, conto, random);
                             Scy[wheel] -= Stat.Revlift;
                             if (IsClientPlayer)
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto);
+                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto, random);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
@@ -292,19 +294,19 @@ public class Mad
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regz(otherwheel, f133 * Stat.Moment * damageMult, otherconto);
+                            totalOtherDamage += othermad.Regz(otherwheel, f133 * Stat.Moment * damageMult, otherconto, random);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
                             }
                             Scz[wheel] -= f132;
-                            totalOwnDamage += Regz(wheel, -f132 * Stat.Moment * damageMult, conto);
+                            totalOwnDamage += Regz(wheel, -f132 * Stat.Moment * damageMult, conto, random);
                             Scy[wheel] -= Stat.Revlift;
                             if (IsClientPlayer)
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto);
+                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto, random);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
