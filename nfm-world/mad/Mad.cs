@@ -1173,12 +1173,12 @@ public class Mad
 
             if (surfaceType == 1)
             {
-                traction = (int)(traction * 0.75);
+                traction = traction * 0.75f;
             }
 
             if (surfaceType == 2)
             {
-                traction = (int)(traction * 0.55);
+                traction = traction * 0.55f;
             }
 
             var speedx = -(int)(Speed * UMath.Sin(conto.Xz) * UMath.Cos(Pzy));
@@ -1238,9 +1238,6 @@ public class Mad
 
                 if (Math.Abs(Scy[j] - speedy) > traction * _tickRate)
                 {
-                    // Jacher: decouple this from tickrate
-                    // this reduces bouncing when AB-ing, but at what cost?
-                    // oteek: if decoupled slanted ramps make car bounce for no reason for a bit
                     Scy[j] += traction * Math.Sign(speedy - Scy[j]) * _tickRate;
                 }
                 else
