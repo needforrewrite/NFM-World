@@ -80,7 +80,7 @@ public class InRacePhase : BasePhase
     public override void Exit()
     {
         base.Exit();
-        gamemode.Exit(CarsInRace, CurrentStage);
+        gamemode.Exit(CarsInRace, CurrentStage, current_scene);
 
         GameSparker.CurrentMusic?.Unload();
     }
