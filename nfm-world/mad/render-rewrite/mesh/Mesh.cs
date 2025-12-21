@@ -51,6 +51,8 @@ public class Mesh : Transform, IRenderable
     public Mesh? ClonedMesh;
     public float? alphaOverride;
 
+    public int MaxRadius;
+
     public Mesh(GraphicsDevice graphicsDevice, Rad3d rad, string fileName)
     {
         Colors = rad.Colors;
@@ -77,6 +79,7 @@ public class Mesh : Transform, IRenderable
         Sparks = new Sparks(this, graphicsDevice);
 
         FileName = fileName;
+        MaxRadius = rad.MaxRadius;
     }
 
     public Mesh(Mesh baseMesh, Vector3 position, Euler rotation)
@@ -110,6 +113,7 @@ public class Mesh : Transform, IRenderable
 
         FileName = baseMesh.FileName;
         ClonedMesh = baseMesh;
+        MaxRadius = baseMesh.MaxRadius;
     }
 
     [MemberNotNull(nameof(Submeshes))]

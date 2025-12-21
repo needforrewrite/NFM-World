@@ -16,10 +16,12 @@ namespace NFMWorld.Mad;
 
 public class GameSparker
 {
+    public const float OriginalTps = 21.4f;
     public const float TargetTps = 63f;
+    public const int OriginalTicksPerNewTick = 3;
     public static Program _game;
     public static GraphicsDevice _graphicsDevice;
-    public static readonly float PHYSICS_MULTIPLIER = 21.4f/TargetTps;
+    public const float PHYSICS_MULTIPLIER = OriginalTps/TargetTps;
 
     public static readonly string version = GetVersionString();
 

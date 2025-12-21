@@ -35,6 +35,18 @@ namespace NFMWorld.Mad
             console.RegisterCommand("r_blackpoint", SetBlackPoint);
             console.RegisterCommand("r_whitepoint", SetWhitePoint);
             console.RegisterCommand("r_displaytrackers", (c, args) => GameSparker.devRenderTrackers = !GameSparker.devRenderTrackers);
+            
+            // gamemode
+            console.RegisterCommand("go_tt", (c, args) =>
+            {
+                InRacePhase.gamemode = new TimeTrialGamemode();
+                GameSparker.CurrentPhase = GameSparker.InRace;
+            });
+            console.RegisterCommand("go_sbox", (c, args) =>
+            {
+                InRacePhase.gamemode = new SandboxGamemode();
+                GameSparker.CurrentPhase = GameSparker.InRace;
+            });
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
@@ -203,9 +215,7 @@ namespace NFMWorld.Mad
         private static void ResetCar(DevConsole console)
         {
             var originalCar = InRacePhase.CarsInRace[InRacePhase.playerCarIndex];
-            InRacePhase.current_scene.Renderables.Remove(originalCar);
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, (Car) originalCar.CarRef.ClonedMesh!, 0, 0);
-            InRacePhase.current_scene.Renderables.Add(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, (Car) originalCar.CarRef.ClonedMesh!, 0, 0, true);
             console.Log("Position reset");
         }
 
@@ -257,7 +267,7 @@ namespace NFMWorld.Mad
             console.Log($"Switched to stage '{stageName}'");
 
             InRacePhase.CarsInRace.Clear();
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0);
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
             InRacePhase.current_scene = new Scene(
                 GameSparker._graphicsDevice,
                 [InRacePhase.CurrentStage, ..InRacePhase.CarsInRace],
@@ -284,10 +294,8 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            InRacePhase.current_scene.Renderables.Remove(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
             InRacePhase.playerCarName = car.FileName;
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, car, 0, 0);
-            InRacePhase.current_scene.Renderables.Add(InRacePhase.CarsInRace[InRacePhase.playerCarIndex]);
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, car, 0, 0, true);
             InRacePhase.gamemode.Reset();
         
             IBackend.Backend.StopAllSounds();
