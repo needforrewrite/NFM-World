@@ -16,7 +16,7 @@ public class SandboxGamemode : BaseGamemode
         Reset();
     }
 
-    public override void Exit()
+    public override void Exit(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
     {
         // Cleanup for Time Trial mode
     }

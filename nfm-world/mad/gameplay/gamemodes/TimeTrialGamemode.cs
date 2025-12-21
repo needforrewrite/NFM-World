@@ -68,7 +68,7 @@ public class TimeTrialGamemode : BaseGamemode
         _currentState = TimeTrialState.Countdown;
     }
 
-    public override void Exit(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
+    public override void Exit(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
     {
         // Cleanup for Time Trial mode
     }
