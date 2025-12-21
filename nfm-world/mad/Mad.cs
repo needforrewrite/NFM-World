@@ -1173,12 +1173,12 @@ public class Mad
 
             if (surfaceType == 1)
             {
-                traction = (int)(traction * 0.75);
+                traction *= 0.75f;
             }
 
             if (surfaceType == 2)
             {
-                traction = (int)(traction * 0.55);
+                traction *= 0.55f;
             }
 
             var speedx = -(int)(Speed * UMath.Sin(conto.Xz) * UMath.Cos(Pzy));
