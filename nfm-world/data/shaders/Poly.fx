@@ -1,10 +1,10 @@
-﻿#if OPENGL
+#if OPENGL
 	#define SV_POSITION POSITION
 	#define VS_SHADERMODEL vs_3_0
 	#define PS_SHADERMODEL ps_3_0
 #else
-	#define VS_SHADERMODEL vs_4_0_level_9_1
-	#define PS_SHADERMODEL ps_4_0_level_9_1
+	#define VS_SHADERMODEL vs_3_0
+	#define PS_SHADERMODEL ps_3_0
 #endif
 
 #include "./Mad.fxh"
@@ -31,25 +31,12 @@ float3 CameraPosition;
 float Alpha;
 
 // Lighting
-matrix LightViewProj;
-float DepthBias = 0.25f;
 bool GetsShadowed;
 
 // Damage
 bool Expand;
 float RandomFloat;
 float Darken; // set below 1.0f to adjust brightness
-
-// Charged line blink
-float ChargedBlinkAmount;
-
-texture ShadowMap;
-sampler ShadowMapSampler = sampler_state
-{
-    Texture = <ShadowMap>;
-    AddressU = Clamp;
-    AddressV = Clamp;
-};
 
 struct VertexShaderInput
 {
@@ -71,14 +58,11 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 {
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
-	// Apply decal offset to prevent Z-fighting
-	// DecalOffset is negative to pull away from surface, positive to push into it
-	// Multiply by the sign to control direction
-	float3 offsetPosition = input.Position - input.Normal * input.DecalOffset * 0.1;
+    float3 position = input.Position;
 
-	float3 viewPos = mul(float4(offsetPosition, 1), WorldView).xyz;
-	output.Position = mul(float4(offsetPosition, 1), WorldViewProj);
+    VS_DecalOffset(position, input.Normal, input.DecalOffset);
 
+	float3 viewPos = mul(float4(position, 1), WorldView).xyz;
 	float3 color = input.Color;
 
     // Apply base color
@@ -89,26 +73,14 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 
     if (Expand == true)
     {
-        // Translate vertex around centroid by a random factor between -15 and 15 units
-
-        float3 direction = normalize(offsetPosition - input.Centroid);
-        float3 randomScale = float3(
-            15.0 - Random(input.Centroid.x + RandomFloat) * 30.0,
-            15.0 - Random(input.Centroid.y + RandomFloat) * 30.0,
-            15.0 - Random(input.Centroid.z + RandomFloat) * 30.0
-        );
-        float3 scaledPosition = offsetPosition + direction * randomScale;
-        output.Position = mul(float4(scaledPosition, 1), WorldViewProj);
+        VS_Expand(position, input.Centroid, RandomFloat);
     }
+
+    output.Position = mul(float4(position, 1), WorldViewProj);
 
     if (Darken < 1.0f)
     {
-        float3 hsv = rgb2hsv(color);
-        if (hsv.z > Darken)
-        {
-            hsv.z = Darken;
-            color = hsv2rgb(hsv);
-        }
+        VS_Darken(color, Darken);
     }
 
 	// Apply diffuse lighting
@@ -125,14 +97,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 	}
 
 	// Apply snap
-	color += (color * (SnapColor * 255.0 / 100.0));
-
-    if (ChargedBlinkAmount > 0.0f)
-    {
-        color.r = (25.5 * ChargedBlinkAmount) / 255.0;
-        color.g = (128.0 + 12.8 * ChargedBlinkAmount) / 255.0;
-        color.b = 1.0;
-    }
+    VS_Snap(color, SnapColor);
 
     VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
 
@@ -141,22 +106,19 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     output.Color = float4(color, Alpha);
 
     // Save the vertices postion in world space (for shadow mapping)
-    output.WorldPos = mul(float4(offsetPosition, 1), World);
+    output.WorldPos = mul(float4(position, 1), World);
 
 	return output;
 }
 
-float4 MainPS(VertexShaderOutput input) : COLOR
+float4 MainPS(VertexShaderOutput input) : SV_TARGET
 {
     float4 diffuse = input.Color;
 
     if (GetsShadowed == true)
     {
-        // Find the position of this pixel in light space
-        float4 lightingPosition = mul(input.WorldPos, LightViewProj);
-
         float3 diffuseRGB = diffuse.xyz;
-        PS_ApplyShadowing(diffuseRGB, lightingPosition, ShadowMapSampler, DepthBias);
+        PS_ApplyShadowing(diffuseRGB, input.WorldPos);
         diffuse = float4(diffuseRGB, diffuse.w);
     }
 
@@ -173,10 +135,10 @@ struct CreateShadowMap_VSOut
 CreateShadowMap_VSOut CreateShadowMapVS(in VertexShaderInput input)
 {
     CreateShadowMap_VSOut output = (CreateShadowMap_VSOut)0;
-    
+
     // Apply decal offset to prevent Z-fighting in shadow maps too
     float3 offsetPosition = input.Position - input.Normal * input.DecalOffset * 0.1;
-    
+
     output.Position = mul(float4(offsetPosition, 1), WorldViewProj);
     output.Depth = output.Position.z / output.Position.w;
     return output;

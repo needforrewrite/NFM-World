@@ -1,5 +1,4 @@
 ﻿using Stride.Core.Mathematics;
-using Matrix = Microsoft.Xna.Framework.Matrix;
 
 namespace NFMWorld.Mad;
 
@@ -38,7 +37,7 @@ public class Transform
         {
             if (_matrixWorldNeedsUpdate)
             {
-                var ownMatrixWorld = Matrix.CreateFromEuler(Rotation) * Matrix.CreateTranslation(Position.ToXna());
+                var ownMatrixWorld = Matrix.CreateFromEuler(Rotation) * Matrix.CreateTranslation(Position);
                 if (Parent != null)
                 {
                     ownMatrixWorld = ownMatrixWorld * Parent.MatrixWorld;

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace NFMWorld.Mad;
 
@@ -12,11 +13,11 @@ public static class Utility
         {
             if (i++ == index)
             {
-                return (int)float.Parse(line[range]);
+                return (int)float.Parse(line[range], CultureInfo.InvariantCulture);
             }
         }
 
-        return (int)float.Parse("");
+        return (int)float.Parse("", CultureInfo.InvariantCulture);
     }
 
     public static int GetInt(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
@@ -27,11 +28,26 @@ public static class Utility
         {
             if (i++ == index)
             {
-                return int.Parse(line[range]);
+                return int.Parse(line[range], CultureInfo.InvariantCulture);
             }
         }
 
-        return int.Parse("");
+        return int.Parse("", CultureInfo.InvariantCulture);
+    }
+
+    public static string GetString(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
+    {
+        line = line[(prefix.Length + 1)..];
+        var i = 0;
+        foreach (var range in line.SplitAny(',', ')'))
+        {
+            if (i++ == index)
+            {
+                return new string(line[range]);
+            }
+        }
+
+        return "";
     }
 
     public static float GetFloat(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
@@ -42,11 +58,11 @@ public static class Utility
         {
             if (i++ == index)
             {
-                return float.Parse(line[range]);
+                return float.Parse(line[range], CultureInfo.InvariantCulture);
             }
         }
 
-        return float.Parse("");
+        return float.Parse("", CultureInfo.InvariantCulture);
     }
 
     private const float Epsilon = 0.0000001F;

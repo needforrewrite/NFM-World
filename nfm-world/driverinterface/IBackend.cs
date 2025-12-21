@@ -6,7 +6,7 @@ public interface IBackend
 {
     public static IBackend Backend { get; set; }
 
-    IRadicalMusic LoadMusic(File file);
+    IRadicalMusic LoadMusic(File file, double tempomul);
     IImage LoadImage(File file);
     IImage LoadImage(ReadOnlySpan<byte> file);
     void StopAllSounds();

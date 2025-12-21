@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.ImGuiNet;
+using Environment = System.Environment;
 
 namespace NFMWorld;
 
@@ -22,20 +23,23 @@ namespace NFMWorld;
 /// </summary>
 public unsafe class Program : Game
 {
-    private GraphicsDeviceManager _graphics;
+    public GraphicsDeviceManager _graphics;
     public static SpriteBatch _spriteBatch { get; private set; }
     public static Effect _polyShader { get; private set; }
+    public static Effect _lineShader { get; private set; }
     public static Effect _skyShader { get; private set; }
     public static Effect _groundShader { get; private set; }
     public static Effect _mountainsShader { get; private set; }
-    public static RenderTarget2D shadowRenderTarget { get; private set; }
+    public static RenderTarget2D[] shadowRenderTargets { get; private set; }
     private ImGuiRenderer _imguiRenderer;
 
     internal static int _lastFrameTime;
     internal static int _lastTickTime;
+    internal static int _lastTickCount;
     private KeyboardState oldKeyState;
     private MouseState oldMouseState;
-    private MonoGameSkia _skia;
+    private NanoVGRenderer _nvg;
+    public const int NumCascades = 3;
 
     private static bool loaded;
     private const int FrameDelay = (int) (1000 / 21.3f);
@@ -213,27 +217,24 @@ public unsafe class Program : Game
     private Program()
     {
         _graphics = new GraphicsDeviceManager(this);
+        _graphics.GraphicsProfile = GraphicsProfile.Reach;
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
 
-        IsFixedTimeStep = true;
+        _graphics.SynchronizeWithVerticalRetrace = true;
+        IsFixedTimeStep = false;
         TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / 63f);
-        _graphics.GraphicsProfile = GraphicsProfile.HiDef;
         _graphics.PreferredBackBufferWidth = 1280;
         _graphics.PreferredBackBufferHeight = 720;
-        _graphics.ApplyChanges();
-        
-        GraphicsDevice.PresentationParameters.MultiSampleCount = 8;
-        _graphics.ApplyChanges();
+        _graphics.PreferMultiSampling = false;
 
-        _skia = new MonoGameSkia(GraphicsDevice);
         // IBackend.Backend = new DummyBackend();
         Window.AllowUserResizing = true;
         Window.ClientSizeChanged += (sender, args) =>
         {
             var viewport = new Viewport(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height);
             GraphicsDevice.Viewport = viewport;
-            _skia.RemakeRenderTarget(Window.ClientBounds.Width, Window.ClientBounds.Height);
+            // _skia.RemakeRenderTarget(Window.ClientBounds.Width, Window.ClientBounds.Height);
             GameSparker.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
             GameSparker.CurrentPhase.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
         };
@@ -242,6 +243,7 @@ public unsafe class Program : Game
     protected override void Update(GameTime gameTime)
     {
         base.Update(gameTime);
+        FPSCounter.Update(gameTime);
         
         UpdateInput();
         UpdateMouse();
@@ -253,11 +255,16 @@ public unsafe class Program : Game
 
         var tick = Stopwatch.StartNew();
 
-        GameSparker.CurrentPhase.BeginGameTick();
-        GameSparker.GameTick();
-        GameSparker.CurrentPhase.GameTick();
-        GameSparker.CurrentPhase.EndGameTick();
+        var timesToTick = TimeStep.Update(gameTime);
+        for (int i = 0; i < timesToTick; i++)
+        {
+            GameSparker.CurrentPhase.BeginGameTick();
+            GameSparker.GameTick();
+            GameSparker.CurrentPhase.GameTick();
+            GameSparker.CurrentPhase.EndGameTick();
+        }
 
+        _lastTickCount = timesToTick;
         _lastTickTime = (int)tick.ElapsedMilliseconds;
     }
 
@@ -272,26 +279,58 @@ public unsafe class Program : Game
         oldKeyState = Keyboard.GetState();
         oldMouseState = Mouse.GetState();
         
+        _nvg = new NanoVGRenderer(GraphicsDevice);
+        
         base.Initialize();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+            foreach (var shadowRenderTarget in shadowRenderTargets)
+            {
+                shadowRenderTarget.Dispose();
+            }
+            _nvg.Dispose();
+            _imguiRenderer.Dispose();
+        }
     }
 
     protected override void LoadContent()
     {
-        _polyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Poly.fxc"));
-        _skyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Sky.fxc"));
-        _groundShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Ground.fxc"));
-        _mountainsShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Mountains.fxc"));
+        _polyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Poly.fxb"));
+        _lineShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Line.fxb"));
+        _skyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Sky.fxb"));
+        _groundShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Ground.fxb"));
+        _mountainsShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Mountains.fxb"));
         
         GameSparker.Load(this);
 
         // Create floating point render target
-        shadowRenderTarget = new RenderTarget2D(
-            GraphicsDevice,
-            2048,
-            2048,
-            false,
-            SurfaceFormat.Single,
-            DepthFormat.Depth24);
+        shadowRenderTargets = new RenderTarget2D[3];
+        for (int i = NumCascades - 1; i >= 0; i--)
+        {
+            shadowRenderTargets[i] = new RenderTarget2D(
+                GraphicsDevice,
+                2048,
+                2048,
+                false,
+                SurfaceFormat.Single,
+                DepthFormat.Depth24,
+                0,
+                RenderTargetUsage.DiscardContents);
+        }
+        
+        // Clear all render targets AFTER creating them all
+        for (int i = 0; i < NumCascades; i++)
+        {
+            GraphicsDevice.SetRenderTarget(shadowRenderTargets[i]);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Microsoft.Xna.Framework.Color.White, 1.0f, 0);
+            GraphicsDevice.SetRenderTarget(null);
+        }
         
         _imguiRenderer.RebuildFontAtlas();
 
@@ -456,7 +495,9 @@ public unsafe class Program : Game
         // Render based on game state
         GameSparker.CurrentPhase.Render();
         
-        _skia.Render();
+        FPSCounter.Render();
+        
+        _nvg.Render();
 
         GameSparker.CurrentPhase.RenderAfterSkia();
         
@@ -472,6 +513,12 @@ public unsafe class Program : Game
 
     public static void Main()
     {
+        // TODO figure out why SDL ProcessExit doesn't work properly
+        AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
+        {
+            Process.GetCurrentProcess().Kill();
+        };
+
         var program = new Program();
         program.Run();
     }
@@ -515,9 +562,9 @@ public unsafe class Program : Game
 
 public class DummyBackend : IBackend
 {
-    public IRadicalMusic LoadMusic(File file)
+    public IRadicalMusic LoadMusic(File file, double tempomul)
     {
-        return new RadicalMusic(file);
+        return new RadicalMusic(file, tempomul);
     }
 
     public IImage LoadImage(File file)

@@ -6,7 +6,7 @@ ground(248,248,25)
 fadefrom(5000)
 density(5)
 nlaps(2)
-soundtrack(Tomas Phusion - Keep Goin,mp3)
+soundtrack(custom,Tomas Phusion - Keep Goin.mp3)
 desc(This is a faithfully recreated version of 61803398874989's\nfirst stage he ever made.)
 
 name(The Hall without a Wall)

@@ -13,6 +13,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Monogame.ImGuiNet", "MonoGa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SoftFloat", "soft-float-starter-pack\SoftFloat\SoftFloat.csproj", "{92F86999-EB29-4921-A1E6-A0BC52ADCCB4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FNA.Core", "FNA\FNA.Core.csproj", "{1430F0C7-5A55-4A1E-AAE8-2D9F655464F6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NvgSharp.FNA.Core", "NvgSharp\src\XNA\NvgSharp.FNA.Core.csproj", "{71A41A85-C2CB-4AF3-B933-4B7E1793F318}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NvgSharp.Text.FNA.Core", "NvgSharp\src\NvgSharp.Text\NvgSharp.Text.FNA.Core.csproj", "{7828B354-F3FB-48E4-8A7D-E5A8080FC2B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FontStashSharp.FNA.Core", "FontStashSharp\src\XNA\FontStashSharp.FNA.Core.csproj", "{6863D1A0-7981-45A9-8C14-4B34F264C25D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FNA.Math", "FNA.Math\FNA.Math.csproj", "{0C978E31-6DD9-4CE4-929F-9AD943318B74}"
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,5 +51,25 @@ Global
 		{92F86999-EB29-4921-A1E6-A0BC52ADCCB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{92F86999-EB29-4921-A1E6-A0BC52ADCCB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{92F86999-EB29-4921-A1E6-A0BC52ADCCB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1430F0C7-5A55-4A1E-AAE8-2D9F655464F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1430F0C7-5A55-4A1E-AAE8-2D9F655464F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1430F0C7-5A55-4A1E-AAE8-2D9F655464F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1430F0C7-5A55-4A1E-AAE8-2D9F655464F6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71A41A85-C2CB-4AF3-B933-4B7E1793F318}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71A41A85-C2CB-4AF3-B933-4B7E1793F318}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71A41A85-C2CB-4AF3-B933-4B7E1793F318}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71A41A85-C2CB-4AF3-B933-4B7E1793F318}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7828B354-F3FB-48E4-8A7D-E5A8080FC2B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7828B354-F3FB-48E4-8A7D-E5A8080FC2B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7828B354-F3FB-48E4-8A7D-E5A8080FC2B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7828B354-F3FB-48E4-8A7D-E5A8080FC2B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6863D1A0-7981-45A9-8C14-4B34F264C25D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6863D1A0-7981-45A9-8C14-4B34F264C25D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6863D1A0-7981-45A9-8C14-4B34F264C25D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6863D1A0-7981-45A9-8C14-4B34F264C25D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

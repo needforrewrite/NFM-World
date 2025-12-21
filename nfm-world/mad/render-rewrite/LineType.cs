@@ -2,7 +2,7 @@
 
 public enum LineType
 {
-    Flat, Charged, Colored,
+    Flat, Charged, Colored, BrightColored,
 
-    MaxValue = Colored
+    MaxValue = BrightColored
 }

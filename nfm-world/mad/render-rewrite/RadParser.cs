@@ -65,6 +65,7 @@ public class RadParser
         if (rad3d.Wheels is { Length: < 4 }) return rad3d;
 
         // reposition car so that ground is at y=0 and the wheel x and z are equidistant from the origin
+        // this fixes masheen bouncing on the big ramp
         float groundTranslation = float.MaxValue;
         float wheelXTranslation = 0;
         float wheelZTranslation = 0;
@@ -96,9 +97,9 @@ public class RadParser
             rad3d.Wheels[i] = wheel with
             {
                 Position = new Vector3(
-                    wheel.Position.X - (wheelXTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    wheel.Position.Y, // - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    wheel.Position.Z - (wheelZTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER))
+                    wheel.Position.X - (wheelXTranslation),
+                    wheel.Position.Y,// - (groundTranslation),
+                    wheel.Position.Z - (wheelZTranslation)
                 )
             };
         }
@@ -110,9 +111,9 @@ public class RadParser
             {
                 var point = poly.Points[j];
                 poly.Points[j] = new Vector3(
-                    point.X - (wheelXTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    point.Y, // - (groundTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER)),
-                    point.Z - (wheelZTranslation * (1 - GameSparker.PHYSICS_MULTIPLIER))
+                    point.X - (wheelXTranslation),
+                    point.Y,// - (groundTranslation),
+                    point.Z - (wheelZTranslation)
                 );
             }
         }
@@ -318,6 +319,7 @@ public class RadParser
             else if (line.StartsWith("lightB")) poly = poly with { PolyType = PolyType.BrakeLight };
             else if (line.StartsWith("lightR")) poly = poly with { PolyType = PolyType.ReverseLight };
             else if (line.StartsWith("light")) poly = poly with { PolyType = PolyType.Light };
+            else if (line.StartsWith("gr(-10)")) poly = poly with { LineType = LineType.BrightColored };
             else if (line.StartsWith("gr(-18)")) poly = poly with { LineType = LineType.Charged };
             else if (line.StartsWith("gr(-13)")) poly = poly with { PolyType = PolyType.Finish };
             else if (line.StartsWith("decal"))
@@ -350,13 +352,16 @@ public class RadParser
                 _points.Clear();
                 if (_stonecold || _noOutline)
                 {
-                    if (_road)
+                    if (poly.LineType == LineType.Flat)
                     {
-                        poly = poly with { LineType = LineType.Colored };
-                    }
-                    else if (poly.LineType == LineType.Flat)
-                    {
-                        poly = poly with { LineType = null };
+                        if (_road)
+                        {
+                            poly = poly with { LineType = LineType.Colored };
+                        }
+                        else
+                        {
+                            poly = poly with { LineType = null };
+                        }
                     }
                 }
             }
@@ -467,6 +472,11 @@ public readonly record struct Color3(
     public static implicit operator ColorBGRA(Color3 color) => new(color.R, color.G, color.B, 255);
     public static explicit operator Color3(Color color) => new(color.R, color.G, color.B);
     public static explicit operator Color3(ColorBGRA color) => new(color.R, color.G, color.B);
+    public static implicit operator Microsoft.Xna.Framework.Color(Color3 color) => new(
+        (byte)Math.Clamp(color.R, (short)0, (short)255),
+        (byte)Math.Clamp(color.G, (short)0, (short)255),
+        (byte)Math.Clamp(color.B, (short)0, (short)255)
+    );
     
     public static Color3 operator +(Color3 a, Color3 b)
         => new(
@@ -502,5 +512,52 @@ public readonly record struct Color3(
     {
         var (r, g, b) = Colors.HSBtoRGB(hue, saturation, brightness);
         return new Color3(r, g, b);
+    }
+
+    private const double Factor = 0.7;
+    public Color3 Darker()
+    {
+        return new Color3(
+            (short) Math.Max((int) (R * Factor), 0),
+            (short) Math.Max((int) (G * Factor), 0),
+            (short) Math.Max((int) (B * Factor), 0)
+        );
+    }
+    public Color3 Brighter()
+    {
+        var r = R;
+        var g = G;
+        var b = B;
+
+        /* From 2D group:
+         * 1. black.brighter() should return grey
+         * 2. applying brighter to blue will always return blue, brighter
+         * 3. non pure color (non zero rgb) will eventually return white
+         */
+        const int i = (int) (1.0 / (1.0 - Factor));
+        if (r == 0 && g == 0 && b == 0)
+        {
+            return new Color3(i, i, i);
+        }
+        if (r is > 0 and < i)
+        {
+            r = i;
+        }
+
+        if (g is > 0 and < i)
+        {
+            g = i;
+        }
+
+        if (b is > 0 and < i)
+        {
+            b = i;
+        }
+
+        return new Color3(
+            (short) Math.Min((int) (r / Factor), 255),
+            (short) Math.Min((int) (g / Factor), 255),
+            (short) Math.Min((int) (b / Factor), 255)
+        );
     }
 }

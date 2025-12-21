@@ -13,11 +13,11 @@ public abstract class Camera
     public Vector3 LookAt { get; set; } = Vector3.UnitZ;
     public Vector3 Up  { get; set; } = -Vector3.UnitY;
 
-    public Microsoft.Xna.Framework.Matrix ViewMatrix { get; protected set; }
+    public Matrix ViewMatrix { get; protected set; }
 
-    public Microsoft.Xna.Framework.Matrix ProjectionMatrix { get; protected set; }
+    public Matrix ProjectionMatrix { get; protected set; }
 
-    public Microsoft.Xna.Framework.Matrix ViewProjectionMatrix { get; protected set; }
+    public Matrix ViewProjectionMatrix { get; protected set; }
 
     public abstract void OnBeforeRender();
 }

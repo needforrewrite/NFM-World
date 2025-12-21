@@ -5,10 +5,6 @@ using CommunityToolkit.HighPerformance;
 using Microsoft.Xna.Framework.Graphics;
 using Stride.Core.Mathematics;
 using Color = Microsoft.Xna.Framework.Color;
-using Matrix = Microsoft.Xna.Framework.Matrix;
-using Quaternion = Stride.Core.Mathematics.Quaternion;
-using Vector2 = Stride.Core.Mathematics.Vector2;
-using Vector3 = Stride.Core.Mathematics.Vector3;
 
 namespace NFMWorld.Mad;
 
@@ -37,20 +33,20 @@ public static class Extensions
 
     extension(System.Numerics.Vector3 vector3)
     {
-        public Microsoft.Xna.Framework.Vector3 ToXna() => new(vector3.X, vector3.Y, vector3.Z);
+        public Vector3 ToXna() => new(vector3.X, vector3.Y, vector3.Z);
     }
 
-    extension(Vector3 vector3)
+    extension(Stride.Core.Mathematics.Vector3 vector3)
     {
-        public static Vector3 RotateAround(in Vector3 source, in Vector3 target, in Vector3 axis, AngleSingle angle)
-            => Vector3.RotateAround(in source, in target, in axis, angle.Radians);
+        public static Stride.Core.Mathematics.Vector3 RotateAround(in Stride.Core.Mathematics.Vector3 source, in Stride.Core.Mathematics.Vector3 target, in Stride.Core.Mathematics.Vector3 axis, AngleSingle angle)
+            => Stride.Core.Mathematics.Vector3.RotateAround(in source, in target, in axis, angle.Radians);
         
-        public static Vector3 Abs(Vector3 vector) => new(MathF.Abs(vector.X), MathF.Abs(vector.Y), MathF.Abs(vector.Z));
+        public static Stride.Core.Mathematics.Vector3 Abs(Stride.Core.Mathematics.Vector3 vector) => new(MathF.Abs(vector.X), MathF.Abs(vector.Y), MathF.Abs(vector.Z));
         
-        public static Vector3 FromSpan(ReadOnlySpan<float> span)
+        public static Stride.Core.Mathematics.Vector3 FromSpan(ReadOnlySpan<float> span)
             => new(span[0], span[1], span[2]);
         
-        public Microsoft.Xna.Framework.Vector3 ToXna() => new(vector3.X, vector3.Y, vector3.Z);
+        public Vector3 ToXna() => new(vector3.X, vector3.Y, vector3.Z);
     }
 
     extension(Int3 int3)
@@ -87,10 +83,10 @@ public static class Extensions
                     (byte)Math.Clamp(color3.B, (short)0, (short)255)
                 );
 
-        public Microsoft.Xna.Framework.Vector3 ToXnaVector3()
+        public Vector3 ToVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
         
-        public Vector3 ToVector3()
+        public Stride.Core.Mathematics.Vector3 ToStrideVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
     }
 
@@ -164,13 +160,13 @@ public static class Extensions
 
     extension(Vector2 vector2)
     {
-        public Microsoft.Xna.Framework.Vector2 ToXna()
+        public Vector2 ToXna()
             => new(vector2.X, vector2.Y);
     }
 
-    extension(Quaternion quat)
+    extension(Stride.Core.Mathematics.Quaternion quat)
     {
-        public Microsoft.Xna.Framework.Quaternion ToXna()
+        public Quaternion ToXna()
             => new(quat.X, quat.Y, quat.Z, quat.W);
     }
 
@@ -254,5 +250,14 @@ public static class Extensions2
                 te[15]
             );
         }
+    }
+
+    extension(Vector3 vector3)
+    {
+        public Span<float> AsSpan()
+            => MemoryMarshal.CreateSpan(ref vector3.X, 3);
+        
+        public static Vector3 FromSpan(ReadOnlySpan<float> span)
+            => new(span[0], span[1], span[2]);
     }
 }

@@ -9,6 +9,8 @@ polys(217,211,180)
 fadefrom(6000)
 density(5)
 
+soundtrack(nfm2,stage15.radq)
+
 name(Dances with Monsters)
 
 nlaps(3)

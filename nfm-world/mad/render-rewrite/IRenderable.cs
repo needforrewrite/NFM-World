@@ -6,7 +6,5 @@ public interface IRenderable
     {
     }
 
-    void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
-    {
-    }
+    void Render(Camera camera, Lighting? lighting);
 }

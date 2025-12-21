@@ -7,4 +7,8 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\FNA.Math\FNA.Math.csproj" />
+    </ItemGroup>
+
 </Project>

@@ -8,7 +8,7 @@ fadefrom(5000)
 density(5)
 
 nlaps(1)
-soundtrack(purple_dream_5,zip)
+soundtrack(custom,purple_dream_5.mod)
 lightson()
 
 name(Example Stage - with all the parts used in it)

@@ -3,17 +3,17 @@ using System.Numerics;
 using System.IO;
 using System.Globalization;
 using NFMWorld.Util;
+using NFMWorld.DriverInterface;
+using SDL3;
 
 namespace NFMWorld.Mad.UI;
 
 /// <summary>
 /// Settings menu with tabs, similar to Half-Life 1 style
 /// </summary>
-public class SettingsMenu
+public class SettingsMenu(Program game)
 {
     private bool _isOpen;
-
-    public static DevConsoleWriter Writer = null!;
     private int _selectedTab = 0;
     
     private readonly string[] _tabNames = { "Keyboard", "Video", "Audio", "Game" };
@@ -42,15 +42,17 @@ public class SettingsMenu
     private int _selectedBindingIndex = -1;
 
     // Video settings
-    private int _selectedRenderer = 0;
-    private readonly string[] _renderers = { "SkiaSharp" };
+    private int _selectedRenderer = 1;
+    private readonly string[] _renderers = { "OpenGL", "SDL_GPU", "D3D11"};
     private int _selectedResolution = 2;
     private readonly string[] _resolutions = { "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440" };
     private int _selectedDisplayMode = 1;
     private readonly string[] _displayModes = { "Fullscreen", "Windowed", "Borderless" };
-    private bool _vsync = false;
+    private bool _vsync = true;
+    private int _fpsLimit = 63;
     private float _brightness = 0.5f;
     private float _gamma = 0.5f;
+    private float _lineWidth = 0.002f;
 
     // Audio settings
     private float _masterVolume = 1.0f;
@@ -85,7 +87,7 @@ public class SettingsMenu
         _isOpen = false;
     }
 
-    public void RenderImgui()
+    public void Render()
     {
         if (!_isOpen)
             return;
@@ -191,7 +193,7 @@ public class SettingsMenu
             {
                 // Clear the conflicting binding by setting it to None
                 prop.SetValue(Bindings, Keys.None);
-                Writer?.WriteLine($"Cleared {prop.Name} (was {key})", "debug");
+                GameSparker.Writer?.WriteLine($"Cleared {prop.Name} (was {key})", "debug");
             }
         }
 
@@ -200,7 +202,7 @@ public class SettingsMenu
         if (property != null)
         {
             property.SetValue(Bindings, key);
-            Writer?.WriteLine($"Bound {_capturingAction} to {key}", "debug");
+            GameSparker.Writer?.WriteLine($"Bound {_capturingAction} to {key}", "debug");
         }
 
         _capturingAction = null;
@@ -221,8 +223,8 @@ public class SettingsMenu
         ImGui.Text("Video Settings");
         ImGui.Spacing();
 
-        // ImGui.Text("Renderer");
-        // ImGui.Combo("##Renderer", ref _selectedRenderer, _renderers, _renderers.Length);
+        ImGui.Text("Renderer");
+        ImGui.Combo("##Renderer", ref _selectedRenderer, _renderers, _renderers.Length);
         
         ImGui.Text("Resolution");
         ImGui.Combo("##Resolution", ref _selectedResolution, _resolutions, _resolutions.Length);
@@ -233,9 +235,13 @@ public class SettingsMenu
         ImGui.Spacing();
         ImGui.Checkbox("Wait for vertical sync", ref _vsync);
         
+        ImGui.Text("FPS Limit");
+        float sliderWidth = ImGui.GetContentRegionAvail().X;
+        ImGui.SetNextItemWidth(sliderWidth);
+        ImGui.SliderInt("##FPSLimit", ref _fpsLimit, 0, 240, "%d FPS (0 = Unlimited)");
+        
         ImGui.Spacing();
         ImGui.Text("Brightness");
-        float sliderWidth = ImGui.GetContentRegionAvail().X;
         ImGui.SetNextItemWidth(sliderWidth);
         ImGui.SliderFloat("##Brightness", ref _brightness, 0.0f, 1.0f, "%.2f");
         float startX = ImGui.GetCursorPosX();
@@ -253,6 +259,9 @@ public class SettingsMenu
         ImGui.TextDisabled("High");
 
         ImGui.Spacing();
+        ImGui.Text("Outline Width");
+        ImGui.SetNextItemWidth(sliderWidth);
+        ImGui.SliderFloat("##LineWidth", ref _lineWidth, 0.001f, 0.005f, "%.4f");
         // ImGui.TextColored(new Vector4(1.0f, 0.8f, 0.4f, 1.0f), 
         //     "Note: changing some video options will cause the game to exit and restart.");
     }
@@ -366,7 +375,7 @@ public class SettingsMenu
 
         if (ImGui.Button("OK", new Vector2(buttonWidth, 30)))
         {
-            ApplySettings();
+            ApplySettingsAndSave();
             _isOpen = false;
         }
 
@@ -381,7 +390,7 @@ public class SettingsMenu
 
         if (ImGui.Button("Apply", new Vector2(buttonWidth, 30)))
         {
-            ApplySettings();
+            ApplySettingsAndSave();
         }
 
         if (_capturingAction != null)
@@ -403,34 +412,73 @@ public class SettingsMenu
         }
     }
 
-    private void ApplySettings()
+    private void ApplySettingsAndSave()
     {
         // Here you would actually apply the settings to the game
         // For now, just show a confirmation message
         _settingMessage = "Settings applied successfully!";
         
+        ApplySettings(out var requireRestart);
+
+        // Save config to file
+        SaveConfig();
+    }
+
+    private void ApplySettings(out bool requireRestart)
+    {
         // Apply audio settings
         if (_muteAll)
         {
             // Mute all sounds
+            IBackend.Backend.SetAllVolumes(0);
+            GameSparker.CurrentMusic?.SetVolume(0);
+            IRadicalMusic.CurrentVolume = 0;
         }
         else
         {
             // Apply volume settings
-            // GameSparker.SetMasterVolume(_masterVolume);
-            // GameSparker.SetMusicVolume(_musicVolume);
-            // GameSparker.SetEffectsVolume(_effectsVolume);
+            IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
+            GameSparker.CurrentMusic?.SetVolume(_musicVolume * _masterVolume);
+            IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
         }
 
         // Apply camera settings
         InRacePhase.camera.Fov = _fov;
         InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
         InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
+
+        bool graphicsChanged = false;
+        requireRestart = false;
+        if (game._graphics.SynchronizeWithVerticalRetrace != _vsync)
+        {
+            game._graphics.SynchronizeWithVerticalRetrace = _vsync;
+            graphicsChanged = true;
+        }
         
-        // Save config to file
-        SaveConfig();
+        if (_renderers[_selectedRenderer] != SDL.SDL_GetHint("FNA3D_FORCE_DRIVER"))
+        {
+            SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", _renderers[_selectedRenderer]); // TODO this only ever gets executed too late to do anything.
+            requireRestart = true;
+        }
+
+        if (graphicsChanged)
+        {
+            game._graphics.ApplyChanges();
+        }
+
+        if (_fpsLimit != 0)
+        {
+            game.TargetElapsedTime = TimeSpan.FromMilliseconds(1000d / _fpsLimit);
+            game.IsFixedTimeStep = true;
+        }
+        else
+        {
+            game.IsFixedTimeStep = false;
+        }
+
+        World.OutlineThickness = _lineWidth;
     }
-    
+
     private void SaveConfig()
     {
         try
@@ -446,11 +494,14 @@ public class SettingsMenu
                 
                 // Video settings
                 cfgWriter.WriteLine("// Video Settings");
+                cfgWriter.WriteLine($"video_renderer {_selectedRenderer}");
                 cfgWriter.WriteLine($"video_resolution {_selectedResolution}");
                 cfgWriter.WriteLine($"video_displaymode {_selectedDisplayMode}");
                 cfgWriter.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
+                cfgWriter.WriteLine($"video_fps {_fpsLimit}");
                 cfgWriter.WriteLine($"video_brightness {_brightness.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"video_gamma {_gamma.ToString("F2", CultureInfo.InvariantCulture)}");
+                cfgWriter.WriteLine($"video_linewidth {_lineWidth.ToString("F4", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine();
                 
                 // Audio settings
@@ -483,13 +534,14 @@ public class SettingsMenu
                 cfgWriter.WriteLine($"key_togglearrace {(int)Bindings.ToggleArrace}");
                 cfgWriter.WriteLine($"key_toggleradar {(int)Bindings.ToggleRadar}");
                 cfgWriter.WriteLine($"key_cycleview {(int)Bindings.CycleView}");
+                cfgWriter.WriteLine();
             }
             
-            Writer?.WriteLine($"Config saved to {configPath}", "debug");
+            GameSparker.Writer?.WriteLine($"Config saved to {configPath}", "debug");
         }
         catch (Exception ex)
         {
-            Writer?.WriteLine($"Error saving config: {ex.Message}", "error");
+            GameSparker.Writer?.WriteLine($"Error saving config: {ex.Message}", "error");
         }
     }
     
@@ -501,7 +553,7 @@ public class SettingsMenu
             
             if (!System.IO.File.Exists(configPath))
             {
-                Writer?.WriteLine("No config file found, using defaults.", "warning");
+                GameSparker.Writer?.WriteLine("No config file found, using defaults.", "warning");
                 return;
             }
             
@@ -525,6 +577,9 @@ public class SettingsMenu
                     switch (key)
                     {
                         // Video settings
+                        case "video_renderer":
+                            _selectedRenderer = int.Parse(value);
+                            break;
                         case "video_resolution":
                             _selectedResolution = int.Parse(value);
                             break;
@@ -534,11 +589,17 @@ public class SettingsMenu
                         case "video_vsync":
                             _vsync = int.Parse(value) != 0;
                             break;
+                        case "video_fps":
+                            _fpsLimit = int.Parse(value);
+                            break;
                         case "video_brightness":
                             _brightness = float.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "video_gamma":
                             _gamma = float.Parse(value, CultureInfo.InvariantCulture);
+                            break;
+                        case "video_linewidth":
+                            _lineWidth = float.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         
                         // Audio settings
@@ -610,20 +671,18 @@ public class SettingsMenu
                 }
                 catch (Exception ex)
                 {
-                    Writer?.WriteLine($"Error parsing config line '{line}': {ex.Message}", "error");
+                    GameSparker.Writer?.WriteLine($"Error parsing config line '{line}': {ex.Message}", "error");
                 }
             }
             
-            // Apply loaded camera settings immediately
-            InRacePhase.camera.Fov = _fov;
-            InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
-            InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
+            // Apply loaded settings immediately
+            ApplySettings(out _);
             
-            Writer?.WriteLine($"Config loaded from {configPath}", "debug");
+            GameSparker.Writer?.WriteLine($"Config loaded from {configPath}", "debug");
         }
         catch (Exception ex)
         {
-            Writer?.WriteLine($"Error loading config: {ex.Message}", "error");
+            GameSparker.Writer?.WriteLine($"Error loading config: {ex.Message}", "error");
         }
     }
 }

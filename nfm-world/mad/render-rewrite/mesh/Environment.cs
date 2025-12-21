@@ -1,32 +1,9 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Util;
-using Vector3 = Stride.Core.Mathematics.Vector3;
 
 namespace NFMWorld.Mad;
 
-using URandom = NFMWorld.Util.Random;
-
-public class NoZBufferMesh : Mesh
-{
-    public NoZBufferMesh(GraphicsDevice graphicsDevice, string code) : base(graphicsDevice, code)
-    {
-    }
-
-    public NoZBufferMesh(GraphicsDevice graphicsDevice, Rad3d rad) : base(graphicsDevice, rad)
-    {
-    }
-
-    public NoZBufferMesh(Mesh baseMesh, Vector3 position, Euler rotation) : base(baseMesh, position, rotation)
-    {
-    }
-
-    public override void Render(Camera camera, Camera? lightCamera, bool isCreateShadowMap = false)
-    {
-        GraphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        base.Render(camera, lightCamera, isCreateShadowMap);
-        GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-    }
-}
+using URandom = Util.Random;
 
 public class Environment
 {
