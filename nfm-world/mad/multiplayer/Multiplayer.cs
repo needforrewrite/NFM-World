@@ -1,9 +1,15 @@
 ﻿using System.Runtime.InteropServices;
+using CommunityToolkit.HighPerformance;
 using Steamworks;
 using Steamworks.Data;
 using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad;
+
+public interface IMultiplayerTransport
+{
+    public event EventHandler<object> PacketReceived;
+}
 
 public class Multiplayer
 {
