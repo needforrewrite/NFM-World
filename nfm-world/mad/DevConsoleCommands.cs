@@ -36,6 +36,18 @@ namespace NFMWorld.Mad
             console.RegisterCommand("r_blackpoint", SetBlackPoint);
             console.RegisterCommand("r_whitepoint", SetWhitePoint);
             console.RegisterCommand("r_displaytrackers", (c, args) => GameSparker.devRenderTrackers = !GameSparker.devRenderTrackers);
+            
+            // gamemode
+            console.RegisterCommand("go_tt", (c, args) =>
+            {
+                InRacePhase.gamemode = new TimeTrialGamemode();
+                GameSparker.CurrentPhase = GameSparker.InRace;
+            });
+            console.RegisterCommand("go_sbox", (c, args) =>
+            {
+                InRacePhase.gamemode = new SandboxGamemode();
+                GameSparker.CurrentPhase = GameSparker.InRace;
+            });
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
@@ -43,6 +55,8 @@ namespace NFMWorld.Mad
             console.RegisterCommand("ui_open_devcam", (c, args) => ToggleCameraSettings(c));
             console.RegisterCommand("ui_open_devmsg", ShowMessageTest);
             console.RegisterCommand("ui_open_settings", (c, args) => GameSparker.SettingsMenu.Open());
+
+            console.RegisterCommand("demo_playback", DemoPlayback);
 
             //cheats
             //console.RegisterCommand("sv_cheats", SVCheats);
@@ -63,6 +77,13 @@ namespace NFMWorld.Mad
             // map command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("map", (args, position) => 
                 position == 0 ? GameSparker.GetAvailableStages() : new List<string>());
+        }
+
+        private static void DemoPlayback(DevConsole console, string[] args)
+        {
+            TimeTrialGamemode.PlaybackOnReset = !TimeTrialGamemode.PlaybackOnReset;
+            console.Log("Playback set to " + TimeTrialGamemode.PlaybackOnReset + ", for maps with a saved demo file.");
+            console.Log("Restart the time trial for changes to take effect.");
         }
 
         private static void WastePlayer(DevConsole console, string[] args)

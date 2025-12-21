@@ -137,6 +137,8 @@ public class Mad
 
     internal void Colide(ContO conto, Mad othermad, ContO otherconto)
     {
+        var random = new URandom(conto.X + otherconto.X);
+        
         Span<float> wheelx = stackalloc float[4];
         Span<float> wheely = stackalloc float[4];
         Span<float> wheelz = stackalloc float[4];
@@ -236,19 +238,19 @@ public class Mad
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regx(otherwheel, f131 * Stat.Moment * damageMult, otherconto);
+                            totalOtherDamage += othermad.Regx(otherwheel, f131 * Stat.Moment * damageMult, otherconto, random);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
                             }
                             Scx[wheel] -= f130;
-                            totalOwnDamage += Regx(wheel, -f130 * Stat.Moment * damageMult, conto);
+                            totalOwnDamage += Regx(wheel, -f130 * Stat.Moment * damageMult, conto, random);
                             Scy[wheel] -= Stat.Revlift;
                             if (IsClientPlayer)
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto);
+                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto, random);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
@@ -292,19 +294,19 @@ public class Mad
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regz(otherwheel, f133 * Stat.Moment * damageMult, otherconto);
+                            totalOtherDamage += othermad.Regz(otherwheel, f133 * Stat.Moment * damageMult, otherconto, random);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
                             }
                             Scz[wheel] -= f132;
-                            totalOwnDamage += Regz(wheel, -f132 * Stat.Moment * damageMult, conto);
+                            totalOwnDamage += Regz(wheel, -f132 * Stat.Moment * damageMult, conto, random);
                             Scy[wheel] -= Stat.Revlift;
                             if (IsClientPlayer)
                             {
                                 othermad._colidim = true;
                             }
-                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto);
+                            totalOtherDamage += othermad.Regy(otherwheel, Stat.Revlift * 7, otherconto, random);
                             if (othermad._colidim)
                             {
                                 othermad._colidim = false;
@@ -393,7 +395,7 @@ public class Mad
     {
         conto.Wasted = true;
     }
-    public void bounceRebound(int wi, ContO conto)
+    public void bounceRebound(int wi, ContO conto, URandom random)
     {
         // part 1: the closer we are to 90/-90 in Pxy or Pzy, the bigger the bounce
         float rebound = (Math.Abs(UMath.Sin(Pxy)) + Math.Abs(UMath.Sin(Pzy))) / 3;
@@ -405,7 +407,7 @@ public class Mad
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
 
-        Regy(wi, Math.Abs(Scy[wi] * rebound), conto);
+        Regy(wi, Math.Abs(Scy[wi] * rebound), conto, random);
         // if scy is > 0 then we are going down, apply the rebound bounce
         if (Scy[wi] > 0.0F)
             // we are subtracting scy * f_51 from scy
@@ -426,7 +428,7 @@ public class Mad
             Scy[wi] = -1 * Scy[wi] * (rebound - 1);
     }
 
-    public void bounceReboundZ(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/)
+    public void bounceReboundZ(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/, URandom random)
     {
         float rebound = Math.Abs(UMath.Cos(Pxy)) + Math.Abs(UMath.Cos(Pzy)) / 4;
         float maxAngleRebound = 0.3F;
@@ -436,11 +438,11 @@ public class Mad
         rebound += Stat.Bounce - 0.2F;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
-        Regz(wi, -1 * Scz[wi] * rebound * Trackers.Dam[ti] /** checkpoints.dam*/, conto);
+        Regz(wi, -1 * Scz[wi] * rebound * Trackers.Dam[ti] /** checkpoints.dam*/, conto, random);
         Scz[wi] = -1 * Scz[wi] * (rebound - 1);
     }
 
-    public void bounceReboundX(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/)
+    public void bounceReboundX(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/, URandom random)
     {
         float rebound = Math.Abs(UMath.Cos(Pxy)) + Math.Abs(UMath.Cos(Pzy)) / 4;
         float maxAngleRebound = 0.3F;
@@ -450,7 +452,7 @@ public class Mad
         rebound += Stat.Bounce - 0.2F;
         float minRebound = 1.1F;
         rebound = Math.Max(rebound, minRebound);
-        Regx(wi, -1 * Scx[wi] * rebound * Trackers.Dam[ti]/* * checkpoints.dam*/, conto);
+        Regx(wi, -1 * Scx[wi] * rebound * Trackers.Dam[ti]/* * checkpoints.dam*/, conto, random);
         Scx[wi] = -1 * Scx[wi] * (rebound - 1);
     }
 
@@ -459,6 +461,8 @@ public class Mad
 
     internal void Drive(Control control, ContO conto)
     {
+        URandom random = new(conto.X);
+
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_fxz:0.00}, cxz: {Cxz:0.00}");
         FrameTrace.AddMessage($"xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}");
         FrameTrace.AddMessage($"Travxz: {Travxz}, Travxy: {Travxy}, Travzy: {Travzy}, Surfing: {Surfer}");
@@ -1264,7 +1268,7 @@ public class Mad
                             f42 = 1.2F;
                         }
 
-                        if (UMath.Random() > 0.65)
+                        if (random.NextDouble() > 0.65)
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
                                 f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch, (int)wheelGround);
@@ -1278,13 +1282,13 @@ public class Mad
                     }
                     else
                     {
-                        if (surfaceType == 1 && UMath.Random() > 0.8)
+                        if (surfaceType == 1 && random.NextDouble() > 0.8)
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
                                 1.1F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, (int)wheelGround);
                         }
 
-                        if ((surfaceType == 2 || surfaceType == 3) && UMath.Random() > 0.6)
+                        if ((surfaceType == 2 || surfaceType == 3) && random.NextDouble() > 0.6)
                         {
                             conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
                                 1.15F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, (int)wheelGround);
@@ -1299,8 +1303,7 @@ public class Mad
                 if (surfaceType == 3 || surfaceType == 4)
                 {
                     int
-                        k = Util.Random.Int(0,
-                            4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
+                        k = (int)Math.Floor(random.NextDouble() * 4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
                     float bumpLift = surfaceType == 3 ? -100F : -150F;
                     float rng = 0.55F;
                     Scy[k] = bumpLift * rng * Speed / Stat.Swits[2] * (Stat.Bounce - 0.3F);
@@ -1387,11 +1390,11 @@ public class Mad
                 f48 += wheely[i49] - groundY;
                 isWheelGrounded[i49] = true;
 
-                bounceRebound(i49, conto);
+                bounceRebound(i49, conto, random);
             }
         }
 
-        OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded);
+        OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
 
         // sparks and scrapes
         for (var i79 = 0; i79 < 4; i79++)
@@ -1707,16 +1710,16 @@ public class Mad
         }
         if (Wtouch && surfaceType == 2)
         {
-            conto.Zy += (int)((UMath.Random() * 6.0F * Speed / Stat.Swits[2] - 3.0F * Speed / Stat.Swits[2]) *
+            conto.Zy += (int)((random.NextDouble() * 6.0F * Speed / Stat.Swits[2] - 3.0F * Speed / Stat.Swits[2]) *
                                (Stat.Bounce - 0.3));
-            conto.Xy += (int)((UMath.Random() * 6.0F * Speed / Stat.Swits[2] - 3.0F * Speed / Stat.Swits[2]) *
+            conto.Xy += (int)((random.NextDouble() * 6.0F * Speed / Stat.Swits[2] - 3.0F * Speed / Stat.Swits[2]) *
                                (Stat.Bounce - 0.3));
         }
         if (Wtouch && surfaceType == 1)
         {
-            conto.Zy += (int)((UMath.Random() * 4.0F * Speed / Stat.Swits[2] - 2.0F * Speed / Stat.Swits[2]) *
+            conto.Zy += (int)((random.NextDouble() * 4.0F * Speed / Stat.Swits[2] - 2.0F * Speed / Stat.Swits[2]) *
                                (Stat.Bounce - 0.3));
-            conto.Xy += (int)((UMath.Random() * 4.0F * Speed / Stat.Swits[2] - 2.0F * Speed / Stat.Swits[2]) *
+            conto.Xy += (int)((random.NextDouble() * 4.0F * Speed / Stat.Swits[2] - 2.0F * Speed / Stat.Swits[2]) *
                                (Stat.Bounce - 0.3));
         } // CHK15
         if (Hitmag >= Stat.Maxmag && !Wasted)
@@ -2226,7 +2229,7 @@ public class Mad
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
     private void OmarTrackPieceCollision(Control control, ContO conto, Span<float> wheelx, Span<float> wheely, Span<float> wheelz,
-        float groundY, float wheelYThreshold, float wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded)
+        float groundY, float wheelYThreshold, float wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, URandom random)
     {
         hitVertical = false;
 
@@ -2283,7 +2286,7 @@ public class Mad
                             SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
 
-                        bounceRebound(k, conto);
+                        bounceRebound(k, conto, random);
                         isWheelTouchingPiece[k] = true;
                     } // CHK4
                     // here we handle cases where zy is -90
@@ -2305,7 +2308,7 @@ public class Mad
                         // sparks and scrapes
                         if (Trackers.Skd[j] != 2)
                             _crank[0, k]++;
-                        if (Trackers.Skd[j] == 5 && Util.Random.Boolean())
+                        if (Trackers.Skd[j] == 5 && random.NextDouble() > 0.5)
                             _crank[0, k]++;
                         if (_crank[0, k] > 1)
                         {
@@ -2315,7 +2318,7 @@ public class Mad
                         }
 
                         // z rebound CHK5
-                        bounceReboundZ(j, k, conto, wasMtouch/*, Trackers, checkpoints*/);
+                        bounceReboundZ(j, k, conto, wasMtouch/*, Trackers, checkpoints*/, random);
 
                         Skid = 2;
                         hitVertical = true;
@@ -2337,7 +2340,7 @@ public class Mad
                         //
                         if (Trackers.Skd[j] != 2)
                             _crank[1, k]++;
-                        if (Trackers.Skd[j] == 5 && Util.Random.Boolean())
+                        if (Trackers.Skd[j] == 5 && random.NextDouble() > 0.5)
                             _crank[1, k]++;
                         if (_crank[1, k] > 1)
                         {
@@ -2346,7 +2349,7 @@ public class Mad
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
 
-                        bounceReboundZ(j, k, conto, wasMtouch/*, Trackers, checkpoints*/);
+                        bounceReboundZ(j, k, conto, wasMtouch/*, Trackers, checkpoints*/, random);
 
                         Skid = 2;
                         hitVertical = true;
@@ -2368,7 +2371,7 @@ public class Mad
                         //
                         if (Trackers.Skd[j] != 2)
                             _crank[2, k]++;
-                        if (Trackers.Skd[j] == 5 && Util.Random.Boolean())
+                        if (Trackers.Skd[j] == 5 && random.NextDouble() > 0.5)
                             _crank[2, k]++;
                         if (_crank[2, k] > 1)
                         {
@@ -2377,7 +2380,7 @@ public class Mad
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
 
-                        bounceReboundX(j, k, conto, wasMtouch/*, Trackers, checkpoints*/);
+                        bounceReboundX(j, k, conto, wasMtouch/*, Trackers, checkpoints*/, random);
 
                         Skid = 2;
                         hitVertical = true;
@@ -2399,7 +2402,7 @@ public class Mad
                         //
                         if (Trackers.Skd[j] != 2)
                             _crank[3, k]++;
-                        if (Trackers.Skd[j] == 5 && Util.Random.Boolean())
+                        if (Trackers.Skd[j] == 5 && random.NextDouble() > 0.5)
                             _crank[3, k]++;
                         if (_crank[3, k] > 1)
                         {
@@ -2408,7 +2411,7 @@ public class Mad
                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                         }
 
-                        bounceReboundX(j, k, conto, wasMtouch/*, Trackers, checkpoints*/);
+                        bounceReboundX(j, k, conto, wasMtouch/*, Trackers, checkpoints*/, random);
 
                         Skid = 2;
                         hitVertical = true;
@@ -2549,7 +2552,7 @@ public class Mad
             Mtouch = true;
     }
 
-    private int Regx(int i, float f, ContO conto)
+    private int Regx(int i, float f, ContO conto, URandom random)
     {
         conto.DamageX(Stat, i, f);
 
@@ -2590,7 +2593,7 @@ public class Mad
                 var f112 = 0.0F;
                 for (var i113 = 0; i113 < 4; i113++)
                 {
-                    f112 = f / 20.0F * UMath.Random();
+                    f112 = f / 20.0F * (float)random.NextDouble();
                     if (abool)
                     {
                         Hitmag += (int)Math.Abs(f112);
@@ -2602,7 +2605,7 @@ public class Mad
         return i110;
     }
 
-    private int Regy(int i, float f, ContO conto)
+    private int Regy(int i, float f, ContO conto, URandom random)
     {
         conto.DamageY(Stat, i, f, Mtouch, _nbsq, Squash);
         var i97 = 0;
@@ -2673,7 +2676,7 @@ public class Mad
                     var f103 = 0.0F;
                     for (var i104 = 0; i104 < 4; i104++)
                     {
-                        f103 = f / 20.0F * UMath.Random();
+                        f103 = f / 20.0F * (float)random.NextDouble();
                         if (abool)
                         {
                             Hitmag += (int)Math.Abs(f103);
@@ -2693,7 +2696,7 @@ public class Mad
                         var f108 = 0.0F;
                         for (var i109 = 0; i109 < 4; i109++)
                         {
-                            f108 = f / 15.0F * UMath.Random();
+                            f108 = f / 15.0F * (float)random.NextDouble();
                             i105 += (int)f108;
                             i106++;
                             if (abool)
@@ -2715,7 +2718,7 @@ public class Mad
         return i97;
     }
 
-    private int Regz(int i, float f, ContO conto)
+    private int Regz(int i, float f, ContO conto, URandom random)
     {
         conto.DamageZ(Stat, i, f);
         var i114 = 0;
@@ -2756,7 +2759,7 @@ public class Mad
                 var f116 = 0.0F;
                 for (var i117 = 0; i117 < 4; i117++)
                 {
-                    f116 = f / 20.0F * UMath.Random();
+                    f116 = f / 20.0F * (float)random.NextDouble();
                     if (abool)
                     {
                         Hitmag += (int)Math.Abs(f116);

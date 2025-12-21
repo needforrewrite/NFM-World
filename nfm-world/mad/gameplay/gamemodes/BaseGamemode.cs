@@ -8,7 +8,7 @@ public abstract class BaseGamemode
         
     }
 
-    public virtual void Exit()
+    public virtual void Exit(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
     {
         
     }

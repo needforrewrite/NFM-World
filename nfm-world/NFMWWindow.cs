@@ -14,6 +14,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.ImGuiNet;
 using Environment = System.Environment;
+using NFMWorld.Util;
 
 namespace NFMWorld;
 
@@ -256,7 +257,8 @@ public unsafe class Program : Game
             loaded = true;
         }
 
-        var tick = Stopwatch.StartNew();
+        var tick = new MicroStopwatch();
+        tick.Start();
 
         var timesToTick = _tickTimeStep.Update(gameTime);
         for (int i = 0; i < timesToTick; i++)
@@ -268,7 +270,7 @@ public unsafe class Program : Game
         }
 
         _lastTickCount = timesToTick;
-        _lastTickTime = (int)tick.ElapsedMilliseconds;
+        _lastTickTime = (int)tick.ElapsedMicroseconds;
     }
 
     protected override void Initialize()
