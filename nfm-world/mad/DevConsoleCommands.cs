@@ -28,6 +28,8 @@ namespace NFMWorld.Mad
             console.RegisterCommand("breaky", BreakY);
             console.RegisterCommand("breakz", BreakZ);
             console.RegisterCommand("waste", WastePlayer);
+            console.RegisterCommand("startserver", StartServer);
+            console.RegisterCommand("connect", Connect);
             
             // rendering
             console.RegisterCommand("r_frametrace", SetFrameTrace);
@@ -67,6 +69,32 @@ namespace NFMWorld.Mad
         {
             InRacePhase.CarsInRace[InRacePhase.playerCarIndex].CarRef.Wasted = true;
         }
+
+        private static void Connect(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !ulong.TryParse(args[0], out ulong steamid))
+            {
+                console.Log("Usage: connect <steamid> <port>");
+                return;
+            }
+            
+            if (args.Length < 2 || !int.TryParse(args[1], out int port))
+            {
+                port = 1;
+            }
+            
+            Multiplayer.Connect(steamid, port);
+        }
+
+        private static void StartServer(DevConsole console, string[] args)
+        {
+            if (args.Length < 1 || !int.TryParse(args[0], out int port))
+            {
+                port = 0;
+            }
+            
+            Multiplayer.StartServer(port);
+		}
 
         private static void BreakX(DevConsole console, string[] args)
         {
