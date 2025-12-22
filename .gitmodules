@@ -12,4 +12,4 @@
 	url = https://github.com/uwx/NvgSharp
 [submodule "Facepunch.Steamworks"]
 	path = Facepunch.Steamworks
-	url = https://github.com/Facepunch/Facepunch.Steamworks
+	url = https://github.com/uwx/Facepunch.Steamworks
