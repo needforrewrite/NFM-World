@@ -66,6 +66,7 @@ jobs:
       matrix:
         rid:
           - win-x64
+          - win-x64-v3
 
     steps:
       - name: Checkout code
@@ -95,13 +96,24 @@ jobs:
 
       - name: Publish ${{ matrix.rid }}
         run: |
+          $rid = "${{ matrix.rid }}"
+          $publishRid = $rid
+          $extraArgs = ""
+          
+          # For v3 variants, use base RID for publishing and add IlcInstructionSet
+          if ($rid.EndsWith("-v3")) {
+            $publishRid = $rid.Substring(0, $rid.Length - 3)
+            $extraArgs = "-p:IlcInstructionSet=x86-64-v3"
+          }
+          
           dotnet publish nfm-world/NFMWorld.csproj `
             -c Release `
-            -r ${{ matrix.rid }} `
+            -r $publishRid `
             --self-contained `
             -p:PublishAot=true `
             -p:Version="${{ steps.version.outputs.semantic_version }}" `
             -p:InformationalVersion="${{ steps.version.outputs.info_version }}" `
+            $extraArgs `
             -o ./publish/${{ matrix.rid }}
 
       - name: Upload artifact
@@ -117,6 +129,7 @@ jobs:
       matrix:
         rid:
           - linux-x64
+          - linux-x64-v3
 
     steps:
       - name: Checkout code
@@ -198,6 +211,16 @@ jobs:
 
       - name: Publish ${{ matrix.rid }}
         run: |
+          RID="${{ matrix.rid }}"
+          PUBLISH_RID="$RID"
+          EXTRA_ARGS=""
+          
+          # For v3 variants, use base RID for publishing and add IlcInstructionSet
+          if [[ "$RID" == *-v3 ]]; then
+            PUBLISH_RID="${RID%-v3}"
+            EXTRA_ARGS="-p:IlcInstructionSet=x86-64-v3"
+          fi
+          
           if [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
             # Set cross-compilation tools for ARM64
             export COMPlus_CrossLinker=/usr/bin/aarch64-linux-gnu-ld
@@ -210,11 +233,12 @@ jobs:
           fi
           dotnet publish nfm-world/NFMWorld.csproj \
             -c Release \
-            -r ${{ matrix.rid }} \
+            -r $PUBLISH_RID \
             --self-contained \
             -p:PublishAot=true \
             -p:Version="${{ steps.version.outputs.semantic_version }}" \
             -p:InformationalVersion="${{ steps.version.outputs.info_version }}" \
+            $EXTRA_ARGS \
             -o ./publish/${{ matrix.rid }}
 
       - name: Upload artifact
