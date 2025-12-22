@@ -27,16 +27,17 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     private float _sidebarWidth = 250f;
     private float _gameListHeight = 200f;
 
-    public override void Enter()
-    {
-        base.Enter();
-        
-        SendUpdatePlayerIdentity();
-    }
+    private bool _sentClientIdentity = false;
 
     public override void GameTick()
     {
         base.GameTick();
+
+        if (!_sentClientIdentity && transport.State == ClientState.Connected)
+        {
+            _sentClientIdentity = true;
+            SendUpdatePlayerIdentity();
+        }
 
         foreach (var packet in transport.GetNewPackets())
         {
