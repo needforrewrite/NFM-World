@@ -1,10 +1,13 @@
 ﻿using ImGuiNET;
 using Microsoft.Xna.Framework;
+using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
 
 public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
 {
+    private Player _player = new();
+    
     private struct ChatMessage
     {
         public required uint PlayerId { get; set; }
@@ -24,7 +27,12 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     private float _sidebarWidth = 250f;
     private float _gameListHeight = 200f;
 
-    private uint _clientId;
+    public override void Enter()
+    {
+        base.Enter();
+        
+        SendUpdatePlayerIdentity();
+    }
 
     public override void GameTick()
     {
@@ -40,11 +48,14 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
                         PlayerId = chatMessage.SenderClientId,
                         PlayerName = chatMessage.Sender, 
                         Message = chatMessage.Message,
-                        Color = new Color3(255, 255, 255)
+                        Color = _players
+                            .Select(e => (S2C_LobbyState.PlayerInfo?)e)
+                            .FirstOrDefault(p => p!.Value.Id == chatMessage.SenderClientId, null)
+                            ?.Color ?? new Color3(255, 255, 255)
                     });
                     break;
                 case S2C_LobbyState lobbyState:
-                    _clientId = lobbyState.PlayerClientId;
+                    _player.ClientId = lobbyState.PlayerClientId;
                     _players = lobbyState.Players.ToList();
                     _activeSessions = lobbyState.ActiveSessions.ToList();
                     break;
@@ -113,7 +124,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             ImGui.PopStyleColor();
             
             ImGui.Indent(20);
-            ImGui.TextDisabled($"Vehicle: {player.Vehicle}");
+            ImGui.TextDisabled($"Vehicle: {GameSparker.GetCar(player.Vehicle).Car?.Stats.Name}");
             ImGui.Unindent(20);
             ImGui.Spacing();
         }
@@ -122,15 +133,53 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         
         if (ImGui.Button("Change Vehicle", new Vector2(-1, 0)))
         {
-            // TODO: Open vehicle selection dialog
+            ImGui.OpenPopup("VehicleSelection");
         }
+        RenderVehicleSelectionDialog();
         
-        if (ImGui.Button("Ready", new Vector2(-1, 0)))
+        if (ImGui.Button(_player.IsReady ? "Unready" : "Ready", new Vector2(-1, 0)))
         {
             // TODO: Toggle ready status
         }
 
         ImGui.EndChild();
+    }
+    
+    private void RenderVehicleSelectionDialog()
+    {
+        if (ImGui.BeginPopupModal("VehicleSelection", ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.Text("Select a car:");
+            ImGui.Separator();
+
+            // Dummy vehicle list
+            foreach (var vehicle in GameSparker.cars)
+            {
+                if (ImGui.Selectable(vehicle.Stats.Name + "##" + vehicle.FileName))
+                {
+                    _player.Vehicle = vehicle.FileName;
+                    SendUpdatePlayerIdentity();
+                    ImGui.CloseCurrentPopup();
+                }
+            }
+
+            if (ImGui.Button("Cancel"))
+            {
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+    }
+
+    private void SendUpdatePlayerIdentity()
+    {
+        transport.SendPacketToServer(new C2S_PlayerIdentity
+        {
+            PlayerName = _player.Name,
+            SelectedVehicle = _player.Vehicle,
+            Color = _player.Color
+        });
     }
 
     private void RenderActiveGames(float width)
@@ -274,4 +323,14 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             Message = chatInput
         });
     }
+}
+
+internal class Player
+{
+    public uint ClientId { get; set; }
+    public string Name { get; set; } = System.Environment.UserName;
+    public string Vehicle { get; set; } = "nfmm/radicalone";
+    public Color3 Color { get; set; } = new(0, 128, 255);
+    public bool IsReady { get; set; }
+    public int? InEventId { get; set; }
 }
