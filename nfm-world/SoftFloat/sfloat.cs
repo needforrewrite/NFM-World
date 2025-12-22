@@ -953,27 +953,5 @@ namespace SoftFloat
                 return -1;
             }
         }
-        
-        public static bool operator <(sfloat f1, int f2) => f1 < (sfloat)f2;
-        public static bool operator >(sfloat f1, int f2) => f1 > (sfloat)f2;
-        public static bool operator <=(sfloat f1, int f2) => f1 <= (sfloat)f2;
-        public static bool operator >=(sfloat f1, int f2) => f1 >= (sfloat)f2;
-        public static bool operator <(int f1, sfloat f2) => (sfloat)f1 < f2;
-        public static bool operator >(int f1, sfloat f2) => (sfloat)f1 > f2;
-        public static bool operator >=(int f1, sfloat f2) => (sfloat)f1 >= f2;
-        public static bool operator <=(int f1, sfloat f2) => (sfloat)f1 <= f2;
-        public static sfloat operator +(sfloat f1, int f2) => f1 + (sfloat)f2;
-        public static sfloat operator +(int f1, sfloat f2) => (sfloat)f1 + f2;
-        public static sfloat operator -(sfloat f1, int f2) => f1 - (sfloat)f2;
-        public static sfloat operator -(int f1, sfloat f2) => (sfloat)f1 - f2;
-        public static sfloat operator *(sfloat f1, int f2) => f1 * (sfloat)f2;
-        public static sfloat operator *(int f1, sfloat f2) => (sfloat)f1 * f2;
-        public static sfloat operator /(sfloat f1, int f2) => f1 / (sfloat)f2;
-        public static sfloat operator /(int f1, sfloat f2) => (sfloat)f1 / f2;
-        public static sfloat operator %(sfloat f1, int f2) => f1 % (sfloat)f2;
-        public static sfloat operator %(int f1, sfloat f2) => (sfloat)f1 % f2;
-        
-        public static sfloat operator --(sfloat f) => f + MinusOne;
-        public static sfloat operator ++(sfloat f) => f + One;
     }
 }

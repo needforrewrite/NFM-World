@@ -1,3 +1,5 @@
+using SoftFloat;
+
 namespace NFMWorld.Util;
 
 // https://stackoverflow.com/a/2147782
@@ -53,5 +55,19 @@ public class Random(long seed)
     public static int Int(int minInclusive, int maxExclusive)
     {
         return System.Random.Shared.Next(minInclusive, maxExclusive);
+    }
+
+    public sfloat NextSFloat()
+    {
+        // Generate two random 31-bit integers
+        uint upper = Next(31);
+        uint lower = Next(22);
+    
+        // Combine to form a 53-bit precision value (similar to NextDouble)
+        ulong combined = ((ulong)upper << 22) | lower;
+    
+        // Create a value in range [0, 1) by dividing by 2^53
+        // This avoids hardware float by using sfloat's constructor
+        return sfloat.FromRaw((uint)((combined >> 24) | 0x3F800000u)) - sfloat.One;
     }
 }
