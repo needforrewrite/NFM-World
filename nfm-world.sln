@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FontStashSharp.FNA.Core", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FNA.Math", "FNA.Math\FNA.Math.csproj", "{0C978E31-6DD9-4CE4-929F-9AD943318B74}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facepunch.Steamworks.Win64", "Facepunch.Steamworks\Facepunch.Steamworks\Facepunch.Steamworks.Win64.csproj", "{B61B29D2-7064-48F5-8A6B-45DACCC84305}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facepunch.Steamworks.Posix", "Facepunch.Steamworks\Facepunch.Steamworks\Facepunch.Steamworks.Posix.csproj", "{DF995AB1-0B32-4260-9FAD-71B2E9E9F421}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,5 +70,13 @@ Global
 		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C978E31-6DD9-4CE4-929F-9AD943318B74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B61B29D2-7064-48F5-8A6B-45DACCC84305}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B61B29D2-7064-48F5-8A6B-45DACCC84305}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B61B29D2-7064-48F5-8A6B-45DACCC84305}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B61B29D2-7064-48F5-8A6B-45DACCC84305}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF995AB1-0B32-4260-9FAD-71B2E9E9F421}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF995AB1-0B32-4260-9FAD-71B2E9E9F421}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF995AB1-0B32-4260-9FAD-71B2E9E9F421}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF995AB1-0B32-4260-9FAD-71B2E9E9F421}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
