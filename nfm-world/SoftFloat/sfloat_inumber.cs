@@ -18,7 +18,11 @@ public partial struct sfloat : ISpanParsable<sfloat>
 
     public static sfloat Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
     {
-        var result = (sfloat)float.Parse(s, provider);
+        var success = float_scan(s, out var result);
+        if (!success)
+        {
+            throw new FormatException($"Input string '{s.ToString()}' was not in a correct format.");
+        }
         if (!float.TryParse(s, CultureInfo.InvariantCulture, out var temp) || temp != (float)result)
         {
             Console.WriteLine($"Discrepancy parsing '{s.ToString()}': float={temp}, sfloat={result}");
