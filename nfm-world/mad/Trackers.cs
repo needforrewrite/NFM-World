@@ -63,11 +63,11 @@ internal class Trackers
 
     internal static void LoadTracker(Mesh element)
     {
-        var xz = (int)element.Rotation.Xz.Degrees;
+        var xz = (int)MathF.Round(element.Rotation.Xz.Degrees);
         for (var i = 0; i < element.Boxes.Length; i++)
         {
-            Xy[Nt] = (int) (element.Boxes[i].Xy * UMath.Cos(xz) - element.Boxes[i].Zy * UMath.Sin(xz));
-            Zy[Nt] = (int) (element.Boxes[i].Zy * UMath.Cos(xz) + element.Boxes[i].Xy * UMath.Sin(xz));
+            Xy[Nt] = (int) MathF.Round(element.Boxes[i].Xy * UMath.Cos(xz) - element.Boxes[i].Zy * UMath.Sin(xz));
+            Zy[Nt] = (int) MathF.Round(element.Boxes[i].Zy * UMath.Cos(xz) + element.Boxes[i].Xy * UMath.Sin(xz));
             for (var c = 0; c < 3; c++)
             {
                 C[Nt][c] = (int) (element.Boxes[i].Color[c] + element.Boxes[i].Color[c] * (World.Snap[c] / 100.0F));
@@ -80,9 +80,9 @@ internal class Trackers
                     C[Nt][c] = 0;
                 }
             }
-            X[Nt] = (int) (element.Position.X + element.Boxes[i].Translation.X * UMath.Cos(xz) - element.Boxes[i].Translation.Z * UMath.Sin(xz));
-            Z[Nt] = (int) (element.Position.Z + element.Boxes[i].Translation.Z * UMath.Cos(xz) + element.Boxes[i].Translation.X * UMath.Sin(xz));
-            Y[Nt] = (int)(element.Position.Y + element.Boxes[i].Translation.Y);
+            X[Nt] = (int) MathF.Round(element.Position.X + element.Boxes[i].Translation.X * UMath.Cos(xz) - element.Boxes[i].Translation.Z * UMath.Sin(xz));
+            Z[Nt] = (int) MathF.Round(element.Position.Z + element.Boxes[i].Translation.Z * UMath.Cos(xz) + element.Boxes[i].Translation.X * UMath.Sin(xz));
+            Y[Nt] = (int) MathF.Round(element.Position.Y + element.Boxes[i].Translation.Y);
             Skd[Nt] = element.Boxes[i].Skid;
             Dam[Nt] = element.Boxes[i].Damage;
             Notwall[Nt] = element.Boxes[i].NotWall;
