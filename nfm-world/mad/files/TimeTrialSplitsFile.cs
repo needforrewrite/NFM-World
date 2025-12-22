@@ -1,4 +1,5 @@
 using NFMWorld.Util;
+using File = System.IO.File;
 
 public class TimeTrialSplitsFile
 {
@@ -15,8 +16,8 @@ public class TimeTrialSplitsFile
         _carName = carName;
         _stageName = stageName;
 
-        _dirName = "data/tts/" + stageName;
         _pathName = "data/tts/" + stageName + "/" + carName + ".splits";
+        _dirName = Path.GetDirectoryName(_pathName) ?? "data/tts/" + stageName;
 
         Splits = [];
     }
