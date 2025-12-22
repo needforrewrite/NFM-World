@@ -461,7 +461,7 @@ public class Mad
 
     internal void Drive(Control control, ContO conto)
     {
-        URandom random = new(conto.X);
+        URandom random = new(conto.X ^ conto.Y ^ conto.Z);
 
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_fxz:0.00}, cxz: {Cxz:0.00}");
         FrameTrace.AddMessage($"xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}");

@@ -39,6 +39,17 @@ public class TimeTrialGamemode : BaseGamemode
     {
         Reset();
 
+        _countdownTime = 4;
+        _innerCountdownTicks = 0; // Tick down immediately to "three"
+        currentCheckpoint = 0;
+        currentLap = 1;
+        raceTimer.Reset();
+        writtenData = false;
+
+        // demos
+        playbackInputs = null;
+        tick = 0;
+
         InRacePhase.playerCarIndex = 0;
         carsInRace[0] = new InGameCar(0, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
 
@@ -69,6 +80,11 @@ public class TimeTrialGamemode : BaseGamemode
         thisRunSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Name);
         recordedInputs = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Name);
 
+        foreach(CheckPoint cp in currentStage.checkpoints)
+        {
+            cp.Glow = false;
+        }
+
         _currentState = TimeTrialState.Countdown;
     }
 
@@ -82,16 +98,6 @@ public class TimeTrialGamemode : BaseGamemode
         base.Reset();
 
         _currentState = TimeTrialState.NotStarted;
-        _countdownTime = 4;
-        _innerCountdownTicks = 0; // Tick down immediately
-        currentCheckpoint = 0;
-        currentLap = 1;
-        raceTimer.Reset();
-        writtenData = false;
-
-        // demos
-        playbackInputs = null;
-        tick = 0;
     }
 
     public override void GameTick(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
