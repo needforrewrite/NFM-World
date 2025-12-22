@@ -1,26 +1,15 @@
 ﻿using System.Buffers;
+using MessagePack;
 using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
 
+[MessagePackObject]
 public struct C2S_LobbyChatMessage : IPacketClientToServer<C2S_LobbyChatMessage>
 {
-    public required string Message { get; set; } = string.Empty;
+    [Key(0)] public required string Message { get; set; } = string.Empty;
 
     public C2S_LobbyChatMessage()
     {
-    }
-
-    public void Write<T>(T writer) where T : IBufferWriter<byte>
-    {
-        writer.WriteString(Message);
-    }
-
-    public static C2S_LobbyChatMessage Read(SpanReader data)
-    {
-        return new C2S_LobbyChatMessage
-        {
-            Message = data.ReadString()
-        };
     }
 }

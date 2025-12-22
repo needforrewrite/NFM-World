@@ -28,6 +28,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
     private float _gameListHeight = 200f;
 
     private bool _sentClientIdentity = false;
+    private bool _showCreateGameDialog = false;
 
     public override void GameTick()
     {
@@ -109,6 +110,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             ImGui.PopStyleVar(3);
         }
         ImGui.End();
+        RenderCreateGameDialog();
     }
 
     private void RenderPlayerSidebar()
@@ -218,10 +220,14 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             
             ImGui.Text($"{session.PlayerCount}/{session.MaxPlayers}");
             ImGui.NextColumn();
-            
-            if (session.PlayerCount >= session.MaxPlayers)
+
+            if (session.State == SessionState.Started)
             {
-                ImGui.TextColored(new Vector4(1.0f, 0.5f, 0.0f, 1.0f), "Full");
+                ImGui.TextColored(new Vector4(0.5f, 0.5f, 1.0f, 1.0f), "Started");
+            }
+            else if (session.PlayerCount >= session.MaxPlayers)
+            {
+                ImGui.TextColored(new Vector4(1.0f, 0.5f, 0.0f, 1.0f), "Full - Waiting to Start");
             }
             else
             {
@@ -233,8 +239,15 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             {
                 ImGui.BeginDisabled();
             }
-            
-            if (ImGui.Button($"Join##{i}"))
+
+            if (session.State == SessionState.Started)
+            {
+                if (ImGui.Button($"Spectate##{i}"))
+                {
+                    // TODO: Spectate game session
+                }
+            }
+            else if (ImGui.Button($"Join##{i}"))
             {
                 // TODO: Join game session
             }
@@ -252,7 +265,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         
         if (ImGui.Button("Create New Game"))
         {
-            // TODO: Open create game dialog
+            _showCreateGameDialog = true;
         }
         
         ImGui.SameLine();
@@ -263,6 +276,51 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
         }
         
         ImGui.EndChild();
+    }
+    
+    private int _selectedStage = 0;
+    private int _maxPlayers = 4;
+    private void RenderCreateGameDialog()
+    {
+        if (!_showCreateGameDialog) return;
+
+        ImGui.OpenPopup("CreateGameDialog");
+        if (ImGui.BeginPopupModal("CreateGameDialog", ImGuiWindowFlags.AlwaysAutoResize))
+        {
+            ImGui.Text("Create New Game");
+            ImGui.Separator();
+
+            // Dummy stage list
+            var items = new List<string>();
+            foreach (var stage in GameSparker.GetAvailableStages())
+            {
+                items.Add($"{stage}##{stage}");
+            }
+            var stages = items.ToArray();
+            ImGui.Combo("Stage", ref _selectedStage, stages, stages.Length);
+
+            ImGui.SliderInt("Max Players", ref _maxPlayers, 1, 127);
+
+            if (ImGui.Button("Create"))
+            {
+                transport.SendPacketToServer(new C2S_CreateSession()
+                {
+                    GameMode = GameModes.Sandbox,
+                    StageName = stages[_selectedStage].Split("##")[0],
+                    MaxPlayers = (byte)_maxPlayers
+                });
+                _showCreateGameDialog = false;
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Cancel"))
+            {
+                _showCreateGameDialog = false;
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
     }
 
     private void RenderChat(float width)

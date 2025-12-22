@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
+using MessagePack;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
 using Color = NFMWorld.Util.Color;
@@ -458,10 +459,11 @@ public readonly record struct Rad3dPoly(
     [property: JsonPropertyName("p")] Vector3[] Points
 );
 
+[MessagePackObject]
 public readonly record struct Color3(
-    [property: JsonPropertyName("r")] short R,
-    [property: JsonPropertyName("g")] short G,
-    [property: JsonPropertyName("b")] short B
+    [property: JsonPropertyName("r"), Key(0)] short R,
+    [property: JsonPropertyName("g"), Key(1)] short G,
+    [property: JsonPropertyName("b"), Key(2)] short B
 )
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

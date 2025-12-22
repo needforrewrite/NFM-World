@@ -283,10 +283,8 @@ namespace NFMWorld.Mad
 
             var objectName = args[0];
 
-            if (InRacePhase.CurrentStage.CreateObject(objectName, x, y, z, r) is { } mesh)
-            {
-                Trackers.LoadTracker(mesh);
-            }
+            var mesh = InRacePhase.CurrentStage.CreateObject(objectName, x, y, z, r);
+            Trackers.LoadTracker(mesh);
         }
 
         private static void LoadStage(DevConsole console, string[] args)

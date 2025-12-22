@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Buffers;
+using NFMWorld.Util;
 using Steamworks;
 using Steamworks.Data;
 
@@ -79,10 +80,11 @@ public class SteamMultiplayerServerTransport : IMultiplayerServerTransport, ISoc
 
     public unsafe void OnMessage(Connection connection, NetIdentity identity, IntPtr data, int size, long messageNum, long recvTime, int channel)
     {
-        var messageData = new Span<byte>((byte*)data, size);
-        
-        var opcode = (sbyte)messageData[0];
-        var message = messageData[1..];
+        using var messageData = new PointerMemoryManager<byte>((void*)data, size);
+
+        var memory = messageData.Memory;
+        var opcode = (sbyte)memory.Span[0];
+        var message = memory[1..];
 
         if (MultiplayerUtils.TryDeserializeC2SPacket(opcode, message) is { } packet)
         {
@@ -102,6 +104,21 @@ public class SteamMultiplayerServerTransport : IMultiplayerServerTransport, ISoc
             arrayWriter.Write(MultiplayerUtils.OpcodesS2CReverse[typeof(T)]);
             packet.Write(arrayWriter);
             connection.SendMessage(arrayWriter.WrittenSpan, reliable ? SendType.Reliable : SendType.Unreliable);
+        }
+    }
+    public void SendPacketToClients<T>(ReadOnlySpan<uint> clientIndices, T packet, bool reliable = true) where T : IPacketServerToClient<T>
+    {
+        using var arrayWriter = new ArrayPoolBufferWriter<byte>();
+        arrayWriter.Write(MultiplayerUtils.OpcodesS2CReverse[typeof(T)]);
+        packet.Write(arrayWriter);
+        var messageSpan = arrayWriter.WrittenSpan;
+        
+        foreach (var clientIndex in clientIndices)
+        {
+            if (ConnectedClients.TryGetValue(clientIndex, out var connection))
+            {
+                connection.SendMessage(messageSpan, reliable ? SendType.Reliable : SendType.Unreliable);
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Buffers;
+using NFMWorld.Util;
 using Steamworks;
 using Steamworks.Data;
 
@@ -50,9 +51,11 @@ public class SteamMultiplayerClientTransport : IMultiplayerClientTransport, ICon
 
     public unsafe void OnMessage(IntPtr data, int size, long messageNum, long recvTime, int channel)
     {
-        var messageData = new Span<byte>((byte*)data, size);
-        var opcode = (sbyte)messageData[0];
-        var message = messageData[1..];
+        using var messageData = new PointerMemoryManager<byte>((void*)data, size);
+
+        var memory = messageData.Memory;
+        var opcode = (sbyte)memory.Span[0];
+        var message = memory[1..];
 
         if (MultiplayerUtils.TryDeserializeS2CPacket(opcode, message) is {} packet)
         {

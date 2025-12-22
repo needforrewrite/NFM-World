@@ -6,8 +6,4 @@ namespace NFMWorld.Mad;
 
 public interface IPacketServerToClient : IPacket;
 
-public interface IPacketServerToClient<TSelf> : IPacketServerToClient where TSelf : IPacketServerToClient<TSelf>
-{
-    void Write<T>(T writer) where T : IBufferWriter<byte>;
-    public static abstract TSelf Read(SpanReader data);
-}
+public interface IPacketServerToClient<out TSelf> : IPacketServerToClient, IReadableWritable<TSelf> where TSelf : IPacketServerToClient<TSelf>;

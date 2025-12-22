@@ -11,6 +11,7 @@ public interface IMultiplayerServerTransport
     event EventHandler<uint>? ClientDisconnected;
     
     void SendPacketToClient<T>(uint clientIndex, T packet, bool reliable = true) where T : IPacketServerToClient<T>;
+    void SendPacketToClients<T>(ReadOnlySpan<uint> clientIndices, T packet, bool reliable = true) where T : IPacketServerToClient<T>;
     void BroadcastPacket<T>(T packet, bool reliable = true) where T : IPacketServerToClient<T>;
 
     void Stop();

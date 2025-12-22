@@ -37,6 +37,7 @@
       <PackageReference Include="ManagedBass" Version="4.0.1" />
       <PackageReference Include="ManagedBass.Fx" Version="4.0.1" />
       <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
+      <PackageReference Include="MessagePack" Version="3.1.4" />
       <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
       <PackageReference Include="Stride.Core.Mathematics" Version="4.3.0.2507" />
   </ItemGroup>
