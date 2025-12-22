@@ -3,6 +3,7 @@ using NFMWorld.DriverInterface;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
 using System.Linq;
+using Steamworks;
 
 namespace NFMWorld.Mad
 {
@@ -126,6 +127,7 @@ namespace NFMWorld.Mad
             }
             
             Multiplayer.StartServer(port);
+            GameSparker.CurrentPhase = new LobbyPhase(new SteamMultiplayerClientTransport(SteamClient.SteamId, port));
 		}
 
         private static void BreakX(DevConsole console, string[] args)
