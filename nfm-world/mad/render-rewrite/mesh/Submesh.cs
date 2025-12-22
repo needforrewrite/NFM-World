@@ -42,7 +42,7 @@ public class Submesh(
         if (PolyType is PolyType.Glass || supermesh.alphaOverride != null)
         {
             // Disable z-write for transparent glass
-            graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
+            graphicsDevice.DepthStencilState = DepthStencilState.Default;
             graphicsDevice.BlendState = BlendState.NonPremultiplied;
         }
 
