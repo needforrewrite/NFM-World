@@ -19,6 +19,9 @@
     <ItemGroup>
         <None Remove="Icon.ico"/>
         <None Remove="Icon.bmp"/>
+        <None Update="steam_appid.txt">
+          <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
     <ItemGroup>
         <EmbeddedResource Include="Icon.ico">
