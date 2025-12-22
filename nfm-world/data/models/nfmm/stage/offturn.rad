@@ -8,6 +8,7 @@ tracks(6)
 
 <track>
 c(191,159,100)
+skid(2)
 radx(10)
 rady(10)
 radz(34)
@@ -16,6 +17,7 @@ tx(40)
 
 <track>
 c(191,159,100)
+skid(2)
 radx(16)
 rady(10)
 radz(31)
@@ -25,6 +27,7 @@ tz(-3)
 
 <track>
 c(191,159,100)
+skid(2)
 radx(27)
 rady(10)
 radz(27)
@@ -34,6 +37,7 @@ tz(-7)
 
 <track>
 c(191,159,100)
+skid(2)
 radx(34)
 rady(10)
 radz(19)
@@ -43,6 +47,7 @@ tz(-15)
 
 <track>
 c(191,159,100)
+skid(2)
 radx(4)
 rady(10)
 radz(9)
@@ -52,6 +57,7 @@ tz(-21)
 
 <track>
 c(191,159,100)
+skid(2)
 radx(36)
 rady(10)
 radz(10)

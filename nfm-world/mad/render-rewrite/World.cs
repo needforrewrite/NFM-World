@@ -4,6 +4,10 @@ namespace NFMWorld.Mad;
 
 public static class World
 {
+    /// <summary>
+    /// Adds extra collision radius and damage to compensate for lag.
+    /// </summary>
+    public static bool UseMultiplayerCollisionModifiers = true;
     public static float OutlineThickness = 0.002f;
     public static bool IsHyperglidingEnabled = true;
     public static int MountainSeed;
@@ -59,7 +63,7 @@ public static class World
     public static int ChargedBlinkCountdown;
     public static void GameTick()
     {
-        if (_tick == 2) // delay all operations by 3 ticks because of the adjusted tickrate
+        if (++_tick == GameSparker.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
         {
             if (ChargedBlinkCountdown > 0)
             {
@@ -80,10 +84,6 @@ public static class World
 
                 _tick = 0;
             }
-        }
-        else
-        {
-            _tick++;
         }
     }
 }

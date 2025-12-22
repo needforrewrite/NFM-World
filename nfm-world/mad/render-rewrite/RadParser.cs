@@ -427,6 +427,24 @@ public record Rad3d(
     [property: JsonPropertyName("shadow")] bool CastsShadow
 )
 {
+    public int MaxRadius { get; } = CalculateMaxRadius(Polys);
+
+    private static int CalculateMaxRadius(Rad3dPoly[] polys)
+    {
+        var maxR = 0;
+        foreach (var poly in polys)
+        foreach (var point in poly.Points)
+        {
+            var rad = (int) float.Sqrt(point.X * point.X + point.Y * point.Y + point.Z * point.Z);
+            if (rad > maxR)
+            {
+                maxR = rad;
+            }
+        }
+
+        return maxR;
+    }
+
     public Rad3d(Rad3dPoly[] polys, bool castsShadow) : this([], new CarStats(), [], null, [], polys, castsShadow)
     {
     }

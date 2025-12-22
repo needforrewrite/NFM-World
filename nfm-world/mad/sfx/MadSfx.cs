@@ -26,6 +26,8 @@ public class MadSfx
 
     private Mad Mad;
 
+    public bool Mute = false;
+
     public MadSfx(Mad mad)
     {
         Mad = mad;
@@ -38,31 +40,35 @@ public class MadSfx
 
     private void SparkEng(int i, int i263, CarStats stats)
     {
-        if (lcn != i263)
+        if (!Mute)
         {
-            for (int i264 = 0; i264 < 5; i264++)
-                if (pengs[i264])
+            if (lcn != i263)
+            {
+                for (int i264 = 0; i264 < 5; i264++)
+                    if (pengs[i264])
+                    {
+                        SfxLibrary.engs[stats.Enginsignature, i264].Stop();
+                        pengs[i264] = false;
+                    }
+                lcn = i263;
+            }
+            i++;
+            for (int i265 = 0; i265 < 5; i265++)
+                if (i == i265)
                 {
-                    SfxLibrary.engs[stats.Enginsignature, i264].Stop();
-                    pengs[i264] = false;
+                    if (!pengs[i265])
+                    {
+                        SfxLibrary.engs[stats.Enginsignature, i265].Loop();
+                        pengs[i265] = true;
+                    }
                 }
-            lcn = i263;
+                else if (pengs[i265])
+                {
+                    SfxLibrary.engs[stats.Enginsignature, i265].Stop();
+                    pengs[i265] = false;
+                }
         }
-        i++;
-        for (int i265 = 0; i265 < 5; i265++)
-            if (i == i265)
-            {
-                if (!pengs[i265])
-                {
-                    SfxLibrary.engs[stats.Enginsignature, i265].Loop();
-                    pengs[i265] = true;
-                }
-            }
-            else if (pengs[i265])
-            {
-                SfxLibrary.engs[stats.Enginsignature, i265].Stop();
-                pengs[i265] = false;
-            }
+
     }
 
     private void StopAirs()
@@ -75,231 +81,234 @@ public class MadSfx
 
     public void Tick(Control control, Mad mad, CarStats stats)
     {
-        if (/*(fase == 0 || fase == 7001) && starcnt < 35 && cntwis != 8 && !mutes*/true)
+        if (!Mute)
         {
-            bool bool1 = control.Up && mad.Speed > (sfloat)0.0F || control.Down && mad.Speed < (sfloat)10.0F;
-            bool bool257 = mad.Skid == 1 && control.Handb || sfloat.Abs(mad.Scz[0] - (mad.Scz[1] + mad.Scz[0] + mad.Scz[2] + mad.Scz[3]) / (sfloat)4.0F) > (sfloat)1.0F || sfloat.Abs(mad.Scx[0] - (mad.Scx[1] + mad.Scx[0] + mad.Scx[2] + mad.Scx[3]) / (sfloat)4.0F) > (sfloat)1.0F;
-            bool bool258 = false;
-            if (control.Up && mad.Speed < (sfloat)10.0F)
+            if (/*(fase == 0 || fase == 7001) && starcnt < 35 && cntwis != 8 && !mutes*/true)
             {
-                bool257 = true;
-                bool1 = true;
-                bool258 = true;
-            }
-            if (bool1 && mad.Mtouch)
-            {
-                if (!mad.BadLanding)
+                bool bool1 = control.Up && mad.Speed > (sfloat)0.0F || control.Down && mad.Speed < (sfloat)10.0F;
+                bool bool257 = mad.Skid == 1 && control.Handb || sfloat.Abs(mad.Scz[0] - (mad.Scz[1] + mad.Scz[0] + mad.Scz[2] + mad.Scz[3]) / (sfloat)4.0F) > (sfloat)1.0F || sfloat.Abs(mad.Scx[0] - (mad.Scx[1] + mad.Scx[0] + mad.Scx[2] + mad.Scx[3]) / (sfloat)4.0F) > (sfloat)1.0F;
+                bool bool258 = false;
+                if (control.Up && mad.Speed < (sfloat)10.0F)
                 {
-                    if (!bool257)
+                    bool257 = true;
+                    bool1 = true;
+                    bool258 = true;
+                }
+                if (bool1 && mad.Mtouch)
+                {
+                    if (!mad.BadLanding)
                     {
-                        if (mad.Power != (sfloat)98.0F)
+                        if (!bool257)
                         {
-                            if (sfloat.Abs(mad.Speed) > (sfloat)0.0F && sfloat.Abs(mad.Speed) <= stats.Swits[0])
+                            if (mad.Power != (sfloat)98.0F)
                             {
-                                int i259 = (int)((sfloat)3.0F * sfloat.Abs(mad.Speed) / stats.Swits[0]);
-                                if (i259 == 2)
+                                if (sfloat.Abs(mad.Speed) > (sfloat)0.0F && sfloat.Abs(mad.Speed) <= stats.Swits[0])
                                 {
-                                    if (pwait == 0)
+                                    int i259 = (int)((sfloat)3.0F * sfloat.Abs(mad.Speed) / stats.Swits[0]);
+                                    if (i259 == 2)
                                     {
-                                        i259 = 0;
+                                        if (pwait == 0)
+                                        {
+                                            i259 = 0;
+                                        }
+                                        else
+                                        {
+                                            pwait--;
+                                        }
                                     }
                                     else
                                     {
-                                        pwait--;
+                                        pwait = 7;
                                     }
+                                    SparkEng(i259, mad.Cn, stats);
                                 }
-                                else
+                                if (sfloat.Abs(mad.Speed) > stats.Swits[0] && sfloat.Abs(mad.Speed) <= stats.Swits[1])
                                 {
-                                    pwait = 7;
-                                }
-                                SparkEng(i259, mad.Cn, stats);
-                            }
-                            if (sfloat.Abs(mad.Speed) > stats.Swits[0] && sfloat.Abs(mad.Speed) <= stats.Swits[1])
-                            {
-                                int i260 = (int)((sfloat)3.0F * (sfloat.Abs(mad.Speed) - stats.Swits[0]) / (stats.Swits[1] - stats.Swits[0]));
-                                if (i260 == 2)
-                                {
-                                    if (pwait == 0)
+                                    int i260 = (int)((sfloat)3.0F * (sfloat.Abs(mad.Speed) - stats.Swits[0]) / (stats.Swits[1] - stats.Swits[0]));
+                                    if (i260 == 2)
                                     {
-                                        i260 = 0;
+                                        if (pwait == 0)
+                                        {
+                                            i260 = 0;
+                                        }
+                                        else
+                                        {
+                                            pwait--;
+                                        }
                                     }
                                     else
                                     {
-                                        pwait--;
+                                        pwait = 7;
                                     }
+                                    SparkEng(i260, mad.Cn, stats);
                                 }
-                                else
+                                if (sfloat.Abs(mad.Speed) > stats.Swits[1] && sfloat.Abs(mad.Speed) <= stats.Swits[2])
                                 {
-                                    pwait = 7;
-                                }
-                                SparkEng(i260, mad.Cn, stats);
-                            }
-                            if (sfloat.Abs(mad.Speed) > stats.Swits[1] && sfloat.Abs(mad.Speed) <= stats.Swits[2])
-                            {
-                                int i261 = (int)((sfloat)3.0F * (sfloat.Abs(mad.Speed) - stats.Swits[1]) / (stats.Swits[2] - stats.Swits[1]));
-                                SparkEng(i261, mad.Cn, stats);
-                            }
-                        }
-                        else
-                        {
-                            int i262 = 2;
-                            if (pwait == 0)
-                            {
-                                if (sfloat.Abs(mad.Speed) > stats.Swits[1])
-                                {
-                                    i262 = 3;
+                                    int i261 = (int)((sfloat)3.0F * (sfloat.Abs(mad.Speed) - stats.Swits[1]) / (stats.Swits[2] - stats.Swits[1]));
+                                    SparkEng(i261, mad.Cn, stats);
                                 }
                             }
                             else
                             {
-                                pwait--;
+                                int i262 = 2;
+                                if (pwait == 0)
+                                {
+                                    if (sfloat.Abs(mad.Speed) > stats.Swits[1])
+                                    {
+                                        i262 = 3;
+                                    }
+                                }
+                                else
+                                {
+                                    pwait--;
+                                }
+                                SparkEng(i262, mad.Cn, stats);
                             }
-                            SparkEng(i262, mad.Cn, stats);
+                        }
+                        else
+                        {
+                            SparkEng(-1, mad.Cn, stats);
+                            if (bool258)
+                            {
+                                if (stopcnt <= 0)
+                                {
+                                    SfxLibrary.air[5].Loop();
+                                    stopcnt = 10;
+                                }
+                            }
+                            else if (stopcnt <= -2)
+                            {
+                                SfxLibrary.air[2 + (int)(Random.Shared.NextDouble() * 3.0F)].Loop();
+                                stopcnt = 7;
+                            }
                         }
                     }
                     else
                     {
-                        SparkEng(-1, mad.Cn, stats);
-                        if (bool258)
-                        {
-                            if (stopcnt <= 0)
-                            {
-                                SfxLibrary.air[5].Loop();
-                                stopcnt = 10;
-                            }
-                        }
-                        else if (stopcnt <= -2)
-                        {
-                            SfxLibrary.air[2 + (int)(Random.Shared.NextDouble() * 3.0F)].Loop();
-                            stopcnt = 7;
-                        }
+                        SparkEng(3, mad.Cn, stats);
+                    }
+                    grrd = false;
+                    aird = false;
+                }
+                else
+                {
+                    pwait = 15;
+                    if (!mad.Mtouch && !grrd && Random.Shared.NextDouble() > 0.4)
+                    {
+                        SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)].Loop();
+                        stopcnt = 5;
+                        grrd = true;
+                    }
+                    if (!mad.Wtouch && !aird)
+                    {
+                        StopAirs();
+                        SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)].Loop();
+                        stopcnt = 10;
+                        aird = true;
+                    }
+                    SparkEng(-1, mad.Cn, stats);
+                }
+                if (mad.Cntdest != 0 && cntwis < 7)
+                {
+                    if (!pwastd)
+                    {
+                        SfxLibrary.wastd?.Loop();
+                        pwastd = true;
                     }
                 }
                 else
                 {
-                    SparkEng(3, mad.Cn, stats);
-                }
-                grrd = false;
-                aird = false;
-            }
-            else
-            {
-                pwait = 15;
-                if (!mad.Mtouch && !grrd && Random.Shared.NextDouble() > 0.4)
-                {
-                    SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)].Loop();
-                    stopcnt = 5;
-                    grrd = true;
-                }
-                if (!mad.Wtouch && !aird)
-                {
-                    StopAirs();
-                    SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)].Loop();
-                    stopcnt = 10;
-                    aird = true;
-                }
-                SparkEng(-1, mad.Cn, stats);
-            }
-            if (mad.Cntdest != 0 && cntwis < 7)
-            {
-                if (!pwastd)
-                {
-                    SfxLibrary.wastd?.Loop();
-                    pwastd = true;
+                    if (pwastd)
+                    {
+                        SfxLibrary.wastd?.Stop();
+                        pwastd = false;
+                    }
+                    if (cntwis == 7/* && !mutes*/)
+                    {
+                        SfxLibrary.firewasted?.Play();
+                    }
                 }
             }
             else
             {
+                SparkEng(-2, mad.Cn, stats);
                 if (pwastd)
                 {
                     SfxLibrary.wastd?.Stop();
                     pwastd = false;
                 }
-                if (cntwis == 7/* && !mutes*/)
+            }
+            if (stopcnt != -20)
+            {
+                if (stopcnt == 1)
                 {
-                    SfxLibrary.firewasted?.Play();
+                    StopAirs();
                 }
+                stopcnt--;
             }
-        }
-        else
-        {
-            SparkEng(-2, mad.Cn, stats);
-            if (pwastd)
+            if (bfcrash != 0)
             {
-                SfxLibrary.wastd?.Stop();
-                pwastd = false;
+                bfcrash--;
             }
-        }
-        if (stopcnt != -20)
-        {
-            if (stopcnt == 1)
+            if (bfscrape != 0)
             {
-                StopAirs();
+                bfscrape--;
             }
-            stopcnt--;
-        }
-        if (bfcrash != 0)
-        {
-            bfcrash--;
-        }
-        if (bfscrape != 0)
-        {
-            bfscrape--;
-        }
-        if (bfsc1 != 0)
-        {
-            bfsc1--;
-        }
-        if (bfsc2 != 0)
-        {
-            bfsc2--;
-        }
-        if (bfskid != 0)
-        {
-            bfskid--;
-        }
-        if (mad.Newcar)
-        {
-            cntwis = 0;
-        }
-        /*if (fase == 0 || fase == 7001 || fase == 6 || fase == -1 || fase == -2 || fase == -3 || fase == -4 || fase == -5) {
-            if (mutes != control.mutes) {
-                mutes = control.mutes;
-            }
-            if (control.mutem != mutem) {
-                mutem = control.mutem;
-                if (mutem) {
-                    if (loadedt) {
-                        strack.setPaused(true);
-                    }
-                } else if (loadedt) {
-                    strack.setPaused(false);
-                }
-            }
-        }*/
-        if (mad.Cntdest != 0 && cntwis < 7)
-        {
-            if (mad.Wasted)
+            if (bfsc1 != 0)
             {
-                cntwis++;
+                bfsc1--;
             }
-        }
-        else
-        {
-            if (mad.Cntdest == 0)
+            if (bfsc2 != 0)
+            {
+                bfsc2--;
+            }
+            if (bfskid != 0)
+            {
+                bfskid--;
+            }
+            if (mad.Newcar)
             {
                 cntwis = 0;
             }
-            if (cntwis == 7)
+            /*if (fase == 0 || fase == 7001 || fase == 6 || fase == -1 || fase == -2 || fase == -3 || fase == -4 || fase == -5) {
+                if (mutes != control.mutes) {
+                    mutes = control.mutes;
+                }
+                if (control.mutem != mutem) {
+                    mutem = control.mutem;
+                    if (mutem) {
+                        if (loadedt) {
+                            strack.setPaused(true);
+                        }
+                    } else if (loadedt) {
+                        strack.setPaused(false);
+                    }
+                }
+            }*/
+            if (mad.Cntdest != 0 && cntwis < 7)
             {
-                cntwis = 8;
+                if (mad.Wasted)
+                {
+                    cntwis++;
+                }
+            }
+            else
+            {
+                if (mad.Cntdest == 0)
+                {
+                    cntwis = 0;
+                }
+                if (cntwis == 7)
+                {
+                    cntwis = 8;
+                }
             }
         }
     }
 
     private void SfxPlayScrape(object? sender, (int i, int i266, int i267) position)
     {
-        if (bfscrape == 0 && Math.Sqrt(position.i * position.i + position.i266 * position.i266 + position.i267 * position.i267) / 10.0 > 10.0)
+        if (!Mute && bfscrape == 0 && Math.Sqrt(position.i * position.i + position.i266 * position.i266 + position.i267 * position.i267) / 10.0 > 10.0)
         {
             int i268 = 0;
             if (Random.Shared.NextInt64() > Random.Shared.NextInt64())
@@ -337,7 +346,7 @@ public class MadSfx
 
     private void SfxPlayGscrape(object? sender, (int i, int i269, int i270) position)
     {
-        if ((bfsc1 == 0 || bfsc2 == 0) && Math.Sqrt(position.i * position.i + position.i269 * position.i269 + position.i270 * position.i270) / 10.0 > 15.0)
+        if (!Mute && (bfsc1 == 0 || bfsc2 == 0) && Math.Sqrt(position.i * position.i + position.i269 * position.i269 + position.i270 * position.i270) / 10.0 > 15.0)
             if (bfsc1 == 0)
             {
                 //if (!mutes) {
@@ -360,9 +369,9 @@ public class MadSfx
 
     private void SfxPlayCrash(object? sender, (float f, int i) crashData)
     {
-        crashData.f *= 1/GameSparker.PHYSICS_MULTIPLIER;
+        crashData.f *= 1 / GameSparker.PHYSICS_MULTIPLIER;
 #if USE_BASS
-        if (bfcrash == 0)
+        if (!Mute && bfcrash == 0)
         {
             if (crashData.i == 0)
             {
@@ -431,7 +440,7 @@ public class MadSfx
     private void SfxPlaySkid(object? sender, (int surfaceType, float skidIntensity) skidData)
     {
 #if USE_BASS
-        if (bfcrash == 0 && bfskid == 0 && skidData.skidIntensity > 150.0F)
+        if (!Mute && bfcrash == 0 && bfskid == 0 && skidData.skidIntensity > 150.0F)
         {
             if (skidData.surfaceType == 0)
             {

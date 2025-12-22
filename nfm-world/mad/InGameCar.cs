@@ -9,15 +9,21 @@ public class InGameCar : IRenderable
     public Control Control;
     public MadSfx Sfx;
 
-    public CarStats Stats
+    public CarStats Stats => CarRef.Stats;
+
+    public InGameCar(InGameCar copy, int im, bool isClientPlayer)
     {
-        get { return CarRef.Stats; }
+        CarRef = new Car(copy.CarRef, new Vector3(0f, World.Ground - copy.CarRef.GroundAt, 0f), Euler.Identity);
+        Mad = new Mad(copy.Stats, im, isClientPlayer);
+        Mad.Reseto(im, CarRef);
+        Control = new Control();
+        Sfx = new MadSfx(Mad);
     }
 
-    public InGameCar(int im, Car car, int x, int z)
+    public InGameCar(int im, Car car, int x, int z, bool isClientPlayer)
     {
-        CarRef = new Car(car, new Vector3(0f, World.Ground - car.GroundAt, 0f), Euler.Identity);
-        Mad = new Mad(car.Stats, im);
+        CarRef = new Car(car, new Vector3(x, World.Ground - car.GroundAt, z), Euler.Identity);
+        Mad = new Mad(car.Stats, im, isClientPlayer);
         Mad.Reseto(im, CarRef);
         Control = new Control();
         Sfx = new MadSfx(Mad);
@@ -28,6 +34,11 @@ public class InGameCar : IRenderable
         CarRef.GameTick();
         Mad.Drive(Control, CarRef);
         Sfx.Tick(Control, Mad, CarRef.Stats);
+    }
+    
+    public void Collide(InGameCar otherCar)
+    {
+        Mad.Colide(CarRef, otherCar.Mad, otherCar.CarRef);
     }
 
     public void Render(Camera camera, Lighting? lighting = null)

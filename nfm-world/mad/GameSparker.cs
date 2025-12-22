@@ -16,10 +16,12 @@ namespace NFMWorld.Mad;
 
 public class GameSparker
 {
+    public const float OriginalTps = 21.4f;
     public const float TargetTps = 63f;
+    public const int OriginalTicksPerNewTick = 3;
     public static Program _game;
     public static GraphicsDevice _graphicsDevice;
-    public static readonly float PHYSICS_MULTIPLIER = 21.4f/TargetTps;
+    public const float PHYSICS_MULTIPLIER = OriginalTps/TargetTps;
 
     public static readonly string version = GetVersionString();
 
@@ -64,6 +66,7 @@ public class GameSparker
     public static InRacePhase? InRace;
     public static MessageWindow MessageWindow = new();
     public static ModelEditorPhase? ModelEditor;
+    //public static StageEditorPhase? StageEditor;
 
     private static DirectionalLight light;
     
@@ -84,7 +87,7 @@ public class GameSparker
 
     public static readonly string[] CarRads = {
         "2000tornados", "formula7", "canyenaro", "lescrab", "nimi", "maxrevenge", "leadoxide", "koolkat", "drifter",
-        "policecops", "mustang", "king", "audir8", "masheen", "radicalone", "drmonster", "marauder"
+        "policecops", "mustang", "king", "audir8", "masheen", "radicalone", "drmonster"
     };
     public static readonly string[] StageRads = {
         "road", "froad", "twister2", "twister1", "turn", "offroad", "bumproad", "offturn", "nroad", "nturn",
@@ -221,6 +224,18 @@ public class GameSparker
         return (-1, null!);
     }
 
+    public static string GetModelName(int index, bool forCar = false)
+    {
+        var models = forCar ? CarRads : StageRads;
+        
+        if (index >= 0 && index < models.Length)
+        {
+            return models[index];
+        }
+        
+        return "";
+    }
+
     public static void Load(Program game)
     {
         _game = game;
@@ -294,6 +309,8 @@ public class GameSparker
         // Initialize ModelEditor after cars are loaded
         ModelEditor = new ModelEditorPhase(_graphicsDevice);
         
+        //StageEditor = new StageEditorPhase(_graphicsDevice);
+        
         for (var i = 0; i < StageRads.Length; i++) {
             if (stage_parts[i] == null) {
                 throw new Exception("No valid ContO (Stage Part) has been assigned to ID " + i + " (" + StageRads[i] + ")");
@@ -316,6 +333,16 @@ public class GameSparker
     {
         CurrentPhase = MainMenu;
         devRenderTrackers = false;
+    }
+
+    public static void StartStageEditor()
+    {
+        //CurrentPhase = StageEditor;
+    }
+    
+    public static void ReturnToMainMenu()
+    {
+        CurrentPhase = MainMenu;
     }
 
     public static void StartGame()

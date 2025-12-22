@@ -57,31 +57,28 @@ public class InRacePhase : BasePhase
     }
     private static ViewMode currentViewMode = ViewMode.Follow;
     
-    public static BaseGamemode gamemode = null!;
+    public static BaseGamemode gamemode = new SandboxGamemode();
 
     public override void Enter()
     {
         base.Enter();
 
-        gamemode = new TimeTrialGamemode();
-
         LoadStage("nfm2/15_dwm", _graphicsDevice);
 
-        CarsInRace[playerCarIndex] = new InGameCar(playerCarIndex, GameSparker.GetCar(playerCarName).Car, 0, 0);
         current_scene = new Scene(
             _graphicsDevice,
-            [CurrentStage, ..CarsInRace],
+            [CurrentStage, new ListRenderable(CarsInRace)],
             camera,
             lightCameras
         );
 
-        gamemode.Enter();
+        gamemode.Enter(CarsInRace, CurrentStage, current_scene);
     }
 
     public override void Exit()
     {
         base.Exit();
-        gamemode.Exit();
+        gamemode.Exit(CarsInRace, CurrentStage, current_scene);
 
         GameSparker.CurrentMusic?.Unload();
     }
@@ -105,7 +102,7 @@ public class InRacePhase : BasePhase
     {
         base.GameTick();
         
-        gamemode.GameTick(CarsInRace, CurrentStage);
+        gamemode.GameTick(CarsInRace, CurrentStage, current_scene);
 
         switch (currentViewMode)
         {
@@ -151,11 +148,11 @@ public class InRacePhase : BasePhase
         
         G.SetColor(new Color(0, 0, 0));
         G.DrawString($"Render: {Program._lastFrameTime}ms", 100, 100);
-        G.DrawString($"Tick: {Program._lastTickTime}ms", 100, 120);
+        G.DrawString($"Tick: {Program._lastTickTime}μs", 100, 120);
         G.DrawString($"Power: {CarsInRace[0]?.Mad?.Power:0.00}", 100, 140);
         G.DrawString($"Ticks executed last frame: {Program._lastTickCount}", 100, 160);
 
-        gamemode.Render(CarsInRace, CurrentStage);
+        gamemode.Render(CarsInRace, CurrentStage, current_scene);
     }
 
     public override void KeyPressed(Keys key, bool imguiWantsKeyboard)

@@ -2,7 +2,10 @@ snap(-60,-80,-60)
 sky(95,95,182)
 fog(255,125,0)
 clouds(140,140,140,0,-3000)
+
 ground(120,60,0)
+polys(120,5,0)
+
 texture(0,0,0,0)
 fadefrom(8000)
 density(8)
@@ -10,6 +13,8 @@ mountains(0)
 nlaps(1)
 soundtrack(custom,dbl_mornjung.s3m)
 lightson()
+
+name(Ridin’ High)
 
 aerial()
 

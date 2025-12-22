@@ -69,13 +69,14 @@ public class ContO
     }
     
     public int Fcnt { get; set; } // TODO car fixed ticks
+    public int MaxR => _mesh.MaxRadius;
 
     public ContO(Mesh mesh)
     {
         _mesh = mesh;
 
-        Keyx = mesh.Wheels.Select(e => (int)e.Position.X).ToArray();
-        Keyz = mesh.Wheels.Select(e => (int)e.Position.Z).ToArray();
+        Keyx = Array.ConvertAll(mesh.Wheels, static e => (int)e.Position.X);
+        Keyz = Array.ConvertAll(mesh.Wheels, static e => (int)e.Position.Z);
     }
 
     public static implicit operator ContO(Mesh mesh) => new ContO(mesh);

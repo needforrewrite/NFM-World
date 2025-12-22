@@ -14,6 +14,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.ImGuiNet;
 using Environment = System.Environment;
+using NFMWorld.Util;
 
 namespace NFMWorld;
 
@@ -39,6 +40,7 @@ public unsafe class Program : Game
     private KeyboardState oldKeyState;
     private MouseState oldMouseState;
     private NanoVGRenderer _nvg;
+    private TimeStep _tickTimeStep = new((1000f / GameSparker.TargetTps) / 1000f);
     public const int NumCascades = 3;
 
     private static bool loaded;
@@ -253,9 +255,10 @@ public unsafe class Program : Game
             loaded = true;
         }
 
-        var tick = Stopwatch.StartNew();
+        var tick = new MicroStopwatch();
+        tick.Start();
 
-        var timesToTick = TimeStep.Update(gameTime);
+        var timesToTick = _tickTimeStep.Update(gameTime);
         for (int i = 0; i < timesToTick; i++)
         {
             GameSparker.CurrentPhase.BeginGameTick();
@@ -265,7 +268,7 @@ public unsafe class Program : Game
         }
 
         _lastTickCount = timesToTick;
-        _lastTickTime = (int)tick.ElapsedMilliseconds;
+        _lastTickTime = (int)tick.ElapsedMicroseconds;
     }
 
     protected override void Initialize()
