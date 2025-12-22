@@ -57,7 +57,7 @@ public class InRacePhase : BasePhase
     }
     private static ViewMode currentViewMode = ViewMode.Follow;
     
-    public static BaseGamemode gamemode = new SandboxGamemode();
+    public static BaseGamemode gamemode = new TimeTrialGamemode();
 
     public override void Enter()
     {
