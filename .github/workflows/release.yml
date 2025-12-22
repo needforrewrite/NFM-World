@@ -221,7 +221,7 @@ jobs:
             EXTRA_ARGS="-p:IlcInstructionSet=x86-64-v3"
           fi
           
-          if [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
+          if [[ "$RID" == "linux-arm64" ]]; then
             # Set cross-compilation tools for ARM64
             export COMPlus_CrossLinker=/usr/bin/aarch64-linux-gnu-ld
             # Create wrapper for objcopy to use the ARM64 version
