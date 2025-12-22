@@ -74,7 +74,7 @@ public class LineMesh
     {
         _graphicsDevice.SetVertexBuffer(_lineVertexBuffer);
         _graphicsDevice.Indices = _lineIndexBuffer;
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
 
         // If a parameter is null that means the HLSL compiler optimized it out.
         _material.World?.SetValue(matrixWorld);

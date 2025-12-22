@@ -311,7 +311,7 @@ public class Flames
                     VertexPositionColor.VertexDeclaration
                 );
             }
-            _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+            _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
         }
     }
 }

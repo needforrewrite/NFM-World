@@ -261,6 +261,6 @@ public class Sparks
                 LineMesh.LineMeshVertexAttribute.VertexDeclaration
             );
         }
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
     }
 }
