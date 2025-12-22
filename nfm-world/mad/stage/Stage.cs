@@ -34,11 +34,14 @@ public class Stage : IRenderable
     private bool swapYandRot = false;
     private bool reverseChkY = false;
 
+    public readonly string Path;
+
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
      */
     public Stage(string stageName, GraphicsDevice graphicsDevice)
     {
+        Path = stageName;
         World.ResetValues();
         Trackers.Nt = 0;
         // Medium.Noelec = 0;

@@ -57,7 +57,7 @@ public class TimeTrialGamemode : BaseGamemode
         carsInRace[1] = new InGameCar(carsInRace[0], 0, false);
         carsInRace[1].Sfx.Mute = true;
 
-        TimeTrialDemoFile bestTimeDemo = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Name);
+        TimeTrialDemoFile bestTimeDemo = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Path);
         if (bestTimeDemo.Load())
         {
             playbackInputs = bestTimeDemo;
@@ -68,7 +68,7 @@ public class TimeTrialGamemode : BaseGamemode
             carsInRace.RemoveAt(1);
         }
 
-        TimeTrialSplitsFile bestTimeSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Name);
+        TimeTrialSplitsFile bestTimeSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Path);
         if (bestTimeSplits.Load())
         {
             this.bestTimeSplits = bestTimeSplits;
@@ -77,8 +77,8 @@ public class TimeTrialGamemode : BaseGamemode
             this.bestTimeSplits = null;
         }
 
-        thisRunSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Name);
-        recordedInputs = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Name);
+        thisRunSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Path);
+        recordedInputs = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Path);
 
         foreach(CheckPoint cp in currentStage.checkpoints)
         {
