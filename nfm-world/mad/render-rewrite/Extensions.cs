@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance;
 using Microsoft.Xna.Framework.Graphics;
+using SoftFloat;
 using Stride.Core.Mathematics;
 using Color = Microsoft.Xna.Framework.Color;
 
@@ -29,6 +30,12 @@ public static class Extensions
 
         public static AngleSingle FromDegrees(float degrees)
             => Unsafe.BitCast<float, AngleSingle>(MathUtil.DegreesToRadians(degrees));
+
+        public static AngleSingle FromDegrees(int degrees)
+            => Unsafe.BitCast<float, AngleSingle>((float)(degrees * sfloat.DegToRad));
+
+        public static AngleSingle FromDegrees(sfloat degrees)
+            => Unsafe.BitCast<float, AngleSingle>((float)(degrees * sfloat.DegToRad));
     }
 
     extension(System.Numerics.Vector3 vector3)

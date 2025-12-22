@@ -26,17 +26,17 @@ public class ContO
     public sfloat Xz 
     {
         get => (sfloat)_mesh.Rotation.Xz.Degrees;
-        set => _mesh.Rotation = _mesh.Rotation with { Xz = AngleSingle.FromDegrees((float)value) };
+        set => _mesh.Rotation = _mesh.Rotation with { Xz = AngleSingle.FromDegrees(value) };
     }
     public sfloat Xy 
     {
         get => (sfloat)_mesh.Rotation.Xy.Degrees;
-        set => _mesh.Rotation = _mesh.Rotation with { Xy = AngleSingle.FromDegrees((float)value) };
+        set => _mesh.Rotation = _mesh.Rotation with { Xy = AngleSingle.FromDegrees(value) };
     }
     public sfloat Zy 
     {
         get => (sfloat)_mesh.Rotation.Zy.Degrees;
-        set => _mesh.Rotation = _mesh.Rotation with { Zy = AngleSingle.FromDegrees((float)value) };
+        set => _mesh.Rotation = _mesh.Rotation with { Zy = AngleSingle.FromDegrees(value) };
     }
 
     public int Grat => _mesh.GroundAt;
