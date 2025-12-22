@@ -17,6 +17,9 @@ public interface IGraphics
     void SetFont(Font font);
     IFontMetrics GetFontMetrics();
     void DrawString(string text, int x, int y);
+    void DrawStringStroke(string text, int x, int y, int effectAmount = 1)
+    {
+    }
     void FillOval(int p0, int p1, int p2, int p3);
     void FillRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei);
     void DrawRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei);

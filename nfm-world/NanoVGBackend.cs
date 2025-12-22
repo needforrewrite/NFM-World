@@ -66,6 +66,12 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
     {
         private Paint _paint = new();
         private DynamicSpriteFont _font = fontSystem.GetFont(18);
+        private float layerDepth = 0.0f;
+        private float characterSpacing = 0.0f;
+        private float lineSpacing = 0.0f;
+        private TextStyle textStyle = TextStyle.None;
+        private FontSystemEffect effect = FontSystemEffect.None;
+        private int effectAmount = 1;
 
         public void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos)
         {
@@ -140,7 +146,13 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
         public void DrawString(string text, int x, int y)
         {
             context.FillPaint(_paint);
-            context.Text(_font, text, x, y - _font.FontSize);
+            context.Text(_font, text, x, y - _font.FontSize, layerDepth, characterSpacing, lineSpacing, textStyle, effect, effectAmount);
+        }
+
+        public void DrawStringStroke(string text, int x, int y, int effectAmount = 1)
+        {
+            context.StrokePaint(_paint);
+            context.Text(_font, text, x, y - _font.FontSize, layerDepth, characterSpacing, lineSpacing, textStyle, FontSystemEffect.Stroked, effectAmount);
         }
 
         public void FillOval(int p0, int p1, int p2, int p3)
