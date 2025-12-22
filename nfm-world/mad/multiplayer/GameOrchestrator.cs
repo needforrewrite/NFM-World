@@ -163,7 +163,7 @@ public class GameOrchestrator
     {
         public ClientState State { get; set; }
         public string Name { get; set; } = "hogan rewish";
-        public string Vehicle { get; set; } = "radicalone";
+        public string Vehicle { get; set; } = "nfmm/radicalone";
         public Color3 Color { get; set; } = new Color3();
     }
 }

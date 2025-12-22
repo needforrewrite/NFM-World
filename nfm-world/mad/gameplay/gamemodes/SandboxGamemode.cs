@@ -11,7 +11,7 @@ public class SandboxGamemode : BaseGamemode
     public override void Enter(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
     {
         carsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
-        carsInRace[1] = new InGameCar(1, GameSparker.GetCar("audir8").Car, 100, 0, false);
+        carsInRace[1] = new InGameCar(1, GameSparker.GetCar("nfmm/audir8").Car, 100, 0, false);
         carsInRace[1].Sfx.Mute = true;
 
         Reset();

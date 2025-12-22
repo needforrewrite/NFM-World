@@ -44,7 +44,7 @@ public class InRacePhase : BasePhase
     
     public static UnlimitedArray<InGameCar> CarsInRace = [];
     public static int playerCarIndex = 0;
-    public static string playerCarName = "radicalone";
+    public static string playerCarName = "nfmm/radicalone";
 
     public static FollowCamera PlayerFollowCamera = new();
 

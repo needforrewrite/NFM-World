@@ -70,7 +70,7 @@ namespace NFMWorld.Mad
             // car command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("car", (args, position) =>
             position == 0
-                ? GameSparker.CarRads
+                ? GameSparker.cars.Select(car => car.FileName)
                     .Concat(GameSparker.vendor_cars.Select(car => car.FileName))
                     .Concat(GameSparker.user_cars.Select(car => car.FileName))
                     .ToList()
@@ -78,11 +78,16 @@ namespace NFMWorld.Mad
             
             // create command: only autocomplete first argument (position 0) - the stage/road name
             console.RegisterArgumentAutocompleter("create", (args, position) => 
-                position == 0 ? new List<string>(GameSparker.StageRads) : new List<string>());
+                position == 0 
+                    ? GameSparker.stage_parts.Select(part => part.FileName)
+                        .Concat(GameSparker.vendor_stage_parts.Select(part => part.FileName))
+                        .Concat(GameSparker.user_stage_parts.Select(part => part.FileName))
+                        .ToList()
+                    : []);
             
             // map command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("map", (args, position) => 
-                position == 0 ? GameSparker.GetAvailableStages() : new List<string>());
+                position == 0 ? GameSparker.GetAvailableStages() : []);
         }
 
         private static void DemoPlayback(DevConsole console, string[] args)

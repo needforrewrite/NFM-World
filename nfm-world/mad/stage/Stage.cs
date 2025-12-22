@@ -420,7 +420,7 @@ public class Stage : IRenderable
                 }
 
                 // stage walls
-                var wall = GameSparker.GetStagePart("thewall");
+                var wall = GameSparker.GetStagePart("nfmm/thewall");
                 if (line.StartsWith("maxr"))
                 {
                     var n = Utility.GetInt("maxr", line, 0);
