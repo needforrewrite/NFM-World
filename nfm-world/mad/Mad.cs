@@ -356,7 +356,7 @@ public class Mad
         int wheelGround;
         if (World.IsHyperglidingEnabled)
         {
-            wheelGround = (int)((bottomy * 1 / _tickRate) * (1 - _tickRate));
+            wheelGround = (int)((bottomy * (sfloat)1f / _tickRate) * ((sfloat)1f - _tickRate));
             if (!mad.BadLanding)
             {
                 wheelGround = -wheelGround;
@@ -1149,28 +1149,6 @@ public class Mad
             wheelx[i29] += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) / (sfloat)(4.0F) * _tickRate;
             wheelz[i29] += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) / (sfloat)(4.0F) * _tickRate;
         } //
-
-        var i30 = (conto.X - Trackers.Sx) / 3000;
-        if (i30 > Trackers.Ncx)
-        {
-            i30 = Trackers.Ncx;
-        }
-
-        if (i30 < 0)
-        {
-            i30 = 0;
-        }
-
-        var i31 = (conto.Z - Trackers.Sz) / 3000;
-        if (i31 > Trackers.Ncz)
-        {
-            i31 = Trackers.Ncz;
-        }
-
-        if (i31 < 0)
-        {
-            i31 = 0;
-        }
 
         var surfaceType = 1;
         for (var i = 0; i < Trackers.Nt; i++) // maxine: remove trackers.sect use here
