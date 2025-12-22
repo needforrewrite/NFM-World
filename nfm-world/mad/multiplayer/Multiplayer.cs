@@ -10,8 +10,15 @@ public class Multiplayer
 
     public static void Initialize()
     {
-        SteamClient.Init(480);
-        SteamNetworkingUtils.InitRelayNetworkAccess();
+        try
+        {
+            SteamClient.Init(480);
+            SteamNetworkingUtils.InitRelayNetworkAccess();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Steam initialization failed: {ex.Message}\n{ex.StackTrace}");
+        }
     }
 
     public static void StartServer(int virtualport = 0)
