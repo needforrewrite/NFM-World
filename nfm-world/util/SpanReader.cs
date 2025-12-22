@@ -99,7 +99,7 @@ public ref struct SpanReader(ReadOnlySpan<byte> span)
 
     public unsafe T ReadMemory<T>() where T : unmanaged
     {
-        var value = MemoryMarshal.Cast<byte, T>(_span)[0];
+        var value = MemoryMarshal.Read<T>(_span);
         _index += sizeof(T);
         return value;
     }
