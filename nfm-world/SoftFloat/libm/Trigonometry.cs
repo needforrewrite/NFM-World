@@ -3,11 +3,11 @@ namespace SoftFloat
 {
     public static partial class libm
     {
-        const uint pi = 0x40490fdb; // 3.1415926535897932384626433832795
-        const uint half_pi = 0x3fc90fdb; // 1.5707963267948966192313216916398
-        const uint two_pi = 0x40c90fdb; // 6.283185307179586476925286766559
-        const uint pi_over_4 = 0x3f490fdb; // 0.78539816339744830961566084581988
-        const uint pi_times_3_over_4 = 0x4016cbe4; // 2.3561944901923449288469825374596
+        internal const uint pi = 0x40490fdb; // 3.1415926535897932384626433832795
+        internal const uint half_pi = 0x3fc90fdb; // 1.5707963267948966192313216916398
+        internal const uint two_pi = 0x40c90fdb; // 6.283185307179586476925286766559
+        internal const uint pi_over_4 = 0x3f490fdb; // 0.78539816339744830961566084581988
+        internal const uint pi_times_3_over_4 = 0x4016cbe4; // 2.3561944901923449288469825374596
 
         /// <summary>
         /// Returns the sine of x

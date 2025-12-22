@@ -2,8 +2,14 @@
 
 public partial struct sfloat
 {
-    public static sfloat DEG_TO_RAD { get; } = ((sfloat)Math.PI / (sfloat)180);
-    public static sfloat RAD_TO_DEG { get; } = ((sfloat)180 / (sfloat)Math.PI);
+    public static sfloat Pi { get; } = FromRaw(libm.pi);
+    public static sfloat HalfPi { get; } = FromRaw(libm.half_pi);
+    public static sfloat TwoPi { get; } = FromRaw(libm.two_pi);
+    public static sfloat PiOver4 { get; } = FromRaw(libm.pi_over_4);
+    public static sfloat PiTimes3Over4 { get; } = FromRaw(libm.pi_times_3_over_4);
+    
+    public static sfloat DegToRad { get; } = Pi / (sfloat)180.0f;
+    public static sfloat RadToDeg { get; } = (sfloat)180.0f / Pi;
 
     public static bool operator <(sfloat f1, int f2) => f1 < (sfloat)f2;
     public static bool operator >(sfloat f1, int f2) => f1 > (sfloat)f2;

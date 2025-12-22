@@ -400,37 +400,37 @@ public class Mad
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static sfloat Sin(sfloat deg)
     {
-        return sfloat.Sin(deg * sfloat.DEG_TO_RAD);
+        return sfloat.Sin(deg * sfloat.DegToRad);
     }
         
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static sfloat Cos(sfloat deg)
     {
-        return sfloat.Cos(deg * sfloat.DEG_TO_RAD);
+        return sfloat.Cos(deg * sfloat.DegToRad);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static sfloat Sin(int deg)
     {
-        return sfloat.Sin((sfloat)deg * sfloat.DEG_TO_RAD);
+        return sfloat.Sin((sfloat)deg * sfloat.DegToRad);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static sfloat Sin(float deg)
     {
-        return sfloat.Sin((sfloat)deg * sfloat.DEG_TO_RAD);
+        return sfloat.Sin((sfloat)deg * sfloat.DegToRad);
     }
         
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static sfloat Cos(int deg)
     {
-        return sfloat.Cos((sfloat)deg * sfloat.DEG_TO_RAD);
+        return sfloat.Cos((sfloat)deg * sfloat.DegToRad);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static sfloat Cos(float deg)
     {
-        return sfloat.Cos((sfloat)deg * sfloat.DEG_TO_RAD);
+        return sfloat.Cos((sfloat)deg * sfloat.DegToRad);
     }
 
     public void bounceRebound(int wi, ContO conto, URandom random)
@@ -2269,8 +2269,8 @@ public class Mad
     {
         if (angle != 0)
         {
-            var sin = sfloat.Sin(angle * sfloat.DEG_TO_RAD);
-            var cos = sfloat.Cos(angle * sfloat.DEG_TO_RAD);
+            var sin = sfloat.Sin(angle * sfloat.DegToRad);
+            var cos = sfloat.Cos(angle * sfloat.DegToRad);
             
             for (var i = 0; i < len; i++)
             {
@@ -2948,12 +2948,12 @@ public class Mad
 
     public static sfloat dAcos(sfloat a)
     {
-        return sfloat.Acos(a) * sfloat.RAD_TO_DEG;
+        return sfloat.Acos(a) * sfloat.RadToDeg;
     }
 
     public static sfloat dAtan2(sfloat y, sfloat x)
     {
-        return sfloat.Atan2(y, x) * sfloat.RAD_TO_DEG;
+        return sfloat.Atan2(y, x) * sfloat.RadToDeg;
     }
 
     public static sfloat QuantizeTowardsZero(sfloat value, sfloat step)
