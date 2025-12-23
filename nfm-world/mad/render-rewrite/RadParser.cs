@@ -14,7 +14,7 @@ public class RadParser
     private int _npoints = 0;
     private bool _stonecold;
     private bool _noOutline;
-    private sfloat idiv = (sfloat)1f, iwid = (sfloat)1f, scaleX = (sfloat)1f, scaleY = (sfloat)1f, scaleZ = (sfloat)1f;
+    private fix64 idiv = (fix64)1f, iwid = (fix64)1f, scaleX = (fix64)1f, scaleY = (fix64)1f, scaleZ = (fix64)1f;
     
     private Dictionary<Color3, int> _colors = new();
     private CarStats _stats = new();
@@ -67,9 +67,9 @@ public class RadParser
 
         // reposition car so that ground is at y=0 and the wheel x and z are equidistant from the origin
         // this fixes masheen bouncing on the big ramp
-        sfloat groundTranslation = sfloat.MaxValue;
-        sfloat wheelXTranslation = 0;
-        sfloat wheelZTranslation = 0;
+        fix64 groundTranslation = fix64.MaxValue;
+        fix64 wheelXTranslation = 0;
+        fix64 wheelZTranslation = 0;
         for (var i = 0; i < 4; i++)
         {
             var wheel = rad3d.Wheels[i];
@@ -83,8 +83,8 @@ public class RadParser
             wheelZTranslation += wheel.Position.Z;
         }
 
-        wheelXTranslation /= (sfloat)4f;
-        wheelZTranslation /= (sfloat)4f;
+        wheelXTranslation /= (fix64)4f;
+        wheelZTranslation /= (fix64)4f;
         
         // maxine: this code is incredibly crucial!
         // in theory we should be moving the car to the wheel center, because otherwise the car drifts off of its center
@@ -97,7 +97,7 @@ public class RadParser
             var wheel = rad3d.Wheels[i];
             rad3d.Wheels[i] = wheel with
             {
-                Position = new SoftVector3(
+                Position = new f64Vector3(
                     wheel.Position.X - (wheelXTranslation),
                     wheel.Position.Y,// - (groundTranslation),
                     wheel.Position.Z - (wheelZTranslation)
@@ -157,26 +157,26 @@ public class RadParser
         else if (line.StartsWith("swits(")) _stats = _stats with { Swits = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3])) };
         else if (line.StartsWith("acelf(")) _stats = _stats with { Acelf = Vector3.FromSpan(BracketParser.GetNumbers(line, stackalloc float[3])) };
         else if (line.StartsWith("handb(")) _stats = _stats with { Handb = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("airs(")) _stats = _stats with { Airs = BracketParser.GetNumber<sfloat>(line) };
+        else if (line.StartsWith("airs(")) _stats = _stats with { Airs = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("airc(")) _stats = _stats with { Airc = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("turn(")) _stats = _stats with { Turn = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("grip(")) _stats = _stats with { Grip = BracketParser.GetNumber<sfloat>(line) };
-        else if (line.StartsWith("bounce(")) _stats = _stats with { Bounce = BracketParser.GetNumber<sfloat>(line) };
-        else if (line.StartsWith("simag(")) _stats = _stats with { Simag = BracketParser.GetNumber<sfloat>(line) };
-        else if (line.StartsWith("moment(")) _stats = _stats with { Moment = BracketParser.GetNumber<sfloat>(line) };
-        else if (line.StartsWith("comprad(")) _stats = _stats with { Comprad = BracketParser.GetNumber<sfloat>(line) };
+        else if (line.StartsWith("grip(")) _stats = _stats with { Grip = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("bounce(")) _stats = _stats with { Bounce = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("simag(")) _stats = _stats with { Simag = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("moment(")) _stats = _stats with { Moment = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("comprad(")) _stats = _stats with { Comprad = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("push(")) _stats = _stats with { Push = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("revpush(")) _stats = _stats with { Revpush = BracketParser.GetNumber<sfloat>(line) };
+        else if (line.StartsWith("revpush(")) _stats = _stats with { Revpush = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("lift(")) _stats = _stats with { Lift = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("revlift(")) _stats = _stats with { Revlift = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("powerloss(")) _stats = _stats with { Powerloss = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("flipy(")) _stats = _stats with { Flipy = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("msquash(")) _stats = _stats with { Msquash = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("clrad(")) _stats = _stats with { Clrad = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("dammult(")) _stats = _stats with { Dammult = BracketParser.GetNumber<sfloat>(line) };
+        else if (line.StartsWith("dammult(")) _stats = _stats with { Dammult = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("maxmag(")) _stats = _stats with { Maxmag = BracketParser.GetNumber<int>(line) };
-        else if (line.StartsWith("dishandle(")) _stats = _stats with { Dishandle = BracketParser.GetNumber<sfloat>(line) };
-        else if (line.StartsWith("outdam(")) _stats = _stats with { Outdam = BracketParser.GetNumber<sfloat>(line) };
+        else if (line.StartsWith("dishandle(")) _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("outdam(")) _stats = _stats with { Outdam = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("name(")) _stats = _stats with { Name = BracketParser.GetString(line) };
         else if (line.StartsWith("enginsignature(")) _stats = _stats with { Enginsignature = BracketParser.GetNumber<sbyte>(line) };
 
@@ -184,7 +184,7 @@ public class RadParser
         {
             var (cx, (cy, (cz, (rotates, (width, (height, _)))))) = BracketParser.GetNumbers(line, stackalloc int[6]);
             _wheels.Add(new Rad3dWheelDef(
-                Position: new SoftVector3(
+                Position: new f64Vector3(
                     cx * idiv * iwid * scaleX,
                     cy * idiv * scaleY,
                     cz * idiv * scaleZ
@@ -208,20 +208,20 @@ public class RadParser
             );
         }
 
-        else if (line.StartsWith("div(")) idiv = BracketParser.GetNumber<int>(line) / (sfloat)10f;
-        else if (line.StartsWith("idiv(")) idiv = BracketParser.GetNumber<int>(line) / (sfloat)100f;
-        else if (line.StartsWith("iwid(")) iwid = BracketParser.GetNumber<int>(line) / (sfloat)100f;
-        else if (line.StartsWith("ScaleX(")) scaleX = BracketParser.GetNumber<int>(line) / (sfloat)100f;
-        else if (line.StartsWith("ScaleY(")) scaleY = BracketParser.GetNumber<int>(line) / (sfloat)100f;
-        else if (line.StartsWith("ScaleZ(")) scaleZ = BracketParser.GetNumber<int>(line) / (sfloat)100f;
+        else if (line.StartsWith("div(")) idiv = BracketParser.GetNumber<int>(line) / (fix64)10f;
+        else if (line.StartsWith("idiv(")) idiv = BracketParser.GetNumber<int>(line) / (fix64)100f;
+        else if (line.StartsWith("iwid(")) iwid = BracketParser.GetNumber<int>(line) / (fix64)100f;
+        else if (line.StartsWith("ScaleX(")) scaleX = BracketParser.GetNumber<int>(line) / (fix64)100f;
+        else if (line.StartsWith("ScaleY(")) scaleY = BracketParser.GetNumber<int>(line) / (fix64)100f;
+        else if (line.StartsWith("ScaleZ(")) scaleZ = BracketParser.GetNumber<int>(line) / (fix64)100f;
 
         else if (line.StartsWith("<track>"))
         {
             _boxes.Add(new Rad3dBoxDef(
                 Xy: 0,
                 Zy: 0,
-                Radius: new SoftVector3(),
-                Translation: new SoftVector3(),
+                Radius: new f64Vector3(),
+                Translation: new f64Vector3(),
                 Skid: 0,
                 Damage: 0,
                 NotWall: false,
@@ -390,14 +390,14 @@ public class RadParser
 public partial class SourceGenerationContext : JsonSerializerContext;
 
 public readonly record struct Rad3dWheelDef(
-    [property: JsonPropertyName("pos")] SoftVector3 Position,
+    [property: JsonPropertyName("pos")] f64Vector3 Position,
     [property: JsonPropertyName("rotates")] int Rotates,
-    [property: JsonPropertyName("w")] sfloat Width,
-    [property: JsonPropertyName("h")] sfloat Height
+    [property: JsonPropertyName("w")] fix64 Width,
+    [property: JsonPropertyName("h")] fix64 Height
 )
 {
-    public int Sparkat { get; } = (int) sfloat.Round((Height / (sfloat)10f) * (sfloat)24.0F);
-    public int Ground { get; } = (int) sfloat.Round(Position.Y + (sfloat)13.0F * (Height / (sfloat)10f));
+    public int Sparkat { get; } = (int) fix64.Round((Height / (fix64)10f) * (fix64)24.0F);
+    public int Ground { get; } = (int) fix64.Round(Position.Y + (fix64)13.0F * (Height / (fix64)10f));
 }
 
 public readonly record struct Rad3dRimsDef(
@@ -409,8 +409,8 @@ public readonly record struct Rad3dRimsDef(
 public readonly record struct Rad3dBoxDef(
     [property: JsonPropertyName("xy")] int Xy,
     [property: JsonPropertyName("zy")] int Zy,
-    [property: JsonPropertyName("rad")] SoftVector3 Radius,
-    [property: JsonPropertyName("t")] SoftVector3 Translation,
+    [property: JsonPropertyName("rad")] f64Vector3 Radius,
+    [property: JsonPropertyName("t")] f64Vector3 Translation,
     [property: JsonPropertyName("skid")] int Skid,
     [property: JsonPropertyName("damage")] int Damage,
     [property: JsonPropertyName("notwall")] bool NotWall,

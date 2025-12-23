@@ -2,91 +2,91 @@
 
 namespace SoftFloat;
 
-public partial struct sfloat
+public partial struct fix64
 {
-    public static sfloat Pi { get; } = new sfloat(FixedMath.PI);
-    public static sfloat HalfPi { get; } = new sfloat(FixedMath.PiOver2);
-    public static sfloat TwoPi { get; } = new sfloat(FixedMath.TwoPI);
-    public static sfloat PiOver4 { get; } = new sfloat(FixedMath.PiOver4);
+    public static fix64 Pi { get; } = new fix64(FixedMath.PI);
+    public static fix64 HalfPi { get; } = new fix64(FixedMath.PiOver2);
+    public static fix64 TwoPi { get; } = new fix64(FixedMath.TwoPI);
+    public static fix64 PiOver4 { get; } = new fix64(FixedMath.PiOver4);
     
-    public static sfloat DegToRad { get; } = new(FixedMath.Deg2Rad);
-    public static sfloat RadToDeg { get; } = new(FixedMath.Rad2Deg);
+    public static fix64 DegToRad { get; } = new(FixedMath.Deg2Rad);
+    public static fix64 RadToDeg { get; } = new(FixedMath.Rad2Deg);
 
-    public static bool operator <(sfloat f1, int f2) => f1 < (sfloat)f2;
-    public static bool operator >(sfloat f1, int f2) => f1 > (sfloat)f2;
-    public static bool operator <=(sfloat f1, int f2) => f1 <= (sfloat)f2;
-    public static bool operator >=(sfloat f1, int f2) => f1 >= (sfloat)f2;
-    public static bool operator <(int f1, sfloat f2) => (sfloat)f1 < f2;
-    public static bool operator >(int f1, sfloat f2) => (sfloat)f1 > f2;
-    public static bool operator >=(int f1, sfloat f2) => (sfloat)f1 >= f2;
-    public static bool operator <=(int f1, sfloat f2) => (sfloat)f1 <= f2;
-    public static sfloat operator +(sfloat f1, int f2) => f1 + (sfloat)f2;
-    public static sfloat operator +(int f1, sfloat f2) => (sfloat)f1 + f2;
-    public static sfloat operator -(sfloat f1, int f2) => f1 - (sfloat)f2;
-    public static sfloat operator -(int f1, sfloat f2) => (sfloat)f1 - f2;
-    public static sfloat operator *(sfloat f1, int f2) => f1 * (sfloat)f2;
-    public static sfloat operator *(int f1, sfloat f2) => (sfloat)f1 * f2;
-    public static sfloat operator /(sfloat f1, int f2) => f1 / (sfloat)f2;
-    public static sfloat operator /(int f1, sfloat f2) => (sfloat)f1 / f2;
-    public static sfloat operator %(sfloat f1, int f2) => f1 % (sfloat)f2;
-    public static sfloat operator %(int f1, sfloat f2) => (sfloat)f1 % f2;
+    public static bool operator <(fix64 f1, int f2) => f1 < (fix64)f2;
+    public static bool operator >(fix64 f1, int f2) => f1 > (fix64)f2;
+    public static bool operator <=(fix64 f1, int f2) => f1 <= (fix64)f2;
+    public static bool operator >=(fix64 f1, int f2) => f1 >= (fix64)f2;
+    public static bool operator <(int f1, fix64 f2) => (fix64)f1 < f2;
+    public static bool operator >(int f1, fix64 f2) => (fix64)f1 > f2;
+    public static bool operator >=(int f1, fix64 f2) => (fix64)f1 >= f2;
+    public static bool operator <=(int f1, fix64 f2) => (fix64)f1 <= f2;
+    public static fix64 operator +(fix64 f1, int f2) => f1 + (fix64)f2;
+    public static fix64 operator +(int f1, fix64 f2) => (fix64)f1 + f2;
+    public static fix64 operator -(fix64 f1, int f2) => f1 - (fix64)f2;
+    public static fix64 operator -(int f1, fix64 f2) => (fix64)f1 - f2;
+    public static fix64 operator *(fix64 f1, int f2) => f1 * (fix64)f2;
+    public static fix64 operator *(int f1, fix64 f2) => (fix64)f1 * f2;
+    public static fix64 operator /(fix64 f1, int f2) => f1 / (fix64)f2;
+    public static fix64 operator /(int f1, fix64 f2) => (fix64)f1 / f2;
+    public static fix64 operator %(fix64 f1, int f2) => f1 % (fix64)f2;
+    public static fix64 operator %(int f1, fix64 f2) => (fix64)f1 % f2;
     
-    public static bool operator <(sfloat f1, long f2) => f1 < (sfloat)f2;
-    public static bool operator >(sfloat f1, long f2) => f1 > (sfloat)f2;
-    public static bool operator <=(sfloat f1, long f2) => f1 <= (sfloat)f2;
-    public static bool operator >=(sfloat f1, long f2) => f1 >= (sfloat)f2;
-    public static bool operator <(long f1, sfloat f2) => (sfloat)f1 < f2;
-    public static bool operator >(long f1, sfloat f2) => (sfloat)f1 > f2;
-    public static bool operator >=(long f1, sfloat f2) => (sfloat)f1 >= f2;
-    public static bool operator <=(long f1, sfloat f2) => (sfloat)f1 <= f2;
-    public static sfloat operator +(sfloat f1, long f2) => f1 + (sfloat)f2;
-    public static sfloat operator +(long f1, sfloat f2) => (sfloat)f1 + f2;
-    public static sfloat operator -(sfloat f1, long f2) => f1 - (sfloat)f2;
-    public static sfloat operator -(long f1, sfloat f2) => (sfloat)f1 - f2;
-    public static sfloat operator *(sfloat f1, long f2) => f1 * (sfloat)f2;
-    public static sfloat operator *(long f1, sfloat f2) => (sfloat)f1 * f2;
-    public static sfloat operator /(sfloat f1, long f2) => f1 / (sfloat)f2;
-    public static sfloat operator /(long f1, sfloat f2) => (sfloat)f1 / f2;
-    public static sfloat operator %(sfloat f1, long f2) => f1 % (sfloat)f2;
-    public static sfloat operator %(long f1, sfloat f2) => (sfloat)f1 % f2;
+    public static bool operator <(fix64 f1, long f2) => f1 < (fix64)f2;
+    public static bool operator >(fix64 f1, long f2) => f1 > (fix64)f2;
+    public static bool operator <=(fix64 f1, long f2) => f1 <= (fix64)f2;
+    public static bool operator >=(fix64 f1, long f2) => f1 >= (fix64)f2;
+    public static bool operator <(long f1, fix64 f2) => (fix64)f1 < f2;
+    public static bool operator >(long f1, fix64 f2) => (fix64)f1 > f2;
+    public static bool operator >=(long f1, fix64 f2) => (fix64)f1 >= f2;
+    public static bool operator <=(long f1, fix64 f2) => (fix64)f1 <= f2;
+    public static fix64 operator +(fix64 f1, long f2) => f1 + (fix64)f2;
+    public static fix64 operator +(long f1, fix64 f2) => (fix64)f1 + f2;
+    public static fix64 operator -(fix64 f1, long f2) => f1 - (fix64)f2;
+    public static fix64 operator -(long f1, fix64 f2) => (fix64)f1 - f2;
+    public static fix64 operator *(fix64 f1, long f2) => f1 * (fix64)f2;
+    public static fix64 operator *(long f1, fix64 f2) => (fix64)f1 * f2;
+    public static fix64 operator /(fix64 f1, long f2) => f1 / (fix64)f2;
+    public static fix64 operator /(long f1, fix64 f2) => (fix64)f1 / f2;
+    public static fix64 operator %(fix64 f1, long f2) => f1 % (fix64)f2;
+    public static fix64 operator %(long f1, fix64 f2) => (fix64)f1 % f2;
 
-    public static sfloat operator --(sfloat f) => f + MinusOne;
-    public static sfloat operator ++(sfloat f) => f + One;
+    public static fix64 operator --(fix64 f) => f + MinusOne;
+    public static fix64 operator ++(fix64 f) => f + One;
 
-    public static sfloat Sqrt(sfloat f) => new(FixedMath.Sqrt(f.Value));
+    public static fix64 Sqrt(fix64 f) => new(FixedMath.Sqrt(f.Value));
 
-    public static sfloat Acos(sfloat f) => new(FixedMath.Acos(f.Value));
+    public static fix64 Acos(fix64 f) => new(FixedMath.Acos(f.Value));
 
-    public static sfloat Atan2(sfloat a, sfloat b) => new(FixedMath.Atan2(a.Value, b.Value));
+    public static fix64 Atan2(fix64 a, fix64 b) => new(FixedMath.Atan2(a.Value, b.Value));
 
-    public static sfloat Round(sfloat f) => new(FixedMath.Round(f.Value));
+    public static fix64 Round(fix64 f) => new(FixedMath.Round(f.Value));
 
-    public static sfloat Sin(sfloat f) => new(FixedMath.Sin(f.Value));
+    public static fix64 Sin(fix64 f) => new(FixedMath.Sin(f.Value));
 
-    public static sfloat Cos(sfloat f) => new(FixedMath.Cos(f.Value));
+    public static fix64 Cos(fix64 f) => new(FixedMath.Cos(f.Value));
 
-    public static sfloat Floor(sfloat f) => new(FixedMath.Floor(f.Value));
+    public static fix64 Floor(fix64 f) => new(FixedMath.Floor(f.Value));
 
-    public static sfloat Ceiling(sfloat f) => new(FixedMath.Ceiling(f.Value));
+    public static fix64 Ceiling(fix64 f) => new(FixedMath.Ceiling(f.Value));
 
-    public static sfloat Hypot(sfloat a, sfloat b) => Sqrt(a * a + b * b);
+    public static fix64 Hypot(fix64 a, fix64 b) => Sqrt(a * a + b * b);
 
-    public static sfloat Clamp(sfloat value, sfloat min, sfloat max)
+    public static fix64 Clamp(fix64 value, fix64 min, fix64 max)
     {
         if (value < min) return min;
         if (value > max) return max;
         return value;
     }
     
-    public static bool WithinEpsilon(sfloat floatA, sfloat floatB) => Abs(floatA - floatB) < MachineEpsilonFloat;
+    public static bool WithinEpsilon(fix64 floatA, fix64 floatB) => Abs(floatA - floatB) < MachineEpsilonFloat;
 
-    private static readonly sfloat MachineEpsilonFloat = GetMachineEpsilonFloat();
+    private static readonly fix64 MachineEpsilonFloat = GetMachineEpsilonFloat();
 
     /// <summary>
     /// Find the current machine's Epsilon for the float data type.
     /// (That is, the largest float, e,  where e == 0.0f is true.)
     /// </summary>
-    private static sfloat GetMachineEpsilonFloat()
+    private static fix64 GetMachineEpsilonFloat()
     {
 	    return new(Fixed64.Epsilon);
     }
@@ -105,7 +105,7 @@ public partial struct sfloat
     /// Passing amount a value of 0 will cause value1 to be returned, a value of 1 will
     /// cause value2 to be returned.
     /// </remarks>
-    public static sfloat Lerp(sfloat value1, sfloat value2, sfloat amount)
+    public static fix64 Lerp(fix64 value1, fix64 value2, fix64 amount)
     {
         return value1 + (value2 - value1) * amount;
     }
@@ -134,12 +134,12 @@ public partial struct sfloat
 	/// <returns>
 	/// Cartesian coordinate of the specified point with respect to the axis being used.
 	/// </returns>
-	public static sfloat Barycentric(
-		sfloat value1,
-		sfloat value2,
-		sfloat value3,
-		sfloat amount1,
-		sfloat amount2
+	public static fix64 Barycentric(
+		fix64 value1,
+		fix64 value2,
+		fix64 value3,
+		fix64 amount1,
+		fix64 amount2
 	) {
 		return value1 + (value2 - value1) * amount1 + (value3 - value1) * amount2;
 	}
@@ -153,24 +153,24 @@ public partial struct sfloat
 	/// <param name="value4">The fourth position in the interpolation.</param>
 	/// <param name="amount">Weighting factor.</param>
 	/// <returns>A position that is the result of the Catmull-Rom interpolation.</returns>
-	public static sfloat CatmullRom(
-		sfloat value1,
-		sfloat value2,
-		sfloat value3,
-		sfloat value4,
-		sfloat amount
+	public static fix64 CatmullRom(
+		fix64 value1,
+		fix64 value2,
+		fix64 value3,
+		fix64 value4,
+		fix64 amount
 	) {
 		/* Using formula from http://www.mvps.org/directx/articles/catmull/
 		 * Internally using doubles not to lose precision.
 		 */
-		sfloat amountSquared = amount * amount;
-		sfloat amountCubed = amountSquared * amount;
-		return (sfloat) (
-			(sfloat)0.5f *
+		fix64 amountSquared = amount * amount;
+		fix64 amountCubed = amountSquared * amount;
+		return (fix64) (
+			(fix64)0.5f *
 			(
-				(((sfloat)2.0f * value2 + (value3 - value1) * amount) +
-				 (((sfloat)2.0f * value1 - (sfloat)5.0f * value2 + (sfloat)4.0f * value3 - value4) * amountSquared) +
-				 ((sfloat)3.0f * value2 - value1 - (sfloat)3.0f * value3 + value4) * amountCubed)
+				(((fix64)2.0f * value2 + (value3 - value1) * amount) +
+				 (((fix64)2.0f * value1 - (fix64)5.0f * value2 + (fix64)4.0f * value3 - value4) * amountSquared) +
+				 ((fix64)3.0f * value2 - value1 - (fix64)3.0f * value3 + value4) * amountCubed)
 			)
 		);
 	}

@@ -144,10 +144,10 @@ public class TimeTrialGamemode : BaseGamemode
 
         if (nextCheckpoint.CheckPointRot == CheckPoint.CheckPointRotation.None)
         {
-            if (sfloat.Abs((sfloat)carPos.Z - (sfloat)nextCheckpoint.Position.Z) <
-                (sfloat)60.0F + sfloat.Abs(carsInRace[0].Mad.Scz[0] + carsInRace[0].Mad.Scz[1] + carsInRace[0].Mad.Scz[2] + carsInRace[0].Mad.Scz[3]) / (sfloat)4.0F &&
-                sfloat.Abs((sfloat)carsInRace[0].CarRef.Position.X - (sfloat)nextCheckpoint.Position.X) < 700 &&
-                sfloat.Abs((sfloat)carsInRace[0].CarRef.Position.Y - (sfloat)nextCheckpoint.Position.Y + 350) < 450)
+            if (fix64.Abs((fix64)carPos.Z - (fix64)nextCheckpoint.Position.Z) <
+                (fix64)60.0F + fix64.Abs(carsInRace[0].Mad.Scz[0] + carsInRace[0].Mad.Scz[1] + carsInRace[0].Mad.Scz[2] + carsInRace[0].Mad.Scz[3]) / (fix64)4.0F &&
+                fix64.Abs((fix64)carsInRace[0].CarRef.Position.X - (fix64)nextCheckpoint.Position.X) < 700 &&
+                fix64.Abs((fix64)carsInRace[0].CarRef.Position.Y - (fix64)nextCheckpoint.Position.Y + 350) < 450)
             {
                 thisRunSplits.Record(raceTimer.ElapsedMilliseconds);
                 currentCheckpoint++;
@@ -161,10 +161,10 @@ public class TimeTrialGamemode : BaseGamemode
         }
         else // None
         {
-            if (sfloat.Abs((sfloat)carPos.X - (sfloat)nextCheckpoint.Position.X) <
-                (sfloat)60.0F + sfloat.Abs(carsInRace[0].Mad.Scx[0] + carsInRace[0].Mad.Scx[1] + carsInRace[0].Mad.Scx[2] + carsInRace[0].Mad.Scx[3]) / (sfloat)4.0F &&
-                sfloat.Abs((sfloat)carPos.Z - (sfloat)nextCheckpoint.Position.Z) < 700 &&
-                sfloat.Abs((sfloat)carPos.Y - (sfloat)nextCheckpoint.Position.Y + 350) < 450)
+            if (fix64.Abs((fix64)carPos.X - (fix64)nextCheckpoint.Position.X) <
+                (fix64)60.0F + fix64.Abs(carsInRace[0].Mad.Scx[0] + carsInRace[0].Mad.Scx[1] + carsInRace[0].Mad.Scx[2] + carsInRace[0].Mad.Scx[3]) / (fix64)4.0F &&
+                fix64.Abs((fix64)carPos.Z - (fix64)nextCheckpoint.Position.Z) < 700 &&
+                fix64.Abs((fix64)carPos.Y - (fix64)nextCheckpoint.Position.Y + 350) < 450)
             {
                 thisRunSplits.Record(raceTimer.ElapsedMilliseconds);
                 SfxLibrary.checkpoint?.Play();

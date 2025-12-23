@@ -7,26 +7,26 @@ public readonly record struct CarStats
     [JsonPropertyName("swits")] public Int3 Swits { get; init; }
     [JsonPropertyName("acelf")] public Vector3 Acelf { get; init; }
     [JsonPropertyName("handb")] public int Handb { get; init; }
-    [JsonPropertyName("airs")] public sfloat Airs { get; init; }
+    [JsonPropertyName("airs")] public fix64 Airs { get; init; }
     [JsonPropertyName("airc")] public int Airc { get; init; }
     [JsonPropertyName("turn")] public int Turn { get; init; }
-    [JsonPropertyName("grip")] public sfloat Grip { get; init; }
-    [JsonPropertyName("bounce")] public sfloat Bounce { get; init; }
-    [JsonPropertyName("simag")] public sfloat Simag { get; init; }
-    [JsonPropertyName("moment")] public sfloat Moment { get; init; }
-    [JsonPropertyName("comprad")] public sfloat Comprad { get; init; }
+    [JsonPropertyName("grip")] public fix64 Grip { get; init; }
+    [JsonPropertyName("bounce")] public fix64 Bounce { get; init; }
+    [JsonPropertyName("simag")] public fix64 Simag { get; init; }
+    [JsonPropertyName("moment")] public fix64 Moment { get; init; }
+    [JsonPropertyName("comprad")] public fix64 Comprad { get; init; }
     [JsonPropertyName("push")] public int Push { get; init; }
-    [JsonPropertyName("revpush")] public sfloat Revpush { get; init; }
+    [JsonPropertyName("revpush")] public fix64 Revpush { get; init; }
     [JsonPropertyName("lift")] public int Lift { get; init; }
     [JsonPropertyName("revlift")] public int Revlift { get; init; }
     [JsonPropertyName("powerloss")] public int Powerloss { get; init; }
     [JsonPropertyName("flipy")] public int Flipy { get; init; }
     [JsonPropertyName("msquash")] public int Msquash { get; init; }
     [JsonPropertyName("clrad")] public int Clrad { get; init; }
-    [JsonPropertyName("dammult")] public sfloat Dammult { get; init; }
+    [JsonPropertyName("dammult")] public fix64 Dammult { get; init; }
     [JsonPropertyName("maxmag")] public int Maxmag { get; init; }
-    [JsonPropertyName("dishandle")] public sfloat Dishandle { get; init; }
-    [JsonPropertyName("outdam")] public sfloat Outdam { get; init; }
+    [JsonPropertyName("dishandle")] public fix64 Dishandle { get; init; }
+    [JsonPropertyName("outdam")] public fix64 Outdam { get; init; }
     [JsonPropertyName("name")] public string Name { get; init; }
     [JsonPropertyName("enginsignature")] public sbyte Enginsignature { get; init; }
 
@@ -95,26 +95,26 @@ public readonly record struct CarStats
         this.Swits = Swits ?? new Int3(int.MinValue, int.MinValue, int.MinValue);
         this.Acelf = Acelf ?? new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
         this.Handb = Handb;
-        this.Airs = (sfloat)Airs;
+        this.Airs = (fix64)Airs;
         this.Airc = Airc;
         this.Turn = Turn;
-        this.Grip = (sfloat)Grip;
-        this.Bounce = (sfloat)Bounce;
-        this.Simag = (sfloat)Simag;
-        this.Moment = (sfloat)Moment;
-        this.Comprad = (sfloat)Comprad;
+        this.Grip = (fix64)Grip;
+        this.Bounce = (fix64)Bounce;
+        this.Simag = (fix64)Simag;
+        this.Moment = (fix64)Moment;
+        this.Comprad = (fix64)Comprad;
         this.Push = Push;
-        this.Revpush = (sfloat)Revpush;
+        this.Revpush = (fix64)Revpush;
         this.Lift = Lift;
         this.Revlift = Revlift;
         this.Powerloss = Powerloss;
         this.Flipy = Flipy;
         this.Msquash = Msquash;
         this.Clrad = Clrad;
-        this.Dammult = (sfloat)Dammult;
+        this.Dammult = (fix64)Dammult;
         this.Maxmag = Maxmag;
-        this.Dishandle = (sfloat)Dishandle;
-        this.Outdam = (sfloat)Outdam;
+        this.Dishandle = (fix64)Dishandle;
+        this.Outdam = (fix64)Outdam;
         this.Name = Name;
         this.Enginsignature = Enginsignature;
     }
@@ -128,26 +128,26 @@ public readonly record struct CarStats
         if(Swits[0] == int.MinValue) return ValidateFail(nameof(Swits));
         else if(Acelf.AsSpan()[0] == float.NegativeInfinity) return ValidateFail(nameof(Acelf));
         else if(Handb == int.MinValue) return ValidateFail(nameof(Handb));
-        else if(Airs == sfloat.MinValue) return ValidateFail(nameof(Airs));
+        else if(Airs == fix64.MinValue) return ValidateFail(nameof(Airs));
         else if(Airc == int.MinValue) return ValidateFail(nameof(Airc));
         else if(Turn == int.MinValue) return ValidateFail(nameof(Turn));
-        else if(Grip == sfloat.MinValue) return ValidateFail(nameof(Grip));
-        else if(Bounce == sfloat.MinValue) return ValidateFail(nameof(Bounce));
-        else if(Simag == sfloat.MinValue) return ValidateFail(nameof(Simag));
-        else if(Moment == sfloat.MinValue) return ValidateFail(nameof(Moment));
-        else if(Comprad == sfloat.MinValue) return ValidateFail(nameof(Comprad));
+        else if(Grip == fix64.MinValue) return ValidateFail(nameof(Grip));
+        else if(Bounce == fix64.MinValue) return ValidateFail(nameof(Bounce));
+        else if(Simag == fix64.MinValue) return ValidateFail(nameof(Simag));
+        else if(Moment == fix64.MinValue) return ValidateFail(nameof(Moment));
+        else if(Comprad == fix64.MinValue) return ValidateFail(nameof(Comprad));
         else if(Push == int.MinValue) return ValidateFail(nameof(Push));
-        else if(Revpush == sfloat.MinValue) return ValidateFail(nameof(Revpush));
+        else if(Revpush == fix64.MinValue) return ValidateFail(nameof(Revpush));
         else if(Lift == int.MinValue) return ValidateFail(nameof(Lift));
         else if(Revlift == int.MinValue) return ValidateFail(nameof(Revlift));
         else if(Powerloss == int.MinValue) return ValidateFail(nameof(Powerloss));
         else if(Flipy == int.MinValue) return ValidateFail(nameof(Flipy));
         else if(Msquash == int.MinValue) return ValidateFail(nameof(Msquash));
         else if(Clrad == int.MinValue) return ValidateFail(nameof(Clrad));
-        else if(Dammult == sfloat.MinValue) return ValidateFail(nameof(Dammult));
+        else if(Dammult == fix64.MinValue) return ValidateFail(nameof(Dammult));
         else if(Maxmag == int.MinValue) return ValidateFail(nameof(Maxmag));
-        else if(Dishandle == sfloat.MinValue) return ValidateFail(nameof(Dishandle));
-        else if(Outdam == sfloat.MinValue) return ValidateFail(nameof(Outdam));
+        else if(Dishandle == fix64.MinValue) return ValidateFail(nameof(Dishandle));
+        else if(Outdam == fix64.MinValue) return ValidateFail(nameof(Outdam));
         else if(Enginsignature == sbyte.MinValue) return ValidateFail(nameof(Enginsignature));
         else if(Name == "") return ValidateFailName(nameof(Name), fileName);
 

@@ -222,7 +222,7 @@ public static class UMath
         return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
     }
 
-    public static sfloat Py(sfloat x1, sfloat x2, sfloat y1, sfloat y2)
+    public static fix64 Py(fix64 x1, fix64 x2, fix64 y1, fix64 y2)
     {
         return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
     }

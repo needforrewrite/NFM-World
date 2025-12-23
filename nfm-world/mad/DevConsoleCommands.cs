@@ -209,7 +209,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex].Mad.Speed = (sfloat)speed;
+            InRacePhase.CarsInRace[InRacePhase.playerCarIndex].Mad.Speed = (fix64)speed;
             console.Log($"Set player car speed to {speed}");
         }
 

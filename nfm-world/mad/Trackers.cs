@@ -64,11 +64,11 @@ internal class Trackers
 
     internal static void LoadTracker(Mesh element)
     {
-        var xz = (int)sfloat.Round(element.Rotation.Xz.DegreesSFloat);
+        var xz = (int)fix64.Round(element.Rotation.Xz.DegreesSFloat);
         for (var i = 0; i < element.Boxes.Length; i++)
         {
-            Xy[Nt] = (int) sfloat.Round(element.Boxes[i].Xy * Mad.Cos(xz) - element.Boxes[i].Zy * Mad.Sin(xz));
-            Zy[Nt] = (int) sfloat.Round(element.Boxes[i].Zy * Mad.Cos(xz) + element.Boxes[i].Xy * Mad.Sin(xz));
+            Xy[Nt] = (int) fix64.Round(element.Boxes[i].Xy * Mad.Cos(xz) - element.Boxes[i].Zy * Mad.Sin(xz));
+            Zy[Nt] = (int) fix64.Round(element.Boxes[i].Zy * Mad.Cos(xz) + element.Boxes[i].Xy * Mad.Sin(xz));
             for (var c = 0; c < 3; c++)
             {
                 C[Nt][c] = (int) (element.Boxes[i].Color[c] + element.Boxes[i].Color[c] * (World.Snap[c] / 100.0F));
@@ -81,9 +81,9 @@ internal class Trackers
                     C[Nt][c] = 0;
                 }
             }
-            X[Nt] = (int) sfloat.Round((sfloat)element.Position.X + element.Boxes[i].Translation.X * Mad.Cos(xz) - element.Boxes[i].Translation.Z * Mad.Sin(xz));
-            Z[Nt] = (int) sfloat.Round((sfloat)element.Position.Z + element.Boxes[i].Translation.Z * Mad.Cos(xz) + element.Boxes[i].Translation.X * Mad.Sin(xz));
-            Y[Nt] = (int) sfloat.Round((sfloat)element.Position.Y + element.Boxes[i].Translation.Y);
+            X[Nt] = (int) fix64.Round((fix64)element.Position.X + element.Boxes[i].Translation.X * Mad.Cos(xz) - element.Boxes[i].Translation.Z * Mad.Sin(xz));
+            Z[Nt] = (int) fix64.Round((fix64)element.Position.Z + element.Boxes[i].Translation.Z * Mad.Cos(xz) + element.Boxes[i].Translation.X * Mad.Sin(xz));
+            Y[Nt] = (int) fix64.Round((fix64)element.Position.Y + element.Boxes[i].Translation.Y);
             Skd[Nt] = element.Boxes[i].Skid;
             Dam[Nt] = element.Boxes[i].Damage;
             Notwall[Nt] = element.Boxes[i].NotWall;
@@ -93,9 +93,9 @@ internal class Trackers
             {
                 xzAbs = 0;
             }
-            Radx[Nt] = (int) sfloat.Round(sfloat.Abs(element.Boxes[i].Radius.X * Mad.Cos(xzAbs) + element.Boxes[i].Radius.Z * Mad.Sin(xzAbs)));
-            Radz[Nt] = (int) sfloat.Round(sfloat.Abs(element.Boxes[i].Radius.X * Mad.Sin(xzAbs) + element.Boxes[i].Radius.Z * Mad.Cos(xzAbs)));
-            Rady[Nt] = (int) sfloat.Round(element.Boxes[i].Radius.Y);
+            Radx[Nt] = (int) fix64.Round(fix64.Abs(element.Boxes[i].Radius.X * Mad.Cos(xzAbs) + element.Boxes[i].Radius.Z * Mad.Sin(xzAbs)));
+            Radz[Nt] = (int) fix64.Round(fix64.Abs(element.Boxes[i].Radius.X * Mad.Sin(xzAbs) + element.Boxes[i].Radius.Z * Mad.Cos(xzAbs)));
+            Rady[Nt] = (int) fix64.Round(element.Boxes[i].Radius.Y);
             Nt++;
         }
     }

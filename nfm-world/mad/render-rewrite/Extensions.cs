@@ -28,7 +28,7 @@ public static class Extensions
 
     extension(AngleSingle angle)
     {
-        public sfloat DegreesSFloat => (sfloat)angle.Radians * sfloat.RadToDeg;
+        public fix64 DegreesSFloat => (fix64)angle.Radians * fix64.RadToDeg;
         
         public static AngleSingle FromRadians(float radians) => Unsafe.As<float, AngleSingle>(ref radians);
 
@@ -36,10 +36,10 @@ public static class Extensions
             => Unsafe.BitCast<float, AngleSingle>(MathUtil.DegreesToRadians(degrees));
 
         public static AngleSingle FromDegrees(int degrees)
-            => Unsafe.BitCast<float, AngleSingle>((float)(degrees * sfloat.DegToRad));
+            => Unsafe.BitCast<float, AngleSingle>((float)(degrees * fix64.DegToRad));
 
-        public static AngleSingle FromDegrees(sfloat degrees)
-            => Unsafe.BitCast<float, AngleSingle>((float)(degrees * sfloat.DegToRad));
+        public static AngleSingle FromDegrees(fix64 degrees)
+            => Unsafe.BitCast<float, AngleSingle>((float)(degrees * fix64.DegToRad));
     }
 
     extension(System.Numerics.Vector3 vector3)
@@ -274,8 +274,8 @@ public static class Extensions2
 
     extension(DeterministicRandom random)
     {
-        public sfloat NextSFloat() => new(random.NextFixed64(Fixed64.One));
-        public sfloat NextSFloat(sfloat maxExclusive) => new(random.NextFixed64(maxExclusive.Value));
-        public sfloat NextSFloat(sfloat minInclusive, sfloat maxExclusive) => new(random.NextFixed64(minInclusive.Value, maxExclusive.Value));
+        public fix64 NextSFloat() => new(random.NextFixed64(Fixed64.One));
+        public fix64 NextSFloat(fix64 maxExclusive) => new(random.NextFixed64(maxExclusive.Value));
+        public fix64 NextSFloat(fix64 minInclusive, fix64 maxExclusive) => new(random.NextFixed64(minInclusive.Value, maxExclusive.Value));
     }
 }
