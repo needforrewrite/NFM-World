@@ -42,13 +42,17 @@ namespace NFMWorld.Mad
             // gamemode
             console.RegisterCommand("go_tt", (c, args) =>
             {
-                InRacePhase.gamemode = new TimeTrialGamemode();
-                GameSparker.CurrentPhase = GameSparker.InRace;
+                if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+                {
+                    inRacePhase.gamemode = GameModes.TimeTrial;
+                }
             });
             console.RegisterCommand("go_sbox", (c, args) =>
             {
-                InRacePhase.gamemode = new SandboxGamemode();
-                GameSparker.CurrentPhase = GameSparker.InRace;
+                if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+                {
+                    inRacePhase.gamemode = GameModes.Sandbox;
+                }
             });
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
@@ -100,7 +104,10 @@ namespace NFMWorld.Mad
 
         private static void WastePlayer(DevConsole console, string[] args)
         {
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex].CarRef.Wasted = true;
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex].CarRef.Wasted = true;
+            }
         }
 
         private static void Connect(DevConsole console, string[] args)
@@ -137,11 +144,14 @@ namespace NFMWorld.Mad
                 amount = 150;
             }
 
-            var car = InRacePhase.CarsInRace[InRacePhase.playerCarIndex];
-            MeshDamage.DamageX(car.Stats, car.CarRef, 0, amount);
-            MeshDamage.DamageX(car.Stats, car.CarRef, 1, amount);
-            MeshDamage.DamageX(car.Stats, car.CarRef, 2, amount);
-            MeshDamage.DamageX(car.Stats, car.CarRef, 3, amount);
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                var car = inRacePhase.CarsInRace[inRacePhase.playerCarIndex];
+                MeshDamage.DamageX(car.Stats, car.CarRef, 0, amount);
+                MeshDamage.DamageX(car.Stats, car.CarRef, 1, amount);
+                MeshDamage.DamageX(car.Stats, car.CarRef, 2, amount);
+                MeshDamage.DamageX(car.Stats, car.CarRef, 3, amount);
+            }
         }
 
         private static void BreakY(DevConsole console, string[] args)
@@ -151,13 +161,16 @@ namespace NFMWorld.Mad
                 amount = 150;
             }
 
-            var car = InRacePhase.CarsInRace[InRacePhase.playerCarIndex];
-            var nbsq = 0;
-            var squash = car.Mad.Squash;
-            MeshDamage.DamageY(car.Stats, car.CarRef, 0, amount, car.Mad.Mtouch, ref nbsq, ref squash);
-            MeshDamage.DamageY(car.Stats, car.CarRef, 1, amount, car.Mad.Mtouch, ref nbsq, ref squash);
-            MeshDamage.DamageY(car.Stats, car.CarRef, 2, amount, car.Mad.Mtouch, ref nbsq, ref squash);
-            MeshDamage.DamageY(car.Stats, car.CarRef, 3, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                var car = inRacePhase.CarsInRace[inRacePhase.playerCarIndex];
+                var nbsq = 0;
+                var squash = car.Mad.Squash;
+                MeshDamage.DamageY(car.Stats, car.CarRef, 0, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+                MeshDamage.DamageY(car.Stats, car.CarRef, 1, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+                MeshDamage.DamageY(car.Stats, car.CarRef, 2, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+                MeshDamage.DamageY(car.Stats, car.CarRef, 3, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+            }
         }
 
         private static void BreakZ(DevConsole console, string[] args)
@@ -167,11 +180,14 @@ namespace NFMWorld.Mad
                 amount = 150;
             }
 
-            var car = InRacePhase.CarsInRace[InRacePhase.playerCarIndex];
-            MeshDamage.DamageZ(car.Stats, car.CarRef, 0, amount);
-            MeshDamage.DamageZ(car.Stats, car.CarRef, 1, amount);
-            MeshDamage.DamageZ(car.Stats, car.CarRef, 2, amount);
-            MeshDamage.DamageZ(car.Stats, car.CarRef, 3, amount);
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                var car = inRacePhase.CarsInRace[inRacePhase.playerCarIndex];
+                MeshDamage.DamageZ(car.Stats, car.CarRef, 0, amount);
+                MeshDamage.DamageZ(car.Stats, car.CarRef, 1, amount);
+                MeshDamage.DamageZ(car.Stats, car.CarRef, 2, amount);
+                MeshDamage.DamageZ(car.Stats, car.CarRef, 3, amount);
+            }
         }
 
         private static void SetBlackPoint(DevConsole console, string[] args)
@@ -243,14 +259,22 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex].Mad.Speed = speed;
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex].Mad.Speed = speed;
+            }
+
             console.Log($"Set player car speed to {speed}");
         }
 
         private static void ResetCar(DevConsole console)
         {
-            var originalCar = InRacePhase.CarsInRace[InRacePhase.playerCarIndex];
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, (Car) originalCar.CarRef.ClonedMesh!, 0, 0, true);
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                var originalCar = inRacePhase.CarsInRace[inRacePhase.playerCarIndex];
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, (Car)originalCar.CarRef.ClonedMesh!, 0, 0, true);
+            }
+
             console.Log("Position reset");
         }
 
@@ -268,9 +292,12 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            var mesh = InRacePhase.CarsInRace[0].CarRef;
-            mesh.Position = new Vector3(x, y, z);
-            console.Log($"Teleported player to ({x}, {y}, {z})");
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                var mesh = inRacePhase.CarsInRace[0].CarRef;
+                mesh.Position = new Vector3(x, y, z);
+                console.Log($"Teleported player to ({x}, {y}, {z})");
+            }
         }
 
         private static void CreateObject(DevConsole console, string[] args)
@@ -283,8 +310,15 @@ namespace NFMWorld.Mad
 
             var objectName = args[0];
 
-            var mesh = InRacePhase.CurrentStage.CreateObject(objectName, x, y, z, r);
-            Trackers.LoadTracker(mesh);
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                var mesh = inRacePhase.CurrentStage.CreateObject(objectName, x, y, z, r);
+                Trackers.LoadTracker(mesh);
+            }
+            else
+            {
+                console.Log("Not in game.");
+            }
         }
 
         private static void LoadStage(DevConsole console, string[] args)
@@ -296,17 +330,13 @@ namespace NFMWorld.Mad
             }
 
             var stageName = args[0];
-            InRacePhase.LoadStage(stageName, GameSparker._graphicsDevice);
-            console.Log($"Switched to stage '{stageName}'");
 
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
-            InRacePhase.current_scene = new Scene(
-                GameSparker._graphicsDevice,
-                [InRacePhase.CurrentStage, new ListRenderable(InRacePhase.CarsInRace)],
-                InRacePhase.camera,
-                InRacePhase.lightCameras
-            );
-            InRacePhase.gamemode.Enter(InRacePhase.CarsInRace, InRacePhase.CurrentStage, InRacePhase.current_scene);
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                inRacePhase.LoadStage(stageName);
+                console.Log($"Switched to stage '{stageName}'");
+                inRacePhase.ReloadGamemode();
+            }
         }
 
         private static void SwitchCar(DevConsole console, string[] args)
@@ -320,15 +350,18 @@ namespace NFMWorld.Mad
             var carId = args[0];
             var (id, car) = GameSparker.GetCar(carId);
 
-            if (id == -1)
+            if (car == null)
             {
                 console.Log($"Car '{carId}' not found.", "warning");
                 return;
             }
 
-            InRacePhase.playerCarName = car.FileName;
-            InRacePhase.CarsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, car, 0, 0, true);
-            InRacePhase.gamemode.Reset();
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            {
+                inRacePhase.playerCarName = car.FileName;
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, car, 0, 0, true);
+                inRacePhase.ReloadGamemode();
+            }
         
             IBackend.Backend.StopAllSounds();
 
@@ -344,7 +377,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            InRacePhase.camera.Fov = fov;
+            CameraSettings.Fov = fov;
         }
         
         private static void SetFollowY(DevConsole console, string[] args)
@@ -355,7 +388,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            InRacePhase.PlayerFollowCamera.FollowYOffset = yoff;
+            FollowCamera.FollowYOffset = yoff;
         }
 
         private static void SetFollowZ(DevConsole console, string[] args)
@@ -366,7 +399,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            InRacePhase.PlayerFollowCamera.FollowZOffset = zoff;
+            FollowCamera.FollowZOffset = zoff;
         }
 
         private static void ShowMessageTest(DevConsole console, string[] args)

@@ -54,6 +54,12 @@ public static class World
         MountainSeed = URandom.Int(0, 100000);
         FogDensity = 0.857f;
         LightDirection = new Vector3(0, 1, 0);
+        Snap = new Color3(20, 20, 20);
+        Fog = new Color3(150, 150, 150);
+        Sky = new Color3(100, 150, 255);
+        GroundColor = new Color3(100, 200, 100);
+        GroundPolysColor = new Color3(120, 180, 120);
+        FadeFrom = 8000;
     }
 
     private static int _tick = 0;

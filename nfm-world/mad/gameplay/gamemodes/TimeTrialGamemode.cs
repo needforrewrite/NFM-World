@@ -5,7 +5,8 @@ using NFMWorld.Mad;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
 
-public class TimeTrialGamemode : BaseGamemode
+public class TimeTrialGamemode(string playerCarName, int playerCarIndex, UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    : BaseGamemode(playerCarIndex, carsInRace, currentStage, currentScene)
 {
     private enum TimeTrialState
     {
@@ -35,7 +36,7 @@ public class TimeTrialGamemode : BaseGamemode
     public static bool PlaybackOnReset = true;
     private TimeTrialDemoFile recordedInputs = null!;
 
-    public override void Enter(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    public override void Enter()
     {
         Reset();
 
@@ -50,14 +51,14 @@ public class TimeTrialGamemode : BaseGamemode
         playbackInputs = null;
         tick = 0;
 
-        InRacePhase.playerCarIndex = 0;
-        carsInRace[0] = new InGameCar(0, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
+        playerCarIndex = 0;
+        carsInRace[0] = new InGameCar(0, GameSparker.GetCar(playerCarName).Car, 0, 0, true);
 
         // ghost
         carsInRace[1] = new InGameCar(carsInRace[0], 0, false);
         carsInRace[1].Sfx.Mute = true;
 
-        TimeTrialDemoFile bestTimeDemo = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Name);
+        TimeTrialDemoFile bestTimeDemo = new TimeTrialDemoFile(playerCarName, currentStage.Name);
         if (bestTimeDemo.Load())
         {
             playbackInputs = bestTimeDemo;
@@ -68,7 +69,7 @@ public class TimeTrialGamemode : BaseGamemode
             carsInRace.RemoveAt(1);
         }
 
-        TimeTrialSplitsFile bestTimeSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Name);
+        TimeTrialSplitsFile bestTimeSplits = new TimeTrialSplitsFile(playerCarName, currentStage.Name);
         if (bestTimeSplits.Load())
         {
             this.bestTimeSplits = bestTimeSplits;
@@ -77,8 +78,8 @@ public class TimeTrialGamemode : BaseGamemode
             this.bestTimeSplits = null;
         }
 
-        thisRunSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Name);
-        recordedInputs = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Name);
+        thisRunSplits = new TimeTrialSplitsFile(playerCarName, currentStage.Name);
+        recordedInputs = new TimeTrialDemoFile(playerCarName, currentStage.Name);
 
         foreach(CheckPoint cp in currentStage.checkpoints)
         {
@@ -88,7 +89,7 @@ public class TimeTrialGamemode : BaseGamemode
         _currentState = TimeTrialState.Countdown;
     }
 
-    public override void Exit(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    public override void Exit()
     {
         // Cleanup for Time Trial mode
     }
@@ -100,27 +101,26 @@ public class TimeTrialGamemode : BaseGamemode
         _currentState = TimeTrialState.NotStarted;
     }
 
-    public override void GameTick(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    public override void GameTick()
     {
         FrameTrace.AddMessage($"contox: {carsInRace[0].CarRef.Position.X:0.00}, contoz: {carsInRace[0].CarRef.Position.Z:0.00}, contoy: {carsInRace[0].CarRef.Position.Y:0.00}");
         switch (_currentState)
         {
             case TimeTrialState.NotStarted:
-                Enter(carsInRace, currentStage, currentScene);
                 break;
             case TimeTrialState.Countdown:
                 CountdownTick();
                 break;
             case TimeTrialState.InProgress:
-                TimeTrialInRace(carsInRace, currentStage);
+                TimeTrialInRace();
                 break;
             case TimeTrialState.Finished:
-                TimeTrialFinished(carsInRace, currentStage);
+                TimeTrialFinished();
                 break;
         }
     }
 
-    private void TimeTrialInRace(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
+    private void TimeTrialInRace()
     {
         if (playbackInputs != null)
         {
@@ -208,7 +208,7 @@ public class TimeTrialGamemode : BaseGamemode
         tick++;
     }
 
-    private void TimeTrialFinished(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
+    private void TimeTrialFinished()
     {
         if (!writtenData)
         {
@@ -254,7 +254,7 @@ public class TimeTrialGamemode : BaseGamemode
         // Handle key releases specific to Time Trial mode
     }
 
-    public override void Render(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    public override void Render()
     {
         if (_currentState == TimeTrialState.InProgress)
         {

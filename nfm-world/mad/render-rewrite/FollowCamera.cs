@@ -5,11 +5,11 @@ namespace NFMWorld.Mad;
 
 public class FollowCamera
 {
-    public int FollowYOffset = 0;
+    public static int FollowYOffset = 0;
 
     private float _bcxz;
     private Euler _angle;
-    public int FollowZOffset = 0;
+    public static int FollowZOffset = 0;
 
     public void Follow(PerspectiveCamera camera, Mesh mesh, float cxz, int lookback)
     {

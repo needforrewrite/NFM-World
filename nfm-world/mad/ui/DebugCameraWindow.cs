@@ -20,9 +20,9 @@ namespace NFMWorld.Mad.UI
             if (_isOpen)
             {
                 // init values from Medium
-                _fov = InRacePhase.camera.Fov;
-                _followY = InRacePhase.PlayerFollowCamera.FollowYOffset;
-                _followZ = InRacePhase.PlayerFollowCamera.FollowZOffset;
+                _fov = CameraSettings.Fov;
+                _followY = FollowCamera.FollowYOffset;
+                _followZ = FollowCamera.FollowZOffset;
             }
         }
 
@@ -40,7 +40,7 @@ namespace NFMWorld.Mad.UI
                 ImGui.Text("Field of View:");
                 if (ImGui.SliderFloat("##FOV", ref _fov, 70.0f, 120.0f, "%.1f°"))
                 {
-                    InRacePhase.camera.Fov = _fov;
+                    CameraSettings.Fov = _fov;
                 }
                 
                 ImGui.Spacing();
@@ -51,7 +51,7 @@ namespace NFMWorld.Mad.UI
                 ImGui.Text("Follow Y Offset:");
                 if (ImGui.SliderInt("##FollowY", ref _followY, -160, 500))
                 {
-                    InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
+                    FollowCamera.FollowYOffset = _followY;
                 }
                 
                 ImGui.Spacing();
@@ -60,7 +60,7 @@ namespace NFMWorld.Mad.UI
                 ImGui.Text("Follow Z Offset:");
                 if (ImGui.SliderInt("##FollowZ", ref _followZ, -500, 500))
                 {
-                    InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
+                    FollowCamera.FollowZOffset = _followZ;
                 }
                 
                 ImGui.Spacing();
@@ -73,9 +73,9 @@ namespace NFMWorld.Mad.UI
                     _fov = 90.0f;
                     _followY = 0;
                     _followZ = 0;
-                    InRacePhase.camera.Fov = _fov;
-                    InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
-                    InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
+                    CameraSettings.Fov = _fov;
+                    FollowCamera.FollowYOffset = _followY;
+                    FollowCamera.FollowZOffset = _followZ;
                 }
             }
             ImGui.End();
