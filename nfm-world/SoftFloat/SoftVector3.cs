@@ -291,40 +291,6 @@ public struct SoftVector3 : IEquatable<SoftVector3>
 		result.Y = value1.Y + value2.Y;
 		result.Z = value1.Z + value2.Z;
 	}
-	
-	/// <summary>
-	/// Returns the Cartesian coordinate for one axis of a point that is defined by a
-	/// given triangle and two normalized barycentric (areal) coordinates.
-	/// </summary>
-	/// <param name="value1">
-	/// The coordinate on one axis of vertex 1 of the defining triangle.
-	/// </param>
-	/// <param name="value2">
-	/// The coordinate on the same axis of vertex 2 of the defining triangle.
-	/// </param>
-	/// <param name="value3">
-	/// The coordinate on the same axis of vertex 3 of the defining triangle.
-	/// </param>
-	/// <param name="amount1">
-	/// The normalized barycentric (areal) coordinate b2, equal to the weighting factor
-	/// for vertex 2, the coordinate of which is specified in value2.
-	/// </param>
-	/// <param name="amount2">
-	/// The normalized barycentric (areal) coordinate b3, equal to the weighting factor
-	/// for vertex 3, the coordinate of which is specified in value3.
-	/// </param>
-	/// <returns>
-	/// Cartesian coordinate of the specified point with respect to the axis being used.
-	/// </returns>
-	private static sfloat Barycentric(
-		sfloat value1,
-		sfloat value2,
-		sfloat value3,
-		sfloat amount1,
-		sfloat amount2
-	) {
-		return value1 + (value2 - value1) * amount1 + (value3 - value1) * amount2;
-	}
 
 	/// <summary>
 	/// Creates a new <see cref="SoftVector3"/> that contains the cartesian coordinates of a vector specified in barycentric coordinates and relative to 3d-triangle.
@@ -343,9 +309,9 @@ public struct SoftVector3 : IEquatable<SoftVector3>
 		sfloat amount2
 	) {
 		return new SoftVector3(
-			Barycentric(value1.X, value2.X, value3.X, amount1, amount2),
-			Barycentric(value1.Y, value2.Y, value3.Y, amount1, amount2),
-			Barycentric(value1.Z, value2.Z, value3.Z, amount1, amount2)
+			sfloat.Barycentric(value1.X, value2.X, value3.X, amount1, amount2),
+			sfloat.Barycentric(value1.Y, value2.Y, value3.Y, amount1, amount2),
+			sfloat.Barycentric(value1.Z, value2.Z, value3.Z, amount1, amount2)
 		);
 	}
 
@@ -366,40 +332,9 @@ public struct SoftVector3 : IEquatable<SoftVector3>
 		sfloat amount2,
 		out SoftVector3 result
 	) {
-		result.X = Barycentric(value1.X, value2.X, value3.X, amount1, amount2);
-		result.Y = Barycentric(value1.Y, value2.Y, value3.Y, amount1, amount2);
-		result.Z = Barycentric(value1.Z, value2.Z, value3.Z, amount1, amount2);
-	}
-
-	/// <summary>
-	/// Performs a Catmull-Rom interpolation using the specified positions.
-	/// </summary>
-	/// <param name="value1">The first position in the interpolation.</param>
-	/// <param name="value2">The second position in the interpolation.</param>
-	/// <param name="value3">The third position in the interpolation.</param>
-	/// <param name="value4">The fourth position in the interpolation.</param>
-	/// <param name="amount">Weighting factor.</param>
-	/// <returns>A position that is the result of the Catmull-Rom interpolation.</returns>
-	private static sfloat CatmullRom(
-		sfloat value1,
-		sfloat value2,
-		sfloat value3,
-		sfloat value4,
-		sfloat amount
-	) {
-		/* Using formula from http://www.mvps.org/directx/articles/catmull/
-		 * Internally using doubles not to lose precision.
-		 */
-		sfloat amountSquared = amount * amount;
-		sfloat amountCubed = amountSquared * amount;
-		return (sfloat) (
-			(sfloat)0.5f *
-			(
-				(((sfloat)2.0f * value2 + (value3 - value1) * amount) +
-				 (((sfloat)2.0f * value1 - (sfloat)5.0f * value2 + (sfloat)4.0f * value3 - value4) * amountSquared) +
-				 ((sfloat)3.0f * value2 - value1 - (sfloat)3.0f * value3 + value4) * amountCubed)
-			)
-		);
+		result.X = sfloat.Barycentric(value1.X, value2.X, value3.X, amount1, amount2);
+		result.Y = sfloat.Barycentric(value1.Y, value2.Y, value3.Y, amount1, amount2);
+		result.Z = sfloat.Barycentric(value1.Z, value2.Z, value3.Z, amount1, amount2);
 	}
 	
 	/// <summary>
@@ -419,9 +354,9 @@ public struct SoftVector3 : IEquatable<SoftVector3>
 		sfloat amount
 	) {
 		return new SoftVector3(
-			CatmullRom(value1.X, value2.X, value3.X, value4.X, amount),
-			CatmullRom(value1.Y, value2.Y, value3.Y, value4.Y, amount),
-			CatmullRom(value1.Z, value2.Z, value3.Z, value4.Z, amount)
+			sfloat.CatmullRom(value1.X, value2.X, value3.X, value4.X, amount),
+			sfloat.CatmullRom(value1.Y, value2.Y, value3.Y, value4.Y, amount),
+			sfloat.CatmullRom(value1.Z, value2.Z, value3.Z, value4.Z, amount)
 		);
 	}
 
@@ -442,9 +377,9 @@ public struct SoftVector3 : IEquatable<SoftVector3>
 		sfloat amount,
 		out SoftVector3 result
 	) {
-		result.X = CatmullRom(value1.X, value2.X, value3.X, value4.X, amount);
-		result.Y = CatmullRom(value1.Y, value2.Y, value3.Y, value4.Y, amount);
-		result.Z = CatmullRom(value1.Z, value2.Z, value3.Z, value4.Z, amount);
+		result.X = sfloat.CatmullRom(value1.X, value2.X, value3.X, value4.X, amount);
+		result.Y = sfloat.CatmullRom(value1.Y, value2.Y, value3.Y, value4.Y, amount);
+		result.Z = sfloat.CatmullRom(value1.Z, value2.Z, value3.Z, value4.Z, amount);
 	}
 
 	/// <summary>

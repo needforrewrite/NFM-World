@@ -151,4 +151,69 @@ public partial struct sfloat
     {
         return value1 + (value2 - value1) * amount;
     }
+	
+	/// <summary>
+	/// Returns the Cartesian coordinate for one axis of a point that is defined by a
+	/// given triangle and two normalized barycentric (areal) coordinates.
+	/// </summary>
+	/// <param name="value1">
+	/// The coordinate on one axis of vertex 1 of the defining triangle.
+	/// </param>
+	/// <param name="value2">
+	/// The coordinate on the same axis of vertex 2 of the defining triangle.
+	/// </param>
+	/// <param name="value3">
+	/// The coordinate on the same axis of vertex 3 of the defining triangle.
+	/// </param>
+	/// <param name="amount1">
+	/// The normalized barycentric (areal) coordinate b2, equal to the weighting factor
+	/// for vertex 2, the coordinate of which is specified in value2.
+	/// </param>
+	/// <param name="amount2">
+	/// The normalized barycentric (areal) coordinate b3, equal to the weighting factor
+	/// for vertex 3, the coordinate of which is specified in value3.
+	/// </param>
+	/// <returns>
+	/// Cartesian coordinate of the specified point with respect to the axis being used.
+	/// </returns>
+	public static sfloat Barycentric(
+		sfloat value1,
+		sfloat value2,
+		sfloat value3,
+		sfloat amount1,
+		sfloat amount2
+	) {
+		return value1 + (value2 - value1) * amount1 + (value3 - value1) * amount2;
+	}
+
+	/// <summary>
+	/// Performs a Catmull-Rom interpolation using the specified positions.
+	/// </summary>
+	/// <param name="value1">The first position in the interpolation.</param>
+	/// <param name="value2">The second position in the interpolation.</param>
+	/// <param name="value3">The third position in the interpolation.</param>
+	/// <param name="value4">The fourth position in the interpolation.</param>
+	/// <param name="amount">Weighting factor.</param>
+	/// <returns>A position that is the result of the Catmull-Rom interpolation.</returns>
+	public static sfloat CatmullRom(
+		sfloat value1,
+		sfloat value2,
+		sfloat value3,
+		sfloat value4,
+		sfloat amount
+	) {
+		/* Using formula from http://www.mvps.org/directx/articles/catmull/
+		 * Internally using doubles not to lose precision.
+		 */
+		sfloat amountSquared = amount * amount;
+		sfloat amountCubed = amountSquared * amount;
+		return (sfloat) (
+			(sfloat)0.5f *
+			(
+				(((sfloat)2.0f * value2 + (value3 - value1) * amount) +
+				 (((sfloat)2.0f * value1 - (sfloat)5.0f * value2 + (sfloat)4.0f * value3 - value4) * amountSquared) +
+				 ((sfloat)3.0f * value2 - value1 - (sfloat)3.0f * value3 + value4) * amountCubed)
+			)
+		);
+	}
 }
