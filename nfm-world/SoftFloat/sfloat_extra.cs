@@ -1,12 +1,13 @@
-﻿namespace SoftFloat;
+﻿using FixedMathSharp;
+
+namespace SoftFloat;
 
 public partial struct sfloat
 {
-    public static sfloat Pi { get; } = FromRaw(libm.pi);
-    public static sfloat HalfPi { get; } = FromRaw(libm.half_pi);
-    public static sfloat TwoPi { get; } = FromRaw(libm.two_pi);
-    public static sfloat PiOver4 { get; } = FromRaw(libm.pi_over_4);
-    public static sfloat PiTimes3Over4 { get; } = FromRaw(libm.pi_times_3_over_4);
+    public static sfloat Pi { get; } = new sfloat(FixedMath.PI);
+    public static sfloat HalfPi { get; } = new sfloat(FixedMath.PiOver2);
+    public static sfloat TwoPi { get; } = new sfloat(FixedMath.TwoPI);
+    public static sfloat PiOver4 { get; } = new sfloat(FixedMath.PiOver4);
     
     public static sfloat DegToRad { get; } = Pi / (sfloat)180.0f;
     public static sfloat RadToDeg { get; } = (sfloat)180.0f / Pi;
@@ -52,50 +53,23 @@ public partial struct sfloat
     public static sfloat operator --(sfloat f) => f + MinusOne;
     public static sfloat operator ++(sfloat f) => f + One;
 
-    public static sfloat Sqrt(sfloat f)
-    {
-        return libm.sqrtf(f);
-    }
+    public static sfloat Sqrt(sfloat f) => new(FixedMath.Sqrt(f.Value));
 
-    public static sfloat Acos(sfloat f)
-    {
-        return libm.acosf(f);
-    }
+    public static sfloat Acos(sfloat f) => new(FixedMath.Acos(f.Value));
 
-    public static sfloat Atan2(sfloat a, sfloat b)
-    {
-        return libm.atan2f(a, b);
-    }
+    public static sfloat Atan2(sfloat a, sfloat b) => new(FixedMath.Atan2(a.Value, b.Value));
 
-    public static sfloat Round(sfloat f)
-    {
-        return libm.roundf(f);
-    }
+    public static sfloat Round(sfloat f) => new(FixedMath.Round(f.Value));
 
-    public static sfloat Sin(sfloat f)
-    {
-        return libm.sinf(f);
-    }
+    public static sfloat Sin(sfloat f) => new(FixedMath.Sin(f.Value));
 
-    public static sfloat Cos(sfloat f)
-    {
-        return libm.cosf(f);
-    }
+    public static sfloat Cos(sfloat f) => new(FixedMath.Cos(f.Value));
 
-    public static sfloat Floor(sfloat f)
-    {
-        return libm.floorf(f);
-    }
+    public static sfloat Floor(sfloat f) => new(FixedMath.Floor(f.Value));
 
-    public static sfloat Ceil(sfloat f)
-    {
-        return libm.ceilf(f);
-    }
+    public static sfloat Ceiling(sfloat f) => new(FixedMath.Ceiling(f.Value));
 
-    public static sfloat Hypot(sfloat a, sfloat b)
-    {
-        return libm.hypotf(a, b);
-    }
+    public static sfloat Hypot(sfloat a, sfloat b) => Sqrt(a * a + b * b);
 
     public static sfloat Clamp(sfloat value, sfloat min, sfloat max)
     {
@@ -104,11 +78,8 @@ public partial struct sfloat
         return value;
     }
     
-    public static bool WithinEpsilon(sfloat floatA, sfloat floatB)
-    {
-        return Abs(floatA - floatB) < MachineEpsilonFloat;
-    }
-    
+    public static bool WithinEpsilon(sfloat floatA, sfloat floatB) => Abs(floatA - floatB) < MachineEpsilonFloat;
+
     private static readonly sfloat MachineEpsilonFloat = GetMachineEpsilonFloat();
 
     /// <summary>
@@ -117,20 +88,7 @@ public partial struct sfloat
     /// </summary>
     private static sfloat GetMachineEpsilonFloat()
     {
-        sfloat machineEpsilon = (sfloat)1.0f;
-        sfloat comparison;
-
-        /* Keep halving the working value of machineEpsilon until we get a number that
-         * when added to 1.0f will still evaluate as equal to 1.0f.
-         */
-        do
-        {
-            machineEpsilon *= (sfloat)0.5f;
-            comparison = (sfloat)1.0f + machineEpsilon;
-        }
-        while (comparison > (sfloat)1.0f);
-
-        return machineEpsilon;
+	    return new(Fixed64.Epsilon);
     }
     /// <summary>
     /// Linearly interpolates between two values.

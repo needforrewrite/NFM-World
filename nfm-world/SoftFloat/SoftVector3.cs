@@ -250,13 +250,6 @@ public struct SoftVector3 : IEquatable<SoftVector3>
 	[Conditional("DEBUG")]
 	internal void CheckForNaNs()
 	{
-		if (	
-			X.IsNaN() ||
-			Y.IsNaN() ||
-			Z.IsNaN()	)
-		{
-			throw new InvalidOperationException("SoftVector3 contains NaNs!");
-		}
 	}
 
 	#endregion

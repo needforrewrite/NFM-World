@@ -2,6 +2,8 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance;
+using FixedMathSharp;
+using FixedMathSharp.Utility;
 using Microsoft.Xna.Framework.Graphics;
 using SoftFloat;
 using Stride.Core.Mathematics;
@@ -268,5 +270,12 @@ public static class Extensions2
         
         public static Vector3 FromSpan(ReadOnlySpan<float> span)
             => new(span[0], span[1], span[2]);
+    }
+
+    extension(DeterministicRandom random)
+    {
+        public sfloat NextSFloat() => new(random.NextFixed64(Fixed64.One));
+        public sfloat NextSFloat(sfloat maxExclusive) => new(random.NextFixed64(maxExclusive.Value));
+        public sfloat NextSFloat(sfloat minInclusive, sfloat maxExclusive) => new(random.NextFixed64(minInclusive.Value, maxExclusive.Value));
     }
 }

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.IO.Compression;
+using FixedMathSharp.Utility;
 using NFMWorld.Util;
 using SoftFloat;
 
@@ -71,30 +72,8 @@ public class Mad
     internal bool Pu;
     internal bool Pushed;
 
-    internal sfloat Pxy
-    {
-        set
-        {
-            if (value.IsNaN())
-            {
-                Debugger.Break();
-            }
-            field = value;
-        }
-        get;
-    }
-    internal sfloat Pzy
-    {
-        set
-        {
-            if (value.IsNaN())
-            {
-                Debugger.Break();
-            }
-            field = value;
-        }
-        get;
-    }
+    internal sfloat Pxy;
+    internal sfloat Pzy;
     internal sfloat Rcomp;
     private int _rpdcatch;
     internal bool Rtab;
@@ -138,7 +117,7 @@ public class Mad
 
     internal void Colide(ContO conto, Mad othermad, ContO otherconto)
     {
-        var random = new URandom(conto.X + otherconto.X);
+        var random = new DeterministicRandom((ulong)(conto.X ^ otherconto.X ^ conto.Z ^ otherconto.Z ^ conto.Y ^ otherconto.Y));
         
         Span<sfloat> wheelx = stackalloc sfloat[4];
         Span<sfloat> wheely = stackalloc sfloat[4];
@@ -435,7 +414,7 @@ public class Mad
         return sfloat.Cos((sfloat)deg * sfloat.DegToRad);
     }
 
-    public void bounceRebound(int wi, ContO conto, URandom random)
+    public void bounceRebound(int wi, ContO conto, DeterministicRandom random)
     {
         // part 1: the closer we are to 90/-90 in Pxy or Pzy, the bigger the bounce
         sfloat rebound = (sfloat.Abs(Sin(Pxy)) + sfloat.Abs(Sin(Pzy))) / (sfloat)3;
@@ -468,7 +447,7 @@ public class Mad
             Scy[wi] = (sfloat)(-1) * Scy[wi] * (rebound - (sfloat)1);
     }
 
-    public void bounceReboundZ(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/, URandom random)
+    public void bounceReboundZ(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/, DeterministicRandom random)
     {
         sfloat rebound = sfloat.Abs(Cos(Pxy)) + sfloat.Abs(Cos(Pzy)) / 4;
         sfloat maxAngleRebound = (sfloat)0.3F;
@@ -482,7 +461,7 @@ public class Mad
         Scz[wi] = -1 * Scz[wi] * (rebound - 1);
     }
 
-    public void bounceReboundX(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/, URandom random)
+    public void bounceReboundX(int ti, int wi, ContO conto, bool wasMtouch/*, Trackers trackers, CheckPoints checkpoints*/, DeterministicRandom random)
     {
         sfloat rebound = sfloat.Abs(Cos(Pxy)) + sfloat.Abs(Cos(Pzy)) / 4;
         sfloat maxAngleRebound = (sfloat)0.3F;
@@ -501,7 +480,7 @@ public class Mad
 
     internal void Drive(Control control, ContO conto)
     {
-        URandom random = new(conto.X ^ conto.Y ^ conto.Z);
+        DeterministicRandom random = new((ulong)(conto.X ^ conto.Y ^ conto.Z));
 
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_fxz:0.00}, cxz: {Cxz:0.00}");
         FrameTrace.AddMessage($"xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}");
@@ -2270,7 +2249,7 @@ public class Mad
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
     private void OmarTrackPieceCollision(Control control, ContO conto, Span<sfloat> wheelx, Span<sfloat> wheely, Span<sfloat> wheelz,
-        sfloat groundY, sfloat wheelYThreshold, sfloat wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, URandom random)
+        sfloat groundY, sfloat wheelYThreshold, sfloat wheelGround, ref int nGroundedWheels, bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, DeterministicRandom random)
     {
         hitVertical = false;
 
@@ -2593,7 +2572,7 @@ public class Mad
             Mtouch = true;
     }
 
-    private int Regx(int i, sfloat f, ContO conto, URandom random)
+    private int Regx(int i, sfloat f, ContO conto, DeterministicRandom random)
     {
         conto.DamageX(Stat, i, f);
 
@@ -2646,7 +2625,7 @@ public class Mad
         return i110;
     }
 
-    private int Regy(int i, sfloat f, ContO conto, URandom random)
+    private int Regy(int i, sfloat f, ContO conto, DeterministicRandom random)
     {
         conto.DamageY(Stat, i, f, Mtouch, _nbsq, Squash);
         var i97 = 0;
@@ -2759,7 +2738,7 @@ public class Mad
         return i97;
     }
 
-    private int Regz(int i, sfloat f, ContO conto, URandom random)
+    private int Regz(int i, sfloat f, ContO conto, DeterministicRandom random)
     {
         conto.DamageZ(Stat, i, f);
         var i114 = 0;
@@ -2942,7 +2921,7 @@ public class Mad
         sfloat scaled = value / step;
 
         // Truncate towards zero
-        sfloat truncated = scaled > 0 ? sfloat.Floor(scaled) : sfloat.Ceil(scaled);
+        sfloat truncated = scaled > 0 ? sfloat.Floor(scaled) : sfloat.Ceiling(scaled);
 
         // Scale back
         return truncated * step;
