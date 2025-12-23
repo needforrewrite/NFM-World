@@ -1101,8 +1101,8 @@ public class Mad
         Rot(wheely, wheelz, conto.Y, conto.Z, Pzy, 4);
         Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
         var wasMtouch = false;
-        var i26 = (int)((Scx[0] + Scx[1] + Scx[2] + Scx[3]) / (sfloat)(4.0F));
-        var i27 = (int)((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / (sfloat)(4.0F));
+        var i26 = ((Scx[0] + Scx[1] + Scx[2] + Scx[3]) / (sfloat)(4.0F));
+        var i27 = ((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / (sfloat)(4.0F));
         for (var wheelid = 0; wheelid < 4; wheelid++)
         {
             if (Scx[wheelid] - i26 > (sfloat)(200.0F))
@@ -1183,9 +1183,9 @@ public class Mad
                 traction *= (sfloat)0.55f;
             }
 
-            var speedx = -(int)(Speed * Sin(conto.Xz) * Cos(Pzy));
-            var speedz = (int)(Speed * Cos(conto.Xz) * Cos(Pzy));
-            var speedy = -(int)(Speed * Sin(Pzy));
+            var speedx = -(Speed * Sin(conto.Xz) * Cos(Pzy));
+            var speedz = (Speed * Cos(conto.Xz) * Cos(Pzy));
+            var speedy = -(Speed * Sin(Pzy));
             if (BadLanding || Wasted || Halted)
             {
                 speedx = 0;
