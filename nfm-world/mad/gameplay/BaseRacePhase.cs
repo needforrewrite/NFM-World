@@ -1,23 +1,29 @@
-﻿using NFMWorld.Mad.UI;
+﻿using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.DriverInterface;
+using NFMWorld.Mad.UI;
 using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
 
-public abstract class BaseRacePhase : BasePhase
+public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
 {
+    private readonly SpriteBatch _spriteBatch = new(graphicsDevice);
+
+    protected readonly GraphicsDevice _graphicsDevice = graphicsDevice;
+
     public PerspectiveCamera camera = new();
     public Camera[] lightCameras = [
-        new OrthoCamera()
+        new OrthoCamera
         {
             Width = 3000,
             Height = 3000
         },
-        new OrthoCamera()
+        new OrthoCamera
         {
             Width = 16384,
             Height = 16384
         },
-        new OrthoCamera()
+        new OrthoCamera
         {
             Width = 65536,
             Height = 65536
@@ -25,11 +31,11 @@ public abstract class BaseRacePhase : BasePhase
     ];
 
     public Stage CurrentStage = null!;
-    public Scene current_scene;
+    public Scene current_scene = null!;
 
     public UnlimitedArray<InGameCar> CarsInRace = [];
     public int playerCarIndex = 0;
-    public FollowCamera PlayerFollowCamera = new();
+    protected FollowCamera PlayerFollowCamera = new();
     
     // View modes
     public enum ViewMode
@@ -39,9 +45,52 @@ public abstract class BaseRacePhase : BasePhase
         Watch
     }
     protected ViewMode currentViewMode = ViewMode.Follow;
+    
+    public virtual GameModes gamemode
+    {
+        get;
+        set
+        {
+            field = value;
+            gamemodeInstance = CreateGameMode();
+            gamemodeInstance.Enter();
+        }
+    }
 
-    public abstract GameModes gamemode { get; set; }
     protected BaseGamemode? gamemodeInstance { get; set; }
+
+    public override void Exit()
+    {
+        base.Exit();
+        GameSparker.CurrentMusic?.Unload();
+    }
+
+    public virtual void LoadStage(string stageName)
+    {
+        CurrentStage = new Stage(stageName, _graphicsDevice);
+
+        GameSparker.CurrentMusic?.Unload();
+
+        if(!string.IsNullOrEmpty(CurrentStage.musicPath))
+        {
+            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{CurrentStage.musicPath}"), CurrentStage.musicTempoMul);
+            GameSparker.CurrentMusic.SetFreqMultiplier(CurrentStage.musicFreqMul);
+            GameSparker.CurrentMusic.SetVolume(IRadicalMusic.CurrentVolume);
+            GameSparker.CurrentMusic.Play();   
+        }
+        
+        RecreateScene();
+    }
+
+    protected virtual void RecreateScene()
+    {
+        current_scene = new Scene(
+            _graphicsDevice,
+            [CurrentStage, new ListRenderable(CarsInRace)],
+            camera,
+            lightCameras
+        );
+    }
 
     public override void KeyPressed(Keys key, bool imguiWantsKeyboard)
     {
@@ -163,5 +212,45 @@ public abstract class BaseRacePhase : BasePhase
         camera.Height = height;
     }
 
-    public abstract void ReloadGamemode();
+    public virtual void ReloadGamemode()
+    {
+        gamemodeInstance = CreateGameMode();
+        gamemodeInstance.Enter();
+    }
+    protected abstract BaseGamemode CreateGameMode();
+
+    public override void Render()
+    {
+        base.Render();
+        
+        foreach (var lightCamera in lightCameras)
+        {
+            lightCamera.Position = camera.Position + new Vector3(0, -5000, 0);
+            lightCamera.LookAt = camera.Position + new Vector3(1f, 0, 0); // 0,0,0 causes shadows to break
+        }
+
+        camera.Fov = CameraSettings.Fov;
+
+        current_scene.Render(true);
+
+        // DISPLAY SHADOW MAP
+        _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullCounterClockwise);
+        _spriteBatch.Draw(Program.shadowRenderTargets[0], new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Microsoft.Xna.Framework.Color.White);
+        _spriteBatch.Draw(Program.shadowRenderTargets[1], new Microsoft.Xna.Framework.Rectangle(0, 128, 128, 128), Microsoft.Xna.Framework.Color.White);
+        _spriteBatch.Draw(Program.shadowRenderTargets[2], new Microsoft.Xna.Framework.Rectangle(0, 256, 128, 128), Microsoft.Xna.Framework.Color.White);
+        _spriteBatch.End();
+
+        _graphicsDevice.Textures[0] = null;
+        _graphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
+
+        FrameTrace.RenderMessages();
+        
+        G.SetColor(new Color(0, 0, 0));
+        G.DrawString($"Render: {Program._lastFrameTime}ms", 100, 100);
+        G.DrawString($"Tick: {Program._lastTickTime}μs", 100, 120);
+        G.DrawString($"Power: {CarsInRace[0]?.Mad?.Power:0.00}", 100, 140);
+        G.DrawString($"Ticks executed last frame: {Program._lastTickCount}", 100, 160);
+
+        gamemodeInstance!.Render();
+    }
 }
