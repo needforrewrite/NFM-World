@@ -61,6 +61,10 @@ public class GameSparker
     }
 
     public static IRadicalMusic? CurrentMusic;
+    /// <summary>
+    /// Use remastered music (soundtrackremaster in stage files) where available.
+    /// </summary>
+    public static bool UseRemasteredMusic = false;
 
     public static MainMenuPhase? MainMenu;
     public static InRacePhase? InRace;

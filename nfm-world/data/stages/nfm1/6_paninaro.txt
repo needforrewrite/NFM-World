@@ -18,9 +18,7 @@ polys(false)
 
 soundtrack(nfm1,stage6.zipo)
 soundtrackfreqmul(1.01)
-
-soundtrack(nfm1,stage6.zipo)
-soundtrackfreqmul(1.01)
+soundtrackremaster(nfm1,stage6remastered.mp3)
 
 set(10,0,0,0)p
 set(10,0,5600,0)p

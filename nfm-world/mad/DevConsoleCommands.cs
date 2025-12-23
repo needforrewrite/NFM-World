@@ -56,6 +56,7 @@ namespace NFMWorld.Mad
             console.RegisterCommand("ui_open_settings", (c, args) => GameSparker.SettingsMenu.Open());
 
             console.RegisterCommand("demo_playback", DemoPlayback);
+            console.RegisterCommand("music_remastered", RemasteredMusic);
 
             //cheats
             //console.RegisterCommand("sv_cheats", SVCheats);
@@ -81,6 +82,13 @@ namespace NFMWorld.Mad
             // map command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("map", (args, position) => 
                 position == 0 ? GameSparker.GetAvailableStages() : new List<string>());
+        }
+
+        private static void RemasteredMusic(DevConsole console, string[] args)
+        {
+            GameSparker.UseRemasteredMusic = !GameSparker.UseRemasteredMusic;
+            console.Log("Remastered music is now " + (GameSparker.UseRemasteredMusic ? "enabled" : "disabled") + ".");
+            console.Log("Change stage for the change to teka effect.");
         }
 
         private static void DemoPlayback(DevConsole console, string[] args)

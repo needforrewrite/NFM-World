@@ -63,6 +63,7 @@ public class SettingsMenu(Program game)
     private float _musicVolume = 0.8f;
     private float _effectsVolume = 0.9f;
     private bool _muteAll = false;
+    private bool _remasteredMusic = false;
 
     // Game settings (Camera)
     private float _fov = 90.0f;
@@ -158,6 +159,9 @@ public class SettingsMenu(Program game)
         ImGui.Spacing();
 
         ImGui.Checkbox("Mute All", ref _muteAll);
+        ImGui.Spacing();
+
+        ImGui.Checkbox("Use Remastered Music if Available", ref _remasteredMusic);
         ImGui.Spacing();
 
         ImGui.Text("Master Volume");
@@ -441,6 +445,7 @@ public class SettingsMenu(Program game)
             IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
             GameSparker.CurrentMusic?.SetVolume(_musicVolume * _masterVolume);
             IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
+            GameSparker.UseRemasteredMusic = _remasteredMusic;
         }
 
         // Apply camera settings
@@ -511,6 +516,7 @@ public class SettingsMenu(Program game)
                 cfgWriter.WriteLine($"audio_master {_masterVolume.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"audio_music {_musicVolume.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"audio_effects {_effectsVolume.ToString("F2", CultureInfo.InvariantCulture)}");
+                cfgWriter.WriteLine($"audio_remaster {(_remasteredMusic ? 1 : 0)}");
                 cfgWriter.WriteLine();
                 
                 // Camera settings
@@ -618,6 +624,9 @@ public class SettingsMenu(Program game)
                             break;
                         case "audio_effects":
                             _effectsVolume = float.Parse(value, CultureInfo.InvariantCulture);
+                            break;
+                        case "audio_remaster":
+                            _remasteredMusic = int.Parse(value) != 0;
                             break;
                         
                         // Camera settings

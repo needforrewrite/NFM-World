@@ -15,6 +15,7 @@ nlaps(4)
 
 soundtrack(nfm2,stage12.radq)
 soundtrackfreqmul(1.01)
+soundtrackremaster(nfm2,stage12remastered.mp3)
 
 set(47,0,0,0)p
 set(10,0,5600,0)p
