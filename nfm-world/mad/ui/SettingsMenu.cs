@@ -515,6 +515,7 @@ public class SettingsMenu(Program game)
                 cfgWriter.WriteLine($"audio_master {_masterVolume.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"audio_music {_musicVolume.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"audio_effects {_effectsVolume.ToString("F2", CultureInfo.InvariantCulture)}");
+                cfgWriter.WriteLine($"audio_remaster {(_remasteredMusic ? 1 : 0)}");
                 cfgWriter.WriteLine();
                 
                 // Camera settings
@@ -619,6 +620,9 @@ public class SettingsMenu(Program game)
                             break;
                         case "audio_effects":
                             _effectsVolume = float.Parse(value, CultureInfo.InvariantCulture);
+                            break;
+                        case "audio_remaster":
+                            _remasteredMusic = int.Parse(value) != 0;
                             break;
                         
                         // Camera settings
