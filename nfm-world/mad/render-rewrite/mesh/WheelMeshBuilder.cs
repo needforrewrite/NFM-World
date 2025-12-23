@@ -41,14 +41,14 @@ public class WheelMeshBuilder
             }
         }
 
-        Make(_planes, 0, 0, 0, wheelDef.Rotates, wheelDef.Width, wheelDef.Height);
+        Make(_planes, 0, 0, 0, wheelDef.Rotates, (float)wheelDef.Width, (float)wheelDef.Height);
     }
 
     public Mesh BuildMesh(GraphicsDevice graphicsDevice, Transform parent)
     {
         return new Mesh(graphicsDevice, new Rad3d(_planes.ToArray(), true), "wheelMesh")
         {
-            Position = _wheelDef.Position,
+            Position = (Vector3)_wheelDef.Position,
             Parent = parent
         };
     }

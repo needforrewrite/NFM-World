@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Runtime.CompilerServices;
+using SoftFloat;
 using Stride.Core.Mathematics;
 
 namespace NFMWorld.Util;
@@ -217,6 +218,11 @@ public static class UMath
     }
 
     public static int Py(int x1, int x2, int y1, int y2)
+    {
+        return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
+    }
+
+    public static sfloat Py(sfloat x1, sfloat x2, sfloat y1, sfloat y2)
     {
         return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2);
     }

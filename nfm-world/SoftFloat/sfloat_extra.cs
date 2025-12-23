@@ -96,4 +96,59 @@ public partial struct sfloat
     {
         return libm.hypotf(a, b);
     }
+
+    public static sfloat Clamp(sfloat value, sfloat min, sfloat max)
+    {
+        if (value < min) return min;
+        if (value > max) return max;
+        return value;
+    }
+    
+    public static bool WithinEpsilon(sfloat floatA, sfloat floatB)
+    {
+        return Abs(floatA - floatB) < MachineEpsilonFloat;
+    }
+    
+    private static readonly sfloat MachineEpsilonFloat = GetMachineEpsilonFloat();
+
+    /// <summary>
+    /// Find the current machine's Epsilon for the float data type.
+    /// (That is, the largest float, e,  where e == 0.0f is true.)
+    /// </summary>
+    private static sfloat GetMachineEpsilonFloat()
+    {
+        sfloat machineEpsilon = (sfloat)1.0f;
+        sfloat comparison;
+
+        /* Keep halving the working value of machineEpsilon until we get a number that
+         * when added to 1.0f will still evaluate as equal to 1.0f.
+         */
+        do
+        {
+            machineEpsilon *= (sfloat)0.5f;
+            comparison = (sfloat)1.0f + machineEpsilon;
+        }
+        while (comparison > (sfloat)1.0f);
+
+        return machineEpsilon;
+    }
+    /// <summary>
+    /// Linearly interpolates between two values.
+    /// </summary>
+    /// <param name="value1">Source value.</param>
+    /// <param name="value2">Source value.</param>
+    /// <param name="amount">
+    /// Value between 0 and 1 indicating the weight of value2.
+    /// </param>
+    /// <returns>Interpolated value.</returns>
+    /// <remarks>
+    /// This method performs the linear interpolation based on the following formula.
+    /// <c>value1 + (value2 - value1) * amount</c>
+    /// Passing amount a value of 0 will cause value1 to be returned, a value of 1 will
+    /// cause value2 to be returned.
+    /// </remarks>
+    public static sfloat Lerp(sfloat value1, sfloat value2, sfloat amount)
+    {
+        return value1 + (value2 - value1) * amount;
+    }
 }

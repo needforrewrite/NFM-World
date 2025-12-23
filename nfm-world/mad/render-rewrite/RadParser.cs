@@ -14,7 +14,7 @@ public class RadParser
     private int _npoints = 0;
     private bool _stonecold;
     private bool _noOutline;
-    private float idiv = 1, iwid = 1, scaleX = 1, scaleY = 1, scaleZ = 1;
+    private sfloat idiv = (sfloat)1f, iwid = (sfloat)1f, scaleX = (sfloat)1f, scaleY = (sfloat)1f, scaleZ = (sfloat)1f;
     
     private Dictionary<Color3, int> _colors = new();
     private CarStats _stats = new();
@@ -67,9 +67,9 @@ public class RadParser
 
         // reposition car so that ground is at y=0 and the wheel x and z are equidistant from the origin
         // this fixes masheen bouncing on the big ramp
-        float groundTranslation = float.MaxValue;
-        float wheelXTranslation = 0;
-        float wheelZTranslation = 0;
+        sfloat groundTranslation = sfloat.MaxValue;
+        sfloat wheelXTranslation = 0;
+        sfloat wheelZTranslation = 0;
         for (var i = 0; i < 4; i++)
         {
             var wheel = rad3d.Wheels[i];
@@ -83,8 +83,8 @@ public class RadParser
             wheelZTranslation += wheel.Position.Z;
         }
 
-        wheelXTranslation /= 4f;
-        wheelZTranslation /= 4f;
+        wheelXTranslation /= (sfloat)4f;
+        wheelZTranslation /= (sfloat)4f;
         
         // maxine: this code is incredibly crucial!
         // in theory we should be moving the car to the wheel center, because otherwise the car drifts off of its center
@@ -97,7 +97,7 @@ public class RadParser
             var wheel = rad3d.Wheels[i];
             rad3d.Wheels[i] = wheel with
             {
-                Position = new Vector3(
+                Position = new SoftVector3(
                     wheel.Position.X - (wheelXTranslation),
                     wheel.Position.Y,// - (groundTranslation),
                     wheel.Position.Z - (wheelZTranslation)
@@ -112,9 +112,9 @@ public class RadParser
             {
                 var point = poly.Points[j];
                 poly.Points[j] = new Vector3(
-                    point.X - (wheelXTranslation),
-                    point.Y,// - (groundTranslation),
-                    point.Z - (wheelZTranslation)
+                    point.X - (float)(wheelXTranslation),
+                    point.Y,// - (float)(groundTranslation),
+                    point.Z - (float)(wheelZTranslation)
                 );
             }
         }
@@ -184,7 +184,7 @@ public class RadParser
         {
             var (cx, (cy, (cz, (rotates, (width, (height, _)))))) = BracketParser.GetNumbers(line, stackalloc int[6]);
             _wheels.Add(new Rad3dWheelDef(
-                Position: new Vector3(
+                Position: new SoftVector3(
                     cx * idiv * iwid * scaleX,
                     cy * idiv * scaleY,
                     cz * idiv * scaleZ
@@ -208,20 +208,20 @@ public class RadParser
             );
         }
 
-        else if (line.StartsWith("div(")) idiv = BracketParser.GetNumber<int>(line) / 10f;
-        else if (line.StartsWith("idiv(")) idiv = BracketParser.GetNumber<int>(line) / 100f;
-        else if (line.StartsWith("iwid(")) iwid = BracketParser.GetNumber<int>(line) / 100f;
-        else if (line.StartsWith("ScaleX(")) scaleX = BracketParser.GetNumber<int>(line) / 100f;
-        else if (line.StartsWith("ScaleY(")) scaleY = BracketParser.GetNumber<int>(line) / 100f;
-        else if (line.StartsWith("ScaleZ(")) scaleZ = BracketParser.GetNumber<int>(line) / 100f;
+        else if (line.StartsWith("div(")) idiv = BracketParser.GetNumber<int>(line) / (sfloat)10f;
+        else if (line.StartsWith("idiv(")) idiv = BracketParser.GetNumber<int>(line) / (sfloat)100f;
+        else if (line.StartsWith("iwid(")) iwid = BracketParser.GetNumber<int>(line) / (sfloat)100f;
+        else if (line.StartsWith("ScaleX(")) scaleX = BracketParser.GetNumber<int>(line) / (sfloat)100f;
+        else if (line.StartsWith("ScaleY(")) scaleY = BracketParser.GetNumber<int>(line) / (sfloat)100f;
+        else if (line.StartsWith("ScaleZ(")) scaleZ = BracketParser.GetNumber<int>(line) / (sfloat)100f;
 
         else if (line.StartsWith("<track>"))
         {
             _boxes.Add(new Rad3dBoxDef(
                 Xy: 0,
                 Zy: 0,
-                Radius: new Vector3(),
-                Translation: new Vector3(),
+                Radius: new SoftVector3(),
+                Translation: new SoftVector3(),
                 Skid: 0,
                 Damage: 0,
                 NotWall: false,
@@ -338,9 +338,9 @@ public class RadParser
             {
                 var position = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3]));
                 var transformedPoint = new Vector3(
-                    position.X * idiv * iwid * scaleX,
-                    position.Y * idiv * scaleY,
-                    position.Z * idiv * scaleZ
+                    position.X * (float)idiv * (float)iwid * (float)scaleX,
+                    position.Y * (float)idiv * (float)scaleY,
+                    position.Z * (float)idiv * (float)scaleZ
                 );
                 _points.Add(transformedPoint);
             }
@@ -390,14 +390,14 @@ public class RadParser
 public partial class SourceGenerationContext : JsonSerializerContext;
 
 public readonly record struct Rad3dWheelDef(
-    [property: JsonPropertyName("pos")] Vector3 Position,
+    [property: JsonPropertyName("pos")] SoftVector3 Position,
     [property: JsonPropertyName("rotates")] int Rotates,
-    [property: JsonPropertyName("w")] float Width,
-    [property: JsonPropertyName("h")] float Height
+    [property: JsonPropertyName("w")] sfloat Width,
+    [property: JsonPropertyName("h")] sfloat Height
 )
 {
-    public int Sparkat => (int) ((Height / 10f) * 24.0F);
-    public int Ground => (int) (Position.Y + 13.0F * (Height / 10f));
+    public int Sparkat { get; } = (int) sfloat.Round((Height / (sfloat)10f) * (sfloat)24.0F);
+    public int Ground { get; } = (int) sfloat.Round(Position.Y + (sfloat)13.0F * (Height / (sfloat)10f));
 }
 
 public readonly record struct Rad3dRimsDef(
@@ -407,10 +407,10 @@ public readonly record struct Rad3dRimsDef(
 );
 
 public readonly record struct Rad3dBoxDef(
-    [property: JsonPropertyName("xy")] float Xy,
-    [property: JsonPropertyName("zy")] float Zy,
-    [property: JsonPropertyName("rad")] Vector3 Radius,
-    [property: JsonPropertyName("t")] Vector3 Translation,
+    [property: JsonPropertyName("xy")] int Xy,
+    [property: JsonPropertyName("zy")] int Zy,
+    [property: JsonPropertyName("rad")] SoftVector3 Radius,
+    [property: JsonPropertyName("t")] SoftVector3 Translation,
     [property: JsonPropertyName("skid")] int Skid,
     [property: JsonPropertyName("damage")] int Damage,
     [property: JsonPropertyName("notwall")] bool NotWall,

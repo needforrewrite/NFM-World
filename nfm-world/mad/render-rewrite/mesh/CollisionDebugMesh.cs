@@ -34,12 +34,12 @@ public class CollisionDebugMesh : Transform
         for (var i = 0; i < boxes.Length; i++)
         {
             var box = boxes[i];
-            var center = box.Translation;
-            var radius = box.Radius;
+            var center = (Vector3)box.Translation;
+            var radius = (Vector3)box.Radius;
 
             // Define the 8 corners of the box
-            Span<Vector3> corners = new Vector3[8]
-            {
+            ReadOnlySpan<Vector3> corners = 
+            [
                 new(center.X - radius.X, center.Y - radius.Y, center.Z - radius.Z), // 0: left-bottom-back
                 new(center.X + radius.X, center.Y - radius.Y, center.Z - radius.Z), // 1: right-bottom-back
                 new(center.X + radius.X, center.Y + radius.Y, center.Z - radius.Z), // 2: right-top-back
@@ -48,7 +48,7 @@ public class CollisionDebugMesh : Transform
                 new(center.X + radius.X, center.Y - radius.Y, center.Z + radius.Z), // 5: right-bottom-front
                 new(center.X + radius.X, center.Y + radius.Y, center.Z + radius.Z), // 6: right-top-front
                 new(center.X - radius.X, center.Y + radius.Y, center.Z + radius.Z)  // 7: left-top-front
-            };
+            ];
 
             // Define the 12 edges as pairs of corner indices
             Span<(int, int, bool isVertical)> edges = new (int, int, bool)[12]
