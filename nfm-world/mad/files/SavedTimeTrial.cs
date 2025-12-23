@@ -2,9 +2,10 @@ using System.Collections;
 using NFMWorld.Mad;
 using NFMWorld.Util;
 
-public class TimeTrialDemoFile
+public class SavedTimeTrial
 {
     public UnlimitedArray<BitArray> TickInputs;
+    public UnlimitedArray<long> Splits;
 
     private string _carName;
     private string _stageName;
@@ -12,15 +13,16 @@ public class TimeTrialDemoFile
     private string _pathName;
     private string _dirName;
 
-    public TimeTrialDemoFile(string carName, string stageName)
+    public SavedTimeTrial(string carName, string stageName)
     {
         _carName = carName;
         _stageName = stageName;
 
         _dirName = "data/tts/" + stageName;
-        _pathName = "data/tts/" + stageName + "/" + carName + ".demo";
+        _pathName = "data/tts/" + stageName + "/" + carName + ".timetrial";
 
         TickInputs = [];
+        Splits = [];
     }
 
     public bool Load()
@@ -29,10 +31,18 @@ public class TimeTrialDemoFile
         {
             using(BinaryReader reader = new(System.IO.File.OpenRead(_pathName)))
             {
+                // read splits
+                int splitsCount = reader.ReadInt32();
+                for(int i = 0; i < splitsCount; i++)
+                {
+                    Splits[i] = reader.ReadInt32();
+                }
+
+                // read demo
                 int entry;
                 while(reader.BaseStream.Position < reader.BaseStream.Length)
                 {
-                    entry = entry = reader.ReadInt32();
+                    entry = reader.ReadInt32();
                     BitArray ba = new([entry]);
 
                     TickInputs[TickInputs.Count] = ba;
@@ -54,6 +64,14 @@ public class TimeTrialDemoFile
 
         using (BinaryWriter outputFile = new BinaryWriter(System.IO.File.OpenWrite(_pathName)))
         {
+            // write splits
+            outputFile.Write(Splits.Count);
+            foreach(int split in Splits)
+            {
+                outputFile.Write(split);
+            }
+
+            // write demo
             foreach (BitArray enc in TickInputs)
             {
                 outputFile.Write(NFMWorld.Util.UMath.getIntFromBitArray(enc));
@@ -61,7 +79,7 @@ public class TimeTrialDemoFile
         }
     }
 
-    public void Record(Control control)
+    public void RecordTick(Control control)
     {
         BitArray enc = control.Encode();
         TickInputs[TickInputs.Count] = enc;
@@ -71,5 +89,15 @@ public class TimeTrialDemoFile
     {
         if(tick >= TickInputs.Count) return null;
         return TickInputs[tick];
+    }
+
+    public void RecordSplit(long elapsed)
+    {
+        Splits[Splits.Count] = elapsed;
+    }
+
+    public long GetSplitDiff(SavedTimeTrial other, int sample)
+    {
+        return Splits[sample] - other.Splits[sample];
     }
 }

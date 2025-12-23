@@ -15,9 +15,6 @@ public class TimeTrialGamemode : BaseGamemode
         Finished
     }
 
-    private TimeTrialSplitsFile thisRunSplits = null!;
-    private TimeTrialSplitsFile? bestTimeSplits = null;
-
     private int _countdownTime = 3;
     // Amount of ticks until we decrease countdown by 1
     private int _innerCountdownTicks = 0;
@@ -30,10 +27,10 @@ public class TimeTrialGamemode : BaseGamemode
     private Stopwatch raceTimer = new Stopwatch();
 
     // demo playback and recording
-    private TimeTrialDemoFile? playbackInputs = null;
+    private SavedTimeTrial? bestTimeTrial = null;
     private int tick = 0;
     public static bool PlaybackOnReset = true;
-    private TimeTrialDemoFile recordedInputs = null!;
+    private SavedTimeTrial currentTimeTrial = null!;
 
     public override void Enter(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
     {
@@ -47,7 +44,7 @@ public class TimeTrialGamemode : BaseGamemode
         writtenData = false;
 
         // demos
-        playbackInputs = null;
+        bestTimeTrial = null;
         tick = 0;
 
         InRacePhase.playerCarIndex = 0;
@@ -57,10 +54,10 @@ public class TimeTrialGamemode : BaseGamemode
         carsInRace[1] = new InGameCar(carsInRace[0], 0, false);
         carsInRace[1].Sfx.Mute = true;
 
-        TimeTrialDemoFile bestTimeDemo = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Path);
+        SavedTimeTrial bestTimeDemo = new SavedTimeTrial(InRacePhase.playerCarName, currentStage.Path);
         if (bestTimeDemo.Load())
         {
-            playbackInputs = bestTimeDemo;
+            bestTimeTrial = bestTimeDemo;
             carsInRace[1].CarRef.alphaOverride = 0.05f;
         }
         else
@@ -68,17 +65,7 @@ public class TimeTrialGamemode : BaseGamemode
             carsInRace.RemoveAt(1);
         }
 
-        TimeTrialSplitsFile bestTimeSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Path);
-        if (bestTimeSplits.Load())
-        {
-            this.bestTimeSplits = bestTimeSplits;
-        } else
-        {
-            this.bestTimeSplits = null;
-        }
-
-        thisRunSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Path);
-        recordedInputs = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Path);
+        currentTimeTrial = new SavedTimeTrial(InRacePhase.playerCarName, currentStage.Path);
 
         foreach(CheckPoint cp in currentStage.checkpoints)
         {
@@ -122,14 +109,14 @@ public class TimeTrialGamemode : BaseGamemode
 
     private void TimeTrialInRace(UnlimitedArray<InGameCar> carsInRace, Stage currentStage)
     {
-        if (playbackInputs != null)
+        if (bestTimeTrial != null)
         {
-            carsInRace[1].Control.Decode(playbackInputs.GetTick(tick) ?? new BitArray([false, false, false, false, false]));
+            carsInRace[1].Control.Decode(bestTimeTrial.GetTick(tick) ?? new BitArray([false, false, false, false, false]));
 
             carsInRace[1].Drive();
         }
 
-        recordedInputs.Record(carsInRace[0].Control);
+        currentTimeTrial.RecordTick(carsInRace[0].Control);
         carsInRace[0].Drive();
 
         if (currentStage.checkpoints.Count == 0)
@@ -148,7 +135,7 @@ public class TimeTrialGamemode : BaseGamemode
                         Math.Abs(carsInRace[0].CarRef.Position.X - nextCheckpoint.Position.X) < 700 &&
                         Math.Abs(carsInRace[0].CarRef.Position.Y - nextCheckpoint.Position.Y + 350) < 450)
             {
-                thisRunSplits.Record(raceTimer.ElapsedMilliseconds);
+                currentTimeTrial.RecordSplit(raceTimer.ElapsedMilliseconds);
                 currentCheckpoint++;
                 SfxLibrary.checkpoint?.Play();
                 if (currentCheckpoint >= currentStage.checkpoints.Count)
@@ -165,7 +152,7 @@ public class TimeTrialGamemode : BaseGamemode
                         Math.Abs(carPos.Z - nextCheckpoint.Position.Z) < 700 &&
                         Math.Abs(carPos.Y - nextCheckpoint.Position.Y + 350) < 450)
             {
-                thisRunSplits.Record(raceTimer.ElapsedMilliseconds);
+                currentTimeTrial.RecordSplit(raceTimer.ElapsedMilliseconds);
                 SfxLibrary.checkpoint?.Play();
                 currentCheckpoint++;
                 if (currentCheckpoint >= currentStage.checkpoints.Count)
@@ -213,10 +200,9 @@ public class TimeTrialGamemode : BaseGamemode
         if (!writtenData)
         {
             writtenData = true;
-            if (bestTimeSplits == null || (bestTimeSplits != null && thisRunSplits.GetDiff(bestTimeSplits, thisRunSplits.Splits.Count - 1) < 0))
+            if (bestTimeTrial == null || (currentTimeTrial != null && currentTimeTrial.GetSplitDiff(bestTimeTrial, currentTimeTrial.Splits.Count - 1) < 0))
             {
-                thisRunSplits.Save();
-                recordedInputs.Save();
+                currentTimeTrial.Save();
             }
         }
 
@@ -265,9 +251,9 @@ public class TimeTrialGamemode : BaseGamemode
             G.DrawStringStroke($"Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 100, 200);
             G.DrawStringStroke($"Lap: {currentLap}/{currentStage.nlaps}", 100, 250);
 
-            if ((currentCheckpoint != 0 || currentLap != 1) && bestTimeSplits != null)
+            if ((currentCheckpoint != 0 || currentLap != 1) && bestTimeTrial != null)
             {
-                long diff = thisRunSplits.GetDiff(bestTimeSplits, thisRunSplits.Splits.Count - 1);
+                long diff = currentTimeTrial.GetSplitDiff(bestTimeTrial, currentTimeTrial.Splits.Count - 1);
                 if (diff > 0)
                 {
                     G.SetColor(new Color(255, 128, 128));
@@ -301,11 +287,11 @@ public class TimeTrialGamemode : BaseGamemode
             G.DrawStringStroke($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds:D2}", 300, 200);
             G.DrawStringStroke($"Press R to restart", 300, 250);
 
-            bool newBest = bestTimeSplits == null || (bestTimeSplits != null && thisRunSplits.GetDiff(bestTimeSplits, thisRunSplits.Splits.Count - 1) < 0);
+            bool newBest = bestTimeTrial == null || (bestTimeTrial != null && currentTimeTrial.GetSplitDiff(bestTimeTrial, currentTimeTrial.Splits.Count - 1) < 0);
 
-            if (bestTimeSplits != null || newBest)
+            if (bestTimeTrial != null || newBest)
             {
-                long bestTimeMs = Math.Min(thisRunSplits.Splits[^1], bestTimeSplits != null ? bestTimeSplits.Splits[^1] : long.MaxValue);
+                long bestTimeMs = Math.Min(currentTimeTrial.Splits[^1], bestTimeTrial != null ? bestTimeTrial.Splits[^1] : long.MaxValue);
 
                 TimeSpan t = TimeSpan.FromMilliseconds(bestTimeMs);
 
