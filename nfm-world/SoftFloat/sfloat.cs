@@ -52,8 +52,16 @@ namespace SoftFloat
         public static explicit operator sfloat(float value) => new(new Fixed64(value));
         public static explicit operator float(sfloat value) => value.Value.ToPreciseFloat();
         public static implicit operator sfloat(int value) => new(new Fixed64(value));
-        public static explicit operator int(sfloat value) => (int)value.Value;
-        
+
+        public static explicit operator int(sfloat value)
+        {
+            // truncation toward zero. regularly casting fixed64 to int doesn't do that
+            if (value.Value > Fixed64.Zero)
+                return value.Value.FloorToInt();
+            else
+                return value.Value.CeilToInt();
+        }
+
         public static sfloat operator +(sfloat a, sfloat b) => new(a.Value + b.Value);
         public static sfloat operator -(sfloat a, sfloat b) => new(a.Value - b.Value);
         public static sfloat operator *(sfloat a, sfloat b) => new(a.Value * b.Value);
