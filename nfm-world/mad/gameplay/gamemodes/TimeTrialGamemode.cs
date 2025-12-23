@@ -4,6 +4,7 @@ using NFMWorld.Mad;
 using NFMWorld.Util;
 using SoftFloat;
 using Stride.Core.Mathematics;
+using Color = NFMWorld.Util.Color;
 
 public class TimeTrialGamemode : BaseGamemode
 {
@@ -57,7 +58,7 @@ public class TimeTrialGamemode : BaseGamemode
         carsInRace[1] = new InGameCar(carsInRace[0], 0, false);
         carsInRace[1].Sfx.Mute = true;
 
-        TimeTrialDemoFile bestTimeDemo = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Name);
+        TimeTrialDemoFile bestTimeDemo = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Path);
         if (bestTimeDemo.Load())
         {
             playbackInputs = bestTimeDemo;
@@ -68,7 +69,7 @@ public class TimeTrialGamemode : BaseGamemode
             carsInRace.RemoveAt(1);
         }
 
-        TimeTrialSplitsFile bestTimeSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Name);
+        TimeTrialSplitsFile bestTimeSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Path);
         if (bestTimeSplits.Load())
         {
             this.bestTimeSplits = bestTimeSplits;
@@ -77,8 +78,8 @@ public class TimeTrialGamemode : BaseGamemode
             this.bestTimeSplits = null;
         }
 
-        thisRunSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Name);
-        recordedInputs = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Name);
+        thisRunSplits = new TimeTrialSplitsFile(InRacePhase.playerCarName, currentStage.Path);
+        recordedInputs = new TimeTrialDemoFile(InRacePhase.playerCarName, currentStage.Path);
 
         foreach(CheckPoint cp in currentStage.checkpoints)
         {
@@ -258,20 +259,23 @@ public class TimeTrialGamemode : BaseGamemode
     {
         if (_currentState == TimeTrialState.InProgress)
         {
-            G.SetColor(new NFMWorld.Util.Color(0, 0, 0));
+            G.SetColor(new Color(255, 255, 255));
             G.DrawString($"Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 100, 200);
             G.DrawString($"Lap: {currentLap}/{currentStage.nlaps}", 100, 250);
+            G.SetColor(new Color(0, 0, 0));
+            G.DrawStringStroke($"Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 100, 200);
+            G.DrawStringStroke($"Lap: {currentLap}/{currentStage.nlaps}", 100, 250);
 
             if ((currentCheckpoint != 0 || currentLap != 1) && bestTimeSplits != null)
             {
                 long diff = thisRunSplits.GetDiff(bestTimeSplits, thisRunSplits.Splits.Count - 1);
                 if (diff > 0)
                 {
-                    G.SetColor(new NFMWorld.Util.Color(255, 128, 128));
+                    G.SetColor(new Color(255, 128, 128));
                 }
                 else if (diff < 0)
                 {
-                    G.SetColor(new NFMWorld.Util.Color(128, 255, 128));
+                    G.SetColor(new Color(128, 255, 128));
                 }
 
                 long diffSeconds = Math.Abs(diff / 1000);
@@ -284,13 +288,19 @@ public class TimeTrialGamemode : BaseGamemode
         }
         else if (_currentState == TimeTrialState.Countdown)
         {
-            G.SetColor(new NFMWorld.Util.Color(0, 0, 0));
+            G.SetColor(new Color(255, 255, 255));
             G.DrawString($"Starting in {_countdownTime}", 400, 300);
+            G.SetColor(new Color(0, 0, 0));
+            G.DrawStringStroke($"Starting in {_countdownTime}", 400, 300);
         }
         else if (_currentState == TimeTrialState.Finished)
         {
-            G.SetColor(new NFMWorld.Util.Color(128, 255, 128));
+            G.SetColor(new Color(128, 255, 128));
             G.DrawString($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds:D2}", 300, 200);
+            G.DrawString($"Press R to restart", 300, 250);
+            G.SetColor(new Color(0, 0, 0));
+            G.DrawStringStroke($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds:D2}", 300, 200);
+            G.DrawStringStroke($"Press R to restart", 300, 250);
 
             bool newBest = bestTimeSplits == null || (bestTimeSplits != null && thisRunSplits.GetDiff(bestTimeSplits, thisRunSplits.Splits.Count - 1) < 0);
 
@@ -305,9 +315,11 @@ public class TimeTrialGamemode : BaseGamemode
                             t.Seconds,
                             t.Milliseconds);
 
+                G.SetColor(new Color(128, 255, 128));
                 G.DrawString("Best time: " + time, 300, 225);
+                G.SetColor(new Color(0, 0, 0));
+                G.DrawStringStroke("Best time: " + time, 300, 225);
             }
-            G.DrawString($"Press R to restart", 300, 250);
         }
     }
 }

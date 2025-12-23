@@ -482,8 +482,13 @@ public readonly record struct Color3(
                 0 => R,
                 1 => G,
                 2 => B,
-                _ => throw new IndexOutOfRangeException()
+                _ => ThrowIndexOutOfRangeException(index)
             };
+
+            static short ThrowIndexOutOfRangeException(int index)
+            {
+                throw new IndexOutOfRangeException($"Index was out of range. Must be between 0 and 2, inclusive. Received: {index}");
+            }
         }
     }
     

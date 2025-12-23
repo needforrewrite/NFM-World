@@ -150,7 +150,8 @@ public class InRacePhase : BasePhase
         G.DrawString($"Render: {Program._lastFrameTime}ms", 100, 100);
         G.DrawString($"Tick: {Program._lastTickTime}μs", 100, 120);
         G.DrawString($"Power: {CarsInRace[0]?.Mad?.Power:0.00}", 100, 140);
-        G.DrawString($"Ticks executed last frame: {Program._lastTickCount}", 100, 160);
+        G.DrawString($"Damage: {(float)(CarsInRace[0]?.Mad?.Hitmag ?? 0f)/(float)(CarsInRace[0]?.Stats.Maxmag ?? 0f) * 100f:0.00}%", 100, 160);
+        G.DrawString($"Ticks executed last frame: {Program._lastTickCount}", 100, 180);
 
         gamemode.Render(CarsInRace, CurrentStage, current_scene);
     }
