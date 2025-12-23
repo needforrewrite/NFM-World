@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
+    <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
     <ProjectReference Include="..\MonoGame.ImGuiNet\MonoGame.ImGuiNet\Monogame.ImGuiNet.csproj" />
     <ProjectReference Include="..\NvgSharp\src\NvgSharp.Text\NvgSharp.Text.FNA.Core.csproj" />
     <ProjectReference Include="..\NvgSharp\src\XNA\NvgSharp.FNA.Core.csproj" />

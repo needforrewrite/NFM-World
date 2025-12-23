@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Diagnostics;
+using Maxine.Extensions;
 using NFMWorld.Mad;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
@@ -123,7 +124,7 @@ public class TimeTrialGamemode : BaseGamemode
     {
         if (playbackInputs != null)
         {
-            carsInRace[1].Control.Decode(playbackInputs.GetTick(tick) ?? new BitArray([false, false, false, false, false]));
+            carsInRace[1].Control.Decode(playbackInputs.GetTick(tick) ?? Nibble<byte>.AllZeros);
 
             carsInRace[1].Drive();
         }

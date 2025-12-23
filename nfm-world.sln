@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facepunch.Steamworks.Win64"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Facepunch.Steamworks.Posix", "Facepunch.Steamworks\Facepunch.Steamworks\Facepunch.Steamworks.Posix.csproj", "{DF995AB1-0B32-4260-9FAD-71B2E9E9F421}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maxine.Extensions", "Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj", "{B460F126-844E-47D4-8C07-4C1DDC2ED856}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -78,5 +80,9 @@ Global
 		{DF995AB1-0B32-4260-9FAD-71B2E9E9F421}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DF995AB1-0B32-4260-9FAD-71B2E9E9F421}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DF995AB1-0B32-4260-9FAD-71B2E9E9F421}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B460F126-844E-47D4-8C07-4C1DDC2ED856}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B460F126-844E-47D4-8C07-4C1DDC2ED856}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B460F126-844E-47D4-8C07-4C1DDC2ED856}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B460F126-844E-47D4-8C07-4C1DDC2ED856}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

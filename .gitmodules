@@ -13,3 +13,6 @@
 [submodule "Facepunch.Steamworks"]
 	path = Facepunch.Steamworks
 	url = https://github.com/uwx/Facepunch.Steamworks
+[submodule "Maxine.Extensions"]
+	path = Maxine.Extensions
+	url = https://github.com/uwx/Maxine.Extensions

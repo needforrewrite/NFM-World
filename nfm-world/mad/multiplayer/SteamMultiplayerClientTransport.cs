@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Buffers;
+using Maxine.Extensions;
 using NFMWorld.Util;
 using Steamworks;
 using Steamworks.Data;
@@ -51,7 +52,7 @@ public class SteamMultiplayerClientTransport : IMultiplayerClientTransport, ICon
 
     public unsafe void OnMessage(IntPtr data, int size, long messageNum, long recvTime, int channel)
     {
-        using var messageData = new PointerMemoryManager<byte>((void*)data, size);
+        using var messageData = new UnmanagedMemoryManager<byte>((byte*)data, size);
 
         var memory = messageData.Memory;
         var opcode = (sbyte)memory.Span[0];
