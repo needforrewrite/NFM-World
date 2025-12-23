@@ -382,14 +382,26 @@ public class Mad
     internal static sfloat Sin(sfloat deg)
     {
         var sin = sfloat.Sin(deg * sfloat.DegToRad);
-        return sfloat.WithinEpsilon(sin, 0) ? 0 : sin;
+        if (sfloat.WithinEpsilon(sin, 0))
+            return 0;
+        if (sfloat.WithinEpsilon(sin, -1))
+            return -1;
+        if (sfloat.WithinEpsilon(sin, 1))
+            return 1;
+        return sin;
     }
         
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static sfloat Cos(sfloat deg)
     {
         var cos = sfloat.Cos(deg * sfloat.DegToRad);
-        return sfloat.WithinEpsilon(cos, 0) ? 0 : cos;
+        if (sfloat.WithinEpsilon(cos, 0))
+            return 0;
+        if (sfloat.WithinEpsilon(cos, -1))
+            return -1;
+        if (sfloat.WithinEpsilon(cos, 1))
+            return 1;
+        return cos;
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
