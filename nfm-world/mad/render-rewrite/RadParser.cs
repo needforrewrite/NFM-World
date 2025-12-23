@@ -459,11 +459,10 @@ public readonly record struct Rad3dPoly(
     [property: JsonPropertyName("p")] Vector3[] Points
 );
 
-[MessagePackObject]
 public readonly record struct Color3(
-    [property: JsonPropertyName("r"), Key(0)] short R,
-    [property: JsonPropertyName("g"), Key(1)] short G,
-    [property: JsonPropertyName("b"), Key(2)] short B
+    [property: JsonPropertyName("r")] short R,
+    [property: JsonPropertyName("g")] short G,
+    [property: JsonPropertyName("b")] short B
 )
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

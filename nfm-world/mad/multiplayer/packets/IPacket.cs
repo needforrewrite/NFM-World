@@ -1,21 +1,39 @@
 ﻿using System.Buffers;
 using MessagePack;
+using MessagePack.Formatters;
 using MessagePack.Resolvers;
-using NFMWorld.Util;
+using Microsoft.Xna.Framework;
+using Color = NFMWorld.Util.Color;
 
 namespace NFMWorld.Mad.packets;
 
 public interface IPacket;
 
+file static class MsgPackHelpers
+{
+    public static MessagePackSerializerOptions Options { get; } = MessagePackSerializerOptions.Standard
+        .WithSecurity(MessagePackSecurity.UntrustedData)
+        .WithResolver(CompositeResolver.Create([
+            new UnsafeUnmanagedStructFormatter<PlayerState>(100),
+            new UnsafeUnmanagedStructFormatter<Vector2>(101),
+            new UnsafeUnmanagedStructFormatter<Vector3>(102),
+            new UnsafeUnmanagedStructFormatter<Vector4>(103),
+            new UnsafeUnmanagedStructFormatter<Quaternion>(104),
+            new UnsafeUnmanagedStructFormatter<Matrix>(105),
+            new UnsafeUnmanagedStructFormatter<Color>(106),
+            new UnsafeUnmanagedStructFormatter<Color3>(107),
+            new UnsafeUnmanagedStructFormatter<AngleSingle>(108),
+        ], [
+            StandardResolver.Instance,
+            MsgPackResolver.Instance
+        ]));
+}
+
 public interface IReadableWritable<out TSelf>
 {
-    private static MessagePackSerializerOptions Options { get; } = MessagePackSerializerOptions.Standard
-        .WithSecurity(MessagePackSecurity.UntrustedData)
-        .WithResolver(CompositeResolver.Create(StandardResolver.Instance, MsgPackResolver.Instance));
-
     void Write<T>(T writer) where T : IBufferWriter<byte>
     {
-        MessagePackSerializer.Serialize<TSelf>(writer, (TSelf)this, Options);
+        MessagePackSerializer.Serialize<TSelf>(writer, (TSelf)this, MsgPackHelpers.Options);
     }
 
     public static virtual TSelf Read(ReadOnlyMemory<byte> data)

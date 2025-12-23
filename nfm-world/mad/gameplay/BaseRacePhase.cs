@@ -36,6 +36,8 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
     public UnlimitedArray<InGameCar> CarsInRace = [];
     public int playerCarIndex = 0;
     protected FollowCamera PlayerFollowCamera = new();
+
+    public bool spectating = false;
     
     // View modes
     public enum ViewMode
@@ -99,27 +101,35 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
         if (imguiWantsKeyboard) return;
         
         var bindings = SettingsMenu.Bindings;
-        
-        if (key == bindings.Accelerate)
+
+        if (!spectating)
         {
-            CarsInRace[playerCarIndex].Control.Up = true;
+            if (key == bindings.Accelerate)
+            {
+                CarsInRace[playerCarIndex].Control.Up = true;
+            }
+
+            if (key == bindings.Brake)
+            {
+                CarsInRace[playerCarIndex].Control.Down = true;
+            }
+
+            if (key == bindings.TurnRight)
+            {
+                CarsInRace[playerCarIndex].Control.Right = true;
+            }
+
+            if (key == bindings.TurnLeft)
+            {
+                CarsInRace[playerCarIndex].Control.Left = true;
+            }
+
+            if (key == bindings.Handbrake)
+            {
+                CarsInRace[playerCarIndex].Control.Handb = true;
+            }
         }
-        if (key == bindings.Brake)
-        {
-            CarsInRace[playerCarIndex].Control.Down = true;
-        }
-        if (key == bindings.TurnRight)
-        {
-            CarsInRace[playerCarIndex].Control.Right = true;
-        }
-        if (key == bindings.TurnLeft)
-        {
-            CarsInRace[playerCarIndex].Control.Left = true;
-        }
-        if (key == bindings.Handbrake)
-        {
-            CarsInRace[playerCarIndex].Control.Handb = true;
-        }
+
         if (key == bindings.Enter)
         {
             CarsInRace[playerCarIndex].Control.Enter = true;
@@ -169,7 +179,7 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
 
         var bindings = SettingsMenu.Bindings;
         
-        if (CarsInRace[playerCarIndex].Control.Multion < 2)
+        if (!spectating)
         {
             if (key == bindings.Accelerate)
             {
@@ -192,6 +202,7 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
                 CarsInRace[playerCarIndex].Control.Handb = false;
             }
         }
+
         if (key == Keys.Escape)
         {
             CarsInRace[playerCarIndex].Control.Exit = false;
