@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Util;
+using SoftFloat;
 using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad;
@@ -63,11 +64,11 @@ internal class Trackers
 
     internal static void LoadTracker(Mesh element)
     {
-        var xz = (int)MathF.Round(element.Rotation.Xz.Degrees);
+        var xz = (int)sfloat.Round(element.Rotation.Xz.DegreesSFloat);
         for (var i = 0; i < element.Boxes.Length; i++)
         {
-            Xy[Nt] = (int) MathF.Round(element.Boxes[i].Xy * UMath.Cos(xz) - element.Boxes[i].Zy * UMath.Sin(xz));
-            Zy[Nt] = (int) MathF.Round(element.Boxes[i].Zy * UMath.Cos(xz) + element.Boxes[i].Xy * UMath.Sin(xz));
+            Xy[Nt] = (int) sfloat.Round((sfloat)element.Boxes[i].Xy * Mad.Cos(xz) - (sfloat)element.Boxes[i].Zy * Mad.Sin(xz));
+            Zy[Nt] = (int) sfloat.Round((sfloat)element.Boxes[i].Zy * Mad.Cos(xz) + (sfloat)element.Boxes[i].Xy * Mad.Sin(xz));
             for (var c = 0; c < 3; c++)
             {
                 C[Nt][c] = (int) (element.Boxes[i].Color[c] + element.Boxes[i].Color[c] * (World.Snap[c] / 100.0F));
@@ -80,9 +81,9 @@ internal class Trackers
                     C[Nt][c] = 0;
                 }
             }
-            X[Nt] = (int) MathF.Round(element.Position.X + element.Boxes[i].Translation.X * UMath.Cos(xz) - element.Boxes[i].Translation.Z * UMath.Sin(xz));
-            Z[Nt] = (int) MathF.Round(element.Position.Z + element.Boxes[i].Translation.Z * UMath.Cos(xz) + element.Boxes[i].Translation.X * UMath.Sin(xz));
-            Y[Nt] = (int) MathF.Round(element.Position.Y + element.Boxes[i].Translation.Y);
+            X[Nt] = (int) sfloat.Round((sfloat)element.Position.X + (sfloat)element.Boxes[i].Translation.X * Mad.Cos(xz) - (sfloat)element.Boxes[i].Translation.Z * Mad.Sin(xz));
+            Z[Nt] = (int) sfloat.Round((sfloat)element.Position.Z + (sfloat)element.Boxes[i].Translation.Z * Mad.Cos(xz) + (sfloat)element.Boxes[i].Translation.X * Mad.Sin(xz));
+            Y[Nt] = (int) sfloat.Round((sfloat)element.Position.Y + (sfloat)element.Boxes[i].Translation.Y);
             Skd[Nt] = element.Boxes[i].Skid;
             Dam[Nt] = element.Boxes[i].Damage;
             Notwall[Nt] = element.Boxes[i].NotWall;
@@ -92,9 +93,9 @@ internal class Trackers
             {
                 xzAbs = 0;
             }
-            Radx[Nt] = (int) Math.Abs(element.Boxes[i].Radius.X * UMath.Cos(xzAbs) + element.Boxes[i].Radius.Z * UMath.Sin(xzAbs));
-            Radz[Nt] = (int) Math.Abs(element.Boxes[i].Radius.X * UMath.Sin(xzAbs) + element.Boxes[i].Radius.Z * UMath.Cos(xzAbs));
-            Rady[Nt] = (int) element.Boxes[i].Radius.Y;
+            Radx[Nt] = (int) sfloat.Round(sfloat.Abs((sfloat)element.Boxes[i].Radius.X * Mad.Cos(xzAbs) + (sfloat)element.Boxes[i].Radius.Z * Mad.Sin(xzAbs)));
+            Radz[Nt] = (int) sfloat.Round(sfloat.Abs((sfloat)element.Boxes[i].Radius.X * Mad.Sin(xzAbs) + (sfloat)element.Boxes[i].Radius.Z * Mad.Cos(xzAbs)));
+            Rady[Nt] = (int) sfloat.Round((sfloat)element.Boxes[i].Radius.Y);
             Nt++;
         }
     }

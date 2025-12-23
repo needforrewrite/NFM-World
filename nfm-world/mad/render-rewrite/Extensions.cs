@@ -26,6 +26,8 @@ public static class Extensions
 
     extension(AngleSingle angle)
     {
+        public sfloat DegreesSFloat => (sfloat)angle.Radians * sfloat.RadToDeg;
+        
         public static AngleSingle FromRadians(float radians) => Unsafe.As<float, AngleSingle>(ref radians);
 
         public static AngleSingle FromDegrees(float degrees)

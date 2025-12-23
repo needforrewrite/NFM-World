@@ -25,17 +25,17 @@ public class ContO
     }
     public sfloat Xz 
     {
-        get => (sfloat)_mesh.Rotation.Xz.Degrees;
+        get => _mesh.Rotation.Xz.DegreesSFloat;
         set => _mesh.Rotation = _mesh.Rotation with { Xz = AngleSingle.FromDegrees(value) };
     }
     public sfloat Xy 
     {
-        get => (sfloat)_mesh.Rotation.Xy.Degrees;
+        get => _mesh.Rotation.Xy.DegreesSFloat;
         set => _mesh.Rotation = _mesh.Rotation with { Xy = AngleSingle.FromDegrees(value) };
     }
     public sfloat Zy 
     {
-        get => (sfloat)_mesh.Rotation.Zy.Degrees;
+        get => _mesh.Rotation.Zy.DegreesSFloat;
         set => _mesh.Rotation = _mesh.Rotation with { Zy = AngleSingle.FromDegrees(value) };
     }
 
@@ -44,18 +44,18 @@ public class ContO
     // wheel rotation
     public sfloat Wzy
     {
-        get => (sfloat)_mesh.TurningWheelAngle.Zy.Degrees;
+        get => _mesh.TurningWheelAngle.Zy.DegreesSFloat;
         set
         {
-            _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Zy = AngleSingle.FromDegrees((float)value) };
-            _mesh.WheelAngle = _mesh.WheelAngle with { Zy = AngleSingle.FromDegrees((float)value) };
+            _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Zy = AngleSingle.FromDegrees(value) };
+            _mesh.WheelAngle = _mesh.WheelAngle with { Zy = AngleSingle.FromDegrees(value) };
         }
     }
 
     public sfloat Wxz
     {
-        get => (sfloat)_mesh.TurningWheelAngle.Xz.Degrees;
-        set => _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Xz = AngleSingle.FromDegrees((float)value) };
+        get => _mesh.TurningWheelAngle.Xz.DegreesSFloat;
+        set => _mesh.TurningWheelAngle = _mesh.TurningWheelAngle with { Xz = AngleSingle.FromDegrees(value) };
     }
     
     // wheel position
