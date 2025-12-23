@@ -89,10 +89,15 @@ public class InRacePhase : BasePhase
 
         GameSparker.CurrentMusic?.Unload();
 
-        if(!CurrentStage.musicPath.IsNullOrEmpty())
+        if(!CurrentStage.musicPath.IsNullOrEmpty() || (GameSparker.UseRemasteredMusic && !CurrentStage.remasteredMusicPath.IsNullOrEmpty()))
         {
-            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{CurrentStage.musicPath}"), CurrentStage.musicTempoMul);
-            GameSparker.CurrentMusic.SetFreqMultiplier(CurrentStage.musicFreqMul);
+            // Dont shift pitch or tempo if using remastered
+            string path = GameSparker.UseRemasteredMusic ? CurrentStage.remasteredMusicPath : CurrentStage.musicPath;
+            double tempoMul = GameSparker.UseRemasteredMusic ? CurrentStage.musicTempoMul : 0d;
+            double freqMul = GameSparker.UseRemasteredMusic ? CurrentStage.musicFreqMul : 1d;
+
+            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{path}"), tempoMul);
+            GameSparker.CurrentMusic.SetFreqMultiplier(freqMul);
             GameSparker.CurrentMusic.SetVolume(IRadicalMusic.CurrentVolume);
             GameSparker.CurrentMusic.Play();   
         }

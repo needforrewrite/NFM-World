@@ -16,6 +16,7 @@ polys(false)
 soundtrack(nfm1,stage3.zipo)
 soundtrackfreqmul(0.94)
 soundtracktempomul(11.6)
+soundtrackremaster(nfm1,stage3remastered.mp3)
 
 soundtrack(nfm1,stage3.zipo)
 soundtrackfreqmul(0.94)

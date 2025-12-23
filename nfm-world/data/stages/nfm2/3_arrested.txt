@@ -12,6 +12,7 @@ fadefrom(5000)
 density(6)
 
 soundtrack(nfm2,stage3.radq)
+soundtrackremaster(nfm2,stage3remastered.mp3)
 
 nlaps(4)
 
