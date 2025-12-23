@@ -1125,15 +1125,6 @@ public class Mad
                 Scz[wheelid] = i27 - 200;
             }
             
-            if (sfloat.Abs(Scx[wheelid]) < (sfloat)0.5f)
-            {
-                Scx[wheelid] = 0;
-            }
-            if (sfloat.Abs(Scz[wheelid]) < (sfloat)0.5f)
-            {
-                Scz[wheelid] = 0;
-            }
-            
             FrameTrace.AddMessage($"Scx[{wheelid}]: {Scx[wheelid]:0.00}, Scz[{wheelid}]: {Scz[wheelid]:0.00}, Scy[{wheelid}]: {Scy[wheelid]:0.00}");
         }
 
@@ -1640,8 +1631,7 @@ public class Mad
             wheelx[3] - conto.Keyx[3] * Cos(conto.Xz) + xneg * conto.Keyz[3] * Sin(conto.Xz)) / (sfloat)4.0F
             + bottomy * Sin(Pxy) * Cos(conto.Xz) - bottomy * Sin(Pzy) * Sin(conto.Xz) + airx);
 
-        conto.Z = (
-            (wheelz[0] - xneg * conto.Keyz[0] * Cos(conto.Xz) - conto.Keyx[0] * Sin(conto.Xz)
+        conto.Z = ((wheelz[0] - xneg * conto.Keyz[0] * Cos(conto.Xz) - conto.Keyx[0] * Sin(conto.Xz)
             + wheelz[1] - xneg * conto.Keyz[1] * Cos(conto.Xz) - conto.Keyx[1] * Sin(conto.Xz)
             + wheelz[2] - xneg * conto.Keyz[2] * Cos(conto.Xz) - conto.Keyx[2] * Sin(conto.Xz)
             + wheelz[3] - xneg * conto.Keyz[3] * Cos(conto.Xz) - conto.Keyx[3] * Sin(conto.Xz)) / (sfloat)4.0F
