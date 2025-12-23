@@ -115,8 +115,10 @@ public class GameSparker
     public static void KeyPressed(Keys key)
     {
         DebugKeyStates[key] = true;
+
+        var bindings = SettingsMenu.Bindings;
         
-        if (key == Keys.Oemtilde)
+        if (key == bindings.ToggleDevConsole)
         {
             devConsole.Toggle();
         }
