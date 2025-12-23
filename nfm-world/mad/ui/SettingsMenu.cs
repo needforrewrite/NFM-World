@@ -59,6 +59,7 @@ public class SettingsMenu(Program game)
     private float _musicVolume = 0.8f;
     private float _effectsVolume = 0.9f;
     private bool _muteAll = false;
+    private bool _remasteredMusic = false;
 
     // Game settings (Camera)
     private float _fov = 90.0f;
@@ -154,6 +155,9 @@ public class SettingsMenu(Program game)
         ImGui.Spacing();
 
         ImGui.Checkbox("Mute All", ref _muteAll);
+        ImGui.Spacing();
+
+        ImGui.Checkbox("Use Remastered Music if Available", ref _remasteredMusic);
         ImGui.Spacing();
 
         ImGui.Text("Master Volume");
@@ -440,6 +444,7 @@ public class SettingsMenu(Program game)
             IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
             GameSparker.CurrentMusic?.SetVolume(_musicVolume * _masterVolume);
             IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
+            GameSparker.UseRemasteredMusic = _remasteredMusic;
         }
 
         // Apply camera settings

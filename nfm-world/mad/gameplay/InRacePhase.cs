@@ -91,10 +91,11 @@ public class InRacePhase : BasePhase
 
         if(!CurrentStage.musicPath.IsNullOrEmpty() || (GameSparker.UseRemasteredMusic && !CurrentStage.remasteredMusicPath.IsNullOrEmpty()))
         {
+            bool useRemastered = GameSparker.UseRemasteredMusic && !CurrentStage.remasteredMusicPath.IsNullOrEmpty();
             // Dont shift pitch or tempo if using remastered
-            string path = GameSparker.UseRemasteredMusic ? CurrentStage.remasteredMusicPath : CurrentStage.musicPath;
-            double tempoMul = GameSparker.UseRemasteredMusic ? CurrentStage.musicTempoMul : 0d;
-            double freqMul = GameSparker.UseRemasteredMusic ? CurrentStage.musicFreqMul : 1d;
+            string path = useRemastered ? CurrentStage.remasteredMusicPath : CurrentStage.musicPath;
+            double tempoMul = useRemastered ? CurrentStage.musicTempoMul : 0d;
+            double freqMul = useRemastered ? CurrentStage.musicFreqMul : 1d;
 
             GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{path}"), tempoMul);
             GameSparker.CurrentMusic.SetFreqMultiplier(freqMul);
