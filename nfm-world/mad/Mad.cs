@@ -1485,8 +1485,9 @@ public class Mad
             assistxz %= (fix64)90f;
             if (assistxz > (fix64)89.5f || assistxz < (fix64)0.5f)
             {
-                conto.Xz = (conto.Xz / (fix64)90.0F) * (fix64)90.0F;
+                conto.Xz = fix64.Round(conto.Xz / (fix64)90.0F) * (fix64)90.0F;
             }
+            FrameTrace.AddMessage($"assistxz: {assistxz:0.00}, conto.Xz: {conto.Xz:0.00}");
         }
 
         if (fix64.Abs(i_82) > fix64.Abs(i_81))
