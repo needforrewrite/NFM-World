@@ -12,7 +12,15 @@ name(The Beach Arcade Dream)
 
 nlaps(3)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
+
+soundtrack(nfm1,stage9.zipo)
+soundtrackfreqmul(1.01)
+
+soundtrack(nfm1,stage9.zipo)
+soundtrackfreqmul(1.01)
 
 set(10,0,0,0)p
 set(10,0,5600,0)p

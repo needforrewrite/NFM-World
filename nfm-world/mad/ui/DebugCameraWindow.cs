@@ -20,9 +20,9 @@ namespace NFMWorld.Mad.UI
             if (_isOpen)
             {
                 // init values from Medium
-                _fov = GetFovFromFocusPoint(Medium.FocusPoint);
-                _followY = Medium.FollowYOffset;
-                _followZ = Medium.FollowZOffset;
+                _fov = InRacePhase.camera.Fov;
+                _followY = InRacePhase.PlayerFollowCamera.FollowYOffset;
+                _followZ = InRacePhase.PlayerFollowCamera.FollowZOffset;
             }
         }
 
@@ -40,7 +40,7 @@ namespace NFMWorld.Mad.UI
                 ImGui.Text("Field of View:");
                 if (ImGui.SliderFloat("##FOV", ref _fov, 70.0f, 120.0f, "%.1f°"))
                 {
-                    Medium.FocusPoint = GetFocusPoint(_fov);
+                    InRacePhase.camera.Fov = _fov;
                 }
                 
                 ImGui.Spacing();
@@ -51,7 +51,7 @@ namespace NFMWorld.Mad.UI
                 ImGui.Text("Follow Y Offset:");
                 if (ImGui.SliderInt("##FollowY", ref _followY, -160, 500))
                 {
-                    Medium.FollowYOffset = _followY;
+                    InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
                 }
                 
                 ImGui.Spacing();
@@ -60,7 +60,7 @@ namespace NFMWorld.Mad.UI
                 ImGui.Text("Follow Z Offset:");
                 if (ImGui.SliderInt("##FollowZ", ref _followZ, -500, 500))
                 {
-                    Medium.FollowZOffset = _followZ;
+                    InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
                 }
                 
                 ImGui.Spacing();
@@ -73,27 +73,14 @@ namespace NFMWorld.Mad.UI
                     _fov = 90.0f;
                     _followY = 0;
                     _followZ = 0;
-                    Medium.FocusPoint = GetFocusPoint(_fov);
-                    Medium.FollowYOffset = _followY;
-                    Medium.FollowZOffset = _followZ;
+                    InRacePhase.camera.Fov = _fov;
+                    InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
+                    InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
                 }
             }
             ImGui.End();
             
             _isOpen = isOpen;
-        }
-        
-        private float GetFovFromFocusPoint(int focusPoint)
-        {
-            if (Medium.Cx == 0) return 90.0f;
-            float tanValue = (float)focusPoint / Medium.Cx;
-            float halfAngle = MathF.Atan(tanValue) * (180.0f / MathF.PI);
-            return 180.0f - (halfAngle * 2.0f);
-        }
-        
-        private int GetFocusPoint(float fov)
-        {
-            return (int)MathF.Round(Medium.Cx * MathF.Tan(MathF.Abs(180 - fov) * 0.5f * (MathF.PI / 180)));
         }
     }
 }

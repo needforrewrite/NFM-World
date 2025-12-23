@@ -1,13 +1,27 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using NFMWorld.Mad.Interp;
 using NFMWorld.Util;
+using ImGuiNET;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Stride.Core.Mathematics;
+using Path = System.IO.Path;
 using NFMWorld.Mad.UI;
+using NFMWorld.SkiaDriver;
+using NFMWorld.DriverInterface;
 
 namespace NFMWorld.Mad;
 
 public class GameSparker
 {
-    public static readonly float PHYSICS_MULTIPLIER = 21.4f/63f;
+    public const float OriginalTps = 21.4f;
+    public const float TargetTps = 63f;
+    public const int OriginalTicksPerNewTick = 3;
+    public static Program _game;
+    public static GraphicsDevice _graphicsDevice;
+    public const float PHYSICS_MULTIPLIER = OriginalTps/TargetTps;
 
     public static readonly string version = GetVersionString();
 
@@ -34,24 +48,42 @@ public class GameSparker
         return "NFM-World dev";
     }
 
-    public enum GameState
+    public static BasePhase CurrentPhase
     {
-        Menu,
-        InGame
+        get;
+        set
+        {
+            // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
+            field?.Exit();
+            field = value;
+            value.Enter();
+        }
     }
 
-    public static GameState CurrentState = GameState.Menu;
-    public static MainMenu? MainMenu = null;
+    public static IRadicalMusic? CurrentMusic;
+
+    public static MainMenuPhase? MainMenu;
+    public static InRacePhase? InRace;
     public static MessageWindow MessageWindow = new();
-    public static SettingsMenu SettingsMenu = new();
+    public static ModelEditorPhase? ModelEditor;
+    //public static StageEditorPhase? StageEditor;
 
-    private static MicroStopwatch timer = null!;
-    public static UnlimitedArray<ContO> cars = null!;
-    public static UnlimitedArray<ContO> stage_parts = null!;
+    private static DirectionalLight light;
     
-    public static Stage current_stage = null!;
-
+    private static MicroStopwatch timer;
+    public static UnlimitedArray<Car> cars;
+    public static UnlimitedArray<Car> vendor_cars;
+    public static UnlimitedArray<Car> user_cars;
+    public static UnlimitedArray<Mesh> stage_parts;
+    public static UnlimitedArray<Mesh> vendor_stage_parts;
+    public static UnlimitedArray<Mesh> user_stage_parts;
+    public static Mesh error_mesh;
+    
+    public static bool devRenderTrackers = false;
+    
     public static DevConsole devConsole = new();
+
+    public static SettingsMenu SettingsMenu;
 
     public static readonly string[] CarRads = {
         "2000tornados", "formula7", "canyenaro", "lescrab", "nimi", "maxrevenge", "leadoxide", "koolkat", "drifter",
@@ -67,22 +99,16 @@ public class GameSparker
         "tree5", "tree6", "tree7", "tree8", "cac1", "cac2", "cac3", "8sroad", "8soffroad"
     };
 
-    public static DevConsoleWriter Writer = null!;
+    public static DevConsoleWriter Writer;
 
-    // View modes
-    public enum ViewMode
+    static GameSparker()
     {
-        Follow,
-        Around,
-        Watch
+        var originalOut = Console.Out;
+        Writer = new DevConsoleWriter(devConsole, originalOut);
+        Console.SetOut(Writer);
     }
-    private static ViewMode currentViewMode = ViewMode.Follow;
-    /////////////////////////////////
 
-    public static UnlimitedArray<Car> cars_in_race = [];
-    public static int playerCarIndex = 0;
-    public static int playerCarID = 14;
-    public static int _stagePartCount = 0;
+    /////////////////////////////////
 
     public static Dictionary<Keys, bool> DebugKeyStates = new();
 
@@ -90,85 +116,9 @@ public class GameSparker
     {
         DebugKeyStates[key] = true;
         
-        // ideally it would be perfect if it was the tilde key, like in Source Engine games
-        if (key == Keys.F1)
+        if (key == Keys.Oemtilde)
         {
             devConsole.Toggle();
-            return;
-        }
-
-        if (CurrentState == GameState.Menu)
-        {
-            // Handle key capture for settings menu
-            if (SettingsMenu.IsOpen && SettingsMenu.IsCapturingKey())
-            {
-                SettingsMenu.HandleKeyCapture(key);
-            }
-            return;
-        }
-
-        if (!devConsole.IsOpen()) {
-            var bindings = SettingsMenu.Bindings;
-            
-            if (key == bindings.Accelerate)
-            {
-                cars_in_race[playerCarIndex].Control.Up = true;
-            }
-            if (key == bindings.Brake)
-            {
-                cars_in_race[playerCarIndex].Control.Down = true;
-            }
-            if (key == bindings.TurnRight)
-            {
-                cars_in_race[playerCarIndex].Control.Right = true;
-            }
-            if (key == bindings.TurnLeft)
-            {
-                cars_in_race[playerCarIndex].Control.Left = true;
-            }
-            if (key == bindings.Handbrake)
-            {
-                cars_in_race[playerCarIndex].Control.Handb = true;
-            }
-            if (key == bindings.Enter)
-            {
-                cars_in_race[playerCarIndex].Control.Enter = true;
-            }
-            if (key == bindings.LookBack)
-            {
-                cars_in_race[playerCarIndex].Control.Lookback = -1;
-            }
-            if (key == bindings.LookLeft)
-            {
-                cars_in_race[playerCarIndex].Control.Lookback = 3;
-            }
-            if (key == bindings.LookRight)
-            {
-                cars_in_race[playerCarIndex].Control.Lookback = 2;
-            }
-            if (key == bindings.ToggleMusic)
-            {
-                cars_in_race[playerCarIndex].Control.Mutem = !cars_in_race[playerCarIndex].Control.Mutem;
-            }
-
-            if (key == bindings.ToggleSFX)
-            {
-                cars_in_race[playerCarIndex].Control.Mutes = !cars_in_race[playerCarIndex].Control.Mutes;
-            }
-
-            if (key == bindings.ToggleArrace)
-            {
-                cars_in_race[playerCarIndex].Control.Arrace = !cars_in_race[playerCarIndex].Control.Arrace;
-            }
-
-            if (key == bindings.ToggleRadar)
-            {
-                cars_in_race[playerCarIndex].Control.Radar = !cars_in_race[playerCarIndex].Control.Radar;
-            }
-            if (key == bindings.CycleView)
-            {
-                currentViewMode = (ViewMode)(((int)currentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
-            }
         }
     }
 
@@ -176,44 +126,6 @@ public class GameSparker
     {
         DebugKeyStates[key] = false;
         
-        if (CurrentState == GameState.Menu)
-        {
-            return;
-        }
-        
-        var bindings = SettingsMenu.Bindings;
-        
-        if (cars_in_race[playerCarIndex].Control.Multion < 2)
-        {
-            if (key == bindings.Accelerate)
-            {
-                cars_in_race[playerCarIndex].Control.Up = false;
-            }
-            if (key == bindings.Brake)
-            {
-                cars_in_race[playerCarIndex].Control.Down = false;
-            }
-            if (key == bindings.TurnRight)
-            {
-                cars_in_race[playerCarIndex].Control.Right = false;
-            }
-            if (key == bindings.TurnLeft)
-            {
-                cars_in_race[playerCarIndex].Control.Left = false;
-            }
-            if (key == bindings.Handbrake)
-            {
-                cars_in_race[playerCarIndex].Control.Handb = false;
-            }
-        }
-        if (key == Keys.Escape)
-        {
-            cars_in_race[playerCarIndex].Control.Exit = false;
-        }
-        if (key == bindings.LookBack || key == bindings.LookLeft || key == bindings.LookRight)
-        {
-            cars_in_race[playerCarIndex].Control.Lookback = 0;
-        }
     }
 
     public static List<string> GetAvailableStages()
@@ -268,75 +180,137 @@ public class GameSparker
         return stages;
     }
 
-    public static int GetModel(string input, bool forCar = false)
+    public static (int Id, Car Car) GetCar(string name)
     {
-        // Combine all model arrays
-        string[][] allModels = new string[][]
-        {
-            forCar ? CarRads : StageRads
-        };
+        IReadOnlyList<Car>[] arrays = [cars, vendor_cars, user_cars];
 
-        int modelId = 0;
-
-        for (int i = 0; i < allModels.Length; i++)
+        var total = 0;
+        foreach (var t in arrays)
         {
-            for (int j = 0; j < allModels[i].Length; j++)
+            foreach (var car in t)
             {
-                if (string.Equals(input, allModels[i][j], StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(car.FileName, name, StringComparison.OrdinalIgnoreCase))
                 {
-                    int offset = 0;
-
-                    // Calculate offset based on previous arrays
-                    for (int k = 0; k < i; k++)
-                    {
-                        offset += allModels[k].Length;
-                    }
-
-                    modelId = j + offset;
-                    return modelId;
+                    return (total, car);
                 }
+
+                total++;
             }
         }
 
-        Debug.WriteLine("No results for GetModel");
-        return -1;
+        Debug.WriteLine("No results for GetCar");
+        return (-1, null!);
     }
 
-    public static void Load()
+    public static (int Id, Mesh Mesh) GetStagePart(string name)
     {
+        IReadOnlyList<Mesh>[] arrays = [stage_parts, vendor_stage_parts, user_stage_parts];
+
+        var total = 0;
+        foreach (var t in arrays)
+        {
+            foreach (var part in t)
+            {
+                if (string.Equals(part.FileName, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return (total, part);
+                }
+
+                total++;
+            }
+        }
+
+        Debug.WriteLine("No results for GetStagePart");
+        return (-1, null!);
+    }
+
+    public static string GetModelName(int index, bool forCar = false)
+    {
+        var models = forCar ? CarRads : StageRads;
+        
+        if (index >= 0 && index < models.Length)
+        {
+            return models[index];
+        }
+        
+        return "";
+    }
+
+    public static void Load(Program game)
+    {
+        _game = game;
+        _graphicsDevice = game.GraphicsDevice;
+
+        SfxLibrary.LoadSounds();
+
         timer = new MicroStopwatch();
         timer.Start();
-        new Medium();
-
-        //Medium.D();
-
-        //Medium.FocusPoint -= 100;
         
         cars = [];
+        vendor_cars = [];
+        user_cars = [];
+        
         stage_parts = [];
+        vendor_stage_parts = [];
+        user_stage_parts = [];
 
-        FileUtil.LoadFiles("./data/models/cars", CarRads, (ais, id) => {
-            cars[id] = new ContO(ais);
-            if (!cars[id].Shadow)
+        FileUtil.LoadFiles("./data/models/nfmm/cars", CarRads, (ais, id, fileName) => {
+            cars[id] = new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName);
+        });
+
+        FileUtil.LoadFiles("./data/models/nfmm/stage", StageRads, (ais, id, fileName) => {
+            stage_parts[id] = new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName);
+        });
+        
+        FileUtil.LoadFiles("./data/models/nfmw/cars", (ais, fileName) => {
+            vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName));
+        });
+        
+        FileUtil.LoadFiles("./data/models/nfmw/stage", (ais, fileName) => {
+            vendor_stage_parts.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName));
+        });
+        
+        FileUtil.LoadFiles("./data/models/user/cars", (ais, fileName) => {
+            try
             {
-                throw new Exception("car does not have a shadow");
+                user_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading user car '{fileName}': {ex.Message}\n{ex.StackTrace}");
+            }
+        });
+        
+        FileUtil.LoadFiles("./data/models/user/stage", (ais, fileName) => {
+            try
+            {
+                user_stage_parts.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), fileName));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading user stage part '{fileName}': {ex.Message}\n{ex.StackTrace}");
             }
         });
 
-        FileUtil.LoadFiles("./data/models/stage", StageRads, (ais, id) => {
-            stage_parts[id] = new ContO(ais);
-        });
+        error_mesh = new Mesh(
+            game.GraphicsDevice,
+            RadParser.ParseRad(Encoding.UTF8.GetString(System.IO.File.ReadAllBytes("./data/models/error.rad"))),
+            "error.rad"
+        );
 
         // init menu
-        CurrentState = GameState.Menu;
-        MainMenu = new MainMenu();
-        
-        // Initialize SettingsMenu writer
-        SettingsMenu.Writer = Writer;
-        
-        // load user config
+        SettingsMenu = new SettingsMenu(game);
+        MainMenu = new MainMenuPhase();
         SettingsMenu.LoadConfig();
 
+        InRace = new InRacePhase(_graphicsDevice);
+        CurrentPhase = MainMenu;
+
+        // Initialize ModelEditor after cars are loaded
+        ModelEditor = new ModelEditorPhase(_graphicsDevice);
+        
+        //StageEditor = new StageEditorPhase(_graphicsDevice);
+        
         for (var i = 0; i < StageRads.Length; i++) {
             if (stage_parts[i] == null) {
                 throw new Exception("No valid ContO (Stage Part) has been assigned to ID " + i + " (" + StageRads[i] + ")");
@@ -348,94 +322,45 @@ public class GameSparker
                 throw new Exception("No valid ContO (Vehicle) has been assigned to ID " + i + " (" + StageRads[i] + ")");
             }
         }
+    }
 
-        //devConsole.ExecuteCommand("ui_dev_cam");
+    public static void StartModelViewer()
+    {
+        CurrentPhase = ModelEditor;
+    }
+    
+    public static void ExitModelViewer()
+    {
+        CurrentPhase = MainMenu;
+        devRenderTrackers = false;
+    }
 
-        Medium.Fadfrom(5000);
+    public static void StartStageEditor()
+    {
+        //CurrentPhase = StageEditor;
+    }
+    
+    public static void ReturnToMainMenu()
+    {
+        CurrentPhase = MainMenu;
     }
 
     public static void StartGame()
     {
         // temp
-        CurrentState = GameState.InGame;
-        MainMenu = null;
+        CurrentPhase = InRace;
 
-        current_stage = new Stage("nfm2/15_dwm");
-        cars_in_race[playerCarIndex] = new Car(new Stat(14), 14, cars[14], 0, 0);
-        
         Console.WriteLine("Game started!");
     }
 
     public static void GameTick()
     {
-        // only tick game logic when actually in-game
-        if (CurrentState != GameState.InGame)
-        {
-            return;
-        }
-
-        cars_in_race[playerCarIndex].Drive();
-        switch (currentViewMode)
-        {
-            case ViewMode.Follow:
-                Medium.Follow(cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Cxz, cars_in_race[playerCarIndex].Control.Lookback);
-                break;
-            case ViewMode.Around:
-                Medium.Around(cars_in_race[playerCarIndex].Conto, true);
-                break;
-            case ViewMode.Watch:
-                Medium.Watch(cars_in_race[playerCarIndex].Conto, cars_in_race[playerCarIndex].Mad.Mxz);
-                break;
-        }
+        World.GameTick();
+        FrameTrace.ClearMessages();
     }
 
     public static void Render()
     {
-        // only render game when in-game state
-        if (CurrentState != GameState.InGame)
-        {
-            return;
-        }
-
-        Medium.D();
-
-        var renderQueue = new UnlimitedArray<ContO>(current_stage.stagePartCount);
-
-        var j = 0;
-        // process player cars
-        foreach (var car in cars_in_race)
-        {
-            if (car.Conto.Dist != 0)
-            {
-                renderQueue[j++] = car.Conto;
-            }
-            else if (car.Conto.Dist == 0)
-            {
-                car.Conto.D();
-            }
-        }
-        
-        // process stage elements
-        foreach (var contO in current_stage.pieces)
-        {
-            if (contO.Dist != 0)
-            {
-                renderQueue[j++] = contO;
-            }
-            else if (contO.Dist == 0)
-            {
-                contO.D();
-            }
-        }
-
-        // sort the render queue by distance in descending order
-        renderQueue.Sort(static (a, b) => b.Dist.CompareTo(a.Dist));
-
-        // render all objects in the sorted order
-        foreach (var obj in renderQueue)
-        {
-            obj.D();
-        }
     }
 
     public static void RenderImgui()
@@ -443,5 +368,9 @@ public class GameSparker
         devConsole.Render();
         MessageWindow.Render();
         SettingsMenu.Render();
+    }
+
+    public static void WindowSizeChanged(int width, int height)
+    {
     }
 }

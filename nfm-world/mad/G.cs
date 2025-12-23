@@ -9,6 +9,8 @@ public static class G
     
     public static void SetColor(Color c) => Graphics.SetColor(c);
 
+    public static void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos) => Graphics.SetLinearGradient(x, y, width, height, colors, colorPos);
+
     public static void FillPolygon(Span<int> x, Span<int> y, int n) => Graphics.FillPolygon(x, y, n);
 
     public static void DrawPolygon(Span<int> x, Span<int> y, int n) => Graphics.DrawPolygon(x, y, n);
@@ -34,6 +36,8 @@ public static class G
     public static IFontMetrics GetFontMetrics() => Graphics.GetFontMetrics();
 
     public static void DrawString(string text, int x, int y) => Graphics.DrawString(text, x, y);
+    
+    public static void DrawStringStroke(string text, int x, int y, int effectAmount = 1) => Graphics.DrawStringStroke(text, x, y, effectAmount);
 
     public static void FillOval(int p0, int p1, int p2, int p3) => Graphics.FillOval(p0, p1, p2, p3);
 

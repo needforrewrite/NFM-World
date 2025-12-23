@@ -6,28 +6,44 @@ using System.Runtime.CompilerServices;
 
 namespace NFMWorld.Util;
 
-public class UnlimitedArray<T> : IList<T>
+public class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
 {
     private T[] _items = [];
     private int _size = 0;
 
-    public int Count => _size;
-    public bool IsReadOnly => false;
+    public int Count
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => _size;
+    }
+
+    public bool IsReadOnly
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        get => false;
+    }
 
     public T this[int index]
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         get
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be non-negative.");
+                ThrowArgumentOutOfRange(index);
             if (index < _size)
                 return _items[index];
             return default!;
+
+            static void ThrowArgumentOutOfRange(int i)
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), i, "Index must be non-negative.");
+            }
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         set
         {
             if (index < 0)
-                throw new ArgumentOutOfRangeException(nameof(index), index, "Index must be non-negative.");
+                ThrowArgumentOutOfRange(index);
             if (index >= _items.Length)
             {
                 Grow(index + 1);
@@ -37,6 +53,11 @@ public class UnlimitedArray<T> : IList<T>
                 _size = index + 1;
             }
             _items[index] = value;
+
+            static void ThrowArgumentOutOfRange(int i)
+            {
+                throw new ArgumentOutOfRangeException(nameof(i), i, "Index must be non-negative.");
+            }
         }
     }
     
@@ -44,30 +65,43 @@ public class UnlimitedArray<T> : IList<T>
     {
         private int _index = -1;
 
-        public T Current => array[_index];
+        public T Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => array[_index];
+        }
 
-        object? IEnumerator.Current => array[_index];
-        
+        object? IEnumerator.Current
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => array[_index];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool MoveNext()
         {
             _index++;
             return _index < array._size;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Reset()
         {
             _index = -1;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public UnlimitedArray()
     {
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public UnlimitedArray(int capacity)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(capacity, 0);
@@ -82,21 +116,25 @@ public class UnlimitedArray<T> : IList<T>
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator()
     {
         return new Enumerator(this);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator<T> IEnumerable<T>.GetEnumerator()
     {
         return new Enumerator(this);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int EnsureCapacity(int capacity)
     {
         if (capacity < 0)

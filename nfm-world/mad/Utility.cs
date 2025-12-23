@@ -1,172 +1,72 @@
+using System.Globalization;
+using System.Text;
+
 namespace NFMWorld.Mad;
 
 public static class Utility
 {
-    /**
-     * Gets a value from a astring ain format:
-     * astring(value1,value2,value3...)
-     *
-     *
-     * @param astring The variable name (e.g: foo(bar) = foo)
-     * @param string262 The astring (single line) to get the value from
-     * @param i The position of the value (starting from 0)
-     * @return An integer containing the value
-     */
-    static int Getvalue(string astring, string string262, int i)
+    public static int GetValue(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
     {
-        var i263 = 0;
-        var string264 = "";
-        for (var i265 = astring.Length + 1; i265 < string262.Length; i265++)
+        line = line[(prefix.Length + 1)..];
+        var i = 0;
+        foreach (var range in line.SplitAny(',', ')'))
         {
-            var string266 = string262[i265];
-            if (string266 == ',' || string266 == ')')
+            if (i++ == index)
             {
-                i263++;
-                i265++;
-            }
-            if (i263 == i)
-            {
-                string264 = $"{string264}{string262[i265]}";
+                return (int)float.Parse(line[range], CultureInfo.InvariantCulture);
             }
         }
-        return (int) float.Parse(string264);
+
+        return (int)float.Parse("", CultureInfo.InvariantCulture);
     }
 
-    /**
-     * Gets a value from a astring like: a|b|c|0|1|2|
-     * @param astring the astring to get the value from
-     * @param i the value position
-     * @return the value at the position
-     */
-    public static int GetServerValue(string astring, int i)
+    public static int GetInt(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
     {
-        throw new NotImplementedException();
-//        int i437 = -1;
-//        try {
-//            int i438 = 0;
-//            int i439 = 0;
-//            int i440 = 0;
-//            String string441;
-//            String string442 = "";
-//            for (; i438 < astring.length() && i440 != 2; i438++) {
-//                string441 = "" + astring.charAt(i438);
-//                if (string441.equals("|")) {
-//                    i439++;
-//                    if (i440 == 1 || i439 > i) {
-//                        i440 = 2;
-//                    }
-//                } else if (i439 == i) {
-//                    string442 = "" + string442 + string441;
-//                    i440 = 1;
-//                }
-//            }
-//            if (string442.equals("")) {
-//                string442 = "-1";
-//            }
-//            i437 = Integer.parseInt(string442);
-//        } catch (Exception ignored) {
-//
-//        }
-//        return i437;
-    }
-
-    /**
-     * Turns a 3D XY coordinate into a 2D X perspective coordinate.
-     *
-     * @param i
-     *            The 3D X point
-     * @param i338
-     *            The 3D Y point
-     * @param m the Medium
-     * @return The 2D X coordinate.
-     */
-    static int Xs(int i, int i338)
-    {
-        if (i338 < Medium.Cz)
+        line = line[(prefix.Length + 1)..];
+        var i = 0;
+        foreach (var range in line.SplitAny(',', ')'))
         {
-            i338 = Medium.Cz;
-        }
-        return (i338 - Medium.FocusPoint) * (Medium.Cx - i) / i338 + i;
-    }
-
-    /**
-     * Turns a 3D ZY coordinate into a 2D Y perspective coordinate.
-     *
-     * @param i
-     *            The 3D Z point
-     * @param i339
-     *            The 3D Y point
-     * @param m the Medium
-     * @return The 2D Y coordinate.
-     */
-    static int Ys(int i, int i339)
-    {
-        if (i339 < Medium.Cz)
-        {
-            i339 = Medium.Cz;
-        }
-        return (i339 - Medium.FocusPoint) * (Medium.Cy - i) / i339 + i;
-    }
-
-    // alt
-
-    static int AltXs(int i, int i260)
-    {
-        if (i260 < 50)
-        {
-            i260 = 50;
-        }
-        return (i260 - Medium.FocusPoint) * (Medium.Cx - i) / i260 + i;
-    }
-
-    static int AltYs(int i, int i261)
-    {
-        if (i261 < 50)
-        {
-            i261 = 50;
-        }
-        return (i261 - Medium.FocusPoint) * (Medium.Cy - i) / i261 + i;
-    }
-
-    // medium
-
-    /*static public int mediumXs(int i, int i272) {
-        if (i272 < m.cz)
-            i272 = m.cz;
-        return (i272 - m.focusPoint) * (m.cx - i) / i272 + i;
-    }*/
-
-    static int MediumYs(int i, int i273)
-    {
-        if (i273 < 10)
-        {
-            i273 = 10;
-        }
-        return (i273 - Medium.FocusPoint) * (Medium.Cy - i) / i273 + i;
-    }
-
-    public static int Getint(string astring, string string262, int i)
-    {
-        var i263 = 0;
-        var string264 = "";
-        for (var i265 = astring.Length + 1; i265 < string262.Length; i265++)
-        {
-            var string266 = string262[i265];
-            if (string266 == ',' || string266 == ')')
+            if (i++ == index)
             {
-                i263++;
-                i265++;
-            }
-            if (i263 == i)
-            {
-                string264 = "" + string264 + string262[i265];
+                return int.Parse(line[range], CultureInfo.InvariantCulture);
             }
         }
-        return int.Parse(string264);
+
+        return int.Parse("", CultureInfo.InvariantCulture);
     }
 
-    private static readonly float Epsilon = 0.0000001F;
-    private static readonly double EpsilonDouble = 0.0000001D;
+    public static string GetString(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
+    {
+        line = line[(prefix.Length + 1)..];
+        var i = 0;
+        foreach (var range in line.SplitAny(',', ')'))
+        {
+            if (i++ == index)
+            {
+                return new string(line[range]);
+            }
+        }
+
+        return "";
+    }
+
+    public static float GetFloat(ReadOnlySpan<char> prefix, ReadOnlySpan<char> line, int index)
+    {
+        line = line[(prefix.Length + 1)..];
+        var i = 0;
+        foreach (var range in line.SplitAny(',', ')'))
+        {
+            if (i++ == index)
+            {
+                return float.Parse(line[range], CultureInfo.InvariantCulture);
+            }
+        }
+
+        return float.Parse("", CultureInfo.InvariantCulture);
+    }
+
+    private const float Epsilon = 0.0000001F;
+    private const double EpsilonDouble = 0.0000001D;
 
     static bool FEquals(float a, float b)
     {
@@ -185,125 +85,11 @@ public static class Utility
      * @param targetValue The value to check for
      * @return {@code true} if the value ais found, {@code false} otherwise
      */
-    static bool ArrayContains(int[] arr, int targetValue)
+    public static bool ArrayContains<T>(T[] arr, T targetValue)
     {
         foreach (var s in arr)
         {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(byte[] arr, byte targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(short[] arr, short targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(char[] arr, char targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(long[] arr, long targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(float[] arr, float targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if an array contains a value, <a href="http://www.programcreek.com/2014/04/check-if-array-contains-a-value-java/">very efficient</a>
-     *
-     * @param arr         The array to check against
-     * @param targetValue The value to check for
-     * @return {@code true} if the value ais found, {@code false} otherwise
-     */
-    public static bool ArrayContains(double[] arr, double targetValue)
-    {
-        foreach (var s in arr)
-        {
-            if (s == targetValue)
+            if (EqualityComparer<T>.Default.Equals(s, targetValue))
             {
                 return true;
             }
@@ -349,36 +135,16 @@ public static class Utility
         return Math.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    public static class ArrayUtilities
+    /**
+     * Reverses an array of elements.
+     * @param data The array to reverse.
+     */
+    public static void Reverse<T>(Span<T> data)
     {
-        /**
-         * Reverses an array of bytes.
-         * @param data The array to reverse.
-         */
-        public static void Reverse(byte[] data)
+        for (int left = 0, right = data.Length - 1; left < right; left++, right--)
         {
-            for (int left = 0, right = data.Length - 1; left < right; left++, right--)
-            {
-                // swap the values at the left and right indices
-                var temp = data[left];
-                data[left] = data[right];
-                data[right] = temp;
-            }
-        }
-
-        /**
-         * Reverses an array of elements.
-         * @param data The array to reverse.
-         */
-        public static void Reverse<T>(T[] data)
-        {
-            for (int left = 0, right = data.Length - 1; left < right; left++, right--)
-            {
-                // swap the values at the left and right indices
-                var temp = data[left];
-                data[left] = data[right];
-                data[right] = temp;
-            }
+            // swap the values at the left and right indices
+            (data[left], data[right]) = (data[right], data[left]);
         }
     }
 

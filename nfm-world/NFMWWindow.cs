@@ -1,30 +1,20 @@
-﻿﻿using System;
-using System.Collections.Frozen;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading;
+﻿using System.Collections.Frozen;
 using ManagedBass;
-using Silk.NET.GLFW;
-using Silk.NET.Input;
-using Silk.NET.Maths;
-using Silk.NET.SDL;
-using Silk.NET.Windowing;
-using SkiaSharp;
 using Color = NFMWorld.Util.Color;
 using Font = NFMWorld.Util.Font;
 using File = NFMWorld.Util.File;
 using Keys = NFMWorld.Util.Keys;
-using Window = Silk.NET.Windowing.Window;
 using NFMWorld.DriverInterface;
 using NFMWorld.SkiaDriver;
 using NFMWorld.Mad;
-using NImpeller;
-using Silk.NET.Input.Glfw;
-using Silk.NET.OpenGL;
-using Silk.NET.Windowing.Glfw;
-using Silk.NET.Windowing.Sdl;
 using System.Diagnostics;
+using ImGuiNET;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
+using MonoGame.ImGuiNet;
+using Environment = System.Environment;
+using NFMWorld.Util;
 
 namespace NFMWorld;
 
@@ -32,369 +22,508 @@ namespace NFMWorld;
 /// This sample demonstrates how to load a Direct2D1 bitmap from a file.
 /// This method will be part of a future version of SharpDX API.
 /// </summary>
-public unsafe class Program
+public unsafe class Program : Game
 {
-    private int _lastFrameTime;
-    private int _lastTickTime;
-    private readonly IWindow _window;
-    private IInputContext _input;
-    private NImpellerBackend _backend;
-    private readonly Glfw _glfw;
-    private ImpellerContext _impellerContext;
-    private int _fbo;
-    private ImpellerSurface? _surface;
+    public GraphicsDeviceManager _graphics;
+    public static SpriteBatch _spriteBatch { get; private set; }
+    public static Effect _polyShader { get; private set; }
+    public static Effect _lineShader { get; private set; }
+    public static Effect _skyShader { get; private set; }
+    public static Effect _groundShader { get; private set; }
+    public static Effect _mountainsShader { get; private set; }
+    public static RenderTarget2D[] shadowRenderTargets { get; private set; }
+    private ImGuiRenderer _imguiRenderer;
+
+    internal static int _lastFrameTime;
+    internal static int _lastTickTime;
+    internal static int _lastTickCount;
+    private KeyboardState oldKeyState;
+    private MouseState oldMouseState;
+    private NanoVGRenderer _nvg;
+    private TimeStep _tickTimeStep = new((1000f / GameSparker.TargetTps) / 1000f);
+    public const int NumCascades = 3;
+
     private static bool loaded;
     private const int FrameDelay = (int) (1000 / 21.3f);
-    private const float scale = 1.6f;
-    private ImGuiController? _imguiController;
+    
+    private static readonly Microsoft.Xna.Framework.Input.Keys[] XnaKeys = Enum.GetValues<Microsoft.Xna.Framework.Input.Keys>();
 
-    private static readonly FrozenDictionary<Key, Keys> KeyMapping = new Dictionary<Key, Keys>()
+    private static Keys TranslateKey(Microsoft.Xna.Framework.Input.Keys key)
     {
-        // [Key.Unknown] = Keys.Unknown,
-        [Key.Space] = Keys.Space,
-        // [Key.Apostrophe] = Keys.Apostrophe,
-        // [Key.Comma] = Keys.Comma,
-        // [Key.Minus] = Keys.Minus,
-        // [Key.Period] = Keys.Period,
-        // [Key.Slash] = Keys.Slash,
-        // [Key.Number0] = Keys.Zero,
-        [Key.D0] = Keys.D0,
-        [Key.Number1] = Keys.D1,
-        [Key.Number2] = Keys.D2,
-        [Key.Number3] = Keys.D3,
-        [Key.Number4] = Keys.D4,
-        [Key.Number5] = Keys.D5,
-        [Key.Number6] = Keys.D6,
-        [Key.Number7] = Keys.D7,
-        [Key.Number8] = Keys.D8,
-        [Key.Number9] = Keys.D9,
-        [Key.Semicolon] = Keys.OemSemicolon,
-        // [Key.Equal] = Keys.Equal,
-        [Key.A] = Keys.A,
-        [Key.B] = Keys.B,
-        [Key.C] = Keys.C,
-        [Key.D] = Keys.D,
-        [Key.E] = Keys.E,
-        [Key.F] = Keys.F,
-        [Key.G] = Keys.G,
-        [Key.H] = Keys.H,
-        [Key.I] = Keys.I,
-        [Key.J] = Keys.J,
-        [Key.K] = Keys.K,
-        [Key.L] = Keys.L,
-        [Key.M] = Keys.M,
-        [Key.N] = Keys.N,
-        [Key.O] = Keys.O,
-        [Key.P] = Keys.P,
-        [Key.Q] = Keys.Q,
-        [Key.R] = Keys.R,
-        [Key.S] = Keys.S,
-        [Key.T] = Keys.T,
-        [Key.U] = Keys.U,
-        [Key.V] = Keys.V,
-        [Key.W] = Keys.W,
-        [Key.X] = Keys.X,
-        [Key.Y] = Keys.Y,
-        [Key.Z] = Keys.Z,
-        // [Key.LeftBracket] = Keys.LeftBracket,
-        // [Key.BackSlash] = Keys.BackSlash,
-        // [Key.RightBracket] = Keys.RightBracket,
-        // [Key.GraveAccent] = Keys.GraveAccent,
-        // [Key.World1] = Keys.World1,
-        // [Key.World2] = Keys.World2,
-        [Key.Escape] = Keys.Escape,
-        [Key.Enter] = Keys.Enter,
-        [Key.Tab] = Keys.Tab,
-        [Key.Backspace] = Keys.Back,
-        [Key.Insert] = Keys.Insert,
-        [Key.Delete] = Keys.Delete,
-        [Key.Right] = Keys.Right,
-        [Key.Left] = Keys.Left,
-        [Key.Down] = Keys.Down,
-        [Key.Up] = Keys.Up,
-        [Key.PageUp] = Keys.PageUp,
-        [Key.PageDown] = Keys.PageDown,
-        [Key.Home] = Keys.Home,
-        [Key.End] = Keys.End,
-        [Key.CapsLock] = Keys.CapsLock,
-        [Key.ScrollLock] = Keys.Scroll,
-        [Key.NumLock] = Keys.NumLock,
-        [Key.PrintScreen] = Keys.PrintScreen,
-        [Key.Pause] = Keys.Pause,
-        [Key.F1] = Keys.F1,
-        [Key.F2] = Keys.F2,
-        [Key.F3] = Keys.F3,
-        [Key.F4] = Keys.F4,
-        [Key.F5] = Keys.F5,
-        [Key.F6] = Keys.F6,
-        [Key.F7] = Keys.F7,
-        [Key.F8] = Keys.F8,
-        [Key.F9] = Keys.F9,
-        [Key.F10] = Keys.F10,
-        [Key.F11] = Keys.F11,
-        [Key.F12] = Keys.F12,
-        [Key.F13] = Keys.F13,
-        [Key.F14] = Keys.F14,
-        [Key.F15] = Keys.F15,
-        [Key.F16] = Keys.F16,
-        [Key.F17] = Keys.F17,
-        [Key.F18] = Keys.F18,
-        [Key.F19] = Keys.F19,
-        [Key.F20] = Keys.F20,
-        [Key.F21] = Keys.F21,
-        [Key.F22] = Keys.F22,
-        [Key.F23] = Keys.F23,
-        [Key.F24] = Keys.F24,
-        // [Key.F25] = Keys.F25,
-        [Key.Keypad0] = Keys.NumPad0,
-        [Key.Keypad1] = Keys.NumPad1,
-        [Key.Keypad2] = Keys.NumPad2,
-        [Key.Keypad3] = Keys.NumPad3,
-        [Key.Keypad4] = Keys.NumPad4,
-        [Key.Keypad5] = Keys.NumPad5,
-        [Key.Keypad6] = Keys.NumPad6,
-        [Key.Keypad7] = Keys.NumPad7,
-        [Key.Keypad8] = Keys.NumPad8,
-        [Key.Keypad9] = Keys.NumPad9,
-        // [Key.KeypadDecimal] = Keys.NumPadDecimal,
-        // [Key.KeypadDivide] = Keys.NumPadDivide,
-        // [Key.KeypadMultiply] = Keys.NumPadMultiply,
-        // [Key.KeypadSubtract] = Keys.NumPadSubtract,
-        // [Key.KeypadAdd] = Keys.NumPadAdd,
-        // [Key.KeypadEnter] = Keys.NumPadEnter,
-        // [Key.KeypadEqual] = Keys.NumPadEqual,
-        [Key.ShiftLeft] = Keys.LShiftKey,
-        [Key.ControlLeft] = Keys.LControlKey,
-        [Key.AltLeft] = Keys.Alt,
-        // [Key.SuperLeft] = Keys.SuperLeft,
-        [Key.ShiftRight] = Keys.RShiftKey,
-        [Key.ControlRight] = Keys.RControlKey,
-        [Key.AltRight] = Keys.Alt,
-        // [Key.SuperRight] = Keys.SuperRight,
-        [Key.Menu] = Keys.Menu,
-    }.ToFrozenDictionary();
+        return key switch
+        {
+            Microsoft.Xna.Framework.Input.Keys.Space => Keys.Space,
+            Microsoft.Xna.Framework.Input.Keys.D0 => Keys.D0,
+            Microsoft.Xna.Framework.Input.Keys.D1 => Keys.D1,
+            Microsoft.Xna.Framework.Input.Keys.D2 => Keys.D2,
+            Microsoft.Xna.Framework.Input.Keys.D3 => Keys.D3,
+            Microsoft.Xna.Framework.Input.Keys.D4 => Keys.D4,
+            Microsoft.Xna.Framework.Input.Keys.D5 => Keys.D5,
+            Microsoft.Xna.Framework.Input.Keys.D6 => Keys.D6,
+            Microsoft.Xna.Framework.Input.Keys.D7 => Keys.D7,
+            Microsoft.Xna.Framework.Input.Keys.D8 => Keys.D8,
+            Microsoft.Xna.Framework.Input.Keys.D9 => Keys.D9,
+            Microsoft.Xna.Framework.Input.Keys.OemSemicolon => Keys.OemSemicolon,
+            Microsoft.Xna.Framework.Input.Keys.A => Keys.A,
+            Microsoft.Xna.Framework.Input.Keys.B => Keys.B,
+            Microsoft.Xna.Framework.Input.Keys.C => Keys.C,
+            Microsoft.Xna.Framework.Input.Keys.D => Keys.D,
+            Microsoft.Xna.Framework.Input.Keys.E => Keys.E,
+            Microsoft.Xna.Framework.Input.Keys.F => Keys.F,
+            Microsoft.Xna.Framework.Input.Keys.G => Keys.G,
+            Microsoft.Xna.Framework.Input.Keys.H => Keys.H,
+            Microsoft.Xna.Framework.Input.Keys.I => Keys.I,
+            Microsoft.Xna.Framework.Input.Keys.J => Keys.J,
+            Microsoft.Xna.Framework.Input.Keys.K => Keys.K,
+            Microsoft.Xna.Framework.Input.Keys.L => Keys.L,
+            Microsoft.Xna.Framework.Input.Keys.M => Keys.M,
+            Microsoft.Xna.Framework.Input.Keys.N => Keys.N,
+            Microsoft.Xna.Framework.Input.Keys.O => Keys.O,
+            Microsoft.Xna.Framework.Input.Keys.P => Keys.P,
+            Microsoft.Xna.Framework.Input.Keys.Q => Keys.Q,
+            Microsoft.Xna.Framework.Input.Keys.R => Keys.R,
+            Microsoft.Xna.Framework.Input.Keys.S => Keys.S,
+            Microsoft.Xna.Framework.Input.Keys.T => Keys.T,
+            Microsoft.Xna.Framework.Input.Keys.U => Keys.U,
+            Microsoft.Xna.Framework.Input.Keys.V => Keys.V,
+            Microsoft.Xna.Framework.Input.Keys.W => Keys.W,
+            Microsoft.Xna.Framework.Input.Keys.X => Keys.X,
+            Microsoft.Xna.Framework.Input.Keys.Y => Keys.Y,
+            Microsoft.Xna.Framework.Input.Keys.Z => Keys.Z,
+            Microsoft.Xna.Framework.Input.Keys.Escape => Keys.Escape,
+            Microsoft.Xna.Framework.Input.Keys.Enter => Keys.Enter,
+            Microsoft.Xna.Framework.Input.Keys.Tab => Keys.Tab,
+            Microsoft.Xna.Framework.Input.Keys.Back => Keys.Back,
+            Microsoft.Xna.Framework.Input.Keys.Insert => Keys.Insert,
+            Microsoft.Xna.Framework.Input.Keys.Delete => Keys.Delete,
+            Microsoft.Xna.Framework.Input.Keys.Right => Keys.Right,
+            Microsoft.Xna.Framework.Input.Keys.Left => Keys.Left,
+            Microsoft.Xna.Framework.Input.Keys.Down => Keys.Down,
+            Microsoft.Xna.Framework.Input.Keys.Up => Keys.Up,
+            Microsoft.Xna.Framework.Input.Keys.PageUp => Keys.PageUp,
+            Microsoft.Xna.Framework.Input.Keys.PageDown => Keys.PageDown,
+            Microsoft.Xna.Framework.Input.Keys.Home => Keys.Home,
+            Microsoft.Xna.Framework.Input.Keys.End => Keys.End,
+            Microsoft.Xna.Framework.Input.Keys.CapsLock => Keys.CapsLock,
+            Microsoft.Xna.Framework.Input.Keys.Scroll => Keys.Scroll,
+            Microsoft.Xna.Framework.Input.Keys.NumLock => Keys.NumLock,
+            Microsoft.Xna.Framework.Input.Keys.PrintScreen => Keys.PrintScreen,
+            Microsoft.Xna.Framework.Input.Keys.Pause => Keys.Pause,
+            Microsoft.Xna.Framework.Input.Keys.F1 => Keys.F1,
+            Microsoft.Xna.Framework.Input.Keys.F2 => Keys.F2,
+            Microsoft.Xna.Framework.Input.Keys.F3 => Keys.F3,
+            Microsoft.Xna.Framework.Input.Keys.F4 => Keys.F4,
+            Microsoft.Xna.Framework.Input.Keys.F5 => Keys.F5,
+            Microsoft.Xna.Framework.Input.Keys.F6 => Keys.F6,
+            Microsoft.Xna.Framework.Input.Keys.F7 => Keys.F7,
+            Microsoft.Xna.Framework.Input.Keys.F8 => Keys.F8,
+            Microsoft.Xna.Framework.Input.Keys.F9 => Keys.F9,
+            Microsoft.Xna.Framework.Input.Keys.F10 => Keys.F10,
+            Microsoft.Xna.Framework.Input.Keys.F11 => Keys.F11,
+            Microsoft.Xna.Framework.Input.Keys.F12 => Keys.F12,
+            Microsoft.Xna.Framework.Input.Keys.F13 => Keys.F13,
+            Microsoft.Xna.Framework.Input.Keys.F14 => Keys.F14,
+            Microsoft.Xna.Framework.Input.Keys.F15 => Keys.F15,
+            Microsoft.Xna.Framework.Input.Keys.F16 => Keys.F16,
+            Microsoft.Xna.Framework.Input.Keys.F17 => Keys.F17,
+            Microsoft.Xna.Framework.Input.Keys.F18 => Keys.F18,
+            Microsoft.Xna.Framework.Input.Keys.F19 => Keys.F19,
+            Microsoft.Xna.Framework.Input.Keys.F20 => Keys.F20,
+            Microsoft.Xna.Framework.Input.Keys.F21 => Keys.F21,
+            Microsoft.Xna.Framework.Input.Keys.F22 => Keys.F22,
+            Microsoft.Xna.Framework.Input.Keys.F23 => Keys.F23,
+            Microsoft.Xna.Framework.Input.Keys.F24 => Keys.F24,
+            Microsoft.Xna.Framework.Input.Keys.NumPad0 => Keys.NumPad0,
+            Microsoft.Xna.Framework.Input.Keys.NumPad1 => Keys.NumPad1,
+            Microsoft.Xna.Framework.Input.Keys.NumPad2 => Keys.NumPad2,
+            Microsoft.Xna.Framework.Input.Keys.NumPad3 => Keys.NumPad3,
+            Microsoft.Xna.Framework.Input.Keys.NumPad4 => Keys.NumPad4,
+            Microsoft.Xna.Framework.Input.Keys.NumPad5 => Keys.NumPad5,
+            Microsoft.Xna.Framework.Input.Keys.NumPad6 => Keys.NumPad6,
+            Microsoft.Xna.Framework.Input.Keys.NumPad7 => Keys.NumPad7,
+            Microsoft.Xna.Framework.Input.Keys.NumPad8 => Keys.NumPad8,
+            Microsoft.Xna.Framework.Input.Keys.NumPad9 => Keys.NumPad9,
+            Microsoft.Xna.Framework.Input.Keys.LeftShift => Keys.LShiftKey,
+            Microsoft.Xna.Framework.Input.Keys.LeftControl => Keys.LControlKey,
+            Microsoft.Xna.Framework.Input.Keys.LeftAlt => Keys.Alt,
+            Microsoft.Xna.Framework.Input.Keys.RightShift => Keys.RShiftKey,
+            Microsoft.Xna.Framework.Input.Keys.RightControl => Keys.RControlKey,
+            Microsoft.Xna.Framework.Input.Keys.RightAlt => Keys.Alt,
+            Microsoft.Xna.Framework.Input.Keys.Select => Keys.Select,
+            Microsoft.Xna.Framework.Input.Keys.Print => Keys.Print,
+            Microsoft.Xna.Framework.Input.Keys.Execute => Keys.Execute,
+            Microsoft.Xna.Framework.Input.Keys.Help => Keys.Help,
+            Microsoft.Xna.Framework.Input.Keys.LeftWindows => Keys.LWin,
+            Microsoft.Xna.Framework.Input.Keys.RightWindows => Keys.RWin,
+            Microsoft.Xna.Framework.Input.Keys.Apps => Keys.Apps,
+            Microsoft.Xna.Framework.Input.Keys.Sleep => Keys.Sleep,
+            Microsoft.Xna.Framework.Input.Keys.Multiply => Keys.Multiply,
+            Microsoft.Xna.Framework.Input.Keys.Add => Keys.Add,
+            Microsoft.Xna.Framework.Input.Keys.Separator => Keys.Separator,
+            Microsoft.Xna.Framework.Input.Keys.Subtract => Keys.Subtract,
+            Microsoft.Xna.Framework.Input.Keys.Decimal => Keys.Decimal,
+            Microsoft.Xna.Framework.Input.Keys.Divide => Keys.Divide,
+            Microsoft.Xna.Framework.Input.Keys.BrowserBack => Keys.BrowserBack,
+            Microsoft.Xna.Framework.Input.Keys.BrowserForward => Keys.BrowserForward,
+            Microsoft.Xna.Framework.Input.Keys.BrowserRefresh => Keys.BrowserRefresh,
+            Microsoft.Xna.Framework.Input.Keys.BrowserStop => Keys.BrowserStop,
+            Microsoft.Xna.Framework.Input.Keys.BrowserSearch => Keys.BrowserSearch,
+            Microsoft.Xna.Framework.Input.Keys.BrowserFavorites => Keys.BrowserFavorites,
+            Microsoft.Xna.Framework.Input.Keys.BrowserHome => Keys.BrowserHome,
+            Microsoft.Xna.Framework.Input.Keys.VolumeMute => Keys.VolumeMute,
+            Microsoft.Xna.Framework.Input.Keys.VolumeDown => Keys.VolumeDown,
+            Microsoft.Xna.Framework.Input.Keys.VolumeUp => Keys.VolumeUp,
+            Microsoft.Xna.Framework.Input.Keys.MediaNextTrack => Keys.MediaNextTrack,
+            Microsoft.Xna.Framework.Input.Keys.MediaPreviousTrack => Keys.MediaPreviousTrack,
+            Microsoft.Xna.Framework.Input.Keys.MediaStop => Keys.MediaStop,
+            Microsoft.Xna.Framework.Input.Keys.MediaPlayPause => Keys.MediaPlayPause,
+            Microsoft.Xna.Framework.Input.Keys.LaunchMail => Keys.LaunchMail,
+            Microsoft.Xna.Framework.Input.Keys.SelectMedia => Keys.SelectMedia,
+            Microsoft.Xna.Framework.Input.Keys.LaunchApplication1 => Keys.LaunchApplication1,
+            Microsoft.Xna.Framework.Input.Keys.LaunchApplication2 => Keys.LaunchApplication2,
+            Microsoft.Xna.Framework.Input.Keys.OemPlus => Keys.Oemplus,
+            Microsoft.Xna.Framework.Input.Keys.OemComma => Keys.Oemcomma,
+            Microsoft.Xna.Framework.Input.Keys.OemMinus => Keys.OemMinus,
+            Microsoft.Xna.Framework.Input.Keys.OemPeriod => Keys.OemPeriod,
+            Microsoft.Xna.Framework.Input.Keys.OemQuestion => Keys.OemQuestion,
+            Microsoft.Xna.Framework.Input.Keys.OemTilde => Keys.Oemtilde,
+            Microsoft.Xna.Framework.Input.Keys.OemOpenBrackets => Keys.OemOpenBrackets,
+            Microsoft.Xna.Framework.Input.Keys.OemPipe => Keys.OemPipe,
+            Microsoft.Xna.Framework.Input.Keys.OemCloseBrackets => Keys.OemCloseBrackets,
+            Microsoft.Xna.Framework.Input.Keys.OemQuotes => Keys.OemQuotes,
+            Microsoft.Xna.Framework.Input.Keys.Oem8 => Keys.Oem8,
+            Microsoft.Xna.Framework.Input.Keys.OemBackslash => Keys.OemBackslash,
+            Microsoft.Xna.Framework.Input.Keys.ProcessKey => Keys.ProcessKey,
+            Microsoft.Xna.Framework.Input.Keys.Attn => Keys.Attn,
+            Microsoft.Xna.Framework.Input.Keys.Crsel => Keys.Crsel,
+            Microsoft.Xna.Framework.Input.Keys.Exsel => Keys.Exsel,
+            Microsoft.Xna.Framework.Input.Keys.EraseEof => Keys.EraseEof,
+            Microsoft.Xna.Framework.Input.Keys.Play => Keys.Play,
+            Microsoft.Xna.Framework.Input.Keys.Zoom => Keys.Zoom,
+            Microsoft.Xna.Framework.Input.Keys.Pa1 => Keys.Pa1,
+            Microsoft.Xna.Framework.Input.Keys.OemClear => Keys.OemClear,
+            Microsoft.Xna.Framework.Input.Keys.ChatPadGreen => Keys.None,
+            Microsoft.Xna.Framework.Input.Keys.ChatPadOrange => Keys.None,
+            Microsoft.Xna.Framework.Input.Keys.ImeConvert => Keys.IMEConvert,
+            Microsoft.Xna.Framework.Input.Keys.ImeNoConvert => Keys.IMENonconvert,
+            Microsoft.Xna.Framework.Input.Keys.Kana => Keys.KanaMode,
+            Microsoft.Xna.Framework.Input.Keys.Kanji => Keys.KanjiMode,
+            Microsoft.Xna.Framework.Input.Keys.OemAuto => Keys.None,
+            Microsoft.Xna.Framework.Input.Keys.OemCopy => Keys.None,
+            Microsoft.Xna.Framework.Input.Keys.OemEnlW => Keys.None,
+            Microsoft.Xna.Framework.Input.Keys.None => Keys.None,
+            _ => Keys.None
+        };
+    }
 
     private Program()
     {
-        GlfwWindowing.RegisterPlatform();
-        SdlWindowing.RegisterPlatform();
-        GlfwInput.RegisterPlatform();
+        _graphics = new GraphicsDeviceManager(this);
+        _graphics.GraphicsProfile = GraphicsProfile.Reach;
+        Content.RootDirectory = "Content";
+        IsMouseVisible = true;
 
-        var options = WindowOptions.Default;
-        options.Size = new Vector2D<int>((int)(800*scale), (int)(450*scale));
-        options.Title = "Need For Madness: World";
-        options.UpdatesPerSecond = 63f;
-        options.FramesPerSecond = 60f;
-        options.VSync = false;
-        options.ShouldSwapAutomatically = false;
-        options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 0));
+        _graphics.SynchronizeWithVerticalRetrace = true;
+        IsFixedTimeStep = false;
+        TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / 63f);
+        _graphics.PreferredBackBufferWidth = 1280;
+        _graphics.PreferredBackBufferHeight = 720;
+        _graphics.PreferMultiSampling = false;
 
-        var sdl = Sdl.GetApi();
-        // sdl.SetHint("SDL_WINDOWS_DPI_AWARENESS"u8, "permonitorv2"u8);
-        // sdl.SetHint("SDL_WINDOWS_DPI_SCALING"u8, "1"u8);
-
-        _window = Window.Create(options);
-    
-        _window.Load += OnLoad;
-        _window.Render += OnRender;
-        _window.Update += OnUpdate;
-
-        _window.Run();
+        // IBackend.Backend = new DummyBackend();
+        Window.AllowUserResizing = true;
+        Window.ClientSizeChanged += (sender, args) =>
+        {
+            var viewport = new Viewport(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height);
+            GraphicsDevice.Viewport = viewport;
+            // _skia.RemakeRenderTarget(Window.ClientBounds.Width, Window.ClientBounds.Height);
+            GameSparker.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
+            GameSparker.CurrentPhase.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
+        };
     }
 
-    private void OnUpdate(double delta)
+    protected override void Update(GameTime gameTime)
     {
+        base.Update(gameTime);
+        FPSCounter.Update(gameTime);
+        
+        UpdateInput();
+        UpdateMouse();
+
         if (!loaded)
         {
             loaded = true;
-            var originalOut = Console.Out;
-            GameSparker.Writer = new DevConsoleWriter(GameSparker.devConsole, originalOut);
-            Console.SetOut(GameSparker.Writer);
-            GameSparker.Load();
         }
 
-        var tick = Stopwatch.StartNew();
+        var tick = new MicroStopwatch();
+        tick.Start();
 
-        GameSparker.GameTick();
+        var timesToTick = _tickTimeStep.Update(gameTime);
+        for (int i = 0; i < timesToTick; i++)
+        {
+            GameSparker.CurrentPhase.BeginGameTick();
+            GameSparker.GameTick();
+            GameSparker.CurrentPhase.GameTick();
+            GameSparker.CurrentPhase.EndGameTick();
+        }
 
-        _lastTickTime = (int)tick.ElapsedMilliseconds;
+        _lastTickCount = timesToTick;
+        _lastTickTime = (int)tick.ElapsedMicroseconds;
     }
 
-    private void OnLoad()
+    protected override void Initialize()
     {
-        
-        _impellerContext = ImpellerContext.CreateOpenGLESNew(name =>
-        {
-            return _window.GLContext!.TryGetProcAddress(name, out var addr) ? addr : IntPtr.Zero;
-        })!;
-        var gl = _window.CreateOpenGL();
-        gl.GetInteger(GLEnum.FramebufferBinding, out var fbo);
-        _fbo = fbo;
-
-        _surface = _impellerContext.SurfaceCreateWrappedFBONew(
-            (ulong)_fbo,
-            ImpellerPixelFormat.kImpellerPixelFormatRGBA8888,
-            new ImpellerISize(_window.Size.X, _window.Size.Y)
-        );
-        
-        _backend = (NImpellerBackend)(IBackend.Backend = new NImpellerBackend(_surface));
-        _backend.Ratio = new Vector2D<float>(scale);
+        _imguiRenderer = new ImGuiRenderer(this);
 
 #if USE_BASS
         Bass.Init();
 #endif
 
-        _input = _window.CreateInput();
+        oldKeyState = Keyboard.GetState();
+        oldMouseState = Mouse.GetState();
         
-        _imguiController = new ImGuiController(gl, _window, _input);
+        _nvg = new NanoVGRenderer(GraphicsDevice);
         
-        _input.ConnectionChanged += InputOnConnectionChanged;
+        base.Initialize();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+            foreach (var shadowRenderTarget in shadowRenderTargets)
+            {
+                shadowRenderTarget.Dispose();
+            }
+            _nvg.Dispose();
+            _imguiRenderer.Dispose();
+        }
+    }
+
+    protected override void LoadContent()
+    {
+        _polyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Poly.fxb"));
+        _lineShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Line.fxb"));
+        _skyShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Sky.fxb"));
+        _groundShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Ground.fxb"));
+        _mountainsShader = new Effect(GraphicsDevice, System.IO.File.ReadAllBytes("./data/shaders/Mountains.fxb"));
         
-        foreach (var gamepad in _input.Gamepads)
-        {
-            if (!gamepad.IsConnected) continue;
-            InputOnConnectionChanged(gamepad, gamepad.IsConnected);
-        }
+        GameSparker.Load(this);
 
-        foreach (var joystick in _input.Joysticks)
+        // Create floating point render target
+        shadowRenderTargets = new RenderTarget2D[3];
+        for (int i = NumCascades - 1; i >= 0; i--)
         {
-            if (!joystick.IsConnected) continue;
-            InputOnConnectionChanged(joystick, joystick.IsConnected);
+            shadowRenderTargets[i] = new RenderTarget2D(
+                GraphicsDevice,
+                2048,
+                2048,
+                false,
+                SurfaceFormat.Single,
+                DepthFormat.Depth24,
+                0,
+                RenderTargetUsage.DiscardContents);
         }
-
-        foreach (var keyboard in _input.Keyboards)
+        
+        // Clear all render targets AFTER creating them all
+        for (int i = 0; i < NumCascades; i++)
         {
-            if (!keyboard.IsConnected) continue;
-            InputOnConnectionChanged(keyboard, keyboard.IsConnected);
+            GraphicsDevice.SetRenderTarget(shadowRenderTargets[i]);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Microsoft.Xna.Framework.Color.White, 1.0f, 0);
+            GraphicsDevice.SetRenderTarget(null);
         }
+        
+        _imguiRenderer.RebuildFontAtlas();
 
-        foreach (var mouse in _input.Mice)
-        {
-            if (!mouse.IsConnected) continue;
-            InputOnConnectionChanged(mouse, mouse.IsConnected);
-        }
+        #region Imgui
+        
+        // Initialize ImGui
+        ImGui.CreateContext();
+        ImGui.StyleColorsDark();
 
+
+        // custom style
+        var style = ImGui.GetStyle();
+        
+        // Rounding 
+        style.WindowRounding = 4.0f;
+        style.FrameRounding = 6.0f;
+        style.GrabRounding = 4.0f;
+        style.PopupRounding = 6.0f;
+        style.ScrollbarRounding = 6.0f;
+        style.TabRounding = 4.0f;
+        
+        // Spacing and padding
+        style.WindowPadding = new System.Numerics.Vector2(12, 12);
+        style.FramePadding = new System.Numerics.Vector2(8, 4);
+        style.ItemSpacing = new System.Numerics.Vector2(8, 6);
+        
+        // Border
+        style.WindowBorderSize = 2.0f;
+        style.FrameBorderSize = 2.0f;
+
+        var colors = style.Colors;
+        
+        // Windows and backgrounds
+        colors[(int)ImGuiCol.WindowBg] = RGB(31, 26, 46, 0.95f);          // Dark purple
+        colors[(int)ImGuiCol.ChildBg] = RGB(26, 20, 38, 0.90f);           // Darker purple
+        colors[(int)ImGuiCol.PopupBg] = RGB(26, 20, 38, 0.95f);           // Darker purple
+        colors[(int)ImGuiCol.MenuBarBg] = RGB(38, 31, 56, 1.0f);          // Medium purple
+        
+        // Borders
+        colors[(int)ImGuiCol.Border] = RGB(230, 128, 26, 0.8f);           // Orange
+        colors[(int)ImGuiCol.BorderShadow] = RGB(0, 0, 0, 0.5f);          // Black shadow
+        
+        // Text
+        colors[(int)ImGuiCol.Text] = RGB(255, 191, 51, 1.0f);             // Light orange/yellow
+        colors[(int)ImGuiCol.TextDisabled] = RGB(153, 115, 38, 1.0f);     // Dimmed orange
+        
+        // Title bar
+        colors[(int)ImGuiCol.TitleBg] = RGB(38, 31, 64, 1.0f);            // Dark purple
+        colors[(int)ImGuiCol.TitleBgActive] = RGB(51, 38, 89, 1.0f);      // Medium purple
+        colors[(int)ImGuiCol.TitleBgCollapsed] = RGB(31, 26, 51, 0.75f);  // Very dark purple
+        
+        // Frames (inputs, etc)
+        colors[(int)ImGuiCol.FrameBg] = RGB(38, 31, 56, 0.9f);            // Medium purple
+        colors[(int)ImGuiCol.FrameBgHovered] = RGB(64, 51, 89, 1.0f);     // Lighter purple
+        colors[(int)ImGuiCol.FrameBgActive] = RGB(77, 64, 102, 1.0f);     // Even lighter purple
+        
+        // Buttons (dark with orange on hover)
+        colors[(int)ImGuiCol.Button] = RGB(38, 31, 64, 1.0f);             // Dark purple
+        colors[(int)ImGuiCol.ButtonHovered] = RGB(64, 51, 89, 1.0f);      // Lighter purple
+        colors[(int)ImGuiCol.ButtonActive] = RGB(128, 77, 3, 0.8f);       // Dark orange
+        
+        // Headers
+        colors[(int)ImGuiCol.Header] = RGB(51, 38, 77, 1.0f);             // Medium purple
+        colors[(int)ImGuiCol.HeaderHovered] = RGB(230, 128, 26, 0.6f);    // Orange
+        colors[(int)ImGuiCol.HeaderActive] = RGB(128, 77, 3, 0.8f);       // Dark orange
+        
+        // Tabs
+        colors[(int)ImGuiCol.Tab] = RGB(38, 31, 64, 1.0f);                     // Dark purple (inactive)
+        colors[(int)ImGuiCol.TabHovered] = RGB(230, 128, 26, 0.8f);            // Orange (hovered)
+        colors[(int)ImGuiCol.TabSelected] = RGB(128, 77, 3, 1.0f);           // Orange (active/selected)
+        colors[(int)ImGuiCol.TabDimmed] = RGB(31, 26, 51, 1.0f);               // Very dark purple (unfocused)
+        colors[(int)ImGuiCol.TabDimmedSelected] = RGB(128, 77, 26, 0.8f);      // Dimmed orange (unfocused selected)
+        colors[(int)ImGuiCol.TabDimmedSelectedOverline] = RGB(230, 128, 26, 1.0f); // Orange underline
+        colors[(int)ImGuiCol.TabSelectedOverline] = RGB(230, 128, 26, 1.0f);   // Orange underline (focused)
+        
+        // Checkmarks and sliders (orange)
+        colors[(int)ImGuiCol.CheckMark] = RGB(255, 179, 51, 1.0f);        // Light orange
+        colors[(int)ImGuiCol.SliderGrab] = RGB(230, 128, 26, 1.0f);       // Orange
+        colors[(int)ImGuiCol.SliderGrabActive] = RGB(255, 166, 51, 1.0f); // Lighter orange
+        
+        // Scrollbar
+        colors[(int)ImGuiCol.ScrollbarBg] = RGB(26, 20, 38, 0.9f);        // Dark purple
+        colors[(int)ImGuiCol.ScrollbarGrab] = RGB(64, 51, 89, 1.0f);      // Medium purple
+        colors[(int)ImGuiCol.ScrollbarGrabHovered] = RGB(89, 71, 115, 1.0f); // Lighter purple
+        colors[(int)ImGuiCol.ScrollbarGrabActive] = RGB(230, 128, 26, 1.0f); // Orange
+        
+        // Separators (orange)
+        colors[(int)ImGuiCol.Separator] = RGB(230, 128, 26, 0.5f);        // Orange
+        colors[(int)ImGuiCol.SeparatorHovered] = RGB(230, 128, 26, 0.8f); // Orange
+        colors[(int)ImGuiCol.SeparatorActive] = RGB(255, 153, 51, 1.0f);  // Lighter orange
+        
+        // Resize grip
+        colors[(int)ImGuiCol.ResizeGrip] = RGB(230, 128, 26, 0.3f);       // Orange
+        colors[(int)ImGuiCol.ResizeGripHovered] = RGB(230, 128, 26, 0.6f); // Orange
+        colors[(int)ImGuiCol.ResizeGripActive] = RGB(255, 153, 51, 1.0f);  // Lighter orange
+        style.FrameRounding = 3.0f;
+        style.WindowPadding = new System.Numerics.Vector2(10, 10);
+        style.FramePadding = new System.Numerics.Vector2(5, 3);
+        style.ItemSpacing = new System.Numerics.Vector2(8, 4);
+        
+        #endregion
+
+        return;
+
+        static System.Numerics.Vector4 RGB(int r, int g, int b, float a = 1.0f) => new(r / 255f, g / 255f, b / 255f, a);
     }
 
-    private void InputOnConnectionChanged(IInputDevice device, bool isConnected)
+    private void UpdateInput()
     {
-        if (device is IKeyboard keyboard)
+        var newState = Keyboard.GetState();
+        
+        foreach (var xnaKey in XnaKeys)
         {
-            if (isConnected)
+            var nfmKey = TranslateKey(xnaKey);
+            if (newState.IsKeyDown(xnaKey) && !oldKeyState.IsKeyDown(xnaKey))
             {
-                keyboard.KeyDown += KeyboardOnKeyDown;
-                keyboard.KeyUp += KeyboardOnKeyUp;
+                KeyDown(nfmKey);
             }
-            else
+            else if (newState.IsKeyUp(xnaKey) && !oldKeyState.IsKeyUp(xnaKey))
             {
-                keyboard.KeyDown -= KeyboardOnKeyDown;
-                keyboard.KeyUp -= KeyboardOnKeyUp;
+                KeyUp(nfmKey);
             }
         }
-        else if (device is IMouse mouse)
+
+        // Update saved state.
+        oldKeyState = newState;
+    }
+
+    private void UpdateMouse()
+    {
+        var newState = Mouse.GetState();
+        
+        if (newState.LeftButton == ButtonState.Pressed && oldMouseState.LeftButton != ButtonState.Pressed)
         {
-            if (isConnected)
-            {
-                mouse.MouseDown += MouseOnMouseDown;
-                mouse.MouseUp += MouseOnMouseUp;
-                mouse.MouseMove += MouseOnMouseMove;
-            }
-            else
-            {
-                mouse.MouseDown -= MouseOnMouseDown;
-                mouse.MouseUp -= MouseOnMouseUp;
-                mouse.MouseMove -= MouseOnMouseMove;
-            }
+            MouseDown(newState.X, newState.Y);
         }
-    }
-
-    private void KeyboardOnKeyUp(IKeyboard keyboard, Key key, int scancode)
-    {
-        KeyUp(KeyMapping.GetValueOrDefault(key));
-    }
-
-    private void KeyboardOnKeyDown(IKeyboard keyboard, Key key, int scancode)
-    {
-        KeyDown(KeyMapping.GetValueOrDefault(key));
-    }
-
-    private void MouseOnMouseDown(IMouse mouse, Silk.NET.Input.MouseButton button)
-    {
-        if (button == Silk.NET.Input.MouseButton.Left)
+        else if (newState.LeftButton == ButtonState.Released && oldMouseState.LeftButton != ButtonState.Released)
         {
-            var pos = mouse.Position;
-            MouseDown((int)pos.X, (int)pos.Y);
+            MouseUp(newState.X, newState.Y);
         }
-    }
 
-    private void MouseOnMouseUp(IMouse mouse, Silk.NET.Input.MouseButton button)
-    {
-        if (button == Silk.NET.Input.MouseButton.Left)
+        if (newState.X != oldMouseState.X || newState.Y != oldMouseState.Y)
         {
-            var pos = mouse.Position;
-            MouseUp((int)pos.X, (int)pos.Y);
+            GameSparker.CurrentPhase.MouseMoved(newState.X, newState.Y, ImGui.GetIO().WantCaptureMouse);
         }
-    }
 
-    private void MouseOnMouseMove(IMouse mouse, System.Numerics.Vector2 position)
-    {
-        if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
+        if (newState.ScrollWheelValue != oldMouseState.ScrollWheelValue)
         {
-            GameSparker.MainMenu.UpdateMouse((int)position.X, (int)position.Y);
+            var delta = newState.ScrollWheelValue - oldMouseState.ScrollWheelValue;
+            GameSparker.CurrentPhase.MouseScrolled(delta, ImGui.GetIO().WantCaptureMouse);
         }
+
+        oldMouseState = newState;
     }
 
-    private void OnRender(double delta)
+    protected override void Draw(GameTime gameTime)
     {
+        GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
+
         var t = Stopwatch.StartNew();
-
-        ImpellerDisplayList displayList;
-        using (var drawListBuilder = ImpellerDisplayListBuilder.New(new ImpellerRect(100, 100, _window.Size.X, _window.Size.Y))!)
-        {
-            _backend.DrawListBuilder = drawListBuilder;
-            using (var paint = ImpellerPaint.New()!)
-            {
-                paint.SetColor(ImpellerColor.FromArgb(1, 0, 0, 0));
-                drawListBuilder.DrawRect(new ImpellerRect(0, 0, _window.Size.X, _window.Size.Y), paint);
-            }
-            
-            // Render based on game state
-            if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
-            {
-                GameSparker.MainMenu.Render();
-            }
-            else if (GameSparker.CurrentState == GameSparker.GameState.InGame)
-            {
-                GameSparker.Render();
-            
-                G.SetColor(new Color(0, 0, 0));
-                G.DrawString($"Render: {_lastFrameTime}ms", 100, 100);
-                G.DrawString($"Tick: {_lastTickTime}ms", 100, 120);
-                G.DrawString($"Power: {GameSparker.cars_in_race[0]?.Mad?.Power:0.00}", 100, 140);
-            }
-
-            displayList = drawListBuilder.CreateDisplayListNew()!;
-        }
-
-        using (displayList)
-        {
-            _surface?.DrawDisplayList(displayList);
-        }
         
-        // Render ImGui
-        _imguiController?.Update((float)delta);
-        _imguiController?.NewFrame();
+        // Render based on game state
+        GameSparker.CurrentPhase.Render();
+        
+        FPSCounter.Render();
+        
+        _nvg.Render();
+
+        GameSparker.CurrentPhase.RenderAfterSkia();
+        
+        // // Render ImGui
+        _imguiRenderer.BeginLayout(gameTime);
         GameSparker.RenderImgui();
-        _imguiController?.Render();
+        GameSparker.CurrentPhase.RenderImgui();
+        _imguiRenderer.EndLayout();
 
-        _window.SwapBuffers();
-
+        base.Draw(gameTime);
         _lastFrameTime = (int)t.ElapsedMilliseconds;
     }
 
     public static void Main()
     {
-        _ = new Program();
+        // TODO figure out why SDL ProcessExit doesn't work properly
+        AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
+        {
+            Process.GetCurrentProcess().Kill();
+        };
+
+        var program = new Program();
+        program.Run();
     }
 
     private void KeyDown(Keys key)
@@ -411,15 +540,12 @@ public unsafe class Program
 
     private void MouseUp(int x, int y)
     {
-        if (GameSparker.CurrentState == GameSparker.GameState.Menu && GameSparker.MainMenu != null)
-        {
-            GameSparker.MainMenu.HandleClick(x, y);
-        }
+        GameSparker.CurrentPhase.MouseReleased(x, y, ImGui.GetIO().WantCaptureMouse);
     }
 
     private void MouseDown(int x, int y)
     {
-        // Currently not needed, but could be used for button press effects
+        GameSparker.CurrentPhase.MousePressed(x, y, ImGui.GetIO().WantCaptureMouse);
     }
 
     private void HandleKeyPress(Keys key, bool isDown)
@@ -427,31 +553,21 @@ public unsafe class Program
         if (isDown)
         {
             GameSparker.KeyPressed(key);
+            GameSparker.CurrentPhase.KeyPressed(key, ImGui.GetIO().WantCaptureKeyboard);
         }
         else
         {
             GameSparker.KeyReleased(key);
+            GameSparker.CurrentPhase.KeyReleased(key, ImGui.GetIO().WantCaptureKeyboard);
         }
     }
 }
 
-internal class NImpellerBackend : IBackend
+public class DummyBackend : IBackend
 {
-    public NImpellerBackend(ImpellerSurface? surface)
+    public IRadicalMusic LoadMusic(File file, double tempomul)
     {
-        Graphics = new NImpellerGraphics(this);
-    }
-
-    public ImpellerDisplayListBuilder? DrawListBuilder { get; set; }
-
-    public Vector2D<float> Ratio
-    {
-        set => ((NImpellerGraphics)Graphics).Ratio = value;
-    }
-
-    public IRadicalMusic LoadMusic(File file)
-    {
-        return new RadicalMusic(file);
+        return new RadicalMusic(file, tempomul);
     }
 
     public IImage LoadImage(File file)
@@ -474,418 +590,78 @@ internal class NImpellerBackend : IBackend
         return new SoundClip(filePath);
     }
 
-    public IGraphics Graphics { get; }
+    public IGraphics Graphics { get; } = new DummyGraphics();
 
-    public void SetAllVolumes(float vol)
+    public class DummyGraphics : IGraphics
     {
-        SoundClip.SetAllVolumes(vol);
-    }
-}
-
-internal class NImpellerGraphics(NImpellerBackend backend) : IGraphics
-{
-    private readonly ImpellerPaint _paint = ImpellerPaint.New()!;
-    private readonly ImpellerTypographyContext _typographyContext = ImpellerTypographyContext.New()!;
-    public Vector2D<float> Ratio { get; set; }
-
-    private Color currentColor;
-
-    public void SetColor(Color c)
-    {
-        currentColor = c;
-        _paint.SetColor(ImpellerColor.FromArgb(c.A, c.R, c.G, c.B));
-    }
-
-    public void FillPolygon(Span<int> xPoints, Span<int> yPoints, int nPoints)
-    {
-        if (nPoints <= 2)
+        public void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[] colorPos)
         {
-            return;
+            
         }
-        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleFill);
-        
-        using var pathBuilder = ImpellerPathBuilder.New()!;
-        
-        // calculate centroid
-        float cx, cy;
+        public void SetColor(Color c)
         {
-            int x = 0;
-            int y = 0;
-            for (int i = 0; i < nPoints; i++) {
-                x += xPoints[i];
-                y += yPoints[i];
-            }
-            cx = (float) x / nPoints;
-            cy = (float) y / nPoints;
         }
-        float sx = xPoints[0] < cx ? xPoints[0] - 0.5f : xPoints[0] + 0.5f;
-        float sy = yPoints[0] < cy ? yPoints[0] - 0.5f : yPoints[0] + 0.5f;
-        
-        pathBuilder.MoveTo(new ImpellerPoint { X = sx, Y = sy });
-        
-        for (int i = 1; i < nPoints; i++) {
-            int x = xPoints[i];
-            int y = yPoints[i];
-            if (xPoints[i - 1] == x && yPoints[i - 1] == y) continue;
-            pathBuilder.LineTo(new ImpellerPoint
-            {
-                X = x < cx ? x - 0.5f : x + 0.5f,
-                Y = y < cy ? y - 0.5f : y + 0.5f
-            });
-        }
-        pathBuilder.LineTo(new ImpellerPoint { X = xPoints[0], Y = yPoints[0] });
 
-        using var path = pathBuilder.CopyPathNew(ImpellerFillType.kImpellerFillTypeNonZero)!;
-
-        backend.DrawListBuilder?.DrawPath(path, _paint);
-    }
-
-    public void DrawPolygon(Span<int> xPoints, Span<int> yPoints, int nPoints)
-    {
-        if (nPoints <= 1 || (nPoints == 2 && xPoints[0] == xPoints[1] && yPoints[0] == yPoints[1]))
+        public void FillPolygon(Span<int> x, Span<int> y, int n)
         {
-            return;
         }
-        
-        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleStroke);
 
-        using var pathBuilder = ImpellerPathBuilder.New()!;
-        pathBuilder.MoveTo(new ImpellerPoint { X = xPoints[0], Y = yPoints[0] });
-        
-        for (int i = 1; i < nPoints; i++) {
-            if (xPoints[i] == xPoints[i - 1] && yPoints[i] == yPoints[i - 1]) continue;
-            pathBuilder.LineTo(new ImpellerPoint { X = xPoints[i], Y = yPoints[i] });
+        public void DrawPolygon(Span<int> x, Span<int> y, int n)
+        {
         }
-        pathBuilder.LineTo(new ImpellerPoint { X = xPoints[0], Y = yPoints[0] });
 
-        using var path = pathBuilder.CopyPathNew(ImpellerFillType.kImpellerFillTypeNonZero)!;
+        public void FillRect(int x1, int y1, int width, int height)
+        {
+        }
 
-        backend.DrawListBuilder?.DrawPath(path, _paint);
-    }
-    
-    public void FillRect(int x1, int y1, int width, int height)
-    {
-        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleFill);
-        backend.DrawListBuilder?.DrawRect(new ImpellerRect(x1, y1, width, height), _paint);
-    }
+        public void DrawLine(int x1, int y1, int x2, int y2)
+        {
+        }
 
-    public void DrawLine(int x1, int y1, int x2, int y2)
-    {
-        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleStroke);
-        backend.DrawListBuilder?.DrawLine(
-            new ImpellerPoint { X = x1, Y = y1 },
-            new ImpellerPoint { X = x2, Y = y2 },
-            _paint
-        );
-    }
+        public void SetAlpha(float f)
+        {
+        }
 
-    public void SetAlpha(float f)
-    {
-        currentColor = new Color(currentColor.R, currentColor.G, currentColor.B, (byte)f*255);
-        _paint.SetColor(ImpellerColor.FromArgb(currentColor.A, currentColor.R, currentColor.G, currentColor.B));
-    }
+        public void DrawImage(IImage image, int x, int y)
+        {
+        }
 
-    public void DrawImage(IImage image, int x, int y)
-    {
-        throw new NotImplementedException();
-    }
+        public void SetFont(Font font)
+        {
+        }
 
-    public void SetFont(Font font)
-    {
-        
-    }
+        public IFontMetrics GetFontMetrics()
+        {
+            throw new NotImplementedException();
+        }
 
-    public IFontMetrics GetFontMetrics()
-    {
-        throw new NotImplementedException();
-    }
+        public void DrawString(string text, int x, int y)
+        {
+        }
 
-    public void DrawString(string text, int x, int y)
-    {
-        using var paragraphBuilder = _typographyContext.ParagraphBuilderNew()!;
-        using var impellerParagraphStyle = ImpellerParagraphStyle.New()!;
-        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleFill);
-        impellerParagraphStyle.SetForeground(_paint);
-        impellerParagraphStyle.SetFontSize(16f);
-        paragraphBuilder.PushStyle(impellerParagraphStyle);
-        paragraphBuilder.AddText(text);
-        using var paragraph = paragraphBuilder.BuildParagraphNew(10000)!;
-        backend.DrawListBuilder?.DrawParagraph(paragraph, new ImpellerPoint { X = x, Y = y });
-    }
+        public void FillOval(int p0, int p1, int p2, int p3)
+        {
+        }
 
-    public void FillOval(int p0, int p1, int p2, int p3)
-    {
-        
-    }
+        public void FillRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei)
+        {
+        }
 
-    public void FillRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei)
-    {
-        // for now, use regular rectangles
-        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleFill);
-        backend.DrawListBuilder?.DrawRect(new ImpellerRect(x, y, wid, hei), _paint);
-    }
+        public void DrawRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei)
+        {
+        }
 
-    public void DrawRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei)
-    {
-        // for now, use regular rectangles
-        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleStroke);
-        _paint.SetStrokeWidth(2.0f);
-        backend.DrawListBuilder?.DrawRect(new ImpellerRect(x, y, wid, hei), _paint);
-    }
+        public void DrawRect(int x1, int y1, int width, int height)
+        {
+        }
 
-    public void DrawRect(int x1, int y1, int width, int height)
-    {
-        _paint.SetDrawStyle(ImpellerDrawStyle.kImpellerDrawStyleStroke);
-        backend.DrawListBuilder?.DrawRect(new ImpellerRect(x1, y1, width, height), _paint);
-    }
-
-    public void DrawImage(IImage image, int x, int y, int width, int height)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-internal class SkiaSharpBackend(SKCanvas canvas) : IBackend
-{
-    public IRadicalMusic LoadMusic(File file)
-    {
-        return new RadicalMusic(file);
-    }
-
-    public IImage LoadImage(File file)
-    {
-        return new MadSharpSKImage(System.IO.File.ReadAllBytes(file.Path));
-    }
-
-    public IImage LoadImage(ReadOnlySpan<byte> file)
-    {
-        return new MadSharpSKImage(file);
-    }
-
-    public void StopAllSounds()
-    {
-        SoundClip.StopAll();
-    }
-
-    public ISoundClip GetSound(string filePath)
-    {
-        return new SoundClip(filePath);
-    }
-
-    public IGraphics Graphics { get; } = new SkiaSharpGraphics(canvas);
-
-    public Vector2D<float> Ratio
-    {
-        set => ((SkiaSharpGraphics)Graphics).Ratio = value;
+        public void DrawImage(IImage image, int x, int y, int width, int height)
+        {
+        }
     }
 
     public void SetAllVolumes(float vol)
     {
         SoundClip.SetAllVolumes(vol);
     }
-}
-
-internal class SkiaSharpGraphics(SKCanvas canvas) : IGraphics
-{
-    private float sx = 1;
-    private float sy = 1;
-
-    public Vector2D<float> Ratio
-    {
-        set
-        {
-            //canvas.Scale(1/sx, 1/sy);
-            //canvas.Scale(value.X, value.Y);
-            sx = value.X;
-            sy = value.Y;
-            //_paint.StrokeWidth = (sx + sy) / 3;
-        }
-    }
-
-    private readonly SKPaint _paint = new()
-    {
-        IsAntialias = false,
-    };
-    private SKFont _font = new();
-    private Dictionary<(string FamilyName, byte Flags), SKTypeface> _typefaceCache = new();
-
-    public void SetColor(Color c)
-    {
-        _paint.Color = new SKColor(c.R, c.G, c.B, c.A);
-    }
-
-    public void FillPolygon(Span<int> xPoints, Span<int> yPoints, int nPoints)
-    {
-        if (nPoints <= 2)
-        {
-            return;
-        }
-        _paint.Style = SKPaintStyle.Fill;
-        
-        using var path = new SKPath();
-        
-        // calculate centroid
-        float cx, cy;
-        {
-            int x = 0;
-            int y = 0;
-            for (int i = 0; i < nPoints; i++) {
-                x += xPoints[i];
-                y += yPoints[i];
-            }
-            cx = (float) x / nPoints;
-            cy = (float) y / nPoints;
-        }
-        float sx = xPoints[0] < cx ? xPoints[0] - 0.5f : xPoints[0] + 0.5f;
-        float sy = yPoints[0] < cy ? yPoints[0] - 0.5f : yPoints[0] + 0.5f;
-        
-        path.MoveTo(sx, sy);
-        
-        for (int i = 1; i < nPoints; i++) {
-            int x = xPoints[i];
-            int y = yPoints[i];
-            if (xPoints[i - 1] == x && yPoints[i - 1] == y) continue;
-            path.LineTo(
-                x < cx ? x - 0.5f : x + 0.5f,
-                y < cy ? y - 0.5f : y + 0.5f
-            );
-        }
-        path.LineTo(xPoints[0], yPoints[0]);
-
-        canvas.DrawPath(path, _paint);
-    }
-
-    public void DrawPolygon(Span<int> xPoints, Span<int> yPoints, int nPoints)
-    {
-        if (nPoints <= 1 || (nPoints == 2 && xPoints[0] == xPoints[1] && yPoints[0] == yPoints[1]))
-        {
-            return;
-        }
-        
-        _paint.Style = SKPaintStyle.Stroke;
-        
-        using var path = new SKPath();
-        path.MoveTo(xPoints[0], yPoints[0]);
-        
-        for (int i = 1; i < nPoints; i++) {
-            if (xPoints[i] == xPoints[i - 1] && yPoints[i] == yPoints[i - 1]) continue;
-            path.LineTo(xPoints[i], yPoints[i]);
-        }
-        path.LineTo(xPoints[0], yPoints[0]);
-
-        canvas.DrawPath(path, _paint);
-    }
-
-    public void FillRect(int x1, int y1, int width, int height)
-    {
-        _paint.Style = SKPaintStyle.Fill;
-        canvas.DrawRect(x1, y1, width, height, _paint);
-    }
-
-    public void DrawLine(int x1, int y1, int x2, int y2)
-    {
-        _paint.Style = SKPaintStyle.Stroke;
-        canvas.DrawLine(x1, y1, x2, y2, _paint);
-    }
-
-    public void SetAlpha(float f)
-    {
-        _paint.Color = _paint.Color.WithAlpha((byte)(f * 255));
-    }
-
-    public void DrawImage(IImage image, int x, int y)
-    {
-        canvas.DrawImage(((MadSharpSKImage)image).SkImage, x, y);
-    }
-
-    public void SetFont(Font font)
-    {
-        if (_typefaceCache.TryGetValue((font.FontName, (byte)font.Flags), out var typeface))
-        {
-            _font.Typeface = typeface;
-        }
-        else
-        {
-            _font.Typeface = _typefaceCache[(font.FontName, (byte)font.Flags)] = SKTypeface.FromFamilyName(
-                font.FontName,
-                font.Flags == Font.BOLD ? SKFontStyleWeight.Bold : SKFontStyleWeight.Normal,
-                SKFontStyleWidth.Normal,
-                font.Flags == Font.ITALIC ? SKFontStyleSlant.Italic : SKFontStyleSlant.Upright
-            );
-        }
-        
-        _font.Size = font.Size;
-    }
-
-    public IFontMetrics GetFontMetrics()
-    {
-        return new SkiaFontMetrics(_font);
-    }
-
-    public void DrawString(string text, int x, int y)
-    {
-        _paint.Style = SKPaintStyle.Fill;
-        canvas.DrawText(text, x, y, SKTextAlign.Left, _font, _paint);
-    }
-
-    public void FillOval(int p0, int p1, int p2, int p3)
-    {
-        _paint.Style = SKPaintStyle.Fill;
-        canvas.DrawOval(p0, p1, p2, p3, _paint);
-    }
-
-    public void FillRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei)
-    {
-        _paint.Style = SKPaintStyle.Fill;
-        canvas.DrawRoundRect(x, y, wid, hei, arcWid, arcHei, _paint);
-    }
-
-    public void DrawRoundRect(int x, int y, int wid, int hei, int arcWid, int arcHei)
-    {
-        _paint.Style = SKPaintStyle.Stroke;
-        canvas.DrawRoundRect(x, y, wid, hei, arcWid, arcHei, _paint);
-    }
-
-    public void DrawRect(int x1, int y1, int width, int height)
-    {
-        _paint.Style = SKPaintStyle.Stroke;
-        canvas.DrawRect(x1, y1, width, height, _paint);
-    }
-
-    public void DrawImage(IImage image, int x, int y, int width, int height)
-    {
-        _paint.Style = SKPaintStyle.Fill;
-        canvas.DrawImage(((MadSharpSKImage)image).SkImage, new SKRect(x, y, width + x, height + y));
-    }
-
-    public void SetAntialiasing(bool useAntialias)
-    {
-        _paint.IsAntialias = useAntialias;
-    }
-}
-
-internal class SkiaFontMetrics(SKFont font) : IFontMetrics
-{
-    public int StringWidth(string astring)
-    {
-        return (int)font.MeasureText(astring);
-    }
-
-    public int Height(string astring)
-    {
-        return (int)font.Metrics.Ascent;
-    }
-}
-
-internal class MadSharpSKImage : IImage
-{
-    internal readonly SKImage SkImage;
-
-    public MadSharpSKImage(ReadOnlySpan<byte> file)
-    {
-        SkImage = SKImage.FromEncodedData(file);
-    }
-
-    public int Height => SkImage.Width;
-    public int Width => SkImage.Height;
 }

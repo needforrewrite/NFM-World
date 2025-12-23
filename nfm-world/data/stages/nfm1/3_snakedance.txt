@@ -9,7 +9,17 @@ fadefrom(6000)
 name(Do The Snake Dance)
 nlaps(7)
 
-detail(0)
+mountains(false)
+clouds(false)
+polys(false)
+
+soundtrack(nfm1,stage3.zipo)
+soundtrackfreqmul(0.94)
+soundtracktempomul(11.6)
+
+soundtrack(nfm1,stage3.zipo)
+soundtrackfreqmul(0.94)
+soundtracktempomul(11.6)
 
 set(10,0,0,0)p
 set(10,0,5600,0)

@@ -12,6 +12,8 @@ density(5)
 name(Maximum Overfly)
 nlaps(3)
 
+soundtrack(nfm2,stage8.radq)
+soundtrackfreqmul(1.01)
 
 set(47,0,0,0)p
 set(10,0,5600,0)p

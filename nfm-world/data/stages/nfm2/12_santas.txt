@@ -13,6 +13,9 @@ name(Suddenly the King becomes Santa's Little Helper)
 
 nlaps(4)
 
+soundtrack(nfm2,stage12.radq)
+soundtrackfreqmul(1.01)
+
 set(47,0,0,0)p
 set(10,0,5600,0)p
 set(10,0,11200,180)p

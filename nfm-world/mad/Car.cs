@@ -1,23 +1,42 @@
-﻿namespace NFMWorld.Mad;
+﻿using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Mad;
+using Stride.Core.Extensions;
+using Stride.Core.Mathematics;
 
-public class Car
+public class Car : Mesh
 {
-    public ContO Conto;
-    public Mad Mad;
-    public Stat Stat;
-    public Control Control;
+    public CarStats Stats;
 
-    public Car(Stat stat, int im, ContO carConto, int x, int z)
+    public Car(GraphicsDevice device, Rad3d rad, string fileName) : base(device, rad, fileName)
     {
-        Conto = new ContO(carConto, x, Medium.Ground, z, 0);
-        Mad = new Mad(stat, im);
-        Stat = stat;
-        Mad.Reseto(im, Conto);
-        Control = new Control();
+        string? invalidStat = rad.Stats.Validate(fileName);
+        if (invalidStat != null)
+        {
+            Stats = CarStats.Default;
+            if(invalidStat == nameof(Stats.Name) || rad.Stats.Name.IsNullOrEmpty())
+            {
+                Stats = Stats with { Name = fileName };
+            }
+        }
+        else
+        {
+
+            Stats = rad.Stats;
+        }
     }
 
-    public void Drive()
+    public Car(Car baseCar, Vector3 position, Euler rotation) : base(baseCar, position, rotation)
     {
-        Mad.Drive(Control, Conto);
+        string? invalidStat = baseCar.Stats.Validate(baseCar.Stats.Name);
+        if (invalidStat != null)
+        {
+            // Name should always be defined by now so dont bother checking for that here
+            Stats = CarStats.Default;
+        }
+        else
+        {
+
+            Stats = baseCar.Stats;
+        }
     }
 }

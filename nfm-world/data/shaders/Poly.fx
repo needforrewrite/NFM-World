@@ -1,0 +1,170 @@
+#if OPENGL
+	#define SV_POSITION POSITION
+	#define VS_SHADERMODEL vs_3_0
+	#define PS_SHADERMODEL ps_3_0
+#else
+	#define VS_SHADERMODEL vs_3_0
+	#define PS_SHADERMODEL ps_3_0
+#endif
+
+#include "./Mad.fxh"
+
+// BasicEffect
+matrix World;
+matrix WorldInverseTranspose;
+matrix WorldViewProj;
+matrix View;
+matrix Projection;
+
+// Custom
+matrix WorldView;
+float3 SnapColor;
+bool IsFullbright;
+bool UseBaseColor;
+float3 BaseColor;
+float3 LightDirection;
+float3 FogColor;
+float FogDistance;
+float FogDensity;
+float2 EnvironmentLight;
+float3 CameraPosition;
+float Alpha;
+
+// Lighting
+bool GetsShadowed;
+
+// Damage
+bool Expand;
+float RandomFloat;
+float Darken; // set below 1.0f to adjust brightness
+
+struct VertexShaderInput
+{
+	float3 Position : POSITION0;
+	float3 Normal : NORMAL0;
+	float3 Color : COLOR0;
+	float3 Centroid : POSITION1;
+	float DecalOffset : TEXCOORD0;
+};
+
+struct VertexShaderOutput
+{
+	float4 Position : SV_POSITION;
+	float4 Color : COLOR0;
+    float4 WorldPos : TEXCOORD2;
+};
+
+VertexShaderOutput MainVS(in VertexShaderInput input)
+{
+	VertexShaderOutput output = (VertexShaderOutput)0;
+
+    float3 position = input.Position;
+
+    VS_DecalOffset(position, input.Normal, input.DecalOffset);
+
+	float3 viewPos = mul(float4(position, 1), WorldView).xyz;
+	float3 color = input.Color;
+
+    // Apply base color
+    if (UseBaseColor == true)
+    {
+        color = BaseColor;
+    }
+
+    if (Expand == true)
+    {
+        VS_Expand(position, input.Centroid, RandomFloat);
+    }
+
+    output.Position = mul(float4(position, 1), WorldViewProj);
+
+    if (Darken < 1.0f)
+    {
+        VS_Darken(color, Darken);
+    }
+
+	// Apply diffuse lighting
+	if (IsFullbright == false)
+    {
+        VS_ApplyPolygonDiffuse(
+            color,
+            mul(float4(input.Centroid, 1), World).xyz,
+            normalize(mul(float4(input.Normal, 0), WorldInverseTranspose).xyz),
+            LightDirection,
+            CameraPosition,
+            EnvironmentLight
+        );
+	}
+
+	// Apply snap
+    VS_Snap(color, SnapColor);
+
+    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
+
+    VS_ColorCorrect(color);
+
+    output.Color = float4(color, Alpha);
+
+    // Save the vertices postion in world space (for shadow mapping)
+    output.WorldPos = mul(float4(position, 1), World);
+
+	return output;
+}
+
+float4 MainPS(VertexShaderOutput input) : SV_TARGET
+{
+    float4 diffuse = input.Color;
+
+    if (GetsShadowed == true)
+    {
+        float3 diffuseRGB = diffuse.xyz;
+        PS_ApplyShadowing(diffuseRGB, input.WorldPos);
+        diffuse = float4(diffuseRGB, diffuse.w);
+    }
+
+	return diffuse;
+}
+
+struct CreateShadowMap_VSOut
+{
+    float4 Position : SV_POSITION;
+    float Depth     : TEXCOORD0;
+};
+
+// Transforms the model into light space an renders out the depth of the object
+CreateShadowMap_VSOut CreateShadowMapVS(in VertexShaderInput input)
+{
+    CreateShadowMap_VSOut output = (CreateShadowMap_VSOut)0;
+
+    // Apply decal offset to prevent Z-fighting in shadow maps too
+    float3 offsetPosition = input.Position - input.Normal * input.DecalOffset * 0.1;
+
+    output.Position = mul(float4(offsetPosition, 1), WorldViewProj);
+    output.Depth = output.Position.z / output.Position.w;
+    return output;
+}
+
+// Saves the depth value out to the 32bit floating point texture
+float4 CreateShadowMapPS(CreateShadowMap_VSOut input) : COLOR
+{
+    return float4(input.Depth, input.Depth, input.Depth, 1.0);
+}
+
+
+technique CreateShadowMap
+{
+    pass Pass1
+    {
+        VertexShader = compile vs_2_0 CreateShadowMapVS();
+        PixelShader = compile ps_2_0 CreateShadowMapPS();
+    }
+}
+
+technique Basic
+{
+	pass P0
+	{
+		VertexShader = compile VS_SHADERMODEL MainVS();
+		PixelShader = compile PS_SHADERMODEL MainPS();
+	}
+};

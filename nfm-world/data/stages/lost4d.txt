@@ -17,7 +17,7 @@ tip(Good luck!)
 
 nlaps(1)
 
-soundtrack(lost4d,mp3)
+soundtrack(custom,lost4d.mp3)
 noarrow()
 
 set(47,0,0,0)p

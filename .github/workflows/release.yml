@@ -15,9 +15,18 @@ jobs:
       tag_name: ${{ steps.tag.outputs.tag_name }}
       short_sha: ${{ steps.tag.outputs.short_sha }}
       is_master: ${{ steps.check_branch.outputs.is_master }}
+      branch_name: ${{ steps.branch.outputs.branch_name }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Extract branch name
+        id: branch
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          echo "branch_name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
 
       - name: Check if master branch
         id: check_branch
@@ -32,12 +41,13 @@ jobs:
         id: tag
         run: |
           SHORT_SHA=$(git rev-parse --short=8 HEAD)
-          TAG_NAME="build-${SHORT_SHA}"
+          DATETIME=$(date -u +"%Y%m%dT%H%M%SZ")
+          TAG_NAME="release-${DATETIME}-${SHORT_SHA}"
           echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
 
       - name: Create and push tag
-        if: steps.check_branch.outputs.is_master == 'true'
+        # if: steps.check_branch.outputs.is_master == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -56,16 +66,21 @@ jobs:
       matrix:
         rid:
           - win-x64
-          - win-arm64
+          - win-x64-v3
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+
+      - name: Install MGFXC
+        run: dotnet tool install -g dotnet-mgfxc
 
       - name: Generate version string
         id: version
@@ -81,27 +96,25 @@ jobs:
 
       - name: Publish ${{ matrix.rid }}
         run: |
-          dotnet publish nfm-world/nfm-world.csproj `
+          $rid = "${{ matrix.rid }}"
+          $publishRid = $rid
+          $extraArgs = ""
+          
+          # For v3 variants, use base RID for publishing and add IlcInstructionSet
+          if ($rid.EndsWith("-v3")) {
+            $publishRid = $rid.Substring(0, $rid.Length - 3)
+            $extraArgs = "-p:IlcInstructionSet=x86-64-v3"
+          }
+          
+          dotnet publish nfm-world/NFMWorld.csproj `
             -c Release `
-            -r ${{ matrix.rid }} `
+            -r $publishRid `
             --self-contained `
             -p:PublishAot=true `
             -p:Version="${{ steps.version.outputs.semantic_version }}" `
             -p:InformationalVersion="${{ steps.version.outputs.info_version }}" `
+            $extraArgs `
             -o ./publish/${{ matrix.rid }}
-
-      - name: Copy native libraries
-        run: |
-          if (Test-Path "nfm-world/skiadriver/bass.dll") {
-            Copy-Item -Path "nfm-world/skiadriver/bass.dll" -Destination "./publish/${{ matrix.rid }}/"
-          } else {
-            Write-Warning "bass.dll not found, skipping"
-          }
-          if (Test-Path "nfm-world/nimpellerdriver/impeller.dll") {
-            Copy-Item -Path "nfm-world/nimpellerdriver/impeller.dll" -Destination "./publish/${{ matrix.rid }}/"
-          } else {
-            Write-Warning "impeller.dll not found, skipping"
-          }
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -116,11 +129,62 @@ jobs:
       matrix:
         rid:
           - linux-x64
-          - linux-arm64
+          - linux-x64-v3
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Install wine and dependencies
+        run: |
+          # Remove ppa:ondrej/php since it breaks i386 packages -- https://github.com/oerdnj/deb.sury.org/issues/1745
+          sudo add-apt-repository ppa:ondrej/php
+          sudo apt-get install --yes ppa-purge
+          sudo ppa-purge -y ppa:ondrej/php
+
+          sudo dpkg --add-architecture i386
+          wget -qO - https://dl.winehq.org/wine-builds/winehq.key | sudo apt-key add -
+          sudo add-apt-repository ppa:cybermax-dexter/sdl2-backport
+          sudo apt-add-repository "deb https://dl.winehq.org/wine-builds/ubuntu $(lsb_release -cs) main"
+          sudo apt install --install-recommends winehq-stable winetricks xvfb
+
+      - name: Setup Wine prefix for MGFXC
+        run: |
+          # Start Xvfb for headless Wine operation
+          Xvfb :99 -screen 0 1024x768x16 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+
+          # Wait for Xvfb to be ready
+          sleep 2
+
+          # Ensure Xvfb is cleaned up on exit
+          trap "kill $XVFB_PID 2>/dev/null || true" EXIT
+
+          # Create 64-bit wine prefix
+          export WINEPREFIX=$HOME/.wine64
+          export WINEARCH=win64
+          export WINEDLLOVERRIDES="mscoree,mshtml="
+
+          # Initialize wine prefix
+          wineboot -u
+
+          # Wait for wine server to start (with timeout)
+          for i in {1..30}; do
+            if wineserver -w 2>/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          # Install d3dcompiler_47 using winetricks
+          WINEPREFIX=$HOME/.wine64 DISPLAY=:99 winetricks -q d3dcompiler_47
+
+          # Set environment variable for MGFXC
+          echo "MGFXC_WINE_PATH=$HOME/.wine64" >> $GITHUB_ENV
+          echo "WINEPREFIX=$HOME/.wine64" >> $GITHUB_ENV
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -147,7 +211,17 @@ jobs:
 
       - name: Publish ${{ matrix.rid }}
         run: |
-          if [[ "${{ matrix.rid }}" == "linux-arm64" ]]; then
+          RID="${{ matrix.rid }}"
+          PUBLISH_RID="$RID"
+          EXTRA_ARGS=""
+          
+          # For v3 variants, use base RID for publishing and add IlcInstructionSet
+          if [[ "$RID" == *-v3 ]]; then
+            PUBLISH_RID="${RID%-v3}"
+            EXTRA_ARGS="-p:IlcInstructionSet=x86-64-v3"
+          fi
+          
+          if [[ "$RID" == "linux-arm64" ]]; then
             # Set cross-compilation tools for ARM64
             export COMPlus_CrossLinker=/usr/bin/aarch64-linux-gnu-ld
             # Create wrapper for objcopy to use the ARM64 version
@@ -157,27 +231,15 @@ jobs:
             chmod +x $HOME/bin/objcopy
             export PATH=$HOME/bin:$PATH
           fi
-          dotnet publish nfm-world/nfm-world.csproj \
+          dotnet publish nfm-world/NFMWorld.csproj \
             -c Release \
-            -r ${{ matrix.rid }} \
+            -r $PUBLISH_RID \
             --self-contained \
             -p:PublishAot=true \
             -p:Version="${{ steps.version.outputs.semantic_version }}" \
             -p:InformationalVersion="${{ steps.version.outputs.info_version }}" \
+            $EXTRA_ARGS \
             -o ./publish/${{ matrix.rid }}
-
-      - name: Copy native libraries
-        run: |
-          if [ -f "nfm-world/skiadriver/libbass.so" ]; then
-            cp nfm-world/skiadriver/libbass.so ./publish/${{ matrix.rid }}/
-          else
-            echo "Warning: libbass.so not found, skipping"
-          fi
-          if [ -f "nfm-world/nimpellerdriver/libimpeller.so" ]; then
-            cp nfm-world/nimpellerdriver/libimpeller.so ./publish/${{ matrix.rid }}/
-          else
-            echo "Warning: libimpeller.so not found, skipping"
-          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -188,7 +250,6 @@ jobs:
   release:
     needs: [prepare, build-windows, build-linux]
     runs-on: ubuntu-latest
-    if: needs.prepare.outputs.is_master == 'true'
 
     steps:
       - name: Download all artifacts
@@ -220,7 +281,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
-          name: Build ${{ needs.prepare.outputs.short_sha }}
+          name: Build ${{ needs.prepare.outputs.branch_name }} - ${{ needs.prepare.outputs.short_sha }}
+          # prerelease: ${{ needs.prepare.outputs.is_master != 'true' }}
           files: |
             artifacts/*.zip
             artifacts/*.tar.gz
