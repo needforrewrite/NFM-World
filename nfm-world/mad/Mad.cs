@@ -382,11 +382,11 @@ public class Mad
     internal static fix64 Sin(fix64 deg)
     {
         var sin = fix64.Sin(deg * fix64.DegToRad);
-        if (fix64.WithinEpsilon(sin, 0))
+        if (EqEpsilon(sin, 0))
             return 0;
-        if (fix64.WithinEpsilon(sin, -1))
+        if (EqEpsilon(sin, -1))
             return -1;
-        if (fix64.WithinEpsilon(sin, 1))
+        if (EqEpsilon(sin, 1))
             return 1;
         return sin;
     }
@@ -395,15 +395,21 @@ public class Mad
     internal static fix64 Cos(fix64 deg)
     {
         var cos = fix64.Cos(deg * fix64.DegToRad);
-        if (fix64.WithinEpsilon(cos, 0))
+        if (EqEpsilon(cos, 0))
             return 0;
-        if (fix64.WithinEpsilon(cos, -1))
+        if (EqEpsilon(cos, -1))
             return -1;
-        if (fix64.WithinEpsilon(cos, 1))
+        if (EqEpsilon(cos, 1))
             return 1;
         return cos;
     }
-    
+
+    private static bool EqEpsilon(fix64 a, fix64 b)
+    {
+        var epsilon = (fix64)0.00001F;
+        return fix64.Abs(a - b) < epsilon;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static fix64 Sin(int deg)
     {

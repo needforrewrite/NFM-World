@@ -34,6 +34,8 @@ namespace SoftFloat;
 [DebuggerDisplay("{ToString()}")]
 public readonly partial struct fix64(Fixed64 value) : IEquatable<fix64>, IComparable<fix64>, IComparable, IFormattable
 {
+    public const int FRACTION_BITS = FixedMath.SHIFT_AMOUNT_I;
+
     public readonly Fixed64 Value = value;
     public static fix64 MinusOne => new(-Fixed64.One);
     public static fix64 Zero => new(Fixed64.Zero);
@@ -42,6 +44,7 @@ public readonly partial struct fix64(Fixed64 value) : IEquatable<fix64>, ICompar
     public static fix64 Half => new(Fixed64.Half);
     public static fix64 MinValue => new(Fixed64.MIN_VALUE);
     public static fix64 MaxValue => new(Fixed64.MAX_VALUE);
+    public long Raw => Value.m_rawValue;
 
     public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format!);
     public bool Equals(fix64 other) => Value.Equals(other.Value);
@@ -79,4 +82,6 @@ public readonly partial struct fix64(Fixed64 value) : IEquatable<fix64>, ICompar
     public int Sign() => Value.Sign();
     public static fix64 Min(fix64 a, fix64 b) => a < b ? a : b;
     public static fix64 Max(fix64 a, fix64 b) => a > b ? a : b;
+
+    public static fix64 FromRaw(long raw) => new(new(raw));
 }
