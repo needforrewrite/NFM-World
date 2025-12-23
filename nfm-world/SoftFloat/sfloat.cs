@@ -31,7 +31,7 @@ using FixedMathSharp;
 namespace SoftFloat
 {
     // Internal representation is identical to IEEE binary32 floating point numbers
-    [DebuggerDisplay("{ToStringInv()}")]
+    [DebuggerDisplay("{ToString()}")]
     public readonly partial struct sfloat(Fixed64 value) : IEquatable<sfloat>, IComparable<sfloat>, IComparable, IFormattable
     {
         public readonly Fixed64 Value = value;

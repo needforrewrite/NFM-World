@@ -8,20 +8,20 @@ public class ContO
 {
     private readonly Mesh _mesh;
         
-    public int X 
+    public sfloat X 
     {
-        get => (int) _mesh.Position.X;
-        set => _mesh.Position = _mesh.Position with { X = value };
+        get => (sfloat) _mesh.Position.X;
+        set => _mesh.Position = _mesh.Position with { X = (float)value };
     }
-    public int Y 
+    public sfloat Y 
     {
-        get => (int) _mesh.Position.Y;
-        set => _mesh.Position = _mesh.Position with { Y = value };
+        get => (sfloat) _mesh.Position.Y;
+        set => _mesh.Position = _mesh.Position with { Y = (float)value };
     }
-    public int Z 
+    public sfloat Z 
     {
-        get => (int) _mesh.Position.Z;
-        set => _mesh.Position = _mesh.Position with { Z = value };
+        get => (sfloat) _mesh.Position.Z;
+        set => _mesh.Position = _mesh.Position with { Z = (float)value };
     }
     public sfloat Xz 
     {

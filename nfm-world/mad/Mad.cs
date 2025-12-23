@@ -117,7 +117,7 @@ public class Mad
 
     internal void Colide(ContO conto, Mad othermad, ContO otherconto)
     {
-        var random = new DeterministicRandom((ulong)(conto.X ^ otherconto.X ^ conto.Z ^ otherconto.Z ^ conto.Y ^ otherconto.Y));
+        var random = new DeterministicRandom((ulong)(conto.X.Value.m_rawValue ^ otherconto.X.Value.m_rawValue ^ conto.Z.Value.m_rawValue ^ otherconto.Z.Value.m_rawValue ^ conto.Y.Value.m_rawValue ^ otherconto.Y.Value.m_rawValue));
         
         Span<sfloat> wheelx = stackalloc sfloat[4];
         Span<sfloat> wheely = stackalloc sfloat[4];
@@ -381,37 +381,39 @@ public class Mad
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static sfloat Sin(sfloat deg)
     {
-        return sfloat.Sin(deg * sfloat.DegToRad);
+        var sin = sfloat.Sin(deg * sfloat.DegToRad);
+        return sfloat.WithinEpsilon(sin, 0) ? 0 : sin;
     }
         
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static sfloat Cos(sfloat deg)
     {
-        return sfloat.Cos(deg * sfloat.DegToRad);
+        var cos = sfloat.Cos(deg * sfloat.DegToRad);
+        return sfloat.WithinEpsilon(cos, 0) ? 0 : cos;
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static sfloat Sin(int deg)
     {
-        return sfloat.Sin((sfloat)deg * sfloat.DegToRad);
+        return Sin((sfloat)deg);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static sfloat Sin(float deg)
     {
-        return sfloat.Sin((sfloat)deg * sfloat.DegToRad);
+        return Sin((sfloat)deg);
     }
         
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static sfloat Cos(int deg)
     {
-        return sfloat.Cos((sfloat)deg * sfloat.DegToRad);
+        return Cos((sfloat)deg);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static sfloat Cos(float deg)
     {
-        return sfloat.Cos((sfloat)deg * sfloat.DegToRad);
+        return Cos((sfloat)deg);
     }
 
     public void bounceRebound(int wi, ContO conto, DeterministicRandom random)
@@ -476,11 +478,11 @@ public class Mad
     }
 
     int Mtcount = 0;
-    int py = 0;
+    sfloat py = 0;
 
     internal void Drive(Control control, ContO conto)
     {
-        DeterministicRandom random = new((ulong)(conto.X ^ conto.Y ^ conto.Z));
+        DeterministicRandom random = new((ulong)(conto.X.Value.m_rawValue ^ conto.Y.Value.m_rawValue ^ conto.Z.Value.m_rawValue));
 
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_fxz:0.00}, cxz: {Cxz:0.00}");
         FrameTrace.AddMessage($"xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}");
@@ -1015,7 +1017,7 @@ public class Mad
             }
         } //
 
-        var i21 = Speed != 0 ? (int)((sfloat)(3600.0F) / (Speed * Speed)) : 0;
+        var i21 = Speed != 0 ? (int)((sfloat)(3600.0F) / (Speed * Speed)) : int.MaxValue;
         if (i21 < 5)
         {
             i21 = 5;
@@ -1101,27 +1103,38 @@ public class Mad
         var wasMtouch = false;
         var i26 = (int)((Scx[0] + Scx[1] + Scx[2] + Scx[3]) / (sfloat)(4.0F));
         var i27 = (int)((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / (sfloat)(4.0F));
-        for (var i28 = 0; i28 < 4; i28++)
+        for (var wheelid = 0; wheelid < 4; wheelid++)
         {
-            if (Scx[i28] - i26 > (sfloat)(200.0F))
+            if (Scx[wheelid] - i26 > (sfloat)(200.0F))
             {
-                Scx[i28] = 200 + i26;
+                Scx[wheelid] = 200 + i26;
             }
 
-            if (Scx[i28] - i26 < -(sfloat)(200.0F))
+            if (Scx[wheelid] - i26 < -(sfloat)(200.0F))
             {
-                Scx[i28] = i26 - 200;
+                Scx[wheelid] = i26 - 200;
             }
 
-            if (Scz[i28] - i27 > (sfloat)(200.0F))
+            if (Scz[wheelid] - i27 > (sfloat)(200.0F))
             {
-                Scz[i28] = 200 + i27;
+                Scz[wheelid] = 200 + i27;
             }
 
-            if (Scz[i28] - i27 < -(sfloat)(200.0F))
+            if (Scz[wheelid] - i27 < -(sfloat)(200.0F))
             {
-                Scz[i28] = i27 - 200;
+                Scz[wheelid] = i27 - 200;
             }
+            
+            if (sfloat.Abs(Scx[wheelid]) < (sfloat)0.5f)
+            {
+                Scx[wheelid] = 0;
+            }
+            if (sfloat.Abs(Scz[wheelid]) < (sfloat)0.5f)
+            {
+                Scz[wheelid] = 0;
+            }
+            
+            FrameTrace.AddMessage($"Scx[{wheelid}]: {Scx[wheelid]:0.00}, Scz[{wheelid}]: {Scz[wheelid]:0.00}, Scy[{wheelid}]: {Scy[wheelid]:0.00}");
         }
 
         for (var i29 = 0; i29 < 4; i29++)
@@ -1607,7 +1620,7 @@ public class Mad
             _cntouch = 0; // CHK12
                           //DS-addons: Bad landing hotfix
 
-        int newy = (int)((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / (sfloat)4.0F - bottomy * Cos(Pzy) * Cos(Pxy) + airy);
+        sfloat newy = ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / (sfloat)4.0F - bottomy * Cos(Pzy) * Cos(Pxy) + airy);
         py = conto.Y - newy;
         conto.Y = newy;
         //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) / (sfloat)(4.0F) - (sfloat) i_10 * Cos(this.Pzy) * Cos(this.Pxy) + f_12);
@@ -1621,13 +1634,13 @@ public class Mad
 
         // CHK13
         // car sliding fix by jacher: do not adjust to tickrate
-        conto.X = (int)((wheelx[0] - conto.Keyx[0] * Cos(conto.Xz) + xneg * conto.Keyz[0] * Sin(conto.Xz) +
+        conto.X = ((wheelx[0] - conto.Keyx[0] * Cos(conto.Xz) + xneg * conto.Keyz[0] * Sin(conto.Xz) +
             wheelx[1] - conto.Keyx[1] * Cos(conto.Xz) + xneg * conto.Keyz[1] * Sin(conto.Xz) +
             wheelx[2] - conto.Keyx[2] * Cos(conto.Xz) + xneg * conto.Keyz[2] * Sin(conto.Xz) +
             wheelx[3] - conto.Keyx[3] * Cos(conto.Xz) + xneg * conto.Keyz[3] * Sin(conto.Xz)) / (sfloat)4.0F
             + bottomy * Sin(Pxy) * Cos(conto.Xz) - bottomy * Sin(Pzy) * Sin(conto.Xz) + airx);
 
-        conto.Z = (int)(
+        conto.Z = (
             (wheelz[0] - xneg * conto.Keyz[0] * Cos(conto.Xz) - conto.Keyx[0] * Sin(conto.Xz)
             + wheelz[1] - xneg * conto.Keyz[1] * Cos(conto.Xz) - conto.Keyx[1] * Sin(conto.Xz)
             + wheelz[2] - xneg * conto.Keyz[2] * Cos(conto.Xz) - conto.Keyx[2] * Sin(conto.Xz)
@@ -2228,8 +2241,8 @@ public class Mad
     {
         if (angle != 0)
         {
-            var sin = sfloat.Sin(angle * sfloat.DegToRad);
-            var cos = sfloat.Cos(angle * sfloat.DegToRad);
+            var sin = Sin(angle);
+            var cos = Cos(angle);
             
             for (var i = 0; i < len; i++)
             {

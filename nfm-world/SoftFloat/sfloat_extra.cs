@@ -9,8 +9,8 @@ public partial struct sfloat
     public static sfloat TwoPi { get; } = new sfloat(FixedMath.TwoPI);
     public static sfloat PiOver4 { get; } = new sfloat(FixedMath.PiOver4);
     
-    public static sfloat DegToRad { get; } = Pi / (sfloat)180.0f;
-    public static sfloat RadToDeg { get; } = (sfloat)180.0f / Pi;
+    public static sfloat DegToRad { get; } = new(FixedMath.Deg2Rad);
+    public static sfloat RadToDeg { get; } = new(FixedMath.Rad2Deg);
 
     public static bool operator <(sfloat f1, int f2) => f1 < (sfloat)f2;
     public static bool operator >(sfloat f1, int f2) => f1 > (sfloat)f2;
