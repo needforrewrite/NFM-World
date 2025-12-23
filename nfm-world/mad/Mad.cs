@@ -175,7 +175,7 @@ public class Mad
         if (_dominate[othermad.Im])
         {
             var impactMagnitude =
-                (int) sfloat.Round((
+                (int) ((
                     (Scz[0] - othermad.Scz[0] + Scz[1] - othermad.Scz[1] + Scz[2] - othermad.Scz[2] + Scz[3] - othermad.Scz[3]) *
                     (Scz[0] - othermad.Scz[0] + Scz[1] - othermad.Scz[1] + Scz[2] - othermad.Scz[2] + Scz[3] - othermad.Scz[3]) +
                     (Scx[0] - othermad.Scx[0] + Scx[1] - othermad.Scx[1] + Scx[2] - othermad.Scx[2] + Scx[3] - othermad.Scx[3]) *
@@ -337,7 +337,7 @@ public class Mad
         int wheelGround;
         if (World.IsHyperglidingEnabled)
         {
-            wheelGround = (int)sfloat.Round((bottomy * (sfloat)1f / _tickRate) * ((sfloat)1f - _tickRate));
+            wheelGround = (int)((bottomy * (sfloat)1f / _tickRate) * ((sfloat)1f - _tickRate));
             if (!mad.BadLanding)
             {
                 wheelGround = -wheelGround;
@@ -1015,7 +1015,7 @@ public class Mad
             }
         } //
 
-        var i21 = (int)sfloat.Round((sfloat)(3600.0F) / (Speed * Speed));
+        var i21 = Speed != 0 ? (int)((sfloat)(3600.0F) / (Speed * Speed)) : 0;
         if (i21 < 5)
         {
             i21 = 5;
@@ -1099,8 +1099,8 @@ public class Mad
         Rot(wheely, wheelz, conto.Y, conto.Z, Pzy, 4);
         Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
         var wasMtouch = false;
-        var i26 = (int)sfloat.Round((Scx[0] + Scx[1] + Scx[2] + Scx[3]) / (sfloat)(4.0F));
-        var i27 = (int)sfloat.Round((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / (sfloat)(4.0F));
+        var i26 = (int)((Scx[0] + Scx[1] + Scx[2] + Scx[3]) / (sfloat)(4.0F));
+        var i27 = (int)((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / (sfloat)(4.0F));
         for (var i28 = 0; i28 < 4; i28++)
         {
             if (Scx[i28] - i26 > (sfloat)(200.0F))
@@ -1179,9 +1179,9 @@ public class Mad
                 traction *= (sfloat)0.55f;
             }
 
-            var speedx = -(int)sfloat.Round(Speed * Sin(conto.Xz) * Cos(Pzy));
-            var speedz = (int)sfloat.Round(Speed * Cos(conto.Xz) * Cos(Pzy));
-            var speedy = -(int)sfloat.Round(Speed * Sin(Pzy));
+            var speedx = -(int)(Speed * Sin(conto.Xz) * Cos(Pzy));
+            var speedz = (int)(Speed * Cos(conto.Xz) * Cos(Pzy));
+            var speedy = -(int)(Speed * Sin(Pzy));
             if (BadLanding || Wasted || Halted)
             {
                 speedx = 0;
@@ -1323,7 +1323,7 @@ public class Mad
             sfloat sczavg = sczsum / 4;
             sfloat scxz = sfloat.Hypot(sczavg, scxavg);
 
-            Mxz = (int)sfloat.Round(dAtan2(-scxsum, sczsum));
+            Mxz = (int)(dAtan2(-scxsum, sczsum));
 
             if (Skid == 2)
             {
@@ -1463,7 +1463,7 @@ public class Mad
             assistxz %= (sfloat)90f;
             if (assistxz > (sfloat)89.5f || assistxz < (sfloat)0.5f)
             {
-                conto.Xz = sfloat.Round(conto.Xz / (sfloat)90.0F) * (sfloat)90.0F;
+                conto.Xz = (conto.Xz / (sfloat)90.0F) * (sfloat)90.0F;
             }
         }
 
@@ -1607,7 +1607,7 @@ public class Mad
             _cntouch = 0; // CHK12
                           //DS-addons: Bad landing hotfix
 
-        int newy = (int)sfloat.Round((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / (sfloat)4.0F - bottomy * Cos(Pzy) * Cos(Pxy) + airy);
+        int newy = (int)((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / (sfloat)4.0F - bottomy * Cos(Pzy) * Cos(Pxy) + airy);
         py = conto.Y - newy;
         conto.Y = newy;
         //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) / (sfloat)(4.0F) - (sfloat) i_10 * Cos(this.Pzy) * Cos(this.Pxy) + f_12);
@@ -1621,13 +1621,13 @@ public class Mad
 
         // CHK13
         // car sliding fix by jacher: do not adjust to tickrate
-        conto.X = (int)sfloat.Round((wheelx[0] - conto.Keyx[0] * Cos(conto.Xz) + xneg * conto.Keyz[0] * Sin(conto.Xz) +
+        conto.X = (int)((wheelx[0] - conto.Keyx[0] * Cos(conto.Xz) + xneg * conto.Keyz[0] * Sin(conto.Xz) +
             wheelx[1] - conto.Keyx[1] * Cos(conto.Xz) + xneg * conto.Keyz[1] * Sin(conto.Xz) +
             wheelx[2] - conto.Keyx[2] * Cos(conto.Xz) + xneg * conto.Keyz[2] * Sin(conto.Xz) +
             wheelx[3] - conto.Keyx[3] * Cos(conto.Xz) + xneg * conto.Keyz[3] * Sin(conto.Xz)) / (sfloat)4.0F
             + bottomy * Sin(Pxy) * Cos(conto.Xz) - bottomy * Sin(Pzy) * Sin(conto.Xz) + airx);
 
-        conto.Z = (int)sfloat.Round(
+        conto.Z = (int)(
             (wheelz[0] - xneg * conto.Keyz[0] * Cos(conto.Xz) - conto.Keyx[0] * Sin(conto.Xz)
             + wheelz[1] - xneg * conto.Keyz[1] * Cos(conto.Xz) - conto.Keyx[1] * Sin(conto.Xz)
             + wheelz[2] - xneg * conto.Keyz[2] * Cos(conto.Xz) - conto.Keyx[2] * Sin(conto.Xz)
@@ -1697,7 +1697,7 @@ public class Mad
             FrameTrace.AddMessage("y before tilt: " + conto.Y);
             if (Gtouch)
             {
-                conto.Y -= (int)sfloat.Round((_tilt / (sfloat)1.5f) * _tickRate);
+                conto.Y -= (int)((_tilt / (sfloat)1.5f) * _tickRate);
             }
             FrameTrace.AddMessage("y after tilt: " + conto.Y);
             FrameTrace.AddMessage("tilt: " + _tilt);
@@ -1708,16 +1708,16 @@ public class Mad
         }
         if (Wtouch && surfaceType == 2)
         {
-            conto.Zy += (int)sfloat.Round(((sfloat)random.NextSFloat() * (sfloat)6.0F * Speed / Stat.Swits[2] - (sfloat)3.0F * Speed / Stat.Swits[2]) *
+            conto.Zy += (int)(((sfloat)random.NextSFloat() * (sfloat)6.0F * Speed / Stat.Swits[2] - (sfloat)3.0F * Speed / Stat.Swits[2]) *
                                           (Stat.Bounce - (sfloat)0.3f));
-            conto.Xy += (int)sfloat.Round(((sfloat)random.NextSFloat() * (sfloat)6.0F * Speed / Stat.Swits[2] - (sfloat)3.0F * Speed / Stat.Swits[2]) *
+            conto.Xy += (int)(((sfloat)random.NextSFloat() * (sfloat)6.0F * Speed / Stat.Swits[2] - (sfloat)3.0F * Speed / Stat.Swits[2]) *
                                           (Stat.Bounce - (sfloat)0.3f));
         }
         if (Wtouch && surfaceType == 1)
         {
-            conto.Zy += (int)sfloat.Round(((sfloat)random.NextSFloat() * (sfloat)4.0F * Speed / Stat.Swits[2] - (sfloat)2.0F * Speed / Stat.Swits[2]) *
+            conto.Zy += (int)(((sfloat)random.NextSFloat() * (sfloat)4.0F * Speed / Stat.Swits[2] - (sfloat)2.0F * Speed / Stat.Swits[2]) *
                                           (Stat.Bounce - (sfloat)0.3f));
-            conto.Xy += (int)sfloat.Round(((sfloat)random.NextSFloat() * (sfloat)4.0F * Speed / Stat.Swits[2] - (sfloat)2.0F * Speed / Stat.Swits[2]) *
+            conto.Xy += (int)(((sfloat)random.NextSFloat() * (sfloat)4.0F * Speed / Stat.Swits[2] - (sfloat)2.0F * Speed / Stat.Swits[2]) *
                                           (Stat.Bounce - (sfloat)0.3f));
         } // CHK15
         if (Hitmag >= Stat.Maxmag && !Wasted)
@@ -2001,12 +2001,12 @@ public class Mad
             }
             if (Loop == 2 || Loop == -1)
             {
-                Travxy += (int)sfloat.Round((Rcomp - Lcomp) * _tickRate);
+                Travxy += (int)((Rcomp - Lcomp) * _tickRate);
                 if (Math.Abs(Travxy) > 135)
                 {
                     Rtab = true;
                 }
-                Travzy += (int)sfloat.Round((Ucomp - Dcomp) * _tickRate);
+                Travzy += (int)((Ucomp - Dcomp) * _tickRate);
                 if (Travzy > 135)
                 {
                     Ftab = true;
@@ -2093,11 +2093,11 @@ public class Mad
                             Power = (sfloat)(98.0F);
                             if (Powerup > (sfloat)(150.0F))
                             {
-                                _xtpower = (int)sfloat.Round(200 / _tickRate);
+                                _xtpower = (int)(200 / _tickRate);
                             }
                             else
                             {
-                                _xtpower = (int)sfloat.Round(100 / _tickRate);
+                                _xtpower = (int)(100 / _tickRate);
                             }
                         }
                     } // CHK17
