@@ -504,7 +504,7 @@ public class Mad
 
         FrameTrace.AddMessage($"xz: {conto.Xz:0.00}, mxz: {Mxz:0.00}, lxz: {_lxz:0.00}, fxz: {_fxz:0.00}, cxz: {Cxz:0.00}");
         FrameTrace.AddMessage($"xy: {conto.Xy:0.00}, pxy: {Pxy:0.00}, zy: {conto.Zy:0.00}, pzy: {Pzy:0.00}");
-        FrameTrace.AddMessage($"Travxz: {Travxz}, Travxy: {Travxy}, Travzy: {Travzy}, Surfing: {Surfer}");
+        FrameTrace.AddMessage($"Travxz: {Travxz:0.00}, Travxy: {Travxy:0.00}, Travzy: {Travzy:0.00}, Surfing: {Surfer}");
 
         var xneg = 1;
         var zneg = 1;
@@ -2043,7 +2043,7 @@ public class Mad
                 Travxz += (_lxz - conto.Xz) * _tickRate;
                 _lxz = conto.Xz;
             }
-            if (_srfcnt < (10 * 1/_tickRate))
+            if (_srfcnt < (10 * (1/_tickRate)))
             {
                 if (control.Wall != -1)
                 {
