@@ -32,6 +32,7 @@ public class Mad
     /// </summary>
     private bool _colidim;
     private readonly int[,] _crank = new int[4, 4];
+    private readonly int[,] _lcrank = new int[4, 4];
     internal fix64 Cxz;
     private int _dcnt;
     internal fix64 Dcomp;
@@ -48,7 +49,6 @@ public class Mad
     internal int Im;
     internal int Lastcolido;
     internal fix64 Lcomp;
-    private readonly int[,] _lcrank = new int[4, 4];
     internal int Loop;
     private fix64 _lxz;
     internal int Missedcp;
@@ -77,9 +77,9 @@ public class Mad
     internal fix64 Rcomp;
     private int _rpdcatch;
     internal bool Rtab;
-    internal readonly fix64[] Scx = new fix64[4];
-    internal readonly fix64[] Scy = new fix64[4];
-    internal readonly fix64[] Scz = new fix64[4];
+    internal InlineArray4<fix64> Scx;
+    internal InlineArray4<fix64> Scy;
+    internal InlineArray4<fix64> Scz;
     internal int Shakedam;
     internal int Skid;
     internal fix64 Speed;
@@ -87,9 +87,9 @@ public class Mad
     private int _srfcnt;
     internal bool Surfer;
     private fix64 _tilt;
-    internal int Travxy;
+    internal fix64 Travxy;
     internal fix64 Travxz;
-    internal int Travzy;
+    internal fix64 Travzy;
     internal int Trcnt;
     internal fix64 Txz;
     internal fix64 Ucomp;
@@ -2023,12 +2023,12 @@ public class Mad
             }
             if (Loop == 2 || Loop == -1)
             {
-                Travxy += (int)((Rcomp - Lcomp) * _tickRate);
-                if (Math.Abs(Travxy) > 135)
+                Travxy += ((Rcomp - Lcomp) * _tickRate);
+                if (fix64.Abs(Travxy) > 135)
                 {
                     Rtab = true;
                 }
-                Travzy += (int)((Ucomp - Dcomp) * _tickRate);
+                Travzy += ((Ucomp - Dcomp) * _tickRate);
                 if (Travzy > 135)
                 {
                     Ftab = true;
