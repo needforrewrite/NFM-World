@@ -50,7 +50,7 @@ public class InMultiplayerRacePhase(
         switch (currentViewMode)
         {
             case ViewMode.Follow:
-                PlayerFollowCamera.Follow(camera, CarsInRace[playerCarIndex].CarRef, CarsInRace[playerCarIndex].Mad.Cxz, CarsInRace[playerCarIndex].Control.Lookback);
+                PlayerFollowCamera.Follow(camera, CarsInRace[playerCarIndex].CarRef, (float)CarsInRace[playerCarIndex].Mad.Cxz, CarsInRace[playerCarIndex].Control.Lookback);
                 break;
             case ViewMode.Around:
                 // Medium.Around(CarsInRace[playerCarIndex].Conto, true);

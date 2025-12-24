@@ -14,7 +14,7 @@ public static class MeshDamage
     {
         var wheel = mesh.Wheels[wheelIdx];
 
-        damageFactor *= stat.Dammult;
+        damageFactor *= (float)stat.Dammult;
         if (Math.Abs(damageFactor) > 100.0f)
         {
             if (damageFactor > 100.0f)
@@ -33,9 +33,9 @@ public static class MeshDamage
                 for (var j = 0; j < mesh.Polys[i].Points.Length; j++)
                 {
                     if (UMath.Py(
-                            wheel.Position.X,
+                            (float)wheel.Position.X,
                             mesh.Polys[i].Points[j].X, // x
-                            wheel.Position.Z,
+                            (float)wheel.Position.Z,
                             mesh.Polys[i].Points[j].Z // z
                         ) < stat.Clrad)
                     {
@@ -114,7 +114,7 @@ public static class MeshDamage
     {
         var wheel = mesh.Wheels[wheelIdx];
 
-        damageFactor *= stat.Dammult;
+        damageFactor *= (float)stat.Dammult;
         if (Math.Abs(damageFactor) > 100.0f)
         {
             if (damageFactor > 100.0f)
@@ -175,9 +175,9 @@ public static class MeshDamage
                     for (var j = 0; j < mesh.Polys[i].Points.Length; j++)
                     {
                         if (UMath.Py(
-                                wheel.Position.X,
+                                (float)wheel.Position.X,
                                 mesh.Polys[i].Points[j].X, // x
-                                wheel.Position.Z,
+                                (float)wheel.Position.Z,
                                 mesh.Polys[i].Points[j].Z // z
                             ) < stat.Clrad)
                         {
@@ -296,7 +296,7 @@ public static class MeshDamage
     {
         var wheel = mesh.Wheels[wheelIdx];
 
-        damageFactor *= stat.Dammult;
+        damageFactor *= (float)stat.Dammult;
         if (Math.Abs(damageFactor) > 100.0f)
         {
             if (damageFactor > 100.0f)
@@ -315,9 +315,9 @@ public static class MeshDamage
                 for (var j = 0; j < mesh.Polys[i].Points.Length; j++)
                 {
                     if (UMath.Py(
-                            wheel.Position.X,
+                            (float)wheel.Position.X,
                             mesh.Polys[i].Points[j].X, // x
-                            wheel.Position.Z,
+                            (float)wheel.Position.Z,
                             mesh.Polys[i].Points[j].Z // z
                         ) < stat.Clrad)
                     {

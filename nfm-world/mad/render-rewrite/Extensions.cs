@@ -2,7 +2,10 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance;
+using FixedMathSharp;
+using FixedMathSharp.Utility;
 using Microsoft.Xna.Framework.Graphics;
+using SoftFloat;
 using Steamworks;
 using Steamworks.Data;
 using Stride.Core.Mathematics;
@@ -27,10 +30,18 @@ public static class Extensions
 
     extension(AngleSingle angle)
     {
+        public fix64 DegreesSFloat => (fix64)angle.Radians * fix64.RadToDeg;
+        
         public static AngleSingle FromRadians(float radians) => Unsafe.As<float, AngleSingle>(ref radians);
 
         public static AngleSingle FromDegrees(float degrees)
             => Unsafe.BitCast<float, AngleSingle>(MathUtil.DegreesToRadians(degrees));
+
+        public static AngleSingle FromDegrees(int degrees)
+            => Unsafe.BitCast<float, AngleSingle>((float)(degrees * fix64.DegToRad));
+
+        public static AngleSingle FromDegrees(fix64 degrees)
+            => Unsafe.BitCast<float, AngleSingle>((float)(degrees * fix64.DegToRad));
     }
 
     extension(System.Numerics.Vector3 vector3)
@@ -281,5 +292,12 @@ public static class Extensions2
         
         public static Vector3 FromSpan(ReadOnlySpan<float> span)
             => new(span[0], span[1], span[2]);
+    }
+
+    extension(ref DeterministicRandom random)
+    {
+        public fix64 NextSFloat() => new(random.NextFixed64(Fixed64.One));
+        public fix64 NextSFloat(fix64 maxExclusive) => new(random.NextFixed64(maxExclusive.Value));
+        public fix64 NextSFloat(fix64 minInclusive, fix64 maxExclusive) => new(random.NextFixed64(minInclusive.Value, maxExclusive.Value));
     }
 }

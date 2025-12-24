@@ -3,6 +3,7 @@ using MessagePack;
 using MessagePack.Formatters;
 using MessagePack.Resolvers;
 using Microsoft.Xna.Framework;
+using SoftFloat;
 using Color = NFMWorld.Util.Color;
 
 namespace NFMWorld.Mad.packets;
@@ -23,6 +24,8 @@ file static class MsgPackHelpers
             new UnsafeUnmanagedStructFormatter<Color>(106),
             new UnsafeUnmanagedStructFormatter<Color3>(107),
             new UnsafeUnmanagedStructFormatter<AngleSingle>(108),
+            new UnsafeUnmanagedStructFormatter<fix64>(109),
+            new UnsafeUnmanagedStructFormatter<f64Vector3>(110),
         ], [
             StandardResolver.Instance,
             MsgPackResolver.Instance

@@ -915,8 +915,8 @@ public class ModelEditorPhase : BasePhase
         distance = float.MaxValue;
         
         // Convert box to axis-aligned bounding box in world space
-        var center = new Vector3(box.Translation.X, box.Translation.Y, box.Translation.Z);
-        var radius = new Vector3(box.Radius.X, box.Radius.Y, box.Radius.Z);
+        var center = (Vector3)box.Translation;
+        var radius = (Vector3)box.Radius;
         
         // Simple AABB ray intersection (ignoring rotation for now - can be enhanced later)
         var min = center - radius;
@@ -927,9 +927,7 @@ public class ModelEditorPhase : BasePhase
         
         if (tmin > tmax)
         {
-            var temp = tmin;
-            tmin = tmax;
-            tmax = temp;
+            (tmin, tmax) = (tmax, tmin);
         }
         
         float tymin = (min.Y - rayOrigin.Y) / rayDirection.Y;

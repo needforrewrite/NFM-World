@@ -1,6 +1,7 @@
 using System;
 using NFMWorld.DriverInterface;
 using NFMWorld.Util;
+using SoftFloat;
 using Stride.Core.Mathematics;
 using System.Linq;
 using Steamworks;
@@ -269,9 +270,8 @@ namespace NFMWorld.Mad
 
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
-                inRacePhase.CarsInRace[inRacePhase.playerCarIndex].Mad.Speed = speed;
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex].Mad.Speed = (fix64)speed;
             }
-
             console.Log($"Set player car speed to {speed}");
         }
 

@@ -1,6 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using MessagePack;
 using NFMWorld.Mad;
+using SoftFloat;
 
 namespace NFMWorld.Mad;
 
@@ -22,18 +23,18 @@ public struct PlayerState
     [Key(12)] public required bool pd;
     [Key(13)] public required bool pu;
     [Key(14)] public required bool dest;
-    [Key(29)] public required float x;
-    [Key(30)] public required float y;
-    [Key(31)] public required float z;
-    [Key(32)] public required float xz;
-    [Key(33)] public required float xy;
-    [Key(34)] public required float zy;
-    [Key(35)] public required float speed;
-    [Key(36)] public required float power;
-    [Key(37)] public required float mxz;
-    [Key(38)] public required float pzy;
-    [Key(39)] public required float pxy;
-    [Key(40)] public required float txz;
+    [Key(29)] public required fix64 x;
+    [Key(30)] public required fix64 y;
+    [Key(31)] public required fix64 z;
+    [Key(32)] public required fix64 xz;
+    [Key(33)] public required fix64 xy;
+    [Key(34)] public required fix64 zy;
+    [Key(35)] public required fix64 speed;
+    [Key(36)] public required fix64 power;
+    [Key(37)] public required fix64 mxz;
+    [Key(38)] public required fix64 pzy;
+    [Key(39)] public required fix64 pxy;
+    [Key(40)] public required fix64 txz;
     [Key(27)] public required int loop;
     [Key(28)] public required int wxz;
     [Key(41)] public required int pcleared;
@@ -56,7 +57,7 @@ public struct PlayerState
         c.Mad.Pr = state.pr;
         c.Mad.Pd = state.pd;
         c.Mad.Pu = state.pu;
-        c.CarRef.Position = new Vector3(state.x, state.y, state.z);
+        c.CarRef.Position = new Vector3((float)state.x, (float)state.y, (float)state.z);
         c.CarRef.Rotation = new Euler(AngleSingle.FromDegrees(state.xz), AngleSingle.FromDegrees(state.zy), AngleSingle.FromDegrees(state.xy));
         c.Mad.Speed = state.speed;
         c.Mad.Power = state.power;
@@ -89,12 +90,12 @@ public struct PlayerState
             pr = car.Mad.Pr,
             pd = car.Mad.Pd,
             pu = car.Mad.Pu,
-            x = car.CarRef.Position.X,
-            y = car.CarRef.Position.Y,
-            z = car.CarRef.Position.Z,
-            xz = car.CarRef.Rotation.Xz.Degrees,
-            xy = car.CarRef.Rotation.Xy.Degrees,
-            zy = car.CarRef.Rotation.Zy.Degrees,
+            x = (fix64)car.CarRef.Position.X,
+            y = (fix64)car.CarRef.Position.Y,
+            z = (fix64)car.CarRef.Position.Z,
+            xz = car.CarRef.Rotation.Xz.DegreesSFloat,
+            xy = car.CarRef.Rotation.Xy.DegreesSFloat,
+            zy = car.CarRef.Rotation.Zy.DegreesSFloat,
             speed = car.Mad.Speed,
             power = car.Mad.Power,
             mxz = car.Mad.Mxz,
@@ -102,7 +103,7 @@ public struct PlayerState
             pxy = car.Mad.Pxy,
             txz = car.Mad.Txz,
             loop = car.Mad.Loop,
-            wxz = (int)car.CarRef.TurningWheelAngle.Xz.Degrees,
+            wxz = (int)car.CarRef.TurningWheelAngle.Xz.DegreesSFloat,
             pcleared = car.Mad.Pcleared,
             clear = car.Mad.Clear,
             nlaps = car.Mad.Nlaps,

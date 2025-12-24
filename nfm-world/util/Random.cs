@@ -1,3 +1,5 @@
+using SoftFloat;
+
 namespace NFMWorld.Util;
 
 // https://stackoverflow.com/a/2147782
