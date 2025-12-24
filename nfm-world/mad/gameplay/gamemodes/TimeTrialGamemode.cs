@@ -2,13 +2,14 @@ using System.Collections;
 using System.Diagnostics;
 using Maxine.Extensions;
 using NFMWorld.Mad;
+using NFMWorld.Mad.gamemodes;
 using NFMWorld.Util;
 using SoftFloat;
 using Stride.Core.Mathematics;
 using Color = NFMWorld.Util.Color;
 
-public class TimeTrialGamemode(string playerCarName, int playerCarIndex, UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
-    : BaseGamemode
+public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRacePhase baseRacePhase)
+    : BaseGamemode(gamemodeParameters, baseRacePhase)
 {
     private enum TimeTrialState
     {
@@ -48,13 +49,13 @@ public class TimeTrialGamemode(string playerCarName, int playerCarIndex, Unlimit
         bestTimeTrial = null;
         tick = 0;
 
-        carsInRace[playerCarIndex] = new InGameCar(0, GameSparker.GetCar(playerCarName).Car, 0, 0, true);
+        carsInRace[playerCarIndex] = new InGameCar(0, GameSparker.GetCar(player.CarName).Car, 0, 0, true);
 
         // ghost
         carsInRace[playerCarIndex + 1] = new InGameCar(carsInRace[playerCarIndex], 0, false);
         carsInRace[playerCarIndex + 1].Sfx.Mute = true;
 
-        SavedTimeTrial bestTimeDemo = new SavedTimeTrial(playerCarName, currentStage.Path);
+        SavedTimeTrial bestTimeDemo = new SavedTimeTrial(player.CarName, currentStage.Path);
         if (bestTimeDemo.Load())
         {
             bestTimeTrial = bestTimeDemo;
@@ -65,7 +66,7 @@ public class TimeTrialGamemode(string playerCarName, int playerCarIndex, Unlimit
             carsInRace.RemoveAt(1);
         }
 
-        currentTimeTrial = new SavedTimeTrial(playerCarName, currentStage.Path);
+        currentTimeTrial = new SavedTimeTrial(player.CarName, currentStage.Path);
 
         foreach(CheckPoint cp in currentStage.checkpoints)
         {

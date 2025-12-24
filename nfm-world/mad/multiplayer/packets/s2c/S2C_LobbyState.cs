@@ -32,11 +32,17 @@ public struct S2C_LobbyState : IPacketServerToClient<S2C_LobbyState>
         [Key(1)] public required uint CreatorId { get; set; }
         [Key(2)] public required string CreatorName { get; set; }
         [Key(3)] public required string StageName { get; set; }
-        [Key(4)] public required int PlayerCount { get; set; }
-        [Key(5)] public required int MaxPlayers { get; set; }
-        [Key(6)] public required IDictionary<byte, uint> PlayerClientIds { get; set; }
-        [Key(7)] public required SessionState State { get; set; } = SessionState.NotStarted;
+        [Key(6)] public required int MaxPlayers { get; set; }
         
+        /// <summary>
+        /// Key: player car index
+        /// Value: client ID
+        /// </summary>
+        [Key(4)] public required IDictionary<byte, uint> PlayerClientIds { get; set; }
+        [Key(5)] public required SessionState State { get; set; } = SessionState.NotStarted;
+
+        [IgnoreMember] public int PlayerCount => PlayerClientIds.Count;
+
         public GameSession()
         {
         }
