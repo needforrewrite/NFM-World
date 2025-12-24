@@ -87,6 +87,8 @@ public class TimeTrialGamemode(string playerCarName, int playerCarIndex, Unlimit
         base.Reset();
 
         _currentState = TimeTrialState.NotStarted;
+
+        Enter();
     }
 
     public override void GameTick()
