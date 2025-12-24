@@ -3,12 +3,19 @@ using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
 
+// TODO: implement the same menu as in nfm-lit
+
 public class MainMenuPhase : BasePhase
 {
-    private enum MenuState
+    public enum MenuState
     {
         Main,
-        Workshop
+        Play,
+        Workshop,
+        Singleplayer,
+        Multiplayer,
+        Training,
+        Instructions,
     }
 
     private struct Button
@@ -27,7 +34,8 @@ public class MainMenuPhase : BasePhase
     private int _mouseY;
     private readonly Font _titleFont;
     private readonly Font _buttonFont;
-    private MenuState _currentMenuState = MenuState.Main;
+    public MenuState _currentMenuState = MenuState.Main;
+    private readonly List<MenuState> _menuHistory = new();
 
     public MainMenuPhase()
     {
@@ -38,7 +46,7 @@ public class MainMenuPhase : BasePhase
         BuildMainMenu();
     }
 
-    private void BuildMainMenu()
+    public void BuildMainMenu()
     {
         _buttons.Clear();
         
@@ -71,6 +79,81 @@ public class MainMenuPhase : BasePhase
         AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "MODEL EDITOR", OnModelEditorClicked);
         AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "STAGE EDITOR", OnClickUnavailable);
         AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "CAMPAIGN EDITOR", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "BACK", OnBackClicked);
+    }
+
+    private void BuildPlayMenu()
+    {
+        _buttons.Clear();
+        
+        // Initialize submenu buttons
+        int buttonWidth = 235;
+        int buttonHeight = 35;
+        int startX = 100;
+        int startY = 390;
+        int spacing = 40;
+
+        AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "SINGLEPLAYER", OnSPClicked);
+        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "MULTIPLAYER", OnMPClicked);
+        AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "TRAINING", OnTrainingClicked);
+        AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "BACK", OnBackClicked);
+    }
+
+    private void BuildSPMenu()
+    {
+        _buttons.Clear();
+        
+        // Initialize submenu buttons
+        int buttonWidth = 235;
+        int buttonHeight = 35;
+        int startX = 100;
+        int startY = 390;
+        int spacing = 40;
+
+        AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "NFM 1", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "NFM 2", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "CUSTOM CAMPAIGN", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 3, buttonWidth, buttonHeight, "FREE PLAY", OnFreePlayClicked);
+        AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "BACK", OnBackClicked);
+    }
+
+    private void BuildMPMenu()
+    {
+        _buttons.Clear();
+        
+        // Initialize submenu buttons
+        int buttonWidth = 235;
+        int buttonHeight = 35;
+        int startX = 100;
+        int startY = 390;
+        int spacing = 40;
+
+        // this should put you in phy's matchmaking system after matchmaking settings have been selected, as well as ability to spectate ongoing games
+        AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "COMPETITIVE", OnClickUnavailable);
+
+        // this should put you in a lobby like maxine is developing right now
+        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "CASUAL", OnClickUnavailable); 
+
+        AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "BACK", OnBackClicked);
+    }
+
+    private void BuildTrainingMenu()
+    {
+        _buttons.Clear();
+        
+        // Initialize submenu buttons
+        int buttonWidth = 235;
+        int buttonHeight = 35;
+        int startX = 100;
+        int startY = 390;
+        int spacing = 40;
+
+        AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "TIME TRIALS", OnTTClicked);
+
+        //lowkey could challenges be merged in to TTs? not sure
+        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "CHALLENGES", OnClickUnavailable);
+
+        AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "GAME INSTRUCTIONS", OnClickUnavailable);
         AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "BACK", OnBackClicked);
     }
 
@@ -189,10 +272,28 @@ public class MainMenuPhase : BasePhase
                     "SETTINGS" => "Adjust game settings.",
                     "CREDITS" => "View game credits.",
                     "QUIT" => "Exit the game.",
+                    // Workshop submenu
                     "MODEL EDITOR" => "View and edit custom models.",
                     "STAGE EDITOR" => "Design your own stages.",
-                    "CAMPAIGN MAKER" => "Build custom campaign modes.",
-                    "BACK" => "Return to the main menu.",
+                    "CAMPAIGN EDITOR" => "Craft custom experiences.",
+                    // Play submenu
+                    "SINGLEPLAYER" => "Play the original single player experiences.",
+                    "MULTIPLAYER" => "Play online with other players.",
+                    "TRAINING" => "Train your skills and learn the game mechanics.",
+                    // SP submenu
+                    "NFM 1" => "Play the original Need For Madness campaign.",
+                    "NFM 2" => "Play the original Need For Madness 2 campaign.",
+                    "CUSTOM CAMPAIGN" => "Play custom experiences crafted by the community.",
+                    "FREE PLAY" => "The World is your oyster.",
+                    // MP submenu
+                    "COMPETITIVE" => "Compete against other players via matchmaking.",
+                    "CASUAL" => "Play with people in a free relaxed environment.",
+                    // Training submenu
+                    "TIME TRIALS" => "Flex your fastest time against other people.",
+                    "CHALLENGES" => "Complete challenges to sharpen your mechanical skills.",
+                    "GAME INSTRUCTIONS" => "Read about the rules and controls of the game.",
+                    //
+                    "BACK" => "Return to the previous menu.",
                     _ => ""
                 };
                 G.DrawString(description, 120, 637);
@@ -236,21 +337,93 @@ public class MainMenuPhase : BasePhase
         G.DrawString(button.Text, textX, textY);
     }
 
-    private void OnPlayClicked()
+    private void OnFreePlayClicked()
     {
         GameSparker.StartGame();
     }
 
     private void OnWorkshopClicked()
     {
+        _menuHistory.Add(_currentMenuState);
         _currentMenuState = MenuState.Workshop;
         BuildWorkshopMenu();
     }
 
     private void OnBackClicked()
     {
-        _currentMenuState = MenuState.Main;
-        BuildMainMenu();
+        if (_menuHistory.Count > 0)
+        {
+            var previous = _menuHistory[_menuHistory.Count - 1];
+            _menuHistory.RemoveAt(_menuHistory.Count - 1);
+            _currentMenuState = previous;
+            switch (_currentMenuState)
+            {
+                case MenuState.Main:
+                    BuildMainMenu();
+                    break;
+                case MenuState.Play:
+                    BuildPlayMenu();
+                    break;
+                case MenuState.Workshop:
+                    BuildWorkshopMenu();
+                    break;
+                case MenuState.Singleplayer:
+                    BuildSPMenu();
+                    break;
+                case MenuState.Multiplayer:
+                    BuildMPMenu();
+                    break;
+                case MenuState.Training:
+                    BuildTrainingMenu();
+                    break;
+                case MenuState.Instructions:
+                    // If you have an instructions menu, call its builder here
+                    break;
+                default:
+                    BuildMainMenu();
+                    break;
+            }
+        }
+        else
+        {
+            _currentMenuState = MenuState.Main;
+            BuildMainMenu();
+        }
+    }
+
+    private void OnPlayClicked()
+    {
+        _menuHistory.Add(_currentMenuState);
+        _currentMenuState = MenuState.Play;
+        BuildPlayMenu();
+    }
+
+    private void OnSPClicked()
+    {
+        _menuHistory.Add(_currentMenuState);
+        _currentMenuState = MenuState.Singleplayer;
+        BuildSPMenu();
+    }
+
+    private void OnTrainingClicked()
+    {
+        _menuHistory.Add(_currentMenuState);
+        _currentMenuState = MenuState.Training;
+        BuildTrainingMenu();
+    }
+
+    private void OnTTClicked()
+    {
+        InRacePhase.gamemode = new TimeTrialGamemode();
+        GameSparker.CurrentPhase = GameSparker.InRace;
+    }
+
+    private void OnMPClicked()
+    {
+        // this should authenticate the player before showing the menu
+        _menuHistory.Add(_currentMenuState);
+        _currentMenuState = MenuState.Multiplayer;
+        BuildMPMenu();
     }
 
     private void OnModelEditorClicked()
