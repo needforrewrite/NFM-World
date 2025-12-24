@@ -272,7 +272,7 @@ public static class Extensions2
             => new(span[0], span[1], span[2]);
     }
 
-    extension(DeterministicRandom random)
+    extension(ref DeterministicRandom random)
     {
         public fix64 NextSFloat() => new(random.NextFixed64(Fixed64.One));
         public fix64 NextSFloat(fix64 maxExclusive) => new(random.NextFixed64(maxExclusive.Value));
