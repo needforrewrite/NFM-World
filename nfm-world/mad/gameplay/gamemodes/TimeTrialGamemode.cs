@@ -37,8 +37,6 @@ public class TimeTrialGamemode(string playerCarName, int playerCarIndex, Unlimit
 
     public override void Enter()
     {
-        Reset();
-
         _countdownTime = 4;
         _innerCountdownTicks = 0; // Tick down immediately to "three"
         currentCheckpoint = 0;
