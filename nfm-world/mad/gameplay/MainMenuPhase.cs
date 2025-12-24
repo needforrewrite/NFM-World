@@ -49,7 +49,7 @@ public class MainMenuPhase : BasePhase
     public void BuildMainMenu()
     {
         _buttons.Clear();
-
+        
         // Initialize buttons (matching the image positions)
         int buttonWidth = 230;
         int buttonHeight = 35;
@@ -68,7 +68,7 @@ public class MainMenuPhase : BasePhase
     private void BuildWorkshopMenu()
     {
         _buttons.Clear();
-
+        
         // Initialize submenu buttons
         int buttonWidth = 235;
         int buttonHeight = 35;
@@ -85,7 +85,7 @@ public class MainMenuPhase : BasePhase
     private void BuildPlayMenu()
     {
         _buttons.Clear();
-
+        
         // Initialize submenu buttons
         int buttonWidth = 235;
         int buttonHeight = 35;
@@ -102,7 +102,7 @@ public class MainMenuPhase : BasePhase
     private void BuildSPMenu()
     {
         _buttons.Clear();
-
+        
         // Initialize submenu buttons
         int buttonWidth = 235;
         int buttonHeight = 35;
@@ -120,7 +120,7 @@ public class MainMenuPhase : BasePhase
     private void BuildMPMenu()
     {
         _buttons.Clear();
-
+        
         // Initialize submenu buttons
         int buttonWidth = 235;
         int buttonHeight = 35;
@@ -132,7 +132,7 @@ public class MainMenuPhase : BasePhase
         AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "COMPETITIVE", OnClickUnavailable);
 
         // this should put you in a lobby like maxine is developing right now
-        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "CASUAL", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "CASUAL", OnClickUnavailable); 
 
         AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "BACK", OnBackClicked);
     }
@@ -140,7 +140,7 @@ public class MainMenuPhase : BasePhase
     private void BuildTrainingMenu()
     {
         _buttons.Clear();
-
+        
         // Initialize submenu buttons
         int buttonWidth = 235;
         int buttonHeight = 35;
@@ -173,7 +173,7 @@ public class MainMenuPhase : BasePhase
     public override void MouseMoved(int x, int y, bool imguiWantsMouse)
     {
         base.MouseMoved(x, y, imguiWantsMouse);
-
+        
         _mouseX = x;
         _mouseY = y;
 
@@ -207,7 +207,7 @@ public class MainMenuPhase : BasePhase
     public override void MousePressed(int x, int y, bool imguiWantsMouse)
     {
         base.MousePressed(x, y, imguiWantsMouse);
-
+        
         // Don't process clicks if ImGui is capturing the mouse
         if (imguiWantsMouse)
             return;
@@ -231,7 +231,7 @@ public class MainMenuPhase : BasePhase
     public override void Render()
     {
         base.Render();
-
+        
         // Clear to dark purple background
         G.SetColor(new Color(15, 0, 35));
         G.FillRect(0, 0, 1920, 1080);
@@ -239,7 +239,7 @@ public class MainMenuPhase : BasePhase
         // Draw title
         G.SetFont(_titleFont);
         G.SetColor(new Color(255, 140, 0)); // Orange
-
+        
         // Draw "NEED FOR MADNESS?" with styling similar to the image
         G.DrawString("NEED FOR MADNESS?", 90, 290);
 
@@ -249,7 +249,7 @@ public class MainMenuPhase : BasePhase
         {
             DrawButton(button);
         }
-
+        
         // Debug: Show mouse position
         G.SetFont(new Font("Arial", 0, 12));
         G.SetColor(new Color(255, 255, 0)); // Yellow
@@ -258,7 +258,7 @@ public class MainMenuPhase : BasePhase
         // Draw tooltip at bottom (similar to image)
         G.SetFont(new Font("Arial", 0, 14));
         G.SetColor(new Color(255, 140, 0)); // Orange
-
+        
         // Find hovered button and show description
         foreach (var button in _buttons)
         {
@@ -310,11 +310,11 @@ public class MainMenuPhase : BasePhase
             // Hovered state - filled orange background
             G.SetColor(new Color(255, 140, 0)); // Bright orange
             G.FillRect(button.X, button.Y, button.Width, button.Height);
-
+            
             // Inner dark background
             G.SetColor(new Color(20, 15, 35));
             G.FillRect(button.X + 3, button.Y + 3, button.Width - 6, button.Height - 6);
-
+            
             // Border
             G.SetColor(new Color(255, 140, 0)); // Orange
             G.DrawRect(button.X, button.Y, button.Width, button.Height);
@@ -329,11 +329,11 @@ public class MainMenuPhase : BasePhase
         // Button text
         G.SetColor(new Color(255, 140, 0)); // Orange text
         G.SetFont(_buttonFont);
-
+        
         // Center the text in the button
         int textX = button.X + 12; // Left-aligned with padding
         int textY = button.Y + 25; // Adjusted for proper vertical centering
-
+        
         G.DrawString(button.Text, textX, textY);
     }
 
@@ -414,11 +414,8 @@ public class MainMenuPhase : BasePhase
 
     private void OnTTClicked()
     {
+        InRacePhase.gamemode = new TimeTrialGamemode();
         GameSparker.CurrentPhase = GameSparker.InRace;
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
-        {
-            inRacePhase.gamemode = GameModes.TimeTrial;
-        }
     }
 
     private void OnMPClicked()
@@ -452,10 +449,8 @@ public class MainMenuPhase : BasePhase
     private void OnQuitClicked()
     {
         GameSparker.MessageWindow.ShowYesNo("Quit", "Are you sure you want to quit?",
-        result =>
-        {
-            if (result == MessageWindow.MessageResult.Yes)
-            {
+        result => {
+            if (result == MessageWindow.MessageResult.Yes) {
                 System.Environment.Exit(0);
             }
         });
@@ -466,7 +461,7 @@ public class MainMenuPhase : BasePhase
         base.KeyPressed(key, imguiWantsKeyboard);
 
         if (imguiWantsKeyboard) return;
-
+        
         // Handle key capture for settings menu
         if (GameSparker.SettingsMenu.IsOpen && GameSparker.SettingsMenu.IsCapturingKey())
         {
