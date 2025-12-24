@@ -345,6 +345,6 @@ public class Dust
         }
         _graphicsDevice.DepthStencilState = DepthStencilState.Default;
         _graphicsDevice.BlendState = BlendState.Opaque;
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
     }
 }

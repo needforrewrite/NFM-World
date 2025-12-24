@@ -4,20 +4,21 @@ using NFMWorld.Mad;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
 
-public class SandboxGamemode : BaseGamemode
+public class SandboxGamemode(string playerCarName, int playerCarIndex, UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    : BaseGamemode
 {
     private int _newTick = 0;
     
-    public override void Enter(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    public override void Enter()
     {
-        carsInRace[InRacePhase.playerCarIndex] = new InGameCar(InRacePhase.playerCarIndex, GameSparker.GetCar(InRacePhase.playerCarName).Car, 0, 0, true);
-        carsInRace[1] = new InGameCar(1, GameSparker.GetCar("audir8").Car, 100, 0, false);
+        carsInRace[playerCarIndex] = new InGameCar(playerCarIndex, GameSparker.GetCar(playerCarName).Car!, 0, 0, true);
+        carsInRace[1] = new InGameCar(1, GameSparker.GetCar("nfmm/audir8").Car!, 100, 0, false);
         carsInRace[1].Sfx.Mute = true;
 
         Reset();
     }
 
-    public override void Exit(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    public override void Exit()
     {
         // Cleanup for Time Trial mode
     }
@@ -27,7 +28,7 @@ public class SandboxGamemode : BaseGamemode
         base.Reset();
     }
 
-    public override void GameTick(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    public override void GameTick()
     {
         FrameTrace.AddMessage($"contox: {carsInRace[0].CarRef.Position.X:0.00}, contoz: {carsInRace[0].CarRef.Position.Z:0.00}, contoy: {carsInRace[0].CarRef.Position.Y:0.00}");
 
@@ -67,8 +68,7 @@ public class SandboxGamemode : BaseGamemode
         // Handle key releases specific to Time Trial mode
     }
 
-    public override void Render(UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+    public override void Render()
     {
-        // Time Trial specific rendering logic
     }
 }

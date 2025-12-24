@@ -82,9 +82,9 @@ public class SettingsMenu(Program game)
         _isOpen = true;
         
         // Load current game settings
-        _fov = InRacePhase.camera.Fov;
-        _followY = InRacePhase.PlayerFollowCamera.FollowYOffset;
-        _followZ = InRacePhase.PlayerFollowCamera.FollowZOffset;
+        _fov = CameraSettings.Fov;
+        _followY = FollowCamera.FollowYOffset;
+        _followZ = FollowCamera.FollowZOffset;
     }
 
     public void Close()
@@ -449,9 +449,9 @@ public class SettingsMenu(Program game)
         }
 
         // Apply camera settings
-        InRacePhase.camera.Fov = _fov;
-        InRacePhase.PlayerFollowCamera.FollowYOffset = _followY;
-        InRacePhase.PlayerFollowCamera.FollowZOffset = _followZ;
+        CameraSettings.Fov = _fov;
+        FollowCamera.FollowYOffset = _followY;
+        FollowCamera.FollowZOffset = _followZ;
 
         bool graphicsChanged = false;
         requireRestart = false;

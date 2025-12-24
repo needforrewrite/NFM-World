@@ -158,7 +158,7 @@ public class Chips
                 VertexPositionColor.VertexDeclaration
             );
         }
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
     }
 
     public void AddChip(int polyIdx, float breakFactor)

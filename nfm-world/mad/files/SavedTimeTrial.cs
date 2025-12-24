@@ -1,10 +1,11 @@
 using System.Collections;
+using Maxine.Extensions;
 using NFMWorld.Mad;
 using NFMWorld.Util;
 
 public class SavedTimeTrial
 {
-    public UnlimitedArray<BitArray> TickInputs;
+    public UnlimitedArray<Nibble<byte>> TickInputs;
     public UnlimitedArray<long> Splits;
 
     private string _carName;
@@ -27,9 +28,9 @@ public class SavedTimeTrial
 
     public bool Load()
     {
-        if(System.IO.File.Exists(_pathName))
+        if (System.IO.File.Exists(_pathName))
         {
-            using(BinaryReader reader = new(System.IO.File.OpenRead(_pathName)))
+            using (BinaryReader reader = new(System.IO.File.OpenRead(_pathName)))
             {
                 // read splits
                 int splitsCount = reader.ReadInt32();
@@ -43,9 +44,7 @@ public class SavedTimeTrial
                 while(reader.BaseStream.Position < reader.BaseStream.Length)
                 {
                     entry = reader.ReadInt32();
-                    BitArray ba = new([entry]);
-
-                    TickInputs[TickInputs.Count] = ba;
+                    TickInputs[TickInputs.Count] = (byte)entry;
                 }
             }
 
@@ -61,7 +60,6 @@ public class SavedTimeTrial
             Directory.CreateDirectory(_dirName);
         }
 
-
         using (BinaryWriter outputFile = new BinaryWriter(System.IO.File.OpenWrite(_pathName)))
         {
             // write splits
@@ -72,20 +70,20 @@ public class SavedTimeTrial
             }
 
             // write demo
-            foreach (BitArray enc in TickInputs)
+            foreach (var enc in TickInputs)
             {
-                outputFile.Write(NFMWorld.Util.UMath.getIntFromBitArray(enc));
+                outputFile.Write((int)enc);
             }
         }
     }
 
     public void RecordTick(Control control)
     {
-        BitArray enc = control.Encode();
+        var enc = control.Encode();
         TickInputs[TickInputs.Count] = enc;
     }
 
-    public BitArray? GetTick(int tick)
+    public Nibble<byte>? GetTick(int tick)
     {
         if(tick >= TickInputs.Count) return null;
         return TickInputs[tick];

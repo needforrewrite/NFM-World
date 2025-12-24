@@ -437,7 +437,7 @@ public class Stage : IRenderable
                 }
 
                 // stage walls
-                var wall = GameSparker.GetStagePart("thewall");
+                var wall = GameSparker.GetStagePart("nfmm/thewall");
                 if (line.StartsWith("maxr"))
                 {
                     var n = Utility.GetInt("maxr", line, 0);
@@ -600,22 +600,22 @@ public class Stage : IRenderable
         else
         {
             var stagePart = GameSparker.GetStagePart(setstring);
-            mesh = stagePart.Mesh;
-            if (stagePart.Id == -1)
+            if (stagePart.Mesh == null)
             {
                 GameSparker.Writer.WriteLine($"Stage part '{setstring}' not found.", "error");
                 mesh = GameSparker.error_mesh;
                 return true;
             }
+            mesh = stagePart.Mesh;
         }
 
         return true;
     }
 
-    public Mesh? CreateObject(string objectName, int x, int y, int z, int r)
+    public Mesh CreateObject(string objectName, int x, int y, int z, int r)
     {
         var part = GameSparker.GetStagePart(objectName);
-        if (part.Id == -1)
+        if (part.Mesh == null)
         {
             GameSparker.devConsole.Log($"Object '{objectName}' not found.", "warning");
             part = (-1, GameSparker.error_mesh);
