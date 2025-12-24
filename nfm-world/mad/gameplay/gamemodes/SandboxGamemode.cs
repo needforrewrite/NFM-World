@@ -5,7 +5,7 @@ using NFMWorld.Util;
 using Stride.Core.Mathematics;
 
 public class SandboxGamemode(string playerCarName, int playerCarIndex, UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
-    : BaseGamemode(playerCarIndex, carsInRace, currentStage, currentScene)
+    : BaseGamemode
 {
     private int _newTick = 0;
     

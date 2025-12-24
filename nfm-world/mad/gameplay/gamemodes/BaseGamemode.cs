@@ -1,13 +1,8 @@
 using NFMWorld.Mad;
 using NFMWorld.Util;
 
-public abstract class BaseGamemode(int playerCarIndex, UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
+public abstract class BaseGamemode()
 {
-    protected int playerCarIndex = playerCarIndex;
-    protected UnlimitedArray<InGameCar> carsInRace;
-    protected Stage currentStage;
-    protected Scene currentScene;
-    
     public virtual void Enter()
     {
         
