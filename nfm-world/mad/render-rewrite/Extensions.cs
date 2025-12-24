@@ -6,6 +6,8 @@ using FixedMathSharp;
 using FixedMathSharp.Utility;
 using Microsoft.Xna.Framework.Graphics;
 using SoftFloat;
+using Steamworks;
+using Steamworks.Data;
 using Stride.Core.Mathematics;
 using Color = Microsoft.Xna.Framework.Color;
 
@@ -96,7 +98,10 @@ public static class Extensions
 
         public Vector3 ToVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
-        
+
+        public Microsoft.Xna.Framework.Vector4 ToVector4()
+            => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f, 1.0f);
+
         public Stride.Core.Mathematics.Vector3 ToStrideVector3()
             => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f);
     }
@@ -189,6 +194,23 @@ public static class Extensions
                 throw new ArgumentException("Span length does not match the provided dimensions.");
             
             return Span2D<T>.DangerousCreate(ref span[0], height, width, 0);
+        }
+    }
+
+    extension(Connection connection)
+    {
+        public unsafe Result SendMessage<T>(Span<T> data, SendType sendType = SendType.Reliable)
+            where T : unmanaged
+        {
+            fixed (T* ptr = data)
+                return connection.SendMessage((IntPtr) ptr, data.AsBytes().Length, sendType);
+        }
+
+        public unsafe Result SendMessage<T>(ReadOnlySpan<T> data, SendType sendType = SendType.Reliable)
+            where T : unmanaged
+        {
+            fixed (T* ptr = data)
+                return connection.SendMessage((IntPtr) ptr, data.AsBytes().Length, sendType);
         }
     }
 }

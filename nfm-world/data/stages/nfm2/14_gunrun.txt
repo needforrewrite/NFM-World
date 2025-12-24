@@ -14,7 +14,7 @@ name(The Gun Run)
 nlaps(1)
 
 soundtrack(nfm2,stage14.radq)
-
+soundtrackremaster(nfm2,stage14remastered.mp3)
 
 set(48,0,0,0)p
 set(15,0,5600,0)p

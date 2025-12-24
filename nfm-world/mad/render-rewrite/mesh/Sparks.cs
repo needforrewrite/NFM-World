@@ -245,7 +245,7 @@ public class Sparks
 
         _material.Glow?.SetValue(false);
 
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
+        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();
@@ -261,6 +261,6 @@ public class Sparks
                 LineMesh.LineMeshVertexAttribute.VertexDeclaration
             );
         }
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
     }
 }

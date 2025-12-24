@@ -159,8 +159,7 @@ public class ModelEditorPhase : BasePhase
 
         _isOpen = true;
         
-        // render an empty stage for 1 frame to init shaders
-        InRacePhase.LoadStage("empty", GameSparker._graphicsDevice);
+        World.ResetValues();
         
         camera.Position = new Vector3(0, -800, -800);
         camera.LookAt = Vector3.Zero;

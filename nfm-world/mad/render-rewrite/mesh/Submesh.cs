@@ -78,7 +78,7 @@ public class Submesh(
             graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, vertexCount, 0, triangleCount);
         }
         
-        graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
         graphicsDevice.DepthStencilState = DepthStencilState.Default;
         graphicsDevice.BlendState = BlendState.Opaque;
     }

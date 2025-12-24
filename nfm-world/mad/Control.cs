@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Maxine.Extensions;
 
 
 namespace NFMWorld.Mad;
@@ -88,20 +89,17 @@ public class Control
         Mutes = false;
     }
 
-    public BitArray Encode()
+    public Nibble<byte> Encode()
     {
-        bool[] parts = [Right, Left, Up, Down, Handb];
-        BitArray o = new(parts);
-
-        return o;
+        return new Nibble<byte>([Right, Left, Up, Down, Handb]);
     }
 
-    public void Decode(BitArray enc)
+    public void Decode(Nibble<byte> enc)
     {
-        Right = enc.Get(0);
-        Left = enc.Get(1);
-        Up = enc.Get(2);
-        Down = enc.Get(3);
-        Handb = enc.Get(4);
+        Right = enc[0];
+        Left = enc[1];
+        Up = enc[2];
+        Down = enc[3];
+        Handb = enc[4];
     }
 }

@@ -55,7 +55,7 @@ public class FixHoop : Mesh
                 VertexPositionColor.VertexDeclaration
             );
         }
-        GraphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
     }
 
     private void PrepareLine(int idx)

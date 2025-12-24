@@ -13,6 +13,7 @@ name(Four Dimensional Vertigo)
 nlaps(2)
 
 soundtrack(nfm2,stage16.radq)
+soundtrackremaster(nfm2,stage16remastered.mp3)
 
 set(47,0,0,0)p
 set(23,0,2800,180)p

@@ -20,6 +20,7 @@ detail(0)
 soundtrack(nfm1,stage1.zipo)
 soundtrackfreqmul(0.95)
 soundtracktempomul(10.8)
+soundtrackremaster(nfm1,stage1remastered.mp3)
 
 set(10,0,0,0)p
 set(10,0,5600,180)p

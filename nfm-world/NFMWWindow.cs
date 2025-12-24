@@ -218,6 +218,8 @@ public unsafe class Program : Game
 
     private Program()
     {
+        Multiplayer.Initialize();
+        
         _graphics = new GraphicsDeviceManager(this);
         _graphics.GraphicsProfile = GraphicsProfile.Reach;
         Content.RootDirectory = "Content";
