@@ -18,6 +18,8 @@ public class Stage : IRenderable
 
     // soundtrack(folder,fileName)
     public string musicPath = "";
+    // soundtrackremaster(folder,fileName)
+    public string remasteredMusicPath = "";
     // soundtrackfreqmul(mul)
     public double musicFreqMul = 1.0d;
     public double musicTempoMul = 0d;
@@ -34,11 +36,14 @@ public class Stage : IRenderable
     private bool swapYandRot = false;
     private bool reverseChkY = false;
 
+    public readonly string Path;
+
     /**
      * Loads stage currently set by checkpoints.stage onto stageContos
      */
     public Stage(string stageName, GraphicsDevice graphicsDevice)
     {
+        Path = stageName;
         World.ResetValues();
         Trackers.Nt = 0;
         // Medium.Noelec = 0;
@@ -417,6 +422,18 @@ public class Stage : IRenderable
                 {
                     float mul = Utility.GetFloat("soundtracktempomul", line, 0);
                     musicTempoMul = mul;
+                }
+                if(line.StartsWith("soundtrackremaster"))
+                {
+                    string folder = Utility.GetString("soundtrackremaster", line, 0);
+                    string fileName = Utility.GetString("soundtrackremaster", line, 1);
+
+                    if(folder.Contains(".") || folder.Contains("/") || fileName.Contains("..") || fileName.Contains("/"))
+                    {
+                        throw new Exception("Invalid folder or file name in soundtrackremaster() directive");
+                    }
+
+                    remasteredMusicPath = $"{folder}/{fileName}";
                 }
 
                 // stage walls

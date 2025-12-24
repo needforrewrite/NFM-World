@@ -73,10 +73,16 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
 
         GameSparker.CurrentMusic?.Unload();
 
-        if(!string.IsNullOrEmpty(CurrentStage.musicPath))
+        if(!string.IsNullOrEmpty(CurrentStage.musicPath) || (GameSparker.UseRemasteredMusic && !string.IsNullOrEmpty(CurrentStage.remasteredMusicPath)))
         {
-            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{CurrentStage.musicPath}"), CurrentStage.musicTempoMul);
-            GameSparker.CurrentMusic.SetFreqMultiplier(CurrentStage.musicFreqMul);
+            bool useRemastered = GameSparker.UseRemasteredMusic && !string.IsNullOrEmpty(CurrentStage.remasteredMusicPath);
+            // Dont shift pitch or tempo if using remastered
+            string path = useRemastered ? CurrentStage.remasteredMusicPath : CurrentStage.musicPath;
+            double tempoMul = !useRemastered ? CurrentStage.musicTempoMul : 0d;
+            double freqMul = !useRemastered ? CurrentStage.musicFreqMul : 1d;
+
+            GameSparker.CurrentMusic = IBackend.Backend.LoadMusic(new Util.File($"./data/music/{path}"), tempoMul);
+            GameSparker.CurrentMusic.SetFreqMultiplier(freqMul);
             GameSparker.CurrentMusic.SetVolume(IRadicalMusic.CurrentVolume);
             GameSparker.CurrentMusic.Play();   
         }
@@ -107,6 +113,23 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
             if (key == bindings.Accelerate)
             {
                 CarsInRace[playerCarIndex].Control.Up = true;
+            }
+            if (key == bindings.AerialBounce)
+            {
+                CarsInRace[playerCarIndex].Control.Up = true;
+                CarsInRace[playerCarIndex].Control.Down = true;
+            }
+            if (key == bindings.AerialStrafe)
+            {
+                if (CarsInRace[playerCarIndex].Control.Up && CarsInRace[playerCarIndex].Control.Down)
+                {
+                    CarsInRace[playerCarIndex].Control.Left = true;
+                    CarsInRace[playerCarIndex].Control.Right = true;
+                }
+                if (CarsInRace[playerCarIndex].Control.Left)
+                    CarsInRace[playerCarIndex].Control.Right = true;
+                else if (CarsInRace[playerCarIndex].Control.Right)
+                    CarsInRace[playerCarIndex].Control.Left = true;
             }
 
             if (key == bindings.Brake)
@@ -184,6 +207,18 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
             if (key == bindings.Accelerate)
             {
                 CarsInRace[playerCarIndex].Control.Up = false;
+            }
+            if (key == bindings.AerialStrafe)
+            {
+                if (CarsInRace[playerCarIndex].Control.Up && CarsInRace[playerCarIndex].Control.Down)
+                {
+                    CarsInRace[playerCarIndex].Control.Left = false;
+                    CarsInRace[playerCarIndex].Control.Right = false;
+                }
+                if (CarsInRace[playerCarIndex].Control.Left)
+                    CarsInRace[playerCarIndex].Control.Right = false;
+                else if (CarsInRace[playerCarIndex].Control.Right)
+                    CarsInRace[playerCarIndex].Control.Left = false;
             }
             if (key == bindings.Brake)
             {

@@ -61,6 +61,10 @@ public class GameSparker
     }
 
     public static IRadicalMusic? CurrentMusic;
+    /// <summary>
+    /// Use remastered music (soundtrackremaster in stage files) where available.
+    /// </summary>
+    public static bool UseRemasteredMusic = false;
 
     public static MainMenuPhase? MainMenu;
     public static InRacePhase? InRace;
@@ -115,8 +119,10 @@ public class GameSparker
     public static void KeyPressed(Keys key)
     {
         DebugKeyStates[key] = true;
+
+        var bindings = SettingsMenu.Bindings;
         
-        if (key == Keys.Oemtilde)
+        if (key == bindings.ToggleDevConsole)
         {
             devConsole.Toggle();
         }

@@ -27,6 +27,8 @@ public class SettingsMenu(Program game)
         public Keys TurnRight { get; set; } = Keys.Right;
         public Keys Handbrake { get; set; } = Keys.Space;
         public Keys Enter { get; set; } = Keys.Enter;
+        public Keys AerialBounce { get; set; } = Keys.Q;
+        public Keys AerialStrafe { get; set; } = Keys.E;
         public Keys LookLeft { get; set; } = Keys.Z;
         public Keys LookBack { get; set; } = Keys.X;
         public Keys LookRight { get; set; } = Keys.C;
@@ -34,6 +36,8 @@ public class SettingsMenu(Program game)
         public Keys ToggleSFX { get; set; } = Keys.N;
         public Keys ToggleArrace { get; set; } = Keys.A;
         public Keys ToggleRadar { get; set; } = Keys.S;
+        public Keys ToggleCarCam { get; set; } = Keys.W;
+        public Keys ToggleDevConsole { get; set; } = Keys.Oemtilde;
         public Keys CycleView { get; set; } = Keys.V;
     }
 
@@ -59,6 +63,7 @@ public class SettingsMenu(Program game)
     private float _musicVolume = 0.8f;
     private float _effectsVolume = 0.9f;
     private bool _muteAll = false;
+    private bool _remasteredMusic = false;
 
     // Game settings (Camera)
     private float _fov = 90.0f;
@@ -156,6 +161,9 @@ public class SettingsMenu(Program game)
         ImGui.Checkbox("Mute All", ref _muteAll);
         ImGui.Spacing();
 
+        ImGui.Checkbox("Use Remastered Music if Available", ref _remasteredMusic);
+        ImGui.Spacing();
+
         ImGui.Text("Master Volume");
         ImGui.SliderFloat("##MasterVolume", ref _masterVolume, 0.0f, 1.0f, "%.2f");
         
@@ -176,12 +184,6 @@ public class SettingsMenu(Program game)
         {
             _capturingAction = null;
             _selectedBindingIndex = -1;
-            return;
-        }
-
-        // Don't allow binding F1 (console key)
-        if (key == Keys.F1)
-        {
             return;
         }
 
@@ -293,6 +295,9 @@ public class SettingsMenu(Program game)
             ("Turn Left", "TurnLeft", Bindings.TurnLeft),
             ("Turn Right", "TurnRight", Bindings.TurnRight),
             ("Handbrake / Stunt", "Handbrake", Bindings.Handbrake),
+            ("Cycle View", "CycleView", Bindings.CycleView),
+            ("Aerial boost / bounce", "AerialBounce", Bindings.AerialBounce),
+            ("Aerial strafe, Smooth turn", "AerialStrafe", Bindings.AerialStrafe),
             //("Enter", "Enter", Bindings.Enter),       //iirc previously this would bring up pause menu in game and also used as keyboard navigation through menus, perhaps not needed to be able to be binded here
             ("Look Back", "LookBack", Bindings.LookBack),
             ("Look Left", "LookLeft", Bindings.LookLeft),
@@ -301,7 +306,7 @@ public class SettingsMenu(Program game)
             ("Toggle SFX", "ToggleSFX", Bindings.ToggleSFX),
             ("Toggle Arrow Mode", "ToggleArrace", Bindings.ToggleArrace),
             ("Toggle Radar", "ToggleRadar", Bindings.ToggleRadar),
-            ("Cycle View", "CycleView", Bindings.CycleView)
+            ("Toggle Developer Console", "ToggleDevConsole", Bindings.ToggleDevConsole),
         };
 
         ImGui.Columns(2, "KeyBindings", true);
@@ -440,6 +445,7 @@ public class SettingsMenu(Program game)
             IBackend.Backend.SetAllVolumes(_effectsVolume * _masterVolume);
             GameSparker.CurrentMusic?.SetVolume(_musicVolume * _masterVolume);
             IRadicalMusic.CurrentVolume = _musicVolume * _masterVolume;
+            GameSparker.UseRemasteredMusic = _remasteredMusic;
         }
 
         // Apply camera settings
@@ -510,6 +516,7 @@ public class SettingsMenu(Program game)
                 cfgWriter.WriteLine($"audio_master {_masterVolume.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"audio_music {_musicVolume.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"audio_effects {_effectsVolume.ToString("F2", CultureInfo.InvariantCulture)}");
+                cfgWriter.WriteLine($"audio_remaster {(_remasteredMusic ? 1 : 0)}");
                 cfgWriter.WriteLine();
                 
                 // Camera settings
@@ -522,6 +529,8 @@ public class SettingsMenu(Program game)
                 // Key bindings
                 cfgWriter.WriteLine("// Key Bindings");
                 cfgWriter.WriteLine($"key_accelerate {(int)Bindings.Accelerate}");
+                cfgWriter.WriteLine($"key_ab {(int)Bindings.AerialBounce}");
+                cfgWriter.WriteLine($"key_smoothturn {(int)Bindings.AerialStrafe}");
                 cfgWriter.WriteLine($"key_brake {(int)Bindings.Brake}");
                 cfgWriter.WriteLine($"key_turnleft {(int)Bindings.TurnLeft}");
                 cfgWriter.WriteLine($"key_turnright {(int)Bindings.TurnRight}");
@@ -534,6 +543,7 @@ public class SettingsMenu(Program game)
                 cfgWriter.WriteLine($"key_togglearrace {(int)Bindings.ToggleArrace}");
                 cfgWriter.WriteLine($"key_toggleradar {(int)Bindings.ToggleRadar}");
                 cfgWriter.WriteLine($"key_cycleview {(int)Bindings.CycleView}");
+                cfgWriter.WriteLine($"key_console {(int)Bindings.ToggleDevConsole}");
                 cfgWriter.WriteLine();
             }
             
@@ -615,6 +625,9 @@ public class SettingsMenu(Program game)
                         case "audio_effects":
                             _effectsVolume = float.Parse(value, CultureInfo.InvariantCulture);
                             break;
+                        case "audio_remaster":
+                            _remasteredMusic = int.Parse(value) != 0;
+                            break;
                         
                         // Camera settings
                         case "camera_fov":
@@ -630,6 +643,12 @@ public class SettingsMenu(Program game)
                         // Key bindings
                         case "key_accelerate":
                             Bindings.Accelerate = (Keys)int.Parse(value);
+                            break;
+                        case "key_ab":
+                            Bindings.AerialBounce = (Keys)int.Parse(value);
+                            break;
+                        case "key_smoothturn":
+                            Bindings.AerialStrafe = (Keys)int.Parse(value);
                             break;
                         case "key_brake":
                             Bindings.Brake = (Keys)int.Parse(value);
@@ -660,6 +679,9 @@ public class SettingsMenu(Program game)
                             break;
                         case "key_togglearrace":
                             Bindings.ToggleArrace = (Keys)int.Parse(value);
+                            break;
+                        case "key_console":
+                            Bindings.ToggleDevConsole = (Keys)int.Parse(value);
                             break;
                         case "key_toggleradar":
                             Bindings.ToggleRadar = (Keys)int.Parse(value);
