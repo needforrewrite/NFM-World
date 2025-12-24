@@ -168,6 +168,23 @@ public class InRacePhase : BasePhase
         {
             CarsInRace[playerCarIndex].Control.Up = true;
         }
+        if (key == bindings.AerialBounce)
+        {
+            CarsInRace[playerCarIndex].Control.Up = true;
+            CarsInRace[playerCarIndex].Control.Down = true;
+        }
+        if (key == bindings.AerialStrafe)
+        {
+            if (CarsInRace[playerCarIndex].Control.Up && CarsInRace[playerCarIndex].Control.Down)
+            {
+                CarsInRace[playerCarIndex].Control.Left = true;
+                CarsInRace[playerCarIndex].Control.Right = true;
+            }
+            if (CarsInRace[playerCarIndex].Control.Left)
+                CarsInRace[playerCarIndex].Control.Right = true;
+            else if (CarsInRace[playerCarIndex].Control.Right)
+                CarsInRace[playerCarIndex].Control.Left = true;
+        }
         if (key == bindings.Brake)
         {
             CarsInRace[playerCarIndex].Control.Down = true;
@@ -237,19 +254,36 @@ public class InRacePhase : BasePhase
         
         if (CarsInRace[playerCarIndex].Control.Multion < 2)
         {
-            if (key == bindings.Accelerate)
+            if (key == bindings.Accelerate || key == bindings.AerialBounce)
             {
                 CarsInRace[playerCarIndex].Control.Up = false;
             }
-            if (key == bindings.Brake)
+            if (key == bindings.AerialBounce)
+            {
+                CarsInRace[playerCarIndex].Control.Up = false;
+                CarsInRace[playerCarIndex].Control.Down = false;
+            }
+            if (key == bindings.AerialStrafe)
+            {
+                if (CarsInRace[playerCarIndex].Control.Up && CarsInRace[playerCarIndex].Control.Down)
+                {
+                    CarsInRace[playerCarIndex].Control.Left = false;
+                    CarsInRace[playerCarIndex].Control.Right = false;
+                }
+                if (CarsInRace[playerCarIndex].Control.Left)
+                    CarsInRace[playerCarIndex].Control.Right = false;
+                else if (CarsInRace[playerCarIndex].Control.Right)
+                    CarsInRace[playerCarIndex].Control.Left = false;
+            }
+            if (key == bindings.Brake || key == bindings.AerialBounce)
             {
                 CarsInRace[playerCarIndex].Control.Down = false;
             }
-            if (key == bindings.TurnRight)
+            if (key == bindings.TurnRight || key == bindings.AerialStrafe)
             {
                 CarsInRace[playerCarIndex].Control.Right = false;
             }
-            if (key == bindings.TurnLeft)
+            if (key == bindings.TurnLeft || key == bindings.AerialStrafe)
             {
                 CarsInRace[playerCarIndex].Control.Left = false;
             }
