@@ -1,19 +1,24 @@
 using System.Diagnostics;
+using Maxine.Extensions;
 using NFMWorld;
 using NFMWorld.Mad;
+using NFMWorld.Mad.gamemodes;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
 
-public class SandboxGamemode(string playerCarName, int playerCarIndex, UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
-    : BaseGamemode
+public class SandboxGamemode(BaseGamemodeParameters gamemodeParameters, BaseRacePhase baseRacePhase)
+    : BaseGamemode(gamemodeParameters, baseRacePhase)
 {
     private int _newTick = 0;
     
     public override void Enter()
     {
-        carsInRace[playerCarIndex] = new InGameCar(playerCarIndex, GameSparker.GetCar(playerCarName).Car!, 0, 0, true);
-        carsInRace[1] = new InGameCar(1, GameSparker.GetCar("nfmm/audir8").Car!, 100, 0, false);
-        carsInRace[1].Sfx.Mute = true;
+        foreach (var (idx, player) in players.WithIndex())
+        {
+            carsInRace[idx] = new InGameCar(idx, GameSparker.GetCar(player.CarName).Car!, 0, 0, idx == playerCarIndex);
+        }
+        carsInRace[NumPlayers] = new InGameCar(1, GameSparker.GetCar("nfmm/audir8").Car!, 100, 0, false);
+        carsInRace[NumPlayers].Sfx.Mute = true;
 
         Reset();
     }

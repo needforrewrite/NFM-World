@@ -48,19 +48,6 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
     }
     protected ViewMode currentViewMode = ViewMode.Follow;
     
-    public virtual GameModes gamemode
-    {
-        get;
-        set
-        {
-            field = value;
-            gamemodeInstance = CreateGameMode();
-            gamemodeInstance.Enter();
-        }
-    }
-
-    protected BaseGamemode? gamemodeInstance { get; set; }
-
     public override void Exit()
     {
         base.Exit();
@@ -192,8 +179,6 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
         {
             currentViewMode = (ViewMode)(((int)currentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
         }
-
-        gamemodeInstance?.KeyPressed(key);
     }
 
     public override void KeyReleased(Keys key, bool imguiWantsKeyboard)
@@ -246,8 +231,6 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
         {
             CarsInRace[playerCarIndex].Control.Lookback = 0;
         }
-
-        gamemodeInstance?.KeyReleased(key);
     }
 
     public override void WindowSizeChanged(int width, int height)
@@ -257,13 +240,6 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
         camera.Width = width;
         camera.Height = height;
     }
-
-    public virtual void ReloadGamemode()
-    {
-        gamemodeInstance = CreateGameMode();
-        gamemodeInstance.Enter();
-    }
-    protected abstract BaseGamemode CreateGameMode();
 
     public override void Render()
     {
@@ -296,7 +272,5 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
         G.DrawString($"Tick: {Program._lastTickTime}μs", 100, 120);
         G.DrawString($"Power: {CarsInRace[0]?.Mad?.Power:0.00}", 100, 140);
         G.DrawString($"Ticks executed last frame: {Program._lastTickCount}", 100, 160);
-
-        gamemodeInstance!.Render();
     }
 }
