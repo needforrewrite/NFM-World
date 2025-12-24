@@ -30,7 +30,8 @@ public class SavedTimeTrial
     {
         if (System.IO.File.Exists(_pathName))
         {
-            using (B
+            using (BinaryReader reader = new(System.IO.File.OpenRead(_pathName)))
+            {
                 // read splits
                 int splitsCount = reader.ReadInt32();
                 for(int i = 0; i < splitsCount; i++)
