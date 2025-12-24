@@ -414,10 +414,12 @@ public class MainMenuPhase : BasePhase
 
     private void OnTTClicked()
     {
-        InRacePhase.gamemode = new TimeTrialGamemode();
         GameSparker.CurrentPhase = GameSparker.InRace;
+        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+        {
+            inRacePhase.gamemode = GameModes.TimeTrial;
+        }
     }
-
     private void OnMPClicked()
     {
         // this should authenticate the player before showing the menu
