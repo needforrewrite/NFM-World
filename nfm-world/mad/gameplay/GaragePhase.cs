@@ -5,7 +5,7 @@ using NFMWorld.Util;
 
 internal class GarageDynamicStatBar
 {
-    private readonly float maxSpeed = 50f;
+    private readonly float maxSpeed = 100f;
     private readonly float speedUp = 0.1f;
     private readonly int fullBar = 100;
 
@@ -241,11 +241,6 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
         G.SetFont(new Font("Arial", 1, 48));
         G.SetColor(new Color(0, 0, 0));
         G.DrawStringAligned(_cars[_selectedCarIdx].Stats.Name, graphicsDevice.Viewport.Width, 120, TextHorizontalAlignment.Center);
-
-        G.SetFont(new Font("Arial", 1, 24));
-        G.DrawString("Racing", _statsBarBaseX - 90, _statsBarBaseY + 5);
-        G.DrawString("Wasting", _statsBarBaseX - 90, _statsBarBaseY + _statsBarYGap + 5);
-        G.DrawString("Stunts", _statsBarBaseX - 90, _statsBarBaseY+ _statsBarYGap*2 + 5);
 
         DrawCarStats();
     }

@@ -271,6 +271,10 @@ public class GameSparker
         FileUtil.LoadFiles("./data/models/nfmw/cars", (ais, fileName) => {
             vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmw/" + fileName));
         });
+
+        FileUtil.LoadFiles("./data/models/elo/cars", (ais, fileName) => {
+            vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmw/" + fileName));
+        });
         
         FileUtil.LoadFiles("./data/models/nfmw/stage", (ais, fileName) => {
             vendor_stage_parts.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmw/" + fileName));

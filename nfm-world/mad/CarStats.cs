@@ -15,7 +15,7 @@ public readonly record struct CarStats
     [JsonPropertyName("simag")] public fix64 Simag { get; init; }
     [JsonPropertyName("moment")] public fix64 Moment { get; init; }
     [JsonPropertyName("comprad")] public fix64 Comprad { get; init; }
-    [JsonPropertyName("push")] public int Push { get; init; }
+    [JsonPropertyName("push")] public fix64 Push { get; init; }
     [JsonPropertyName("revpush")] public fix64 Revpush { get; init; }
     [JsonPropertyName("lift")] public int Lift { get; init; }
     [JsonPropertyName("revlift")] public int Revlift { get; init; }
@@ -77,7 +77,7 @@ public readonly record struct CarStats
         float Simag = float.NegativeInfinity,
         float Moment = float.NegativeInfinity,
         float Comprad = float.NegativeInfinity,
-        int Push = int.MinValue,
+        float Push = int.MinValue,
         float Revpush = float.NegativeInfinity,
         int Lift = int.MinValue,
         int Revlift = int.MinValue,
@@ -103,7 +103,7 @@ public readonly record struct CarStats
         this.Simag = (fix64)Simag;
         this.Moment = (fix64)Moment;
         this.Comprad = (fix64)Comprad;
-        this.Push = Push;
+        this.Push = (fix64)Push;
         this.Revpush = (fix64)Revpush;
         this.Lift = Lift;
         this.Revlift = Revlift;
@@ -136,7 +136,7 @@ public readonly record struct CarStats
         else if(Simag == fix64.MinValue) return ValidateFail(nameof(Simag));
         else if(Moment == fix64.MinValue) return ValidateFail(nameof(Moment));
         else if(Comprad == fix64.MinValue) return ValidateFail(nameof(Comprad));
-        else if(Push == int.MinValue) return ValidateFail(nameof(Push));
+        else if(Push == fix64.MinValue) return ValidateFail(nameof(Push));
         else if(Revpush == fix64.MinValue) return ValidateFail(nameof(Revpush));
         else if(Lift == int.MinValue) return ValidateFail(nameof(Lift));
         else if(Revlift == int.MinValue) return ValidateFail(nameof(Revlift));
