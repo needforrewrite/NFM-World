@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using NFMWorld.Mad;
 using SoftFloat;
 
-public readonly record struct CarStats
+public record struct CarStats
 {
     [JsonPropertyName("swits")] public Int3 Swits { get; init; }
     [JsonPropertyName("acelf")] public Vector3 Acelf { get; init; }
@@ -22,7 +22,7 @@ public readonly record struct CarStats
     [JsonPropertyName("powerloss")] public int Powerloss { get; init; }
     [JsonPropertyName("flipy")] public int Flipy { get; init; }
     [JsonPropertyName("msquash")] public int Msquash { get; init; }
-    [JsonPropertyName("clrad")] public int Clrad { get; init; }
+    [JsonPropertyName("clrad")] public int Clrad { get; init; } 
     [JsonPropertyName("dammult")] public fix64 Dammult { get; init; }
     [JsonPropertyName("maxmag")] public int Maxmag { get; init; }
     [JsonPropertyName("dishandle")] public fix64 Dishandle { get; init; }
@@ -82,15 +82,15 @@ public readonly record struct CarStats
         int Lift = int.MinValue,
         int Revlift = int.MinValue,
         int Powerloss = int.MinValue,
-        int Flipy = int.MinValue,
+        int Flipy = -100,
         int Msquash = int.MinValue,
         int Clrad = int.MinValue,
         float Dammult = float.NegativeInfinity,
-        int Maxmag = int.MinValue,
+        int Maxmag = 7,
         float Dishandle = float.NegativeInfinity,
         float Outdam = float.NegativeInfinity,
         string Name = "",
-        sbyte Enginsignature = sbyte.MinValue)
+        sbyte Enginsignature = 0)
     {
         this.Swits = Swits ?? new Int3(int.MinValue, int.MinValue, int.MinValue);
         this.Acelf = Acelf ?? new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
@@ -141,14 +141,10 @@ public readonly record struct CarStats
         else if(Lift == int.MinValue) return ValidateFail(nameof(Lift));
         else if(Revlift == int.MinValue) return ValidateFail(nameof(Revlift));
         else if(Powerloss == int.MinValue) return ValidateFail(nameof(Powerloss));
-        else if(Flipy == int.MinValue) return ValidateFail(nameof(Flipy));
-        else if(Msquash == int.MinValue) return ValidateFail(nameof(Msquash));
         else if(Clrad == int.MinValue) return ValidateFail(nameof(Clrad));
         else if(Dammult == fix64.MinValue) return ValidateFail(nameof(Dammult));
         else if(Maxmag == int.MinValue) return ValidateFail(nameof(Maxmag));
-        else if(Dishandle == fix64.MinValue) return ValidateFail(nameof(Dishandle));
         else if(Outdam == fix64.MinValue) return ValidateFail(nameof(Outdam));
-        else if(Enginsignature == sbyte.MinValue) return ValidateFail(nameof(Enginsignature));
         else if(Name == "") return ValidateFailName(nameof(Name), fileName);
 
         return null;

@@ -355,7 +355,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            var carId = args[0];
+            var carId = string.Join(" ", args);
             var (id, car) = GameSparker.GetCar(carId);
 
             if (car == null)

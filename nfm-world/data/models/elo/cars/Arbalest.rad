@@ -28,7 +28,6 @@ dammult(0.38)
 maxmag(22000)
 moment(1.5)
 outdam(0.9)
-handling(200)
 flipy(-140)
 name(Arbalest)
 
