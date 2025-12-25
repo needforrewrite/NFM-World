@@ -10,7 +10,7 @@ namespace NFMWorld.Mad.UI;
 public class ModelEditorTab
 {
     public string? ModelPath { get; set; }
-    public Mesh? Model { get; set; }
+    public Car? Model { get; set; }
     
     // Text editor state
     public string TextContent { get; set; } = "";
@@ -407,7 +407,7 @@ public class ModelEditorPhase : BasePhase
         // Try to parse the model, but keep the file loaded even if it fails
         try
         {
-            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(radContent), "editing");
+            tab.Model = new Car(new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(radContent), "editing"));
             ResetTabView(tab);
         }
         catch (Exception parseEx)
@@ -773,10 +773,10 @@ public class ModelEditorPhase : BasePhase
         float closestDistance = float.MaxValue;
         int closestPolyIndex = -1;
         
-        for (int i = 0; i < tab.Model.Polys.Length; i++)
+        for (int i = 0; i < tab.Model.Mesh.Polys.Length; i++)
         {
-            var poly = tab.Model.Polys[i];
-            var triangulation = tab.Model.Triangulation[i];
+            var poly = tab.Model.Mesh.Polys[i];
+            var triangulation = tab.Model.Mesh.Triangulation[i];
             
             // Test each triangle in this polygon
             for (int t = 0; t < triangulation.Triangles.Length; t += 3)
@@ -2315,7 +2315,7 @@ public class ModelEditorPhase : BasePhase
         );
         
         // Prepare list of models to render
-        var modelsToRender = new List<IRenderable>();
+        var modelsToRender = new List<IImmediateRenderable>();
         
         // Add the main model
         modelsToRender.Add(tab.Model);

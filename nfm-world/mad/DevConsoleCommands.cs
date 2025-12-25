@@ -1,9 +1,5 @@
-using System;
 using NFMWorld.DriverInterface;
-using NFMWorld.Util;
 using SoftFloat;
-using Stride.Core.Mathematics;
-using System.Linq;
 using Steamworks;
 
 namespace NFMWorld.Mad
@@ -280,7 +276,7 @@ namespace NFMWorld.Mad
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var originalCar = inRacePhase.CarsInRace[inRacePhase.playerCarIndex];
-                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, (Car)originalCar.CarRef.ClonedMesh!, 0, 0, true);
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, originalCar.CarRef.Mesh.ClonedMesh!, 0, 0, true);
             }
 
             console.Log("Position reset");
@@ -321,7 +317,8 @@ namespace NFMWorld.Mad
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var mesh = inRacePhase.CurrentStage.CreateObject(objectName, x, y, z, r);
-                Trackers.LoadTracker(mesh);
+                if (mesh is CollisionObject obj)
+                    Trackers.LoadTracker(obj);
             }
             else
             {
@@ -367,7 +364,7 @@ namespace NFMWorld.Mad
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 inRacePhase.playerCarName = car.FileName;
-                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, car, 0, 0, true);
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, car.Mesh, 0, 0, true);
                 inRacePhase.ReloadGamemode();
             }
         

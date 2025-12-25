@@ -7,9 +7,9 @@ using Stride.Core.Extensions;
     Represents a stage. Holds all information relating to track pices, scenery, etc.
     But does NOT hold any information relating to the actual game being played, unless such game affects the layout or scenery of the stage.
 */
-public class Stage : IRenderable
+public class Stage : GameObject
 {
-    public UnlimitedArray<Mesh> pieces = [];
+    public UnlimitedArray<GameObject> pieces = [];
     public UnlimitedArray<CheckPoint> checkpoints = [];
 
     public int nlaps = 3;
@@ -43,6 +43,8 @@ public class Stage : IRenderable
      */
     public Stage(string stageName, GraphicsDevice graphicsDevice)
     {
+        Children = pieces;
+
         Path = stageName;
         World.ResetValues();
         Trackers.Nt = 0;
@@ -245,7 +247,7 @@ public class Stage : IRenderable
                         rotPlace = 4;
                     }
 
-                    pieces[stagePartCount] = new Mesh(
+                    pieces[stagePartCount] = new CollisionObject(
                         mesh,
                         new Vector3(Utility.GetInt("set", line, 1), setheight, Utility.GetInt("set", line, 2)),
                         new Euler(AngleSingle.FromDegrees(Utility.GetInt("set", line, rotPlace)), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle));
@@ -438,6 +440,10 @@ public class Stage : IRenderable
 
                 // stage walls
                 var wall = GameSparker.GetStagePart("nfmm/thewall");
+                if (wall.Mesh == null)
+                {
+                    throw new InvalidOperationException("Stage wall part 'thewall' not found.");
+                }
                 if (line.StartsWith("maxr"))
                 {
                     var n = Utility.GetInt("maxr", line, 0);
@@ -446,7 +452,7 @@ public class Stage : IRenderable
                     var p = Utility.GetInt("maxr", line, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        pieces[stagePartCount] = new Mesh(
+                        pieces[stagePartCount] = new CollisionObject(
                             wall.Mesh,
                             new Vector3(o, World.Ground, q * 4800 + p),
                             Euler.Identity                        
@@ -473,7 +479,7 @@ public class Stage : IRenderable
                     var p = Utility.GetInt("maxl", line, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        pieces[stagePartCount] = new Mesh(
+                        pieces[stagePartCount] = new CollisionObject(
                             wall.Mesh,
                             new Vector3(o, World.Ground, q * 4800 + p),
                             new Euler(AngleSingle.FromDegrees(180), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
@@ -500,7 +506,7 @@ public class Stage : IRenderable
                     var p = Utility.GetInt("maxt", line, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        pieces[stagePartCount] = new Mesh(
+                        pieces[stagePartCount] = new CollisionObject(
                             wall.Mesh,
                             new Vector3(q * 4800 + p, World.Ground, o),
                             new Euler(AngleSingle.FromDegrees(90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
@@ -527,7 +533,7 @@ public class Stage : IRenderable
                     var p = Utility.GetInt("maxb", line, 2);
                     for (var q = 0; q < n; q++)
                     {
-                        pieces[stagePartCount] = new Mesh(
+                        pieces[stagePartCount] = new CollisionObject(
                             wall.Mesh,
                             new Vector3(q * 4800 + p, World.Ground, o),
                             new Euler(AngleSingle.FromDegrees(-90), AngleSingle.ZeroAngle, AngleSingle.ZeroAngle)                        
@@ -612,7 +618,7 @@ public class Stage : IRenderable
         return true;
     }
 
-    public Mesh CreateObject(string objectName, int x, int y, int z, int r)
+    public GameObject CreateObject(string objectName, int x, int y, int z, int r)
     {
         var part = GameSparker.GetStagePart(objectName);
         if (part.Mesh == null)
@@ -621,7 +627,7 @@ public class Stage : IRenderable
             part = (-1, GameSparker.error_mesh);
         }
 
-        var mesh = pieces[stagePartCount] = new Mesh(
+        var mesh = pieces[stagePartCount] = new CollisionObject(
             part.Mesh,
             new Vector3(x,
             250 - y,
@@ -635,17 +641,13 @@ public class Stage : IRenderable
         return mesh;
     }
 
-    public void Render(Camera camera, Lighting? lighting = null)
+    public override void Render(Camera camera, Lighting? lighting)
     {
+        base.Render(camera, lighting);
         sky.Render(camera, lighting);
         ground.Render(camera, lighting);
         polys?.Render(camera, lighting);
         clouds?.Render(camera, lighting);
         mountains?.Render(camera, lighting);
-
-        foreach (var piece in pieces)
-        {
-            piece.Render(camera, lighting);
-        }
     }
 }

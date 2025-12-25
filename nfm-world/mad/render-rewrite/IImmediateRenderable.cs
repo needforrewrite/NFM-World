@@ -1,6 +1,6 @@
 ﻿namespace NFMWorld.Mad;
 
-public interface IRenderable
+public interface IImmediateRenderable
 {
     void OnBeforeRender()
     {

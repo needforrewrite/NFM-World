@@ -2,7 +2,7 @@
 
 namespace NFMWorld.Mad;
 
-public class Ground : Transform, IRenderable
+public class Ground : Transform, IImmediateRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;

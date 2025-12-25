@@ -6,7 +6,7 @@ namespace NFMWorld.Mad;
 
 public class Sparks
 {
-    private readonly Mesh _mesh;
+    private readonly Car _car;
     private readonly GraphicsDevice _graphicsDevice;
 
     internal int Sprk;
@@ -32,23 +32,23 @@ public class Sparks
     private readonly LineEffect _material;
     private int _sparkCount;
 
-    public Sparks(Mesh mesh, GraphicsDevice graphicsDevice)
+    public Sparks(Car car, GraphicsDevice graphicsDevice)
     {
-        _mesh = mesh;
+        _car = car;
         _graphicsDevice = graphicsDevice;
 
         _material = new LineEffect(Program._lineShader);
 
-        _sprkat = _mesh.Wheels.FirstOrDefault().Sparkat;
+        _sprkat = _car.Wheels.FirstOrDefault().Sparkat;
     }
     
     public void AddSpark(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)
     {
         if (type != 1)
         {
-            Srx = (wheelx - _sprkat * UMath.Sin(_mesh.Rotation.Xz.Degrees));
-            Sry = (wheely - wheelGround - _sprkat * UMath.Cos(_mesh.Rotation.Zy.Degrees) * UMath.Cos(_mesh.Rotation.Xy.Degrees));
-            Srz = (wheelz + _sprkat * UMath.Cos(_mesh.Rotation.Xz.Degrees));
+            Srx = (wheelx - _sprkat * UMath.Sin(_car.Rotation.Xz.Degrees));
+            Sry = (wheely - wheelGround - _sprkat * UMath.Cos(_car.Rotation.Zy.Degrees) * UMath.Cos(_car.Rotation.Xy.Degrees));
+            Srz = (wheelz + _sprkat * UMath.Cos(_car.Rotation.Xz.Degrees));
             Sprk = 1;
         }
         else
@@ -56,9 +56,9 @@ public class Sparks
             Sprk++;
             if (Sprk == 4)
             {
-                Srx = (_mesh.Position.X + scx);
+                Srx = (_car.Position.X + scx);
                 Sry = wheely - wheelGround;
-                Srz = (_mesh.Position.Z + scz);
+                Srz = (_car.Position.Z + scz);
                 Sprk = 5;
             }
             else

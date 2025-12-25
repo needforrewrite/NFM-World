@@ -2,45 +2,19 @@
 
 namespace NFMWorld.Mad;
 
-public class ListRenderable(IReadOnlyList<IRenderable?> renderables) : IRenderable
-{
-    public void Render(Camera camera, Lighting? lighting)
-    {
-        foreach (var renderable in renderables)
-        {
-            if (renderable == null)
-            {
-                Console.WriteLine("Null renderable in ListRenderable. Please fix!");
-            }
-            else
-            {
-                renderable.Render(camera, lighting);
-            }
-        }
-    }
-}
-
 public class Scene
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly Camera _camera;
     private readonly Camera[] _lightCameras;
-    public readonly List<IRenderable> Renderables;
+    public readonly List<GameObject> Objects;
 
-    public Scene(GraphicsDevice graphicsDevice, IEnumerable<IRenderable> renderables, Camera camera, Camera[] lightCameras)
+    public Scene(GraphicsDevice graphicsDevice, IEnumerable<GameObject> objects, Camera camera, Camera[] lightCameras)
     {
         _graphicsDevice = graphicsDevice;
         _camera = camera;
         _lightCameras = lightCameras;
-        Renderables = [..renderables];
-    }
-
-    public Scene(GraphicsDevice graphicsDevice, ReadOnlySpan<IRenderable> renderables, Camera camera, Camera[] lightCameras)
-    {
-        _graphicsDevice = graphicsDevice;
-        _camera = camera;
-        _lightCameras = lightCameras;
-        Renderables = [..renderables];
+        Objects = [..objects];
     }
 
     public void Render(bool useShadowMapping)
@@ -51,7 +25,7 @@ public class Scene
             lightCamera.OnBeforeRender();
         }
         
-        foreach (var renderable in Renderables)
+        foreach (var renderable in Objects)
         {
             renderable.OnBeforeRender();
         }
@@ -93,7 +67,7 @@ public class Scene
     
     private void RenderInternal(bool isCreateShadowMap = false, int numCascade = -1)
     {
-        foreach (var renderable in Renderables)
+        foreach (var renderable in Objects)
         {
             renderable.Render(_camera, new Lighting(_lightCameras, Program.shadowRenderTargets, isCreateShadowMap, numCascade));
         }

@@ -2,7 +2,7 @@
 
 namespace NFMWorld.Mad;
 
-public class CollisionDebugMesh : Transform
+public class CollisionDebugMesh : GameObject
 {
     private LineEffect _material;
     private int lineTriangleCount;

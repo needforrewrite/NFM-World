@@ -16,7 +16,7 @@ public class Chips
         public Color3 Color;
     }
     
-    private readonly Mesh _mesh;
+    private readonly Car _car;
     private readonly GraphicsDevice _graphicsDevice;
     
     private Chip[] _chips;
@@ -24,11 +24,11 @@ public class Chips
     private readonly VertexPositionColor[] _triangles;
     private int _triangleCount;
 
-    public Chips(Mesh mesh, GraphicsDevice graphicsDevice)
+    public Chips(Car car, GraphicsDevice graphicsDevice)
     {
-        _mesh = mesh;
+        _car = car;
         _graphicsDevice = graphicsDevice;
-        _chips = new Chip[mesh.Polys.Length];
+        _chips = new Chip[_car.Mesh.Polys.Length];
         
         _effect = new BasicEffect(graphicsDevice)
         {
@@ -36,16 +36,16 @@ public class Chips
             TextureEnabled = false,
             VertexColorEnabled = true
         };
-        _triangles = new VertexPositionColor[3 * mesh.Polys.Length];
+        _triangles = new VertexPositionColor[3 * _car.Mesh.Polys.Length];
     }
 
     public void GameTick()
     {
         _triangleCount = 0;
         var tri = 0;
-        for (var i = 0; i < _mesh.Polys.Length; i++)
+        for (var i = 0; i < _car.Mesh.Polys.Length; i++)
         {
-            var poly = _mesh.Polys[i];
+            var poly = _car.Mesh.Polys[i];
             ref var chip = ref _chips[i];
             if (chip.State != 0)
             {
@@ -71,7 +71,7 @@ public class Chips
                     chip.V1.Z = (chip.V0.Z + chip.Ctmag * (10.0F - URandom.Single() * 20.0F));
                     chip.V2.Z = (chip.V0.Z + chip.Ctmag * (10.0F - URandom.Single() * 20.0F));
                     chip.Delta = new Vector3(0, 0, 0);
-                    if (!_mesh.Wasted)
+                    if (!_car.Wasted)
                     {
                         var vx = (chip.Ctmag * (30.0F - URandom.Single() * 60.0F));
                         var vz = (chip.Ctmag * (30.0F - URandom.Single() * 60.0F));
@@ -97,7 +97,7 @@ public class Chips
                     chip.State = 59;
                 }
 
-                if (!_mesh.Wasted)
+                if (!_car.Wasted)
                 {
                     var c = URandom.Int(0, 3);
 
@@ -113,9 +113,9 @@ public class Chips
                 {
                     var c = poly.Color;
                     c.ToHSB(out var hue, out var saturation, out var brightness);
-                    if (brightness > _mesh.Flames.Darken)
+                    if (brightness > _car.Flames.Darken)
                     {
-                        brightness = _mesh.Flames.Darken;
+                        brightness = _car.Flames.Darken;
                     }
                     chip.Color = Color3.FromHSB(hue, saturation, brightness);
                 }
@@ -141,7 +141,7 @@ public class Chips
     {
         if (_triangleCount == 0) return;
 
-        _effect.World = _mesh.MatrixWorld;
+        _effect.World = _car.MatrixWorld;
         _effect.View = camera.ViewMatrix;
         _effect.Projection = camera.ProjectionMatrix;
         

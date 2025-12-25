@@ -2,7 +2,7 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Mad;
 using Stride.Core.Mathematics;
 
-public class CheckPoint(Mesh mesh, Vector3 position, Euler rotation) : Mesh(mesh, position, rotation)
+public class CheckPoint(Mesh mesh, Vector3 position, Euler rotation) : MeshedGameObject(mesh)
 {
     public enum CheckPointRotation 
     {

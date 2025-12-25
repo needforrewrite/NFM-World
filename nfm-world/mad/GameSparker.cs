@@ -75,9 +75,9 @@ public class GameSparker
     private static DirectionalLight light;
     
     private static MicroStopwatch timer;
-    public static UnlimitedArray<Car> cars;
-    public static UnlimitedArray<Car> vendor_cars;
-    public static UnlimitedArray<Car> user_cars;
+    public static UnlimitedArray<Mesh> cars;
+    public static UnlimitedArray<Mesh> vendor_cars;
+    public static UnlimitedArray<Mesh> user_cars;
     public static UnlimitedArray<Mesh> stage_parts;
     public static UnlimitedArray<Mesh> vendor_stage_parts;
     public static UnlimitedArray<Mesh> user_stage_parts;
@@ -186,9 +186,9 @@ public class GameSparker
         return stages;
     }
 
-    public static (int Id, Car? Car) GetCar(string name)
+    public static (int Id, Mesh? Car) GetCar(string name)
     {
-        IReadOnlyList<Car>[] arrays = [cars, vendor_cars, user_cars];
+        IReadOnlyList<Mesh>[] arrays = [cars, vendor_cars, user_cars];
 
         var total = 0;
         foreach (var t in arrays)
@@ -261,7 +261,7 @@ public class GameSparker
         user_stage_parts = [];
 
         FileUtil.LoadFiles("./data/models/nfmm/cars", CarRads, (ais, id, fileName) => {
-            cars[id] = new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmm/" + fileName);
+            cars[id] = new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmm/" + fileName);
         });
 
         FileUtil.LoadFiles("./data/models/nfmm/stage", StageRads, (ais, id, fileName) => {
@@ -269,11 +269,11 @@ public class GameSparker
         });
         
         FileUtil.LoadFiles("./data/models/nfmw/cars", (ais, fileName) => {
-            vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmw/" + fileName));
+            vendor_cars.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmw/" + fileName));
         });
 
         FileUtil.LoadFiles("./data/models/elo/cars", (ais, fileName) => {
-            vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "elo/" + fileName));
+            vendor_cars.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "elo/" + fileName));
         });
         
         FileUtil.LoadFiles("./data/models/nfmw/stage", (ais, fileName) => {
@@ -283,7 +283,7 @@ public class GameSparker
         FileUtil.LoadFiles("./data/models/user/cars", (ais, fileName) => {
             try
             {
-                user_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "user/" + fileName));
+                user_cars.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "user/" + fileName));
             }
             catch (Exception ex)
             {
