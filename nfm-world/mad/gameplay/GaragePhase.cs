@@ -5,20 +5,19 @@ using NFMWorld.Util;
 
 internal class GarageDynamicStatBar
 {
-    private readonly float maxSpeed = 35f;
+    private readonly float maxSpeed = 50f;
     private readonly float speedUp = 0.1f;
-    private readonly float maxValue = 1000f;
     private readonly int fullBar = 100;
 
-    private readonly int maxWidth = 100;
-    private readonly int height = 10;
+    public int maxWidth = 100;
+    public int height = 10;
 
     private float currentValue = 0f;
     private float targetValue;
     private float speed;
 
-    private int x;
-    private int y;
+    public int x;
+    public int y;
 
     private string _name;
 
@@ -50,24 +49,6 @@ internal class GarageDynamicStatBar
         new Color(128, 128, 128),
     ];
 
-    /*
-    private Color[] barColors =
-    [
-        new Color(255, 0, 0),
-        new Color(255, 255, 0),
-        new Color(90, 255, 0),
-        new Color(0, 128, 255),
-        new Color(0, 0, 255),
-        new Color(255, 0, 255),
-        new Color(255, 0, 0),
-        new Color(255, 255, 0),
-        new Color(90, 255, 0),
-        new Color(0, 128, 255),
-        new Color(0, 0, 255),
-        new Color(255, 0, 255),
-    ];
-    */
-
     public GarageDynamicStatBar(float targetValue, int x, int y, string name)
     {
         this.targetValue = targetValue * 100;
@@ -80,13 +61,22 @@ internal class GarageDynamicStatBar
     public void Tick()
     {
         currentValue += speed;
-        if (currentValue >= Math.Min(targetValue, maxValue))
-        {
-            currentValue = Math.Min(targetValue, maxValue);
-        }
+        currentValue = Math.Min(targetValue, currentValue);
 
         speed += speedUp;
         speed = Math.Min(speed, maxSpeed);
+    }
+
+    private int GetColor(int lim, int i)
+    {
+        if (i < 0)
+        {
+            return i % lim + lim;
+        }
+        else
+        {
+            return i % lim;
+        }
     }
 
     public void Render()
@@ -100,11 +90,11 @@ internal class GarageDynamicStatBar
             multiples++;
         }
 
-        Color baseBarColorStart = multiples > 0 ? barColors[multiples - 1] : new Color(0, 0, 0, 0);
-        Color baseBarColorEnd = multiples > 0 ? barColors[multiples] : new Color(0, 0, 0, 0);
+        Color baseBarColorStart = multiples > 0 ? barColors[GetColor(barColors.Length, multiples - 1)] : new Color(0, 0, 0, 0);
+        Color baseBarColorEnd = multiples > 0 ? barColors[GetColor(barColors.Length, multiples)] : new Color(0, 0, 0, 0);
 
-        Color barColorStart = barColors[multiples];
-        Color barColorEnd = barColors[multiples + 1];
+        Color barColorStart = barColors[GetColor(barColors.Length, multiples)];
+        Color barColorEnd = barColors[GetColor(barColors.Length, multiples + 1)];
 
         G.SetLinearGradient(x, y, maxWidth, height, [baseBarColorStart, baseBarColorEnd], null);
         G.FillRect(x, y, maxWidth, height);
@@ -120,7 +110,18 @@ internal class GarageDynamicStatBar
         G.DrawString(_name, x, y - 5);
 
         G.SetFont(new Font("Arial", 1, 12));
-        G.DrawString(((int)currentValue).ToString(), x, y + height);
+        G.DrawString(((int)currentValue).ToString(), x + 5, y + height);
+
+        DrawDividers();
+    }
+
+    // Draw the black thing that overlays the stat itself...
+    private void DrawDividers()
+    {
+        G.SetColor(new Color(0, 0, 0));
+        G.DrawLine(x, y + height, x + maxWidth, y + height);
+        G.DrawLine(x, y, x, y + height);
+        G.DrawLine(x + maxWidth, y, x + maxWidth, y + height);
     }
 }
 
@@ -150,6 +151,11 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
     private UnlimitedArray<GarageDynamicStatBar> statBars = [];
 
+    private int _statsBarBaseX = 120;
+    private int _statsBarBaseY = 200;
+    private int _statsBarXGap = 130;
+    private int _statsBarYGap = 75;
+
     private PerspectiveCamera _camera = new();
     public GaragePhase(GraphicsDevice graphicsDevice, Car currentCar) : this(graphicsDevice)
     {
@@ -162,7 +168,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
         if (_selectedCarIdx == -1) _selectedCarIdx = 0;
     }
 
-    private void CreateScene()
+    private void SetupCurrentCar()
     {
         _garageScene = new Scene(
             graphicsDevice,
@@ -174,21 +180,34 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
         // create and position stat bars
         Car car = _cars[_selectedCarIdx];
         float switsLevel = (car.Stats.Swits[2] - 220) / 90f;
-        statBars[0] = new GarageDynamicStatBar(Math.Max(0.2f, switsLevel), 100, 200, "Top Speed");
+        switsLevel = Math.Max(0.05f, switsLevel);
+        statBars[0] = new GarageDynamicStatBar(switsLevel, _statsBarBaseX, _statsBarBaseY, "Top Speed");
 
         float accel = car.Stats.Acelf.X * car.Stats.Acelf.Y * car.Stats.Acelf.Z * (float)car.Stats.Grip / 7700f;
-        statBars[1] = new GarageDynamicStatBar(accel, 230, 200, "Acceleration");
+        statBars[1] = new GarageDynamicStatBar(accel, _statsBarBaseX + _statsBarXGap, _statsBarBaseY, "Acceleration");
 
-        statBars[2] = new GarageDynamicStatBar((float)car.Stats.Dishandle, 360, 200, "Handling");
+        statBars[2] = new GarageDynamicStatBar((float)car.Stats.Dishandle, _statsBarBaseX + _statsBarXGap * 2, _statsBarBaseY, "Handling");
 
-        float airs = (car.Stats.Airc * (float)car.Stats.Airs * (float)car.Stats.Bounce + 28f) / 139f;
-        statBars[3] = new GarageDynamicStatBar(airs, 100, 300, "Stunting");
+        float powerloss = car.Stats.Powerloss / 4500000f;
+        statBars[3] = new GarageDynamicStatBar(powerloss, _statsBarBaseX, _statsBarBaseY + _statsBarYGap, "Power Save");
 
         float strength = ((float)car.Stats.Moment + 0.5f) / 2.6f;
-        statBars[4] = new GarageDynamicStatBar(strength, 230, 300, "Strength");
+        statBars[4] = new GarageDynamicStatBar(strength, _statsBarBaseX + _statsBarXGap, _statsBarBaseY + _statsBarYGap, "Strength");
 
-        statBars[5] = new GarageDynamicStatBar((float)car.Stats.Outdam, 360, 300, "Endurance");
+        float health = (float)car.Stats.Outdam * 1.35f;
+        statBars[5] = new GarageDynamicStatBar(health, _statsBarBaseX + _statsBarXGap * 2, _statsBarBaseY + _statsBarYGap, "Max Health");
+
+        float airs = ((car.Stats.Airc * 2) * ((float)car.Stats.Airs * 0.5f) * (float)car.Stats.Bounce + 28f) / 100f;
+        statBars[6] = new GarageDynamicStatBar(airs, _statsBarBaseX, _statsBarBaseY + _statsBarYGap * 2, "Stunting");
+
+        float hglide = (Math.Abs(car.Stats.Flipy) + Math.Abs(car.GroundAt)) / 2f / 45.5f;
+        statBars[7] = new GarageDynamicStatBar(hglide, _statsBarBaseX + _statsBarXGap, _statsBarBaseY + _statsBarYGap * 2, "Hypergliding");
+
+        float ab = Math.Max(0.05f, car.Stats.Airc / 75f);
+        statBars[8] = new GarageDynamicStatBar(ab, _statsBarBaseX + _statsBarXGap * 2, _statsBarBaseY + _statsBarYGap * 2, "AB'ing");
     }
+
+
 
     public override void GameTick()
     {
@@ -223,6 +242,11 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
         G.SetColor(new Color(0, 0, 0));
         G.DrawStringAligned(_cars[_selectedCarIdx].Stats.Name, graphicsDevice.Viewport.Width, 120, TextHorizontalAlignment.Center);
 
+        G.SetFont(new Font("Arial", 1, 24));
+        G.DrawString("Racing", _statsBarBaseX - 90, _statsBarBaseY + 5);
+        G.DrawString("Wasting", _statsBarBaseX - 90, _statsBarBaseY + _statsBarYGap + 5);
+        G.DrawString("Stunts", _statsBarBaseX - 90, _statsBarBaseY+ _statsBarYGap*2 + 5);
+
         DrawCarStats();
     }
 
@@ -239,7 +263,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
         World.ResetValues();
         World.Snap = new Color3(15, 0, 35);
 
-        CreateScene();
+        SetupCurrentCar();
     }
 
     public override void Exit()
@@ -282,13 +306,18 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     {
         _selectedCarIdx += 1;
         if (_selectedCarIdx >= _cars.Count) _selectedCarIdx -= _cars.Count;
-        CreateScene();
+        SetupCurrentCar();
     }
 
     private void CycleCarLeft()
     {
         _selectedCarIdx -= 1;
         if (_selectedCarIdx < 0) _selectedCarIdx = _cars.Count - 1;
-        CreateScene();
+        SetupCurrentCar();
+    }
+
+    public override void WindowSizeChanged(int width, int height)
+    {
+
     }
 }

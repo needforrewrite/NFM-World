@@ -23,7 +23,7 @@ clrad(1500)
 dammult(0.96)
 maxmag(2000)
 dishandle(1.0)
-outdam(35)
+outdam(0.35)
 name(Turbo Dragster)
 enginsignature(1)
 
