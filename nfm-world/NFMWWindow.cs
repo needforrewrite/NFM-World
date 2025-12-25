@@ -247,7 +247,7 @@ public unsafe class Program : Game
     protected override void Update(GameTime gameTime)
     {
         base.Update(gameTime);
-        FPSCounter.Update(gameTime);
+        //FPSCounter.Update(gameTime);
         
         UpdateInput();
         UpdateMouse();
@@ -638,6 +638,9 @@ public class DummyBackend : IBackend
         }
 
         public void DrawString(string text, int x, int y)
+        {
+        }
+        public void DrawStringAligned(string text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
         {
         }
 

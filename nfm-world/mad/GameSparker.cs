@@ -306,7 +306,7 @@ public class GameSparker
 
         // init menu
         SettingsMenu = new SettingsMenu(game);
-        MainMenu = new MainMenuPhase();
+        MainMenu = new MainMenuPhase(_graphicsDevice);
         SettingsMenu.LoadConfig();
 
         InRace = new InRacePhase(_graphicsDevice);

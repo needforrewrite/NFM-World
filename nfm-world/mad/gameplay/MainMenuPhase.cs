@@ -1,11 +1,12 @@
-﻿using NFMWorld.Mad.UI;
+﻿using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Mad.UI;
 using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
 
 // TODO: implement the same menu as in nfm-lit
 
-public class MainMenuPhase : BasePhase
+public class MainMenuPhase: BasePhase
 {
     public enum MenuState
     {
@@ -37,8 +38,14 @@ public class MainMenuPhase : BasePhase
     public MenuState _currentMenuState = MenuState.Main;
     private readonly List<MenuState> _menuHistory = new();
 
-    public MainMenuPhase()
+    private GraphicsDevice _graphicsDevice;
+
+    private Car? garageSelectedCar;
+
+    public MainMenuPhase(GraphicsDevice graphicsDevice)
     {
+        _graphicsDevice = graphicsDevice;
+
         // Create title and button fonts
         _titleFont = new Font("Arial", 1, 48); // Large title
         _buttonFont = new Font("Arial", 1, 24); // Button text
@@ -58,7 +65,7 @@ public class MainMenuPhase : BasePhase
         int spacing = 40;
 
         AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "PLAY", OnPlayClicked);
-        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "GARAGE", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "GARAGE", OnGarageClicked);
         AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "WORKSHOP", OnWorkshopClicked);
         AddButton(startX, startY + spacing * 3, buttonWidth, buttonHeight, "SETTINGS", OnSettingsClicked);
         AddButton(startX, startY + spacing * 4, buttonWidth, buttonHeight, "CREDITS", OnClickUnavailable);
@@ -420,6 +427,27 @@ public class MainMenuPhase : BasePhase
             inRacePhase.gamemode = GameModes.TimeTrial;
         }
     }
+
+    private void OnGarageClicked()
+    {
+        GaragePhase gp = new GaragePhase(_graphicsDevice);
+        gp.Enter();
+        gp.CarSelected += (sender, c) =>
+        {
+            garageSelectedCar = c;
+            GameSparker.CurrentPhase = this;
+        };
+
+        gp.CarSelectionCancelled += (sender, _) =>
+        {
+            GameSparker.CurrentPhase = this;
+        };
+
+        GameSparker.CurrentPhase = gp;
+
+    }
+
+
     private void OnMPClicked()
     {
         // this should authenticate the player before showing the menu
