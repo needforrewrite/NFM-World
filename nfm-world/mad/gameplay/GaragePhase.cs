@@ -197,10 +197,10 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
         float health = (float)car.Stats.Outdam * 1.35f;
         statBars[5] = new GarageDynamicStatBar(health, _statsBarBaseX + _statsBarXGap * 2, _statsBarBaseY + _statsBarYGap, "Max Health");
 
-        float airs = ((car.Stats.Airc * 2) * ((float)car.Stats.Airs * 0.5f) * (float)car.Stats.Bounce + 28f) / 100f;
+        float airs = (car.Stats.Airc * 2 * ((float)car.Stats.Airs * 0.5f) * (float)car.Stats.Bounce + 28f) / 100f;
         statBars[6] = new GarageDynamicStatBar(airs, _statsBarBaseX, _statsBarBaseY + _statsBarYGap * 2, "Stunting");
 
-        float hglide = (Math.Abs(car.Stats.Flipy) + Math.Abs(car.GroundAt)) / 2f / 45.5f;
+        float hglide = (Math.Abs(car.Stats.Flipy) + Math.Abs(car.GroundAt)) / 2f / 60f;
         statBars[7] = new GarageDynamicStatBar(hglide, _statsBarBaseX + _statsBarXGap, _statsBarBaseY + _statsBarYGap * 2, "Hypergliding");
 
         float ab = Math.Max(0.05f, car.Stats.Airc / 75f);
