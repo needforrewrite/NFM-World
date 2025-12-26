@@ -7,6 +7,9 @@ road()
 
 tracks(8)
 
+atp(1810,980)
+atp(1810,-980)
+
 <track>
 zy(90)
 radx(1400)

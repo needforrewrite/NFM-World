@@ -6,6 +6,9 @@ grounded(189)
 
 tracks(5)
 
+atp(0,-1750)
+atp(1750,0)
+
 <track>
 c(163,158,147)
 radx(12)

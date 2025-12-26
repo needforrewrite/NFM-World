@@ -24,6 +24,7 @@ public class RadParser
     private List<Rad3dBoxDef> _boxes = new();
     private List<Rad3dPoly> _polys = new();
     private List<Vector3> _points = new();
+    private List<Vector2> _atp = new();
     private bool _road;
     private bool _castsShadow;
     
@@ -58,7 +59,8 @@ public class RadParser
             Rims: parser._rims,
             Boxes: parser._boxes.ToArray(),
             Polys: parser._polys.ToArray(),
-            CastsShadow: parser._castsShadow
+            CastsShadow: parser._castsShadow,
+            Atp: parser._atp.ToArray()
         ));
     }
 
@@ -334,7 +336,13 @@ public class RadParser
                 }
                 poly = poly with { DecalOffset = decalValue };
             }
+            else if(line.StartsWith("atp("))
+            {
+                var x = Utility.GetInt("atp(", line, 0);
+                var z = Utility.GetInt("atp(", line, 0);
 
+                _atp.Add(new Vector2(x, z));
+            }
             else if (line.StartsWith("p("))
             {
                 var position = Int3.FromSpan(BracketParser.GetNumbers(line, stackalloc int[3]));
@@ -388,6 +396,7 @@ public class RadParser
 [JsonSerializable(typeof(Color3[]))]
 [JsonSerializable(typeof(Int3[]))]
 [JsonSerializable(typeof(Vector3[]))]
+[JsonSerializable(typeof(Vector2[]))]
 public partial class SourceGenerationContext : JsonSerializerContext;
 
 public readonly record struct Rad3dWheelDef(
@@ -425,7 +434,8 @@ public record Rad3d(
     [property: JsonPropertyName("rims")] Rad3dRimsDef? Rims,
     [property: JsonPropertyName("boxes")] Rad3dBoxDef[] Boxes,
     [property: JsonPropertyName("polys")] Rad3dPoly[] Polys,
-    [property: JsonPropertyName("shadow")] bool CastsShadow
+    [property: JsonPropertyName("shadow")] bool CastsShadow,
+    [property: JsonPropertyName("atp")] Vector2[] Atp
 )
 {
     public int MaxRadius { get; } = CalculateMaxRadius(Polys);
@@ -446,7 +456,7 @@ public record Rad3d(
         return maxR;
     }
 
-    public Rad3d(Rad3dPoly[] polys, bool castsShadow) : this([], new CarStats(), [], null, [], polys, castsShadow)
+    public Rad3d(Rad3dPoly[] polys, bool castsShadow) : this([], new CarStats(), [], null, [], polys, castsShadow, [])
     {
     }
 }

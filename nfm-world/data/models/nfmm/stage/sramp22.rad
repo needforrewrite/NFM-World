@@ -6,6 +6,9 @@ grounded(105)
 
 tracks(4)
 
+atp(350,0)
+atp(-350,0)
+
 <track>
 zy(-90)
 radx(330)

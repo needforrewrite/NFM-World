@@ -7,6 +7,8 @@ road()
 
 tracks(1)
 
+atp(0,0)
+
 <track>
 c(147,147,147)
 radx(24)

@@ -4,6 +4,8 @@ disline(6)
 stonecold()
 grounded(130)
 
+atp(0,0)
+
 <p>
 c(255,0,0)
 

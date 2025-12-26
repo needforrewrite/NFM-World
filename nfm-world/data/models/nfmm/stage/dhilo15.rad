@@ -6,6 +6,9 @@ grounded(110)
 road()
 tracks(8)
 
+atp(0,2164)
+atp(0,-2164)
+
 <track>
 c(147,147,147)
 radx(700)
