@@ -147,15 +147,17 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
             if (ImGui.BeginMenu("Search"))
             {
                 _searchKbFocus++;
-                if(HandleSearch())
+                if (HandleSearch())
                 {
                     ImGui.CloseCurrentPopup();
-                };
+                }
+                ;
 
                 ImGui.EndMenu();
-            } else
+            }
+            else
             {
-                if(!_openSearchPopup) _searchKbFocus = 0;
+                if (!_openSearchPopup) _searchKbFocus = 0;
             }
 
             ImGui.EndMainMenuBar();
@@ -163,17 +165,17 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
         if (_openSearchPopup)
         {
-            ImGui.SetNextWindowPos(new System.Numerics.Vector2(200, 200));
-            ImGui.SetNextWindowSize(new System.Numerics.Vector2(250, 200));
+            ImGui.SetNextWindowSize(new System.Numerics.Vector2(0, 0));
 
             bool open = _openSearchPopup;
 
-            if (ImGui.Begin("Search", ref open, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoNavInputs | ImGuiWindowFlags.NoNavFocus | ImGuiWindowFlags.NoResize))
+            if (ImGui.Begin("Search", ref open, ImGuiWindowFlags.NoResize))
             {
                 _searchKbFocus++;
-                if(HandleSearch())
+                if (HandleSearch())
                 {
                     _openSearchPopup = false;
+                    open = false;
                     ImGui.CloseCurrentPopup();
                 };
 
@@ -203,24 +205,32 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
             }
         }
 
-        if(_searchKbFocus == 1) {
+        if (_searchKbFocus == 1)
+        {
             ImGui.SetKeyboardFocusHere(-1);
         }
 
-        if (!_searchQuery.IsNullOrEmpty())
+        if (_searchQuery.IsNullOrEmpty())
+        {
+            _autocompleteMatches = _cars.ToArray();
+        }
+        else
         {
             _autocompleteMatches = _cars.ToList().FindAll(x => x.Stats.Name.ToLower().StartsWith(_searchQuery.ToLower())).ToArray();
-            string[] _autocompleteMatchedNames = _autocompleteMatches.Select(x => x.Stats.Name).ToArray();
+        }
+        string[] _autocompleteMatchedNames = _autocompleteMatches.Select(x => x.Stats.Name).ToArray();
 
-            if (_autocompleteMatches.Length > 0 && ImGui.BeginListBox("##Autocomplete"))
+
+        if (_autocompleteMatches.Length > 0)
+        {
+            _inAutocomplete = true;
+            if(ImGui.ListBox("##AutocompleteEntries", ref _autocompleteIndex, _autocompleteMatchedNames, _autocompleteMatches.Length, _autocompleteMatches.Length))
             {
-                if (_autocompleteMatches.Length > 0)
-                {
-                    _inAutocomplete = true;
-                    ImGui.ListBox("##AutocompleteEntries", ref _autocompleteIndex, _autocompleteMatchedNames, _autocompleteMatches.Length);
-                }
-                ImGui.EndListBox();
-            }
+                _selectedCarIdx = _cars.ToList().FindIndex(c => c.Stats.Name == _autocompleteMatches[_autocompleteIndex].Stats.Name);
+                SetupCurrentCar();
+                _searchQuery = "";
+                return true;
+            };
         }
 
         return false;
@@ -265,7 +275,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
             }
         }
 
-        if (imguiWantsKeyboard) return;
+        if (imguiWantsKeyboard || _inAutocomplete) return;
 
         if (key == Keys.Right)
         {
