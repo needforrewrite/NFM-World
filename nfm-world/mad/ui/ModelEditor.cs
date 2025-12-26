@@ -1922,7 +1922,7 @@ public class ModelEditorPhase : BasePhase
                             var isCurrentModel = activeTab != null && activeTab.ModelPath != null && 
                                 activeTab.ModelPath.EndsWith(file.Replace('/', '\\'));
                             
-                            if (ImGui.Selectable($"  {fileName}", isCurrentModel))
+                            if (ImGui.Selectable($"  {fileName}##{file}", isCurrentModel))
                             {
                                 LoadModel(file, _openInNewTab);
                                 _showLoadDialog = false;
@@ -1944,7 +1944,7 @@ public class ModelEditorPhase : BasePhase
                             var isCurrentModel = activeTab != null && activeTab.ModelPath != null && 
                                 activeTab.ModelPath.EndsWith(file.Replace('/', '\\'));
                             
-                            if (ImGui.Selectable($"  {fileName}", isCurrentModel))
+                            if (ImGui.Selectable($"  {fileName}##{file}", isCurrentModel))
                             {
                                 LoadModel(file, _openInNewTab);
                                 _showLoadDialog = false;
@@ -2004,7 +2004,7 @@ public class ModelEditorPhase : BasePhase
         {
             if (editingCollision)
             {
-                // ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Model?.Boxes.Length ?? 0}");
+                ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Object?.Boxes.Length ?? 0}");
             }
             else
             {
@@ -2456,9 +2456,10 @@ public class ModelEditorPhase : BasePhase
         highlightMesh.Rotation = tab.Object.Rotation;
         
         // Render with highlighting
-        overlayScene.Objects.Clear();
-        overlayScene.Objects.Add(highlightMesh);
-        overlayScene.Render(false, false);
+        var oldDevRenderTrackers = GameSparker.devRenderTrackers;
+        GameSparker.devRenderTrackers = true;
+        highlightMesh.Render(camera, null);
+        GameSparker.devRenderTrackers = oldDevRenderTrackers;
     }
     
     public override void WindowSizeChanged(int width, int height)

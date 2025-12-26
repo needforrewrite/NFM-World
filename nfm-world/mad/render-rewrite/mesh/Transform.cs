@@ -56,9 +56,9 @@ public class Transform
     private bool MatrixWorldNeedsUpdate
     {
         get => field || (Parent?.MatrixWorldNeedsUpdate ?? false);
-        set => field = value;
+        set;
     }
-    
+
     public virtual void GameTick()
     {
     }
