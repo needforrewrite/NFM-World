@@ -1,0 +1,24 @@
+
+// car: PenaltySpot
+---------------------
+
+// To start making you car you must start by reading the tutorial at:
+// http://www.needformadness.com/developer/simplecar.html
+
+disline(4)
+stonecold()
+grounded(30000)
+
+<p>
+c(255,255,255)
+gr(150)
+p(-86,0,208)
+p(86,0,208)
+p(208,0,86)
+p(208,0,-86)
+p(86,0,-208)
+p(-86,0,-208)
+p(-208,0,-86)
+p(-208,0,86)
+</p>
+

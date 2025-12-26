@@ -19,8 +19,8 @@ public class SavedTimeTrial
         _carName = carName;
         _stageName = stageName;
 
-        _dirName = "data/tts/" + stageName;
         _pathName = "data/tts/" + stageName + "/" + carName + ".timetrial";
+        _dirName = new FileInfo(_pathName).Directory?.FullName ?? "";
 
         TickInputs = [];
         Splits = [];

@@ -1,9 +1,5 @@
-using System;
 using NFMWorld.DriverInterface;
-using NFMWorld.Util;
 using SoftFloat;
-using Stride.Core.Mathematics;
-using System.Linq;
 using Steamworks;
 
 namespace NFMWorld.Mad
@@ -55,6 +51,13 @@ namespace NFMWorld.Mad
                     inRacePhase.gamemode = GameModes.Sandbox;
                 }
             });
+            console.RegisterCommand("go_football", (c, args) =>
+            {
+                if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+                {
+                    inRacePhase.gamemode = GameModes.Football;
+                }
+            });
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
@@ -77,10 +80,7 @@ namespace NFMWorld.Mad
             // car command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("car", (args, position) =>
             position == 0
-                ? GameSparker.cars.Select(car => car.FileName)
-                    .Concat(GameSparker.vendor_cars.Select(car => car.FileName))
-                    .Concat(GameSparker.user_cars.Select(car => car.FileName))
-                    .ToList()
+                ? [.. GameSparker.cars.Values.SelectMany(i => i).Select(a => a.FileName)]
                 : new List<string>());
             
             // create command: only autocomplete first argument (position 0) - the stage/road name
@@ -280,7 +280,7 @@ namespace NFMWorld.Mad
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var originalCar = inRacePhase.CarsInRace[inRacePhase.playerCarIndex];
-                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, (Car)originalCar.CarRef.ClonedMesh!, 0, 0, true);
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, originalCar.ClonedCarInfo, 0, 0, true);
             }
 
             console.Log("Position reset");
@@ -293,7 +293,7 @@ namespace NFMWorld.Mad
         }
 
         private static void SetPos(DevConsole console, string[] args)
-{
+        {
             if (args.Length < 3 || !int.TryParse(args[0], out var x) || !int.TryParse(args[1], out var y) || !int.TryParse(args[2], out var z))
             {
                 console.Log("Usage: setpos <x> <y> <z>");
@@ -321,7 +321,8 @@ namespace NFMWorld.Mad
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var mesh = inRacePhase.CurrentStage.CreateObject(objectName, x, y, z, r);
-                Trackers.LoadTracker(mesh);
+                if (mesh is CollisionObject obj)
+                    Trackers.LoadTracker(obj);
             }
             else
             {
@@ -355,7 +356,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            var carId = args[0];
+            var carId = string.Join(" ", args);
             var (id, car) = GameSparker.GetCar(carId);
 
             if (car == null)

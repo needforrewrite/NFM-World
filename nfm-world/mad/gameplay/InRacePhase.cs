@@ -53,6 +53,7 @@ public class InRacePhase(GraphicsDevice graphicsDevice) : BaseRacePhase(graphics
         {
             GameModes.Sandbox => new SandboxGamemode(playerCarName, playerCarIndex, CarsInRace, CurrentStage, current_scene),
             GameModes.TimeTrial => new TimeTrialGamemode(playerCarName, playerCarIndex, CarsInRace, CurrentStage, current_scene),
+            GameModes.Football => new FootballGamemode(playerCarName, playerCarIndex, CarsInRace, CurrentStage, current_scene),
             _ => throw new ArgumentOutOfRangeException(nameof(gamemode), gamemode, null)
         };
     }

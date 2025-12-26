@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
 
-public class Sky : Transform, IRenderable
+public class Sky : Transform, IImmediateRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;
@@ -30,7 +30,7 @@ public class Sky : Transform, IRenderable
             col = new Vector3(0.991f, 0.991f, 0.998f) * col;
             layers.AddFirst((new Vector3(0, skyline - 700 - i * 70, 7000), col));
         }
-        layers.AddLast((new Vector3(0, 250, 7000), World.Fog.ToVector3()));
+        layers.AddLast((new Vector3(0, 10250, 7000), World.Fog.ToVector3()));
 
         var data = new List<VertexPositionColor>();
 
@@ -51,7 +51,7 @@ public class Sky : Transform, IRenderable
         }
 
         var vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None);
-        vertexBuffer.SetData(data.ToArray());
+        vertexBuffer.SetDataEXT(data);
         _vertexBuffer = vertexBuffer;
 
         _material = Program._skyShader;

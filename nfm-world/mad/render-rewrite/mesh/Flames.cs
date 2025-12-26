@@ -1,12 +1,11 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad;
 
 public class Flames
 {
     private int _embos;
-    private readonly Mesh _mesh;
+    private readonly Car _car;
     private readonly GraphicsDevice _graphicsDevice;
     private int[] _pa, _pb;
 
@@ -18,12 +17,12 @@ public class Flames
     private int _tick;
     public float Darken = 1f;
 
-    public Flames(Mesh mesh, GraphicsDevice graphicsDevice)
+    public Flames(Car car, GraphicsDevice graphicsDevice)
     {
-        _mesh = mesh;
+        _car = car;
         _graphicsDevice = graphicsDevice;
-        _pa = new int[mesh.Polys.Length];
-        _pb = new int[mesh.Polys.Length];
+        _pa = new int[car.Mesh.Polys.Length];
+        _pb = new int[car.Mesh.Polys.Length];
         
         _flameEffect = new BasicEffect(graphicsDevice)
         {
@@ -31,12 +30,12 @@ public class Flames
             TextureEnabled = false,
             VertexColorEnabled = true
         };
-        _triangles = new VertexPositionColor[9 * mesh.Polys.Length];
+        _triangles = new VertexPositionColor[9 * car.Mesh.Polys.Length];
     }
 
     public void GameTick()
     {
-        if (_mesh.Wasted)
+        if (_car.Wasted)
         {
             if (++_tick == GameSparker.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
             {
@@ -64,7 +63,7 @@ public class Flames
 
                 if (_embos == 12)
                 {
-                    _mesh.ChipWasted();
+                    _car.ChipWasted();
                 }
 
                 if (_embos == 13)
@@ -83,9 +82,9 @@ public class Flames
 
                 if (_embos == 16)
                 {
-                    for (var i = 0; i < _mesh.Polys.Length; i++)
+                    for (var i = 0; i < _car.Mesh.Polys.Length; i++)
                     {
-                        var n = _mesh.Polys[i].Points.Length;
+                        var n = _car.Mesh.Polys[i].Points.Length;
                         _pa[i] = URandom.Int(0, n);
                         for (_pb[i] = URandom.Int(0, n); _pa[i] == _pb[i]; _pb[i] = URandom.Int(0, n))
                         {
@@ -108,14 +107,14 @@ public class Flames
             Span<float> innerX = stackalloc float[3];
             Span<float> innerY = stackalloc float[3];
             Span<float> innerZ = stackalloc float[3];
-            for (var i = 0; i < _mesh.Polys.Length; i++)
+            for (var i = 0; i < _car.Mesh.Polys.Length; i++)
             {
-                var poly = _mesh.Polys[i];
+                var poly = _car.Mesh.Polys[i];
                 
                 var i45 = 1;
                 var i46 = 1;
                 int i47;
-                for (i47 = (int)Math.Abs(_mesh.Rotation.Zy.Degrees); i47 > 270; i47 -= 360)
+                for (i47 = (int)Math.Abs(_car.Rotation.Zy.Degrees); i47 > 270; i47 -= 360)
                 {
                 }
                 i47 = Math.Abs(i47);
@@ -124,7 +123,7 @@ public class Flames
                     i45 = -1;
                 }
                 int i48;
-                for (i48 = (int)Math.Abs(_mesh.Rotation.Xy.Degrees); i48 > 270; i48 -= 360)
+                for (i48 = (int)Math.Abs(_car.Rotation.Xy.Degrees); i48 > 270; i48 -= 360)
                 {
                 }
                 i48 = Math.Abs(i48);
@@ -294,7 +293,7 @@ public class Flames
             }
             
             
-            _flameEffect.World = _mesh.MatrixWorld;
+            _flameEffect.World = _car.MatrixWorld;
             _flameEffect.View = camera.ViewMatrix;
             _flameEffect.Projection = camera.ProjectionMatrix;
         
@@ -307,7 +306,7 @@ public class Flames
                     PrimitiveType.TriangleList,
                     _triangles,
                     0,
-                    3 * _mesh.Polys.Length,
+                    3 * _car.Mesh.Polys.Length,
                     VertexPositionColor.VertexDeclaration
                 );
             }

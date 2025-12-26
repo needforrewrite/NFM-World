@@ -1,0 +1,22 @@
+
+// car: Soccer Line
+---------------------
+
+// To start making you car you must start by reading the tutorial at:
+// http://www.needformadness.com/developer/simplecar.html
+
+
+disline(4)
+stonecold()
+grounded(30000)
+
+
+
+<p>
+c(255,255,255)
+gr(150)
+p(-50,0,-450)
+p(-50,0,450)
+p(50,0,450)
+p(50,0,-450)
+</p>

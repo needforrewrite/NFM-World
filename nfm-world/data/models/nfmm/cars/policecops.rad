@@ -24,6 +24,10 @@ outdam(0.62)
 name(Sword of Justice)
 enginsignature(0)
 
+class(B)
+author(Omar Waly)
+desc(hogan rewish)
+
 idiv(170)
 shadow()
 

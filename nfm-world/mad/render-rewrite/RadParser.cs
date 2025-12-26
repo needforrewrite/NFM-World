@@ -168,7 +168,7 @@ public class RadParser
         else if (line.StartsWith("simag(")) _stats = _stats with { Simag = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("moment(")) _stats = _stats with { Moment = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("comprad(")) _stats = _stats with { Comprad = BracketParser.GetNumber<fix64>(line) };
-        else if (line.StartsWith("push(")) _stats = _stats with { Push = BracketParser.GetNumber<int>(line) };
+        else if (line.StartsWith("push(")) _stats = _stats with { Push = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("revpush(")) _stats = _stats with { Revpush = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("lift(")) _stats = _stats with { Lift = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("revlift(")) _stats = _stats with { Revlift = BracketParser.GetNumber<int>(line) };
@@ -179,9 +179,11 @@ public class RadParser
         else if (line.StartsWith("dammult(")) _stats = _stats with { Dammult = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("maxmag(")) _stats = _stats with { Maxmag = BracketParser.GetNumber<int>(line) };
         else if (line.StartsWith("dishandle(")) _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) };
+        else if (line.StartsWith("handling(")) /* physhot */ _stats = _stats with { Dishandle = BracketParser.GetNumber<fix64>(line) / (fix64)200f };
         else if (line.StartsWith("outdam(")) _stats = _stats with { Outdam = BracketParser.GetNumber<fix64>(line) };
         else if (line.StartsWith("name(")) _stats = _stats with { Name = BracketParser.GetString(line) };
         else if (line.StartsWith("enginsignature(")) _stats = _stats with { Enginsignature = BracketParser.GetNumber<sbyte>(line) };
+
 
         else if (line.StartsWith("w("))
         {
