@@ -40,7 +40,7 @@ public class MainMenuPhase: BasePhase
 
     private GraphicsDevice _graphicsDevice;
 
-    private Car? garageSelectedCar;
+    private CarInfo? garageSelectedCar;
 
     public MainMenuPhase(GraphicsDevice graphicsDevice)
     {

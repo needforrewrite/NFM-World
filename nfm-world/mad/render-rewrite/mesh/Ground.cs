@@ -2,7 +2,7 @@
 
 namespace NFMWorld.Mad;
 
-public class Ground : Transform, IRenderable
+public class Ground : Transform, IImmediateRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;
@@ -15,7 +15,7 @@ public class Ground : Transform, IRenderable
         _graphicsDevice = graphicsDevice;
         const int size = 1_000_000;
         var color = World.GroundColor.Snap(World.Snap);
-        VertexPositionColor[] data =
+        Span<VertexPositionColor> data =
         [
             new(new Vector3(-size, World.Ground, -size), color),
             new(new Vector3(size, World.Ground, -size), color),
@@ -26,7 +26,7 @@ public class Ground : Transform, IRenderable
         ];
         
         _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Length, BufferUsage.None);
-        _vertexBuffer.SetData(data);
+        _vertexBuffer.SetDataEXT(data);
         _triangleCount = data.Length / 3;
 
         _material = Program._groundShader;

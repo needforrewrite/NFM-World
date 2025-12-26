@@ -4,8 +4,10 @@ using Stride.Core.Mathematics;
 
 namespace NFMWorld.Mad;
 
-public class FixHoop : Mesh
+public class FixHoop : CollisionObject
 {
+    private readonly GraphicsDevice _graphicsDevice;
+    
     public bool Rotated;
 
     private const int CntLines = 4;
@@ -19,9 +21,10 @@ public class FixHoop : Mesh
     private VertexPositionColor[] _vertices = new VertexPositionColor[8*CntLines];
     private short[] _indices = new short[18*CntLines];
 
-    public FixHoop(Mesh baseMesh, Vector3 position, Euler rotation) : base(baseMesh, position, rotation)
+    public FixHoop(PlaceableObjectInfo placeableObjectInfo, Vector3 position, Euler rotation) : base(placeableObjectInfo, position, rotation)
     {
-        _fixhoopEffect = new BasicEffect(GraphicsDevice)
+        _graphicsDevice = placeableObjectInfo.GraphicsDevice;
+        _fixhoopEffect = new BasicEffect(_graphicsDevice)
         {
             LightingEnabled = false,
             TextureEnabled = false,
@@ -39,12 +42,12 @@ public class FixHoop : Mesh
         _fixhoopEffect.View = camera.ViewMatrix;
         _fixhoopEffect.Projection = camera.ProjectionMatrix;
         
-        GraphicsDevice.RasterizerState = RasterizerState.CullNone;
+        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
         foreach (var pass in _fixhoopEffect.CurrentTechnique.Passes)
         {
             pass.Apply();
 
-            GraphicsDevice.DrawUserIndexedPrimitives(
+            _graphicsDevice.DrawUserIndexedPrimitives(
                 PrimitiveType.TriangleList,
                 _vertices,
                 0,
@@ -55,7 +58,7 @@ public class FixHoop : Mesh
                 VertexPositionColor.VertexDeclaration
             );
         }
-        GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
     }
 
     private void PrepareLine(int idx)
@@ -174,7 +177,7 @@ public class FixHoop : Mesh
         }
     }
 
-    public override void Render(Camera camera, Lighting? lighting = null)
+    public override void Render(Camera camera, Lighting? lighting)
     {
         base.Render(camera, lighting);
         if (lighting?.IsCreateShadowMap != true)

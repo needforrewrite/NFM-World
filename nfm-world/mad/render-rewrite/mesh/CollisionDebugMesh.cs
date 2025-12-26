@@ -2,13 +2,14 @@
 
 namespace NFMWorld.Mad;
 
-public class CollisionDebugMesh : Transform
+public sealed class CollisionDebugMesh : GameObject
 {
     private LineEffect _material;
     private int lineTriangleCount;
-    private IndexBuffer? lineIndexBuffer;
-    private VertexBuffer? lineVertexBuffer;
+    private IndexBuffer lineIndexBuffer;
+    private VertexBuffer lineVertexBuffer;
     private readonly int lineVertexCount;
+    private VertexBuffer lineInstanceBuffer;
 
     public CollisionDebugMesh(Span<Rad3dBoxDef> boxes)
     {
@@ -128,27 +129,29 @@ public class CollisionDebugMesh : Transform
         }
 
         lineVertexBuffer = new VertexBuffer(GameSparker._graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None);
-        lineVertexBuffer.SetData(data.ToArray());
+        lineVertexBuffer.SetDataEXT(data);
 	    
         lineIndexBuffer = new IndexBuffer(GameSparker._graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
-        lineIndexBuffer.SetData(indices.ToArray());
+        lineIndexBuffer.SetDataEXT(indices);
 	    
         lineTriangleCount = indices.Count / 3;
         lineVertexCount = data.Count;
+        
+        lineInstanceBuffer = new VertexBuffer(GameSparker._graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.None);
+        lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);
 
         _material = new LineEffect(Program._lineShader);
 
         #endregion
     }
 
-    public void Render(Camera camera)
+    public override void Render(Camera camera, Lighting? lighting)
     {
-        GameSparker._graphicsDevice.SetVertexBuffer(lineVertexBuffer);
+        if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
+        GameSparker._graphicsDevice.SetVertexBuffers(lineVertexBuffer, new VertexBufferBinding(lineInstanceBuffer, 0, 1));
         GameSparker._graphicsDevice.Indices = lineIndexBuffer;
 
         // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.World?.SetValue(MatrixWorld);
-        _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(MatrixWorld)));
         _material.SnapColor?.SetValue(new Color3(100, 100, 100).ToVector3());
         _material.IsFullbright?.SetValue(true);
         _material.UseBaseColor?.SetValue(false);
@@ -167,8 +170,7 @@ public class CollisionDebugMesh : Transform
 
         _material.View?.SetValue(camera.ViewMatrix);
         _material.Projection?.SetValue(camera.ProjectionMatrix);
-        _material.WorldView?.SetValue(MatrixWorld * camera.ViewMatrix);
-        _material.WorldViewProj?.SetValue(MatrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
+        _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         _material.CameraPosition?.SetValue(camera.Position);
 
         _material.CurrentTechnique = _material.Techniques["Basic"];
@@ -183,7 +185,7 @@ public class CollisionDebugMesh : Transform
         {
             pass.Apply();
     
-            GameSparker._graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, lineVertexCount, 0, lineTriangleCount);
+            GameSparker._graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, lineVertexCount, 0, lineTriangleCount, 1);
         }
     }
 }

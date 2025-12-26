@@ -1,9 +1,5 @@
-using System;
 using NFMWorld.DriverInterface;
-using NFMWorld.Util;
 using SoftFloat;
-using Stride.Core.Mathematics;
-using System.Linq;
 using Steamworks;
 
 namespace NFMWorld.Mad
@@ -284,7 +280,7 @@ namespace NFMWorld.Mad
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var originalCar = inRacePhase.CarsInRace[inRacePhase.playerCarIndex];
-                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, (Car)originalCar.CarRef.ClonedMesh!, 0, 0, true);
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, originalCar.ClonedCarInfo, 0, 0, true);
             }
 
             console.Log("Position reset");
@@ -297,7 +293,7 @@ namespace NFMWorld.Mad
         }
 
         private static void SetPos(DevConsole console, string[] args)
-{
+        {
             if (args.Length < 3 || !int.TryParse(args[0], out var x) || !int.TryParse(args[1], out var y) || !int.TryParse(args[2], out var z))
             {
                 console.Log("Usage: setpos <x> <y> <z>");
@@ -325,7 +321,8 @@ namespace NFMWorld.Mad
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var mesh = inRacePhase.CurrentStage.CreateObject(objectName, x, y, z, r);
-                Trackers.LoadTracker(mesh);
+                if (mesh is CollisionObject obj)
+                    Trackers.LoadTracker(obj);
             }
             else
             {

@@ -1,3 +1,11 @@
+void VS_UnpackParameters(in float4 parameters, out bool getsShadowed, out float alphaOverride, out bool isFullbright, out bool glow)
+{
+    getsShadowed = parameters.x > 0.0f;
+    alphaOverride = parameters.y;
+    isFullbright = parameters.z > 0.0f;
+    glow = parameters.w > 0.0f;
+}
+
 // All components are in the range [0…1], including hue.
 float3 rgb2hsv(float3 c)
 {

@@ -44,9 +44,9 @@ public class WheelMeshBuilder
         Make(_planes, 0, 0, 0, wheelDef.Rotates, (float)wheelDef.Width, (float)wheelDef.Height);
     }
 
-    public Mesh BuildMesh(GraphicsDevice graphicsDevice, Transform parent)
+    public MeshedGameObject BuildGameObject(GraphicsDevice graphicsDevice, Transform parent)
     {
-        return new Mesh(graphicsDevice, new Rad3d(_planes.ToArray(), true), "wheelMesh")
+        return new MeshedGameObject(new Mesh(graphicsDevice, new Rad3d(_planes.ToArray(), true), "wheelMesh"))
         {
             Position = (Vector3)_wheelDef.Position,
             Parent = parent

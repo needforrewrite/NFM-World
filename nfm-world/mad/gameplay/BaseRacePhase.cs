@@ -94,7 +94,7 @@ public abstract class BaseRacePhase(GraphicsDevice graphicsDevice) : BasePhase
     {
         current_scene = new Scene(
             _graphicsDevice,
-            [CurrentStage, new ListRenderable(CarsInRace)],
+            [CurrentStage, new GameObject() { Children = CarsInRace }],
             camera,
             lightCameras
         );

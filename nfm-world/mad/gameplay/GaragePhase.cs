@@ -11,7 +11,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     /// This should be hooked onto by the calling phase, so that the calling phase can be restored upon car selection.
     /// Returns the car that was selected.
     /// </summary>
-    public event EventHandler<Car>? CarSelected;
+    public event EventHandler<CarInfo>? CarSelected;
 
     /// <summary>
     /// This should be hooked onto by the calling phase, so that the calling phase can be restored upon car selection.
@@ -24,7 +24,8 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     private int _selectedCarIdx = 0;
 
     private Collection _currentCollection = Collection.NFMM;
-    private UnlimitedArray<Car> _cars = GameSparker.cars[Collection.NFMM];
+    private UnlimitedArray<CarInfo> _cars = GameSparker.cars[Collection.NFMM];
+    private Car? _car;
 
     private UnlimitedArray<GarageDynamicStatBar> statBars = [];
 
@@ -36,12 +37,12 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     private string _searchQuery = "";
     private int _autocompleteIndex = 0;
     private bool _inAutocomplete = false;
-    private Car[] _autocompleteMatches = [];
+    private CarInfo[] _autocompleteMatches = [];
     private bool _openSearchPopup = false;
     private int _searchKbFocus = 0;
 
     private PerspectiveCamera _camera = new();
-    public GaragePhase(GraphicsDevice graphicsDevice, Car currentCar) : this(graphicsDevice)
+    public GaragePhase(GraphicsDevice graphicsDevice, CarInfo currentCar) : this(graphicsDevice)
     {
         _selectedCarIdx = _cars.FindIndex(c =>
         {
@@ -59,40 +60,40 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
     private void SetupCurrentCar()
     {
+        _car = new Car(_cars[_selectedCarIdx]);
         _garageScene = new Scene(
             graphicsDevice,
-            [_cars[_selectedCarIdx]],
+            [_car],
             _camera,
             []
         );
 
         // create and position stat bars
-        Car car = _cars[_selectedCarIdx];
-        float switsLevel = (car.Stats.Swits[2] - 220) / 90f;
+        float switsLevel = (_car.Stats.Swits[2] - 220) / 90f;
         switsLevel = Math.Max(0.05f, switsLevel);
         statBars[0] = new GarageDynamicStatBar(switsLevel, _statsBarBaseX, _statsBarBaseY, "Top Speed");
 
-        float accel = car.Stats.Acelf.X * car.Stats.Acelf.Y * car.Stats.Acelf.Z * (float)car.Stats.Grip / 7700f;
+        float accel = _car.Stats.Acelf.X * _car.Stats.Acelf.Y * _car.Stats.Acelf.Z * (float)_car.Stats.Grip / 7700f;
         statBars[1] = new GarageDynamicStatBar(accel, _statsBarBaseX + _statsBarXGap, _statsBarBaseY, "Acceleration");
 
-        statBars[2] = new GarageDynamicStatBar((float)car.Stats.Dishandle, _statsBarBaseX + _statsBarXGap * 2, _statsBarBaseY, "Handling");
+        statBars[2] = new GarageDynamicStatBar((float)_car.Stats.Dishandle, _statsBarBaseX + _statsBarXGap * 2, _statsBarBaseY, "Handling");
 
-        float powerloss = car.Stats.Powerloss / 5500000f;
+        float powerloss = _car.Stats.Powerloss / 5500000f;
         statBars[3] = new GarageDynamicStatBar(powerloss, _statsBarBaseX, _statsBarBaseY + _statsBarYGap, "Power Save");
 
-        float strength = ((float)car.Stats.Moment + 0.5f) / 2.6f;
+        float strength = ((float)_car.Stats.Moment + 0.5f) / 2.6f;
         statBars[4] = new GarageDynamicStatBar(strength, _statsBarBaseX + _statsBarXGap, _statsBarBaseY + _statsBarYGap, "Strength");
 
-        float health = (float)car.Stats.Outdam / 1.05f + car.Stats.Maxmag / 100000f;
+        float health = (float)_car.Stats.Outdam / 1.05f + _car.Stats.Maxmag / 100000f;
         statBars[5] = new GarageDynamicStatBar(health, _statsBarBaseX + _statsBarXGap * 2, _statsBarBaseY + _statsBarYGap, "Max Health");
 
-        float airs = (car.Stats.Airc * 2 * ((float)car.Stats.Airs * 0.5f) * (float)car.Stats.Bounce + 28f) / 100f;
+        float airs = (_car.Stats.Airc * 2 * ((float)_car.Stats.Airs * 0.5f) * (float)_car.Stats.Bounce + 28f) / 100f;
         statBars[6] = new GarageDynamicStatBar(airs, _statsBarBaseX, _statsBarBaseY + _statsBarYGap * 2, "Stunting");
 
-        float hglide = ((Math.Abs(car.Stats.Flipy) + Math.Abs(car.GroundAt)) / 2f / 70f) + (float)car.Stats.Airs / 230f;
+        float hglide = ((Math.Abs(_car.Stats.Flipy) + Math.Abs(_car.GroundAt)) / 2f / 70f) + (float)_car.Stats.Airs / 230f;
         statBars[7] = new GarageDynamicStatBar(hglide, _statsBarBaseX + _statsBarXGap, _statsBarBaseY + _statsBarYGap * 2, "Hypergliding");
 
-        float ab = car.Stats.Airc / 75f;
+        float ab = _car.Stats.Airc / 75f;
         statBars[8] = new GarageDynamicStatBar(ab, _statsBarBaseX + _statsBarXGap * 2, _statsBarBaseY + _statsBarYGap * 2, "AB'ing");
     }
 
@@ -112,11 +113,9 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
         graphicsDevice.BlendState = BlendState.Opaque;
         graphicsDevice.DepthStencilState = DepthStencilState.Default;
-
-        Car car = _cars[_selectedCarIdx];
-        car.Position = new Vector3(-500, -100 - car.GroundAt, 200);
-        car.Rotation = Euler.Identity;
-        car.Rotation = new Euler(AngleSingle.FromDegrees(-30), car.Rotation.Pitch, car.Rotation.Roll);
+        
+        _car?.Position = new Vector3(-500, -100 - _car.GroundAt, 200);
+        _car?.Rotation = new Euler(AngleSingle.FromDegrees(-30), _car.Rotation.Pitch, _car.Rotation.Roll);
         _camera.LookAt = new Vector3(0, 0, 0);
         _camera.Position = new Vector3(-600, -300, 1000);
 
@@ -306,7 +305,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     private void SelectedCar()
     {
         if (CarSelected == null) throw new ArgumentNullException("Attempted to invoke CarSelected, but it was null.");
-        CarSelected.Invoke(this, _cars[_selectedCarIdx]);
+        CarSelected.Invoke(this, _car.CarInfo);
     }
 
     private void SelectionCancelled()
