@@ -30,7 +30,7 @@ public class Sky : Transform, IRenderable
             col = new Vector3(0.991f, 0.991f, 0.998f) * col;
             layers.AddFirst((new Vector3(0, skyline - 700 - i * 70, 7000), col));
         }
-        layers.AddLast((new Vector3(0, 250, 7000), World.Fog.ToVector3()));
+        layers.AddLast((new Vector3(0, 10250, 7000), World.Fog.ToVector3()));
 
         var data = new List<VertexPositionColor>();
 

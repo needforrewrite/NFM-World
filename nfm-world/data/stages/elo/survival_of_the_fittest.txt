@@ -9,7 +9,10 @@ fadefrom(8000)
 density(7)
 mountains(50341)
 nlaps(5)
-soundtrack(custom,Platform Racing 3 - Stylization.mp3,359,696)
+soundtrack(elo,Platform Racing 3 - Stylization.mp3,359,696)
+
+author(Ultimato)
+tag(racing)
 
 pulsegrnd(0.95,0.04,0.845)
 aerial()

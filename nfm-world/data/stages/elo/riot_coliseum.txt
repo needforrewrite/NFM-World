@@ -8,8 +8,9 @@ fadefrom(5990)
 density(5)
 mountains(74065)
 nlaps(4)
-soundtrack(custom,enemyTerritory.mp3)
+soundtrack(elo,enemyTerritory.mp3)
 name(Riot Coliseum)
+author(Lightor)
 
 set(48,0,0,0)p
 set(15,0,5600,0)p
