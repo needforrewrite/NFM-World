@@ -89,22 +89,25 @@ public class ModelEditorPhase : BasePhase
     private bool _openInNewTab = true;
     
     // Control states (shared across all tabs)
-    private bool _moveForward = false;
-    private bool _moveBackward = false;
-    private bool _rotateLeft = false;
-    private bool _rotateRight = false;
-    private bool _rotatePitchUp = false;
-    private bool _rotatePitchDown = false;
-    private bool _rotateRollLeft = false;
-    private bool _rotateRollRight = false;
-    private bool _raiseUp = false;
-    private bool _lowerDown = false;
+    private bool _zoomIn = false;
+    private bool _zoomOut = false;
+    private bool _orbitLeft = false;
+    private bool _orbitRight = false;
+    private bool _orbitUp = false;
+    private bool _orbitDown = false;
+    private bool _panLeft = false;
+    private bool _panRight = false;
+    private bool _panUp = false;
+    private bool _panDown = false;
+    private bool _zoomInAlt = false;
+    private bool _zoomOutAlt = false;
 
     private bool _lightsOn = true;
     
-    // Rotation speeds
-    private const float ROTATION_SPEED = 3.5f;
-    private const float HEIGHT_SPEED = 5.0f;
+    // Camera control speeds
+    private const float ORBIT_SPEED = 2.0f;  // degrees per frame
+    private const float PAN_SPEED = 3.0f;    // units per frame
+    private const float ZOOM_SPEED = 10.0f;  // units per frame
     
     // Mouse state (shared)
     private int _mouseX;
@@ -434,7 +437,7 @@ public class ModelEditorPhase : BasePhase
     
     private void UpdateTabCameraPosition(ModelEditorTab tab)
     {
-        // Position camera in orbit around the origin
+        // Position camera in orbit around the model position
         // Camera orbits at the specified distance
         var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
         var pitchRad = MathUtil.DegreesToRadians(tab.CameraPitch);
@@ -443,7 +446,8 @@ public class ModelEditorPhase : BasePhase
         var y = -tab.CameraDistance * (float)Math.Sin(pitchRad);
         var z = tab.CameraDistance * (float)(Math.Cos(pitchRad) * Math.Cos(yawRad));
         
-        tab.CameraPosition = new Vector3(x, y, -z);
+        // Camera position is relative to the model position
+        tab.CameraPosition = tab.ModelPosition + new Vector3(x, y, -z);
     }
 
     public override void KeyPressed(Keys key, bool imguiWantsKeyboard)
@@ -452,39 +456,55 @@ public class ModelEditorPhase : BasePhase
         if (imguiWantsKeyboard) return;
         if (!_isOpen) return;
         
+        var keyboardState = Microsoft.Xna.Framework.Input.Keyboard.GetState();
+        bool isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || 
+                             keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift);
+        
         switch (key)
         {
             case Keys.W:
-                _moveForward = true;
+                if (isShiftPressed)
+                    _panUp = true;
+                else
+                    _zoomIn = true;  // Zoom in like scroll up
                 break;
             case Keys.S:
-                _moveBackward = true;
+                if (isShiftPressed)
+                    _panDown = true;
+                else
+                    _zoomOut = true;  // Zoom out like scroll down
                 break;
             case Keys.A:
-                _rotateLeft = true;
+                if (isShiftPressed)
+                    _panLeft = true;
+                else
+                    _orbitLeft = true;
                 break;
             case Keys.D:
-                _rotateRight = true;
+                if (isShiftPressed)
+                    _panRight = true;
+                else
+                    _orbitRight = true;
                 break;
             case Keys.Up:
-                _rotatePitchUp = true;
+                _orbitUp = true;
                 break;
             case Keys.Down:
-                _rotatePitchDown = true;
+                _orbitDown = true;
                 break;
             case Keys.Left:
-                _rotateRollLeft = true;
+                _orbitLeft = true;
                 break;
             case Keys.Right:
-                _rotateRollRight = true;
+                _orbitRight = true;
                 break;
             case Keys.Oemplus:
             case Keys.Add:
-                _raiseUp = true;
+                _zoomInAlt = true;
                 break;
             case Keys.OemMinus:
             case Keys.Subtract:
-                _lowerDown = true;
+                _zoomOutAlt = true;
                 break;
         }
     }
@@ -500,36 +520,40 @@ public class ModelEditorPhase : BasePhase
         switch (key)
         {
             case Keys.W:
-                _moveForward = false;
+                _zoomIn = false;
+                _panUp = false;
                 break;
             case Keys.S:
-                _moveBackward = false;
+                _zoomOut = false;
+                _panDown = false;
                 break;
             case Keys.A:
-                _rotateLeft = false;
+                _orbitLeft = false;
+                _panLeft = false;
                 break;
             case Keys.D:
-                _rotateRight = false;
+                _orbitRight = false;
+                _panRight = false;
                 break;
             case Keys.Up:
-                _rotatePitchUp = false;
+                _orbitUp = false;
                 break;
             case Keys.Down:
-                _rotatePitchDown = false;
+                _orbitDown = false;
                 break;
             case Keys.Left:
-                _rotateRollLeft = false;
+                _orbitLeft = false;
                 break;
             case Keys.Right:
-                _rotateRollRight = false;
+                _orbitRight = false;
                 break;
             case Keys.Oemplus:
             case Keys.Add:
-                _raiseUp = false;
+                _zoomInAlt = false;
                 break;
             case Keys.OemMinus:
             case Keys.Subtract:
-                _lowerDown = false;
+                _zoomOutAlt = false;
                 break;
         }
     }
@@ -717,7 +741,8 @@ public class ModelEditorPhase : BasePhase
         var originalPosition = tab.Model.Position;
         var originalRotation = tab.Model.Rotation;
         
-        tab.Model.Position = tab.ModelPosition;
+        // Keep model at origin - ModelPosition is only for camera orbit center
+        tab.Model.Position = Vector3.Zero;
         tab.Model.Rotation = new Euler(
             AngleSingle.FromDegrees(tab.ModelRotation.Y),  // Yaw
             AngleSingle.FromDegrees(-tab.ModelRotation.X), // Pitch (negated)
@@ -736,7 +761,7 @@ public class ModelEditorPhase : BasePhase
         var tempCamera = new PerspectiveCamera
         {
             Position = tab.CameraPosition,
-            LookAt = Vector3.Zero,
+            LookAt = tab.ModelPosition,  // Look at the orbit center, not origin
             Up = -Vector3.UnitY,
             Width = camera.Width,
             Height = camera.Height,
@@ -856,7 +881,7 @@ public class ModelEditorPhase : BasePhase
         var tempCamera = new PerspectiveCamera
         {
             Position = tab.CameraPosition,
-            LookAt = Vector3.Zero,
+            LookAt = tab.ModelPosition,  // Look at the orbit center, not origin
             Up = -Vector3.UnitY,
             Width = camera.Width,
             Height = camera.Height,
@@ -1206,41 +1231,79 @@ public class ModelEditorPhase : BasePhase
         var tab = ActiveTab;
         if (tab == null) return;
         
-        var pos = tab.ModelPosition;
-        var rot = tab.ModelRotation;
+        // Apply camera orbit (A/D and Arrow keys)
+        if (_orbitLeft)
+            tab.CameraYaw -= ORBIT_SPEED;
+        if (_orbitRight)
+            tab.CameraYaw += ORBIT_SPEED;
+        if (_orbitUp)
+        {
+            tab.CameraPitch += ORBIT_SPEED;
+            tab.CameraPitch = Math.Clamp(tab.CameraPitch, -89f, 89f);
+        }
+        if (_orbitDown)
+        {
+            tab.CameraPitch -= ORBIT_SPEED;
+            tab.CameraPitch = Math.Clamp(tab.CameraPitch, -89f, 89f);
+        }
         
-        // Apply movement
-        if (_moveForward)
-            pos.Z += HEIGHT_SPEED;
-        if (_moveBackward)
-            pos.Z -= HEIGHT_SPEED;
+        // Apply panning (Shift+WASD for all directions)
+        if (_panLeft || _panRight || _panUp || _panDown)
+        {
+            var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
+            var pitchRad = MathUtil.DegreesToRadians(tab.CameraPitch);
+            
+            // Camera right vector (for horizontal panning)
+            var rightX = (float)Math.Cos(yawRad);
+            var rightZ = (float)Math.Sin(yawRad);
+            
+            // Camera up vector (for vertical panning)
+            var upX = -(float)(Math.Sin(pitchRad) * Math.Sin(yawRad));
+            var upY = (float)Math.Cos(pitchRad);
+            var upZ = -(float)(Math.Sin(pitchRad) * Math.Cos(yawRad));
+            
+            var pos = tab.ModelPosition;
+            
+            // Sideways panning (Shift+A/D)
+            if (_panLeft)
+            {
+                pos.X += rightX * PAN_SPEED;
+                pos.Z += rightZ * PAN_SPEED;
+            }
+            if (_panRight)
+            {
+                pos.X -= rightX * PAN_SPEED;
+                pos.Z -= rightZ * PAN_SPEED;
+            }
+            
+            // Height panning (Shift+W/S)
+            if (_panUp)
+            {
+                pos.X -= upX * PAN_SPEED;
+                pos.Y -= upY * PAN_SPEED;
+                pos.Z -= upZ * PAN_SPEED;
+            }
+            if (_panDown)
+            {
+                pos.X += upX * PAN_SPEED;
+                pos.Y += upY * PAN_SPEED;
+                pos.Z += upZ * PAN_SPEED;
+            }
+            
+            tab.ModelPosition = pos;
+        }
         
-        // Apply yaw rotation (A/D)
-        if (_rotateLeft)
-            rot.Y -= ROTATION_SPEED;
-        if (_rotateRight)
-            rot.Y += ROTATION_SPEED;
-        
-        // Apply pitch rotation (Up/Down arrows)
-        if (_rotatePitchUp)
-            rot.X -= ROTATION_SPEED;
-        if (_rotatePitchDown)
-            rot.X += ROTATION_SPEED;
-        
-        // Apply roll rotation (Left/Right arrows)
-        if (_rotateRollLeft)
-            rot.Z -= ROTATION_SPEED;
-        if (_rotateRollRight)
-            rot.Z += ROTATION_SPEED;
-        
-        // Apply height changes (+/-)
-        if (_raiseUp)
-            pos.Y += HEIGHT_SPEED;
-        if (_lowerDown)
-            pos.Y -= HEIGHT_SPEED;
-        
-        tab.ModelPosition = pos;
-        tab.ModelRotation = rot;
+        // Apply camera zoom (W/S and +/- keys)
+        if (_zoomIn || _zoomInAlt)
+        {
+            tab.CameraDistance -= ZOOM_SPEED;
+            tab.CameraDistance = Math.Clamp(tab.CameraDistance, 100f, 10000f);
+        }
+        if (_zoomOut || _zoomOutAlt)
+        {
+            tab.CameraDistance += ZOOM_SPEED;
+            tab.CameraDistance = Math.Clamp(tab.CameraDistance, 100f, 10000f);
+        }
         
         UpdateTabCameraPosition(tab);
     }
@@ -1613,11 +1676,12 @@ public class ModelEditorPhase : BasePhase
                     
                     // Left column - Keyboard controls
                     ImGui.Text("Keyboard Controls:");
-                    ImGui.Text("W/S: Move Forward/Back");
-                    ImGui.Text("A/D: Rotate Yaw");
-                    ImGui.Text("Up/Down: Rotate Pitch");
-                    ImGui.Text("Left/Right: Rotate Roll");
-                    ImGui.Text("+/-: Move Up/Down");
+                    ImGui.Text("W/S: Zoom In/Out");
+                    ImGui.Text("A/D: Orbit Left/Right");
+                    ImGui.Text("Shift+W/S: Pan Up/Down");
+                    ImGui.Text("Shift+A/D: Pan Left/Right");
+                    ImGui.Text("Arrows: Orbit Camera");
+                    ImGui.Text("+/-: Zoom In/Out");
                     
                     ImGui.NextColumn();
                     
@@ -2297,16 +2361,17 @@ public class ModelEditorPhase : BasePhase
         _graphicsDevice.BlendState = BlendState.Opaque;
         _graphicsDevice.DepthStencilState = DepthStencilState.Default;
 
-        // Set up camera with fixed orientation (looking at origin)
+        // Set up camera to orbit around and look at the model position
         camera.Position = tab.CameraPosition;
-        camera.LookAt = Vector3.Zero; // Always look at origin, not the model position
+        camera.LookAt = tab.ModelPosition; // Look at the orbit center (which can be panned)
         
         // Store original transform
         var originalPosition = tab.Model.Position;
         var originalRotation = tab.Model.Rotation;
         
-        // Apply our transform to the main model
-        tab.Model.Position = tab.ModelPosition;
+        // Keep the model at the origin - don't apply ModelPosition
+        // ModelPosition is used only for camera orbit center, not mesh position
+        tab.Model.Position = Vector3.Zero;
         // Euler constructor is (yaw, pitch, roll)
         tab.Model.Rotation = new Euler(
             AngleSingle.FromDegrees(tab.ModelRotation.Y),  // Yaw (Y-axis rotation)
