@@ -63,7 +63,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
         _car = new Car(_cars[_selectedCarIdx]);
         _garageScene = new Scene(
             graphicsDevice,
-            [],
+            [_car],
             _camera,
             []
         );
