@@ -70,7 +70,7 @@ public class GameSparker
     public static InRacePhase? InRace;
     public static MessageWindow MessageWindow = new();
     public static ModelEditorPhase? ModelEditor;
-    //public static StageEditorPhase? StageEditor;
+    public static StageEditorPhase? StageEditor;
 
     private static DirectionalLight light;
     
@@ -315,7 +315,7 @@ public class GameSparker
         // Initialize ModelEditor after cars are loaded
         ModelEditor = new ModelEditorPhase(_graphicsDevice);
         
-        //StageEditor = new StageEditorPhase(_graphicsDevice);
+        StageEditor = new StageEditorPhase(_graphicsDevice);
         
         for (var i = 0; i < StageRads.Length; i++) {
             if (stage_parts[i] == null) {
@@ -335,7 +335,7 @@ public class GameSparker
         CurrentPhase = ModelEditor;
     }
     
-    public static void ExitModelViewer()
+    public static void ExitEditor()
     {
         CurrentPhase = MainMenu;
         devRenderTrackers = false;
@@ -343,7 +343,7 @@ public class GameSparker
 
     public static void StartStageEditor()
     {
-        //CurrentPhase = StageEditor;
+        CurrentPhase = StageEditor;
     }
     
     public static void ReturnToMainMenu()

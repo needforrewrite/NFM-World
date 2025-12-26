@@ -70,7 +70,7 @@ public class Mountains : Transform, IRenderable
         _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
         _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
 
-        lighting.SetShadowMapParameters(_material);
+        lighting?.SetShadowMapParameters(_material);
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();

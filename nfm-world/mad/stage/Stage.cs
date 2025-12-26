@@ -96,10 +96,12 @@ public class Stage : IRenderable
                     if (line.Contains("false", StringComparison.OrdinalIgnoreCase))
                     {
                         World.DrawPolys = false;
+                        World.HasPolys = false;
                     }
                     else
                     {
                         World.HasPolys = true;
+                        World.DrawPolys = true;
                         World.GroundPolysColor = new Color3(
                             (short)Utility.GetInt("polys", line, 0),
                             (short)Utility.GetInt("polys", line, 1),
@@ -134,18 +136,29 @@ public class Stage : IRenderable
                     if (line.Contains("false", StringComparison.OrdinalIgnoreCase))
                     {
                         World.DrawClouds = false;
+                        World.HasClouds = false;
                     }
                     else
                     {
                         World.HasClouds = true;
-                        World.Clouds =
-                        [
-                            Utility.GetInt("clouds", line, 0),
-                            Utility.GetInt("clouds", line, 1),
-                            Utility.GetInt("clouds", line, 2),
-                            Utility.GetInt("clouds", line, 3),
-                            Utility.GetInt("clouds", line, 4)
-                        ];
+                        World.DrawClouds = true;
+                        // Support both single seed value and full cloud parameters
+                        var cloudParams = line.Split(',');
+                        if (cloudParams.Length == 2) // clouds(seed) format
+                        {
+                            World.CloudCoverage = Utility.GetInt("clouds", line, 0);
+                        }
+                        else // clouds(param1,param2,...) format
+                        {
+                            World.Clouds =
+                            [
+                                Utility.GetInt("clouds", line, 0),
+                                Utility.GetInt("clouds", line, 1),
+                                Utility.GetInt("clouds", line, 2),
+                                Utility.GetInt("clouds", line, 3),
+                                Utility.GetInt("clouds", line, 4)
+                            ];
+                        }
                     }
                 }
 
@@ -186,6 +199,7 @@ public class Stage : IRenderable
                     }
                     else
                     {
+                        World.DrawMountains = true;
                         World.MountainSeed = Utility.GetInt("mountains", line, 0);
                     }
                 }
@@ -289,7 +303,7 @@ public class Stage : IRenderable
                     
                     if (!TryGetPieceToPlace(Utility.GetString("chk", line, 0), out var mesh)) continue;
 
-                    if (mesh.FileName == "aircheckpoint" || reverseChkY)
+                    if (mesh.FileName == "nfmm/aircheckpoint" || reverseChkY)
                     {
                         ymult = 1; // default to inverted Y for stupid rollercoaster chks for compatibility reasons
                     }
@@ -637,8 +651,8 @@ public class Stage : IRenderable
 
     public void Render(Camera camera, Lighting? lighting = null)
     {
-        sky.Render(camera, lighting);
-        ground.Render(camera, lighting);
+        sky?.Render(camera, lighting);
+        ground?.Render(camera, lighting);
         polys?.Render(camera, lighting);
         clouds?.Render(camera, lighting);
         mountains?.Render(camera, lighting);
