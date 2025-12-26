@@ -2325,9 +2325,9 @@ public class ModelEditorPhase : BasePhase
         scene.Render(false);
         
         // Render reference car overlay with transparency (rendered separately after main model)
-        if (tab.ShowReferenceOverlay && tab.ReferenceCarIndex >= 0 && tab.ReferenceCarIndex < GameSparker.cars.Count)
+        if (tab.ShowReferenceOverlay && tab.ReferenceCarIndex >= 0 && tab.ReferenceCarIndex < GameSparker.cars[Collection.NFMM].Count)
         {
-            // var referenceCar = GameSparker.cars[tab.ReferenceCarIndex];
+            // var referenceCar = GameSparker.cars[Collection.NFMM][tab.ReferenceCarIndex];
             // if (referenceCar != null)
             // {
             //     // Store original state

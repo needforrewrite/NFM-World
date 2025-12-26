@@ -156,7 +156,7 @@ public class LobbyPhase(IMultiplayerClientTransport transport) : BasePhase
             ImGui.Separator();
 
             // Dummy vehicle list
-            foreach (var vehicleArr in (Span<UnlimitedArray<CarInfo>>)[GameSparker.cars, GameSparker.vendor_cars, GameSparker.user_cars])
+            foreach (var vehicleArr in (Span<UnlimitedArray<CarInfo>>)[[.. GameSparker.cars.Values.SelectMany(i => i)]])
             foreach (var vehicle in vehicleArr)
             {
                 if (ImGui.Selectable(vehicle.Stats.Name + "##" + vehicle.FileName))
