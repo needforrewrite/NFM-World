@@ -55,6 +55,13 @@ namespace NFMWorld.Mad
                     inRacePhase.gamemode = GameModes.Sandbox;
                 }
             });
+            console.RegisterCommand("go_football", (c, args) =>
+            {
+                if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+                {
+                    inRacePhase.gamemode = GameModes.Football;
+                }
+            });
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 

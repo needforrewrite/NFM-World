@@ -97,7 +97,9 @@ public class GameSparker
         "road", "froad", "twister2", "twister1", "turn", "offroad", "bumproad", "offturn", "nroad", "nturn",
         "roblend", "noblend", "rnblend", "roadend", "offroadend", "hpground", "ramp30", "cramp35", "dramp15",
         "dhilo15", "slide10", "takeoff", "sramp22", "offbump", "offramp", "sofframp", "halfpipe", "spikes", "rail",
-        "thewall", "checkpoint", "fixpoint", "offcheckpoint", "sideoff", "bsideoff", "uprise", "riseroad", "sroad",
+        "thewall", "checkpoint", "fixpoint", "offcheckpoint", "sideoff", "bsideoff", "uprise",  //45
+        "riseroad",
+        "sroad",
         "soffroad", "tside", "launchpad", "thenet", "speedramp", "offhill", "slider", "uphill", "roll1", "roll2",
         "roll3", "roll4", "roll5", "roll6", "opile1", "opile2", "aircheckpoint", "tree1", "tree2", "tree3", "tree4",
         "tree5", "tree6", "tree7", "tree8", "cac1", "cac2", "cac3", "8sroad", "8soffroad"
@@ -268,18 +270,26 @@ public class GameSparker
             stage_parts[id] = new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmm/" + fileName);
         });
         
-        FileUtil.LoadFiles("./data/models/nfmw/cars", (ais, fileName) => {
-            vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmw/" + fileName));
+        FileUtil.LoadFiles("./data/models/world/cars", (ais, fileName) => {
+            vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "world/" + fileName));
         });
 
         FileUtil.LoadFiles("./data/models/elo/cars", (ais, fileName) => {
             vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "elo/" + fileName));
         });
-        
-        FileUtil.LoadFiles("./data/models/nfmw/stage", (ais, fileName) => {
-            vendor_stage_parts.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "nfmw/" + fileName));
+
+        FileUtil.LoadFiles("./data/models/football/cars", (ais, fileName) => {
+            vendor_cars.Add(new Car(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "football/" + fileName));
         });
         
+        FileUtil.LoadFiles("./data/models/world/stage", (ais, fileName) => {
+            vendor_stage_parts.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "world/" + fileName));
+        });
+        
+        FileUtil.LoadFiles("./data/models/football/stage", (ais, fileName) => {
+            vendor_stage_parts.Add(new Mesh(game.GraphicsDevice, RadParser.ParseRad(Encoding.UTF8.GetString(ais)), "football/" + fileName));
+        });
+
         FileUtil.LoadFiles("./data/models/user/cars", (ais, fileName) => {
             try
             {

@@ -74,7 +74,7 @@ public record struct CarStats
         int Turn = int.MinValue,
         float Grip = float.NegativeInfinity,
         float Bounce = float.NegativeInfinity,
-        float Simag = float.NegativeInfinity,
+        float Simag = 1.3F,
         float Moment = float.NegativeInfinity,
         float Comprad = float.NegativeInfinity,
         float Push = int.MinValue,
@@ -133,7 +133,7 @@ public record struct CarStats
         else if(Turn == int.MinValue) return ValidateFail(nameof(Turn));
         else if(Grip == fix64.MinValue) return ValidateFail(nameof(Grip));
         else if(Bounce == fix64.MinValue) return ValidateFail(nameof(Bounce));
-        else if(Simag == fix64.MinValue) return ValidateFail(nameof(Simag));
+        //else if(Simag == fix64.MinValue) return ValidateFail(nameof(Simag));
         else if(Moment == fix64.MinValue) return ValidateFail(nameof(Moment));
         else if(Comprad == fix64.MinValue) return ValidateFail(nameof(Comprad));
         else if(Push == fix64.MinValue) return ValidateFail(nameof(Push));
