@@ -1,5 +1,5 @@
 // Collision rewrite by Phyrexian
-// Ported to C# using fixe-point math for determinism
+// Ported to C# using fixed-point math for determinism
 
 using SoftFloat;
 
