@@ -18,6 +18,7 @@ public interface IGraphics
     IFontMetrics GetFontMetrics();
     void DrawString(string text, int x, int y);
     void DrawStringAligned(string text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign, TextVerticalAlignment vAlign);
+    void DrawStringStrokeAligned(string text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign, TextVerticalAlignment vAlign, int effectAmount = 1);
     void DrawStringStroke(string text, int x, int y, int effectAmount = 1)
     {
     }
