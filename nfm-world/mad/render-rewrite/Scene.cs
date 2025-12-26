@@ -25,7 +25,7 @@ public class Scene
         _renderDataCache = new RenderDataCache(graphicsDevice);
     }
 
-    public void Render(bool useShadowMapping)
+    public void Render(bool useShadowMapping, bool clearRenderBuffer = true)
     {
         _camera.OnBeforeRender();
         foreach (var lightCamera in _lightCameras)
@@ -63,7 +63,8 @@ public class Scene
 
         // DRAW WITH SHADOW MAP
         
-        _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
+        if (clearRenderBuffer)
+            _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
 
         _graphicsDevice.SamplerStates[1] = SamplerState.PointClamp;
         _graphicsDevice.SamplerStates[2] = SamplerState.PointClamp;
