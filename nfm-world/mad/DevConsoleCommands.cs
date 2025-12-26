@@ -84,10 +84,7 @@ namespace NFMWorld.Mad
             // car command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("car", (args, position) =>
             position == 0
-                ? GameSparker.cars.Select(car => car.FileName)
-                    .Concat(GameSparker.vendor_cars.Select(car => car.FileName))
-                    .Concat(GameSparker.user_cars.Select(car => car.FileName))
-                    .ToList()
+                ? [.. GameSparker.cars.Values.SelectMany(i => i).Select(a => a.FileName)]
                 : new List<string>());
             
             // create command: only autocomplete first argument (position 0) - the stage/road name
