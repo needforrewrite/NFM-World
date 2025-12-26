@@ -40,9 +40,10 @@ public class MeshedGameObject(Mesh mesh) : GameObject
     {
         if (lighting?.IsCreateShadowMap == true && !(CastsShadow || Position.Y < World.Ground)) yield break;
         
-        foreach (var element in Mesh.GetRenderables(lighting, Finish ?? false))
+        foreach (var (element, renderOrder) in Mesh.GetRenderables(lighting, Finish ?? false))
         {
-            yield return new RenderData(element, MatrixWorld, GetsShadowed ?? true, AlphaOverride ?? 1.0f, Glow ?? false, Glow ?? false);
+            var actualRenderOrder = AlphaOverride is {} alphaOverride and < 1.0f ? 1 : renderOrder;
+            yield return new RenderData(element, MatrixWorld, GetsShadowed ?? true, AlphaOverride ?? 1.0f, Glow ?? false, Glow ?? false, actualRenderOrder);
         }
 
         foreach (var renderData in base.GetRenderData(lighting))

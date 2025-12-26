@@ -3,6 +3,7 @@ using System.Collections;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LuzFaltex.Core.Collections;
+using Microsoft.Collections.Extensions;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
@@ -84,7 +85,8 @@ public class Scene
             public int HashCode = 0;
         }
 
-        private Dictionary<IInstancedRenderElement, CachedRenderData> _cache = new();
+        // dict of render order -> (dict of render element -> cached render data)
+        private SortedDictionary<int, Dictionary<IInstancedRenderElement, CachedRenderData>> _cache = new();
 
         private static int GetHashCode(ReadOnlySpan<RenderData> renderData)
         {
@@ -114,31 +116,42 @@ public class Scene
         public void Clear()
         {
             // Delete any instance not rendered for two consecutive frames.
-            foreach (var (element, data) in _cache)
+            foreach (var (renderOrder, innerCache) in _cache)
             {
-                if (data.RenderData.Count == 0)
+                _elementsToPrune.Clear();
+
+                foreach (var (element, data) in innerCache)
                 {
-                    _elementsToPrune.Add(element);
+                    if (data.RenderData.Count == 0)
+                    {
+                        _elementsToPrune.Add(element);
+                    }
+                    else
+                    {
+                        CollectionsMarshal.SetCount(data.RenderData, 0);
+                    }
                 }
-                else
+
+                foreach (var element in _elementsToPrune)
                 {
-                    CollectionsMarshal.SetCount(data.RenderData, 0);
+                    if (innerCache.TryGetValue(element, out var data))
+                    {
+                        data.VertexBuffer?.Dispose();
+                        innerCache.Remove(element);
+                    }
                 }
             }
-            
-            foreach (var element in _elementsToPrune)
-            {
-                if (_cache.TryGetValue(element, out var data))
-                {
-                    data.VertexBuffer?.Dispose();
-                    _cache.Remove(element);
-                }
-            }
+
         }
 
         public void Add(RenderData renderData)
         {
-            ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, renderData.RenderElement, out var exists);
+            if (!_cache.TryGetValue(renderData.RenderOrder, out var innerCache))
+            {
+                _cache[renderData.RenderOrder] = innerCache = new Dictionary<IInstancedRenderElement, CachedRenderData>();
+            }
+            
+            ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(innerCache, renderData.RenderElement, out var exists);
             if (!exists)
             {
                 entry = new CachedRenderData([renderData]);
@@ -151,7 +164,8 @@ public class Scene
 
         public IEnumerator<(DynamicVertexBuffer Buffer, int InstanceCount, IInstancedRenderElement Element)> GetEnumerator()
         {
-            foreach (var (renderElement, cachedRenderData) in _cache)
+            foreach (var (renderOrder, innerCache) in _cache)
+            foreach (var (renderElement, cachedRenderData) in innerCache)
             {
                 var instances = cachedRenderData.RenderData;
                 if (instances.Count == 0) continue;
@@ -185,6 +199,10 @@ public class Scene
 
                     cachedRenderData.VertexBuffer.SetDataEXT(instanceDataArraySpan, SetDataOptions.NoOverwrite);
                     cachedRenderData.HashCode = currentHashCode;
+                    
+                    // Swap old and new instance lists
+                    CollectionsMarshal.SetCount(oldInstances, instances.Count);
+                    CollectionsMarshal.AsSpan(instances).CopyTo(CollectionsMarshal.AsSpan(oldInstances));
                 }
                 yield return (cachedRenderData.VertexBuffer, instances.Count, renderElement);
             }

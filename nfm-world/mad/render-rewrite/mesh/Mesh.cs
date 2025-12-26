@@ -186,7 +186,7 @@ public class Mesh
         BuildMesh(GraphicsDevice);
     }
 
-    public IEnumerable<IInstancedRenderElement> GetRenderables(Lighting? lighting, bool finish)
+    public IEnumerable<(IInstancedRenderElement Element, int RenderOrder)> GetRenderables(Lighting? lighting, bool finish)
     {
         foreach (var submesh in Submeshes)
         {
@@ -195,7 +195,7 @@ public class Mesh
                 submesh.PolyType != PolyType.Glass &&
                 (submesh.PolyType != PolyType.Finish || finish))
             {
-                yield return submesh;
+                yield return (submesh, 0);
             }
         }
 
@@ -207,7 +207,7 @@ public class Mesh
                 {
                     if (lineMesh != null)
                     {
-                        yield return lineMesh;
+                        yield return (lineMesh, 0);
                     }
                 }
             }
@@ -216,7 +216,7 @@ public class Mesh
         // Render glass (translucency) last if it is the only translucent thing
         if (Submeshes[(int)PolyType.Glass] is {} glassSubmesh)
         {
-            yield return glassSubmesh;
+            yield return (glassSubmesh, 1);
         }
     }
 }
