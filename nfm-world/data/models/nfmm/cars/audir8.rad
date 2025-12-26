@@ -24,6 +24,10 @@ outdam(0.77)
 name(Mighty Eight)
 enginsignature(1)
 
+class(A)
+author(Omar Waly)
+desc(hogan rewish)
+
 idiv(160)
 shadow()
 

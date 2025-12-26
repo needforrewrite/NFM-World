@@ -55,6 +55,13 @@ namespace NFMWorld.Mad
                     inRacePhase.gamemode = GameModes.Sandbox;
                 }
             });
+            console.RegisterCommand("go_football", (c, args) =>
+            {
+                if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+                {
+                    inRacePhase.gamemode = GameModes.Football;
+                }
+            });
 
             console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
@@ -77,10 +84,7 @@ namespace NFMWorld.Mad
             // car command: only autocomplete first argument (position 0)
             console.RegisterArgumentAutocompleter("car", (args, position) =>
             position == 0
-                ? GameSparker.cars.Select(car => car.FileName)
-                    .Concat(GameSparker.vendor_cars.Select(car => car.FileName))
-                    .Concat(GameSparker.user_cars.Select(car => car.FileName))
-                    .ToList()
+                ? [.. GameSparker.cars.Values.SelectMany(i => i).Select(a => a.FileName)]
                 : new List<string>());
             
             // create command: only autocomplete first argument (position 0) - the stage/road name
@@ -355,7 +359,7 @@ namespace NFMWorld.Mad
                 return;
             }
 
-            var carId = args[0];
+            var carId = string.Join(" ", args);
             var (id, car) = GameSparker.GetCar(carId);
 
             if (car == null)

@@ -24,6 +24,10 @@ outdam(0.72)
 name(Drifter X)
 enginsignature(1)
 
+class(B)
+author(Omar Waly)
+desc(hogan rewish)
+
 idiv(157)
 shadow()
 
