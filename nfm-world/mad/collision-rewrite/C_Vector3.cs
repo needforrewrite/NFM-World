@@ -1,3 +1,6 @@
+// Collision rewrite by Phyrexian
+// Ported to C# using fixe-point math for determinism
+
 using SoftFloat;
 
 namespace NFMWorld.Mad.Collision;
