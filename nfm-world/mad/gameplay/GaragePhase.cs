@@ -23,6 +23,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
     private int _selectedCarIdx = 0;
 
+    private Collection _currentCollection = Collection.NFMM;
     private UnlimitedArray<Car> _cars = GameSparker.cars[Collection.NFMM];
 
     private UnlimitedArray<GarageDynamicStatBar> statBars = [];
@@ -37,7 +38,6 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     private bool _inAutocomplete = false;
     private Car[] _autocompleteMatches = [];
     private bool _openSearchPopup = false;
-    private bool _justOpenedSearch = false;
     private int _searchKbFocus = 0;
 
     private PerspectiveCamera _camera = new();
@@ -144,7 +144,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
                 ImGui.EndMenu();
             }
 
-            if (ImGui.BeginMenu("Search"))
+            if (ImGui.BeginMenu("Search", !_openSearchPopup))
             {
                 _searchKbFocus++;
                 if (HandleSearch())
@@ -183,6 +183,10 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
             }
 
             _openSearchPopup = open;
+            if(!_openSearchPopup)
+            {
+                _searchQuery = "";
+            }
         }
 
         G.SetFont(new Font("Arial", 1, 48));
@@ -194,7 +198,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
     private bool HandleSearch()
     {
-        if (ImGui.InputText("Search...", ref _searchQuery, 256, ImGuiInputTextFlags.EscapeClearsAll | ImGuiInputTextFlags.EnterReturnsTrue))
+        if (ImGui.InputText($"Search {_currentCollection}", ref _searchQuery, 256, ImGuiInputTextFlags.EscapeClearsAll | ImGuiInputTextFlags.EnterReturnsTrue))
         {
             if (_autocompleteMatches.Length > 0)
             {
@@ -329,6 +333,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     {
         _cars = GameSparker.cars[collection];
         _selectedCarIdx = 0;
+        _currentCollection = collection;
         SetupCurrentCar();
     }
 
