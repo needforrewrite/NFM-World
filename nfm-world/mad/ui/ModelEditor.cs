@@ -114,7 +114,7 @@ public class ModelEditorPhase : BasePhase
     private bool _isShiftPressed = false;
     
     // 3D
-    public static PerspectiveCamera camera = new();
+    public PerspectiveCamera camera = new();
     private Scene scene;
     private Scene overlayScene;
 
@@ -167,8 +167,6 @@ public class ModelEditorPhase : BasePhase
         
         camera.Position = new Vector3(0, -800, -800);
         camera.LookAt = Vector3.Zero;
-        
-        camera.OnBeforeRender();
         
         GameSparker._graphicsDevice.BlendState = BlendState.Opaque;
         GameSparker._graphicsDevice.DepthStencilState = DepthStencilState.Default;
@@ -2458,7 +2456,9 @@ public class ModelEditorPhase : BasePhase
         highlightMesh.Rotation = tab.Object.Rotation;
         
         // Render with highlighting
-        highlightMesh.Render(camera, null);
+        overlayScene.Objects.Clear();
+        overlayScene.Objects.Add(highlightMesh);
+        overlayScene.Render(false, false);
     }
     
     public override void WindowSizeChanged(int width, int height)

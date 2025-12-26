@@ -5,8 +5,6 @@ namespace NFMWorld.Mad;
 
 public class GameObject : Transform, IImmediateRenderable
 {
-    public IReadOnlyList<GameObject> Children { get; set; } = [];
-
     /// <summary>
     /// Gets mesh render data for instanced rendering.
     /// </summary>
