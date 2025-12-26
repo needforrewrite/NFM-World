@@ -5,12 +5,9 @@ namespace NFMWorld.Mad;
 public class LineEffect(Effect effect)
 {
     public Effect UnderlyingEffect => effect;
-    public EffectParameter? World { get; } = effect.Parameters["World"];
-    public EffectParameter? WorldInverseTranspose { get; } = effect.Parameters["WorldInverseTranspose"];
     public EffectParameter? View { get; } = effect.Parameters["View"];
+    public EffectParameter? ViewProj { get; } = effect.Parameters["ViewProj"];
     public EffectParameter? Projection { get; } = effect.Parameters["Projection"];
-    public EffectParameter? WorldView { get; } = effect.Parameters["WorldView"];
-    public EffectParameter? WorldViewProj { get; } = effect.Parameters["WorldViewProj"];
     public EffectParameter? CameraPosition { get; } = effect.Parameters["CameraPosition"];
     public EffectParameter? SnapColor { get; } = effect.Parameters["SnapColor"];
     public EffectParameter? IsFullbright { get; } = effect.Parameters["IsFullbright"];

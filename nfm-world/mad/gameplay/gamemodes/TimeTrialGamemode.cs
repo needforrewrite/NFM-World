@@ -58,7 +58,7 @@ public class TimeTrialGamemode(string playerCarName, int playerCarIndex, Unlimit
         if (bestTimeDemo.Load())
         {
             bestTimeTrial = bestTimeDemo;
-            carsInRace[playerCarIndex + 1].CarRef.alphaOverride = 0.05f;
+            carsInRace[playerCarIndex + 1].CarRef.AlphaOverride = 0.05f;
         }
         else
         {

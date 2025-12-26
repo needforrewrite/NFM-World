@@ -24,6 +24,10 @@ outdam(0.35)
 name(Formula 7)
 enginsignature(1)
 
+class(C)
+author(Omar Waly)
+desc(hogan rewish)
+
 idiv(170)
 iwid(105)
 shadow()

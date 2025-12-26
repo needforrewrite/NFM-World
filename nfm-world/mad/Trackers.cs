@@ -28,11 +28,12 @@ internal class Trackers
     internal static readonly UnlimitedArray<int> Z = [];
     internal static readonly UnlimitedArray<int> Zy = [];
 
-    internal static void LoadTrackers(IReadOnlyList<Mesh> elements, int sx, int ncx, int sz, int ncz)
+    internal static void LoadTrackers(IReadOnlyList<GameObject> elements, int sx, int ncx, int sz, int ncz)
     {
         foreach (var element in elements)
         {
-            LoadTracker(element);
+            if (element is CollisionObject obj)
+                LoadTracker(obj);
         }
         
         Sx = sx;
@@ -62,7 +63,7 @@ internal class Trackers
         Ncz--;
     }
 
-    internal static void LoadTracker(Mesh element)
+    internal static void LoadTracker(CollisionObject element)
     {
         var xz = (int)fix64.Round(element.Rotation.Xz.DegreesSFloat);
         for (var i = 0; i < element.Boxes.Length; i++)

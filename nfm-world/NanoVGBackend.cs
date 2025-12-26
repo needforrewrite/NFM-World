@@ -149,6 +149,38 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
             context.Text(_font, text, x, y - _font.FontSize, layerDepth, characterSpacing, lineSpacing, textStyle, effect, effectAmount);
         }
 
+        public void DrawStringAligned(string text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top)
+        {
+            context.FillPaint(_paint);
+            float x = areaWidth / 2;
+            float y = areaHeight / 2;
+
+            if (hAlign != TextHorizontalAlignment.Left)
+			{
+				var sz = _font.MeasureString(text);
+				if (hAlign == TextHorizontalAlignment.Center)
+				{
+					x -= sz.X / 2.0f;
+				}
+				else if (hAlign == TextHorizontalAlignment.Right)
+				{
+					x -= sz.X;
+				}
+			}
+
+
+			if (vAlign == TextVerticalAlignment.Center)
+			{
+				y -= _font.LineHeight / 2.0f;
+			}
+			else if (vAlign == TextVerticalAlignment.Bottom)
+			{
+				y -= _font.LineHeight;
+			}
+
+            context.Text(_font, text, x, y, layerDepth, characterSpacing, lineSpacing, textStyle, effect, effectAmount);
+        }
+
         public void DrawStringStroke(string text, int x, int y, int effectAmount = 1)
         {
             context.StrokePaint(_paint);
