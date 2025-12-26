@@ -114,7 +114,7 @@ public class ModelEditorPhase : BasePhase
     private bool _isShiftPressed = false;
     
     // 3D
-    public static PerspectiveCamera camera = new();
+    public PerspectiveCamera camera = new();
     private Scene scene;
     private Scene overlayScene;
 
@@ -167,8 +167,6 @@ public class ModelEditorPhase : BasePhase
         
         camera.Position = new Vector3(0, -800, -800);
         camera.LookAt = Vector3.Zero;
-        
-        camera.OnBeforeRender();
         
         GameSparker._graphicsDevice.BlendState = BlendState.Opaque;
         GameSparker._graphicsDevice.DepthStencilState = DepthStencilState.Default;
@@ -1924,7 +1922,7 @@ public class ModelEditorPhase : BasePhase
                             var isCurrentModel = activeTab != null && activeTab.ModelPath != null && 
                                 activeTab.ModelPath.EndsWith(file.Replace('/', '\\'));
                             
-                            if (ImGui.Selectable($"  {fileName}", isCurrentModel))
+                            if (ImGui.Selectable($"  {fileName}##{file}", isCurrentModel))
                             {
                                 LoadModel(file, _openInNewTab);
                                 _showLoadDialog = false;
@@ -1946,7 +1944,7 @@ public class ModelEditorPhase : BasePhase
                             var isCurrentModel = activeTab != null && activeTab.ModelPath != null && 
                                 activeTab.ModelPath.EndsWith(file.Replace('/', '\\'));
                             
-                            if (ImGui.Selectable($"  {fileName}", isCurrentModel))
+                            if (ImGui.Selectable($"  {fileName}##{file}", isCurrentModel))
                             {
                                 LoadModel(file, _openInNewTab);
                                 _showLoadDialog = false;
@@ -2006,7 +2004,7 @@ public class ModelEditorPhase : BasePhase
         {
             if (editingCollision)
             {
-                // ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Model?.Boxes.Length ?? 0}");
+                ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Object?.Boxes.Length ?? 0}");
             }
             else
             {
@@ -2458,7 +2456,10 @@ public class ModelEditorPhase : BasePhase
         highlightMesh.Rotation = tab.Object.Rotation;
         
         // Render with highlighting
+        var oldDevRenderTrackers = GameSparker.devRenderTrackers;
+        GameSparker.devRenderTrackers = true;
         highlightMesh.Render(camera, null);
+        GameSparker.devRenderTrackers = oldDevRenderTrackers;
     }
     
     public override void WindowSizeChanged(int width, int height)

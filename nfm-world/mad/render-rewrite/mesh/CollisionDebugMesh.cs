@@ -137,7 +137,7 @@ public sealed class CollisionDebugMesh : GameObject
         lineTriangleCount = indices.Count / 3;
         lineVertexCount = data.Count;
         
-        lineInstanceBuffer = new VertexBuffer(GameSparker._graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.None);
+        lineInstanceBuffer = new DynamicVertexBuffer(GameSparker._graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.WriteOnly);
         lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);
 
         _material = new LineEffect(Program._lineShader);
@@ -148,6 +148,8 @@ public sealed class CollisionDebugMesh : GameObject
     public override void Render(Camera camera, Lighting? lighting)
     {
         if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
+        lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);
+
         GameSparker._graphicsDevice.SetVertexBuffers(lineVertexBuffer, new VertexBufferBinding(lineInstanceBuffer, 0, 1));
         GameSparker._graphicsDevice.Indices = lineIndexBuffer;
 
