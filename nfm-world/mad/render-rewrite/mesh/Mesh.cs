@@ -15,6 +15,7 @@ public class Mesh : Transform, IRenderable
     public Rad3dRimsDef? Rims;
     public Rad3dBoxDef[] Boxes;
     public Rad3dPoly[] Polys;
+    public Vector2[] Atp;
     
     // visually wasted
     public bool Wasted;
@@ -61,6 +62,7 @@ public class Mesh : Transform, IRenderable
         Boxes = rad.Boxes;
         Polys = rad.Polys;
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
+        Atp = rad.Atp;
 
         GraphicsDevice = graphicsDevice;
 
