@@ -131,7 +131,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     /// This should be hooked onto by the calling phase, so that the calling phase can be restored upon car selection.
     /// Returns the car that was selected.
     /// </summary>
-    public event EventHandler<Car>? CarSelected;
+    public event EventHandler<CarInfo>? CarSelected;
 
     /// <summary>
     /// This should be hooked onto by the calling phase, so that the calling phase can be restored upon car selection.
@@ -143,7 +143,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
     private int _selectedCarIdx = 0;
 
-    private UnlimitedArray<Mesh> _cars = [
+    private UnlimitedArray<CarInfo> _cars = [
         ..GameSparker.cars,
         ..GameSparker.vendor_cars,
         ..GameSparker.user_cars,

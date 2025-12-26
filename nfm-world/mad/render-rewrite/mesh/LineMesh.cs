@@ -56,11 +56,11 @@ public class LineMesh : IInstancedRenderElement
 
         var lineVertexBuffer = new VertexBuffer(graphicsDevice,
             LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None);
-        lineVertexBuffer.SetData(data.ToArray());
+        lineVertexBuffer.SetDataEXT(data);
 
         var lineIndexBuffer =
             new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
-        lineIndexBuffer.SetData(indices.ToArray());
+        lineIndexBuffer.SetDataEXT(indices);
 
         var lineVertexCount = data.Count;
         var lineTriangleCount = indices.Count / 3;
@@ -73,7 +73,7 @@ public class LineMesh : IInstancedRenderElement
         _lineVertexCount = lineVertexCount;
     }
 
-    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)
+    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
     {
         _graphicsDevice.SetVertexBuffers(_lineVertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
         _graphicsDevice.Indices = _lineIndexBuffer;
@@ -103,6 +103,7 @@ public class LineMesh : IInstancedRenderElement
         _material.Expand?.SetValue(Expand);
         _material.Darken?.SetValue(Darken);
         _material.RandomFloat?.SetValue(URandom.Single());
+        _material.Alpha?.SetValue(1.0f);
 
         lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
         
@@ -112,7 +113,7 @@ public class LineMesh : IInstancedRenderElement
         {
             pass.Apply();
 
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineVertexCount, 0, _lineTriangleCount);
+            _graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineVertexCount, 0, _lineTriangleCount, instanceCount);
         }
     }
 

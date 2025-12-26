@@ -23,8 +23,8 @@ public class Submesh : IInstancedRenderElement
         PolyType polyType,
         Mesh supermesh,
         GraphicsDevice graphicsDevice,
-        Mesh.VertexPositionNormalColorCentroid[] vertices,
-        int[] indices)
+        ReadOnlySpan<Mesh.VertexPositionNormalColorCentroid> vertices,
+        ReadOnlySpan<int> indices)
     {
         _supermesh = supermesh;
         _graphicsDevice = graphicsDevice;
@@ -34,11 +34,11 @@ public class Submesh : IInstancedRenderElement
         _vertexCount = vertices.Length;
         _triangleCount = indices.Length / 3;
         
-        _vertexBuffer.SetData(vertices);
-        _indexBuffer.SetData(indices);
+        _vertexBuffer.SetDataEXT(vertices);
+        _indexBuffer.SetDataEXT(indices);
     }
 
-    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)
+    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
     {
         _graphicsDevice.SetVertexBuffers(_vertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
         _graphicsDevice.Indices = _indexBuffer;
@@ -64,12 +64,14 @@ public class Submesh : IInstancedRenderElement
             _material.View?.SetValue(lighting.CascadeLightCamera.ViewMatrix);
             _material.Projection?.SetValue(lighting.CascadeLightCamera.ProjectionMatrix);
             _material.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position);
+            _material.ViewProj?.SetValue(lighting.CascadeLightCamera.ViewMatrix * lighting.CascadeLightCamera.ProjectionMatrix);
         }
         else
         {
             _material.View?.SetValue(camera.ViewMatrix);
             _material.Projection?.SetValue(camera.ProjectionMatrix);
             _material.CameraPosition?.SetValue(camera.Position);
+            _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         }
 
         _material.CurrentTechnique = lighting?.IsCreateShadowMap == true ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
@@ -84,7 +86,7 @@ public class Submesh : IInstancedRenderElement
         {
             pass.Apply();
     
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _vertexCount, 0, _triangleCount);
+            _graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, _vertexCount, 0, _triangleCount, instanceCount);
         }
         
         _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;

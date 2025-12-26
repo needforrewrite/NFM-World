@@ -407,7 +407,7 @@ public class ModelEditorPhase : BasePhase
         // Try to parse the model, but keep the file loaded even if it fails
         try
         {
-            tab.Model = new Car(new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(radContent), "editing"));
+            tab.Model = new Car(new CarInfo(GameSparker._graphicsDevice, RadParser.ParseRad(radContent), "editing"));
             ResetTabView(tab);
         }
         catch (Exception parseEx)
@@ -686,17 +686,17 @@ public class ModelEditorPhase : BasePhase
                 }
                 else if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
                 {
-                    var pickedIndex = PerformCollisionPicking(x, y, tab);
-                    
-                    if (pickedIndex >= 0)
-                    {
-                        tab.SelectedCollisionIndex = pickedIndex;
-                    }
-                    else
-                    {
-                        // Clicked on background, deselect
-                        tab.SelectedCollisionIndex = -1;
-                    }
+                    // var pickedIndex = PerformCollisionPicking(x, y, tab);
+                    //
+                    // if (pickedIndex >= 0)
+                    // {
+                    //     tab.SelectedCollisionIndex = pickedIndex;
+                    // }
+                    // else
+                    // {
+                    //     // Clicked on background, deselect
+                    //     tab.SelectedCollisionIndex = -1;
+                    // }
                 }
             }
         }
@@ -846,69 +846,69 @@ public class ModelEditorPhase : BasePhase
         return distance > EPSILON;
     }
     
-    private int PerformCollisionPicking(int screenX, int screenY, ModelEditorTab tab)
-    {
-        if (tab.Model == null || tab.Model.Boxes.Length == 0) return -1;
-        
-        var viewport = GameSparker._graphicsDevice.Viewport;
-        
-        // Set up camera exactly as RenderModel does
-        var tempCamera = new PerspectiveCamera
-        {
-            Position = tab.CameraPosition,
-            LookAt = Vector3.Zero,
-            Up = -Vector3.UnitY,
-            Width = camera.Width,
-            Height = camera.Height,
-            Fov = camera.Fov,
-            Near = camera.Near,
-            Far = camera.Far
-        };
-        
-        tempCamera.OnBeforeRender();
-        
-        var view = tempCamera.ViewMatrix;
-        var projection = tempCamera.ProjectionMatrix;
-        
-        // Unproject screen coordinates to world space ray
-        var nearPoint = viewport.Unproject(
-            new Vector3(screenX, screenY, 0f),
-            projection,
-            view,
-            Matrix.Identity
-        );
-        
-        var farPoint = viewport.Unproject(
-            new Vector3(screenX, screenY, 1f),
-            projection,
-            view,
-            Matrix.Identity
-        );
-        
-        var rayOrigin = nearPoint;
-        var rayDirection = Vector3.Normalize(farPoint - nearPoint);
-        
-        // Test against all collision boxes
-        float closestDistance = float.MaxValue;
-        int closestBoxIndex = -1;
-        
-        for (int i = 0; i < tab.Model.Boxes.Length; i++)
-        {
-            var box = tab.Model.Boxes[i];
-            
-            // Check if ray intersects this box
-            if (RayIntersectsBox(rayOrigin, rayDirection, box, out float distance))
-            {
-                if (distance < closestDistance)
-                {
-                    closestDistance = distance;
-                    closestBoxIndex = i;
-                }
-            }
-        }
-        
-        return closestBoxIndex;
-    }
+    // private int PerformCollisionPicking(int screenX, int screenY, ModelEditorTab tab)
+    // {
+    //     if (tab.Model == null || tab.Model.Boxes.Length == 0) return -1;
+    //     
+    //     var viewport = GameSparker._graphicsDevice.Viewport;
+    //     
+    //     // Set up camera exactly as RenderModel does
+    //     var tempCamera = new PerspectiveCamera
+    //     {
+    //         Position = tab.CameraPosition,
+    //         LookAt = Vector3.Zero,
+    //         Up = -Vector3.UnitY,
+    //         Width = camera.Width,
+    //         Height = camera.Height,
+    //         Fov = camera.Fov,
+    //         Near = camera.Near,
+    //         Far = camera.Far
+    //     };
+    //     
+    //     tempCamera.OnBeforeRender();
+    //     
+    //     var view = tempCamera.ViewMatrix;
+    //     var projection = tempCamera.ProjectionMatrix;
+    //     
+    //     // Unproject screen coordinates to world space ray
+    //     var nearPoint = viewport.Unproject(
+    //         new Vector3(screenX, screenY, 0f),
+    //         projection,
+    //         view,
+    //         Matrix.Identity
+    //     );
+    //     
+    //     var farPoint = viewport.Unproject(
+    //         new Vector3(screenX, screenY, 1f),
+    //         projection,
+    //         view,
+    //         Matrix.Identity
+    //     );
+    //     
+    //     var rayOrigin = nearPoint;
+    //     var rayDirection = Vector3.Normalize(farPoint - nearPoint);
+    //     
+    //     // Test against all collision boxes
+    //     float closestDistance = float.MaxValue;
+    //     int closestBoxIndex = -1;
+    //     
+    //     for (int i = 0; i < tab.Model.Boxes.Length; i++)
+    //     {
+    //         var box = tab.Model.Boxes[i];
+    //         
+    //         // Check if ray intersects this box
+    //         if (RayIntersectsBox(rayOrigin, rayDirection, box, out float distance))
+    //         {
+    //             if (distance < closestDistance)
+    //             {
+    //                 closestDistance = distance;
+    //                 closestBoxIndex = i;
+    //             }
+    //         }
+    //     }
+    //     
+    //     return closestBoxIndex;
+    // }
     
     private bool RayIntersectsBox(Vector3 rayOrigin, Vector3 rayDirection, Rad3dBoxDef box, out float distance)
     {
@@ -981,11 +981,11 @@ public class ModelEditorPhase : BasePhase
         var tab = ActiveTab;
         if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Model == null) return;
         
-        var poly = tab.Model.Polys[tab.SelectedPolygonIndex];
+        var poly = tab.Model.Mesh.Polys[tab.SelectedPolygonIndex];
         Array.Reverse(poly.Points);
         
         // Rebuild the mesh with the flipped polygon
-        tab.Model.RebuildMesh();
+        tab.Model.Mesh.RebuildMesh();
         
         // Update the text content to reflect the change
         UpdateTextContentFromModel(tab);
@@ -996,12 +996,12 @@ public class ModelEditorPhase : BasePhase
         var tab = ActiveTab;
         if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Model == null) return;
         
-        var polyList = tab.Model.Polys.ToList();
+        var polyList = tab.Model.Mesh.Polys.ToList();
         polyList.RemoveAt(tab.SelectedPolygonIndex);
-        tab.Model.Polys = polyList.ToArray();
+        tab.Model.Mesh.Polys = polyList.ToArray();
         
         // Rebuild the mesh
-        tab.Model.RebuildMesh();
+        tab.Model.Mesh.RebuildMesh();
         
         // Update the text content to reflect the change
         UpdateTextContentFromModel(tab);
@@ -1178,7 +1178,7 @@ public class ModelEditorPhase : BasePhase
         sb.AppendLine("// Modified in Model Editor");
         sb.AppendLine();
         
-        foreach (var poly in tab.Model.Polys)
+        foreach (var poly in tab.Model.Mesh.Polys)
         {
             sb.AppendLine("<p>");
             sb.AppendLine($"c({poly.Color.R},{poly.Color.G},{poly.Color.B})");
@@ -1386,7 +1386,7 @@ public class ModelEditorPhase : BasePhase
                             System.IO.File.WriteAllText(tab.ModelPath, tab.TextContent);
                             tab.TextEditorDirty = false;
                             // Reload model
-                            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing");
+                            tab.Model = new Car(new CarInfo(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing"));
                         }
                     }
                     catch (Exception ex)
@@ -1409,7 +1409,7 @@ public class ModelEditorPhase : BasePhase
                             System.IO.File.WriteAllText(tab.ModelPath, tab.TextContent);
                             tab.TextEditorDirty = false;
                             // Reload model
-                            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing");
+                            tab.Model = new Car(new CarInfo(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing"));
                             tab.TextEditorExpanded = false;
                         }
                     }
@@ -1479,15 +1479,15 @@ public class ModelEditorPhase : BasePhase
                         tab.SelectedPolygonIndex = -1;
                     }
                     ImGui.SameLine();
-                    ImGui.TextDisabled($"({tab.Model.Boxes.Length} collision boxes)");
+                    // ImGui.TextDisabled($"({tab.Model.Boxes.Length} collision boxes)");
                 }
                 
                 // Polygon editing UI
                 if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
                 {
-                    if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)
+                    if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Mesh.Polys.Length)
                     {
-                        ImGui.Text($"[ Piece {tab.SelectedPolygonIndex + 1} of {tab.Model.Polys.Length} selected ]");
+                        ImGui.Text($"[ Piece {tab.SelectedPolygonIndex + 1} of {tab.Model.Mesh.Polys.Length} selected ]");
                         ImGui.SameLine();
                         
                         if (ImGui.Button("Edit Polygon"))
@@ -1527,39 +1527,39 @@ public class ModelEditorPhase : BasePhase
                 // Collision editing UI
                 else if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
                 {
-                    if (tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Model.Boxes.Length)
-                    {
-                        var box = tab.Model.Boxes[tab.SelectedCollisionIndex];
-                        ImGui.Text($"[ Collision {tab.SelectedCollisionIndex + 1} of {tab.Model.Boxes.Length} selected ]");
-                        ImGui.SameLine();
-                        
-                        if (ImGui.Button("Edit Collision"))
-                        {
-                            JumpToSelectedCollisionInText();
-                        }
-                        ImGui.SameLine();
-                        
-                        if (ImGui.Button("X"))
-                        {
-                            tab.SelectedCollisionIndex = -1; // Deselect
-                        }
-                        
-                        // Display collision properties
-                        ImGui.Text($"Angle: xy={box.Xy:F0}° zy={box.Zy:F0}°");
-                        ImGui.SameLine();
-                        ImGui.Text($"| Radius: [{box.Radius.X:F0}, {box.Radius.Y:F0}, {box.Radius.Z:F0}]");
-                        ImGui.SameLine();
-                        ImGui.Text($"| Offset: [{box.Translation.X:F0}, {box.Translation.Y:F0}, {box.Translation.Z:F0}]");
-                    }
-                    else
-                    {
-                        ImGui.Text("Click on a collision box in the 3D view to select it");
-                        if (_mouseX > 0 || _mouseY > 0)
-                        {
-                            ImGui.SameLine();
-                            ImGui.TextDisabled($"(Mouse: {_mouseX}, {_mouseY})");
-                        }
-                    }
+                    // if (tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Model.Boxes.Length)
+                    // {
+                    //     var box = tab.Model.Boxes[tab.SelectedCollisionIndex];
+                    //     ImGui.Text($"[ Collision {tab.SelectedCollisionIndex + 1} of {tab.Model.Boxes.Length} selected ]");
+                    //     ImGui.SameLine();
+                    //     
+                    //     if (ImGui.Button("Edit Collision"))
+                    //     {
+                    //         JumpToSelectedCollisionInText();
+                    //     }
+                    //     ImGui.SameLine();
+                    //     
+                    //     if (ImGui.Button("X"))
+                    //     {
+                    //         tab.SelectedCollisionIndex = -1; // Deselect
+                    //     }
+                    //     
+                    //     // Display collision properties
+                    //     ImGui.Text($"Angle: xy={box.Xy:F0}° zy={box.Zy:F0}°");
+                    //     ImGui.SameLine();
+                    //     ImGui.Text($"| Radius: [{box.Radius.X:F0}, {box.Radius.Y:F0}, {box.Radius.Z:F0}]");
+                    //     ImGui.SameLine();
+                    //     ImGui.Text($"| Offset: [{box.Translation.X:F0}, {box.Translation.Y:F0}, {box.Translation.Z:F0}]");
+                    // }
+                    // else
+                    // {
+                    //     ImGui.Text("Click on a collision box in the 3D view to select it");
+                    //     if (_mouseX > 0 || _mouseY > 0)
+                    //     {
+                    //         ImGui.SameLine();
+                    //         ImGui.TextDisabled($"(Mouse: {_mouseX}, {_mouseY})");
+                    //     }
+                    // }
                 }
             }
             
@@ -2002,11 +2002,11 @@ public class ModelEditorPhase : BasePhase
         {
             if (editingCollision)
             {
-                ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Model?.Boxes.Length ?? 0}");
+                // ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Model?.Boxes.Length ?? 0}");
             }
             else
             {
-                ImGui.Text($"Editing polygon {tab.SelectedPolygonIndex + 1} of {tab.Model?.Polys.Length ?? 0}");
+                ImGui.Text($"Editing polygon {tab.SelectedPolygonIndex + 1} of {tab.Model?.Mesh.Polys.Length ?? 0}");
             }
             ImGui.Separator();
             
@@ -2224,7 +2224,7 @@ public class ModelEditorPhase : BasePhase
         // Try to reload the model with the new code
         try
         {
-            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing");
+            tab.Model = new Car(new CarInfo(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing"));
             tab.PolygonEditorDirty = false;
             
             if (removeElement)
@@ -2315,163 +2315,163 @@ public class ModelEditorPhase : BasePhase
         );
         
         // Prepare list of models to render
-        var modelsToRender = new List<IImmediateRenderable>();
+        var modelsToRender = new List<GameObject>();
         
         // Add the main model
         modelsToRender.Add(tab.Model);
         
         // Render main model first
-        var scene = new Scene(GameSparker._graphicsDevice, modelsToRender.ToArray(), camera, []);
+        var scene = new Scene(GameSparker._graphicsDevice, modelsToRender, camera, []);
         scene.Render(false);
         
         // Render reference car overlay with transparency (rendered separately after main model)
         if (tab.ShowReferenceOverlay && tab.ReferenceCarIndex >= 0 && tab.ReferenceCarIndex < GameSparker.cars.Count)
         {
-            var referenceCar = GameSparker.cars[tab.ReferenceCarIndex];
-            if (referenceCar != null)
-            {
-                // Store original state
-                var originalRefPosition = referenceCar.Position;
-                var originalRefRotation = referenceCar.Rotation;
-                var previousBlendState = _graphicsDevice.BlendState;
-                var previousDepthState = _graphicsDevice.DepthStencilState;
-                
-                // Store original PolyTypes and set all to Glass for alpha blending
-                var originalPolyTypes = new PolyType[referenceCar.Polys.Length];
-                for (int i = 0; i < referenceCar.Polys.Length; i++)
-                {
-                    originalPolyTypes[i] = referenceCar.Polys[i].PolyType;
-                    referenceCar.Polys[i] = referenceCar.Polys[i] with { PolyType = PolyType.Glass };
-                }
-                
-                // Rebuild mesh to apply the polytype changes
-                referenceCar.RebuildMesh();
-                
-                // Position reference car at same location as main model
-                referenceCar.Position = tab.ModelPosition;
-                referenceCar.Rotation = new Euler(
-                    AngleSingle.FromDegrees(tab.ModelRotation.Y),
-                    AngleSingle.FromDegrees(-tab.ModelRotation.X),
-                    AngleSingle.FromDegrees(tab.ModelRotation.Z)
-                );
-                
-                // Enable alpha blending
-                _graphicsDevice.BlendState = BlendState.AlphaBlend;
-                
-                // Clear depth buffer and disable depth testing so reference car always renders in front
-                _graphicsDevice.Clear(ClearOptions.DepthBuffer, Microsoft.Xna.Framework.Color.Transparent, 1.0f, 0);
-                var depthOff = new DepthStencilState
-                {
-                    DepthBufferEnable = false,
-                    DepthBufferWriteEnable = false
-                };
-                _graphicsDevice.DepthStencilState = depthOff;
-                
-                referenceCar.alphaOverride = tab.ReferenceOpacity;
-                referenceCar.Render(camera);
-                
-                // Restore original PolyTypes
-                for (int i = 0; i < referenceCar.Polys.Length; i++)
-                {
-                    referenceCar.Polys[i] = referenceCar.Polys[i] with { PolyType = originalPolyTypes[i] };
-                }
-                referenceCar.RebuildMesh();
-                
-                // Restore states
-                _graphicsDevice.BlendState = previousBlendState;
-                _graphicsDevice.DepthStencilState = previousDepthState;
-                referenceCar.Position = originalRefPosition;
-                referenceCar.Rotation = originalRefRotation;
-            }
+            // var referenceCar = GameSparker.cars[tab.ReferenceCarIndex];
+            // if (referenceCar != null)
+            // {
+            //     // Store original state
+            //     var originalRefPosition = referenceCar.Position;
+            //     var originalRefRotation = referenceCar.Rotation;
+            //     var previousBlendState = _graphicsDevice.BlendState;
+            //     var previousDepthState = _graphicsDevice.DepthStencilState;
+            //     
+            //     // Store original PolyTypes and set all to Glass for alpha blending
+            //     var originalPolyTypes = new PolyType[referenceCar.Polys.Length];
+            //     for (int i = 0; i < referenceCar.Polys.Length; i++)
+            //     {
+            //         originalPolyTypes[i] = referenceCar.Polys[i].PolyType;
+            //         referenceCar.Polys[i] = referenceCar.Polys[i] with { PolyType = PolyType.Glass };
+            //     }
+            //     
+            //     // Rebuild mesh to apply the polytype changes
+            //     referenceCar.RebuildMesh();
+            //     
+            //     // Position reference car at same location as main model
+            //     referenceCar.Position = tab.ModelPosition;
+            //     referenceCar.Rotation = new Euler(
+            //         AngleSingle.FromDegrees(tab.ModelRotation.Y),
+            //         AngleSingle.FromDegrees(-tab.ModelRotation.X),
+            //         AngleSingle.FromDegrees(tab.ModelRotation.Z)
+            //     );
+            //     
+            //     // Enable alpha blending
+            //     _graphicsDevice.BlendState = BlendState.AlphaBlend;
+            //     
+            //     // Clear depth buffer and disable depth testing so reference car always renders in front
+            //     _graphicsDevice.Clear(ClearOptions.DepthBuffer, Microsoft.Xna.Framework.Color.Transparent, 1.0f, 0);
+            //     var depthOff = new DepthStencilState
+            //     {
+            //         DepthBufferEnable = false,
+            //         DepthBufferWriteEnable = false
+            //     };
+            //     _graphicsDevice.DepthStencilState = depthOff;
+            //     
+            //     referenceCar.alphaOverride = tab.ReferenceOpacity;
+            //     referenceCar.Render(camera);
+            //     
+            //     // Restore original PolyTypes
+            //     for (int i = 0; i < referenceCar.Polys.Length; i++)
+            //     {
+            //         referenceCar.Polys[i] = referenceCar.Polys[i] with { PolyType = originalPolyTypes[i] };
+            //     }
+            //     referenceCar.RebuildMesh();
+            //     
+            //     // Restore states
+            //     _graphicsDevice.BlendState = previousBlendState;
+            //     _graphicsDevice.DepthStencilState = previousDepthState;
+            //     referenceCar.Position = originalRefPosition;
+            //     referenceCar.Rotation = originalRefRotation;
+            // }
         }
         
         // Render selected polygon overlay with transparency
-        if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon && 
-            tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)
-        {
-            RenderSelectionOverlay(tab);
-        }
+        // if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon && 
+        //     tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Mesh.Polys.Length)
+        // {
+        //     RenderSelectionOverlay(tab);
+        // }
         
         // Render selected collision box overlay
-        if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision && 
-            tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Model.Boxes.Length)
-        {
-            RenderCollisionSelectionOverlay(camera, tab);
-        }
+        // if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision && 
+        //     tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Model.Boxes.Length)
+        // {
+        //     RenderCollisionSelectionOverlay(camera, tab);
+        // }
         
         // Restore original transform
         tab.Model.Position = originalPosition;
         tab.Model.Rotation = originalRotation;
     }
     
-    private void RenderSelectionOverlay(ModelEditorTab tab)
-    {
-        if (tab.Model == null || tab.SelectedPolygonIndex < 0) return;
-        
-        // Create a temporary mesh with only the selected polygon
-        var selectedPoly = tab.Model.Polys[tab.SelectedPolygonIndex];
-        
-        // Make it bright cyan/yellow with semi-transparency for visibility
-        var highlightPoly = selectedPoly with { 
-            Color = new Color3(255, 255, 0),
-            PolyType = PolyType.Flat  // Ensure it renders as flat/solid
-        };
-        
-        var overlayPolys = new Rad3dPoly[] { highlightPoly };
-        
-        // Create a temporary mesh for the overlay
-        var overlayMesh = new Mesh(
-            GameSparker._graphicsDevice,
-            new Rad3d(overlayPolys, false),
-            "overlay"
-        );
-        
-        // Match the main model's transform
-        overlayMesh.Position = tab.Model.Position;
-        overlayMesh.Rotation = tab.Model.Rotation;
-        
-        // Save current blend state
-        var oldBlendState = GameSparker._graphicsDevice.BlendState;
-        var oldDepthStencilState = GameSparker._graphicsDevice.DepthStencilState;
-        
-        // Enable alpha blending and disable depth write (but keep depth test)
-        GameSparker._graphicsDevice.BlendState = BlendState.AlphaBlend;
-        var depthRead = new DepthStencilState
-        {
-            DepthBufferEnable = true,
-            DepthBufferWriteEnable = false,  // Don't write to depth, just read
-            DepthBufferFunction = CompareFunction.LessEqual
-        };
-        GameSparker._graphicsDevice.DepthStencilState = depthRead;
-        
-        // Render the overlay
-        overlayMesh.Render(camera);
-        
-        // Restore previous states
-        GameSparker._graphicsDevice.BlendState = oldBlendState;
-        GameSparker._graphicsDevice.DepthStencilState = oldDepthStencilState;
-    }
-    
-    private void RenderCollisionSelectionOverlay(PerspectiveCamera camera, ModelEditorTab tab)
-    {
-        if (tab.Model == null || tab.SelectedCollisionIndex < 0) return;
-        
-        // Create a highlighted collision box mesh for the selected collision
-        var selectedBox = tab.Model.Boxes[tab.SelectedCollisionIndex];
-        var highlightedBox = selectedBox with { 
-            Color = new Color3(255, 255, 0) // Yellow highlight
-        };
-        
-        var highlightBoxes = new Rad3dBoxDef[] { highlightedBox };
-        var highlightMesh = new CollisionDebugMesh(highlightBoxes);
-        
-        // Match the main model's transform
-        highlightMesh.Position = tab.Model.Position;
-        highlightMesh.Rotation = tab.Model.Rotation;
-        
-        // Render with highlighting
-        highlightMesh.Render(camera);
-    }
+    // private void RenderSelectionOverlay(ModelEditorTab tab)
+    // {
+    //     if (tab.Model == null || tab.SelectedPolygonIndex < 0) return;
+    //     
+    //     // Create a temporary mesh with only the selected polygon
+    //     var selectedPoly = tab.Model.Mesh.Polys[tab.SelectedPolygonIndex];
+    //     
+    //     // Make it bright cyan/yellow with semi-transparency for visibility
+    //     var highlightPoly = selectedPoly with { 
+    //         Color = new Color3(255, 255, 0),
+    //         PolyType = PolyType.Flat  // Ensure it renders as flat/solid
+    //     };
+    //     
+    //     var overlayPolys = new Rad3dPoly[] { highlightPoly };
+    //     
+    //     // Create a temporary mesh for the overlay
+    //     var overlayMesh = new Mesh(
+    //         GameSparker._graphicsDevice,
+    //         new Rad3d(overlayPolys, false),
+    //         "overlay"
+    //     );
+    //     
+    //     // Match the main model's transform
+    //     overlayMesh.Position = tab.Model.Position;
+    //     overlayMesh.Rotation = tab.Model.Rotation;
+    //     
+    //     // Save current blend state
+    //     var oldBlendState = GameSparker._graphicsDevice.BlendState;
+    //     var oldDepthStencilState = GameSparker._graphicsDevice.DepthStencilState;
+    //     
+    //     // Enable alpha blending and disable depth write (but keep depth test)
+    //     GameSparker._graphicsDevice.BlendState = BlendState.AlphaBlend;
+    //     var depthRead = new DepthStencilState
+    //     {
+    //         DepthBufferEnable = true,
+    //         DepthBufferWriteEnable = false,  // Don't write to depth, just read
+    //         DepthBufferFunction = CompareFunction.LessEqual
+    //     };
+    //     GameSparker._graphicsDevice.DepthStencilState = depthRead;
+    //     
+    //     // Render the overlay
+    //     overlayMesh.Render(camera);
+    //     
+    //     // Restore previous states
+    //     GameSparker._graphicsDevice.BlendState = oldBlendState;
+    //     GameSparker._graphicsDevice.DepthStencilState = oldDepthStencilState;
+    // }
+    //
+    // private void RenderCollisionSelectionOverlay(PerspectiveCamera camera, ModelEditorTab tab)
+    // {
+    //     if (tab.Model == null || tab.SelectedCollisionIndex < 0) return;
+    //     
+    //     // Create a highlighted collision box mesh for the selected collision
+    //     var selectedBox = tab.Model.Boxes[tab.SelectedCollisionIndex];
+    //     var highlightedBox = selectedBox with { 
+    //         Color = new Color3(255, 255, 0) // Yellow highlight
+    //     };
+    //     
+    //     var highlightBoxes = new Rad3dBoxDef[] { highlightedBox };
+    //     var highlightMesh = new CollisionDebugMesh(highlightBoxes);
+    //     
+    //     // Match the main model's transform
+    //     highlightMesh.Position = tab.Model.Position;
+    //     highlightMesh.Rotation = tab.Model.Rotation;
+    //     
+    //     // Render with highlighting
+    //     highlightMesh.Render(camera);
+    // }
     
     public override void WindowSizeChanged(int width, int height)
     {

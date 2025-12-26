@@ -247,7 +247,7 @@ public unsafe class Program : Game
     protected override void Update(GameTime gameTime)
     {
         base.Update(gameTime);
-        //FPSCounter.Update(gameTime);
+        FPSCounter.Update(gameTime);
         
         UpdateInput();
         UpdateMouse();

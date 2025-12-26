@@ -276,7 +276,7 @@ namespace NFMWorld.Mad
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var originalCar = inRacePhase.CarsInRace[inRacePhase.playerCarIndex];
-                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, originalCar.CarRef.Mesh.ClonedMesh!, 0, 0, true);
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, originalCar.ClonedCarInfo, 0, 0, true);
             }
 
             console.Log("Position reset");
@@ -289,7 +289,7 @@ namespace NFMWorld.Mad
         }
 
         private static void SetPos(DevConsole console, string[] args)
-{
+        {
             if (args.Length < 3 || !int.TryParse(args[0], out var x) || !int.TryParse(args[1], out var y) || !int.TryParse(args[2], out var z))
             {
                 console.Log("Usage: setpos <x> <y> <z>");
@@ -364,7 +364,7 @@ namespace NFMWorld.Mad
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 inRacePhase.playerCarName = car.FileName;
-                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, car.Mesh, 0, 0, true);
+                inRacePhase.CarsInRace[inRacePhase.playerCarIndex] = new InGameCar(inRacePhase.playerCarIndex, car, 0, 0, true);
                 inRacePhase.ReloadGamemode();
             }
         

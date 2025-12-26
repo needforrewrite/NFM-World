@@ -51,7 +51,7 @@ public class Sky : Transform, IImmediateRenderable
         }
 
         var vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None);
-        vertexBuffer.SetData(data.ToArray());
+        vertexBuffer.SetDataEXT(data);
         _vertexBuffer = vertexBuffer;
 
         _material = Program._skyShader;

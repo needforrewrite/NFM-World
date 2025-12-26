@@ -10,7 +10,7 @@ public class MeshedGameObject(Mesh mesh) : GameObject
         Rotation = rotation;
     }
 
-    public bool CastsShadow { get; set; } = mesh.Rad.CastsShadow;
+    public bool CastsShadow { get; set; } = mesh.CastsShadow;
 
     public bool? GetsShadowed
     {

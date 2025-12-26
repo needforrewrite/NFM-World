@@ -50,6 +50,7 @@ struct VertexShaderOutput
 	float4 Position : SV_POSITION;
 	float4 Color : COLOR0;
     float4 WorldPos : TEXCOORD2;
+    float GetsShadowed : TEXCOORD3;
 };
 
 VertexShaderOutput MainVS(
@@ -67,16 +68,22 @@ VertexShaderOutput MainVS(
 
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
-    float distanceToCamera = mul(float4(input.Position, 1), WorldViewProj).z;
+    float distanceToCamera = mul(mul(mul(float4(input.Position, 1), world), View), Projection).z;
 
     float3 position = input.Position + input.Right * HalfThickness * distanceToCamera + input.Up * HalfThickness * distanceToCamera;
 
     VS_DecalOffset(position, input.Normal, input.DecalOffset);
 
+    if (Expand == true)
+    {
+        VS_Expand(position, input.Centroid, RandomFloat);
+    }
+
     // Save the vertices postion in world space (for shadow mapping)
     output.WorldPos = mul(float4(position, 1), world);
+    output.GetsShadowed = getsShadowed;
 
-    float3 viewPos = mul(float4(output.WorldPos.xyz, 1), View).xyz;
+    float4 viewPos = mul(output.WorldPos, View);
 
 	float3 color = input.Color;
 
@@ -86,12 +93,7 @@ VertexShaderOutput MainVS(
         color = BaseColor;
     }
 
-    if (Expand == true)
-    {
-        VS_Expand(position, input.Centroid, RandomFloat);
-    }
-
-    output.Position = mul(float4(viewPos, 1), Projection);
+    output.Position = mul(viewPos, Projection);
 
     if (Darken < 1.0f)
     {
@@ -128,7 +130,7 @@ VertexShaderOutput MainVS(
         color.b = 1.0;
     }
 
-    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
+    VS_ApplyFog(color, viewPos.xyz, FogColor, FogDistance, FogDensity);
 
     VS_ColorCorrect(color);
 
@@ -141,7 +143,7 @@ float4 MainPS(VertexShaderOutput input) : SV_TARGET
 {
     float4 diffuse = input.Color;
 
-    if (GetsShadowed == true)
+    if (input.GetsShadowed > 0.0)
     {
         float3 diffuseRGB = diffuse.xyz;
         PS_ApplyShadowing(diffuseRGB, input.WorldPos);

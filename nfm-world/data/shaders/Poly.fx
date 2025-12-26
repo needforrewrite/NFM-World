@@ -43,7 +43,7 @@ struct VertexShaderOutput
 	float4 Position : SV_POSITION;
 	float4 Color : COLOR0;
     float4 WorldPos : TEXCOORD2;
-    bool GetsShadowed : TEXCOORD3;
+    float GetsShadowed : TEXCOORD3;
 };
 
 VertexShaderOutput MainVS(
@@ -65,11 +65,16 @@ VertexShaderOutput MainVS(
 
     VS_DecalOffset(position, input.Normal, input.DecalOffset);
 
+    if (Expand == true)
+    {
+        VS_Expand(position, input.Centroid, RandomFloat);
+    }
+
     // Save the vertices postion in world space (for shadow mapping)
-    output.WorldPos = mul(float4(position, 1), World);
+    output.WorldPos = mul(float4(position, 1), world);
     output.GetsShadowed = getsShadowed;
 
-    float3 viewPos = mul(float4(output.WorldPos.xyz, 1), View).xyz;
+    float4 viewPos = mul(output.WorldPos, View);
 
 	float3 color = input.Color;
 
@@ -79,12 +84,7 @@ VertexShaderOutput MainVS(
         color = BaseColor;
     }
 
-    if (Expand == true)
-    {
-        VS_Expand(position, input.Centroid, RandomFloat);
-    }
-
-    output.Position = mul(float4(viewPos, 1), Projection);
+    output.Position = mul(viewPos, Projection);
 
     if (Darken < 1.0f)
     {
@@ -107,7 +107,7 @@ VertexShaderOutput MainVS(
 	// Apply snap
     VS_Snap(color, SnapColor);
 
-    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
+    VS_ApplyFog(color, viewPos.xyz, FogColor, FogDistance, FogDensity);
 
     VS_ColorCorrect(color);
 
@@ -120,7 +120,7 @@ float4 MainPS(VertexShaderOutput input) : SV_TARGET
 {
     float4 diffuse = input.Color;
 
-    if (input.GetsShadowed == true)
+    if (input.GetsShadowed > 0.0)
     {
         float3 diffuseRGB = diffuse.xyz;
         PS_ApplyShadowing(diffuseRGB, input.WorldPos);
@@ -139,15 +139,12 @@ struct CreateShadowMap_VSOut
 // Transforms the model into light space an renders out the depth of the object
 CreateShadowMap_VSOut CreateShadowMapVS(
     in VertexShaderInput input,
-    float4x4 world : TEXCOORD1
+    float4x4 world : TEXCOORD3
 )
 {
     CreateShadowMap_VSOut output = (CreateShadowMap_VSOut)0;
 
-    // Apply decal offset to prevent Z-fighting in shadow maps too
-    float3 offsetPosition = input.Position - input.Normal * input.DecalOffset * 0.1;
-
-    output.Position = mul(mul(float4(offsetPosition, 1), world), ViewProj);
+    output.Position = mul(mul(mul(float4(input.Position, 1), world), View), Projection);
     output.Depth = output.Position.z / output.Position.w;
     return output;
 }

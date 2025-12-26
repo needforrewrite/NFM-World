@@ -10,8 +10,6 @@ namespace NFMWorld.Mad;
 
 public class Mesh
 {
-    public Rad3d Rad;
-    
     public Rad3dPoly[] Polys;
 
     public readonly GraphicsDevice GraphicsDevice;
@@ -28,10 +26,10 @@ public class Mesh
 
     public int MaxRadius;
 
+    public bool CastsShadow;
+
     public Mesh(GraphicsDevice graphicsDevice, Rad3d rad, string fileName)
     {
-        Rad = rad;
-
         Polys = rad.Polys;
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
 
@@ -42,12 +40,11 @@ public class Mesh
 
         FileName = fileName;
         MaxRadius = rad.MaxRadius;
+        CastsShadow = rad.CastsShadow;
     }
 
     public Mesh(Mesh baseMesh)
     {
-        Rad = baseMesh.Rad;
-        
         // make a copy of points for damageable meshes
         Polys = Array.ConvertAll(baseMesh.Polys, poly => poly with { Points = [..poly.Points] });
         GraphicsDevice = baseMesh.GraphicsDevice;
@@ -60,6 +57,7 @@ public class Mesh
         FileName = baseMesh.FileName;
         ClonedMesh = baseMesh;
         MaxRadius = baseMesh.MaxRadius;
+        CastsShadow = baseMesh.CastsShadow;
     }
 
     [MemberNotNull(nameof(Submeshes))]
@@ -130,7 +128,7 @@ public class Mesh
             
             if (data.Count == 0 || indices.Count == 0) continue;
 
-            Submeshes[i] = new Submesh(type, this, GraphicsDevice, data.ToArray(), indices.ToArray());
+            Submeshes[i] = new Submesh(type, this, GraphicsDevice, CollectionsMarshal.AsSpan(data), CollectionsMarshal.AsSpan(indices));
         }
 
         LineMeshes = new LineMesh[lines.Length];

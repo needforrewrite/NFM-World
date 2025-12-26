@@ -590,7 +590,7 @@ public class Stage : GameObject
         ground = new Ground(graphicsDevice);
     }
 
-    private static bool TryGetPieceToPlace(string setstring, out Mesh mesh)
+    private static bool TryGetPieceToPlace(string setstring, out PlaceableObjectInfo mesh)
     {
         if (int.TryParse(setstring, out var setindex))
         {
@@ -643,11 +643,11 @@ public class Stage : GameObject
 
     public override void Render(Camera camera, Lighting? lighting)
     {
-        base.Render(camera, lighting);
         sky.Render(camera, lighting);
         ground.Render(camera, lighting);
         polys?.Render(camera, lighting);
         clouds?.Render(camera, lighting);
         mountains?.Render(camera, lighting);
+        base.Render(camera, lighting);
     }
 }

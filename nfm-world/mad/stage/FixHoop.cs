@@ -21,9 +21,9 @@ public class FixHoop : CollisionObject
     private VertexPositionColor[] _vertices = new VertexPositionColor[8*CntLines];
     private short[] _indices = new short[18*CntLines];
 
-    public FixHoop(Mesh baseMesh, Vector3 position, Euler rotation) : base(baseMesh, position, rotation)
+    public FixHoop(PlaceableObjectInfo placeableObjectInfo, Vector3 position, Euler rotation) : base(placeableObjectInfo, position, rotation)
     {
-        _graphicsDevice = baseMesh.GraphicsDevice;
+        _graphicsDevice = placeableObjectInfo.GraphicsDevice;
         _fixhoopEffect = new BasicEffect(_graphicsDevice)
         {
             LightingEnabled = false,

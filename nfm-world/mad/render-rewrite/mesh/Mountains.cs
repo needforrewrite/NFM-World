@@ -45,10 +45,10 @@ public class Mountains : Transform, IImmediateRenderable
         }
         
         _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None);
-        _vertexBuffer.SetData(data.ToArray());
+        _vertexBuffer.SetDataEXT(data);
         
         _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
-        _indexBuffer.SetData(indices.ToArray());
+        _indexBuffer.SetDataEXT(indices);
         _triangleCount = indices.Count / 3;
         _vertexCount = data.Count;
 

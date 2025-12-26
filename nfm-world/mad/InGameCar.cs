@@ -1,9 +1,8 @@
-﻿using Stride.Core.Mathematics;
-
-namespace NFMWorld.Mad;
+﻿namespace NFMWorld.Mad;
 
 public class InGameCar : GameObject
 {
+    public CarInfo ClonedCarInfo;
     public Car CarRef;
     public Mad Mad;
     public Control Control;
@@ -13,7 +12,8 @@ public class InGameCar : GameObject
 
     public InGameCar(InGameCar copy, int im, bool isClientPlayer)
     {
-        CarRef = new Car(copy.CarRef.Mesh, new Vector3(0f, World.Ground - copy.CarRef.GroundAt, 0f), Euler.Identity)
+        ClonedCarInfo = copy.CarRef.CarInfo;
+        CarRef = new Car(copy.CarRef.CarInfo, new Vector3(0f, World.Ground - copy.CarRef.GroundAt, 0f), Euler.Identity)
         {
             Parent = this
         };
@@ -23,9 +23,10 @@ public class InGameCar : GameObject
         Sfx = new MadSfx(Mad);
     }
 
-    public InGameCar(int im, Mesh mesh, int x, int z, bool isClientPlayer)
+    public InGameCar(int im, CarInfo carInfo, int x, int z, bool isClientPlayer)
     {
-        CarRef = new Car(mesh, new Vector3(x, World.Ground - mesh.GroundAt, z), Euler.Identity)
+        ClonedCarInfo = carInfo;
+        CarRef = new Car(carInfo, new Vector3(x, World.Ground - carInfo.GroundAt, z), Euler.Identity)
         {
             Parent = this
         };
