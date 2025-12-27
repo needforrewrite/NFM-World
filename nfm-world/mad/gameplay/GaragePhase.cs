@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Mad;
 using NFMWorld.Mad.UI.yoga;
+using NFMWorld.Mad.UI.Elements;
 using NFMWorld.Util;
 using Stride.Core.Extensions;
 
@@ -95,7 +96,6 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BaseStageRenderingPhas
         camera.LookAt = new Vector3(0, 250, 400);
         camera.Position = new Vector3(-750, 50, 750);
         FovOverride = 53;
-        ShadowmapDisplay = false;
 
         RecreateScene();
 

@@ -8,7 +8,7 @@ namespace NFMWorld.Mad;
 public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : BasePhase
 {
     protected int? FovOverride = null;
-    protected bool ShadowmapDisplay = true;
+    public static bool DebugDisplay = false;
 
     private readonly SpriteBatch _spriteBatch = new(graphicsDevice);
 
@@ -116,7 +116,7 @@ public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : B
 
         current_scene.Render(true);
 
-        if (ShadowmapDisplay)
+        if (DebugDisplay)
         {
             // DISPLAY SHADOW MAP
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullCounterClockwise);
