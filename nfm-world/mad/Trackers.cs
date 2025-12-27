@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Util;
 using SoftFloat;
@@ -7,7 +8,6 @@ namespace NFMWorld.Mad;
 
 internal class Trackers
 {
-    //private Trackers() {}
     internal static readonly int[][] C = ArrayExt.New<int>(75000, 3);
 
     internal static readonly UnlimitedArray<int> Dam = [];
@@ -28,26 +28,49 @@ internal class Trackers
     internal static readonly UnlimitedArray<int> Z = [];
     internal static readonly UnlimitedArray<int> Zy = [];
 
+    // This will be replaced with something better after Phy's physics rewrite.
+    public readonly struct TempTracker(int index, int x, int z, int radx, int radz) : IQuadObject
+    {
+        public readonly int Index = index;
+        private readonly f64Bounds _bounds = new(
+            x - radx,
+            z - radz,
+            radx * 2,
+            radz * 2
+        );
+        
+        public f64Bounds GetBounds()
+        {
+            return _bounds;
+        }
+    }
+    
+    internal static QuadTree<TempTracker> TrackersQuadTree = new(0,0,0,0);
+
     internal static void LoadTrackers(IReadOnlyList<GameObject> elements, int sx, int ncx, int sz, int ncz)
     {
+        Sx = sx;
+        Sz = sz;
+        Ncx = ncx;
+        if (Ncx <= 0)
+        {
+            Ncx = 1;
+        }
+        Ncz = ncz;
+        if (Ncz <= 0)
+        {
+            Ncz = 1;
+        }
+
+        TrackersQuadTree = new QuadTree<TempTracker>(sx, sz, ncx, ncz);
+
         foreach (var element in elements)
         {
             if (element is CollisionObject obj)
                 LoadTracker(obj);
         }
         
-        Sx = sx;
-        Sz = sz;
-        Ncx = ncx / 3000;
-        if (Ncx <= 0)
-        {
-            Ncx = 1;
-        }
-        Ncz = ncz / 3000;
-        if (Ncz <= 0)
-        {
-            Ncz = 1;
-        }
+        TrackersQuadTree.TrimExcess();
         
         // maxine: remove trackers.sect which was assigned here. it's not used anymore.
         
@@ -58,9 +81,6 @@ internal class Trackers
                 Dam[i] = 1;
             }
         }
-
-        Ncx--;
-        Ncz--;
     }
 
     internal static void LoadTracker(CollisionObject element)
@@ -97,7 +117,18 @@ internal class Trackers
             Radx[Nt] = (int) fix64.Round(fix64.Abs(element.Boxes[i].Radius.X * Mad.Cos(xzAbs) + element.Boxes[i].Radius.Z * Mad.Sin(xzAbs)));
             Radz[Nt] = (int) fix64.Round(fix64.Abs(element.Boxes[i].Radius.X * Mad.Sin(xzAbs) + element.Boxes[i].Radius.Z * Mad.Cos(xzAbs)));
             Rady[Nt] = (int) fix64.Round(element.Boxes[i].Radius.Y);
+            
+            TrackersQuadTree.Insert(new TempTracker(Nt, X[Nt], Z[Nt], Radx[Nt], Radz[Nt]));
+            
             Nt++;
         }
+    }
+    
+    private static List<TempTracker> _tempTrackers = new();
+    public static ReadOnlySpan<TempTracker> RetrievePoint(fix64 x, fix64 z)
+    {
+        _tempTrackers.Clear();
+        TrackersQuadTree.RetrievePoint(_tempTrackers, x, z);
+        return CollectionsMarshal.AsSpan(_tempTrackers);
     }
 }
