@@ -19,8 +19,8 @@ public static class SfxLibrary
 
     public static ISoundClip? checkpoint;
 
-
     public static ISoundClip? tires;
+    public static ISoundClip? powerup;
 
     public static void LoadSounds()
     {
@@ -72,6 +72,8 @@ public static class SfxLibrary
         countdown[3] = IBackend.Backend.GetSound("data/sound/count/three.wav");
 
         checkpoint = IBackend.Backend.GetSound("data/sound/checkpoint.wav");
+        
+        powerup = IBackend.Backend.GetSound("data/sound/powerup.wav");
     }
 
     private static string GetEngineSignature(int engine)

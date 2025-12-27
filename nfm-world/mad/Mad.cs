@@ -16,6 +16,7 @@ public class Mad
     public event EventHandler<(int i, float f)> SfxPlaySkid;
     public event EventHandler<(int i, int i2, int i3)> SfxPlayScrape;
     public event EventHandler<(int i, int i2, int i3)> SfxPlayGscrape;
+    public event EventHandler<float> PowerUp;
 
     internal bool Btab;
     internal int Capcnt;
@@ -2064,32 +2065,39 @@ public class Mad
                 {
                     if (Trcnt == 9)
                     {
-                        Powerup = (fix64)(0.0F);
+                        bool JustSurfer = true;
+                        Powerup = (fix64)0.0F;
                         if (fix64.Abs(Travxy) > 90)
                         {
+                            JustSurfer = false;
                             Powerup += fix64.Abs(Travxy) / (fix64)(24.0F);
                         }
                         else if (Rtab)
                         {
+                            JustSurfer = false;
                             Powerup += (fix64)(30.0F);
                         }
                         if (fix64.Abs(Travzy) > 90)
                         {
+                            JustSurfer = false;
                             Powerup += fix64.Abs(Travzy) / (fix64)(18.0F);
                         }
                         else
                         {
                             if (Ftab)
                             {
+                                JustSurfer = false;
                                 Powerup += (fix64)(40.0F);
                             }
                             if (Btab)
                             {
+                                JustSurfer = false;
                                 Powerup += (fix64)(40.0F);
                             }
                         }
                         if (fix64.Abs(Travxz) > 90)
                         {
+                            JustSurfer = false;
                             Powerup += fix64.Abs(Travxz) / (fix64)(18.0F);
                         }
                         if (Surfer)
@@ -2097,6 +2105,10 @@ public class Mad
                             Powerup += (fix64)(30.0F);
                         }
                         Power += Powerup;
+
+                        // dont invoke powerup if we only did a surf...
+                        if(!JustSurfer) PowerUp(this, (float)Powerup);
+                        
                         /*if (Im == XTGraphics.Im && (int) Powerup > Record.Powered && Record.Wasted == 0 &&
                             (Powerup > (fix64)(60.0F) || CheckPoints.Stage == 1 || CheckPoints.Stage == 2))
                         {
