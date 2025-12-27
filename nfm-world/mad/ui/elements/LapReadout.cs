@@ -12,7 +12,7 @@ public class LapReadout : Node
 
     public override void RenderContent(Vector2 position, Vector2 size)
     {
-        G.DrawImage(LapImage, (int)position.X, (int)position.Y);
+        G.DrawImage(LapImage, (int)position.X, (int)position.Y, (int)Width.InternalValue.value, (int)Height.InternalValue.value);
         G.SetColor(new Color(0, 0, 0));
         G.DrawStringStroke(CurrentLap + "/" + StageLaps, (int)position.X + LapImage.Width, (int)position.Y + LapImage.Height);
         G.SetColor(new Color(255, 255, 255));

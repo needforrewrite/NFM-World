@@ -56,6 +56,7 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
                 CurrentLap = 1,
                 StageLaps = 1,
                 Height = LapReadout.LapImage.Height,
+                Width = LapReadout.LapImage.Width,
                 MarginBottom = 10
                 
             },
