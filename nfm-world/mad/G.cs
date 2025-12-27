@@ -6,7 +6,7 @@ namespace NFMWorld.Mad;
 public static class G
 {
     private static IGraphics Graphics => IBackend.Backend.Graphics;
-    
+
     public static void SetColor(Color c) => Graphics.SetColor(c);
 
     public static void SetLinearGradient(int x, int y, int width, int height, Color[] colors, float[]? colorPos) => Graphics.SetLinearGradient(x, y, width, height, colors, colorPos);
@@ -36,7 +36,12 @@ public static class G
     public static IFontMetrics GetFontMetrics() => Graphics.GetFontMetrics();
 
     public static void DrawString(string text, int x, int y) => Graphics.DrawString(text, x, y);
+    public static void DrawStringAligned(string text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top) 
+        => Graphics.DrawStringAligned(text, areaWidth, areaHeight, hAlign, vAlign);
     
+    public static void DrawStringStrokeAligned(string text, int areaWidth, int areaHeight, TextHorizontalAlignment hAlign = TextHorizontalAlignment.Left, TextVerticalAlignment vAlign = TextVerticalAlignment.Top, int effectAmount = 1)
+        => Graphics.DrawStringStrokeAligned(text, areaWidth, areaHeight, hAlign, vAlign, effectAmount);
+
     public static void DrawStringStroke(string text, int x, int y, int effectAmount = 1) => Graphics.DrawStringStroke(text, x, y, effectAmount);
 
     public static void FillOval(int p0, int p1, int p2, int p3) => Graphics.FillOval(p0, p1, p2, p3);

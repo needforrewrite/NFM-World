@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
 
-public class Mountains : Transform, IRenderable
+public class Mountains : Transform, IImmediateRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;
@@ -45,10 +45,10 @@ public class Mountains : Transform, IRenderable
         }
         
         _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None);
-        _vertexBuffer.SetData(data.ToArray());
+        _vertexBuffer.SetDataEXT(data);
         
         _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
-        _indexBuffer.SetData(indices.ToArray());
+        _indexBuffer.SetDataEXT(indices);
         _triangleCount = indices.Count / 3;
         _vertexCount = data.Count;
 
@@ -70,7 +70,7 @@ public class Mountains : Transform, IRenderable
         _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
         _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
 
-        lighting.SetShadowMapParameters(_material);
+        lighting?.SetShadowMapParameters(_material);
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();

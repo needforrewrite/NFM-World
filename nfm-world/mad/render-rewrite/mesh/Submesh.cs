@@ -3,31 +3,50 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
 
-public class Submesh(
-    PolyType polyType,
-    Mesh supermesh,
-    GraphicsDevice graphicsDevice,
-    VertexBuffer vertexBuffer,
-    IndexBuffer indexBuffer,
-    int triangleCount,
-    int vertexCount)
+public class Submesh : IInstancedRenderElement
 {
     private readonly PolyEffect _material = new(Program._polyShader);
-    public readonly PolyType PolyType = polyType;
+    public readonly PolyType PolyType;
+    
+    private readonly VertexBuffer _vertexBuffer;
+    private readonly IndexBuffer _indexBuffer;
 
-    public void Render(Camera camera, Lighting? lighting, Matrix matrixWorld)
+    private readonly int _vertexCount;
+    private readonly int _triangleCount;
+    private readonly Mesh _supermesh;
+    private readonly GraphicsDevice _graphicsDevice;
+    
+    public bool Expand = false;
+    public float Darken = 1.0f;
+
+    public Submesh(
+        PolyType polyType,
+        Mesh supermesh,
+        GraphicsDevice graphicsDevice,
+        ReadOnlySpan<Mesh.VertexPositionNormalColorCentroid> vertices,
+        ReadOnlySpan<int> indices)
     {
-        if (lighting?.IsCreateShadowMap == true && !(supermesh.CastsShadow || supermesh.Position.Y < World.Ground)) return;
+        _supermesh = supermesh;
+        _graphicsDevice = graphicsDevice;
+        PolyType = polyType;
+        _vertexBuffer = new VertexBuffer(graphicsDevice, Mesh.VertexPositionNormalColorCentroid.VertexDeclaration, vertices.Length, BufferUsage.None);
+        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Length, BufferUsage.None);
+        _vertexCount = vertices.Length;
+        _triangleCount = indices.Length / 3;
+        
+        _vertexBuffer.SetDataEXT(vertices);
+        _indexBuffer.SetDataEXT(indices);
+    }
 
-        graphicsDevice.SetVertexBuffer(vertexBuffer);
-        graphicsDevice.Indices = indexBuffer;
-        graphicsDevice.RasterizerState = RasterizerState.CullNone;
+    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
+    {
+        _graphicsDevice.SetVertexBuffers(_vertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
+        _graphicsDevice.Indices = _indexBuffer;
+        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
         
         // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.World?.SetValue(matrixWorld);
-        _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
         _material.SnapColor?.SetValue(World.Snap.ToVector3());
-        _material.IsFullbright?.SetValue((PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn) || supermesh.Glow);
+        _material.IsFullbright?.SetValue((PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn));
         _material.UseBaseColor?.SetValue(PolyType is PolyType.Glass);
         _material.BaseColor?.SetValue(World.Sky.ToVector3());
         _material.LightDirection?.SetValue(World.LightDirection);
@@ -36,50 +55,42 @@ public class Submesh(
         _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
-        _material.GetsShadowed?.SetValue(supermesh.GetsShadowed);
-        _material.Alpha?.SetValue(supermesh.alphaOverride ?? (PolyType is PolyType.Glass ? 0.7f : 1f));
+        _material.Alpha?.SetValue(PolyType is PolyType.Glass ? 0.7f : 1f);
 
-        if (PolyType is PolyType.Glass || supermesh.alphaOverride != null)
-        {
-            // Disable z-write for transparent glass
-            graphicsDevice.DepthStencilState = DepthStencilState.Default;
-            graphicsDevice.BlendState = BlendState.NonPremultiplied;
-        }
+        _graphicsDevice.BlendState = BlendState.NonPremultiplied;
 
         if (lighting?.IsCreateShadowMap == true)
         {
             _material.View?.SetValue(lighting.CascadeLightCamera.ViewMatrix);
             _material.Projection?.SetValue(lighting.CascadeLightCamera.ProjectionMatrix);
-            _material.WorldView?.SetValue(matrixWorld * lighting.CascadeLightCamera.ViewMatrix);
-            _material.WorldViewProj?.SetValue(matrixWorld * lighting.CascadeLightCamera.ViewMatrix * lighting.CascadeLightCamera.ProjectionMatrix);
             _material.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position);
+            _material.ViewProj?.SetValue(lighting.CascadeLightCamera.ViewMatrix * lighting.CascadeLightCamera.ProjectionMatrix);
         }
         else
         {
             _material.View?.SetValue(camera.ViewMatrix);
             _material.Projection?.SetValue(camera.ProjectionMatrix);
-            _material.WorldView?.SetValue(matrixWorld * camera.ViewMatrix);
-            _material.WorldViewProj?.SetValue(matrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
             _material.CameraPosition?.SetValue(camera.Position);
+            _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         }
 
         _material.CurrentTechnique = lighting?.IsCreateShadowMap == true ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
         
         lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
 
-        _material.Expand?.SetValue(supermesh.Flames.Expand);
-        _material.Darken?.SetValue(supermesh.Flames.Darken);
+        _material.Expand?.SetValue(Expand);
+        _material.Darken?.SetValue(Darken);
         _material.RandomFloat?.SetValue(URandom.Single());
         
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();
     
-            graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, vertexCount, 0, triangleCount);
+            _graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, _vertexCount, 0, _triangleCount, instanceCount);
         }
         
-        graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
-        graphicsDevice.DepthStencilState = DepthStencilState.Default;
-        graphicsDevice.BlendState = BlendState.Opaque;
+        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+        _graphicsDevice.BlendState = BlendState.Opaque;
     }
 }

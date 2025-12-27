@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld.Mad;
 
-public class LineMesh
+public class LineMesh : IInstancedRenderElement
 {
     private readonly LineEffect _material = new(Program._lineShader);
     private readonly Mesh _supermesh;
@@ -14,6 +14,9 @@ public class LineMesh
     private readonly int _lineTriangleCount;
     private readonly LineType _lineType;
     private readonly int _lineVertexCount;
+
+    public bool Expand = false;
+    public float Darken = 1.0f;
 
     public LineMesh(
         Mesh supermesh,
@@ -53,11 +56,11 @@ public class LineMesh
 
         var lineVertexBuffer = new VertexBuffer(graphicsDevice,
             LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None);
-        lineVertexBuffer.SetData(data.ToArray());
+        lineVertexBuffer.SetDataEXT(data);
 
         var lineIndexBuffer =
             new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
-        lineIndexBuffer.SetData(indices.ToArray());
+        lineIndexBuffer.SetDataEXT(indices);
 
         var lineVertexCount = data.Count;
         var lineTriangleCount = indices.Count / 3;
@@ -70,19 +73,17 @@ public class LineMesh
         _lineVertexCount = lineVertexCount;
     }
 
-    public void Render(Camera camera, Lighting? lighting, Matrix matrixWorld)
+    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
     {
-        _graphicsDevice.SetVertexBuffer(_lineVertexBuffer);
+        _graphicsDevice.SetVertexBuffers(_lineVertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
         _graphicsDevice.Indices = _lineIndexBuffer;
         _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
 
         // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.World?.SetValue(matrixWorld);
-        _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(matrixWorld)));
         _material.SnapColor?.SetValue(World.Snap.ToVector3());
-        _material.IsFullbright?.SetValue(_supermesh.Glow);
+        _material.IsFullbright?.SetValue(false);
         _material.UseBaseColor?.SetValue(false);
-        _material.BaseColor?.SetValue(new Microsoft.Xna.Framework.Vector3(0, 0, 0));
+        _material.BaseColor?.SetValue(new Vector3(0, 0, 0));
         _material.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
         _material.HalfThickness?.SetValue(World.OutlineThickness);
 
@@ -92,40 +93,30 @@ public class LineMesh
         _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
         _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         _material.DepthBias?.SetValue(0.00005f);
-        _material.GetsShadowed?.SetValue(_supermesh.GetsShadowed);
-        _material.Alpha?.SetValue(_supermesh.alphaOverride ?? 1f);
 
         _material.View?.SetValue(camera.ViewMatrix);
         _material.Projection?.SetValue(camera.ProjectionMatrix);
-        _material.WorldView?.SetValue(matrixWorld * camera.ViewMatrix);
-        _material.WorldViewProj?.SetValue(matrixWorld * camera.ViewMatrix * camera.ProjectionMatrix);
         _material.CameraPosition?.SetValue(camera.Position);
 
         _material.CurrentTechnique = _material.Techniques["Basic"];
 
-        _material.Expand?.SetValue(_supermesh.Flames.Expand);
-        _material.Darken?.SetValue(_supermesh.Flames.Darken);
+        _material.Expand?.SetValue(Expand);
+        _material.Darken?.SetValue(Darken);
         _material.RandomFloat?.SetValue(URandom.Single());
-
-        _material.Glow?.SetValue(_supermesh.Glow);
+        _material.Alpha?.SetValue(1.0f);
 
         lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
-
-        if (_supermesh.alphaOverride != null)
-        {
-            // Disable z-write for transparent glass
-            _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-            _graphicsDevice.BlendState = BlendState.NonPremultiplied;
-        }
+        
+        _graphicsDevice.BlendState = BlendState.NonPremultiplied;
 
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();
 
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineVertexCount, 0, _lineTriangleCount);
+            _graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineVertexCount, 0, _lineTriangleCount, instanceCount);
         }
     }
-    
+
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public readonly record struct LineMeshVertexAttribute(
         Vector3 Position,
@@ -148,5 +139,4 @@ public class LineMesh
             new VertexElement(56, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 2)
         );
     }
-
 }

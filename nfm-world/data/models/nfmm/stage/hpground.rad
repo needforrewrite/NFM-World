@@ -7,6 +7,9 @@ road()
 
 tracks(1)
 
+atp(385,980)
+atp(385,-980)
+
 <track>
 c(177,171,160)
 skid(1)

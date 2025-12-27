@@ -1,9 +1,8 @@
-﻿using Stride.Core.Mathematics;
+﻿namespace NFMWorld.Mad;
 
-namespace NFMWorld.Mad;
-
-public class InGameCar : IRenderable
+public class InGameCar : GameObject
 {
+    public CarInfo ClonedCarInfo;
     public Car CarRef;
     public Mad Mad;
     public Control Control;
@@ -13,17 +12,25 @@ public class InGameCar : IRenderable
 
     public InGameCar(InGameCar copy, int im, bool isClientPlayer)
     {
-        CarRef = new Car(copy.CarRef, new Vector3(0f, World.Ground - copy.CarRef.GroundAt, 0f), Euler.Identity);
+        ClonedCarInfo = copy.CarRef.CarInfo;
+        CarRef = new Car(copy.CarRef.CarInfo, new Vector3(0f, World.Ground - copy.CarRef.GroundAt, 0f), Euler.Identity)
+        {
+            Parent = this
+        };
         Mad = new Mad(copy.Stats, im, isClientPlayer);
         Mad.Reseto(im, CarRef);
         Control = new Control();
         Sfx = new MadSfx(Mad);
     }
 
-    public InGameCar(int im, Car car, int x, int z, bool isClientPlayer)
+    public InGameCar(int im, CarInfo carInfo, int x, int z, bool isClientPlayer)
     {
-        CarRef = new Car(car, new Vector3(x, World.Ground - car.GroundAt, z), Euler.Identity);
-        Mad = new Mad(car.Stats, im, isClientPlayer);
+        ClonedCarInfo = carInfo;
+        CarRef = new Car(carInfo, new Vector3(x, World.Ground - carInfo.GroundAt, z), Euler.Identity)
+        {
+            Parent = this
+        };
+        Mad = new Mad(CarRef.Stats, im, isClientPlayer);
         Mad.Reseto(im, CarRef);
         Control = new Control();
         Sfx = new MadSfx(Mad);
@@ -41,8 +48,27 @@ public class InGameCar : IRenderable
         Mad.Colide(CarRef, otherCar.Mad, otherCar.CarRef);
     }
 
-    public void Render(Camera camera, Lighting? lighting = null)
+    public override void OnBeforeRender()
     {
+        base.OnBeforeRender();
+        CarRef.OnBeforeRender();
+    }
+
+    public override IEnumerable<RenderData> GetRenderData(Lighting? lighting)
+    {
+        foreach (var renderData in base.GetRenderData(lighting))
+        {
+            yield return renderData;
+        }
+        foreach (var renderData in CarRef.GetRenderData(lighting))
+        {
+            yield return renderData;
+        }
+    }
+
+    public override void Render(Camera camera, Lighting? lighting)
+    {
+        base.Render(camera, lighting);
         CarRef.Render(camera, lighting);
     }
 

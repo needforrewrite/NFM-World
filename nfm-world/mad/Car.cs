@@ -1,42 +1,138 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Mad;
-using Stride.Core.Extensions;
+﻿using NFMWorld.Mad;
 using Stride.Core.Mathematics;
 
-public class Car : Mesh
+public class Car : MeshedGameObject
 {
-    public CarStats Stats;
+    public CarInfo CarInfo;
 
-    public Car(GraphicsDevice device, Rad3d rad, string fileName) : base(device, rad, fileName)
+    public CarStats Stats => CarInfo.Stats;
+    private readonly MeshedGameObject[] _wheels;
+
+    public Rad3dWheelDef[] Wheels => CarInfo.Wheels;
+    public Rad3dRimsDef? Rims => CarInfo.Rims;
+    
+    // Stores "brokenness" phase for damageable meshes
+    public readonly float[] Bfase;
+
+    internal readonly Flames Flames;
+    internal readonly Dust Dust;
+    internal readonly Chips Chips;
+    internal readonly Sparks Sparks;
+    
+    public Euler TurningWheelAngle { get; set; }
+    public Euler WheelAngle { get; set; }
+
+    public int GroundAt => Mesh.GroundAt;
+    public int MaxRadius => Mesh.MaxRadius;
+    public string FileName => Mesh.FileName;
+
+    // visually wasted
+    public bool Wasted;
+
+    public Car(CarInfo carInfo) : base(new Mesh(carInfo.Mesh))
     {
-        string? invalidStat = rad.Stats.Validate(fileName);
-        if (invalidStat != null)
+        CarInfo = carInfo;
+        Bfase = new float[carInfo.Mesh.Polys.Length];
+
+        var graphicsDevice = carInfo.GraphicsDevice;
+        _wheels = Array.ConvertAll(Wheels, wheel => new WheelMeshBuilder(wheel, Rims).BuildGameObject(graphicsDevice, this));
+        Flames = new Flames(this, graphicsDevice);
+        Dust = new Dust(this, graphicsDevice);
+        Chips = new Chips(this, graphicsDevice);
+        Sparks = new Sparks(this, graphicsDevice);
+    }
+
+    public Car(CarInfo carInfo, Vector3 position, Euler rotation) : this(carInfo)
+    {
+        Position = position;
+        Rotation = rotation;
+    }
+
+    public override void GameTick()
+    {
+        Flames.GameTick();
+        Dust.GameTick();
+        Chips.GameTick();
+        Sparks.GameTick();
+        base.GameTick();
+    }
+
+    public override IEnumerable<RenderData> GetRenderData(Lighting? lighting)
+    {
+        if (lighting?.IsCreateShadowMap == true && !(CastsShadow || Position.Y < World.Ground)) yield break;
+        
+        for (var i = 0; i < _wheels.Length; i++)
         {
-            Stats = CarStats.Default;
-            if(invalidStat == nameof(Stats.Name) || rad.Stats.Name.IsNullOrEmpty())
+            var wheel = _wheels[i];
+            wheel.Parent = this;
+            if (Wheels[i].Rotates == 11)
             {
-                Stats = Stats with { Name = fileName };
+                wheel.Rotation = TurningWheelAngle;
+            }
+            else
+            {
+                wheel.Rotation = WheelAngle;
+            }
+
+            foreach (var renderData in wheel.GetRenderData(lighting))
+            {
+                yield return renderData;
             }
         }
-        else
+        
+        foreach (var renderData in base.GetRenderData(lighting))
         {
-
-            Stats = rad.Stats;
+            yield return renderData;
         }
     }
 
-    public Car(Car baseCar, Vector3 position, Euler rotation) : base(baseCar, position, rotation)
+    public override void Render(Camera camera, Lighting? lighting)
     {
-        string? invalidStat = baseCar.Stats.Validate(baseCar.Stats.Name);
-        if (invalidStat != null)
+        base.Render(camera, lighting);
+        
+        foreach (var wheel in _wheels)
         {
-            // Name should always be defined by now so dont bother checking for that here
-            Stats = CarStats.Default;
+            wheel.Render(camera, lighting);
         }
-        else
-        {
 
-            Stats = baseCar.Stats;
+        if (lighting?.IsCreateShadowMap != true)
+        {
+            Flames.Render(camera);
+            Dust.Render(camera);
+            Chips.Render(camera);
+            Sparks.Render(camera);
         }
+    }
+
+    public override void OnBeforeRender()
+    {
+        base.OnBeforeRender();
+        
+        foreach (var wheel in _wheels)
+        {
+            wheel.OnBeforeRender();
+        }
+    }
+
+    public void AddDust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
+    {
+        Dust.AddDust(wheelidx, wheelx, wheely, wheelz, scx, scz, simag, tilt, onRoof, wheelGround);
+    }
+
+    public void Chip(int polyIdx, float breakFactor)
+    {
+        Chips.AddChip(polyIdx, breakFactor);
+    }
+
+    public void ChipWasted()
+    {
+        Chips.ChipWasted();
+        // breakFactor = 2.0f
+        // bfase = -7
+    }
+
+    public void Spark(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)
+    {
+        Sparks.AddSpark(wheelx, wheely, wheelz, scx, scy, scz, type, wheelGround);
     }
 }

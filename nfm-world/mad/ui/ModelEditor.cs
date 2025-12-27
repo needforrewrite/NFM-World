@@ -10,7 +10,7 @@ namespace NFMWorld.Mad.UI;
 public class ModelEditorTab
 {
     public string? ModelPath { get; set; }
-    public Mesh? Model { get; set; }
+    public EditorObject? Object { get; set; }
     
     // Text editor state
     public string TextContent { get; set; } = "";
@@ -89,22 +89,25 @@ public class ModelEditorPhase : BasePhase
     private bool _openInNewTab = true;
     
     // Control states (shared across all tabs)
-    private bool _moveForward = false;
-    private bool _moveBackward = false;
-    private bool _rotateLeft = false;
-    private bool _rotateRight = false;
-    private bool _rotatePitchUp = false;
-    private bool _rotatePitchDown = false;
-    private bool _rotateRollLeft = false;
-    private bool _rotateRollRight = false;
-    private bool _raiseUp = false;
-    private bool _lowerDown = false;
+    private bool _zoomIn = false;
+    private bool _zoomOut = false;
+    private bool _orbitLeft = false;
+    private bool _orbitRight = false;
+    private bool _orbitUp = false;
+    private bool _orbitDown = false;
+    private bool _panLeft = false;
+    private bool _panRight = false;
+    private bool _panUp = false;
+    private bool _panDown = false;
+    private bool _zoomInAlt = false;
+    private bool _zoomOutAlt = false;
 
     private bool _lightsOn = true;
     
-    // Rotation speeds
-    private const float ROTATION_SPEED = 3.5f;
-    private const float HEIGHT_SPEED = 5.0f;
+    // Camera control speeds
+    private const float ORBIT_SPEED = 2.0f;  // degrees per frame
+    private const float PAN_SPEED = 3.0f;    // units per frame
+    private const float ZOOM_SPEED = 10.0f;  // units per frame
     
     // Mouse state (shared)
     private int _mouseX;
@@ -114,11 +117,15 @@ public class ModelEditorPhase : BasePhase
     private bool _isShiftPressed = false;
     
     // 3D
-    public static PerspectiveCamera camera = new();
-    
+    public PerspectiveCamera camera = new();
+    private Scene scene;
+    private Scene overlayScene;
+
     public ModelEditorPhase(GraphicsDevice graphicsDevice)
     {
         _graphicsDevice = graphicsDevice;
+        scene = new Scene(graphicsDevice, [], camera, []);
+        overlayScene = new Scene(graphicsDevice, [], camera, []);
         RefreshUserModels();
     }
     
@@ -163,8 +170,6 @@ public class ModelEditorPhase : BasePhase
         
         camera.Position = new Vector3(0, -800, -800);
         camera.LookAt = Vector3.Zero;
-        
-        camera.OnBeforeRender();
         
         GameSparker._graphicsDevice.BlendState = BlendState.Opaque;
         GameSparker._graphicsDevice.DepthStencilState = DepthStencilState.Default;
@@ -407,7 +412,7 @@ public class ModelEditorPhase : BasePhase
         // Try to parse the model, but keep the file loaded even if it fails
         try
         {
-            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(radContent), "editing");
+            tab.Object = new EditorObject(new EditorObjectInfo(GameSparker._graphicsDevice, RadParser.ParseRad(radContent), "editing"));
             ResetTabView(tab);
         }
         catch (Exception parseEx)
@@ -418,7 +423,7 @@ public class ModelEditorPhase : BasePhase
             {
                 GameSparker.Writer.WriteLine($"Parse error in {Path.GetFileName(filePath)}: {parseEx.Message}", "error");
             }
-            tab.Model = null;
+            tab.Object = null;
         }
     }
     
@@ -434,7 +439,7 @@ public class ModelEditorPhase : BasePhase
     
     private void UpdateTabCameraPosition(ModelEditorTab tab)
     {
-        // Position camera in orbit around the origin
+        // Position camera in orbit around the model position
         // Camera orbits at the specified distance
         var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
         var pitchRad = MathUtil.DegreesToRadians(tab.CameraPitch);
@@ -443,7 +448,8 @@ public class ModelEditorPhase : BasePhase
         var y = -tab.CameraDistance * (float)Math.Sin(pitchRad);
         var z = tab.CameraDistance * (float)(Math.Cos(pitchRad) * Math.Cos(yawRad));
         
-        tab.CameraPosition = new Vector3(x, y, -z);
+        // Camera position is relative to the model position
+        tab.CameraPosition = tab.ModelPosition + new Vector3(x, y, -z);
     }
 
     public override void KeyPressed(Keys key, bool imguiWantsKeyboard)
@@ -452,39 +458,55 @@ public class ModelEditorPhase : BasePhase
         if (imguiWantsKeyboard) return;
         if (!_isOpen) return;
         
+        var keyboardState = Microsoft.Xna.Framework.Input.Keyboard.GetState();
+        bool isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || 
+                             keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift);
+        
         switch (key)
         {
             case Keys.W:
-                _moveForward = true;
+                if (isShiftPressed)
+                    _panUp = true;
+                else
+                    _zoomIn = true;  // Zoom in like scroll up
                 break;
             case Keys.S:
-                _moveBackward = true;
+                if (isShiftPressed)
+                    _panDown = true;
+                else
+                    _zoomOut = true;  // Zoom out like scroll down
                 break;
             case Keys.A:
-                _rotateLeft = true;
+                if (isShiftPressed)
+                    _panLeft = true;
+                else
+                    _orbitLeft = true;
                 break;
             case Keys.D:
-                _rotateRight = true;
+                if (isShiftPressed)
+                    _panRight = true;
+                else
+                    _orbitRight = true;
                 break;
             case Keys.Up:
-                _rotatePitchUp = true;
+                _orbitUp = true;
                 break;
             case Keys.Down:
-                _rotatePitchDown = true;
+                _orbitDown = true;
                 break;
             case Keys.Left:
-                _rotateRollLeft = true;
+                _orbitLeft = true;
                 break;
             case Keys.Right:
-                _rotateRollRight = true;
+                _orbitRight = true;
                 break;
             case Keys.Oemplus:
             case Keys.Add:
-                _raiseUp = true;
+                _zoomInAlt = true;
                 break;
             case Keys.OemMinus:
             case Keys.Subtract:
-                _lowerDown = true;
+                _zoomOutAlt = true;
                 break;
         }
     }
@@ -500,36 +522,40 @@ public class ModelEditorPhase : BasePhase
         switch (key)
         {
             case Keys.W:
-                _moveForward = false;
+                _zoomIn = false;
+                _panUp = false;
                 break;
             case Keys.S:
-                _moveBackward = false;
+                _zoomOut = false;
+                _panDown = false;
                 break;
             case Keys.A:
-                _rotateLeft = false;
+                _orbitLeft = false;
+                _panLeft = false;
                 break;
             case Keys.D:
-                _rotateRight = false;
+                _orbitRight = false;
+                _panRight = false;
                 break;
             case Keys.Up:
-                _rotatePitchUp = false;
+                _orbitUp = false;
                 break;
             case Keys.Down:
-                _rotatePitchDown = false;
+                _orbitDown = false;
                 break;
             case Keys.Left:
-                _rotateRollLeft = false;
+                _orbitLeft = false;
                 break;
             case Keys.Right:
-                _rotateRollRight = false;
+                _orbitRight = false;
                 break;
             case Keys.Oemplus:
             case Keys.Add:
-                _raiseUp = false;
+                _zoomInAlt = false;
                 break;
             case Keys.OemMinus:
             case Keys.Subtract:
-                _lowerDown = false;
+                _zoomOutAlt = false;
                 break;
         }
     }
@@ -668,7 +694,7 @@ public class ModelEditorPhase : BasePhase
             _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
             
             // Process click for polygon/collision selection only if it was a simple click, not a drag
-            if (wasClick && !imguiWantsMouse && tab.Model != null)
+            if (wasClick && !imguiWantsMouse && tab.Object != null)
             {
                 if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
                 {
@@ -709,34 +735,35 @@ public class ModelEditorPhase : BasePhase
     
     private int PerformRayPicking(int screenX, int screenY, ModelEditorTab tab)
     {
-        if (tab.Model == null) return -1;
+        if (tab.Object == null) return -1;
         
         var viewport = GameSparker._graphicsDevice.Viewport;
         
         // Set up the model's transform exactly as RenderModel does
-        var originalPosition = tab.Model.Position;
-        var originalRotation = tab.Model.Rotation;
+        var originalPosition = tab.Object.Position;
+        var originalRotation = tab.Object.Rotation;
         
-        tab.Model.Position = tab.ModelPosition;
-        tab.Model.Rotation = new Euler(
+        // Keep model at origin - ModelPosition is only for camera orbit center
+        tab.Object.Position = Vector3.Zero;
+        tab.Object.Rotation = new Euler(
             AngleSingle.FromDegrees(tab.ModelRotation.Y),  // Yaw
             AngleSingle.FromDegrees(-tab.ModelRotation.X), // Pitch (negated)
             AngleSingle.FromDegrees(tab.ModelRotation.Z)   // Roll
         );
         
         // Get the ACTUAL MatrixWorld that will be used for rendering
-        var modelWorld = tab.Model.MatrixWorld;
+        var modelWorld = tab.Object.MatrixWorld;
         
         // Restore transform
-        tab.Model.Position = originalPosition;
-        tab.Model.Rotation = originalRotation;
+        tab.Object.Position = originalPosition;
+        tab.Object.Rotation = originalRotation;
         
         // Set up camera exactly as RenderModel does
         // Use GameSparker.camera's actual Width/Height (not viewport, which might differ)
         var tempCamera = new PerspectiveCamera
         {
             Position = tab.CameraPosition,
-            LookAt = Vector3.Zero,
+            LookAt = tab.ModelPosition,  // Look at the orbit center, not origin
             Up = -Vector3.UnitY,
             Width = camera.Width,
             Height = camera.Height,
@@ -773,10 +800,10 @@ public class ModelEditorPhase : BasePhase
         float closestDistance = float.MaxValue;
         int closestPolyIndex = -1;
         
-        for (int i = 0; i < tab.Model.Polys.Length; i++)
+        for (int i = 0; i < tab.Object.Mesh.Polys.Length; i++)
         {
-            var poly = tab.Model.Polys[i];
-            var triangulation = tab.Model.Triangulation[i];
+            var poly = tab.Object.Mesh.Polys[i];
+            var triangulation = tab.Object.Mesh.Triangulation[i];
             
             // Test each triangle in this polygon
             for (int t = 0; t < triangulation.Triangles.Length; t += 3)
@@ -848,7 +875,7 @@ public class ModelEditorPhase : BasePhase
     
     private int PerformCollisionPicking(int screenX, int screenY, ModelEditorTab tab)
     {
-        if (tab.Model == null || tab.Model.Boxes.Length == 0) return -1;
+        if (tab.Object == null || tab.Object.Boxes.Length == 0) return -1;
         
         var viewport = GameSparker._graphicsDevice.Viewport;
         
@@ -856,7 +883,7 @@ public class ModelEditorPhase : BasePhase
         var tempCamera = new PerspectiveCamera
         {
             Position = tab.CameraPosition,
-            LookAt = Vector3.Zero,
+            LookAt = tab.ModelPosition,  // Look at the orbit center, not origin
             Up = -Vector3.UnitY,
             Width = camera.Width,
             Height = camera.Height,
@@ -892,9 +919,9 @@ public class ModelEditorPhase : BasePhase
         float closestDistance = float.MaxValue;
         int closestBoxIndex = -1;
         
-        for (int i = 0; i < tab.Model.Boxes.Length; i++)
+        for (int i = 0; i < tab.Object.Boxes.Length; i++)
         {
-            var box = tab.Model.Boxes[i];
+            var box = tab.Object.Boxes[i];
             
             // Check if ray intersects this box
             if (RayIntersectsBox(rayOrigin, rayDirection, box, out float distance))
@@ -979,13 +1006,13 @@ public class ModelEditorPhase : BasePhase
     private void FlipSelectedPolygonVertexOrder()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Model == null) return;
+        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Object == null) return;
         
-        var poly = tab.Model.Polys[tab.SelectedPolygonIndex];
+        var poly = tab.Object.Mesh.Polys[tab.SelectedPolygonIndex];
         Array.Reverse(poly.Points);
         
         // Rebuild the mesh with the flipped polygon
-        tab.Model.RebuildMesh();
+        tab.Object.Mesh.RebuildMesh();
         
         // Update the text content to reflect the change
         UpdateTextContentFromModel(tab);
@@ -994,14 +1021,14 @@ public class ModelEditorPhase : BasePhase
     private void RemoveSelectedPolygon()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Model == null) return;
+        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Object == null) return;
         
-        var polyList = tab.Model.Polys.ToList();
+        var polyList = tab.Object.Mesh.Polys.ToList();
         polyList.RemoveAt(tab.SelectedPolygonIndex);
-        tab.Model.Polys = polyList.ToArray();
+        tab.Object.Mesh.Polys = polyList.ToArray();
         
         // Rebuild the mesh
-        tab.Model.RebuildMesh();
+        tab.Object.Mesh.RebuildMesh();
         
         // Update the text content to reflect the change
         UpdateTextContentFromModel(tab);
@@ -1013,7 +1040,7 @@ public class ModelEditorPhase : BasePhase
     private void JumpToSelectedPolygonInText()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Model == null) return;
+        if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Object == null) return;
         
         // Find the polygon in the text by searching for <p> tags and counting
         int polygonCount = 0;
@@ -1091,7 +1118,7 @@ public class ModelEditorPhase : BasePhase
     private void JumpToSelectedCollisionInText()
     {
         var tab = ActiveTab;
-        if (tab == null || tab.SelectedCollisionIndex < 0 || tab.Model == null) return;
+        if (tab == null || tab.SelectedCollisionIndex < 0 || tab.Object == null) return;
         
         // Find the collision box in the text by searching for <track> tags and counting
         int collisionCount = 0;
@@ -1168,7 +1195,7 @@ public class ModelEditorPhase : BasePhase
     
     private void UpdateTextContentFromModel(ModelEditorTab tab)
     {
-        if (tab.Model == null) return;
+        if (tab.Object == null) return;
         
         // Don't regenerate from scratch - this would lose comments and formatting
         // Instead, this method should only be called when we've done structural changes
@@ -1178,7 +1205,7 @@ public class ModelEditorPhase : BasePhase
         sb.AppendLine("// Modified in Model Editor");
         sb.AppendLine();
         
-        foreach (var poly in tab.Model.Polys)
+        foreach (var poly in tab.Object.Mesh.Polys)
         {
             sb.AppendLine("<p>");
             sb.AppendLine($"c({poly.Color.R},{poly.Color.G},{poly.Color.B})");
@@ -1206,41 +1233,79 @@ public class ModelEditorPhase : BasePhase
         var tab = ActiveTab;
         if (tab == null) return;
         
-        var pos = tab.ModelPosition;
-        var rot = tab.ModelRotation;
+        // Apply camera orbit (A/D and Arrow keys)
+        if (_orbitLeft)
+            tab.CameraYaw -= ORBIT_SPEED;
+        if (_orbitRight)
+            tab.CameraYaw += ORBIT_SPEED;
+        if (_orbitUp)
+        {
+            tab.CameraPitch += ORBIT_SPEED;
+            tab.CameraPitch = Math.Clamp(tab.CameraPitch, -89f, 89f);
+        }
+        if (_orbitDown)
+        {
+            tab.CameraPitch -= ORBIT_SPEED;
+            tab.CameraPitch = Math.Clamp(tab.CameraPitch, -89f, 89f);
+        }
         
-        // Apply movement
-        if (_moveForward)
-            pos.Z += HEIGHT_SPEED;
-        if (_moveBackward)
-            pos.Z -= HEIGHT_SPEED;
+        // Apply panning (Shift+WASD for all directions)
+        if (_panLeft || _panRight || _panUp || _panDown)
+        {
+            var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
+            var pitchRad = MathUtil.DegreesToRadians(tab.CameraPitch);
+            
+            // Camera right vector (for horizontal panning)
+            var rightX = (float)Math.Cos(yawRad);
+            var rightZ = (float)Math.Sin(yawRad);
+            
+            // Camera up vector (for vertical panning)
+            var upX = -(float)(Math.Sin(pitchRad) * Math.Sin(yawRad));
+            var upY = (float)Math.Cos(pitchRad);
+            var upZ = -(float)(Math.Sin(pitchRad) * Math.Cos(yawRad));
+            
+            var pos = tab.ModelPosition;
+            
+            // Sideways panning (Shift+A/D)
+            if (_panLeft)
+            {
+                pos.X += rightX * PAN_SPEED;
+                pos.Z += rightZ * PAN_SPEED;
+            }
+            if (_panRight)
+            {
+                pos.X -= rightX * PAN_SPEED;
+                pos.Z -= rightZ * PAN_SPEED;
+            }
+            
+            // Height panning (Shift+W/S)
+            if (_panUp)
+            {
+                pos.X -= upX * PAN_SPEED;
+                pos.Y -= upY * PAN_SPEED;
+                pos.Z -= upZ * PAN_SPEED;
+            }
+            if (_panDown)
+            {
+                pos.X += upX * PAN_SPEED;
+                pos.Y += upY * PAN_SPEED;
+                pos.Z += upZ * PAN_SPEED;
+            }
+            
+            tab.ModelPosition = pos;
+        }
         
-        // Apply yaw rotation (A/D)
-        if (_rotateLeft)
-            rot.Y -= ROTATION_SPEED;
-        if (_rotateRight)
-            rot.Y += ROTATION_SPEED;
-        
-        // Apply pitch rotation (Up/Down arrows)
-        if (_rotatePitchUp)
-            rot.X -= ROTATION_SPEED;
-        if (_rotatePitchDown)
-            rot.X += ROTATION_SPEED;
-        
-        // Apply roll rotation (Left/Right arrows)
-        if (_rotateRollLeft)
-            rot.Z -= ROTATION_SPEED;
-        if (_rotateRollRight)
-            rot.Z += ROTATION_SPEED;
-        
-        // Apply height changes (+/-)
-        if (_raiseUp)
-            pos.Y += HEIGHT_SPEED;
-        if (_lowerDown)
-            pos.Y -= HEIGHT_SPEED;
-        
-        tab.ModelPosition = pos;
-        tab.ModelRotation = rot;
+        // Apply camera zoom (W/S and +/- keys)
+        if (_zoomIn || _zoomInAlt)
+        {
+            tab.CameraDistance -= ZOOM_SPEED;
+            tab.CameraDistance = Math.Clamp(tab.CameraDistance, 100f, 10000f);
+        }
+        if (_zoomOut || _zoomOutAlt)
+        {
+            tab.CameraDistance += ZOOM_SPEED;
+            tab.CameraDistance = Math.Clamp(tab.CameraDistance, 100f, 10000f);
+        }
         
         UpdateTabCameraPosition(tab);
     }
@@ -1386,7 +1451,7 @@ public class ModelEditorPhase : BasePhase
                             System.IO.File.WriteAllText(tab.ModelPath, tab.TextContent);
                             tab.TextEditorDirty = false;
                             // Reload model
-                            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing");
+                            tab.Object = new EditorObject(new EditorObjectInfo(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing"));
                         }
                     }
                     catch (Exception ex)
@@ -1409,7 +1474,7 @@ public class ModelEditorPhase : BasePhase
                             System.IO.File.WriteAllText(tab.ModelPath, tab.TextContent);
                             tab.TextEditorDirty = false;
                             // Reload model
-                            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing");
+                            tab.Object = new EditorObject(new EditorObjectInfo(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing"));
                             tab.TextEditorExpanded = false;
                         }
                     }
@@ -1456,7 +1521,7 @@ public class ModelEditorPhase : BasePhase
             }
             
             // Polygon/Collision selection info and controls (always visible when model is loaded)
-            if (tab.Model != null)
+            if (tab.Object != null)
             {
                 ImGui.Separator();
                 
@@ -1479,15 +1544,15 @@ public class ModelEditorPhase : BasePhase
                         tab.SelectedPolygonIndex = -1;
                     }
                     ImGui.SameLine();
-                    ImGui.TextDisabled($"({tab.Model.Boxes.Length} collision boxes)");
+                    // ImGui.TextDisabled($"({tab.Model.Boxes.Length} collision boxes)");
                 }
                 
                 // Polygon editing UI
                 if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
                 {
-                    if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)
+                    if (tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Object.Mesh.Polys.Length)
                     {
-                        ImGui.Text($"[ Piece {tab.SelectedPolygonIndex + 1} of {tab.Model.Polys.Length} selected ]");
+                        ImGui.Text($"[ Piece {tab.SelectedPolygonIndex + 1} of {tab.Object.Mesh.Polys.Length} selected ]");
                         ImGui.SameLine();
                         
                         if (ImGui.Button("Edit Polygon"))
@@ -1527,10 +1592,10 @@ public class ModelEditorPhase : BasePhase
                 // Collision editing UI
                 else if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
                 {
-                    if (tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Model.Boxes.Length)
+                    if (tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Object.Boxes.Length)
                     {
-                        var box = tab.Model.Boxes[tab.SelectedCollisionIndex];
-                        ImGui.Text($"[ Collision {tab.SelectedCollisionIndex + 1} of {tab.Model.Boxes.Length} selected ]");
+                        var box = tab.Object.Boxes[tab.SelectedCollisionIndex];
+                        ImGui.Text($"[ Collision {tab.SelectedCollisionIndex + 1} of {tab.Object.Boxes.Length} selected ]");
                         ImGui.SameLine();
                         
                         if (ImGui.Button("Edit Collision"))
@@ -1613,11 +1678,12 @@ public class ModelEditorPhase : BasePhase
                     
                     // Left column - Keyboard controls
                     ImGui.Text("Keyboard Controls:");
-                    ImGui.Text("W/S: Move Forward/Back");
-                    ImGui.Text("A/D: Rotate Yaw");
-                    ImGui.Text("Up/Down: Rotate Pitch");
-                    ImGui.Text("Left/Right: Rotate Roll");
-                    ImGui.Text("+/-: Move Up/Down");
+                    ImGui.Text("W/S: Zoom In/Out");
+                    ImGui.Text("A/D: Orbit Left/Right");
+                    ImGui.Text("Shift+W/S: Pan Up/Down");
+                    ImGui.Text("Shift+A/D: Pan Left/Right");
+                    ImGui.Text("Arrows: Orbit Camera");
+                    ImGui.Text("+/-: Zoom In/Out");
                     
                     ImGui.NextColumn();
                     
@@ -1920,7 +1986,7 @@ public class ModelEditorPhase : BasePhase
                             var isCurrentModel = activeTab != null && activeTab.ModelPath != null && 
                                 activeTab.ModelPath.EndsWith(file.Replace('/', '\\'));
                             
-                            if (ImGui.Selectable($"  {fileName}", isCurrentModel))
+                            if (ImGui.Selectable($"  {fileName}##{file}", isCurrentModel))
                             {
                                 LoadModel(file, _openInNewTab);
                                 _showLoadDialog = false;
@@ -1942,7 +2008,7 @@ public class ModelEditorPhase : BasePhase
                             var isCurrentModel = activeTab != null && activeTab.ModelPath != null && 
                                 activeTab.ModelPath.EndsWith(file.Replace('/', '\\'));
                             
-                            if (ImGui.Selectable($"  {fileName}", isCurrentModel))
+                            if (ImGui.Selectable($"  {fileName}##{file}", isCurrentModel))
                             {
                                 LoadModel(file, _openInNewTab);
                                 _showLoadDialog = false;
@@ -2002,11 +2068,11 @@ public class ModelEditorPhase : BasePhase
         {
             if (editingCollision)
             {
-                ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Model?.Boxes.Length ?? 0}");
+                ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Object?.Boxes.Length ?? 0}");
             }
             else
             {
-                ImGui.Text($"Editing polygon {tab.SelectedPolygonIndex + 1} of {tab.Model?.Polys.Length ?? 0}");
+                ImGui.Text($"Editing polygon {tab.SelectedPolygonIndex + 1} of {tab.Object?.Mesh.Polys.Length ?? 0}");
             }
             ImGui.Separator();
             
@@ -2224,7 +2290,7 @@ public class ModelEditorPhase : BasePhase
         // Try to reload the model with the new code
         try
         {
-            tab.Model = new Mesh(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing");
+            tab.Object = new EditorObject(new EditorObjectInfo(GameSparker._graphicsDevice, RadParser.ParseRad(tab.TextContent), "editing"));
             tab.PolygonEditorDirty = false;
             
             if (removeElement)
@@ -2284,7 +2350,7 @@ public class ModelEditorPhase : BasePhase
 
     public void ExitModelViewer()
     {
-        GameSparker.ExitModelViewer();
+        GameSparker.ExitEditor();
     }
     
     public override void RenderAfterSkia()
@@ -2292,42 +2358,40 @@ public class ModelEditorPhase : BasePhase
         base.RenderAfterSkia();
         
         var tab = ActiveTab;
-        if (!_isOpen || tab == null || tab.Model == null) return;
+        if (!_isOpen || tab == null || tab.Object == null) return;
         
         _graphicsDevice.BlendState = BlendState.Opaque;
         _graphicsDevice.DepthStencilState = DepthStencilState.Default;
 
-        // Set up camera with fixed orientation (looking at origin)
+        // Set up camera to orbit around and look at the model position
         camera.Position = tab.CameraPosition;
-        camera.LookAt = Vector3.Zero; // Always look at origin, not the model position
+        camera.LookAt = tab.ModelPosition; // Look at the orbit center (which can be panned)
         
         // Store original transform
-        var originalPosition = tab.Model.Position;
-        var originalRotation = tab.Model.Rotation;
+        var originalPosition = tab.Object.Position;
+        var originalRotation = tab.Object.Rotation;
         
-        // Apply our transform to the main model
-        tab.Model.Position = tab.ModelPosition;
+        // Keep the model at the origin - don't apply ModelPosition
+        // ModelPosition is used only for camera orbit center, not mesh position
+        tab.Object.Position = Vector3.Zero;
         // Euler constructor is (yaw, pitch, roll)
-        tab.Model.Rotation = new Euler(
+        tab.Object.Rotation = new Euler(
             AngleSingle.FromDegrees(tab.ModelRotation.Y),  // Yaw (Y-axis rotation)
             AngleSingle.FromDegrees(-tab.ModelRotation.X), // Pitch (X-axis rotation, negated for correct direction)
             AngleSingle.FromDegrees(tab.ModelRotation.Z)   // Roll (Z-axis rotation)
         );
         
-        // Prepare list of models to render
-        var modelsToRender = new List<IRenderable>();
-        
-        // Add the main model
-        modelsToRender.Add(tab.Model);
+        scene.Objects.Clear();
+        scene.Objects.Add(tab.Object);
         
         // Render main model first
-        var scene = new Scene(GameSparker._graphicsDevice, modelsToRender.ToArray(), camera, []);
         scene.Render(false);
         
         // Render reference car overlay with transparency (rendered separately after main model)
-        if (tab.ShowReferenceOverlay && tab.ReferenceCarIndex >= 0 && tab.ReferenceCarIndex < GameSparker.cars.Count)
+        if (tab.ShowReferenceOverlay && tab.ReferenceCarIndex >= 0 && tab.ReferenceCarIndex < GameSparker.cars[Collection.NFMM].Count)
         {
-            var referenceCar = GameSparker.cars[tab.ReferenceCarIndex];
+            // TODO optimize by caching reference car object instead of recreating each frame
+            var referenceCar = new Car(GameSparker.cars[Collection.NFMM][tab.ReferenceCarIndex]);
             if (referenceCar != null)
             {
                 // Store original state
@@ -2335,18 +2399,7 @@ public class ModelEditorPhase : BasePhase
                 var originalRefRotation = referenceCar.Rotation;
                 var previousBlendState = _graphicsDevice.BlendState;
                 var previousDepthState = _graphicsDevice.DepthStencilState;
-                
-                // Store original PolyTypes and set all to Glass for alpha blending
-                var originalPolyTypes = new PolyType[referenceCar.Polys.Length];
-                for (int i = 0; i < referenceCar.Polys.Length; i++)
-                {
-                    originalPolyTypes[i] = referenceCar.Polys[i].PolyType;
-                    referenceCar.Polys[i] = referenceCar.Polys[i] with { PolyType = PolyType.Glass };
-                }
-                
-                // Rebuild mesh to apply the polytype changes
-                referenceCar.RebuildMesh();
-                
+
                 // Position reference car at same location as main model
                 referenceCar.Position = tab.ModelPosition;
                 referenceCar.Rotation = new Euler(
@@ -2367,15 +2420,11 @@ public class ModelEditorPhase : BasePhase
                 };
                 _graphicsDevice.DepthStencilState = depthOff;
                 
-                referenceCar.alphaOverride = tab.ReferenceOpacity;
-                referenceCar.Render(camera);
+                referenceCar.AlphaOverride = tab.ReferenceOpacity;
                 
-                // Restore original PolyTypes
-                for (int i = 0; i < referenceCar.Polys.Length; i++)
-                {
-                    referenceCar.Polys[i] = referenceCar.Polys[i] with { PolyType = originalPolyTypes[i] };
-                }
-                referenceCar.RebuildMesh();
+                overlayScene.Objects.Clear();
+                overlayScene.Objects.Add(referenceCar);
+                overlayScene.Render(false, false);
                 
                 // Restore states
                 _graphicsDevice.BlendState = previousBlendState;
@@ -2387,29 +2436,29 @@ public class ModelEditorPhase : BasePhase
         
         // Render selected polygon overlay with transparency
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon && 
-            tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Model.Polys.Length)
+            tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex < tab.Object.Mesh.Polys.Length)
         {
             RenderSelectionOverlay(tab);
         }
         
         // Render selected collision box overlay
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision && 
-            tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Model.Boxes.Length)
+            tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Object.Boxes.Length)
         {
             RenderCollisionSelectionOverlay(camera, tab);
         }
         
         // Restore original transform
-        tab.Model.Position = originalPosition;
-        tab.Model.Rotation = originalRotation;
+        tab.Object.Position = originalPosition;
+        tab.Object.Rotation = originalRotation;
     }
     
     private void RenderSelectionOverlay(ModelEditorTab tab)
     {
-        if (tab.Model == null || tab.SelectedPolygonIndex < 0) return;
+        if (tab.Object == null || tab.SelectedPolygonIndex < 0) return;
         
         // Create a temporary mesh with only the selected polygon
-        var selectedPoly = tab.Model.Polys[tab.SelectedPolygonIndex];
+        var selectedPoly = tab.Object.Mesh.Polys[tab.SelectedPolygonIndex];
         
         // Make it bright cyan/yellow with semi-transparency for visibility
         var highlightPoly = selectedPoly with { 
@@ -2420,15 +2469,15 @@ public class ModelEditorPhase : BasePhase
         var overlayPolys = new Rad3dPoly[] { highlightPoly };
         
         // Create a temporary mesh for the overlay
-        var overlayMesh = new Mesh(
+        var overlayMesh = new EditorObject(new EditorObjectInfo(
             GameSparker._graphicsDevice,
             new Rad3d(overlayPolys, false),
             "overlay"
-        );
+        ));
         
         // Match the main model's transform
-        overlayMesh.Position = tab.Model.Position;
-        overlayMesh.Rotation = tab.Model.Rotation;
+        overlayMesh.Position = tab.Object.Position;
+        overlayMesh.Rotation = tab.Object.Rotation;
         
         // Save current blend state
         var oldBlendState = GameSparker._graphicsDevice.BlendState;
@@ -2445,7 +2494,9 @@ public class ModelEditorPhase : BasePhase
         GameSparker._graphicsDevice.DepthStencilState = depthRead;
         
         // Render the overlay
-        overlayMesh.Render(camera);
+        overlayScene.Objects.Clear();
+        overlayScene.Objects.Add(overlayMesh);
+        overlayScene.Render(false, false);
         
         // Restore previous states
         GameSparker._graphicsDevice.BlendState = oldBlendState;
@@ -2454,23 +2505,26 @@ public class ModelEditorPhase : BasePhase
     
     private void RenderCollisionSelectionOverlay(PerspectiveCamera camera, ModelEditorTab tab)
     {
-        if (tab.Model == null || tab.SelectedCollisionIndex < 0) return;
+        if (tab.Object == null || tab.SelectedCollisionIndex < 0) return;
         
         // Create a highlighted collision box mesh for the selected collision
-        var selectedBox = tab.Model.Boxes[tab.SelectedCollisionIndex];
+        var selectedBox = tab.Object.Boxes[tab.SelectedCollisionIndex];
         var highlightedBox = selectedBox with { 
             Color = new Color3(255, 255, 0) // Yellow highlight
         };
         
-        var highlightBoxes = new Rad3dBoxDef[] { highlightedBox };
+        var highlightBoxes = new[] { highlightedBox };
         var highlightMesh = new CollisionDebugMesh(highlightBoxes);
         
         // Match the main model's transform
-        highlightMesh.Position = tab.Model.Position;
-        highlightMesh.Rotation = tab.Model.Rotation;
+        highlightMesh.Position = tab.Object.Position;
+        highlightMesh.Rotation = tab.Object.Rotation;
         
         // Render with highlighting
-        highlightMesh.Render(camera);
+        var oldDevRenderTrackers = GameSparker.devRenderTrackers;
+        GameSparker.devRenderTrackers = true;
+        highlightMesh.Render(camera, null);
+        GameSparker.devRenderTrackers = oldDevRenderTrackers;
     }
     
     public override void WindowSizeChanged(int width, int height)

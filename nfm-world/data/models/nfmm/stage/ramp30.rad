@@ -7,6 +7,9 @@ road()
 
 tracks(4)
 
+atp(0,0)
+atp(0,-600)
+
 <track>
 c(147,147,147)
 zy(-30)

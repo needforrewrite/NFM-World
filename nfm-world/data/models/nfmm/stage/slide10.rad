@@ -7,6 +7,9 @@ road()
 
 tracks(5)
 
+atp(0,3309)
+atp(0,-1680)
+
 <track>
 xy(-90)
 dam()

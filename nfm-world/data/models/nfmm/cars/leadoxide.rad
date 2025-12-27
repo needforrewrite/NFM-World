@@ -24,6 +24,10 @@ outdam(0.82)
 name(Lead Oxide)
 enginsignature(2)
 
+class(B)
+author(Omar Waly)
+desc(hogan rewish)
+
 div(17)
 shadow()
 

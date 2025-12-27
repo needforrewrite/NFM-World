@@ -6,6 +6,9 @@ grounded(189)
 
 tracks(6)
 
+atp(0,-1750)
+atp(1750,0)
+
 <track>
 c(191,159,100)
 skid(2)
