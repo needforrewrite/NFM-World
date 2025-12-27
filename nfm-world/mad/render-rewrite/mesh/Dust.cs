@@ -5,7 +5,7 @@ namespace NFMWorld.Mad;
 
 public class Dust
 {
-    private readonly Mesh _mesh;
+    private readonly Car _car;
     private readonly GraphicsDevice _graphicsDevice;
 
     private int _ust;
@@ -26,9 +26,9 @@ public class Dust
     private int _indexCount;
     private readonly BasicEffect _effect;
 
-    public Dust(Mesh mesh, GraphicsDevice graphicsDevice)
+    public Dust(Car car, GraphicsDevice graphicsDevice)
     {
-        _mesh = mesh;
+        _car = car;
         _graphicsDevice = graphicsDevice;
 
         _effect = new BasicEffect(graphicsDevice)
@@ -65,14 +65,14 @@ public class Dust
             if (!onRoof)
             {
                 var rand = URandom.Single();
-                Sx[_ust] = ((wheelx + _mesh.Position.X * rand) / (1.0F + rand));
-                Sz[_ust] = ((wheelz + _mesh.Position.Z * rand) / (1.0F + rand));
-                Sy[_ust] = ((wheely + (_mesh.Position.Y - wheelGround) * rand) / (1.0F + rand));
+                Sx[_ust] = ((wheelx + _car.Position.X * rand) / (1.0F + rand));
+                Sz[_ust] = ((wheelz + _car.Position.Z * rand) / (1.0F + rand));
+                Sy[_ust] = ((wheely + (_car.Position.Y - wheelGround) * rand) / (1.0F + rand));
             }
             else
             {
-                Sx[_ust] = ((wheelx + (_mesh.Position.X + scx)) / 2.0F);
-                Sz[_ust] = ((wheelz + (_mesh.Position.Z + scz)) / 2.0F);
+                Sx[_ust] = ((wheelx + (_car.Position.X + scx)) / 2.0F);
+                Sz[_ust] = ((wheelz + (_car.Position.Z + scz)) / 2.0F);
                 Sy[_ust] = wheely;
             }
             if (Sy[wheelidx] > 250)
@@ -117,24 +117,6 @@ public class Dust
                 {
                     baseColor[i] = 0;
                 }
-            }
-            var i210 = (_mesh.Position.X - Trackers.Sx) / 3000;
-            if (i210 > Trackers.Ncx)
-            {
-                i210 = Trackers.Ncx;
-            }
-            if (i210 < 0)
-            {
-                i210 = 0;
-            }
-            var i211 = (_mesh.Position.Z - Trackers.Sz) / 3000;
-            if (i211 > Trackers.Ncz)
-            {
-                i211 = Trackers.Ncz;
-            }
-            if (i211 < 0)
-            {
-                i211 = 0;
             }
             for (var i213 = 0; i213 < Trackers.Nt; i213++)
             {

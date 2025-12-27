@@ -24,6 +24,10 @@ outdam(0.5)
 name(La Vita Crab)
 enginsignature(1)
 
+class(C)
+author(Omar Waly)
+desc(hogan rewish)
+
 div(17)
 shadow()
 

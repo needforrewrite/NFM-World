@@ -4,11 +4,13 @@ namespace NFMWorld.Mad;
 
 public class Transform
 {
+    public IReadOnlyList<GameObject> Children { get; set; } = [];
+
     public Vector3 Position {
         get;
         set
         {
-            _matrixWorldNeedsUpdate = true;
+            MatrixWorldNeedsUpdate = true;
             field = value;
         }
     } = Vector3.Zero;
@@ -16,7 +18,7 @@ public class Transform
         get;
         set
         {
-            _matrixWorldNeedsUpdate = true;
+            MatrixWorldNeedsUpdate = true;
             field = value;
         }
     } = new();
@@ -26,16 +28,16 @@ public class Transform
         get;
         set
         {
-            _matrixWorldNeedsUpdate = true;
+            MatrixWorldNeedsUpdate = true;
             field = value;
         }
     }
 
-    public virtual Matrix MatrixWorld
+    public Matrix MatrixWorld
     {
         get
         {
-            if (_matrixWorldNeedsUpdate)
+            if (MatrixWorldNeedsUpdate)
             {
                 var ownMatrixWorld = Matrix.CreateFromEuler(Rotation) * Matrix.CreateTranslation(Position);
                 if (Parent != null)
@@ -44,15 +46,19 @@ public class Transform
                 }
 
                 field = ownMatrixWorld;
-                _matrixWorldNeedsUpdate = false;
+                MatrixWorldNeedsUpdate = false;
             }
 
             return field;
         }
     }
 
-    private bool _matrixWorldNeedsUpdate = true;
-    
+    private bool MatrixWorldNeedsUpdate
+    {
+        get => field || (Parent?.MatrixWorldNeedsUpdate ?? false);
+        set;
+    } = true;
+
     public virtual void GameTick()
     {
     }

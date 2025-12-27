@@ -1,0 +1,16 @@
+
+// car: InvisWall3
+---------------------
+
+// To start making you car you must start by reading the tutorial at:
+// http://www.needformadness.com/developer/simplecar.html
+
+
+tracks(1)
+
+<track>
+xy(-90)
+radx(400)
+rady(3000)
+radz(5600)
+</track>
