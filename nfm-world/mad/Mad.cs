@@ -2107,7 +2107,7 @@ public class Mad
                         Power += Powerup;
 
                         // dont invoke powerup if we only did a surf...
-                        if(!JustSurfer) PowerUp(this, (float)Powerup);
+                        if(!JustSurfer) PowerUp?.Invoke(this, (float)Powerup);
                         
                         /*if (Im == XTGraphics.Im && (int) Powerup > Record.Powered && Record.Wasted == 0 &&
                             (Powerup > (fix64)(60.0F) || CheckPoints.Stage == 1 || CheckPoints.Stage == 2))
