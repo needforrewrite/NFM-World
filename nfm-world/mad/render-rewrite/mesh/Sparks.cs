@@ -43,11 +43,32 @@ public class Sparks
         _material = new LineEffect(Program._lineShader);
 
         _sprkat = _car.Wheels.FirstOrDefault().Sparkat;
-        
-        _vertexBuffer = new DynamicVertexBuffer(graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration, 100 * LineMeshHelpers.VerticesPerLine, BufferUsage.WriteOnly);
-        _indexBuffer = new DynamicIndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, 100 * LineMeshHelpers.IndicesPerLine, BufferUsage.WriteOnly);
-        _instanceBuffer = new VertexBuffer(graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.None);
+
+        _vertexBuffer = new DynamicVertexBuffer(graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration,
+            100 * LineMeshHelpers.VerticesPerLine, BufferUsage.WriteOnly)
+        {
+            Name = "Sparks Vertex Buffer",
+            Tag = this
+        };
+        _indexBuffer = new DynamicIndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits,
+            100 * LineMeshHelpers.IndicesPerLine, BufferUsage.WriteOnly)
+        {
+            Name = "Sparks Index Buffer",
+            Tag = this
+        };
+        _instanceBuffer = new VertexBuffer(graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.None)
+        {
+            Name = "Sparks Instance Buffer",
+            Tag = this
+        };
         _instanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(Matrix.Identity)]);
+    }
+    
+    ~Sparks()
+    {
+        _vertexBuffer.Dispose();
+        _indexBuffer.Dispose();
+        _instanceBuffer.Dispose();
     }
     
     public void AddSpark(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)

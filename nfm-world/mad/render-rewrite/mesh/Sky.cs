@@ -50,7 +50,11 @@ public class Sky : Transform, IImmediateRenderable
             data.Add(new VertexPositionColor(vertices[3].Position, new Microsoft.Xna.Framework.Color(vertices[3].Color)));
         }
 
-        var vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None);
+        var vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None)
+        {
+            Name = "Sky Vertex Buffer",
+            Tag = this
+        };
         vertexBuffer.SetDataEXT(data);
         _vertexBuffer = vertexBuffer;
 
@@ -62,6 +66,11 @@ public class Sky : Transform, IImmediateRenderable
         static float Fade(int i) {
             return World.FadeFrom / 2f * (i + 1);
         }
+    }
+
+    ~Sky()
+    {
+        _vertexBuffer.Dispose();
     }
     
     public void Render(Camera camera, Lighting? lighting = null)

@@ -24,7 +24,7 @@ public class Scene
         Objects = [..objects];
         _renderDataCache = new RenderDataCache(graphicsDevice);
     }
-
+    
     public void Render(bool useShadowMapping, bool clearRenderBuffer = true)
     {
         _camera.OnBeforeRender();
@@ -87,6 +87,15 @@ public class Scene
 
         // dict of render order -> (dict of render element -> cached render data)
         private SortedDictionary<int, Dictionary<IInstancedRenderElement, CachedRenderData>> _cache = new();
+
+        ~RenderDataCache()
+        {
+            foreach (var (_, innerCache) in _cache)
+            foreach (var (_, data) in innerCache)
+            {
+                data.VertexBuffer?.Dispose();
+            }
+        }
 
         private static int GetHashCode(ReadOnlySpan<RenderData> renderData)
         {
@@ -194,7 +203,11 @@ public class Scene
                     if (cachedRenderData.VertexBuffer == null || cachedRenderData.VertexBuffer.VertexCount < instances.Count)
                     {
                         cachedRenderData.VertexBuffer?.Dispose();
-                        cachedRenderData.VertexBuffer = new DynamicVertexBuffer(graphicsDevice, InstanceData.InstanceDeclaration, instances.Count, BufferUsage.WriteOnly);
+                        cachedRenderData.VertexBuffer = new DynamicVertexBuffer(graphicsDevice, InstanceData.InstanceDeclaration, instances.Count, BufferUsage.WriteOnly)
+                        {
+                            Name = "Instance Data Vertex Buffer",
+                            Tag = this
+                        };
                     }
 
                     cachedRenderData.VertexBuffer.SetDataEXT(instanceDataArraySpan, SetDataOptions.Discard);
