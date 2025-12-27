@@ -198,7 +198,7 @@ public class Scene
                         cachedRenderData.VertexBuffer = new DynamicVertexBuffer(graphicsDevice, InstanceData.InstanceDeclaration, instances.Count, BufferUsage.WriteOnly);
                     }
 
-                    cachedRenderData.VertexBuffer.SetDataEXT(instanceDataArraySpan, SetDataOptions.NoOverwrite);
+                    cachedRenderData.VertexBuffer.SetDataEXT(instanceDataArraySpan, SetDataOptions.Discard);
                     cachedRenderData.HashCode = currentHashCode;
                     
                     // Swap old and new instance lists

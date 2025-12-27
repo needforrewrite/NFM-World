@@ -215,8 +215,8 @@ public class Sparks
 
             if (_vertexCount > 0 && _triangleCount > 0)
             {
-                _vertexBuffer.SetDataEXT(_lineVertices.AsSpan(0, _vertexCount), SetDataOptions.NoOverwrite);
-                _indexBuffer.SetDataEXT(_lineIndices.AsSpan(0, _triangleCount * 3), SetDataOptions.NoOverwrite);
+                _vertexBuffer.SetDataEXT(_lineVertices.AsSpan(0, _vertexCount), SetDataOptions.Discard);
+                _indexBuffer.SetDataEXT(_lineIndices.AsSpan(0, _triangleCount * 3), SetDataOptions.Discard);
             }
         }
         Sprk = 0;
