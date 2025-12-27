@@ -33,7 +33,7 @@ public class Transform
         }
     }
 
-    public virtual Matrix MatrixWorld
+    public Matrix MatrixWorld
     {
         get
         {
@@ -57,7 +57,7 @@ public class Transform
     {
         get => field || (Parent?.MatrixWorldNeedsUpdate ?? false);
         set;
-    }
+    } = true;
 
     public virtual void GameTick()
     {
