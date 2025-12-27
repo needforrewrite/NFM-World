@@ -6,7 +6,7 @@ using NFMWorld.Mad.UI.yoga;
 using NFMWorld.Util;
 using Stride.Core.Extensions;
 
-public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
+public class GaragePhase(GraphicsDevice graphicsDevice) : BaseStageRenderingPhase(graphicsDevice)
 {
     /// <summary>
     /// This should be hooked onto by the calling phase, so that the calling phase can be restored upon car selection.
@@ -19,8 +19,6 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     /// Indicates no selection was made; retain existing car, if any.
     /// </summary>
     public event EventHandler? CarSelectionCancelled;
-
-    private Scene _garageScene = null!;
 
     private int _selectedCarIdx = 0;
 
@@ -78,13 +76,28 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
     private void SetupCurrentCar()
     {
+        string[] stages = Directory.GetFiles("data/stages", "*.*", SearchOption.AllDirectories);
+        string stagePath = "";
+        while(stagePath.IsNullOrEmpty() || stagePath.Contains("rar2"))
+        {
+            stagePath = stages[(int)(URandom.Double() * stages.Length)];
+        }
+
+        string dir = new FileInfo(stagePath).Directory?.Name ?? "";
+        if(dir == "stages") dir = "";
+        else dir += "/";
+
+        LoadStage(dir + Path.GetFileNameWithoutExtension(stagePath), false);
+
         _car = new Car(_cars[_selectedCarIdx]);
-        _garageScene = new Scene(
-            graphicsDevice,
-            [_car],
-            _camera,
-            []
-        );
+        CarsInRace[0] = new InGameCar(0, _car.CarInfo, 0, 0, false);
+
+        camera.LookAt = new Vector3(0, 250, 400);
+        camera.Position = new Vector3(-750, 50, 750);
+        FovOverride = 53;
+        ShadowmapDisplay = false;
+
+        RecreateScene();
 
         // create and position stat bars
         float switsLevel = (_car.Stats.Swits[2] - 220) / 90f;
@@ -129,18 +142,6 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     public override void Render()
     {
         base.Render();
-
-        graphicsDevice.BlendState = BlendState.Opaque;
-        graphicsDevice.DepthStencilState = DepthStencilState.Default;
-        
-        _car?.Position = new Vector3(-500, -100 - _car.GroundAt, 200);
-        _car?.Rotation = new Euler(AngleSingle.FromDegrees(-30), _car.Rotation.Pitch, _car.Rotation.Roll);
-        _camera.LookAt = new Vector3(0, 0, 0);
-        _camera.Position = new Vector3(-600, -300, 1000);
-
-        _garageScene.Render(false);
-
-        _ui.LayoutAndRender(new Vector2(graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height));
     }
 
     public override void RenderImgui()
@@ -211,6 +212,8 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
         G.SetFont(new Font("Arial", 1, 48));
         G.SetColor(new Color(0, 0, 0));
+        G.DrawStringStrokeAligned(_cars[_selectedCarIdx].Stats.Name, graphicsDevice.Viewport.Width, 120, TextHorizontalAlignment.Center);
+        G.SetColor(new Color(255, 255, 255));
         G.DrawStringAligned(_cars[_selectedCarIdx].Stats.Name, graphicsDevice.Viewport.Width, 120, TextHorizontalAlignment.Center);
 
         DrawCarStats();
@@ -270,9 +273,6 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
 
     public override void Enter()
     {
-        World.ResetValues();
-        World.Snap = new Color3(15, 0, 35);
-
         SetupCurrentCar();
     }
 
@@ -326,7 +326,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     private void SelectedCar()
     {
         if (CarSelected == null) throw new ArgumentNullException("Attempted to invoke CarSelected, but it was null.");
-        CarSelected.Invoke(this, _car.CarInfo);
+        CarSelected.Invoke(this, _car!.CarInfo);
     }
 
     private void SelectionCancelled()
@@ -450,6 +450,12 @@ internal class GarageDynamicStatBar
             multiples++;
         }
 
+        G.SetColor(new Color(0, 0, 0));
+        G.SetFont(new Font("Arial", 1, 20));
+        G.DrawStringStroke(_name, x, y - 5);
+        G.SetColor(new Color(255, 255, 255));
+        G.DrawString(_name, x, y - 5);
+
         Color baseBarColorStart = multiples > 0 ? barColors[GetColor(barColors.Length, multiples - 1)] : new Color(0, 0, 0, 0);
         Color baseBarColorEnd = multiples > 0 ? barColors[GetColor(barColors.Length, multiples)] : new Color(0, 0, 0, 0);
 
@@ -465,10 +471,7 @@ internal class GarageDynamicStatBar
         G.SetLinearGradient(x, y, maxWidth, height, [barColorStart, barColorEnd], null);
         G.FillRect(x, y, barRatio, height);
 
-        G.SetFont(new Font("Arial", 1, 20));
-        G.SetColor(new Color(0, 0, 0));
-        G.DrawString(_name, x, y - 5);
-
+        G.SetColor(new Color(255, 255, 255));
         G.SetFont(new Font("Arial", 1, 12));
         G.DrawString(((int)currentValue).ToString(), x + 5, y + height);
 
