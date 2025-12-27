@@ -743,7 +743,8 @@ public class ModelEditorPhase : BasePhase
         var originalPosition = tab.Object.Position;
         var originalRotation = tab.Object.Rotation;
         
-        tab.Object.Position = tab.ModelPosition;
+        // Keep model at origin - ModelPosition is only for camera orbit center
+        tab.Object.Position = Vector3.Zero;
         tab.Object.Rotation = new Euler(
             AngleSingle.FromDegrees(tab.ModelRotation.Y),  // Yaw
             AngleSingle.FromDegrees(-tab.ModelRotation.X), // Pitch (negated)
@@ -2370,8 +2371,9 @@ public class ModelEditorPhase : BasePhase
         var originalPosition = tab.Object.Position;
         var originalRotation = tab.Object.Rotation;
         
-        // Apply our transform to the main model
-        tab.Object.Position = tab.ModelPosition;
+        // Keep the model at the origin - don't apply ModelPosition
+        // ModelPosition is used only for camera orbit center, not mesh position
+        tab.Object.Position = Vector3.Zero;
         // Euler constructor is (yaw, pitch, roll)
         tab.Object.Rotation = new Euler(
             AngleSingle.FromDegrees(tab.ModelRotation.Y),  // Yaw (Y-axis rotation)

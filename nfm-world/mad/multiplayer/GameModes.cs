@@ -2,5 +2,5 @@
 
 public enum GameModes
 {
-    Sandbox, TimeTrial, Race
+    Sandbox, Classic, TimeTrial, Racing, Wasting, Both, Football
 }

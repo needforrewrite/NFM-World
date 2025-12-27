@@ -6,7 +6,7 @@ namespace NFMWorld.Mad;
 
 public class Sparks
 {
-    private readonly Mesh _mesh;
+    private readonly Car _car;
     private readonly GraphicsDevice _graphicsDevice;
 
     internal int Sprk;
@@ -31,24 +31,32 @@ public class Sparks
     private int _triangleCount;
     private readonly LineEffect _material;
     private int _sparkCount;
+    private readonly DynamicVertexBuffer _vertexBuffer;
+    private readonly DynamicIndexBuffer _indexBuffer;
+    private readonly VertexBuffer _instanceBuffer;
 
-    public Sparks(Mesh mesh, GraphicsDevice graphicsDevice)
+    public Sparks(Car car, GraphicsDevice graphicsDevice)
     {
-        _mesh = mesh;
+        _car = car;
         _graphicsDevice = graphicsDevice;
 
         _material = new LineEffect(Program._lineShader);
 
-        _sprkat = _mesh.Wheels.FirstOrDefault().Sparkat;
+        _sprkat = _car.Wheels.FirstOrDefault().Sparkat;
+        
+        _vertexBuffer = new DynamicVertexBuffer(graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration, 100 * LineMeshHelpers.VerticesPerLine, BufferUsage.WriteOnly);
+        _indexBuffer = new DynamicIndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, 100 * LineMeshHelpers.IndicesPerLine, BufferUsage.WriteOnly);
+        _instanceBuffer = new VertexBuffer(graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.None);
+        _instanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(Matrix.Identity)]);
     }
     
     public void AddSpark(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)
     {
         if (type != 1)
         {
-            Srx = (wheelx - _sprkat * UMath.Sin(_mesh.Rotation.Xz.Degrees));
-            Sry = (wheely - wheelGround - _sprkat * UMath.Cos(_mesh.Rotation.Zy.Degrees) * UMath.Cos(_mesh.Rotation.Xy.Degrees));
-            Srz = (wheelz + _sprkat * UMath.Cos(_mesh.Rotation.Xz.Degrees));
+            Srx = (wheelx - _sprkat * UMath.Sin(_car.Rotation.Xz.Degrees));
+            Sry = (wheely - wheelGround - _sprkat * UMath.Cos(_car.Rotation.Zy.Degrees) * UMath.Cos(_car.Rotation.Xy.Degrees));
+            Srz = (wheelz + _sprkat * UMath.Cos(_car.Rotation.Xz.Degrees));
             Sprk = 1;
         }
         else
@@ -56,9 +64,9 @@ public class Sparks
             Sprk++;
             if (Sprk == 4)
             {
-                Srx = (_mesh.Position.X + scx);
+                Srx = (_car.Position.X + scx);
                 Sry = wheely - wheelGround;
-                Srz = (_mesh.Position.Z + scz);
+                Srz = (_car.Position.Z + scz);
                 Sprk = 5;
             }
             else
@@ -204,6 +212,12 @@ public class Sparks
                     _rtg[i]++;
                 }
             }
+
+            if (_vertexCount > 0 && _triangleCount > 0)
+            {
+                _vertexBuffer.SetDataEXT(_lineVertices.AsSpan(0, _vertexCount), SetDataOptions.NoOverwrite);
+                _indexBuffer.SetDataEXT(_lineIndices.AsSpan(0, _triangleCount * 3), SetDataOptions.NoOverwrite);
+            }
         }
         Sprk = 0;
     }
@@ -212,9 +226,10 @@ public class Sparks
     {
         if (_vertexCount == 0 || _triangleCount == 0) return;
         
+        _graphicsDevice.SetVertexBuffers(_vertexBuffer, new VertexBufferBinding(_instanceBuffer, 0, 1));
+        _graphicsDevice.Indices = _indexBuffer;
+
         // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.World?.SetValue(Matrix.Identity);
-        _material.WorldInverseTranspose?.SetValue(Matrix.Transpose(Matrix.Invert(Matrix.Identity)));
         _material.SnapColor?.SetValue(new Color3(100, 100, 100).ToVector3());
         _material.IsFullbright?.SetValue(true);
         _material.UseBaseColor?.SetValue(false);
@@ -233,8 +248,7 @@ public class Sparks
 
         _material.View?.SetValue(camera.ViewMatrix);
         _material.Projection?.SetValue(camera.ProjectionMatrix);
-        _material.WorldView?.SetValue(camera.ViewMatrix);
-        _material.WorldViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
+        _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         _material.CameraPosition?.SetValue(camera.Position);
 
         _material.CurrentTechnique = _material.Techniques["Basic"];
@@ -250,15 +264,14 @@ public class Sparks
         {
             pass.Apply();
 
-            _graphicsDevice.DrawUserIndexedPrimitives(
+            _graphicsDevice.DrawInstancedPrimitives(
                 PrimitiveType.TriangleList,
-                _lineVertices,
+                0,
                 0,
                 _vertexCount,
-                _lineIndices,
                 0,
                 _triangleCount,
-                LineMesh.LineMeshVertexAttribute.VertexDeclaration
+                1
             );
         }
         _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;

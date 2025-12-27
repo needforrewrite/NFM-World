@@ -11,7 +11,7 @@ public class FollowCamera
     private Euler _angle;
     public static int FollowZOffset = 0;
 
-    public void Follow(PerspectiveCamera camera, Mesh mesh, float cxz, int lookback)
+    public void Follow(PerspectiveCamera camera, Transform obj, float cxz, int lookback)
     {
         // x: yaw = xz
         // y: pitch = zy
@@ -80,9 +80,9 @@ public class FollowCamera
         var followDistance = 800 + FollowZOffset;
         camera.Position = camera.Position with
         {
-            X = mesh.Position.X + (followDistance * UMath.Sin(cxz)),
-            Z = mesh.Position.Z - (followDistance * UMath.Cos(cxz)),
-            Y = mesh.Position.Y - 250 - FollowYOffset,
+            X = obj.Position.X + (followDistance * UMath.Sin(cxz)),
+            Z = obj.Position.Z - (followDistance * UMath.Cos(cxz)),
+            Y = obj.Position.Y - 250 - FollowYOffset,
         };
         
         // Calculate the look direction by rotating the forward vector

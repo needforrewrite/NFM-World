@@ -9,15 +9,9 @@
 
 #include "./Mad.fxh"
 
-// BasicEffect
-matrix World;
-matrix WorldInverseTranspose;
-matrix WorldViewProj;
 matrix View;
 matrix Projection;
-
-// Custom
-matrix WorldView;
+matrix ViewProj;
 float3 SnapColor;
 bool IsFullbright;
 bool UseBaseColor;
@@ -30,9 +24,6 @@ float2 EnvironmentLight;
 float3 CameraPosition;
 float Alpha;
 
-// Lighting
-bool GetsShadowed;
-
 // Damage
 bool Expand;
 float RandomFloat;
@@ -40,9 +31,6 @@ float Darken; // set below 1.0f to adjust brightness
 
 // Charged line blink
 float ChargedBlinkAmount;
-
-// Next checkpoint line glow
-bool Glow;
 
 float HalfThickness;
 
@@ -62,19 +50,41 @@ struct VertexShaderOutput
 	float4 Position : SV_POSITION;
 	float4 Color : COLOR0;
     float4 WorldPos : TEXCOORD2;
+    float GetsShadowed : TEXCOORD3;
 };
 
-VertexShaderOutput MainVS(in VertexShaderInput input)
+VertexShaderOutput MainVS(
+    in VertexShaderInput input,
+    // instance parameters
+    in float4x4 world : TEXCOORD3,
+    in float4 parameters : TEXCOORD7
+)
 {
+    bool getsShadowed;
+    float alphaOverride;
+    bool isFullbright;
+    bool glow;
+    VS_UnpackParameters(parameters, getsShadowed, alphaOverride, isFullbright, glow);
+
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
-    float distanceToCamera = mul(float4(input.Position, 1), WorldViewProj).z;
+    float distanceToCamera = mul(mul(mul(float4(input.Position, 1), world), View), Projection).z;
 
     float3 position = input.Position + input.Right * HalfThickness * distanceToCamera + input.Up * HalfThickness * distanceToCamera;
 
     VS_DecalOffset(position, input.Normal, input.DecalOffset);
 
-	float3 viewPos = mul(float4(position, 1), WorldView).xyz;
+    if (Expand == true)
+    {
+        VS_Expand(position, input.Centroid, RandomFloat);
+    }
+
+    // Save the vertices postion in world space (for shadow mapping)
+    output.WorldPos = mul(float4(position, 1), world);
+    output.GetsShadowed = getsShadowed;
+
+    float4 viewPos = mul(output.WorldPos, View);
+
 	float3 color = input.Color;
 
     // Apply base color
@@ -83,19 +93,14 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
         color = BaseColor;
     }
 
-    if (Expand == true)
-    {
-        VS_Expand(position, input.Centroid, RandomFloat);
-    }
-
-    output.Position = mul(float4(position, 1), WorldViewProj);
+    output.Position = mul(viewPos, Projection);
 
     if (Darken < 1.0f)
     {
         VS_Darken(color, Darken);
     }
 
-    if (Glow == true)
+    if (glow == true)
     {
         color = color * 1.6;
         // clamp to 1.0
@@ -103,12 +108,12 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     }
 
 	// Apply diffuse lighting
-	if (IsFullbright == false)
+	if (IsFullbright == false && isFullbright == false && glow == false)
     {
         VS_ApplyPolygonDiffuse(
             color,
-            mul(float4(input.Centroid, 1), World).xyz,
-            normalize(mul(float4(input.Normal, 0), WorldInverseTranspose).xyz),
+            mul(float4(input.Centroid, 1), world).xyz,
+            normalize(mul(float4(input.Normal, 0), world).xyz),
             LightDirection,
             CameraPosition,
             EnvironmentLight
@@ -125,14 +130,11 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
         color.b = 1.0;
     }
 
-    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
+    VS_ApplyFog(color, viewPos.xyz, FogColor, FogDistance, FogDensity);
 
     VS_ColorCorrect(color);
 
-    output.Color = float4(color, Alpha);
-
-    // Save the vertices postion in world space (for shadow mapping)
-    output.WorldPos = mul(float4(position, 1), World);
+    output.Color = float4(color, min(alphaOverride, Alpha));
 
 	return output;
 }
@@ -141,7 +143,7 @@ float4 MainPS(VertexShaderOutput input) : SV_TARGET
 {
     float4 diffuse = input.Color;
 
-    if (GetsShadowed == true)
+    if (input.GetsShadowed > 0.0)
     {
         float3 diffuseRGB = diffuse.xyz;
         PS_ApplyShadowing(diffuseRGB, input.WorldPos);
