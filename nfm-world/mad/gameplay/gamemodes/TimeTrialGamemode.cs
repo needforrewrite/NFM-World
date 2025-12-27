@@ -38,8 +38,6 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
 
     public override void Enter()
     {
-        Reset();
-
         _countdownTime = 4;
         _innerCountdownTicks = 0; // Tick down immediately to "three"
         currentCheckpoint = 0;
@@ -88,6 +86,8 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         base.Reset();
 
         _currentState = TimeTrialState.NotStarted;
+
+        Enter();
     }
 
     public override void GameTick()
