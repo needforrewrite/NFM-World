@@ -22,14 +22,14 @@ public class StagePieceInstance
     public enum PieceTypeEnum { Set, Chk, Fix, Wall }
     
     public string Name { get; set; } = "";
-    public Mesh? MeshRef { get; set; }
+    public CollisionObject? MeshRef { get; set; }
     public Vector3 Position { get; set; } = Vector3.Zero;
     public Vector3 Rotation { get; set; } = Vector3.Zero;
     public int Id { get; set; }
     public PieceTypeEnum PieceType { get; set; } = PieceTypeEnum.Set;
     public string Tags { get; set; } = ""; // AI waypoint tags like p, pr, pt, ph, etc.
     
-    public StagePieceInstance(string name, Mesh? meshRef, int id)
+    public StagePieceInstance(string name, CollisionObject? meshRef, int id)
     {
         Name = name;
         MeshRef = meshRef;
@@ -76,7 +76,7 @@ public class StageEditorTab
     public string TabName { get; set; } = "Stage";
     public List<StagePieceInstance> ScenePieces { get; set; } = new();
     public List<StageWall> StageWalls { get; set; } = new();
-    public List<Mesh> WallMeshes { get; set; } = new(); // Visual representation of walls
+    public List<CollisionObject> WallMeshes { get; set; } = new(); // Visual representation of walls
     public List<string> UnknownParameters { get; set; } = new(); // Unknown/unhandled stage parameters to preserve
     // Camera/view controls
     public Vector3 CameraPosition { get; set; } = new Vector3(0, -300, -1500);
@@ -152,7 +152,7 @@ public class StageEditorPhase : BasePhase
     private int _activeTabIndex = -1;
     
     // Available stage parts
-    private List<(string Name, Mesh? Mesh)> _availableParts = new();
+    private List<(string Name, PlaceableObjectInfo? Object)> _availableParts = new();
     
     // Active tab property
     private StageEditorTab? ActiveTab => _activeTabIndex >= 0 && _activeTabIndex < _tabs.Count ? _tabs[_activeTabIndex] : null;
@@ -352,7 +352,7 @@ public class StageEditorPhase : BasePhase
                                 break;
                         }
                         
-                        tab.Stage.pieces.Add(new Mesh(wallPart.Mesh, position, rotation));
+                        tab.Stage.pieces.Add(new CollisionObject(wallPart.Mesh, position, rotation));
                     }
                 }
             }
@@ -678,7 +678,7 @@ public class StageEditorPhase : BasePhase
             for (int i = tab.Stage.pieces.Count - 1; i >= 0; i--)
             {
                 var piece = tab.Stage.pieces[i];
-                if (piece != null && (piece.FileName == "thewall" || piece.FileName.Contains("wall")))
+                if (piece is CollisionObject collisionObject && (collisionObject.FileName == "thewall" || collisionObject.FileName.Contains("wall")))
                 {
                     tab.Stage.pieces.RemoveAt(i);
                     removedCount++;
@@ -768,12 +768,15 @@ public class StageEditorPhase : BasePhase
             // Populate editor pieces from loaded stage
             foreach (var piece in tab.Stage.pieces)
             {
+                if (piece is not CollisionObject collisionObject)
+                    continue;
+                
                 // Skip thewall pieces - they're handled as StageWalls
-                if (piece.FileName == "thewall" || piece.FileName.Contains("thewall"))
+                if (collisionObject.FileName == "thewall" || collisionObject.FileName.Contains("thewall"))
                     continue;
                     
                 // Construct the full piece name with folder prefix
-                string pieceName = piece.FileName;
+                string pieceName = collisionObject.FileName;
                 if (!pieceName.Contains("/"))
                 {
                     // If no folder prefix, it's from nfmm
@@ -782,7 +785,7 @@ public class StageEditorPhase : BasePhase
                 
                 var instance = new StagePieceInstance(
                     pieceName,
-                    piece,
+                    collisionObject,
                     tab.GetNextPieceId()
                 );
                 
@@ -1066,7 +1069,7 @@ public class StageEditorPhase : BasePhase
                         break;
                 }
                 
-                ActiveTab.WallMeshes.Add(new Mesh(wallPart.Mesh, position, rotation));
+                ActiveTab.WallMeshes.Add(new CollisionObject(wallPart.Mesh, position, rotation));
             }
         }
         
@@ -1111,7 +1114,7 @@ public class StageEditorPhase : BasePhase
         // Collect all polygon edges for wireframe rendering
         var edgeVertices = new List<Microsoft.Xna.Framework.Graphics.VertexPositionColor>();
         
-        foreach (var poly in mesh.Polys)
+        foreach (var poly in mesh.Mesh.Polys)
         {
             if (poly.Points.Length < 2) continue;
             
@@ -1228,7 +1231,7 @@ public class StageEditorPhase : BasePhase
                 Microsoft.Xna.Framework.Matrix.CreateRotationZ(roll);
             
             // Test each polygon
-            foreach (var poly in mesh.Polys)
+            foreach (var poly in mesh.Mesh.Polys)
             {
                 if (poly.Points.Length < 3) continue;
                 
@@ -2923,8 +2926,8 @@ public class StageEditorPhase : BasePhase
             if (ImGui.Selectable(part.Name))
             {
                 // Create a new mesh instance and add it to the stage (stage is guaranteed to exist here since we return early if null)
-                var newMesh = new Mesh(
-                    part.Mesh!,
+                var newMesh = new CollisionObject(
+                    part.Object!,
                     Vector3.Zero,
                     Euler.Identity
                 );

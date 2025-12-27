@@ -5,6 +5,9 @@ public class CollisionObject : MeshedGameObject
     public PlaceableObjectInfo PlaceableObjectInfo;
 
     public Rad3dBoxDef[] Boxes => PlaceableObjectInfo.Boxes;
+    public Vector2[] Atp => PlaceableObjectInfo.Atp;
+    public string FileName => Mesh.FileName;
+
     private readonly CollisionDebugMesh? _collisionDebugMesh;
     
     public CollisionObject(PlaceableObjectInfo placeableObjectInfo) : base(placeableObjectInfo.Mesh)
