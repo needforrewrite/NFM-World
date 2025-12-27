@@ -32,8 +32,6 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
     private int currentLap = 0;
     private bool writtenData;
 
-    private Stopwatch raceTimer = new Stopwatch();
-
     // demo playback and recording
     private SavedTimeTrial? bestTimeTrial = null;
     private int tick = 0;
@@ -41,6 +39,37 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
     private SavedTimeTrial currentTimeTrial = null!;
 
     private PowerDamageBars _pdBars = new PowerDamageBars();
+
+    private Node _lapAndTimer = new Node()
+    {
+        Left = 0,
+        Padding = 10,
+        FlexDirection = Yoga.YGFlexDirection.YGFlexDirectionColumn,
+        Gap = 10,
+        AlignItems = Yoga.YGAlign.YGAlignFlexStart,
+        JustifyContent = Yoga.YGJustify.YGJustifyCenter,
+
+        Children =
+        {
+            new LapReadout()
+            {
+                CurrentLap = 1,
+                StageLaps = 1,
+                Height = LapReadout.LapImage.Height,
+                MarginBottom = 10
+                
+            },
+            new NFMWorld.Mad.UI.Elements.Timer()
+            {
+
+            }
+        }
+    };
+
+    public Stopwatch GetStopwatch()
+    {
+        return ((NFMWorld.Mad.UI.Elements.Timer)_lapAndTimer.Children[1]).Stopwatch;
+    }
 
     public override void Enter()
     {
@@ -62,7 +91,7 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         _innerCountdownTicks = 0; // Tick down immediately to "three"
         currentCheckpoint = 0;
         currentLap = 1;
-        raceTimer.Reset();
+        GetStopwatch().Reset();
         writtenData = false;
 
         // ghosts
@@ -94,6 +123,8 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
             cp.Glow = false;
         }
 
+        ((LapReadout)_lapAndTimer.Children[0]).StageLaps = currentStage.nlaps;
+
         _currentState = TimeTrialState.Countdown;
     }
 
@@ -123,6 +154,7 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         _pdBars.UpdateDamageBarColor();
         _pdBars.SetPowerBarFill((float)carsInRace[playerCarIndex].Mad.Power);
         _pdBars.UpdatePowerBarColor();
+        ((LapReadout)_lapAndTimer.Children[0]).CurrentLap = currentLap;
 
         if (bestTimeTrial != null)
         {
@@ -150,7 +182,7 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
                 fix64.Abs((fix64)carsInRace[playerCarIndex].CarRef.Position.X - (fix64)nextCheckpoint.Position.X) < 700 &&
                 fix64.Abs((fix64)carsInRace[playerCarIndex].CarRef.Position.Y - (fix64)nextCheckpoint.Position.Y + 350) < 450)
             {
-                currentTimeTrial.RecordSplit(raceTimer.ElapsedMilliseconds);
+                currentTimeTrial.RecordSplit(GetStopwatch().ElapsedMilliseconds);
                 currentCheckpoint++;
                 SfxLibrary.checkpoint?.Play();
                 if (currentCheckpoint >= currentStage.checkpoints.Count)
@@ -167,7 +199,7 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
                 fix64.Abs((fix64)carPos.Z - (fix64)nextCheckpoint.Position.Z) < 700 &&
                 fix64.Abs((fix64)carPos.Y - (fix64)nextCheckpoint.Position.Y + 350) < 450)
             {
-                currentTimeTrial.RecordSplit(raceTimer.ElapsedMilliseconds);
+                currentTimeTrial.RecordSplit(GetStopwatch().ElapsedMilliseconds);
                 SfxLibrary.checkpoint?.Play();
                 currentCheckpoint++;
                 if (currentCheckpoint >= currentStage.checkpoints.Count)
@@ -204,7 +236,7 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         if (currentLap > currentStage.nlaps)
         {
             _currentState = TimeTrialState.Finished;
-            raceTimer.Stop();
+            GetStopwatch().Stop();
         }
 
         tick++;
@@ -236,7 +268,7 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
             if (_countdownTime <= 0)
             {
                 _currentState = TimeTrialState.InProgress;
-                raceTimer.Start();
+                GetStopwatch().Start();
             }
         }
     }
@@ -258,16 +290,10 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
     public override void Render()
     {
         _pdBars.Render();
+        _lapAndTimer.LayoutAndRender(G.Viewport());
 
         if (_currentState == TimeTrialState.InProgress)
         {
-            G.SetColor(new Color(255, 255, 255));
-            G.DrawString($"Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 100, 200);
-            G.DrawString($"Lap: {currentLap}/{currentStage.nlaps}", 100, 250);
-            G.SetColor(new Color(0, 0, 0));
-            G.DrawStringStroke($"Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds / 10:D2}", 100, 200);
-            G.DrawStringStroke($"Lap: {currentLap}/{currentStage.nlaps}", 100, 250);
-
             if ((currentCheckpoint != 0 || currentLap != 1) && bestTimeTrial != null)
             {
                 long diff = currentTimeTrial.GetSplitDiff(bestTimeTrial, currentTimeTrial.Splits.Count - 1);
@@ -298,10 +324,10 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         else if (_currentState == TimeTrialState.Finished)
         {
             G.SetColor(new Color(128, 255, 128));
-            G.DrawString($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds:D2}", 300, 200);
+            G.DrawString($"Finished! Time: {GetStopwatch().Elapsed.Minutes:D2}:{GetStopwatch().Elapsed.Seconds:D2}.{GetStopwatch().Elapsed.Milliseconds:D3}", 300, 200);
             G.DrawString($"Press R to restart", 300, 250);
-            G.SetColor(new Color(0, 0, 0));
-            G.DrawStringStroke($"Finished! Time: {raceTimer.Elapsed.Minutes:D2}:{raceTimer.Elapsed.Seconds:D2}.{raceTimer.Elapsed.Milliseconds:D2}", 300, 200);
+            G.SetColor(new Color(255, 255, 255));
+            G.DrawStringStroke($"Finished! Time: {GetStopwatch().Elapsed.Minutes:D2}:{GetStopwatch().Elapsed.Seconds:D2}.{GetStopwatch().Elapsed.Milliseconds:D3}", 300, 200);
             G.DrawStringStroke($"Press R to restart", 300, 250);
 
             bool newBest = bestTimeTrial == null || (bestTimeTrial != null && currentTimeTrial.GetSplitDiff(bestTimeTrial, currentTimeTrial.Splits.Count - 1) < 0);

@@ -13,6 +13,7 @@ public class FPSCounter
     private static double now = 0;
     private static double msgFrequency = 0.05f;
     private static string msg;
+    public static bool Display = false;
 
     /// <summary>
     /// The msgFrequency here is the reporting time to update the message.
@@ -35,8 +36,11 @@ public class FPSCounter
 
     public static void Render()
     {
-        G.SetColor(new Color(0, 0, 0));
-        G.DrawString(msg, 10, 25);
+        if (Display)
+        {
+            G.SetColor(new Color(0, 0, 0));
+            G.DrawString(msg, 10, 25);
+        }
         frames++;
     }
 }

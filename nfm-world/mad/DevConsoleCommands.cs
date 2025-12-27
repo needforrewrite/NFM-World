@@ -39,6 +39,11 @@ namespace NFMWorld.Mad
                 BaseStageRenderingPhase.DebugDisplay = !BaseStageRenderingPhase.DebugDisplay;
                 console.Log(BaseStageRenderingPhase.DebugDisplay.ToString());
             });
+            console.RegisterCommand("r_fps", (c, _) =>
+            {
+               FPSCounter.Display = !FPSCounter.Display;
+               console.Log(FPSCounter.Display.ToString()); 
+            });
             
             // gamemode
             console.RegisterCommand("go_tt", (c, args) =>
