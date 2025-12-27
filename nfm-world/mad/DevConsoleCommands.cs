@@ -35,6 +35,10 @@ namespace NFMWorld.Mad
             console.RegisterCommand("r_blackpoint", SetBlackPoint);
             console.RegisterCommand("r_whitepoint", SetWhitePoint);
             console.RegisterCommand("r_displaytrackers", (c, args) => GameSparker.devRenderTrackers = !GameSparker.devRenderTrackers);
+            console.RegisterCommand("r_debugdisplay", (c, _) => {
+                BaseStageRenderingPhase.DebugDisplay = !BaseStageRenderingPhase.DebugDisplay;
+                console.Log(BaseStageRenderingPhase.DebugDisplay.ToString());
+            });
             
             // gamemode
             console.RegisterCommand("go_tt", (c, args) =>
