@@ -2350,7 +2350,7 @@ public class ModelEditorPhase : BasePhase
 
     public void ExitModelViewer()
     {
-        GameSparker.ExitModelViewer();
+        GameSparker.ExitEditor();
     }
     
     public override void RenderAfterSkia()

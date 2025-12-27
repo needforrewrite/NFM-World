@@ -84,7 +84,7 @@ public class MainMenuPhase: BasePhase
         int spacing = 40;
 
         AddButton(startX, startY + spacing * 0, buttonWidth, buttonHeight, "MODEL EDITOR", OnModelEditorClicked);
-        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "STAGE EDITOR", OnClickUnavailable);
+        AddButton(startX, startY + spacing * 1, buttonWidth, buttonHeight, "STAGE EDITOR", OnStageEditorClicked);
         AddButton(startX, startY + spacing * 2, buttonWidth, buttonHeight, "CAMPAIGN EDITOR", OnClickUnavailable);
         AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "BACK", OnBackClicked);
     }

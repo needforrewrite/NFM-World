@@ -7,6 +7,9 @@ road()
 
 shadow()
 
+atp(0,500)
+atp(0,-500)
+
 tracks(11)
 
 <track>
