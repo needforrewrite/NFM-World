@@ -65,13 +65,11 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         raceTimer.Reset();
         writtenData = false;
 
-        playerCarIndex = 0;
-
         // ghosts
         bestTimeTrial = null;
         tick = 0;
 
-        carsInRace[playerCarIndex] = new InGameCar(0, GameSparker.GetCar(playerCarName).Car!, 0, 0, true);
+        carsInRace[playerCarIndex] = new InGameCar(0, GameSparker.GetCar(player.CarName).Car!, 0, 0, true);
         carsInRace[playerCarIndex].Mad.PowerUp += _pdBars.EventPowerUp;
 
         // ghost
