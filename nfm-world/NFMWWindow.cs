@@ -567,6 +567,10 @@ public unsafe class Program : Game
 
 public class DummyBackend : IBackend
 {
+    public Vector2 Viewport()
+    {
+        return new Vector2();
+    }
     public IRadicalMusic LoadMusic(File file, double tempomul)
     {
         return new RadicalMusic(file, tempomul);

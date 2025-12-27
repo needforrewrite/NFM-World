@@ -42,7 +42,8 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
     public IImage LoadImage(File file)
     {
-        throw new NotImplementedException();
+        using var stream = System.IO.File.OpenRead(file.Path);
+        return new NanoVGImage(Texture2D.FromStream(context.GraphicsDevice, stream));
     }
 
     public IImage LoadImage(ReadOnlySpan<byte> file)
@@ -131,6 +132,13 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
         public void DrawImage(IImage image, int x, int y)
         {
+            if (image is not NanoVGImage img) throw new ArgumentException("Invalid image type for NanoVGBackend.");
+
+            var imgPaint = context.ImagePattern(x, y, img.Width, img.Height, 0.0f, img.Texture, 1.0f);
+            context.BeginPath();
+            context.FillPaint(imgPaint);
+            context.Rect(x, y, img.Width, img.Height);
+            context.Fill();
         }
 
         public void SetFont(Font font)
@@ -246,7 +254,13 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
 
         public void DrawImage(IImage image, int x, int y, int width, int height)
         {
-            throw new NotImplementedException();
+            if (image is not NanoVGImage img) throw new ArgumentException("Invalid image type for NanoVGBackend.");
+
+            var imgPaint = context.ImagePattern(x, y, width, height, 0.0f, img.Texture, 1.0f);
+            context.BeginPath();
+            context.FillPaint(imgPaint);
+            context.Rect(x, y, width, height);
+            context.Fill();
         }
     }
 
@@ -254,4 +268,16 @@ internal class NanoVGBackend(NvgContext context, FontSystem fontSystem) : IBacke
     {
         SoundClip.SetAllVolumes(vol);
     }
+
+    public Vector2 Viewport()
+    {
+        return new Vector2(context.GraphicsDevice.Viewport.Width, context.GraphicsDevice.Viewport.Height);
+    }
+}
+
+internal class NanoVGImage(Texture2D texture) : IImage
+{
+    public Texture2D Texture { get; } = texture;
+    public int Height => Texture.Height;
+    public int Width => Texture.Width;
 }

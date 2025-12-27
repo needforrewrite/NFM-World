@@ -1,8 +1,12 @@
 using System.Collections;
 using System.Diagnostics;
+using System.Reflection.Metadata;
 using Maxine.Extensions;
+using NFMWorld.DriverInterface;
 using NFMWorld.Mad;
 using NFMWorld.Mad.gamemodes;
+using NFMWorld.Mad.UI.Elements;
+using NFMWorld.Mad.UI.yoga;
 using NFMWorld.Util;
 using SoftFloat;
 using Stride.Core.Mathematics;
@@ -36,8 +40,24 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
     public static bool PlaybackOnReset = true;
     private SavedTimeTrial currentTimeTrial = null!;
 
+    private PowerDamageBars _pdBars = new PowerDamageBars();
+
     public override void Enter()
     {
+        _currentState = TimeTrialState.NotStarted;
+
+        Reset();
+    }
+
+    public override void Exit()
+    {
+        // Cleanup for Time Trial mode
+    }
+
+    public override void Reset()
+    {
+        base.Reset();
+
         _countdownTime = 4;
         _innerCountdownTicks = 0; // Tick down immediately to "three"
         currentCheckpoint = 0;
@@ -45,11 +65,12 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         raceTimer.Reset();
         writtenData = false;
 
-        // demos
+        // ghosts
         bestTimeTrial = null;
         tick = 0;
 
-        carsInRace[playerCarIndex] = new InGameCar(0, GameSparker.GetCar(player.CarName).Car, 0, 0, true);
+        carsInRace[playerCarIndex] = new InGameCar(0, GameSparker.GetCar(player.CarName).Car!, 0, 0, true);
+        carsInRace[playerCarIndex].Mad.PowerUp += _pdBars.EventPowerUp;
 
         // ghost
         carsInRace[playerCarIndex + 1] = new InGameCar(carsInRace[playerCarIndex], 0, false);
@@ -68,26 +89,12 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
 
         currentTimeTrial = new SavedTimeTrial(player.CarName, currentStage.Path);
 
-        foreach(CheckPoint cp in currentStage.checkpoints)
+        foreach (CheckPoint cp in currentStage.checkpoints)
         {
             cp.Glow = false;
         }
 
         _currentState = TimeTrialState.Countdown;
-    }
-
-    public override void Exit()
-    {
-        // Cleanup for Time Trial mode
-    }
-
-    public override void Reset()
-    {
-        base.Reset();
-
-        _currentState = TimeTrialState.NotStarted;
-
-        Enter();
     }
 
     public override void GameTick()
@@ -96,6 +103,7 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         switch (_currentState)
         {
             case TimeTrialState.NotStarted:
+                Reset();
                 break;
             case TimeTrialState.Countdown:
                 CountdownTick();
@@ -111,6 +119,11 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
 
     private void TimeTrialInRace()
     {
+        _pdBars.SetDamageBarFill(carsInRace[playerCarIndex].Mad.Hitmag, carsInRace[0].Stats.Maxmag);
+        _pdBars.UpdateDamageBarColor();
+        _pdBars.SetPowerBarFill((float)carsInRace[playerCarIndex].Mad.Power);
+        _pdBars.UpdatePowerBarColor();
+
         if (bestTimeTrial != null)
         {
             carsInRace[playerCarIndex + 1].Control.Decode(bestTimeTrial.GetTick(tick) ?? Nibble<byte>.AllZeros);
@@ -133,7 +146,7 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         if (nextCheckpoint.CheckPointRot == CheckPoint.CheckPointRotation.None)
         {
             if (fix64.Abs((fix64)carPos.Z - (fix64)nextCheckpoint.Position.Z) <
-                (fix64)60.0F + fix64.Abs(carsInRace[playerCarIndex].Mad.Scz[0] + carsInRace[0].Mad.Scz[1] + carsInRace[playerCarIndex].Mad.Scz[2] + carsInRace[playerCarIndex].Mad.Scz[3]) / (fix64)4.0F &&
+                (fix64)60.0F + fix64.Abs(carsInRace[playerCarIndex].Mad.Scz[0] + carsInRace[playerCarIndex].Mad.Scz[1] + carsInRace[playerCarIndex].Mad.Scz[2] + carsInRace[playerCarIndex].Mad.Scz[3]) / (fix64)4.0F &&
                 fix64.Abs((fix64)carsInRace[playerCarIndex].CarRef.Position.X - (fix64)nextCheckpoint.Position.X) < 700 &&
                 fix64.Abs((fix64)carsInRace[playerCarIndex].CarRef.Position.Y - (fix64)nextCheckpoint.Position.Y + 350) < 450)
             {
@@ -244,6 +257,8 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
 
     public override void Render()
     {
+        _pdBars.Render();
+
         if (_currentState == TimeTrialState.InProgress)
         {
             G.SetColor(new Color(255, 255, 255));
