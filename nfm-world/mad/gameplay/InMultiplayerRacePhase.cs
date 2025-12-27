@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Mad.gamemodes;
 using NFMWorld.Util;
 
 namespace NFMWorld.Mad;
@@ -6,20 +7,20 @@ namespace NFMWorld.Mad;
 public class InMultiplayerRacePhase(
     GraphicsDevice graphicsDevice,
     IMultiplayerClientTransport transport,
-    S2C_LobbyState.GameSession session,
+    S2C_RaceStarted.GameSession session,
     uint playerClientId
 )
     : BaseRacePhase(graphicsDevice)
 {
-    public string playerCarName = "nfmm/radicalone";
-    
+    protected BaseGamemode? gamemodeInstance { get; set; }
+
     public override void Enter()
     {
         base.Enter();
 
-        var player = session.PlayerClientIds
-            .Select(c => (KeyValuePair<byte, uint>?) c)
-            .FirstOrDefault(c => c!.Value.Value == playerClientId);
+        var player = session.Players
+            .Select(c => (KeyValuePair<byte, S2C_RaceStarted.PlayerInfo>?) c)
+            .FirstOrDefault(c => c!.Value.Value.Id == playerClientId);
         
         if (player is { Key: var index })
             playerCarIndex = index;
@@ -31,7 +32,25 @@ public class InMultiplayerRacePhase(
 
         LoadStage("nfm2/15_dwm");
 
-        gamemodeInstance ??= CreateGameMode();
+        var parameters = new BaseGamemodeParameters()
+        {
+            PlayerCarIndex = playerCarIndex,
+            Players = session.Players
+                .Select(c => new PlayerParameters()
+                {
+                    CarName = c.Value.Vehicle,
+                    Color = c.Value.Color,
+                    PlayerName = c.Value.Name
+                })
+                .ToArray()
+        };
+
+        gamemodeInstance ??= session.Gamemode switch
+        {
+            GameModes.Sandbox => new SandboxGamemode(parameters, this),
+            GameModes.TimeTrial => new TimeTrialGamemode(parameters, this),
+            _ => throw new ArgumentOutOfRangeException(nameof(session.Gamemode), session.Gamemode, null)
+        };;
         gamemodeInstance.Enter();
     }
 
@@ -70,13 +89,21 @@ public class InMultiplayerRacePhase(
         });
     }
 
-    protected override BaseGamemode CreateGameMode()
+    public override void KeyPressed(Keys key, bool imguiWantsKeyboard)
     {
-        return gamemode switch
-        {
-            GameModes.Sandbox => new SandboxGamemode(playerCarName, playerCarIndex, CarsInRace, CurrentStage, current_scene),
-            GameModes.TimeTrial => new TimeTrialGamemode(playerCarName, playerCarIndex, CarsInRace, CurrentStage, current_scene),
-            _ => throw new ArgumentOutOfRangeException(nameof(gamemode), gamemode, null)
-        };
+        base.KeyPressed(key, imguiWantsKeyboard);
+        gamemodeInstance?.KeyPressed(key);
+    }
+
+    public override void KeyReleased(Keys key, bool imguiWantsKeyboard)
+    {
+        base.KeyReleased(key, imguiWantsKeyboard);
+        gamemodeInstance?.KeyPressed(key);
+    }
+
+    public override void Render()
+    {
+        base.Render();
+        gamemodeInstance?.Render();
     }
 }

@@ -70,7 +70,16 @@ public class GameOrchestrator
             
         foreach (var (id, session) in _activeSessions)
         {
-            sessions.Add(GetGameSession(session));
+            sessions.Add(new S2C_LobbyState.GameSession
+            {
+                Id = session.Id,
+                CreatorId = session.CreatorId,
+                CreatorName = session.CreatorName,
+                StageName = session.StageName,
+                MaxPlayers = session.MaxPlayers,
+                PlayerClientIds = session.PlayerClientIds,
+                State = session.State
+            });
         }
 
         return new S2C_LobbyState
@@ -78,21 +87,6 @@ public class GameOrchestrator
             PlayerClientId = playerClientId,
             Players = players,
             ActiveSessions = sessions
-        };
-    }
-
-    private static S2C_LobbyState.GameSession GetGameSession(GameSession session)
-    {
-        return new S2C_LobbyState.GameSession
-        {
-            Id = session.Id,
-            CreatorId = session.CreatorId,
-            CreatorName = session.CreatorName,
-            StageName = session.StageName,
-            PlayerCount = session.PlayerClientIds.Count,
-            MaxPlayers = session.MaxPlayers,
-            PlayerClientIds = session.PlayerClientIds,
-            State = session.State
         };
     }
 
@@ -155,7 +149,21 @@ public class GameOrchestrator
                     
                     _transport.SendPacketToClients(session.PlayerClientIds.Values.ToArray(), new S2C_RaceStarted
                     {
-                        Session = GetGameSession(session)
+                        Session = new S2C_RaceStarted.GameSession
+                        {
+                            StageName = session.StageName,
+                            State = session.State,
+                            Gamemode = session.Gamemode,
+                            Players = session.PlayerClientIds.ToDictionary(
+                                e1 => e1.Key,
+                                e1 => new S2C_RaceStarted.PlayerInfo
+                                {
+                                    Id = e1.Value,
+                                    Name = _connectedClients.TryGetValue(e1.Value, out var ci) ? ci.Name : "Unknown",
+                                    Vehicle = _connectedClients.TryGetValue(e1.Value, out ci) ? ci.Vehicle : "nfmm/radicalone",
+                                    Color = _connectedClients.TryGetValue(e1.Value, out ci) ? ci.Color : new Color3()
+                                })
+                        }
                     });
                 }
                 break;
@@ -219,6 +227,7 @@ public class GameOrchestrator
         
         public ConcurrentDictionary<byte, uint> PlayerClientIds { get; set; } = [];
         public SessionState State { get; set; } = SessionState.NotStarted;
+        public GameModes Gamemode { get; set; } = GameModes.Sandbox;
     }
 
     private class ClientInfo

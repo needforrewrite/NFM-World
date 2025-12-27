@@ -1,17 +1,18 @@
 using System.Diagnostics;
 using NFMWorld;
 using NFMWorld.Mad;
+using NFMWorld.Mad.gamemodes;
 using NFMWorld.Util;
 using Stride.Core.Mathematics;
 
-public class FootballGamemode(string playerCarName, int playerCarIndex, UnlimitedArray<InGameCar> carsInRace, Stage currentStage, Scene currentScene)
-    : BaseGamemode
+public class FootballGamemode(BaseGamemodeParameters gamemodeParameters, BaseRacePhase baseRacePhase)
+    : BaseGamemode(gamemodeParameters, baseRacePhase)
 {
     private int _newTick = 0;
     
     public override void Enter()
     {
-        carsInRace[playerCarIndex] = new InGameCar(playerCarIndex, GameSparker.GetCar(playerCarName).Car!, 500, 0, true);
+        carsInRace[playerCarIndex] = new InGameCar(playerCarIndex, GameSparker.GetCar(player.CarName).Car!, 500, 0, true);
         carsInRace[1] = new InGameCar(1, GameSparker.GetCar("football/BALL").Car!, 0, 0, false);
         carsInRace[1].Sfx.Mute = true;
 
