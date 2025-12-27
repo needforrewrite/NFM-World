@@ -36,6 +36,12 @@ public class MadSfx
         Mad.SfxPlayScrape += SfxPlayScrape;
         Mad.SfxPlayGscrape += SfxPlayGscrape;
         Mad.SfxPlaySkid += SfxPlaySkid;
+        mad.PowerUp += SfxPlayPowerup;
+    }
+
+    private void SfxPlayPowerup(object? sender, float f)
+    {
+        if(!Mute) SfxLibrary.powerup?.Play();
     }
 
     private void SparkEng(int i, int i263, CarStats stats)
