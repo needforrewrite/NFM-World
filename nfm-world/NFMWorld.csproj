@@ -43,6 +43,7 @@
       <PackageReference Include="MessagePack.Experimental" Version="3.1.4" />
       <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
       <PackageReference Include="Stride.Core.Mathematics" Version="4.3.0.2507" />
+      <PackageReference Include="Yoga-CS" Version="1.0.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />

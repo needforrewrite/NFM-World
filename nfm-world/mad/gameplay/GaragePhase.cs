@@ -2,6 +2,7 @@ using ImGuiNET;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.Mad;
+using NFMWorld.Mad.UI.yoga;
 using NFMWorld.Util;
 using Stride.Core.Extensions;
 
@@ -42,6 +43,23 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
     private int _searchKbFocus = 0;
 
     private PerspectiveCamera _camera = new();
+    private Node _ui = new Box()
+    {
+        BackgroundColor = new Color(255, 0, 0),
+        Width = 250,
+        Height = 250,
+        Padding = 20,
+
+        Children =
+        {
+            new Box()
+            {
+                BackgroundColor = new Color(0, 255, 0),
+                Flex = 1
+            }
+        }
+    };
+
     public GaragePhase(GraphicsDevice graphicsDevice, CarInfo currentCar) : this(graphicsDevice)
     {
         _selectedCarIdx = _cars.FindIndex(c =>
@@ -105,6 +123,7 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
         {
             gb.Tick();
         }
+        _ui.Update();
     }
 
     public override void Render()
@@ -120,6 +139,8 @@ public class GaragePhase(GraphicsDevice graphicsDevice) : BasePhase
         _camera.Position = new Vector3(-600, -300, 1000);
 
         _garageScene.Render(false);
+
+        _ui.LayoutAndRender(new Vector2(graphicsDevice.Viewport.Width, graphicsDevice.Viewport.Height));
     }
 
     public override void RenderImgui()
