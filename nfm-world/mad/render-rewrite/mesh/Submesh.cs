@@ -29,13 +29,27 @@ public class Submesh : IInstancedRenderElement
         _supermesh = supermesh;
         _graphicsDevice = graphicsDevice;
         PolyType = polyType;
-        _vertexBuffer = new VertexBuffer(graphicsDevice, Mesh.VertexPositionNormalColorCentroid.VertexDeclaration, vertices.Length, BufferUsage.None);
-        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Length, BufferUsage.None);
+        _vertexBuffer = new VertexBuffer(graphicsDevice, Mesh.VertexPositionNormalColorCentroid.VertexDeclaration, vertices.Length, BufferUsage.None)
+        {
+            Name = "Submesh Vertex Buffer",
+            Tag = this
+        };
+        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Length, BufferUsage.None)
+        {
+            Name = "Submesh Index Buffer",
+            Tag = this
+        };
         _vertexCount = vertices.Length;
         _triangleCount = indices.Length / 3;
         
         _vertexBuffer.SetDataEXT(vertices);
         _indexBuffer.SetDataEXT(indices);
+    }
+
+    ~Submesh()
+    {
+        _vertexBuffer.Dispose();
+        _indexBuffer.Dispose();
     }
 
     public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)

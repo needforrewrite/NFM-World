@@ -43,16 +43,30 @@ public class GroundPolys : Transform, IImmediateRenderable
                 indices.AddRange(i0 + baseIndex, i1 + baseIndex, i2 + baseIndex);
             }
         }
-        
-        _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None);
+
+        _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None)
+        {
+            Name = "Ground Polys Vertex Buffer",
+            Tag = this
+        };
         _vertexBuffer.SetDataEXT(data);
-        
-        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+
+        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None)
+        {
+            Name = "Ground Polys Index Buffer",
+            Tag = this
+        };
         _indexBuffer.SetDataEXT(indices);
         _triangleCount = indices.Count / 3;
         _vertexCount = data.Count;
 
         _material = Program._groundShader;
+    }
+    
+    ~GroundPolys()
+    {
+        _vertexBuffer.Dispose();
+        _indexBuffer.Dispose();
     }
 
     public void Render(Camera camera, Lighting? lighting = null)

@@ -128,21 +128,40 @@ public sealed class CollisionDebugMesh : GameObject
             }
         }
 
-        lineVertexBuffer = new VertexBuffer(GameSparker._graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None);
+        lineVertexBuffer = new VertexBuffer(GameSparker._graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None)
+        {
+            Name = "Collision Debug Mesh Vertex Buffer",
+            Tag = this
+        };
         lineVertexBuffer.SetDataEXT(data);
 	    
-        lineIndexBuffer = new IndexBuffer(GameSparker._graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+        lineIndexBuffer = new IndexBuffer(GameSparker._graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None)
+        {
+            Name = "Collision Debug Mesh Index Buffer",
+            Tag = this
+        };
         lineIndexBuffer.SetDataEXT(indices);
 	    
         lineTriangleCount = indices.Count / 3;
         lineVertexCount = data.Count;
         
-        lineInstanceBuffer = new DynamicVertexBuffer(GameSparker._graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.WriteOnly);
+        lineInstanceBuffer = new DynamicVertexBuffer(GameSparker._graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.WriteOnly)
+        {
+            Name = "Collision Debug Mesh Instance Buffer",
+            Tag = this
+        };
         lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);
 
         _material = new LineEffect(Program._lineShader);
 
         #endregion
+    }
+
+    ~CollisionDebugMesh()
+    {
+        lineVertexBuffer.Dispose();
+        lineIndexBuffer.Dispose();
+        lineInstanceBuffer.Dispose();
     }
 
     public override void Render(Camera camera, Lighting? lighting)

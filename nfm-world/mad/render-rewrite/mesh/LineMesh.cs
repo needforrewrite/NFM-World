@@ -54,12 +54,18 @@ public class LineMesh : IInstancedRenderElement
             data.AddRange(verts);
         }
 
-        var lineVertexBuffer = new VertexBuffer(graphicsDevice,
-            LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None);
+        var lineVertexBuffer = new VertexBuffer(graphicsDevice, LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None)
+        {
+            Name = "Line Mesh Vertex Buffer",
+            Tag = this
+        };
         lineVertexBuffer.SetDataEXT(data);
 
-        var lineIndexBuffer =
-            new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None);
+        var lineIndexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None)
+        {
+            Name = "Line Mesh Index Buffer",
+            Tag = this
+        };
         lineIndexBuffer.SetDataEXT(indices);
 
         var lineVertexCount = data.Count;
@@ -71,6 +77,12 @@ public class LineMesh : IInstancedRenderElement
         _lineIndexBuffer = lineIndexBuffer;
         _lineTriangleCount = lineTriangleCount;
         _lineVertexCount = lineVertexCount;
+    }
+
+    ~LineMesh()
+    {
+        _lineVertexBuffer.Dispose();
+        _lineIndexBuffer.Dispose();
     }
 
     public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)

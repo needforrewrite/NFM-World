@@ -24,12 +24,21 @@ public class Ground : Transform, IImmediateRenderable
             new(new Vector3(-size, World.Ground, size), color),
             new(new Vector3(size, World.Ground, size), color)
         ];
-        
-        _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Length, BufferUsage.None);
+
+        _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Length, BufferUsage.None)
+        {
+            Name = "Ground Vertex Buffer",
+            Tag = this
+        };
         _vertexBuffer.SetDataEXT(data);
         _triangleCount = data.Length / 3;
 
         _material = Program._groundShader;
+    }
+    
+    ~Ground()
+    {
+        _vertexBuffer.Dispose();
     }
 
     public void Render(Camera camera, Lighting? lighting = null)
