@@ -126,6 +126,7 @@ matrix LightViewProj0;
 texture ShadowMap0;
 sampler ShadowMapSampler0 = sampler_state
 {
+    Filter = MIN_MAG_MIP_POINT;
     Texture = <ShadowMap0>;
     AddressU = Clamp;
     AddressV = Clamp;
@@ -134,6 +135,7 @@ matrix LightViewProj1;
 texture ShadowMap1;
 sampler ShadowMapSampler1 = sampler_state
 {
+    Filter = MIN_MAG_MIP_POINT;
     Texture = <ShadowMap1>;
     AddressU = Clamp;
     AddressV = Clamp;
@@ -142,6 +144,7 @@ matrix LightViewProj2;
 texture ShadowMap2;
 sampler ShadowMapSampler2 = sampler_state
 {
+    Filter = MIN_MAG_MIP_POINT;
     Texture = <ShadowMap2>;
     AddressU = Clamp;
     AddressV = Clamp;

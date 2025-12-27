@@ -16,17 +16,17 @@ public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : B
 
     public PerspectiveCamera camera = new();
     public Camera[] lightCameras = [
-        new OrthoCamera
+        new OrthoLightCamera
         {
             Width = 3000,
             Height = 3000
         },
-        new OrthoCamera
+        new OrthoLightCamera
         {
             Width = 16384,
             Height = 16384
         },
-        new OrthoCamera
+        new OrthoLightCamera
         {
             Width = 65536,
             Height = 65536
