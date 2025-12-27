@@ -20,7 +20,7 @@ public class Mad
     internal bool Btab;
     internal int Capcnt;
     internal bool BadLanding;
-    private readonly bool[] _caught = new bool[8];
+    private readonly UnlimitedArray<bool> _caught = [];
     internal CarStats Stat;
     internal int Clear;
     internal int Cn;
@@ -37,7 +37,7 @@ public class Mad
     private int _dcnt;
     internal fix64 Dcomp;
     internal bool Wasted;
-    private readonly bool[] _dominate = new bool[8];
+    private readonly UnlimitedArray<bool> _dominate = [];
     private readonly fix64 _drag = (fix64)(0.5F);
     private int _fixes = -1;
     private int _focus = -1;
@@ -1154,15 +1154,16 @@ public class Mad
         } //
 
         var surfaceType = 1;
-        for (var i = 0; i < Trackers.Nt; i++) // maxine: remove trackers.sect use here
+        foreach (var tracker in Trackers.RetrievePoint(conto.X, conto.Z))
         {
+            var i = tracker.Index;
             if (fix64.Abs(Trackers.Zy[i]) != 90 && fix64.Abs(Trackers.Xy[i]) != 90 &&
                 fix64.Abs(conto.X - Trackers.X[i]) < Trackers.Radx[i] &&
                 fix64.Abs(conto.Z - Trackers.Z[i]) < Trackers.Radz[i])
             {
                 surfaceType = Trackers.Skd[i];
             }
-        } //
+        }
 
         // maxine: we counteract the reduced bottomy from hypergliding here
         int wheelGround = GetWheelGround(this, conto, bottomy);
@@ -2279,10 +2280,12 @@ public class Mad
 
         int nWheelsRoadRamp = 0;
         int nWheelsDirtRamp = 0;
-        for (int j = 0; j < Trackers.Nt; j++)
+        for (int k = 0; k < 4; k++)
         {
-            for (int k = 0; k < 4; k++)
+            foreach (var tracker in Trackers.RetrievePoint(wheelx[k], wheelz[k]))
             {
+                var j = tracker.Index;
+
                 // the part below just makes sparks and scrape noises
                 // this looks wrong though? there is no rady check
                 if (isWheelGrounded[k] && BadLanding && (Trackers.Skd[j] == 0 || Trackers.Skd[j] == 1) && wheelx[k] > (fix64) (Trackers.X[j] - Trackers.Radx[j]) && wheelx[k] < (fix64) (Trackers.X[j] + Trackers.Radx[j]) && wheelz[k] > (fix64) (Trackers.Z[j] - Trackers.Radz[j]) && wheelz[k] < (fix64) (Trackers.Z[j] + Trackers.Radz[j])) {
