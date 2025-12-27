@@ -66,9 +66,8 @@ public class Scene
         if (clearRenderBuffer)
             _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
 
-        _graphicsDevice.SamplerStates[1] = SamplerState.PointClamp;
-        _graphicsDevice.SamplerStates[2] = SamplerState.PointClamp;
-        _graphicsDevice.SamplerStates[3] = SamplerState.PointClamp;
+        for (var i = 0; i < 16; i++)
+            _graphicsDevice.SamplerStates[i] = SamplerState.PointClamp;
 
         RenderInternal();
 
