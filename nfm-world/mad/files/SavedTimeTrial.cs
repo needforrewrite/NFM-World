@@ -1,114 +1,94 @@
 using System.Collections;
 using Maxine.Extensions;
+using MessagePack;
 using NFMWorld.Mad;
+using NFMWorld.Mad.packets;
 using NFMWorld.Util;
 
+[MessagePackObject]
 public class SavedTimeTrial
 {
-    public UnlimitedArray<Nibble<byte>> TickInputs;
-    public UnlimitedArray<long> Splits;
+    [Key(0)] public string CarName;
+    [Key(1)] public string StageName;
+    [Key(2)] public Demo DemoData;
+    [Key(3)] public Splits Splits;
 
-    private string _carName;
-    private string _stageName;
+    public static string GetDirName(string carName, string stageName)
+    {
+        return new FileInfo(GetPathName(carName, stageName)).Directory?.FullName ?? "";
+    }
 
-    private string _pathName;
-    private string _dirName;
-
-    /// <summary>
-    /// If you change the physics (or this file format), BUMP THIS NUMBER
-    /// </summary>
-    private static int _demoVersion = 1;
+    public static string GetPathName(string carName, string stageName)
+    {
+        return "data/tts/" + stageName + "/" + carName + ".timetrial";
+    }
 
     public SavedTimeTrial(string carName, string stageName)
     {
-        _carName = carName;
-        _stageName = stageName;
+        CarName = carName;
+        StageName = stageName;
 
-        _pathName = "data/tts/" + stageName + "/" + carName + ".timetrial";
-        _dirName = new FileInfo(_pathName).Directory?.FullName ?? "";
-
-        TickInputs = [];
-        Splits = [];
+        DemoData = new Demo()
+        {
+            Ticks = new List<DemoEntry>()
+        };
+        Splits = new Splits()
+        {
+            SplitTimes = new List<long>()
+        };
     }
 
-    public bool Load()
+    public static SavedTimeTrial? Load(string carName, string stageName)
     {
-        if (System.IO.File.Exists(_pathName))
+        if (System.IO.File.Exists(GetPathName(carName, stageName)))
         {
-            using (BinaryReader reader = new(System.IO.File.OpenRead(_pathName)))
-            {
-                int version = reader.ReadInt32();
-                if(version != _demoVersion)
-                {
-                    GameSparker.Writer.WriteLine("Attempted to load saved time trial at " + _pathName + ", but it was the wrong version. Expected: " + _demoVersion + ", actual: " + version);
-                    return false;
-                }
-
-                // read splits
-                int splitsCount = reader.ReadInt32();
-                for(int i = 0; i < splitsCount; i++)
-                {
-                    Splits[i] = reader.ReadInt32();
-                }
-
-                // read demo
-                int entry;
-                while(reader.BaseStream.Position < reader.BaseStream.Length)
-                {
-                    entry = reader.ReadInt32();
-                    TickInputs[TickInputs.Count] = (byte)entry;
-                }
-            }
-
-            return true;
+            using var compressedStream = new System.IO.Compression.DeflateStream(
+                System.IO.File.OpenRead(GetPathName(carName, stageName)),
+                System.IO.Compression.CompressionMode.Decompress
+            );
+            using var memoryStream = new MemoryStream();
+            compressedStream.CopyTo(memoryStream);
+            byte[] data = memoryStream.ToArray();
+            return MessagePackSerializer.Deserialize<SavedTimeTrial>(data, MsgPackHelpers.Options);
         }
-        return false;
+        return null;
     }
 
     public void Save()
     {
-        if (!Directory.Exists(_dirName))
+        if (!Directory.Exists(GetDirName(CarName, StageName)))
         {
-            Directory.CreateDirectory(_dirName);
+            Directory.CreateDirectory(GetDirName(CarName, StageName));
         }
 
-        using (BinaryWriter outputFile = new BinaryWriter(System.IO.File.OpenWrite(_pathName)))
-        {
-            outputFile.Write(_demoVersion);
-            // write splits
-            outputFile.Write(Splits.Count);
-            foreach(int split in Splits)
-            {
-                outputFile.Write(split);
-            }
+        // compress file using DeflateStream
 
-            // write demo
-            foreach (var enc in TickInputs)
-            {
-                outputFile.Write((int)enc);
-            }
-        }
+        byte[] data = MessagePackSerializer.Serialize(this, MsgPackHelpers.Options);
+        using var compressedStream = new System.IO.Compression.DeflateStream(
+            System.IO.File.OpenWrite(GetPathName(CarName, StageName)),
+            System.IO.Compression.CompressionMode.Compress
+        );
+        compressedStream.Write(data, 0, data.Length);
     }
 
-    public void RecordTick(Control control)
+    public void RecordTick(InGameCar car, int checkpointInLap, int lap)
     {
-        var enc = control.Encode();
-        TickInputs[TickInputs.Count] = enc;
+        DemoEntry entry = DemoEntry.Create(car, checkpointInLap, lap);
+        DemoData.AddEntry(entry);
     }
-
     public Nibble<byte>? GetTick(int tick)
     {
-        if(tick >= TickInputs.Count) return null;
-        return TickInputs[tick];
+        if(tick >= DemoData.Ticks.Count) return null;
+        return DemoData.Ticks[tick].SerializedControl;
     }
 
     public void RecordSplit(long elapsed)
     {
-        Splits[Splits.Count] = elapsed;
+        Splits.SplitTimes.Add(elapsed);
     }
 
     public long GetSplitDiff(SavedTimeTrial other, int sample)
     {
-        return Splits[sample] - other.Splits[sample];
+        return Splits.SplitTimes[sample] - other.Splits.SplitTimes[sample];
     }
 }

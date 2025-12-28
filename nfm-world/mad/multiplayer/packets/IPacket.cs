@@ -10,7 +10,7 @@ namespace NFMWorld.Mad.packets;
 
 public interface IPacket;
 
-file static class MsgPackHelpers
+public static class MsgPackHelpers
 {
     public static MessagePackSerializerOptions Options { get; } = MessagePackSerializerOptions.Standard
         .WithSecurity(MessagePackSecurity.UntrustedData)
