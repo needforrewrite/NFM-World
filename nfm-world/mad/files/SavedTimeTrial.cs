@@ -14,6 +14,11 @@ public class SavedTimeTrial
     private string _pathName;
     private string _dirName;
 
+    /// <summary>
+    /// If you change the physics (or this file format), BUMP THIS NUMBER
+    /// </summary>
+    private static int _demoVersion = 1;
+
     public SavedTimeTrial(string carName, string stageName)
     {
         _carName = carName;
@@ -32,6 +37,13 @@ public class SavedTimeTrial
         {
             using (BinaryReader reader = new(System.IO.File.OpenRead(_pathName)))
             {
+                int version = reader.ReadInt32();
+                if(version != _demoVersion)
+                {
+                    GameSparker.Writer.WriteLine("Attempted to load saved time trial at " + _pathName + ", but it was the wrong version. Expected: " + _demoVersion + ", actual: " + version);
+                    return false;
+                }
+
                 // read splits
                 int splitsCount = reader.ReadInt32();
                 for(int i = 0; i < splitsCount; i++)
@@ -62,6 +74,7 @@ public class SavedTimeTrial
 
         using (BinaryWriter outputFile = new BinaryWriter(System.IO.File.OpenWrite(_pathName)))
         {
+            outputFile.Write(_demoVersion);
             // write splits
             outputFile.Write(Splits.Count);
             foreach(int split in Splits)
