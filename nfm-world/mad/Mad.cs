@@ -379,6 +379,20 @@ public class Mad
         conto.Wasted = true;
     }
 
+    internal static fix64 RoundToZero(fix64 val)
+    {
+        if(val > (fix64)0f)
+        {
+            return fix64.Floor(val);
+        } else if(val < (fix64)0f)
+        {
+            return fix64.Ceiling(val);
+        } else
+        {
+            return val;
+        }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static fix64 Sin(fix64 deg)
     {
@@ -757,17 +771,17 @@ public class Mad
                     Rcomp -= (fix64)(2.0F) * Stat.Airs * _tickRate;
                 }
 
-                Pzy = QuantizeTowardsZero((Pzy + (Dcomp - Ucomp) * Cos(Pxy) * _tickRate), _tickRate); //
+                Pzy = QuantizeTowardsZero(Pzy + (Dcomp - Ucomp) * Cos(Pxy) * _tickRate, _tickRate); //
                 if (zyinv)
                 {
-                    conto.Xz = QuantizeTowardsZero(conto.Xz + ((Dcomp - Ucomp) * Sin(Pxy) * _tickRate), _tickRate);
+                    conto.Xz = QuantizeTowardsZero(conto.Xz + ((Dcomp * _tickRate - Ucomp * _tickRate) * Sin((int)RoundToZero(Pxy)) * _tickRate), _tickRate);
                 }
                 else
                 {
-                    conto.Xz = QuantizeTowardsZero(conto.Xz - ((Dcomp - Ucomp) * Sin(Pxy) * _tickRate), _tickRate);
+                    conto.Xz = QuantizeTowardsZero(conto.Xz - ((Dcomp * _tickRate - Ucomp * _tickRate) * Sin((int)RoundToZero(Pxy)) * _tickRate), _tickRate);
                 }
 
-                Pxy = QuantizeTowardsZero((Pxy + (Rcomp - Lcomp) * _tickRate), _tickRate);
+                Pxy = QuantizeTowardsZero(Pxy + (Rcomp - Lcomp) * _tickRate, _tickRate);
             }
             else
             {
