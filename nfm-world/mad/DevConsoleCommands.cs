@@ -222,10 +222,10 @@ namespace NFMWorld.Mad
                 var car = inRacePhase.CarsInRace[inRacePhase.playerCarIndex];
                 var nbsq = 0;
                 var squash = car.Mad.Squash;
-                MeshDamage.DamageY(car.Stats, car, 0, amount, car.Mad.Mtouch, ref nbsq, ref squash);
-                MeshDamage.DamageY(car.Stats, car, 1, amount, car.Mad.Mtouch, ref nbsq, ref squash);
-                MeshDamage.DamageY(car.Stats, car, 2, amount, car.Mad.Mtouch, ref nbsq, ref squash);
-                MeshDamage.DamageY(car.Stats, car, 3, amount, car.Mad.Mtouch, ref nbsq, ref squash);
+                MeshDamage.DamageY(car.Stats, car, 0, amount, car.Mad.Grounded, ref nbsq, ref squash);
+                MeshDamage.DamageY(car.Stats, car, 1, amount, car.Mad.Grounded, ref nbsq, ref squash);
+                MeshDamage.DamageY(car.Stats, car, 2, amount, car.Mad.Grounded, ref nbsq, ref squash);
+                MeshDamage.DamageY(car.Stats, car, 3, amount, car.Mad.Grounded, ref nbsq, ref squash);
             }
         }
 

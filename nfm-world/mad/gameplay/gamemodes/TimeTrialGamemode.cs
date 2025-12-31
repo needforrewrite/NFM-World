@@ -257,6 +257,15 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         }
     }
 
+#if DEBUG
+    private int _ticks2 = 0;
+    private bool slowdown;
+    private bool pause;
+    private bool step;
+    private bool rewind;
+    private UnlimitedArray<DemoEntry[]?> _timeTravelData = new();
+#endif
+
     private void TimeTrialInRace()
     {
         SetLapText(carsInRace[playerCarIndex].currentLap);
@@ -267,6 +276,61 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         _pdBars.SetPowerBarFill((float)carsInRace[playerCarIndex].Mad.Power);
         _pdBars.UpdatePowerBarColor();
 
+#if DEBUG
+        if (slowdown)
+        {
+            if (_ticks2++ % 10 != 0)
+            {
+                return;
+            }
+        }
+
+        if (pause)
+        {
+            if (!step)
+            {
+                return;
+            }
+
+            step = false;
+        }
+
+        if (rewind)
+        {
+            if (tick > 0)
+            {
+                tick--;
+                for (var i = 0; i < carsInRace.Count; i++)
+                {
+                    _timeTravelData[tick]![i].ApplyToCar(carsInRace[i]);
+                }
+            }
+
+            Console.WriteLine($"Rewind Tick {tick}");
+        }
+        else if (_timeTravelData[tick] is { } data)
+        {
+            for (var i = 0; i < carsInRace.Count; i++)
+            {
+                _timeTravelData[tick]?[i].ApplyControlToCar(carsInRace[i]);
+            }
+            Console.WriteLine($"Replay Tick {tick}");
+        }
+        else 
+        {
+            var arr = _timeTravelData[tick] = new DemoEntry[carsInRace.Count];
+            for (var i = 0; i < carsInRace.Count; i++)
+            {
+                arr[i] = DemoEntry.Create(carsInRace[i]);
+            }
+            Console.WriteLine($"Tick {tick}");
+        }
+#endif
+
+#if DEBUG
+        if (!rewind)
+        {
+#endif
         if (bestTimeTrial != null)
         {
             carsInRace[playerCarIndex + 1].Control.Decode(bestTimeTrial.GetTick(tick) ?? (false, false, false, false, false));
@@ -291,6 +355,10 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
             
             SfxLibrary.checkpoint?.Play();
         }
+#if DEBUG
+            tick++;
+        }
+#endif
 
         if (carsInRace[playerCarIndex].currentCheckpoint == currentStage.checkpoints.Count - 1 && carsInRace[playerCarIndex].currentLap == currentStage.nlaps - 1)
         {
@@ -320,8 +388,6 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
             _currentState = TimeTrialState.Finished;
             raceTimer.Stop();
         }
-
-        tick++;
     }
 
     private void TimeTrialFinished()
@@ -363,11 +429,45 @@ public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, BaseRa
         {
             Reset();
         }
+#if DEBUG
+        if (key == Keys.Q)
+        {
+            slowdown = true;
+        }
+
+        if (key == Keys.P)
+        {
+            pause = !pause;
+        }
+        if (key == Keys.S)
+        {
+            step = true;
+        }
+
+        if (key == Keys.W)
+        {
+            rewind = true;
+        }
+#endif
     }
 
     public override void KeyReleased(Keys key)
     {
         // Handle key releases specific to Time Trial mode
+#if DEBUG
+        if (key == Keys.Q)
+        {
+            slowdown = false;
+        }
+        if (key == Keys.S)
+        {
+            step = false;
+        }
+        if (key == Keys.W)
+        {
+            rewind = false;
+        }
+#endif
     }
 
     public override void Render()

@@ -83,8 +83,8 @@ public struct DemoEntry
         entry.TheBitFlags.BadLanding = car.Mad.BadLanding;
         entry.TheBitFlags.Wasted = car.Mad.Wasted;
         entry.Speed = car.Mad.Speed;
-        entry.TheBitFlags.Mtouch = car.Mad.Mtouch;
-        entry.TheBitFlags.Wtouch = car.Mad.Wtouch;
+        entry.TheBitFlags.Mtouch = car.Mad.Grounded;
+        entry.TheBitFlags.Wtouch = false;
         entry.TheBitFlags.Gtouch = car.Mad.Gtouch;
         entry.TheBitFlags.Pu = car.Mad.Pu;
         entry.TheBitFlags.Pd = car.Mad.Pd;
@@ -96,6 +96,15 @@ public struct DemoEntry
         entry.XzReadings.Txz = car.Mad.Txz;
 
         return entry;
+    }
+    
+    public void ApplyControlToCar(InGameCar car)
+    {
+        car.Control.Up = TheBitFlags.Up;
+        car.Control.Down = TheBitFlags.Down;
+        car.Control.Left = TheBitFlags.Left;
+        car.Control.Right = TheBitFlags.Right;
+        car.Control.Handb = TheBitFlags.Handb;
     }
 
     public void ApplyToCar(InGameCar car)
@@ -142,8 +151,7 @@ public struct DemoEntry
         car.Mad.Pushed = TheBitFlags.Pushed;
         car.Mad.Newcar = TheBitFlags.Newcar;
 
-        car.Mad.Mtouch = TheBitFlags.Mtouch;
-        car.Mad.Wtouch = TheBitFlags.Wtouch;
+        car.Mad.Grounded = TheBitFlags.Mtouch;
         car.Mad.Gtouch = TheBitFlags.Gtouch;
 
         car.Mad.Pu = TheBitFlags.Pu;

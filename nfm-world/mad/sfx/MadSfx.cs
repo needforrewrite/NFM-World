@@ -100,7 +100,7 @@ public class MadSfx
                     bool1 = true;
                     bool258 = true;
                 }
-                if (bool1 && mad.Mtouch)
+                if (bool1 && mad.Grounded)
                 {
                     if (!mad.BadLanding)
                     {
@@ -199,13 +199,13 @@ public class MadSfx
                 else
                 {
                     pwait = 15;
-                    if (!mad.Mtouch && !grrd && Random.Shared.NextDouble() > 0.4)
+                    if (!mad.Grounded && !grrd && Random.Shared.NextDouble() > 0.4)
                     {
                         SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)].Loop();
                         stopcnt = 5;
                         grrd = true;
                     }
-                    if (!mad.Wtouch && !aird)
+                    if (!mad.Grounded && !aird)
                     {
                         StopAirs();
                         SfxLibrary.air[(int)(Random.Shared.NextDouble() * 4.0F)].Loop();

@@ -85,6 +85,7 @@ public class InRacePhase(GraphicsDevice graphicsDevice) : BaseRacePhase(graphics
 
     public override void GameTick()
     {
+
         base.GameTick();
         
         gamemodeInstance!.GameTick();
@@ -108,6 +109,7 @@ public class InRacePhase(GraphicsDevice graphicsDevice) : BaseRacePhase(graphics
     {
         base.KeyPressed(key, imguiWantsKeyboard);
         gamemodeInstance?.KeyPressed(key);
+
     }
 
     public override void KeyReleased(Keys key, bool imguiWantsKeyboard)

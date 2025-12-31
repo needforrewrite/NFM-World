@@ -5,7 +5,7 @@ namespace nfm_world.mad.collision;
 
 public static class CollisionExtensions
 {
-    extension(f64Vector3 vec)
+    extension(in f64Vector3 vec)
     {
         public f64Vector3 RotateZy(fix64 zy) {
             var a = zy * fix64.DegToRad;
@@ -24,8 +24,17 @@ public static class CollisionExtensions
                 vec.X * -fix64.Sin(a) + vec.Z * fix64.Cos(a)
             );
         }
+        
+        public f64Vector3 RotateXy(fix64 xy) {
+            var a = xy * fix64.DegToRad;
+            return new f64Vector3(
+                vec.X * fix64.Cos(a) + vec.Y * -fix64.Sin(a),
+                vec.X * fix64.Sin(a) + vec.Y * fix64.Cos(a),
+                vec.Z
+            );
+        }
 
-        public (fix64 x1, fix64 x2) Coefficients(f64Vector3 v1, f64Vector3 v2) {
+        public (fix64 x1, fix64 x2) Coefficients(in f64Vector3 v1, in f64Vector3 v2) {
             // A^T A terms
             var a11 = f64Vector3.Dot(v1, v1);
             var a12 = f64Vector3.Dot(v1, v2);

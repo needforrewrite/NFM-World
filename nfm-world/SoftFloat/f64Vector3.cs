@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Xna.Framework.Design;
+using nfm_world.mad.collision;
 
 namespace SoftFloat;
 
@@ -1500,5 +1501,17 @@ public struct f64Vector3 : IEquatable<f64Vector3>
 	public Span<fix64> AsSpan()
 	{
 		return MemoryMarshal.CreateSpan(ref Unsafe.As<f64Vector3, fix64>(ref this), 3);
+	}
+
+	public static f64Vector3 RotateAroundPivot(in f64Vector3 point, in f64Vector3 pivot, in f64Euler euler)
+	{
+		var dir = point - pivot; // get point direction relative to pivot
+		dir = dir.RotateXy(euler.Xy.Degrees).RotateZy(euler.Zy.Degrees).RotateXz(euler.Xz.Degrees);
+		return dir + pivot; // calculate rotated point
+	}
+
+	public static f64Vector3 Transform(in f64Vector3 vec, in f64Euler euler)
+	{
+		return vec.RotateXy(euler.Xy.Degrees).RotateZy(euler.Zy.Degrees).RotateXz(euler.Xz.Degrees);
 	}
 }

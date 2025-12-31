@@ -37,7 +37,6 @@ public class Mad
     internal CarStats Stat;
     internal int Cn;
     internal int Cntdest;
-    internal int _cntouch;
     
     /// <summary>
     /// Is colliding with the client player car
@@ -62,7 +61,7 @@ public class Mad
     internal fix64 Lcomp;
     internal sbyte Loop;
     internal fix64 _lxz;
-    internal bool Mtouch;
+    internal bool Grounded;
     internal fix64 Mxz;
     internal int _nbsq;
     internal bool Newcar;
@@ -87,6 +86,9 @@ public class Mad
     internal InlineArray4<fix64> Scx;
     internal InlineArray4<fix64> Scy;
     internal InlineArray4<fix64> Scz;
+    internal fix64 AngularVelXy; // Roll velocity
+    internal fix64 AngularVelZy; // Pitch velocity  
+    internal fix64 AngularVelXz; // Yaw velocity
     internal int Shakedam;
     internal sbyte Skid;
     internal fix64 Speed;
@@ -100,7 +102,6 @@ public class Mad
     internal int Trcnt;
     internal fix64 Txz;
     internal fix64 Ucomp;
-    internal bool Wtouch;
     internal int _xtpower;
 
     internal bool IsClientPlayer;
@@ -386,7 +387,7 @@ public class Mad
         conto.Wasted = true;
     }
 
-    public void bounceRebound(int wi, ContO conto, DeterministicRandom random, fix64 avgscy)
+    public void bounceRebound(int wi, ContO conto, DeterministicRandom random)
     {
         // part 1: the closer we are to 90/-90 in Pxy or Pzy, the bigger the bounce
         fix64 rebound = (fix64.Abs(UMath.Sin(Pxy)) + fix64.Abs(UMath.Sin(Pzy))) / (fix64)3;
@@ -400,7 +401,7 @@ public class Mad
 
         Regy(wi, fix64.Abs(Scy[wi] * rebound), conto, random);
         // if scy is > 0 then we are going down, apply the rebound bounce
-        if (Scy[wi] > 0)
+        if (Scy[wi] > 100)
             // we are subtracting scy * f_51 from scy
             // so, for example, if f_51 is 1.1 (which is the minimum bounce)
             // the result will be = scy - (1.1 * scy)
@@ -417,10 +418,8 @@ public class Mad
             // Scy[wi] -= fix64.Abs(Scy[wi] * rebound);
             // Scy[wi] -= Scy[wi] * rebound; // don't need the abs, both are always positive
             // Scy[wi] -= Scy[wi] * rebound;
-            Scy[wi] = -avgscy * rebound; // maxine: make rebound consistent between wheels (unaffected by scy value)
+            Scy[wi] -= Scy[wi] * rebound;
     }
-    internal int Mtcount = 0;
-    internal fix64 py = 0;
 
     internal void Drive(Control control, ContO conto, Stage stage)
     {
@@ -436,24 +435,10 @@ public class Mad
         var revspeed = false;
         var hitVertical = false;
         BadLanding = false;
-        if (!Mtouch) Mtcount++; //DS-addons: Bad landing hotfix
-        fix64 zyangle;
-        for (zyangle = fix64.Abs(Pzy); zyangle > 360; zyangle -= 360)
-        {
-            /* empty */
-        }
-
-        fix64 xyangle;
-        for (xyangle = fix64.Abs(Pxy); xyangle > 360; xyangle -= 360)
-        {
-            /* empty */
-        }
-
+        
         fix64 zy;
-        for (zy = fix64.Abs(Pzy); zy > 270; zy -= 360)
-        {
-        }
-
+        for (zy = Pzy; zy > 180; zy -= 360) { }
+        for (; zy < -180; zy += 360) { }
         zy = fix64.Abs(zy);
         if (zy > 90)
         {
@@ -462,10 +447,8 @@ public class Mad
 
         var xyinv = false;
         fix64 xy;
-        for (xy = fix64.Abs(Pxy); xy > 270; xy -= 360)
-        {
-        }
-
+        for (xy = Pxy; xy > 180; xy -= 360) { }
+        for (; xy < -180; xy += 360) { }
         xy = fix64.Abs(xy);
         if (xy > 90)
         {
@@ -505,12 +488,12 @@ public class Mad
         fix64 airx = 0;
         fix64 airz = 0;
         fix64 airy = 0;
-        if (Mtouch)
+        if (Grounded)
         {
             Loop = 0;
         }
 
-        if (Wtouch)
+        if (Grounded)
         {
             if (Loop == 2 || Loop == -1)
             {
@@ -546,7 +529,7 @@ public class Mad
         {
             if (!Pushed)
             {
-                if (!Wtouch)
+                if (!Grounded)
                 {
                     if (Loop == 0)
                     {
@@ -680,17 +663,9 @@ public class Mad
                     Rcomp -= 2 * Stat.Airs * _tickRate;
                 }
 
-                Pzy = UMath.QuantizeTowardsZero((Pzy + (Dcomp - Ucomp) * UMath.Cos(Pxy) * _tickRate), _tickRate); //
-                if (zyinv)
-                {
-                    conto.Xz = UMath.QuantizeTowardsZero(conto.Xz + ((Dcomp - Ucomp) * UMath.Sin(Pxy) * _tickRate), _tickRate);
-                }
-                else
-                {
-                    conto.Xz = UMath.QuantizeTowardsZero(conto.Xz - ((Dcomp - Ucomp) * UMath.Sin(Pxy) * _tickRate), _tickRate);
-                }
-
-                Pxy = UMath.QuantizeTowardsZero((Pxy + (Rcomp - Lcomp) * _tickRate), _tickRate);
+                // AngularVelZy += (Dcomp - Ucomp) * UMath.Cos(Pxy) * _tickRate;
+                // AngularVelXz += (Dcomp - Ucomp) * UMath.Sin(Pxy) * _tickRate * (zyinv ? 1 : -1);
+                AngularVelXy = (Rcomp - Lcomp);
             }
             else
             {
@@ -872,17 +847,9 @@ public class Mad
                         Pd = false;
                     }
 
-                    Pzy = UMath.QuantizeTowardsZero((Pzy + ((Dcomp - Ucomp) * UMath.Cos(Pxy)) * _tickRate), _tickRate);
-                    if (zyinv)
-                    {
-                        conto.Xz = UMath.QuantizeTowardsZero(conto.Xz + (((Dcomp - Ucomp) * UMath.Sin(Pxy)) * _tickRate), _tickRate);
-                    }
-                    else
-                    {
-                        conto.Xz = UMath.QuantizeTowardsZero(conto.Xz - (((Dcomp - Ucomp) * UMath.Sin(Pxy)) * _tickRate), _tickRate);
-                    }
-
-                    Pxy = UMath.QuantizeTowardsZero((Pxy + (Rcomp - Lcomp) * _tickRate), _tickRate);
+                    // AngularVelZy += (Dcomp - Ucomp) * UMath.Cos(Pxy) * _tickRate;
+                    // AngularVelXz += (Dcomp - Ucomp) * UMath.Sin(Pxy) * _tickRate * (zyinv ? 1 : -1);
+                    AngularVelXy = (Rcomp - Lcomp);
                 }
             }
         }
@@ -970,7 +937,7 @@ public class Mad
             i21 = -i21;
         }
 
-        if (Wtouch)
+        if (Grounded)
         {
             if (!BadLanding)
             {
@@ -986,7 +953,6 @@ public class Mad
                 conto.Xz += (conto.Wxz / i21 * _tickRate);
             }
 
-            Wtouch = false;
             Gtouch = false;
         }
         else
@@ -1026,22 +992,26 @@ public class Mad
                 }
             }
         }
-
-
-        var wheelx = new InlineArray4<fix64>();
-        var wheelz = new InlineArray4<fix64>();
-        var wheely = new InlineArray4<fix64>();
+        
+        var euler = new f64Euler(
+            f64AngleSingle.FromDegrees(conto.Xz),
+            f64AngleSingle.FromDegrees(Pzy),
+            f64AngleSingle.FromDegrees(Pxy)
+        );
+        var wheelpos = new InlineArray4<f64Vector3>();
         for (var i24 = 0; i24 < 4; i24++)
         {
-            wheelx[i24] = conto.Keyx[i24] + conto.X;
-            wheely[i24] = bottomy + conto.Y;
-            wheelz[i24] = conto.Z + conto.Keyz[i24];
+            wheelpos[i24] = new f64Vector3(
+                conto.Keyx[i24] + conto.X,
+                bottomy + conto.Y,
+                conto.Z + conto.Keyz[i24]
+            );
+            
+            wheelpos[i24] = f64Vector3.RotateAroundPivot(wheelpos[i24], new f64Vector3(conto.X, conto.Y, conto.Z), euler);
+            
             Scy[i24] += 7 * _tickRate;
         }
 
-        UMath.Rot(wheelx, wheely, conto.X, conto.Y, Pxy, 4);
-        UMath.Rot(wheely, wheelz, conto.Y, conto.Z, Pzy, 4);
-        UMath.Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
         var wasMtouch = false;
         var i26 = ((Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4);
         var i27 = ((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4);
@@ -1070,11 +1040,12 @@ public class Mad
             FrameTrace.AddMessage($"Scx[{wheelid}]: {Scx[wheelid]:0.00}, Scz[{wheelid}]: {Scz[wheelid]:0.00}, Scy[{wheelid}]: {Scy[wheelid]:0.00}");
         }
 
-        for (var i29 = 0; i29 < 4; i29++)
+        // Apply wheel velocities to wheel positions
+        for (var i = 0; i < 4; i++)
         {
-            wheely[i29] += Scy[i29] * _tickRate;
-            wheelx[i29] += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4 * _tickRate;
-            wheelz[i29] += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4 * _tickRate;
+            wheelpos[i].Y += Scy[i] * _tickRate;
+            wheelpos[i].X += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4 * _tickRate;
+            wheelpos[i].Z += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4 * _tickRate;
         } //
 
         var surfaceType = 1;
@@ -1100,7 +1071,7 @@ public class Mad
         // maxine: we counteract the reduced bottomy from hypergliding here
         int wheelGround = GetWheelGround(this, conto, bottomy);
 
-        if (Mtouch)
+        if (Grounded)
         {
             // Jacher: 1/_tickrate for traction; Txz is set on previous tick so we need to scale
             var traction = Stat.Grip;
@@ -1223,8 +1194,8 @@ public class Mad
 
                         if (random.NextSFloat() > (fix64)0.65f)
                         {
-                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                                f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
+                            conto.Dust(j, wheelpos[j].X, wheelpos[j].Y, wheelpos[j].Z, (int)Scx[j], (int)Scz[j],
+                                f42 * Stat.Simag, (int)_tilt, BadLanding && Grounded, wheelGround);
                             if ( /*Im == XTGraphics.Im &&*/ !BadLanding)
                             {
                                 SfxPlaySkid(this, (surfaceType, (float)fix64.Sqrt(Scx[j] * Scx[j] + Scz[j] * Scz[j])));
@@ -1237,14 +1208,14 @@ public class Mad
                     {
                         if (surfaceType == 1 && random.NextSFloat() > (fix64)0.8f)
                         {
-                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                                (fix64)1.1F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
+                            conto.Dust(j, wheelpos[j].X, wheelpos[j].Y, wheelpos[j].Z, (int)Scx[j], (int)Scz[j],
+                                (fix64)1.1F * Stat.Simag, (int)_tilt, BadLanding && Grounded, wheelGround);
                         }
 
                         if ((surfaceType == 2 || surfaceType == 3) && random.NextSFloat() > (fix64)0.6f)
                         {
-                            conto.Dust(j, wheelx[j], wheely[j], wheelz[j], (int)Scx[j], (int)Scz[j],
-                                (fix64)1.15F * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
+                            conto.Dust(j, wheelpos[j].X, wheelpos[j].Y, wheelpos[j].Z, (int)Scx[j], (int)Scz[j],
+                                (fix64)1.15F * Stat.Simag, (int)_tilt, BadLanding && Grounded, wheelGround);
                         }
                     }
                 }
@@ -1278,7 +1249,7 @@ public class Mad
             fix64 sczavg = sczsum / 4;
             fix64 scxz = fix64.Hypot(sczavg, scxavg);
 
-            Mxz = (int)(UMath.dAtan2(-scxsum, sczsum));
+            Mxz = UMath.dAtan2(-scxsum, sczsum);
 
             if (Skid == 2)
             {
@@ -1295,8 +1266,7 @@ public class Mad
                 surfaceType = 0;
             } //
 
-            Mtouch = false;
-            Mtcount = 0;
+            Grounded = false;
             wasMtouch = true;
         }
         else
@@ -1304,23 +1274,22 @@ public class Mad
             Skid = 2;
         }
 
-        var nGroundedWheels = 0;
+        var nWheelsOnFlatRoad = 0;
         var isWheelGrounded = new InlineArray4<bool>();
         fix64 groundY = 250 + wheelGround;
-        fix64 wheelYThreshold = (fix64)5f;
+        fix64 wheelYThreshold = 5;
         fix64 f48 = 0;
-        for (var i49 = 0; i49 < 4; i49++)
+        for (var i = 0; i < 4; i++)
         {
-            isWheelGrounded[i49] = false;
-            var avgscy = (Scy[0] + Scy[1] + Scy[2] + Scy[3]) / 4;
-            if (wheely[i49] > (groundY - (fix64)20f))
+            isWheelGrounded[i] = false;
+            if (wheelpos[i].Y > (groundY - 5))
             {
-                nGroundedWheels++;
-                Wtouch = true;
+                nWheelsOnFlatRoad++;
+                Grounded = true;
                 Gtouch = true;
-                if (!wasMtouch && Scy[i49] != 7)
+                if (!wasMtouch && Scy[i] != 7)
                 {
-                    var f50 = Scy[i49] / (fix64)(333.33F);
+                    var f50 = Scy[i] / (fix64)(333.33F);
                     if (f50 > (fix64)(0.3F))
                     {
                         f50 = (fix64)(0.3F);
@@ -1335,16 +1304,16 @@ public class Mad
                         f50 += (fix64)1.2f;
                     }
 
-                    conto.Dust(i49, wheelx[i49], wheely[i49], wheelz[i49], (int)Scx[i49], (int)Scz[i49],
+                    conto.Dust(i, wheelpos[i].X, wheelpos[i].Y, wheelpos[i].Z, (int)Scx[i], (int)Scz[i],
                         f50 * Stat.Simag,
-                        0, BadLanding && Mtouch, wheelGround);
+                        0, BadLanding && Grounded, wheelGround);
                 } // CHK2
 
-                wheely[i49] = groundY;
-                f48 += wheely[i49] - groundY;
-                isWheelGrounded[i49] = true;
+                wheelpos[i].Y = groundY;
+                f48 += wheelpos[i].Y - groundY;
+                isWheelGrounded[i] = true;
 
-                bounceRebound(i49, conto, random, avgscy);
+                bounceRebound(i, conto, random);
             }
         }
         
@@ -1352,7 +1321,7 @@ public class Mad
         Console.WriteLine("pxy: " + Pxy + ", pzy: " + Pzy);
 
         // OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
-        PhyTrackPieceCollision(stage, control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
+        PhyTrackPieceCollision(stage, control, conto, wheelpos, groundY, wheelYThreshold, wheelGround, ref nWheelsOnFlatRoad, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
 
         // sparks and scrapes
         for (var i79 = 0; i79 < 4; i79++)
@@ -1367,49 +1336,46 @@ public class Mad
             }
         }
 
-        // Jacher: change all this to float. The old code was blatantly wrong:
-        // i_81 = d > 1 ? 0 : (fix64) dAcos(ratio) * sgn;
-        // `d` was an unused double set to 0.0 and never used. GO figure.
-        fix64 i_81 = 0;
-        if (Scy[2] != Scy[0])
         {
-            fix64 sgn = Scy[2] < Scy[0] ? -1 : 1;
-            fix64 ratio = UMath.Hypot3(wheelz[0] - wheelz[2], wheely[0] - wheely[2], wheelx[0] - wheelx[2]) / (Math.Abs(conto.Keyz[0]) + Math.Abs(conto.Keyz[2]));
-            i_81 = ratio >= 1 ? sgn : UMath.dAcos(ratio) * sgn; // the d > 1 ? 0 part was different in the original code, but this I think makes more sense
-        }
-        fix64 i_82 = 0;
-        if (Scy[3] != Scy[1])
-        {
-            fix64 sgn = Scy[3] < Scy[1] ? -1 : 1;
-            fix64 ratio = UMath.Hypot3(wheelz[1] - wheelz[3], wheely[1] - wheely[3], wheelx[1] - wheelx[3]) / (Math.Abs(conto.Keyz[1]) + Math.Abs(conto.Keyz[3]));
-            i_82 = ratio >= 1 ? sgn : UMath.dAcos(ratio) * sgn;
-        }
-        fix64 i_83 = 0;
-        if (Scy[1] != Scy[0])
-        {
-            fix64 sgn = Scy[1] < Scy[0] ? -1 : 1;
-            fix64 ratio = UMath.Hypot3(wheelz[0] - wheelz[1], wheely[0] - wheely[1], wheelx[0] - wheelx[1]) / (Math.Abs(conto.Keyx[0]) + Math.Abs(conto.Keyx[1]));
-            i_83 = ratio >= 1 ? sgn : UMath.dAcos(ratio) * sgn;
-        }
-        fix64 i_84 = 0;
-        if (Scy[3] != Scy[2])
-        {
-            fix64 sgn = Scy[3] < Scy[2] ? -1 : 1;
-            fix64 ratio = UMath.Hypot3(wheelz[2] - wheelz[3], wheely[2] - wheely[3], wheelx[2] - wheelx[3]) / (Math.Abs(conto.Keyx[2]) + Math.Abs(conto.Keyx[3]));
-            i_84 = ratio >= 1 ? sgn : UMath.dAcos(ratio) * sgn;
-        }
+            // Only apply angular velocity when airborne or partially grounded
+            if (!Grounded)
+            {
+                Pxy += AngularVelXy * _tickRate;
+                Pzy += AngularVelZy * _tickRate;
+                conto.Xz += AngularVelXz * _tickRate;
+            }
+            else
+            {
+                var frontY = (wheelpos[0].Y + wheelpos[1].Y) / 2;
+                var rearY = (wheelpos[2].Y + wheelpos[3].Y) / 2;
+                var lengthFrontToRear = fix64.Abs(conto.Keyz[0]) + fix64.Abs(conto.Keyz[2]);
+                Pzy = UMath.dAtan2(-(frontY - rearY), lengthFrontToRear);
 
-        if (hitVertical)
-        {
-            fix64 i_85;
-            for (i_85 = fix64.Abs(conto.Xz + 45); i_85 > 180; i_85 -= 360) { }
-            _pmlt = fix64.Abs(i_85) > 90 ? 1 : -1;
-            for (i_85 = fix64.Abs(conto.Xz - 45); i_85 > 180; i_85 -= 360) { }
-            _nmlt = fix64.Abs(i_85) > 90 ? 1 : -1;
-        }
+                // Height difference between left and right wheels
+                var leftY = (wheelpos[0].Y + wheelpos[2].Y) / 2;
+                var rightY = (wheelpos[1].Y + wheelpos[3].Y) / 2;
+                var widthLeftToRight = fix64.Abs(conto.Keyx[0]) + fix64.Abs(conto.Keyx[1]);
+                Pxy = UMath.dAtan2(rightY - leftY, widthLeftToRight);
 
-        // I think this line, among other things, is responsible for causing flatspins after glitching on the edge of a ramp
-        conto.Xz += _tickRate * _forca * (Scz[0] * _nmlt - Scz[1] * _pmlt + Scz[2] * _pmlt - Scz[3] * _nmlt + Scx[0] * _pmlt + Scx[1] * _nmlt - Scx[2] * _nmlt - Scx[3] * _pmlt);
+                // Reset angular velocities when fully grounded
+                AngularVelXy = 0;
+                AngularVelZy = 0;
+                AngularVelXz = 0;
+            }
+        }
+        Console.WriteLine($"BadLanding={BadLanding} Pxy={Pxy}, Pzy={Pzy}, zyinv={zyinv}, xyinv={xyinv}, AngularVelXy={AngularVelXy}, AngularVelZy={AngularVelZy}, AngularVelXz={AngularVelXz}");
+
+        // if (hitVertical)
+        // {
+        //     fix64 i_85;
+        //     for (i_85 = fix64.Abs(conto.Xz + 45); i_85 > 180; i_85 -= 360) { }
+        //     _pmlt = fix64.Abs(i_85) > 90 ? 1 : -1;
+        //     for (i_85 = fix64.Abs(conto.Xz - 45); i_85 > 180; i_85 -= 360) { }
+        //     _nmlt = fix64.Abs(i_85) > 90 ? 1 : -1;
+        // }
+        //
+        // // I think this line, among other things, is responsible for causing flatspins after glitching on the edge of a ramp
+        // conto.Xz += _tickRate * _forca * (Scz[0] * _nmlt - Scz[1] * _pmlt + Scz[2] * _pmlt - Scz[3] * _nmlt + Scx[0] * _pmlt + Scx[1] * _nmlt - Scx[2] * _nmlt - Scx[3] * _pmlt);
 
         // maxine: angle assist to make hypergliding easier
         if (!control.Left && !control.Right)
@@ -1428,164 +1394,58 @@ public class Mad
             FrameTrace.AddMessage($"assistxz: {assistxz:0.00}, conto.Xz: {conto.Xz:0.00}");
         }
 
-        if (fix64.Abs(i_82) > fix64.Abs(i_81))
-        {
-            i_81 = i_82;
-        }
-        if (fix64.Abs(i_84) > fix64.Abs(i_83))
-        {
-            i_83 = i_84;
-        }
-
-        // CHK11
-        if (!Mtouch && py < 0/* && this.mtCount > 15*/)
-        {
-            var zeroanglezy = fix64.Min(zyangle, 360 - zyangle); //distance from 0 degrees in the zy-plane
-            var flipanglezy = fix64.Abs(zyangle - 180); //distance from 180 degrees in the zy-plane
-            if (zeroanglezy <= flipanglezy && zyangle < 180 || flipanglezy < zeroanglezy && zyangle >= 180) //the landing adjustment mechanism
-            {
-                if (Pzy > 0) //Pzy can be negative, so this needs to be accounted for
-                {
-                    Pzy -= UMath.QuantizeTowardsZero(fix64.Abs(i_81) * _tickRate, _tickRate);
-                }
-                else
-                {
-                    Pzy += UMath.QuantizeTowardsZero(fix64.Abs(i_81) * _tickRate, _tickRate);
-                }
-            }
-            if (zeroanglezy <= flipanglezy && zyangle >= 180 || flipanglezy < zeroanglezy && zyangle < 180) //similar to above, just in reverse
-            {
-                if (Pzy > 0)
-                {
-                    Pzy += UMath.QuantizeTowardsZero(fix64.Abs(i_81) * _tickRate, _tickRate);
-                }
-                else
-                {
-                    Pzy -= UMath.QuantizeTowardsZero(fix64.Abs(i_81) * _tickRate, _tickRate);
-                }
-            }
-            var zeroanglexy = fix64.Min(xyangle, 360 - xyangle); //distance from 0 degrees in the xy-plane
-            var flipanglexy = fix64.Abs(xyangle - 180); //distance from 180 degrees in the xy-plane
-            if (zeroanglexy <= flipanglexy && xyangle < 180 || flipanglexy < zeroanglexy && xyangle >= 180) //same as above, just for the xy-plane
-            {
-                if (Pxy > 0) //again, Pxy can be negative
-                {
-                    Pxy -= UMath.QuantizeTowardsZero(fix64.Abs(i_83) * _tickRate, _tickRate);
-                }
-                else
-                {
-                    Pxy += UMath.QuantizeTowardsZero(fix64.Abs(i_83) * _tickRate, _tickRate);
-                }
-            }
-            if (zeroanglexy <= flipanglexy && xyangle >= 180 || flipanglexy < zeroanglexy && xyangle < 180)
-            {
-                if (Pxy > 0)
-                {
-                    Pxy += UMath.QuantizeTowardsZero(fix64.Abs(i_83) * _tickRate, _tickRate);
-                }
-                else
-                {
-                    Pxy -= UMath.QuantizeTowardsZero(fix64.Abs(i_83) * _tickRate, _tickRate);
-                }
-            }
-        }
-        else
-        {
-            if (!zyinv)
-                Pzy += i_81;
-            else
-                Pzy -= i_81;
-            if (!xyinv)
-                Pxy += i_83;
-            else
-                Pxy -= i_83;
-        }
         //
-        if (nGroundedWheels == 4)
+        if (nWheelsOnFlatRoad == 4)
         {
-            int i_86 = 0;
-            while (Pzy < 360)
-            {
-                Pzy += 360;
-                conto.Zy += 360;
-            }
-            while (Pzy > 360)
-            {
-                Pzy -= 360;
-                conto.Zy -= 360;
-            }
-            if (Pzy < 190 && Pzy > 170)
-            {
-                Pzy = 180;
-                conto.Zy = 180;
-                i_86++;
-            }
-            if (Pzy > 350 || Pzy < 10)
-            {
-                Pzy = 0;
-                conto.Zy = 0;
-                i_86++;
-            }
-            while (Pxy < 360)
-            {
-                Pxy += 360;
-                conto.Xy += 360;
-            }
-            while (Pxy > 360)
-            {
-                Pxy -= 360;
-                conto.Xy -= 360;
-            }
-            // maxine: extend the deadzone to make landing easier
-            if (Pxy < 190 && Pxy > 170)
-            {
-                Pxy = 180;
-                conto.Xy = 180;
-                i_86++;
-            }
-            if (Pxy > 350 || Pxy < 10)
-            {
-                Pxy = 0;
-                conto.Xy = 0;
-                i_86++;
-            }
-            if (i_86 == 2)
-            {
-                Mtouch = true; //DS-addons: Bad landing hotfix
-            }
-        }
-        else
-        {
-            while (Pxy < 360)
-            {
-                Pxy += 360;
-                conto.Xy += 360;
-            }
-            while (Pxy > 360)
-            {
-                Pxy -= 360;
-                conto.Xy -= 360;
-            }
-        }
-        Console.WriteLine("nGroundedWheels: " + nGroundedWheels);
-        if (!Mtouch && Wtouch)
-        {
-            if (_cntouch == 10)
-            {
-                Mtouch = true; //DS-addons: Bad landing hotfix
-            }
-            else
-            {
-                _cntouch++;
-            }
-        }
-        else
-            _cntouch = 0; // CHK12
-                          //DS-addons: Bad landing hotfix
+            // Only snap angles if wheels are at similar heights (not on a ramp)
+            var frontY = (wheelpos[0].Y + wheelpos[1].Y) / 2;
+            var rearY = (wheelpos[2].Y + wheelpos[3].Y) / 2;
+            var leftY = (wheelpos[0].Y + wheelpos[2].Y) / 2;
+            var rightY = (wheelpos[1].Y + wheelpos[3].Y) / 2;
+    
+            fix64 heightTolerance = (fix64)5f;
+            bool isLevelPitch = fix64.Abs(frontY - rearY) < heightTolerance;
+            bool isLevelRoll = fix64.Abs(leftY - rightY) < heightTolerance;
 
-        fix64 newy = ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4 - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
-        py = conto.Y - newy;
-        conto.Y = newy;
+            int i_86 = 0;
+    
+            // Normalize to 0-360
+            while (Pzy < 0) { Pzy += 360; conto.Zy += 360; }
+            while (Pzy > 360) { Pzy -= 360; conto.Zy -= 360; }
+            while (Pxy < 0) { Pxy += 360; conto.Xy += 360; }
+            while (Pxy > 360) { Pxy -= 360; conto.Xy -= 360; }
+
+            // Only snap pitch if actually level
+            if (isLevelPitch)
+            {
+                if (Pzy < 190 && Pzy > 170) { Pzy = 180; conto.Zy = 180; i_86++; }
+                if (Pzy > 350 || Pzy < 10) { Pzy = 0; conto.Zy = 0; i_86++; }
+            }
+
+            // Only snap roll if actually level
+            if (isLevelRoll)
+            {
+                if (Pxy < 190 && Pxy > 170) { Pxy = 180; conto.Xy = 180; i_86++; }
+                if (Pxy > 350 || Pxy < 10) { Pxy = 0; conto.Xy = 0; i_86++; }
+            }
+
+            if (i_86 == 2) { Grounded = true; }
+        }
+        else
+        {
+            while (Pxy < 0)
+            {
+                Pxy += 360;
+                conto.Xy += 360;
+            }
+            while (Pxy > 360)
+            {
+                Pxy -= 360;
+                conto.Xy -= 360;
+            }
+        }
+        Console.WriteLine("nGroundedWheels: " + nWheelsOnFlatRoad);
+
         //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) / 4 - (fix64) i_10 * Cos(this.Pzy) * Cos(this.Pxy) + f_12);
         //
         if (zyinv)
@@ -1595,54 +1455,48 @@ public class Mad
 
         FrameTrace.AddMessage($"x: {airx:0.00}, z: {airz:0.00}, sum: {UMath.Sin(Pxy):0.00}, sum2: {UMath.Sin(Pzy):0.00}");
 
-        // CHK13
-        // car sliding fix by jacher: do not adjust to tickrate
-        conto.X = ((wheelx[0] - conto.Keyx[0] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[0] * UMath.Sin(conto.Xz) +
-            wheelx[1] - conto.Keyx[1] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[1] * UMath.Sin(conto.Xz) +
-            wheelx[2] - conto.Keyx[2] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[2] * UMath.Sin(conto.Xz) +
-            wheelx[3] - conto.Keyx[3] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz)) / 4
-            + bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz) + airx);
-
-        conto.Z = ((wheelz[0] - xneg * conto.Keyz[0] * UMath.Cos(conto.Xz) - conto.Keyx[0] * UMath.Sin(conto.Xz)
-            + wheelz[1] - xneg * conto.Keyz[1] * UMath.Cos(conto.Xz) - conto.Keyx[1] * UMath.Sin(conto.Xz)
-            + wheelz[2] - xneg * conto.Keyz[2] * UMath.Cos(conto.Xz) - conto.Keyx[2] * UMath.Sin(conto.Xz)
-            + wheelz[3] - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz) - conto.Keyx[3] * UMath.Sin(conto.Xz)) / 4
-            + bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz) + airz);
-
-        if (fix64.Abs(Speed) > 10 || !Mtouch)
+        var euler2 = new f64Euler(
+            f64AngleSingle.FromDegrees(conto.Xz),
+            f64AngleSingle.FromDegrees(Pzy),
+            f64AngleSingle.FromDegrees(Pxy)
+        );
+        
+        var centerPos = (wheelpos[0] + wheelpos[1] + wheelpos[2] + wheelpos[3]) / 4;
+        
+        // calculate forward vector of the car based on euler2
+        var forwardVector = f64Vector3.Transform(f64Vector3.UnitZ, euler2);
+        var rightVector = f64Vector3.Transform(f64Vector3.UnitX, euler2);
+        var upVector = f64Vector3.Transform(-f64Vector3.UnitY, euler2);
+        
+        // calculate translation based on wheel origin
+        fix64 wheelXTranslation = 0;
+        fix64 wheelZTranslation = 0;
+        var offset = new f64Vector3();
         {
-            if (fix64.Abs(Pxy - conto.Xy) >= 4)
+            for (var i = 0; i < 4; i++)
             {
-                if (Pxy > conto.Xy)
-                {
-                    conto.Xy += (2 + (Pxy - conto.Xy) / 2);
-                }
-                else
-                {
-                    conto.Xy -= (2 + (conto.Xy - Pxy) / 2);
-                }
+                wheelXTranslation += conto.Keyx[i];
+                wheelZTranslation += conto.Keyz[i];
             }
-            else
-            {
-                conto.Xy = Pxy;
-            }
-            if (fix64.Abs(Pzy - conto.Zy) >= 4)
-            {
-                if (Pzy > conto.Zy)
-                {
-                    conto.Zy += (2 + (Pzy - conto.Zy) / 2);
-                }
-                else
-                {
-                    conto.Zy -= (2 + (conto.Zy - Pzy) / 2);
-                }
-            }
-            else
-            {
-                conto.Zy = Pzy;
-            }
-        } // CHK14
-        if (Wtouch && !BadLanding)
+
+            wheelXTranslation /= 4;
+            wheelZTranslation /= 4;
+
+            offset += wheelXTranslation * -rightVector;
+            offset += wheelZTranslation * -forwardVector;
+            offset += bottomy * upVector;
+        }
+
+        offset += new f64Vector3(airx, 0, airz);
+
+        conto.X = centerPos.X + offset.X;
+        conto.Z = centerPos.Z + offset.Z;
+        conto.Y = centerPos.Y + offset.Y;
+
+        conto.Xy = Pxy;
+        conto.Zy = Pzy;
+
+        if (Grounded && !BadLanding)
         {
             var f87 = (Speed / (fix64)Stat.Swits[2] * 14 * (Stat.Bounce - (fix64)0.4f));
             if (control.Left && _tilt < f87 && _tilt >= 0)
@@ -1681,14 +1535,14 @@ public class Mad
         {
             _tilt = 0;
         }
-        if (Wtouch && surfaceType == 2)
+        if (Grounded && surfaceType == 2)
         {
             conto.Zy += (int)((random.NextSFloat() * 6 * Speed / Stat.Swits[2] - 3 * Speed / Stat.Swits[2]) *
                                           (Stat.Bounce - (fix64)0.3f));
             conto.Xy += (int)((random.NextSFloat() * 6 * Speed / Stat.Swits[2] - 3 * Speed / Stat.Swits[2]) *
                                           (Stat.Bounce - (fix64)0.3f));
         }
-        if (Wtouch && surfaceType == 1)
+        if (Grounded && surfaceType == 1)
         {
             conto.Zy += (int)((random.NextSFloat() * 4 * Speed / Stat.Swits[2] - 2 * Speed / Stat.Swits[2]) *
                                           (Stat.Bounce - (fix64)0.3f));
@@ -1959,7 +1813,7 @@ public class Mad
                 Newcar = false;
             }
         }
-        if (!Mtouch)
+        if (!Grounded)
         {
             if (Trcnt != 1)
             {
@@ -2136,6 +1990,35 @@ public class Mad
                         conto.Y += Stat.Flipy;
                         Pxy += 180;
                         conto.Xy += 180;
+                        // Add pitch flip if needed
+                        if (fix64.Abs(Pzy) > 90 && fix64.Abs(Pzy) < 270)
+                        {
+                            Pzy += 180;
+                            conto.Zy += 180;
+                        }
+                        
+                        // Normalize angles to 0-360 range
+                        while (Pxy >= 360) Pxy -= 360;
+                        while (Pxy < 0) Pxy += 360;
+                        while (conto.Xy >= 360) conto.Xy -= 360;
+                        while (conto.Xy < 0) conto.Xy += 360;
+    
+                        while (Pzy >= 360) Pzy -= 360;
+                        while (Pzy < 0) Pzy += 360;
+                        while (conto.Zy >= 360) conto.Zy -= 360;
+                        while (conto.Zy < 0) conto.Zy += 360;
+    
+                        // Reset angular velocities to prevent immediate re-flip
+                        AngularVelXy = 0;
+                        AngularVelZy = 0;
+                        AngularVelXz = 0;
+    
+                        // Reset wheel velocities
+                        for (var i = 0; i < 4; i++)
+                        {
+                            Scy[i] = 0;
+                        }
+                        
                         Capcnt = 0;
                     }
                 }
@@ -2205,8 +2088,8 @@ public class Mad
 
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
-    private void PhyTrackPieceCollision(Stage stage, Control control, ContO conto, Span<fix64> wheelx, Span<fix64> wheely, Span<fix64> wheelz,
-        fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nGroundedWheels, bool wasMtouch,
+    private void PhyTrackPieceCollision(Stage stage, Control control, ContO conto, in Span<f64Vector3> wheelpos,
+        fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nWheelsOnFlatRoad, bool wasMtouch,
         int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, DeterministicRandom random)
     {
         hitVertical = false;
@@ -2219,20 +2102,20 @@ public class Mad
         var avgscy = (Scy[0] + Scy[1] + Scy[2] + Scy[3]) / 4;
         for (int k = 0; k < 4; k++)
         {
-            var position = new f64Vector3(wheelx[k], wheely[k] - wheelGround, wheelz[k]);
+            var position = new f64Vector3(wheelpos[k].X, wheelpos[k].Y - wheelGround, wheelpos[k].Z);
             var velocity = new f64Vector3(Scx[k], Scy[k], Scz[k]);
 
             if (!isWheelTouchingPiece[k])
             {
-                foreach (var collidable in stage.RetrievePointCollidables(wheelx[k], wheelz[k]))
+                foreach (var collidable in stage.RetrievePointCollidables(wheelpos[k].X, wheelpos[k].Z))
                 {
                     if (collidable.BoxRoad is {} boxRoad)
                     {
                         if (boxRoad.ResolveCollision(position) is { } collision)
                         {
                             touching |= 1 << k;
-                            ++nGroundedWheels;
-                            Wtouch = true;
+                            ++nWheelsOnFlatRoad;
+                            Grounded = true;
                             Gtouch = true;
 
                             if (!wasMtouch && Scy[k] != 7 /* * checkpoints.gravity */ * _tickRate)
@@ -2244,19 +2127,19 @@ public class Mad
                                     dustMag += (fix64)1.1f;
                                 else
                                     dustMag += (fix64)1.2f;
-                                conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], dustMag * Stat.Simag, 0, BadLanding && Mtouch, (int)wheelGround);
+                                conto.Dust(k, wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, (int)Scx[k], (int)Scz[k], dustMag * Stat.Simag, 0, BadLanding && Grounded, (int)wheelGround);
                             }
-                            wheely[k] = collision.newY + wheelGround; // snap wheel to the surface
+                            wheelpos[k].Y = collision.newY + wheelGround; // snap wheel to the surface
                             
                             // sparks and scrape
                             if (BadLanding && collidable.Box.Skid is 0 or 1)
                             {
-                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
+                                conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
                                 //if (Im == /*this.xt.im*/ 0)
                                 SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
 
-                            bounceRebound(k, conto, random, avgscy);
+                            bounceRebound(k, conto, random);
                             isWheelTouchingPiece[k] = true;
                             break;
                         }
@@ -2266,9 +2149,9 @@ public class Mad
                         if (boxWall.ResolveCollision(position, velocity) is { } collision)
                         {
                             for (int w = 0; w < 4; w++) {
-                                wheelx[w] += collision.positionDelta.X;
-                                wheely[w] += collision.positionDelta.Y;
-                                wheelz[w] += collision.positionDelta.Z;
+                                wheelpos[k].X += collision.positionDelta.X;
+                                wheelpos[k].Y += collision.positionDelta.Y;
+                                wheelpos[k].Z += collision.positionDelta.Z;
                             }
                             
                             // sparks and scrapes
@@ -2278,7 +2161,7 @@ public class Mad
                                 _crank[0, k]++;
                             if (_crank[0, k] > 1)
                             {
-                                conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
+                                conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
                                 //if (Im == /*this.xt.im*/ 0)
                                 SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
@@ -2317,13 +2200,13 @@ public class Mad
                                 else
                                     nWheelsRoadRamp++;
                                 
-                                Wtouch = true;
+                                Grounded = true;
                                 Gtouch = false;
 
                                 // sparks and scrape
                                 if (BadLanding && (collidable.Box.Skid == 0 || collidable.Box.Skid == 1))
                                 {
-                                    conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
+                                    conto.Spark(wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
                                     //if (Im == /*this.xt.im*/ 0)
                                     SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                                 }
@@ -2331,13 +2214,13 @@ public class Mad
                                 if (!wasMtouch && surfaceType != 0)
                                 {
                                     fix64 dustMag = (fix64)1.4F;
-                                    conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], dustMag * Stat.Simag, 0, BadLanding && Mtouch, (int)wheelGround);
+                                    conto.Dust(k, wheelpos[k].X, wheelpos[k].Y, wheelpos[k].Z, (int)Scx[k], (int)Scz[k], dustMag * Stat.Simag, 0, BadLanding && Grounded, (int)wheelGround);
                                 }
                             }
                             
-                            wheelx[k] = collision.newPosition.X;
-                            wheely[k] = collision.newPosition.Y + wheelGround;
-                            wheelz[k] = collision.newPosition.Z;
+                            wheelpos[k].X = collision.newPosition.X;
+                            wheelpos[k].Y = collision.newPosition.Y + wheelGround;
+                            wheelpos[k].Z = collision.newPosition.Z;
                             isWheelTouchingPiece[k] = true;
                             break;
                         }
@@ -2416,7 +2299,7 @@ public class Mad
 
     private int Regy(int i, fix64 f, ContO conto, DeterministicRandom random)
     {
-        conto.DamageY(Stat, i, f, Mtouch, _nbsq, Squash);
+        conto.DamageY(Stat, i, f, Grounded, _nbsq, Squash);
         var i97 = 0;
         var abool = true;
         /*if (XTGraphics.Multion == 1 && XTGraphics.Im != Im)
@@ -2478,7 +2361,7 @@ public class Mad
                 SfxPlayCrash(this, ((int)f, i99 * i98));
                 //XTGraphics.Acrash(Im, f, i99 * i98);
             }
-            if (i99 * i98 == 0 || Mtouch)
+            if (i99 * i98 == 0 || Grounded)
             {
                 for (var i102 = 0; i102 < 40; i102++)
                 {
@@ -2604,8 +2487,7 @@ public class Mad
                   fix64.Sqrt(conto.Keyz[2] * conto.Keyz[2] + conto.Keyx[2] * conto.Keyx[2]) +
                   fix64.Sqrt(conto.Keyz[3] * conto.Keyz[3] + conto.Keyx[3] * conto.Keyx[3])) / 10000 *
                  (Stat.Bounce - (fix64)0.3f);
-        Mtouch = false;
-        Wtouch = false;
+        Grounded = false;
         Txz = 0;
         _fxz = 0;
         _pmlt = 1;

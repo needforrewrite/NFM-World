@@ -81,11 +81,11 @@ public class ElStupido(BaseGamemode gamemode, BaseRacePhase racePhase) : BaseAi
         bool grounded;
         if (bouncing)
         {
-            grounded = mad.Wtouch; // Use wheel touch when bounce enabled
+            grounded = mad.Grounded; // Use wheel touch when bounce enabled
         }
         else
         {
-            grounded = mad.Mtouch; // Use main/body touch otherwise
+            grounded = mad.Grounded; // Use main/body touch otherwise
         }
 
         FindDrivingTarget(car, rubberbandingFactor, mad, ref random);
