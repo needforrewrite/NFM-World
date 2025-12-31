@@ -80,7 +80,7 @@ public struct DemoEntry
         entry.StuntState.Travzy = car.Mad.Travzy;
         entry.TheBitFlags.Surfer = car.Mad.Surfer;
         entry.Powerup = car.Mad.Powerup;
-        entry.TheBitFlags.BadLanding = car.Mad.BadLanding;
+        entry.TheBitFlags.BadLanding = car.Mad.Capsized;
         entry.TheBitFlags.Wasted = car.Mad.Wasted;
         entry.Speed = car.Mad.Speed;
         entry.TheBitFlags.Mtouch = car.Mad.Grounded;
@@ -145,7 +145,7 @@ public struct DemoEntry
         car.Mad.Surfer = TheBitFlags.Surfer;
 
         car.Mad.Powerup = Powerup;
-        car.Mad.BadLanding = TheBitFlags.BadLanding;
+        car.Mad.Capsized = TheBitFlags.BadLanding;
         car.Mad.Wasted = TheBitFlags.Wasted;
         car.Mad.Speed = Speed;
         car.Mad.Pushed = TheBitFlags.Pushed;

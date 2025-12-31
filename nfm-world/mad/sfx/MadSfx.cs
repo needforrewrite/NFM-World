@@ -102,7 +102,7 @@ public class MadSfx
                 }
                 if (bool1 && mad.Grounded)
                 {
-                    if (!mad.BadLanding)
+                    if (!mad.Capsized)
                     {
                         if (!bool257)
                         {
