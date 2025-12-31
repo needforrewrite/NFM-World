@@ -386,7 +386,7 @@ public class Mad
         conto.Wasted = true;
     }
 
-    public void bounceRebound(int wi, ContO conto, DeterministicRandom random)
+    public void bounceRebound(int wi, ContO conto, DeterministicRandom random, fix64 avgscy)
     {
         // part 1: the closer we are to 90/-90 in Pxy or Pzy, the bigger the bounce
         fix64 rebound = (fix64.Abs(UMath.Sin(Pxy)) + fix64.Abs(UMath.Sin(Pzy))) / (fix64)3;
@@ -416,7 +416,8 @@ public class Mad
             // but all three are equivalent
             // Scy[wi] -= fix64.Abs(Scy[wi] * rebound);
             // Scy[wi] -= Scy[wi] * rebound; // don't need the abs, both are always positive
-            Scy[wi] = (fix64)(-1) * Scy[wi] * (rebound - (fix64)1);
+            // Scy[wi] -= Scy[wi] * rebound;
+            Scy[wi] = -avgscy * rebound; // maxine: make rebound consistent between wheels (unaffected by scy value)
     }
     internal int Mtcount = 0;
     internal fix64 py = 0;
@@ -1304,14 +1305,15 @@ public class Mad
         }
 
         var nGroundedWheels = 0;
-        Span<bool> isWheelGrounded = stackalloc bool[4];
+        var isWheelGrounded = new InlineArray4<bool>();
         fix64 groundY = 250 + wheelGround;
         fix64 wheelYThreshold = (fix64)5f;
         fix64 f48 = 0;
         for (var i49 = 0; i49 < 4; i49++)
         {
             isWheelGrounded[i49] = false;
-            if (wheely[i49] > (groundY - (fix64)5f))
+            var avgscy = (Scy[0] + Scy[1] + Scy[2] + Scy[3]) / 4;
+            if (wheely[i49] > (groundY - (fix64)20f))
             {
                 nGroundedWheels++;
                 Wtouch = true;
@@ -1342,9 +1344,12 @@ public class Mad
                 f48 += wheely[i49] - groundY;
                 isWheelGrounded[i49] = true;
 
-                bounceRebound(i49, conto, random);
+                bounceRebound(i49, conto, random, avgscy);
             }
         }
+        
+        Console.WriteLine("scy: " + Scy[0] + ", " + Scy[1] + ", " + Scy[2] + ", " + Scy[3]);
+        Console.WriteLine("pxy: " + Pxy + ", pzy: " + Pzy);
 
         // OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
         PhyTrackPieceCollision(stage, control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
@@ -1531,6 +1536,7 @@ public class Mad
                 Pxy -= 360;
                 conto.Xy -= 360;
             }
+            // maxine: extend the deadzone to make landing easier
             if (Pxy < 190 && Pxy > 170)
             {
                 Pxy = 180;
@@ -1548,6 +1554,20 @@ public class Mad
                 Mtouch = true; //DS-addons: Bad landing hotfix
             }
         }
+        else
+        {
+            while (Pxy < 360)
+            {
+                Pxy += 360;
+                conto.Xy += 360;
+            }
+            while (Pxy > 360)
+            {
+                Pxy -= 360;
+                conto.Xy -= 360;
+            }
+        }
+        Console.WriteLine("nGroundedWheels: " + nGroundedWheels);
         if (!Mtouch && Wtouch)
         {
             if (_cntouch == 10)
@@ -2196,6 +2216,7 @@ public class Mad
         int touching = 0; //Phy-addons: Fix sliding on floating pieces
         int nWheelsRoadRamp = 0;
         int nWheelsDirtRamp = 0;
+        var avgscy = (Scy[0] + Scy[1] + Scy[2] + Scy[3]) / 4;
         for (int k = 0; k < 4; k++)
         {
             var position = new f64Vector3(wheelx[k], wheely[k] - wheelGround, wheelz[k]);
@@ -2235,7 +2256,7 @@ public class Mad
                                 SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                             }
 
-                            bounceRebound(k, conto, random);
+                            bounceRebound(k, conto, random, avgscy);
                             isWheelTouchingPiece[k] = true;
                             break;
                         }
