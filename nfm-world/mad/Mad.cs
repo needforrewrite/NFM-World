@@ -2286,7 +2286,7 @@ public class Mad
                             if (liftDivider < 1)
                                 liftDivider = 1;
                             if (collision.zTmp > 0 && collision.zTmp < 200) {
-                                Scy[k] -= collision.zTmp / liftDivider;
+                                Scy[k] -= (collision.zTmp / liftDivider) * _tickRate;
                             }
 
                             if (collision.zTmp > -30)
