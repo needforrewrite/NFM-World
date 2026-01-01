@@ -15,8 +15,7 @@ swapRotY()
 
 soundtrack(rar2,massive.mp3)
 
-set(47,0,0,250,0)
-set(15,0,0,250,0)p
+set(48,0,0,250,0)
 set(15,0,5600,250,0)p
 set(15,0,11200,250,0)p
 set(35,0,11200,250,0)pr

@@ -424,10 +424,14 @@ namespace NFMWorld.Mad
                         return;
                     }
                     
-                    // Filter suggestions based on current partial argument
                     foreach (var suggestion in suggestions)
                     {
-                        if (string.IsNullOrEmpty(currentArg) || suggestion.StartsWith(currentArg, StringComparison.OrdinalIgnoreCase))
+                        // partial matching
+                        bool matches = string.IsNullOrEmpty(currentArg) ||
+                                      suggestion.StartsWith(currentArg, StringComparison.OrdinalIgnoreCase) ||
+                                      suggestion.Contains(currentArg, StringComparison.OrdinalIgnoreCase);
+                        
+                        if (matches)
                         {
                             // Build the full command with this suggestion
                             var previousArgs = args.Length > 0 && !_currentInput.EndsWith(' ') ? args[..^1] : args;
