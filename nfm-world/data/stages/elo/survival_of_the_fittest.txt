@@ -14,6 +14,8 @@ soundtrack(elo,Platform Racing 3 - Stylization.mp3,359,696)
 author(Ultimato)
 tag(racing)
 
+name(Survival of the Fittest)
+
 pulsegrnd(0.95,0.04,0.845)
 aerial()
 desc(In a forgotten metropolitan civilisation lies an abandoned race track.\nTime is not your ally here, only the fastest will survive.\n\nP.S. Enjoy the scenery :D)

@@ -1,22 +1,17 @@
 snap(-25,0,25)
 
 sky(198,226,255)
-fog(206,244,255) 
+fog(206,244,255)
 ground(183,221,208)
 
 fadefrom(6000)
 
-name(Do The Snake Dance)
-nlaps(7)
-
-mountains(false)
-clouds(false)
-polys(false)
-
 soundtrack(nfm1,stage3.zipo)
 soundtrackfreqmul(0.94)
 soundtracktempomul(11.6)
-soundtrackremaster(nfm1,stage3remastered.mp3)
+
+name(Crazy Level)
+nlaps(1)
 
 set(10,0,0,0)p
 set(10,0,5600,0)
@@ -68,7 +63,6 @@ set(15,-10700,5000,0)p
 set(15,-10700,9600,0)p
 set(15,-10700,15200,0)p
 set(16,-10700,20800,0)p
-fix(41,-10700,20800,-2000,0)s
 set(15,-10700,26400,0)p
 
 set(34,-10700,24600,0)
@@ -76,10 +70,12 @@ set(34,-10700,17000,180)
 set(15,-10700,32000,0)
 set(24,-10700,34800,0)po
 
-maxr(13,5000,-13600)
-maxb(6,-16000,-21400)
-maxl(13,-23800,-13600)
-maxt(6,46400,-21400)
+fix(41,0,0,-250,0)
+fix(41,-1000,0,-250,0)
+fix(41,1000,0,-250,0)
 
 
-
+maxr(31,1000,-13600)
+maxb(31,-1000,-21400)
+maxl(31,-1000,-13600)
+maxt(31,1000,-21400)

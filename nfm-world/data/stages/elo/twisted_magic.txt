@@ -12,6 +12,7 @@ nlaps(4)
 soundtrack(elo,rise_up_oteekMix.mod)
 lightson()
 
+name(Twisted Magic)
 desc(It's Magic.)
 author(oteek)
 

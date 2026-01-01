@@ -343,7 +343,7 @@ public class Stage : GameObject
 
                         if(swapYandRot)
                         {
-                            chkheight = Utility.GetInt("chk", line, 3) * ymult;
+                            chkheight = Utility.GetInt("chk", line, 3) * ymult * -1;
                         }
                         else
                         {
