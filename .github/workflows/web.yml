@@ -81,6 +81,8 @@ jobs:
         run: |
           dotnet workload install wasm-tools
           dotnet workload install wasm-experimental
+          dotnet tool install -g uno.check
+          uno-check -v --target web --ci --non-interactive
         working-directory: ${{ github.workspace }}/NFMWorld.Web
 
       - name: Install MGFXC
