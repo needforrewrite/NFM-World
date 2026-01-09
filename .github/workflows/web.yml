@@ -81,7 +81,8 @@ jobs:
         run: |
           dotnet workload install wasm-tools
           dotnet workload install wasm-experimental
-      
+        working-directory: ${{ github.workspace }}/NFMWorld.Web
+
       - name: Install MGFXC
         run: dotnet tool install -g dotnet-mgfxc
 
