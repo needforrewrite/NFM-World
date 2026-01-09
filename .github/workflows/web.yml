@@ -1,0 +1,75 @@
+﻿name: Deploy FNA Sample
+
+on:
+  push:
+    branches:
+      - main
+      - feature/web
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        variant: [Release]
+        dotnet-version: ['10.0.x']
+        dotnet-version-id: ['net10.0']
+    runs-on: ${{ matrix.os }}
+    name: Build FNA Sample
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: ${{ matrix.dotnet-version }}
+      - name: Install dotnet workloads
+        run: |
+          dotnet workload install wasm-tools
+          dotnet workload install wasm-experimental
+      - name: Publish project
+        run: dotnet publish NFMWorld.Web -c Release
+      - name: Test path
+        run: |
+          cd ${{ github.workspace }}/NFMWorld.Web/bin/Release/${{ matrix.dotnet-version-id }}/publish
+          cd wwwroot
+          ls
+      - name: Save published files for download
+        uses: actions/upload-artifact@v4
+        with:
+          name: Published Files
+          path: |
+            ${{ github.workspace }}/NFMWorld.Web/bin/Release/${{ matrix.dotnet-version-id }}/publish/wwwroot/*
+          if-no-files-found: error
+      - name: Fix permissions
+        run: |
+          chmod -c -R +rX "${{ github.workspace }}/NFMWorld.Web/bin/Release/${{ matrix.dotnet-version-id }}/publish/wwwroot/" | while read line; do
+            echo "::warning title=Invalid file permissions automatically fixed::$line"
+          done
+      - name: Save published files for GH Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: github-pages
+          path: ${{ github.workspace }}/NFMWorld.Web/bin/Release/${{ matrix.dotnet-version-id }}/publish/wwwroot/
+  deploy:
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        variant: [Release]
+    runs-on: ${{ matrix.os }}
+    needs: build
+    #required for Github Pages deploy
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    name: Deploy FNA Sample
+    steps:
+      - name: Deploy to Github Pages
+        uses: actions/deploy-pages@v4

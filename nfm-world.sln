@@ -41,6 +41,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.RustBindGen", "NFM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maxine.Extensions.MessagePack", "Maxine.Extensions\Maxine.Extensions.MessagePack\Maxine.Extensions.MessagePack.csproj", "{16F06DAB-D69F-4324-9023-91BA351A0B67}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.Web", "NFMWorld.Web\NFMWorld.Web.csproj", "{5395317F-7101-4704-B5F6-0C7A96B837E4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -126,5 +128,9 @@ Global
 		{16F06DAB-D69F-4324-9023-91BA351A0B67}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{16F06DAB-D69F-4324-9023-91BA351A0B67}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{16F06DAB-D69F-4324-9023-91BA351A0B67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5395317F-7101-4704-B5F6-0C7A96B837E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5395317F-7101-4704-B5F6-0C7A96B837E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5395317F-7101-4704-B5F6-0C7A96B837E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5395317F-7101-4704-B5F6-0C7A96B837E4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
