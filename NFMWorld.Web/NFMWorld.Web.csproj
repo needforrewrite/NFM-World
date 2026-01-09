@@ -31,7 +31,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <WasmShellExtraEmccFlags Include="-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2" />
+        <WasmShellExtraEmccFlags Include="-s MIN_WEBGL_VERSION=2 -s MAX_WEBGL_VERSION=2 --preload-file $([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../nfm-world'))/data@data" />
     </ItemGroup>
 
 </Project>
