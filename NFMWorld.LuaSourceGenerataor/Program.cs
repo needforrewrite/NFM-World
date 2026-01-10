@@ -1,238 +1,967 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿// Lua Source Generator
+// This program uses reflection to find all types marked with [LuaVisible]
+// and generates Lua binding code for them.
 
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text;
-using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
-using nfm_world_library.util;
-using Stride.Core.Mathematics;
-using File = System.IO.File;
+using nfm_world_library.Lua;
 
-var fields = new List<Field>();
+namespace NFMWorld.LuaSourceGenerator;
 
-foreach (var field in typeof(Mad).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic))
+public static class Program
 {
-    var name = field.Name;
-    if (name.StartsWith('_'))
-        name = name[1..];
-    name = char.ToLowerInvariant(name[0]) + name[1..];
-    
-    if (field.FieldType == typeof(int))
+    public static void Main(string[] args)
     {
-        var getter =
-            $"""
-             lua_pushinteger(L, obj.{field.Name});
-             return 1;          
-             """;
-        var setter =
-            $"""
-             var newValue = (int)lua_tointeger(L, 3);
-             obj.{field.Name} = newValue;
-             return 0;
-             """;
-        fields.Add(new Field(name, getter, setter));
-    }
-    else if (field.FieldType == typeof(float))
-    {
-        var getter =
-            $"""
-             lua_pushnumber(L, obj.{field.Name});
-             return 1;          
-             """;
-        var setter =
-            $"""
-             var newValue = (float)lua_tonumber(L, 3);
-             obj.{field.Name} = newValue;
-             return 0;
-             """;
-        fields.Add(new Field(name, getter, setter));
-    }
-    else if (field.FieldType == typeof(bool))
-    {
-        var getter =
-            $"""
-             lua_pushboolean(L, obj.{field.Name} ? 1 : 0);
-             return 1;          
-             """;
-        var setter =
-            $"""
-             var newValue = lua_toboolean(L, 3) != 0;
-             obj.{field.Name} = newValue;
-             return 0;
-             """;
-        fields.Add(new Field(name, getter, setter));
-    }
-    else if (field.FieldType == typeof(string))
-    {
-        var getter =
-            $"""
-             lua_pushstring(L, obj.{field.Name});
-             return 1;          
-             """;
-        var setter =
-            $"""
-             var newValue = lua_tostring(L, 3);
-             obj.{field.Name} = newValue;
-             return 0;
-             """;
-        fields.Add(new Field(name, getter, setter));
-    }
-    else if (field.FieldType == typeof(Int3))
-    {
-        var getter =
-            $"""
-             // Int3 is a struct, so we need to use a lambda to access the field
-             PushInt3(L, obj, static obj => obj.{field.Name});
-             return 1;          
-             """;
-        var setter =
-            $"""
-             var newValue = ReadInt3(L, 3);
-             obj.{field.Name} = newValue;
-             return 0;
-             """;
-        fields.Add(new Field(name, getter, setter));
-    }
-    else if (field.FieldType == typeof(int[,]))
-    {
-        var getter =
-            $"""
-             PushInt2DArray(L, obj.{field.Name});
-             return 1;          
-             """;
-        var setter =
-            $$"""
-             var newValue = ReadInt2DArray(L, 3);
-             for (int i = 0; i < newValue.GetLength(0); i++)
-             {
-                 for (int j = 0; j < newValue.GetLength(1); j++)
-                 {
-                     obj.{{field.Name}}[i, j] = newValue[i, j];
-                 }
-             }
-             return 0;
-             """;
-        fields.Add(new Field(name, getter, setter));
-    }
-    else if (field.FieldType == typeof(UnlimitedArray<bool>))
-    {
-        var getter =
-            $"""
-             PushBoolUnlimitedArray(L, obj.{field.Name});
-             return 1;          
-             """;
-        var setter =
-            $$"""
-             var newValue = ReadBoolUnlimitedArray(L, 3);
-             for (int i = 0; i < newValue.Count; i++)
-             {
-                 obj.{{field.Name}}[i] = newValue[i];
-             }
-             return 0;
-             """;
-        fields.Add(new Field(name, getter, setter));
-    }
-    else if (field.FieldType == typeof(InlineArray4<fix64>))
-    {
-        var getter =
-            $"""
-             // InlineArray4 is a struct, so we need to use a lambda to access the field
-             PushFix64InlineArray4(L, obj, static obj => obj.{field.Name});
-             return 1;
-             """;
-        var setter =
-            $"""
-             var newValue = ReadFix64InlineArray4(L, 3);
-             obj.{field.Name} = newValue;
-             return 0;
-             """;
-        fields.Add(new Field(name, getter, setter));
-    }
-    else if (field.FieldType == typeof(f64Vector3))
-    {
-        var getter =
-            $"""
-             // f64Vector3 is a struct, so we need to use a lambda to access the field
-             PushF64Vector3(L, obj, static obj => obj.{field.Name});
-             return 1;          
-             """;
-        var setter =
-            $"""
-             var newValue = ReadF64Vector3(L, 3);
-             obj.{field.Name} = newValue;
-             return 0;
-             """;
-        fields.Add(new Field(name, getter, setter));
-    }
-}
+        // Parse arguments for output path
+        string outputPath = args.Length > 0
+            ? args[0]
+            : @"C:\Users\maxinelocal\Git\NFM-World\nfm-world\mad\Lua.Generated.cs";
 
-var sb = new StringBuilder();
-sb.AppendLine(
-    """
-    // ReSharper disable InconsistentNaming
+        // Load the library assembly
+        var assembly = typeof(LuaVisibleAttribute).Assembly;
 
-    using System.Runtime.InteropServices;
-    
-    namespace nfm_world.mad;
+        // Also scan the main game assembly if available
+        var assemblies = new List<Assembly> { assembly };
 
-    public partial class Lua
-    {
-        public int GetMadField(lua_State L, Mad obj, string field)
+        // Try to load additional assemblies from the same directory
+        var assemblyDir = Path.GetDirectoryName(assembly.Location);
+        if (!string.IsNullOrEmpty(assemblyDir))
         {
-            switch (field)
+            foreach (var dllPath in Directory.GetFiles(assemblyDir, "*.dll"))
             {
-    """);
-foreach (var field in fields)
-{
-    sb.AppendLine(
-        $"""
-                case "{field.Name}":
-    {IndentLines(field.Getter, 4)}
-    """);
-}
-
-sb.AppendLine(
-    """
-                default:
-                    lua_pushnil(L);
-                    return 1;
-            }
-        }
-
-        public int SetMadField(lua_State L, Mad obj, string field)
-        {
-            switch (field)
-            {
-    """);
-foreach (var field in fields)
-{
-    sb.AppendLine(
-        $$"""
-                case "{{field.Name}}":
+                try
                 {
-    {{IndentLines(field.Setter, 4)}}
+                    var loadedAssembly = Assembly.LoadFrom(dllPath);
+                    if (!assemblies.Contains(loadedAssembly))
+                    {
+                        assemblies.Add(loadedAssembly);
+                    }
                 }
-    """);
+                catch
+                {
+                    // Ignore assemblies that can't be loaded
+                }
+            }
+        }
+
+        var generator = new LuaBindingGenerator();
+        var code = generator.Generate(assemblies);
+
+        // Ensure directory exists
+        var dir = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+
+        File.WriteAllText(outputPath, code);
+        Console.WriteLine($"Generated Lua bindings to: {outputPath}");
+    }
 }
-sb.AppendLine(
-    """
-                default:
-                    return 0;
+
+public class LuaBindingGenerator
+{
+    private readonly StringBuilder _sb = new();
+    private int _indent;
+
+    private void AppendLine(string line = "")
+    {
+        if (string.IsNullOrEmpty(line))
+        {
+            _sb.AppendLine();
+        }
+        else
+        {
+            _sb.Append(new string(' ', _indent * 4));
+            _sb.AppendLine(line);
+        }
+    }
+
+    private void Append(string text)
+    {
+        _sb.Append(text);
+    }
+
+    private IDisposable Indent()
+    {
+        _indent++;
+        return new IndentDisposable(this);
+    }
+
+    private class IndentDisposable : IDisposable
+    {
+        private readonly LuaBindingGenerator _gen;
+        public IndentDisposable(LuaBindingGenerator gen) => _gen = gen;
+        public void Dispose() => _gen._indent--;
+    }
+
+    public string Generate(IEnumerable<Assembly> assemblies)
+    {
+        var types = new List<TypeInfo>();
+
+        foreach (var assembly in assemblies)
+        {
+            try
+            {
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (type.GetCustomAttribute<LuaVisibleAttribute>() is { } attr)
+                    {
+                        types.Add(new TypeInfo(type, attr));
+                    }
+                }
+            }
+            catch (ReflectionTypeLoadException)
+            {
+                // Some types may fail to load, continue with others
+            }
+        }
+
+        GenerateCode(types);
+        return _sb.ToString();
+    }
+
+    private void GenerateCode(List<TypeInfo> types)
+    {
+        AppendLine("// <auto-generated />");
+        AppendLine("// This file is auto-generated by NFMWorld.LuaSourceGenerator.");
+        AppendLine("// The base infrastructure (helper methods, storage, etc.) is in LuaBindingsBase.cs");
+        AppendLine("// ReSharper disable All");
+        AppendLine("#nullable enable");
+        AppendLine();
+        AppendLine("using LuaNET.LuaJIT;");
+        AppendLine("using static LuaNET.LuaJIT.Lua;");
+        AppendLine();
+        AppendLine("namespace nfm_world.Lua;");
+        AppendLine();
+        AppendLine("public partial class LuaBindings");
+        AppendLine("{");
+
+        using (Indent())
+        {
+            // Generate the main initialization method
+            GenerateInitializeMethod(types);
+
+            // Generate binding code for each type
+            foreach (var typeInfo in types)
+            {
+                GenerateTypeBindings(typeInfo);
+            }
+        }
+
+        AppendLine("}");
+    }
+
+    private void GenerateInitializeMethod(List<TypeInfo> types)
+    {
+        AppendLine("/// <summary>");
+        AppendLine("/// Initialize all Lua bindings for types marked with [LuaVisible]");
+        AppendLine("/// </summary>");
+        AppendLine("public static void Initialize(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            foreach (var typeInfo in types)
+            {
+                AppendLine($"Register_{GetSafeTypeName(typeInfo.Type)}(L);");
+            }
+        }
+        AppendLine("}");
+        AppendLine();
+    }
+
+    private void GenerateTypeBindings(TypeInfo typeInfo)
+    {
+        var type = typeInfo.Type;
+        var luaName = typeInfo.LuaName;
+        var safeName = GetSafeTypeName(type);
+        var metatableName = $"MT_{safeName}";
+        var isStruct = type.IsValueType;
+
+        AppendLine($"// =========== Bindings for {type.FullName} ===========");
+        AppendLine($"private static void Register_{safeName}(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            // Register the metatable name
+            AppendLine($"RegisterMetatable(typeof({GetFullTypeName(type)}), \"{metatableName}\");");
+            AppendLine();
+
+            // Create metatable for instances
+            AppendLine($"// Create metatable for instances");
+            AppendLine($"luaL_newmetatable(L, \"{metatableName}\");");
+            AppendLine();
+
+            // __gc for cleanup (only for classes, structs don't need special cleanup)
+            if (!isStruct)
+            {
+                AppendLine("// __gc metamethod");
+                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}__gc));");
+                AppendLine("lua_setfield(L, -2, \"__gc\");");
+                AppendLine();
+            }
+            else
+            {
+                // Structs still need __gc to remove from storage
+                AppendLine("// __gc metamethod (cleanup storage)");
+                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}__gc));");
+                AppendLine("lua_setfield(L, -2, \"__gc\");");
+                AppendLine();
+            }
+
+            // __index metamethod
+            AppendLine("// __index metamethod");
+            AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}__index));");
+            AppendLine("lua_setfield(L, -2, \"__index\");");
+            AppendLine();
+
+            // __newindex metamethod
+            AppendLine("// __newindex metamethod");
+            AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}__newindex));");
+            AppendLine("lua_setfield(L, -2, \"__newindex\");");
+            AppendLine();
+
+            // Generate operator metamethods
+            GenerateOperatorMetamethods(type, safeName);
+
+            // __tostring metamethod
+            AppendLine("// __tostring metamethod");
+            AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}__tostring));");
+            AppendLine("lua_setfield(L, -2, \"__tostring\");");
+            AppendLine();
+
+            // Pop the metatable
+            AppendLine("lua_pop(L, 1);");
+            AppendLine();
+
+            // Create the type table (for static access and constructor)
+            AppendLine($"// Create type table for {luaName}");
+            AppendLine("lua_newtable(L);");
+            AppendLine();
+
+            // Constructor (new)
+            var constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .Where(c => c.GetCustomAttribute<LuaHiddenAttribute>() == null)
+                .ToList();
+
+            if (constructors.Count > 0 || type.IsValueType)
+            {
+                AppendLine("// Constructor: new()");
+                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_new));");
+                AppendLine("lua_setfield(L, -2, \"new\");");
+                AppendLine();
+            }
+
+            // Static methods
+            var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => !m.IsSpecialName && m.GetCustomAttribute<LuaHiddenAttribute>() == null)
+                .GroupBy(m => GetLuaMethodName(m))
+                .ToList();
+
+            foreach (var methodGroup in staticMethods)
+            {
+                var methodName = methodGroup.Key;
+                AppendLine($"// Static method: {methodName}");
+                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_static_{GetSafeMethodName(methodName)}));");
+                AppendLine($"lua_setfield(L, -2, \"{methodName}\");");
+                AppendLine();
+            }
+
+            // Static properties
+            var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+                .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null)
+                .ToList();
+
+            if (staticProps.Count > 0)
+            {
+                AppendLine("// Create metatable for type table (static properties)");
+                AppendLine("lua_newtable(L);");
+                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_type__index));");
+                AppendLine("lua_setfield(L, -2, \"__index\");");
+                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_type__newindex));");
+                AppendLine("lua_setfield(L, -2, \"__newindex\");");
+                AppendLine("lua_setmetatable(L, -2);");
+                AppendLine();
+            }
+
+            // Set as global
+            AppendLine($"lua_setglobal(L, \"{luaName}\");");
+        }
+        AppendLine("}");
+        AppendLine();
+
+        // Generate metamethod implementations
+        GenerateGcMethod(type, safeName, isStruct);
+        GenerateIndexMethod(type, safeName, isStruct);
+        GenerateNewIndexMethod(type, safeName, isStruct);
+        GenerateTostringMethod(type, safeName, isStruct);
+        GenerateOperatorMethods(type, safeName, isStruct);
+        GenerateConstructorMethod(type, safeName, isStruct);
+        GenerateStaticMethods(type, safeName);
+        GenerateInstanceMethods(type, safeName, isStruct);
+
+        // Generate static property accessors if needed
+        var staticProps2 = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+            .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null)
+            .ToList();
+
+        if (staticProps2.Count > 0)
+        {
+            GenerateStaticPropertyAccessors(type, safeName);
+        }
+    }
+
+    private void GenerateOperatorMetamethods(Type type, string safeName)
+    {
+        var operators = GetOperatorMethods(type);
+
+        foreach (var op in operators)
+        {
+            var luaMetamethod = GetLuaMetamethodName(op.Name);
+            if (luaMetamethod != null)
+            {
+                AppendLine($"// Operator: {luaMetamethod}");
+                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_op_{GetSafeMethodName(op.Name)}));");
+                AppendLine($"lua_setfield(L, -2, \"{luaMetamethod}\");");
+                AppendLine();
             }
         }
     }
-    """);
 
-File.WriteAllText(@"C:\Users\maxinelocal\Git\NFM-World\nfm-world\mad\Lua.generated.cs", sb.ToString());
+    private void GenerateGcMethod(Type type, string safeName, bool isStruct)
+    {
+        AppendLine($"private static int {safeName}__gc(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            AppendLine("var ptr = lua_touserdata(L, 1);");
+            AppendLine("if (ptr != 0)");
+            AppendLine("{");
+            using (Indent())
+            {
+                AppendLine("unsafe");
+                AppendLine("{");
+                using (Indent())
+                {
+                    AppendLine("var id = *(int*)ptr;");
+                    AppendLine("RemoveObject(id);");
+                }
+                AppendLine("}");
+            }
+            AppendLine("}");
+            AppendLine("return 0;");
+        }
+        AppendLine("}");
+        AppendLine();
+    }
 
-return;
+    private void GenerateIndexMethod(Type type, string safeName, bool isStruct)
+    {
+        var fullTypeName = GetFullTypeName(type);
 
-static string IndentLines(string lines, int indentLevel)
-{
-    var indent = new string(' ', indentLevel * 4);
-    var indentedLines = lines.Replace("\n", "\n" + indent);
-    return indent + indentedLines;
+        AppendLine($"private static int {safeName}__index(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            AppendLine("var key = lua_tostring(L, 2);");
+            AppendLine("if (key == null) { lua_pushnil(L); return 1; }");
+            AppendLine();
+
+            if (isStruct)
+            {
+                AppendLine($"var obj = GetStructFromStack<{fullTypeName}>(L, 1);");
+            }
+            else
+            {
+                AppendLine($"var obj = GetObjectFromStack<{fullTypeName}>(L, 1);");
+                AppendLine("if (obj == null) { lua_pushnil(L); return 1; }");
+            }
+            AppendLine();
+
+            AppendLine("switch (key)");
+            AppendLine("{");
+            using (Indent())
+            {
+                // Instance properties
+                var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null && p.CanRead)
+                    .ToList();
+
+                foreach (var prop in props)
+                {
+                    var luaName = GetLuaPropertyName(prop);
+                    AppendLine($"case \"{luaName}\":");
+                    using (Indent())
+                    {
+                        AppendLine($"PushValue(L, obj.{prop.Name});");
+                        AppendLine("return 1;");
+                    }
+                }
+
+                // Instance fields
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(f => f.GetCustomAttribute<LuaHiddenAttribute>() == null)
+                    .ToList();
+
+                foreach (var field in fields)
+                {
+                    var luaName = GetLuaFieldName(field);
+                    AppendLine($"case \"{luaName}\":");
+                    using (Indent())
+                    {
+                        AppendLine($"PushValue(L, obj.{field.Name});");
+                        AppendLine("return 1;");
+                    }
+                }
+
+                // Instance methods - return the method wrapper
+                var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(m => !m.IsSpecialName && m.GetCustomAttribute<LuaHiddenAttribute>() == null)
+                    .GroupBy(m => GetLuaMethodName(m))
+                    .ToList();
+
+                foreach (var methodGroup in methods)
+                {
+                    var methodName = methodGroup.Key;
+                    AppendLine($"case \"{methodName}\":");
+                    using (Indent())
+                    {
+                        AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_method_{GetSafeMethodName(methodName)}));");
+                        AppendLine("return 1;");
+                    }
+                }
+
+                AppendLine("default:");
+                using (Indent())
+                {
+                    AppendLine("lua_pushnil(L);");
+                    AppendLine("return 1;");
+                }
+            }
+            AppendLine("}");
+        }
+        AppendLine("}");
+        AppendLine();
+    }
+
+    private void GenerateNewIndexMethod(Type type, string safeName, bool isStruct)
+    {
+        var fullTypeName = GetFullTypeName(type);
+
+        AppendLine($"private static int {safeName}__newindex(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            AppendLine("var key = lua_tostring(L, 2);");
+            AppendLine("if (key == null) return 0;");
+            AppendLine();
+
+            if (isStruct)
+            {
+                AppendLine($"var obj = GetStructFromStack<{fullTypeName}>(L, 1);");
+            }
+            else
+            {
+                AppendLine($"var obj = GetObjectFromStack<{fullTypeName}>(L, 1);");
+                AppendLine("if (obj == null) return 0;");
+            }
+            AppendLine();
+
+            AppendLine("switch (key)");
+            AppendLine("{");
+            using (Indent())
+            {
+                // Instance properties
+                var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null && p.CanWrite)
+                    .ToList();
+
+                foreach (var prop in props)
+                {
+                    var luaName = GetLuaPropertyName(prop);
+                    AppendLine($"case \"{luaName}\":");
+                    using (Indent())
+                    {
+                        AppendLine($"obj.{prop.Name} = ({GetFullTypeName(prop.PropertyType)})ToObject(L, 3, typeof({GetFullTypeName(prop.PropertyType)}))!;");
+                        if (isStruct)
+                        {
+                            AppendLine($"UpdateStruct(L, 1, obj);");
+                        }
+                        AppendLine("break;");
+                    }
+                }
+
+                // Instance fields
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(f => f.GetCustomAttribute<LuaHiddenAttribute>() == null && !f.IsInitOnly)
+                    .ToList();
+
+                foreach (var field in fields)
+                {
+                    var luaName = GetLuaFieldName(field);
+                    AppendLine($"case \"{luaName}\":");
+                    using (Indent())
+                    {
+                        AppendLine($"obj.{field.Name} = ({GetFullTypeName(field.FieldType)})ToObject(L, 3, typeof({GetFullTypeName(field.FieldType)}))!;");
+                        if (isStruct)
+                        {
+                            AppendLine($"UpdateStruct(L, 1, obj);");
+                        }
+                        AppendLine("break;");
+                    }
+                }
+            }
+            AppendLine("}");
+            AppendLine("return 0;");
+        }
+        AppendLine("}");
+        AppendLine();
+    }
+
+    private void GenerateTostringMethod(Type type, string safeName, bool isStruct)
+    {
+        var fullTypeName = GetFullTypeName(type);
+
+        AppendLine($"private static int {safeName}__tostring(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            if (isStruct)
+            {
+                AppendLine($"var obj = GetStructFromStack<{fullTypeName}>(L, 1);");
+                AppendLine("lua_pushstring(L, obj.ToString() ?? \"\");");
+            }
+            else
+            {
+                AppendLine($"var obj = GetObjectFromStack<{fullTypeName}>(L, 1);");
+                AppendLine("lua_pushstring(L, obj?.ToString() ?? \"nil\");");
+            }
+            AppendLine("return 1;");
+        }
+        AppendLine("}");
+        AppendLine();
+    }
+
+    private void GenerateOperatorMethods(Type type, string safeName, bool isStruct)
+    {
+        var fullTypeName = GetFullTypeName(type);
+        var operators = GetOperatorMethods(type);
+
+        foreach (var op in operators)
+        {
+            var luaMetamethod = GetLuaMetamethodName(op.Name);
+            if (luaMetamethod == null) continue;
+
+            AppendLine($"private static int {safeName}_op_{GetSafeMethodName(op.Name)}(lua_State L)");
+            AppendLine("{");
+            using (Indent())
+            {
+                var parameters = op.Parameters;
+
+                // Binary operators
+                if (parameters.Length == 2)
+                {
+                    AppendLine($"var left = ({GetFullTypeName(parameters[0].ParameterType)})ToObject(L, 1, typeof({GetFullTypeName(parameters[0].ParameterType)}))!;");
+                    AppendLine($"var right = ({GetFullTypeName(parameters[1].ParameterType)})ToObject(L, 2, typeof({GetFullTypeName(parameters[1].ParameterType)}))!;");
+                    AppendLine($"var result = {fullTypeName}.{op.Name}(left, right);");
+                    AppendLine("PushValue(L, result);");
+                    AppendLine("return 1;");
+                }
+                // Unary operators
+                else if (parameters.Length == 1)
+                {
+                    AppendLine($"var operand = ({GetFullTypeName(parameters[0].ParameterType)})ToObject(L, 1, typeof({GetFullTypeName(parameters[0].ParameterType)}))!;");
+                    AppendLine($"var result = {fullTypeName}.{op.Name}(operand);");
+                    AppendLine("PushValue(L, result);");
+                    AppendLine("return 1;");
+                }
+            }
+            AppendLine("}");
+            AppendLine();
+        }
+    }
+
+    private void GenerateConstructorMethod(Type type, string safeName, bool isStruct)
+    {
+        var fullTypeName = GetFullTypeName(type);
+        var constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+            .Where(c => c.GetCustomAttribute<LuaHiddenAttribute>() == null)
+            .OrderBy(c => c.GetParameters().Length)
+            .ToList();
+
+        AppendLine($"private static int {safeName}_new(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            AppendLine("var argCount = lua_gettop(L);");
+            AppendLine();
+
+            // Default constructor for structs
+            if (isStruct)
+            {
+                AppendLine("if (argCount == 0)");
+                AppendLine("{");
+                using (Indent())
+                {
+                    AppendLine($"var obj = new {fullTypeName}();");
+                    AppendLine($"PushObject(L, obj, \"MT_{safeName}\");");
+                    AppendLine("return 1;");
+                }
+                AppendLine("}");
+                AppendLine();
+            }
+
+            foreach (var ctor in constructors)
+            {
+                var parameters = ctor.GetParameters();
+                AppendLine($"if (argCount == {parameters.Length})");
+                AppendLine("{");
+                using (Indent())
+                {
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        var param = parameters[i];
+                        AppendLine($"var arg{i} = ({GetFullTypeName(param.ParameterType)})ToObject(L, {i + 1}, typeof({GetFullTypeName(param.ParameterType)}))!;");
+                    }
+
+                    var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
+                    AppendLine($"var obj = new {fullTypeName}({argList});");
+                    AppendLine($"PushObject(L, obj, \"MT_{safeName}\");");
+                    AppendLine("return 1;");
+                }
+                AppendLine("}");
+                AppendLine();
+            }
+
+            AppendLine($"luaL_error(L, \"Invalid arguments for {type.Name} constructor\");");
+            AppendLine("return 0;");
+        }
+        AppendLine("}");
+        AppendLine();
+    }
+
+    private void GenerateStaticMethods(Type type, string safeName)
+    {
+        var fullTypeName = GetFullTypeName(type);
+        var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(m => !m.IsSpecialName && m.GetCustomAttribute<LuaHiddenAttribute>() == null)
+            .GroupBy(m => GetLuaMethodName(m))
+            .ToList();
+
+        foreach (var methodGroup in staticMethods)
+        {
+            var methodName = methodGroup.Key;
+            var overloads = methodGroup.OrderBy(m => m.GetParameters().Length).ToList();
+
+            AppendLine($"private static int {safeName}_static_{GetSafeMethodName(methodName)}(lua_State L)");
+            AppendLine("{");
+            using (Indent())
+            {
+                AppendLine("var argCount = lua_gettop(L);");
+                AppendLine();
+
+                foreach (var method in overloads)
+                {
+                    var parameters = method.GetParameters();
+                    AppendLine($"if (argCount == {parameters.Length})");
+                    AppendLine("{");
+                    using (Indent())
+                    {
+                        for (int i = 0; i < parameters.Length; i++)
+                        {
+                            var param = parameters[i];
+                            AppendLine($"var arg{i} = ({GetFullTypeName(param.ParameterType)})ToObject(L, {i + 1}, typeof({GetFullTypeName(param.ParameterType)}))!;");
+                        }
+
+                        var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
+
+                        if (method.ReturnType == typeof(void))
+                        {
+                            AppendLine($"{fullTypeName}.{method.Name}({argList});");
+                            AppendLine("return 0;");
+                        }
+                        else
+                        {
+                            AppendLine($"var result = {fullTypeName}.{method.Name}({argList});");
+                            AppendLine("PushValue(L, result);");
+                            AppendLine("return 1;");
+                        }
+                    }
+                    AppendLine("}");
+                    AppendLine();
+                }
+
+                AppendLine($"luaL_error(L, \"Invalid arguments for {methodName}\");");
+                AppendLine("return 0;");
+            }
+            AppendLine("}");
+            AppendLine();
+        }
+    }
+
+    private void GenerateInstanceMethods(Type type, string safeName, bool isStruct)
+    {
+        var fullTypeName = GetFullTypeName(type);
+        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+            .Where(m => !m.IsSpecialName && m.GetCustomAttribute<LuaHiddenAttribute>() == null)
+            .GroupBy(m => GetLuaMethodName(m))
+            .ToList();
+
+        foreach (var methodGroup in methods)
+        {
+            var methodName = methodGroup.Key;
+            var overloads = methodGroup.OrderBy(m => m.GetParameters().Length).ToList();
+
+            AppendLine($"private static int {safeName}_method_{GetSafeMethodName(methodName)}(lua_State L)");
+            AppendLine("{");
+            using (Indent())
+            {
+                AppendLine("var argCount = lua_gettop(L) - 1; // First arg is self");
+                AppendLine();
+
+                if (isStruct)
+                {
+                    AppendLine($"var self = GetStructFromStack<{fullTypeName}>(L, 1);");
+                }
+                else
+                {
+                    AppendLine($"var self = GetObjectFromStack<{fullTypeName}>(L, 1);");
+                    AppendLine("if (self == null)");
+                    AppendLine("{");
+                    using (Indent())
+                    {
+                        AppendLine($"luaL_error(L, \"Expected {type.Name} as first argument\");");
+                        AppendLine("return 0;");
+                    }
+                    AppendLine("}");
+                }
+                AppendLine();
+
+                foreach (var method in overloads)
+                {
+                    var parameters = method.GetParameters();
+                    AppendLine($"if (argCount == {parameters.Length})");
+                    AppendLine("{");
+                    using (Indent())
+                    {
+                        for (int i = 0; i < parameters.Length; i++)
+                        {
+                            var param = parameters[i];
+                            AppendLine($"var arg{i} = ({GetFullTypeName(param.ParameterType)})ToObject(L, {i + 2}, typeof({GetFullTypeName(param.ParameterType)}))!;");
+                        }
+
+                        var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
+
+                        if (method.ReturnType == typeof(void))
+                        {
+                            AppendLine($"self.{method.Name}({argList});");
+                            if (isStruct)
+                            {
+                                AppendLine("UpdateStruct(L, 1, self);");
+                            }
+                            AppendLine("return 0;");
+                        }
+                        else
+                        {
+                            AppendLine($"var result = self.{method.Name}({argList});");
+                            if (isStruct)
+                            {
+                                AppendLine("UpdateStruct(L, 1, self);");
+                            }
+                            AppendLine("PushValue(L, result);");
+                            AppendLine("return 1;");
+                        }
+                    }
+                    AppendLine("}");
+                    AppendLine();
+                }
+
+                AppendLine($"luaL_error(L, \"Invalid arguments for {methodName}\");");
+                AppendLine("return 0;");
+            }
+            AppendLine("}");
+            AppendLine();
+        }
+    }
+
+    private void GenerateStaticPropertyAccessors(Type type, string safeName)
+    {
+        var fullTypeName = GetFullTypeName(type);
+        var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+            .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null)
+            .ToList();
+
+        // __index for static properties
+        AppendLine($"private static int {safeName}_type__index(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            AppendLine("var key = lua_tostring(L, 2);");
+            AppendLine("if (key == null) { lua_pushnil(L); return 1; }");
+            AppendLine();
+            AppendLine("switch (key)");
+            AppendLine("{");
+            using (Indent())
+            {
+                foreach (var prop in staticProps.Where(p => p.CanRead))
+                {
+                    var luaName = GetLuaPropertyName(prop);
+                    AppendLine($"case \"{luaName}\":");
+                    using (Indent())
+                    {
+                        AppendLine($"PushValue(L, {fullTypeName}.{prop.Name});");
+                        AppendLine("return 1;");
+                    }
+                }
+
+                AppendLine("default:");
+                using (Indent())
+                {
+                    AppendLine("// Fall through to raw table access");
+                    AppendLine("lua_rawget(L, 1);");
+                    AppendLine("return 1;");
+                }
+            }
+            AppendLine("}");
+        }
+        AppendLine("}");
+        AppendLine();
+
+        // __newindex for static properties
+        AppendLine($"private static int {safeName}_type__newindex(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            AppendLine("var key = lua_tostring(L, 2);");
+            AppendLine("if (key == null) return 0;");
+            AppendLine();
+            AppendLine("switch (key)");
+            AppendLine("{");
+            using (Indent())
+            {
+                foreach (var prop in staticProps.Where(p => p.CanWrite))
+                {
+                    var luaName = GetLuaPropertyName(prop);
+                    AppendLine($"case \"{luaName}\":");
+                    using (Indent())
+                    {
+                        AppendLine($"{fullTypeName}.{prop.Name} = ({GetFullTypeName(prop.PropertyType)})ToObject(L, 3, typeof({GetFullTypeName(prop.PropertyType)}))!;");
+                        AppendLine("return 0;");
+                    }
+                }
+
+                AppendLine("default:");
+                using (Indent())
+                {
+                    AppendLine("// Fall through to raw table set");
+                    AppendLine("lua_rawset(L, 1);");
+                    AppendLine("return 0;");
+                }
+            }
+            AppendLine("}");
+        }
+        AppendLine("}");
+        AppendLine();
+    }
+
+    private static string GetSafeTypeName(Type type)
+    {
+        return type.FullName?.Replace(".", "_").Replace("+", "_").Replace("`", "_")
+               ?? type.Name.Replace(".", "_").Replace("+", "_").Replace("`", "_");
+    }
+
+    private static string GetFullTypeName(Type type)
+    {
+        if (type == typeof(int)) return "int";
+        if (type == typeof(long)) return "long";
+        if (type == typeof(float)) return "float";
+        if (type == typeof(double)) return "double";
+        if (type == typeof(bool)) return "bool";
+        if (type == typeof(string)) return "string";
+        if (type == typeof(void)) return "void";
+        if (type == typeof(object)) return "object";
+
+        if (type.IsGenericType)
+        {
+            var genericDef = type.GetGenericTypeDefinition();
+            var genericArgs = string.Join(", ", type.GetGenericArguments().Select(GetFullTypeName));
+            var baseName = genericDef.FullName?.Split('`')[0] ?? genericDef.Name.Split('`')[0];
+            return $"{baseName}<{genericArgs}>";
+        }
+
+        return type.FullName ?? type.Name;
+    }
+
+    private static string GetSafeMethodName(string methodName)
+    {
+        return methodName.Replace(".", "_").Replace("+", "_").Replace("<", "_").Replace(">", "_");
+    }
+
+    private static string GetLuaMethodName(MethodInfo method)
+    {
+        var attr = method.GetCustomAttribute<LuaNameAttribute>();
+        return attr?.Name ?? ToCamelCase(method.Name);
+    }
+
+    private static string GetLuaPropertyName(PropertyInfo prop)
+    {
+        var attr = prop.GetCustomAttribute<LuaNameAttribute>();
+        return attr?.Name ?? ToCamelCase(prop.Name);
+    }
+
+    private static string GetLuaFieldName(FieldInfo field)
+    {
+        var attr = field.GetCustomAttribute<LuaNameAttribute>();
+        return attr?.Name ?? ToCamelCase(field.Name.TrimStart('_'));
+    }
+
+    private static string ToCamelCase(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return name;
+        return char.ToLowerInvariant(name[0]) + name[1..];
+    }
+
+    private static List<OperatorInfo> GetOperatorMethods(Type type)
+    {
+        var operators = new List<OperatorInfo>();
+        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(m => m.IsSpecialName && m.Name.StartsWith("op_"));
+
+        foreach (var method in methods)
+        {
+            operators.Add(new OperatorInfo(method.Name, method.GetParameters()));
+        }
+
+        return operators;
+    }
+
+    private static string? GetLuaMetamethodName(string operatorName)
+    {
+        return operatorName switch
+        {
+            "op_Addition" => "__add",
+            "op_Subtraction" => "__sub",
+            "op_Multiply" => "__mul",
+            "op_Division" => "__div",
+            "op_Modulus" => "__mod",
+            "op_UnaryNegation" => "__unm",
+            "op_Equality" => "__eq",
+            "op_LessThan" => "__lt",
+            "op_LessThanOrEqual" => "__le",
+            "op_BitwiseAnd" => "__band",
+            "op_BitwiseOr" => "__bor",
+            "op_ExclusiveOr" => "__bxor",
+            "op_OnesComplement" => "__bnot",
+            "op_LeftShift" => "__shl",
+            "op_RightShift" => "__shr",
+            _ => null
+        };
+    }
 }
 
-public readonly record struct Field(string Name, string Getter, string Setter);
+public record TypeInfo(Type Type, LuaVisibleAttribute Attribute)
+{
+    public string LuaName => Attribute.Name ?? Type.Name;
+}
+
+public record OperatorInfo(string Name, ParameterInfo[] Parameters);

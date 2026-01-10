@@ -5,10 +5,11 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\nfm-world\NFMWorld.csproj" />
+      <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
     </ItemGroup>
 
 </Project>
