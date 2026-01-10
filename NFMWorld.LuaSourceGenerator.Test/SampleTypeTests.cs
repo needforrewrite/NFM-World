@@ -270,4 +270,85 @@ public class SampleTypeTests
         Assert.AreEqual(2, v3.Y);
         Assert.AreEqual(3, v3.Z);
     }
+
+    // ========== Nullable Tests ==========
+
+    [TestMethod]
+    public void SampleClass_NullableInt_DefaultIsNull()
+    {
+        var obj = new SampleClass();
+
+        Assert.IsFalse(obj.NullableInt.HasValue);
+        Assert.IsNull(obj.NullableInt);
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableInt_SetAndGet()
+    {
+        var obj = new SampleClass { NullableInt = 42 };
+
+        Assert.IsTrue(obj.NullableInt.HasValue);
+        Assert.AreEqual(42, obj.NullableInt.Value);
+        Assert.AreEqual(42, obj.NullableInt);
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableFloat_SetToNull()
+    {
+        var obj = new SampleClass { NullableFloat = 3.14f };
+        Assert.IsTrue(obj.NullableFloat.HasValue);
+
+        obj.NullableFloat = null;
+        Assert.IsFalse(obj.NullableFloat.HasValue);
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableBool_TrueFalseNull()
+    {
+        var obj = new SampleClass();
+
+        obj.NullableBool = true;
+        Assert.AreEqual(true, obj.NullableBool);
+
+        obj.NullableBool = false;
+        Assert.AreEqual(false, obj.NullableBool);
+
+        obj.NullableBool = null;
+        Assert.IsNull(obj.NullableBool);
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableLongField_DefaultIsNull()
+    {
+        var obj = new SampleClass();
+
+        Assert.IsFalse(obj.NullableLongField.HasValue);
+        Assert.IsNull(obj.NullableLongField);
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableLongField_SetAndClear()
+    {
+        var obj = new SampleClass { NullableLongField = 123456789L };
+
+        Assert.IsTrue(obj.NullableLongField.HasValue);
+        Assert.AreEqual(123456789L, obj.NullableLongField.Value);
+
+        obj.NullableLongField = null;
+        Assert.IsNull(obj.NullableLongField);
+    }
+
+    [TestMethod]
+    public void SampleClass_StaticNullableDouble_SetAndGet()
+    {
+        SampleClass.StaticNullableDouble = null;
+        Assert.IsNull(SampleClass.StaticNullableDouble);
+
+        SampleClass.StaticNullableDouble = 2.71828;
+        Assert.IsTrue(SampleClass.StaticNullableDouble.HasValue);
+        Assert.AreEqual(2.71828, SampleClass.StaticNullableDouble.Value, 0.00001);
+
+        SampleClass.StaticNullableDouble = null;
+        Assert.IsNull(SampleClass.StaticNullableDouble);
+    }
 }

@@ -1234,4 +1234,193 @@ public class LuaRuntimeTests
     }
 
     #endregion
+
+    #region Nullable Tests
+
+    [TestMethod]
+    public void SampleClass_NullableProperty_ReadNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            return obj.nullableInt
+        ");
+        AssertLuaOk(result);
+
+        var isNil = lua_isnil(_L, -1);
+        Assert.IsTrue(isNil == 1, "Nullable with no value should return nil");
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableProperty_ReadValue()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.nullableInt = 42
+            return obj.nullableInt
+        ");
+        AssertLuaOk(result);
+
+        var isNil = lua_isnil(_L, -1);
+        var value = lua_tointeger(_L, -1);
+
+        Assert.IsFalse(isNil == 1, "Should not be nil when value is set");
+        Assert.AreEqual(42, value);
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableProperty_WriteNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.nullableInt = 100
+            obj.nullableInt = nil
+            return obj.nullableInt
+        ");
+        AssertLuaOk(result);
+
+        var isNil = lua_isnil(_L, -1);
+        Assert.IsTrue(isNil == 1, "Setting to nil should clear the nullable");
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableFloat_ReadWriteCycle()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            -- Initially nil
+            local v1 = obj.nullableFloat
+            -- Set to value
+            obj.nullableFloat = 3.14
+            local v2 = obj.nullableFloat
+            -- Set back to nil
+            obj.nullableFloat = nil
+            local v3 = obj.nullableFloat
+            return v1, v2, v3
+        ");
+        AssertLuaOk(result);
+
+        var v3IsNil = lua_isnil(_L, -1);
+        var v2 = lua_tonumber(_L, -2);
+        var v1IsNil = lua_isnil(_L, -3);
+
+        Assert.IsTrue(v1IsNil == 1, "Initial nullable should be nil");
+        Assert.AreEqual(3.14, v2, 0.001, "Value should be readable");
+        Assert.IsTrue(v3IsNil == 1, "Setting to nil should clear value");
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableBool_TrueAndFalse()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.nullableBool = true
+            local v1 = obj.nullableBool
+            obj.nullableBool = false
+            local v2 = obj.nullableBool
+            obj.nullableBool = nil
+            local v3 = obj.nullableBool
+            return v1, v2, v3
+        ");
+        AssertLuaOk(result);
+
+        var v3IsNil = lua_isnil(_L, -1);
+        var v2 = lua_toboolean(_L, -2);
+        var v1 = lua_toboolean(_L, -3);
+
+        Assert.AreEqual(1, v1, "Should be true");
+        Assert.AreEqual(0, v2, "Should be false");
+        Assert.IsTrue(v3IsNil == 1, "Should be nil after clearing");
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableField_ReadNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            return obj.nullableLongField
+        ");
+        AssertLuaOk(result);
+
+        var isNil = lua_isnil(_L, -1);
+        Assert.IsTrue(isNil == 1, "Nullable field with no value should return nil");
+    }
+
+    [TestMethod]
+    public void SampleClass_NullableField_WriteAndRead()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.nullableLongField = 999999
+            local v1 = obj.nullableLongField
+            obj.nullableLongField = nil
+            local v2 = obj.nullableLongField
+            return v1, v2
+        ");
+        AssertLuaOk(result);
+
+        var v2IsNil = lua_isnil(_L, -1);
+        var v1 = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(999999, v1, "Should read the value");
+        Assert.IsTrue(v2IsNil == 1, "Should be nil after clearing");
+    }
+
+    [TestMethod]
+    public void SampleClass_StaticNullableProperty_ReadNull()
+    {
+        var result = luaL_dostring(_L, @"
+            SampleClass.staticNullableDouble = nil
+            return SampleClass.staticNullableDouble
+        ");
+        AssertLuaOk(result);
+
+        var isNil = lua_isnil(_L, -1);
+        Assert.IsTrue(isNil == 1, "Static nullable should be nil");
+    }
+
+    [TestMethod]
+    public void SampleClass_StaticNullableProperty_WriteAndRead()
+    {
+        var result = luaL_dostring(_L, @"
+            SampleClass.staticNullableDouble = 2.71828
+            local v1 = SampleClass.staticNullableDouble
+            SampleClass.staticNullableDouble = nil
+            local v2 = SampleClass.staticNullableDouble
+            return v1, v2
+        ");
+        AssertLuaOk(result);
+
+        var v2IsNil = lua_isnil(_L, -1);
+        var v1 = lua_tonumber(_L, -2);
+
+        Assert.AreEqual(2.71828, v1, 0.00001, "Should read the value");
+        Assert.IsTrue(v2IsNil == 1, "Should be nil after clearing");
+    }
+
+    [TestMethod]
+    public void SampleClass_MultipleNullables_IndependentState()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.nullableInt = 10
+            obj.nullableFloat = 20.5
+            obj.nullableBool = true
+
+            -- Clear one
+            obj.nullableInt = nil
+
+            return obj.nullableInt, obj.nullableFloat, obj.nullableBool
+        ");
+        AssertLuaOk(result);
+
+        var boolVal = lua_toboolean(_L, -1);
+        var floatVal = lua_tonumber(_L, -2);
+        var intIsNil = lua_isnil(_L, -3);
+
+        Assert.IsTrue(intIsNil == 1, "Int should be nil");
+        Assert.AreEqual(20.5, floatVal, 0.001, "Float should retain value");
+        Assert.AreEqual(1, boolVal, "Bool should retain value");
+    }
+
+    #endregion
 }

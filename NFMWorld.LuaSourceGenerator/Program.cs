@@ -344,7 +344,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        AppendLine($"PushValue(L, obj.{prop.Name});");
+                        GeneratePushValue($"obj.{prop.Name}", prop.PropertyType);
                         AppendLine("return 1;");
                     }
                 }
@@ -360,7 +360,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        AppendLine($"PushValue(L, obj.{field.Name});");
+                        GeneratePushValue($"obj.{field.Name}", field.FieldType);
                         AppendLine("return 1;");
                     }
                 }
@@ -428,11 +428,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 foreach (var prop in props)
                 {
                     var luaName = GetLuaPropertyName(prop);
-                    var propTypeName = GetFullTypeName(prop.PropertyType);
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        AppendLine($"obj.{prop.Name} = ToObject<{propTypeName}>(L, 3)!;");
+                        GenerateToObjectCode($"obj.{prop.Name}", prop.PropertyType, "3");
                         if (isStruct) AppendLine("UpdateStruct(L, 1, obj);");
                         AppendLine("break;");
                     }
@@ -446,11 +445,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 foreach (var field in fields)
                 {
                     var luaName = GetLuaFieldName(field);
-                    var fieldTypeName = GetFullTypeName(field.FieldType);
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        AppendLine($"obj.{field.Name} = ToObject<{fieldTypeName}>(L, 3)!;");
+                        GenerateToObjectCode($"obj.{field.Name}", field.FieldType, "3");
                         if (isStruct) AppendLine("UpdateStruct(L, 1, obj);");
                         AppendLine("break;");
                     }
@@ -518,13 +516,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         else
                         {
                             AppendLine($"var result = left {opSymbol} right;");
-                            AppendLine("PushValue(L, result);");
+                            GeneratePushValue("result", op.Method.ReturnType);
                         }
                     }
                     else
                     {
                         AppendLine($"var result = {fullTypeName}.{op.Name}(left, right);");
-                        AppendLine("PushValue(L, result);");
+                        GeneratePushValue("result", op.Method.ReturnType);
                     }
                     AppendLine("return 1;");
                 }
@@ -542,7 +540,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     {
                         AppendLine($"var result = {fullTypeName}.{op.Name}(operand);");
                     }
-                    AppendLine("PushValue(L, result);");
+                    GeneratePushValue("result", op.Method.ReturnType);
                     AppendLine("return 1;");
                 }
             }
@@ -655,7 +653,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         else
                         {
                             AppendLine($"var result = {fullTypeName}.{method.Name}({argList});");
-                            AppendLine("PushValue(L, result);");
+                            GeneratePushValue("result", method.ReturnType);
                             AppendLine("return 1;");
                         }
                     }
@@ -734,7 +732,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         {
                             AppendLine($"var result = self.{method.Name}({argList});");
                             if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
-                            AppendLine("PushValue(L, result);");
+                            GeneratePushValue("result", method.ReturnType);
                             AppendLine("return 1;");
                         }
                     }
@@ -774,7 +772,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        AppendLine($"PushValue(L, {fullTypeName}.{prop.Name});");
+                        GeneratePushValue($"{fullTypeName}.{prop.Name}", prop.PropertyType);
                         AppendLine("return 1;");
                     }
                 }
@@ -809,11 +807,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     foreach (var prop in writableProps)
                     {
                         var luaName = GetLuaPropertyName(prop);
-                        var propType = GetFullTypeName(prop.PropertyType);
                         AppendLine($"case \"{luaName}\":");
                         using (Indent())
                         {
-                            AppendLine($"{fullTypeName}.{prop.Name} = ToObject<{propType}>(L, 3)!;");
+                            GenerateToObjectCode($"{fullTypeName}.{prop.Name}", prop.PropertyType, "3");
                             AppendLine("return 0;");
                         }
                     }
@@ -839,6 +836,56 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         if (property.SetMethod == null) return false;
         return property.SetMethod.ReturnParameter.GetRequiredCustomModifiers()
             .Any(t => t.Name == "IsExternalInit");
+    }
+
+    private static bool IsNullable(Type type)
+    {
+        return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>);
+    }
+
+    private void GeneratePushValue(string valueExpression, Type type)
+    {
+        if (IsNullable(type))
+        {
+            AppendLine($"if ({valueExpression}.HasValue)");
+            using (Indent())
+            {
+                AppendLine($"PushValue(L, {valueExpression}.Value);");
+            }
+            AppendLine("else");
+            using (Indent())
+            {
+                AppendLine("lua_pushnil(L);");
+            }
+        }
+        else
+        {
+            AppendLine($"PushValue(L, {valueExpression});");
+        }
+    }
+
+    private void GenerateToObjectCode(string targetExpression, Type type, string luaStackIndex)
+    {
+        var fullTypeName = GetFullTypeName(type);
+        if (IsNullable(type))
+        {
+            var underlyingType = Nullable.GetUnderlyingType(type)!;
+            var underlyingTypeName = GetFullTypeName(underlyingType);
+            AppendLine($"if (lua_isnil(L, {luaStackIndex}) != 0)");
+            using (Indent())
+            {
+                AppendLine($"{targetExpression} = null;");
+            }
+            AppendLine("else");
+            using (Indent())
+            {
+                AppendLine($"{targetExpression} = ToObject<{underlyingTypeName}>(L, {luaStackIndex})!;");
+            }
+        }
+        else
+        {
+            AppendLine($"{targetExpression} = ToObject<{fullTypeName}>(L, {luaStackIndex})!;");
+        }
     }
 
     private static string GetSafeTypeName(Type type) => type.Name.Replace(".", "_").Replace("+", "_").Replace("`", "_");
@@ -891,7 +938,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         foreach (var method in methods)
         {
-            operators.Add(new OperatorInfo(method.Name, method.GetParameters()));
+            operators.Add(new OperatorInfo(method.Name, method.GetParameters(), method));
         }
 
         return operators;
@@ -931,4 +978,4 @@ public record TypeInfo(Type Type, LuaVisibleAttribute Attribute)
     public string LuaName => Attribute.Name ?? Type.Name;
 }
 
-public record OperatorInfo(string Name, ParameterInfo[] Parameters);
+public record OperatorInfo(string Name, ParameterInfo[] Parameters, MethodInfo Method);

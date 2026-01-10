@@ -117,11 +117,35 @@ public partial class LuaBindings
             case "preciseValue":
                 PushValue(L, obj.PreciseValue);
                 return 1;
+            case "nullableInt":
+                if (obj.NullableInt.HasValue)
+                    PushValue(L, obj.NullableInt.Value);
+                else
+                    lua_pushnil(L);
+                return 1;
+            case "nullableFloat":
+                if (obj.NullableFloat.HasValue)
+                    PushValue(L, obj.NullableFloat.Value);
+                else
+                    lua_pushnil(L);
+                return 1;
+            case "nullableBool":
+                if (obj.NullableBool.HasValue)
+                    PushValue(L, obj.NullableBool.Value);
+                else
+                    lua_pushnil(L);
+                return 1;
             case "publicField":
                 PushValue(L, obj.PublicField);
                 return 1;
             case "publicStringField":
                 PushValue(L, obj.PublicStringField);
+                return 1;
+            case "nullableLongField":
+                if (obj.NullableLongField.HasValue)
+                    PushValue(L, obj.NullableLongField.Value);
+                else
+                    lua_pushnil(L);
                 return 1;
             case "getDoubleId":
                 lua_pushcfunction(L, KeepAlive(SampleClass_method_getDoubleId));
@@ -184,11 +208,35 @@ public partial class LuaBindings
             case "preciseValue":
                 obj.PreciseValue = ToObject<double>(L, 3)!;
                 break;
+            case "nullableInt":
+                if (lua_isnil(L, 3) != 0)
+                    obj.NullableInt = null;
+                else
+                    obj.NullableInt = ToObject<int>(L, 3)!;
+                break;
+            case "nullableFloat":
+                if (lua_isnil(L, 3) != 0)
+                    obj.NullableFloat = null;
+                else
+                    obj.NullableFloat = ToObject<float>(L, 3)!;
+                break;
+            case "nullableBool":
+                if (lua_isnil(L, 3) != 0)
+                    obj.NullableBool = null;
+                else
+                    obj.NullableBool = ToObject<bool>(L, 3)!;
+                break;
             case "publicField":
                 obj.PublicField = ToObject<int>(L, 3)!;
                 break;
             case "publicStringField":
                 obj.PublicStringField = ToObject<string>(L, 3)!;
+                break;
+            case "nullableLongField":
+                if (lua_isnil(L, 3) != 0)
+                    obj.NullableLongField = null;
+                else
+                    obj.NullableLongField = ToObject<long>(L, 3)!;
                 break;
         }
         return 0;
@@ -522,6 +570,12 @@ public partial class LuaBindings
             case "staticName":
                 PushValue(L, NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticName);
                 return 1;
+            case "staticNullableDouble":
+                if (NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticNullableDouble.HasValue)
+                    PushValue(L, NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticNullableDouble.Value);
+                else
+                    lua_pushnil(L);
+                return 1;
             default:
                 lua_rawget(L, 1);
                 return 1;
@@ -537,6 +591,12 @@ public partial class LuaBindings
         {
             case "staticCounter":
                 NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticCounter = ToObject<int>(L, 3)!;
+                return 0;
+            case "staticNullableDouble":
+                if (lua_isnil(L, 3) != 0)
+                    NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticNullableDouble = null;
+                else
+                    NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticNullableDouble = ToObject<double>(L, 3)!;
                 return 0;
             default:
                 lua_rawset(L, 1);

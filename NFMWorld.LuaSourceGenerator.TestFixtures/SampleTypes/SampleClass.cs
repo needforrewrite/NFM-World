@@ -22,9 +22,20 @@ public class SampleClass
     public float Value { get; set; }
     public double PreciseValue { get; set; }
 
+    // Nullable properties
+    public int? NullableInt { get; set; }
+    public float? NullableFloat { get; set; }
+    public bool? NullableBool { get; set; }
+
+    // Static nullable property
+    public static double? StaticNullableDouble { get; set; }
+
     // Public fields
     public int PublicField;
     public string PublicStringField = "";
+    
+    // Nullable field
+    public long? NullableLongField;
 
     // Private field (should not be exposed)
     private int _privateField;
