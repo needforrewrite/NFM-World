@@ -351,4 +351,110 @@ public class SampleTypeTests
         SampleClass.StaticNullableDouble = null;
         Assert.IsNull(SampleClass.StaticNullableDouble);
     }
+
+    // ========== Nullable Parameter Tests ==========
+
+    [TestMethod]
+    public void SampleClass_ConstructorWithNullableParams_NullValues()
+    {
+        var obj = new SampleClass(null, null);
+
+        Assert.AreEqual(0, obj.Id);
+        Assert.AreEqual("", obj.Name);
+    }
+
+    [TestMethod]
+    public void SampleClass_ConstructorWithNullableParams_WithValues()
+    {
+        var obj = new SampleClass(42, "Test");
+
+        Assert.AreEqual(42, obj.Id);
+        Assert.AreEqual("Test", obj.Name);
+    }
+
+    [TestMethod]
+    public void SampleClass_AddNullable_BothNull()
+    {
+        var result = SampleClass.AddNullable(null, null);
+        Assert.AreEqual(0, result);
+    }
+
+    [TestMethod]
+    public void SampleClass_AddNullable_OneNull()
+    {
+        var result = SampleClass.AddNullable(5, null);
+        Assert.AreEqual(5, result);
+
+        result = SampleClass.AddNullable(null, 10);
+        Assert.AreEqual(10, result);
+    }
+
+    [TestMethod]
+    public void SampleClass_AddNullable_BothValues()
+    {
+        var result = SampleClass.AddNullable(5, 10);
+        Assert.AreEqual(15, result);
+    }
+
+    [TestMethod]
+    public void SampleClass_GetNullableValue_ReturnsNull()
+    {
+        var result = SampleClass.GetNullableValue(false, 42);
+        Assert.IsNull(result);
+    }
+
+    [TestMethod]
+    public void SampleClass_GetNullableValue_ReturnsValue()
+    {
+        var result = SampleClass.GetNullableValue(true, 42);
+        Assert.AreEqual(42, result);
+    }
+
+    [TestMethod]
+    public void SampleClass_SetNullableValue_WithNull()
+    {
+        var obj = new SampleClass { Value = 100 };
+        obj.SetNullableValue(null);
+        Assert.AreEqual(0, obj.Value);
+    }
+
+    [TestMethod]
+    public void SampleClass_SetNullableValue_WithValue()
+    {
+        var obj = new SampleClass();
+        obj.SetNullableValue(3.14f);
+        Assert.AreEqual(3.14f, obj.Value, 0.001f);
+    }
+
+    [TestMethod]
+    public void SampleClass_MultiplyByNullable_WithNull()
+    {
+        var obj = new SampleClass { Id = 10 };
+        var result = obj.MultiplyByNullable(null);
+        Assert.IsNull(result);
+    }
+
+    [TestMethod]
+    public void SampleClass_MultiplyByNullable_WithValue()
+    {
+        var obj = new SampleClass { Id = 10 };
+        var result = obj.MultiplyByNullable(5);
+        Assert.AreEqual(50, result);
+    }
+
+    [TestMethod]
+    public void SampleClass_FormatWithOptional_BothNull()
+    {
+        var obj = new SampleClass { Name = "Test" };
+        var result = obj.FormatWithOptional(null, null);
+        Assert.AreEqual("Test", result);
+    }
+
+    [TestMethod]
+    public void SampleClass_FormatWithOptional_WithValues()
+    {
+        var obj = new SampleClass { Name = "Test" };
+        var result = obj.FormatWithOptional("[", "]");
+        Assert.AreEqual("[Test]", result);
+    }
 }

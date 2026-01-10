@@ -61,6 +61,13 @@ public class SampleClass
         Value = value;
     }
 
+    // Constructor with nullable parameters
+    public SampleClass(int? nullableId, string? nullableName)
+    {
+        Id = nullableId ?? 0;
+        Name = nullableName ?? "";
+    }
+
     // Static method
     public static int Add(int a, int b)
     {
@@ -77,6 +84,18 @@ public class SampleClass
     public static void IncrementCounter()
     {
         StaticCounter++;
+    }
+
+    // Static method with nullable parameter
+    public static int AddNullable(int? a, int? b)
+    {
+        return (a ?? 0) + (b ?? 0);
+    }
+
+    // Static method returning nullable
+    public static int? GetNullableValue(bool hasValue, int value)
+    {
+        return hasValue ? value : null;
     }
 
     // Instance method
@@ -107,6 +126,28 @@ public class SampleClass
     public SampleClass Clone()
     {
         return new SampleClass(Id, Name, IsActive, Value);
+    }
+
+    // Instance method with nullable parameter
+    public void SetNullableValue(float? newValue)
+    {
+        Value = newValue ?? 0;
+    }
+
+    // Instance method with nullable parameter returning nullable
+    public int? MultiplyByNullable(int? multiplier)
+    {
+        if (!multiplier.HasValue)
+            return null;
+        return Id * multiplier.Value;
+    }
+
+    // Instance method with multiple nullable parameters
+    public string FormatWithOptional(string? prefix, string? suffix)
+    {
+        var p = prefix ?? "";
+        var s = suffix ?? "";
+        return $"{p}{Name}{s}";
     }
 
     // Hidden method (should not be exposed)

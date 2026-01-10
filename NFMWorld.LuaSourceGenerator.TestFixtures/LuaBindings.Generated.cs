@@ -67,6 +67,14 @@ public partial class LuaBindings
         lua_pushcfunction(L, KeepAlive(SampleClass_static_incrementCounter));
         lua_setfield(L, -2, "incrementCounter");
 
+        // Static method: addNullable
+        lua_pushcfunction(L, KeepAlive(SampleClass_static_addNullable));
+        lua_setfield(L, -2, "addNullable");
+
+        // Static method: getNullableValue
+        lua_pushcfunction(L, KeepAlive(SampleClass_static_getNullableValue));
+        lua_setfield(L, -2, "getNullableValue");
+
         // Create metatable for type table (static properties)
         lua_newtable(L);
         lua_pushcfunction(L, KeepAlive(SampleClass_type__index));
@@ -161,6 +169,15 @@ public partial class LuaBindings
                 return 1;
             case "clone":
                 lua_pushcfunction(L, KeepAlive(SampleClass_method_clone));
+                return 1;
+            case "setNullableValue":
+                lua_pushcfunction(L, KeepAlive(SampleClass_method_setNullableValue));
+                return 1;
+            case "multiplyByNullable":
+                lua_pushcfunction(L, KeepAlive(SampleClass_method_multiplyByNullable));
+                return 1;
+            case "formatWithOptional":
+                lua_pushcfunction(L, KeepAlive(SampleClass_method_formatWithOptional));
                 return 1;
             case "customName":
                 lua_pushcfunction(L, KeepAlive(SampleClass_method_customName));
@@ -269,6 +286,19 @@ public partial class LuaBindings
             return 1;
         }
 
+        if (argCount == 2)
+        {
+            int? arg0;
+            if (lua_isnil(L, 1) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<int>(L, 1)!;
+            var arg1 = ToObject<string>(L, 2)!;
+            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1);
+            PushObject(L, obj, "MT_SampleClass");
+            return 1;
+        }
+
         if (argCount == 4)
         {
             var arg0 = ToObject<int>(L, 1)!;
@@ -329,6 +359,51 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for incrementCounter");
+        return 0;
+    }
+
+    private static int SampleClass_static_addNullable(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            int? arg0;
+            if (lua_isnil(L, 1) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<int>(L, 1)!;
+            int? arg1;
+            if (lua_isnil(L, 2) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<int>(L, 2)!;
+            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.AddNullable(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for addNullable");
+        return 0;
+    }
+
+    private static int SampleClass_static_getNullableValue(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<bool>(L, 1)!;
+            var arg1 = ToObject<int>(L, 2)!;
+            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.GetNullableValue(arg0, arg1);
+            if (result.HasValue)
+                PushValue(L, result.Value);
+            else
+                lua_pushnil(L);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getNullableValue");
         return 0;
     }
 
@@ -443,6 +518,86 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int SampleClass_method_setNullableValue(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected SampleClass as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            float? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<float>(L, 2)!;
+            self.SetNullableValue(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for setNullableValue");
+        return 0;
+    }
+
+    private static int SampleClass_method_multiplyByNullable(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected SampleClass as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            int? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<int>(L, 2)!;
+            var result = self.MultiplyByNullable(arg0);
+            if (result.HasValue)
+                PushValue(L, result.Value);
+            else
+                lua_pushnil(L);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for multiplyByNullable");
+        return 0;
+    }
+
+    private static int SampleClass_method_formatWithOptional(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected SampleClass as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<string>(L, 2)!;
+            var arg1 = ToObject<string>(L, 3)!;
+            var result = self.FormatWithOptional(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for formatWithOptional");
         return 0;
     }
 

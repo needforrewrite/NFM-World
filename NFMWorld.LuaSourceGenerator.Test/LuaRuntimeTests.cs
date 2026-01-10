@@ -1423,4 +1423,225 @@ public class LuaRuntimeTests
     }
 
     #endregion
+
+    #region Nullable Parameter Tests
+
+    [TestMethod]
+    public void SampleClass_ConstructorWithNullableParams_BothNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new(nil, nil)
+            return obj.id, obj.name
+        ");
+        AssertLuaOk(result);
+
+        var name = lua_tostring(_L, -1);
+        var id = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(0, id, "Null id should default to 0");
+        Assert.AreEqual("", name, "Null name should default to empty");
+    }
+
+    [TestMethod]
+    public void SampleClass_ConstructorWithNullableParams_WithValues()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new(99, 'NullableTest')
+            return obj.id, obj.name
+        ");
+        AssertLuaOk(result);
+
+        var name = lua_tostring(_L, -1);
+        var id = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(99, id);
+        Assert.AreEqual("NullableTest", name);
+    }
+
+    [TestMethod]
+    public void SampleClass_ConstructorWithNullableParams_MixedNulls()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj1 = SampleClass.new(50, nil)
+            local obj2 = SampleClass.new(nil, 'OnlyName')
+            return obj1.id, obj1.name, obj2.id, obj2.name
+        ");
+        AssertLuaOk(result);
+
+        var name2 = lua_tostring(_L, -1);
+        var id2 = lua_tointeger(_L, -2);
+        var name1 = lua_tostring(_L, -3);
+        var id1 = lua_tointeger(_L, -4);
+
+        Assert.AreEqual(50, id1);
+        Assert.AreEqual("", name1);
+        Assert.AreEqual(0, id2);
+        Assert.AreEqual("OnlyName", name2);
+    }
+
+    [TestMethod]
+    public void SampleClass_AddNullable_BothNull()
+    {
+        var result = luaL_dostring(_L, @"
+            return SampleClass.addNullable(nil, nil)
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        Assert.AreEqual(0, sum, "nil + nil should be 0");
+    }
+
+    [TestMethod]
+    public void SampleClass_AddNullable_OneNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local r1 = SampleClass.addNullable(5, nil)
+            local r2 = SampleClass.addNullable(nil, 10)
+            return r1, r2
+        ");
+        AssertLuaOk(result);
+
+        var r2 = lua_tointeger(_L, -1);
+        var r1 = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(5, r1, "5 + nil should be 5");
+        Assert.AreEqual(10, r2, "nil + 10 should be 10");
+    }
+
+    [TestMethod]
+    public void SampleClass_AddNullable_BothValues()
+    {
+        var result = luaL_dostring(_L, @"
+            return SampleClass.addNullable(7, 13)
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        Assert.AreEqual(20, sum);
+    }
+
+    [TestMethod]
+    public void SampleClass_GetNullableValue_ReturnsNull()
+    {
+        var result = luaL_dostring(_L, @"
+            return SampleClass.getNullableValue(false, 42)
+        ");
+        AssertLuaOk(result);
+
+        var isNil = lua_isnil(_L, -1);
+        Assert.IsTrue(isNil == 1, "Should return nil when hasValue is false");
+    }
+
+    [TestMethod]
+    public void SampleClass_GetNullableValue_ReturnsValue()
+    {
+        var result = luaL_dostring(_L, @"
+            return SampleClass.getNullableValue(true, 42)
+        ");
+        AssertLuaOk(result);
+
+        var value = lua_tointeger(_L, -1);
+        Assert.AreEqual(42, value, "Should return 42 when hasValue is true");
+    }
+
+    [TestMethod]
+    public void SampleClass_SetNullableValue_WithNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.value = 100
+            obj:setNullableValue(nil)
+            return obj.value
+        ");
+        AssertLuaOk(result);
+
+        var value = lua_tonumber(_L, -1);
+        Assert.AreEqual(0, value, 0.001, "Setting nil should reset to 0");
+    }
+
+    [TestMethod]
+    public void SampleClass_SetNullableValue_WithValue()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj:setNullableValue(3.14)
+            return obj.value
+        ");
+        AssertLuaOk(result);
+
+        var value = lua_tonumber(_L, -1);
+        Assert.AreEqual(3.14, value, 0.001, "Should set the value");
+    }
+
+    [TestMethod]
+    public void SampleClass_MultiplyByNullable_WithNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.id = 10
+            return obj:multiplyByNullable(nil)
+        ");
+        AssertLuaOk(result);
+
+        var isNil = lua_isnil(_L, -1);
+        Assert.IsTrue(isNil == 1, "Should return nil when multiplier is nil");
+    }
+
+    [TestMethod]
+    public void SampleClass_MultiplyByNullable_WithValue()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.id = 10
+            return obj:multiplyByNullable(5)
+        ");
+        AssertLuaOk(result);
+
+        var value = lua_tointeger(_L, -1);
+        Assert.AreEqual(50, value, "10 * 5 should be 50");
+    }
+
+    [TestMethod]
+    public void SampleClass_FormatWithOptional_BothNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.name = 'Test'
+            return obj:formatWithOptional(nil, nil)
+        ");
+        AssertLuaOk(result);
+
+        var formatted = lua_tostring(_L, -1);
+        Assert.AreEqual("Test", formatted, "Should return just the name");
+    }
+
+    [TestMethod]
+    public void SampleClass_FormatWithOptional_WithValues()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.name = 'Test'
+            return obj:formatWithOptional('[', ']')
+        ");
+        AssertLuaOk(result);
+
+        var formatted = lua_tostring(_L, -1);
+        Assert.AreEqual("[Test]", formatted, "Should format with brackets");
+    }
+
+    [TestMethod]
+    public void SampleClass_FormatWithOptional_OnlyPrefix()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = SampleClass.new()
+            obj.name = 'Test'
+            return obj:formatWithOptional('>', nil)
+        ");
+        AssertLuaOk(result);
+
+        var formatted = lua_tostring(_L, -1);
+        Assert.AreEqual(">Test", formatted, "Should format with prefix only");
+    }
+
+    #endregion
 }

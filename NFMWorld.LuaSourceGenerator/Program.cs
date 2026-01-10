@@ -589,9 +589,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 {
                     for (int i = 0; i < parameters.Length; i++)
                     {
-                        var param = parameters[i];
-                        var paramType = GetFullTypeName(param.ParameterType);
-                        AppendLine($"var arg{i} = ToObject<{paramType}>(L, {i + 1})!;");
+                        GenerateParameterRead(parameters[i], i);
                     }
 
                     var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
@@ -638,9 +636,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     {
                         for (int i = 0; i < parameters.Length; i++)
                         {
-                            var param = parameters[i];
-                            var paramType = GetFullTypeName(param.ParameterType);
-                            AppendLine($"var arg{i} = ToObject<{paramType}>(L, {i + 1})!;");
+                            GenerateParameterRead(parameters[i], i);
                         }
 
                         var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
@@ -715,9 +711,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     {
                         for (int i = 0; i < parameters.Length; i++)
                         {
-                            var param = parameters[i];
-                            var paramType = GetFullTypeName(param.ParameterType);
-                            AppendLine($"var arg{i} = ToObject<{paramType}>(L, {i + 2})!;");
+                            GenerateParameterRead(parameters[i], i, 2);
                         }
 
                         var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
@@ -888,10 +882,46 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
     }
 
+    private void GenerateParameterRead(ParameterInfo param, int index, int stackOffset = 1)
+    {
+        var varName = $"arg{index}";
+        var stackIndex = index + stackOffset;
+        var paramType = param.ParameterType;
+        var fullTypeName = GetFullTypeName(paramType);
+        
+        if (IsNullable(paramType))
+        {
+            var underlyingType = Nullable.GetUnderlyingType(paramType)!;
+            var underlyingTypeName = GetFullTypeName(underlyingType);
+            AppendLine($"{fullTypeName} {varName};");
+            AppendLine($"if (lua_isnil(L, {stackIndex}) != 0)");
+            using (Indent())
+            {
+                AppendLine($"{varName} = null;");
+            }
+            AppendLine("else");
+            using (Indent())
+            {
+                AppendLine($"{varName} = ToObject<{underlyingTypeName}>(L, {stackIndex})!;");
+            }
+        }
+        else
+        {
+            AppendLine($"var {varName} = ToObject<{fullTypeName}>(L, {stackIndex})!;");
+        }
+    }
+
     private static string GetSafeTypeName(Type type) => type.Name.Replace(".", "_").Replace("+", "_").Replace("`", "_");
 
     private static string GetFullTypeName(Type type)
     {
+        // Handle nullable types
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+        {
+            var underlyingType = Nullable.GetUnderlyingType(type)!;
+            return GetFullTypeName(underlyingType) + "?";
+        }
+        
         if (type == typeof(int)) return "int";
         if (type == typeof(long)) return "long";
         if (type == typeof(float)) return "float";
