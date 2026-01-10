@@ -9,12 +9,12 @@ namespace NFMWorld.LuaSourceGenerator.Test;
 /// Runtime integration tests that spawn a real LuaJIT runtime and verify
 /// that generated bindings for SampleTypes work correctly from the Lua side.
 /// </summary>
-[TestFixture]
+[TestClass]
 public class LuaRuntimeTests
 {
     private lua_State _L;
 
-    [SetUp]
+    [TestInitialize]
     public void Setup()
     {
         // Reset bindings state for test isolation
@@ -28,7 +28,7 @@ public class LuaRuntimeTests
         LuaBindings.Initialize(_L);
     }
 
-    [TearDown]
+    [TestCleanup]
     public void TearDown()
     {
         // Clean up Lua state
@@ -49,7 +49,7 @@ public class LuaRuntimeTests
 
     #region SampleClass Tests
 
-    [Test]
+    [TestMethod]
     public void SampleClass_Constructor_Default()
     {
         var result = luaL_dostring(_L, @"
@@ -61,11 +61,11 @@ public class LuaRuntimeTests
         var name = lua_tostring(_L, -1);
         var id = lua_tointeger(_L, -2);
 
-        Assert.That(id, Is.EqualTo(0));
-        Assert.That(name, Is.EqualTo(""));
+        Assert.AreEqual(0, id);
+        Assert.AreEqual("", name);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_Constructor_WithIdAndName()
     {
         var result = luaL_dostring(_L, @"
@@ -77,11 +77,11 @@ public class LuaRuntimeTests
         var name = lua_tostring(_L, -1);
         var id = lua_tointeger(_L, -2);
 
-        Assert.That(id, Is.EqualTo(42));
-        Assert.That(name, Is.EqualTo("TestName"));
+        Assert.AreEqual(42, id);
+        Assert.AreEqual("TestName", name);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_Constructor_Full()
     {
         var result = luaL_dostring(_L, @"
@@ -95,13 +95,13 @@ public class LuaRuntimeTests
         var name = lua_tostring(_L, -3);
         var id = lua_tointeger(_L, -4);
 
-        Assert.That(id, Is.EqualTo(10));
-        Assert.That(name, Is.EqualTo("FullTest"));
-        Assert.That(isActive, Is.EqualTo(1));
-        Assert.That(value, Is.EqualTo(3.14).Within(0.01));
+        Assert.AreEqual(10, id);
+        Assert.AreEqual("FullTest", name);
+        Assert.AreEqual(1, isActive);
+        Assert.AreEqual(3.14, value, 0.01);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_PropertySet_ModifiesObject()
     {
         var result = luaL_dostring(_L, @"
@@ -119,13 +119,13 @@ public class LuaRuntimeTests
         var name = lua_tostring(_L, -3);
         var id = lua_tointeger(_L, -4);
 
-        Assert.That(id, Is.EqualTo(100));
-        Assert.That(name, Is.EqualTo("Modified"));
-        Assert.That(isActive, Is.EqualTo(1));
-        Assert.That(value, Is.EqualTo(9.99).Within(0.01));
+        Assert.AreEqual(100, id);
+        Assert.AreEqual("Modified", name);
+        Assert.AreEqual(1, isActive);
+        Assert.AreEqual(9.99, value, 0.01);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_InstanceMethod_GetDoubleId()
     {
         var result = luaL_dostring(_L, @"
@@ -135,10 +135,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var doubled = lua_tointeger(_L, -1);
-        Assert.That(doubled, Is.EqualTo(42));
+        Assert.AreEqual(42, doubled);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_InstanceMethod_GetGreeting()
     {
         var result = luaL_dostring(_L, @"
@@ -148,10 +148,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var greeting = lua_tostring(_L, -1);
-        Assert.That(greeting, Is.EqualTo("Hello World!"));
+        Assert.AreEqual("Hello World!", greeting);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_InstanceMethod_SetValue()
     {
         var result = luaL_dostring(_L, @"
@@ -162,10 +162,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var value = lua_tonumber(_L, -1);
-        Assert.That(value, Is.EqualTo(42.5).Within(0.01));
+        Assert.AreEqual(42.5, value, 0.01);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_InstanceMethod_Calculate()
     {
         var result = luaL_dostring(_L, @"
@@ -179,11 +179,11 @@ public class LuaRuntimeTests
         var mul = lua_tonumber(_L, -1);
         var add = lua_tonumber(_L, -2);
 
-        Assert.That(add, Is.EqualTo(7).Within(0.01));
-        Assert.That(mul, Is.EqualTo(12).Within(0.01));
+        Assert.AreEqual(7, add, 0.01);
+        Assert.AreEqual(12, mul, 0.01);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_InstanceMethod_Clone()
     {
         var result = luaL_dostring(_L, @"
@@ -198,12 +198,12 @@ public class LuaRuntimeTests
         var cloneName = lua_tostring(_L, -2);
         var origName = lua_tostring(_L, -3);
 
-        Assert.That(origName, Is.EqualTo("Original"));
-        Assert.That(cloneName, Is.EqualTo("Cloned"));
-        Assert.That(cloneId, Is.EqualTo(42));
+        Assert.AreEqual("Original", origName);
+        Assert.AreEqual("Cloned", cloneName);
+        Assert.AreEqual(42, cloneId);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_InstanceMethod_CustomName()
     {
         var result = luaL_dostring(_L, @"
@@ -213,10 +213,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var custom = lua_tostring(_L, -1);
-        Assert.That(custom, Is.EqualTo("custom"));
+        Assert.AreEqual("custom", custom);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_StaticMethod_Add()
     {
         var result = luaL_dostring(_L, @"
@@ -225,10 +225,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var sum = lua_tointeger(_L, -1);
-        Assert.That(sum, Is.EqualTo(30));
+        Assert.AreEqual(30, sum);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_StaticMethod_Concat()
     {
         var result = luaL_dostring(_L, @"
@@ -237,10 +237,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var concat = lua_tostring(_L, -1);
-        Assert.That(concat, Is.EqualTo("Hello World"));
+        Assert.AreEqual("Hello World", concat);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_StaticProperty_Counter()
     {
         // Reset the counter
@@ -258,11 +258,11 @@ public class LuaRuntimeTests
         var after = lua_tointeger(_L, -1);
         var before = lua_tointeger(_L, -2);
 
-        Assert.That(before, Is.EqualTo(0));
-        Assert.That(after, Is.EqualTo(2));
+        Assert.AreEqual(0, before);
+        Assert.AreEqual(2, after);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_StaticProperty_Name()
     {
         var result = luaL_dostring(_L, @"
@@ -271,10 +271,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var name = lua_tostring(_L, -1);
-        Assert.That(name, Is.EqualTo("SampleClass"));
+        Assert.AreEqual("SampleClass", name);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_Tostring()
     {
         var result = luaL_dostring(_L, @"
@@ -284,11 +284,11 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var str = lua_tostring(_L, -1);
-        Assert.That(str, Does.Contain("42"));
-        Assert.That(str, Does.Contain("Test"));
+        Assert.IsTrue(str!.Contains("42"));
+        Assert.IsTrue(str.Contains("Test"));
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_InstanceProperty_PreciseValue()
     {
         var result = luaL_dostring(_L, @"
@@ -299,10 +299,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var preciseValue = lua_tonumber(_L, -1);
-        Assert.That(preciseValue, Is.EqualTo(3.141592653589793).Within(0.0000000000001));
+        Assert.AreEqual(3.141592653589793, preciseValue, 0.0000000000001);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_InstanceProperty_AllPropertiesRoundTrip()
     {
         var result = luaL_dostring(_L, @"
@@ -322,14 +322,14 @@ public class LuaRuntimeTests
         var name = lua_tostring(_L, -4);
         var id = lua_tointeger(_L, -5);
 
-        Assert.That(id, Is.EqualTo(123));
-        Assert.That(name, Is.EqualTo("RoundTrip"));
-        Assert.That(isActive, Is.EqualTo(1));
-        Assert.That(value, Is.EqualTo(45.67).Within(0.01));
-        Assert.That(preciseValue, Is.EqualTo(89.1234567890123).Within(0.0000000001));
+        Assert.AreEqual(123, id);
+        Assert.AreEqual("RoundTrip", name);
+        Assert.AreEqual(1, isActive);
+        Assert.AreEqual(45.67, value, 0.01);
+        Assert.AreEqual(89.1234567890123, preciseValue, 0.0000000001);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_InstanceProperty_BooleanFalse()
     {
         var result = luaL_dostring(_L, @"
@@ -344,11 +344,11 @@ public class LuaRuntimeTests
         var after = lua_toboolean(_L, -1);
         var before = lua_toboolean(_L, -2);
 
-        Assert.That(before, Is.EqualTo(1), "isActive should be true initially");
-        Assert.That(after, Is.EqualTo(0), "isActive should be false after setting");
+        Assert.AreEqual(1, before, "isActive should be true initially");
+        Assert.AreEqual(0, after, "isActive should be false after setting");
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_StaticProperty_CounterSet()
     {
         SampleClass.StaticCounter = 0;
@@ -360,11 +360,11 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var counter = lua_tointeger(_L, -1);
-        Assert.That(counter, Is.EqualTo(50));
-        Assert.That(SampleClass.StaticCounter, Is.EqualTo(50), "C# static should also be updated");
+        Assert.AreEqual(50, counter);
+        Assert.AreEqual(50, SampleClass.StaticCounter, "C# static should also be updated");
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_StaticProperty_ReadOnly()
     {
         var result = luaL_dostring(_L, @"
@@ -373,10 +373,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var name = lua_tostring(_L, -1);
-        Assert.That(name, Is.EqualTo("SampleClass"));
+        Assert.AreEqual("SampleClass", name);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_PublicField_IntField()
     {
         var result = luaL_dostring(_L, @"
@@ -387,10 +387,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var field = lua_tointeger(_L, -1);
-        Assert.That(field, Is.EqualTo(999));
+        Assert.AreEqual(999, field);
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_PublicField_StringField()
     {
         var result = luaL_dostring(_L, @"
@@ -401,14 +401,14 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var field = lua_tostring(_L, -1);
-        Assert.That(field, Is.EqualTo("FieldValue"));
+        Assert.AreEqual("FieldValue", field);
     }
 
     #endregion
 
     #region Vec2 (SampleStruct) Tests
 
-    [Test]
+    [TestMethod]
     public void Vec2_Constructor_Default()
     {
         var result = luaL_dostring(_L, @"
@@ -420,11 +420,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(0).Within(0.001));
-        Assert.That(y, Is.EqualTo(0).Within(0.001));
+        Assert.AreEqual(0, x, 0.001);
+        Assert.AreEqual(0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Constructor_WithValues()
     {
         var result = luaL_dostring(_L, @"
@@ -436,11 +436,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(3.5).Within(0.001));
-        Assert.That(y, Is.EqualTo(4.5).Within(0.001));
+        Assert.AreEqual(3.5, x, 0.001);
+        Assert.AreEqual(4.5, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Property_Length()
     {
         var result = luaL_dostring(_L, @"
@@ -450,10 +450,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var length = lua_tonumber(_L, -1);
-        Assert.That(length, Is.EqualTo(5.0).Within(0.001));
+        Assert.AreEqual(5.0, length, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Property_LengthSquared()
     {
         var result = luaL_dostring(_L, @"
@@ -463,10 +463,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var lengthSq = lua_tonumber(_L, -1);
-        Assert.That(lengthSq, Is.EqualTo(25.0).Within(0.001));
+        Assert.AreEqual(25.0, lengthSq, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_FieldMutation_PersistsInStorage()
     {
         // This is the key struct mutation test!
@@ -488,13 +488,13 @@ public class LuaRuntimeTests
         var len2 = lua_tonumber(_L, -3);
         var len1 = lua_tonumber(_L, -4);
 
-        Assert.That(len1, Is.EqualTo(5.0).Within(0.001), "Initial length should be 5");
-        Assert.That(len2, Is.EqualTo(10.0).Within(0.001), "After mutation, length should be 10");
-        Assert.That(vx, Is.EqualTo(6.0).Within(0.001), "X should be mutated to 6");
-        Assert.That(vy, Is.EqualTo(8.0).Within(0.001), "Y should be mutated to 8");
+        Assert.AreEqual(5.0, len1, 0.001, "Initial length should be 5");
+        Assert.AreEqual(10.0, len2, 0.001, "After mutation, length should be 10");
+        Assert.AreEqual(6.0, vx, 0.001, "X should be mutated to 6");
+        Assert.AreEqual(8.0, vy, 0.001, "Y should be mutated to 8");
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_MethodMutation_Set()
     {
         var result = luaL_dostring(_L, @"
@@ -507,11 +507,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(10.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(20.0).Within(0.001));
+        Assert.AreEqual(10.0, x, 0.001);
+        Assert.AreEqual(20.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Operator_Add()
     {
         var result = luaL_dostring(_L, @"
@@ -525,11 +525,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(4.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(6.0).Within(0.001));
+        Assert.AreEqual(4.0, x, 0.001);
+        Assert.AreEqual(6.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Operator_Subtract()
     {
         var result = luaL_dostring(_L, @"
@@ -543,11 +543,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(3.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(4.0).Within(0.001));
+        Assert.AreEqual(3.0, x, 0.001);
+        Assert.AreEqual(4.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Operator_Multiply()
     {
         var result = luaL_dostring(_L, @"
@@ -560,11 +560,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(6.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(8.0).Within(0.001));
+        Assert.AreEqual(6.0, x, 0.001);
+        Assert.AreEqual(8.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Operator_Divide()
     {
         var result = luaL_dostring(_L, @"
@@ -577,11 +577,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(3.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(4.0).Within(0.001));
+        Assert.AreEqual(3.0, x, 0.001);
+        Assert.AreEqual(4.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Operator_UnaryNegation()
     {
         var result = luaL_dostring(_L, @"
@@ -594,11 +594,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(-3.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(-4.0).Within(0.001));
+        Assert.AreEqual(-3.0, x, 0.001);
+        Assert.AreEqual(-4.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Operator_Equality()
     {
         var result = luaL_dostring(_L, @"
@@ -614,11 +614,11 @@ public class LuaRuntimeTests
         var eq2 = lua_toboolean(_L, -1);
         var eq1 = lua_toboolean(_L, -2);
 
-        Assert.That(eq1, Is.EqualTo(1), "v1 == v2 should be true");
-        Assert.That(eq2, Is.EqualTo(0), "v1 == v3 should be false");
+        Assert.AreEqual(1, eq1, "v1 == v2 should be true");
+        Assert.AreEqual(0, eq2, "v1 == v3 should be false");
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_StaticMethod_Distance()
     {
         var result = luaL_dostring(_L, @"
@@ -629,10 +629,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var distance = lua_tonumber(_L, -1);
-        Assert.That(distance, Is.EqualTo(5.0).Within(0.001));
+        Assert.AreEqual(5.0, distance, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_StaticMethod_Dot()
     {
         var result = luaL_dostring(_L, @"
@@ -643,10 +643,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var dot = lua_tonumber(_L, -1);
-        Assert.That(dot, Is.EqualTo(11.0).Within(0.001)); // 1*3 + 2*4 = 11
+        Assert.AreEqual(11.0, dot, 0.001); // 1*3 + 2*4 = 11
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_StaticMethod_FromAngle()
     {
         var result = luaL_dostring(_L, @"
@@ -658,11 +658,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(1.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(0.0).Within(0.001));
+        Assert.AreEqual(1.0, x, 0.001);
+        Assert.AreEqual(0.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_InstanceMethod_Normalized()
     {
         var result = luaL_dostring(_L, @"
@@ -676,12 +676,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(0.6).Within(0.001));
-        Assert.That(y, Is.EqualTo(0.8).Within(0.001));
-        Assert.That(length, Is.EqualTo(1.0).Within(0.001));
+        Assert.AreEqual(0.6, x, 0.001);
+        Assert.AreEqual(0.8, y, 0.001);
+        Assert.AreEqual(1.0, length, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_InstanceMethod_Scale()
     {
         var result = luaL_dostring(_L, @"
@@ -694,11 +694,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(6.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(8.0).Within(0.001));
+        Assert.AreEqual(6.0, x, 0.001);
+        Assert.AreEqual(8.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_StaticProperty_Zero()
     {
         var result = luaL_dostring(_L, @"
@@ -710,11 +710,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(0.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(0.0).Within(0.001));
+        Assert.AreEqual(0.0, x, 0.001);
+        Assert.AreEqual(0.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_StaticProperty_One()
     {
         var result = luaL_dostring(_L, @"
@@ -726,11 +726,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(1.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(1.0).Within(0.001));
+        Assert.AreEqual(1.0, x, 0.001);
+        Assert.AreEqual(1.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_StaticProperty_UnitX()
     {
         var result = luaL_dostring(_L, @"
@@ -742,11 +742,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(1.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(0.0).Within(0.001));
+        Assert.AreEqual(1.0, x, 0.001);
+        Assert.AreEqual(0.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_StaticProperty_UnitY()
     {
         var result = luaL_dostring(_L, @"
@@ -758,11 +758,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(0.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(1.0).Within(0.001));
+        Assert.AreEqual(0.0, x, 0.001);
+        Assert.AreEqual(1.0, y, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_InstanceProperty_LengthAfterMutation()
     {
         // Verify computed properties update after field mutation
@@ -781,12 +781,12 @@ public class LuaRuntimeTests
         var len2 = lua_tonumber(_L, -2);
         var len1 = lua_tonumber(_L, -3);
 
-        Assert.That(len1, Is.EqualTo(0.0).Within(0.001));
-        Assert.That(len2, Is.EqualTo(5.0).Within(0.001));
-        Assert.That(lenSq, Is.EqualTo(25.0).Within(0.001));
+        Assert.AreEqual(0.0, len1, 0.001);
+        Assert.AreEqual(5.0, len2, 0.001);
+        Assert.AreEqual(25.0, lenSq, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_InstanceProperty_FieldsIndependent()
     {
         var result = luaL_dostring(_L, @"
@@ -799,11 +799,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(100.0).Within(0.001));
-        Assert.That(y, Is.EqualTo(20.0).Within(0.001), "Y should be unchanged");
+        Assert.AreEqual(100.0, x, 0.001);
+        Assert.AreEqual(20.0, y, 0.001, "Y should be unchanged");
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_Tostring()
     {
         var result = luaL_dostring(_L, @"
@@ -813,15 +813,15 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var str = lua_tostring(_L, -1);
-        Assert.That(str, Does.Contain("3.5"));
-        Assert.That(str, Does.Contain("4.5"));
+        Assert.IsTrue(str!.Contains("3.5"));
+        Assert.IsTrue(str.Contains("4.5"));
     }
 
     #endregion
 
     #region Vec3 (Vector3Struct) Tests
 
-    [Test]
+    [TestMethod]
     public void Vec3_Constructor_Default()
     {
         var result = luaL_dostring(_L, @"
@@ -834,12 +834,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(0).Within(0.001));
-        Assert.That(y, Is.EqualTo(0).Within(0.001));
-        Assert.That(z, Is.EqualTo(0).Within(0.001));
+        Assert.AreEqual(0, x, 0.001);
+        Assert.AreEqual(0, y, 0.001);
+        Assert.AreEqual(0, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_Constructor_WithValues()
     {
         var result = luaL_dostring(_L, @"
@@ -852,12 +852,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(1).Within(0.001));
-        Assert.That(y, Is.EqualTo(2).Within(0.001));
-        Assert.That(z, Is.EqualTo(3).Within(0.001));
+        Assert.AreEqual(1, x, 0.001);
+        Assert.AreEqual(2, y, 0.001);
+        Assert.AreEqual(3, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_FieldMutation()
     {
         var result = luaL_dostring(_L, @"
@@ -873,12 +873,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(10).Within(0.001));
-        Assert.That(y, Is.EqualTo(20).Within(0.001));
-        Assert.That(z, Is.EqualTo(30).Within(0.001));
+        Assert.AreEqual(10, x, 0.001);
+        Assert.AreEqual(20, y, 0.001);
+        Assert.AreEqual(30, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_Property_Length()
     {
         var result = luaL_dostring(_L, @"
@@ -888,10 +888,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var length = lua_tonumber(_L, -1);
-        Assert.That(length, Is.EqualTo(7.0).Within(0.001));
+        Assert.AreEqual(7.0, length, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_Operator_Add()
     {
         var result = luaL_dostring(_L, @"
@@ -906,12 +906,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(5).Within(0.001));
-        Assert.That(y, Is.EqualTo(7).Within(0.001));
-        Assert.That(z, Is.EqualTo(9).Within(0.001));
+        Assert.AreEqual(5, x, 0.001);
+        Assert.AreEqual(7, y, 0.001);
+        Assert.AreEqual(9, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_StaticMethod_Cross()
     {
         var result = luaL_dostring(_L, @"
@@ -927,12 +927,12 @@ public class LuaRuntimeTests
         var x = lua_tonumber(_L, -3);
 
         // Cross product of X and Y axes should be Z axis
-        Assert.That(x, Is.EqualTo(0).Within(0.001));
-        Assert.That(y, Is.EqualTo(0).Within(0.001));
-        Assert.That(z, Is.EqualTo(1).Within(0.001));
+        Assert.AreEqual(0, x, 0.001);
+        Assert.AreEqual(0, y, 0.001);
+        Assert.AreEqual(1, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_StaticMethod_Dot()
     {
         var result = luaL_dostring(_L, @"
@@ -943,10 +943,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var dot = lua_tonumber(_L, -1);
-        Assert.That(dot, Is.EqualTo(32).Within(0.001)); // 1*4 + 2*5 + 3*6 = 32
+        Assert.AreEqual(32, dot, 0.001); // 1*4 + 2*5 + 3*6 = 32
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_InstanceMethod_Normalized()
     {
         var result = luaL_dostring(_L, @"
@@ -957,10 +957,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var length = lua_tonumber(_L, -1);
-        Assert.That(length, Is.EqualTo(1.0).Within(0.001));
+        Assert.AreEqual(1.0, length, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_StaticProperty_Zero()
     {
         var result = luaL_dostring(_L, @"
@@ -973,12 +973,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(0).Within(0.001));
-        Assert.That(y, Is.EqualTo(0).Within(0.001));
-        Assert.That(z, Is.EqualTo(0).Within(0.001));
+        Assert.AreEqual(0, x, 0.001);
+        Assert.AreEqual(0, y, 0.001);
+        Assert.AreEqual(0, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_StaticProperty_One()
     {
         var result = luaL_dostring(_L, @"
@@ -991,12 +991,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(1).Within(0.001));
-        Assert.That(y, Is.EqualTo(1).Within(0.001));
-        Assert.That(z, Is.EqualTo(1).Within(0.001));
+        Assert.AreEqual(1, x, 0.001);
+        Assert.AreEqual(1, y, 0.001);
+        Assert.AreEqual(1, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_InstanceProperty_LengthSquared()
     {
         var result = luaL_dostring(_L, @"
@@ -1006,10 +1006,10 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var lengthSq = lua_tonumber(_L, -1);
-        Assert.That(lengthSq, Is.EqualTo(49.0).Within(0.001)); // 4 + 9 + 36 = 49
+        Assert.AreEqual(49.0, lengthSq, 0.001); // 4 + 9 + 36 = 49
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_InstanceProperty_LengthAfterMutation()
     {
         var result = luaL_dostring(_L, @"
@@ -1026,11 +1026,11 @@ public class LuaRuntimeTests
         var len2 = lua_tonumber(_L, -1);
         var len1 = lua_tonumber(_L, -2);
 
-        Assert.That(len1, Is.EqualTo(0.0).Within(0.001));
-        Assert.That(len2, Is.EqualTo(7.0).Within(0.001));
+        Assert.AreEqual(0.0, len1, 0.001);
+        Assert.AreEqual(7.0, len2, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_Operator_Subtract()
     {
         var result = luaL_dostring(_L, @"
@@ -1045,12 +1045,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(4).Within(0.001));
-        Assert.That(y, Is.EqualTo(5).Within(0.001));
-        Assert.That(z, Is.EqualTo(6).Within(0.001));
+        Assert.AreEqual(4, x, 0.001);
+        Assert.AreEqual(5, y, 0.001);
+        Assert.AreEqual(6, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_Operator_Multiply()
     {
         var result = luaL_dostring(_L, @"
@@ -1064,12 +1064,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(3).Within(0.001));
-        Assert.That(y, Is.EqualTo(6).Within(0.001));
-        Assert.That(z, Is.EqualTo(9).Within(0.001));
+        Assert.AreEqual(3, x, 0.001);
+        Assert.AreEqual(6, y, 0.001);
+        Assert.AreEqual(9, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_Operator_UnaryNegation()
     {
         var result = luaL_dostring(_L, @"
@@ -1083,12 +1083,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(-1).Within(0.001));
-        Assert.That(y, Is.EqualTo(-2).Within(0.001));
-        Assert.That(z, Is.EqualTo(-3).Within(0.001));
+        Assert.AreEqual(-1, x, 0.001);
+        Assert.AreEqual(-2, y, 0.001);
+        Assert.AreEqual(-3, z, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_Tostring()
     {
         var result = luaL_dostring(_L, @"
@@ -1098,16 +1098,16 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var str = lua_tostring(_L, -1);
-        Assert.That(str, Does.Contain("1"));
-        Assert.That(str, Does.Contain("2"));
-        Assert.That(str, Does.Contain("3"));
+        Assert.IsTrue(str!.Contains("1"));
+        Assert.IsTrue(str.Contains("2"));
+        Assert.IsTrue(str.Contains("3"));
     }
 
     #endregion
 
     #region Cross-Type Tests
 
-    [Test]
+    [TestMethod]
     public void Vec3_ToVec2_ReturnsVec2()
     {
         var result = luaL_dostring(_L, @"
@@ -1121,12 +1121,12 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(3).Within(0.001));
-        Assert.That(y, Is.EqualTo(4).Within(0.001));
-        Assert.That(length, Is.EqualTo(5).Within(0.001));
+        Assert.AreEqual(3, x, 0.001);
+        Assert.AreEqual(4, y, 0.001);
+        Assert.AreEqual(5, length, 0.001);
     }
 
-    [Test]
+    [TestMethod]
     public void Vec3_FromVec2_CreatesVec3()
     {
         var result = luaL_dostring(_L, @"
@@ -1140,16 +1140,16 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -2);
         var x = lua_tonumber(_L, -3);
 
-        Assert.That(x, Is.EqualTo(3).Within(0.001));
-        Assert.That(y, Is.EqualTo(4).Within(0.001));
-        Assert.That(z, Is.EqualTo(5).Within(0.001));
+        Assert.AreEqual(3, x, 0.001);
+        Assert.AreEqual(4, y, 0.001);
+        Assert.AreEqual(5, z, 0.001);
     }
 
     #endregion
 
     #region Complex Scenarios
 
-    [Test]
+    [TestMethod]
     public void Vec2_ChainedOperations()
     {
         var result = luaL_dostring(_L, @"
@@ -1163,11 +1163,11 @@ public class LuaRuntimeTests
         var y = lua_tonumber(_L, -1);
         var x = lua_tonumber(_L, -2);
 
-        Assert.That(x, Is.EqualTo(8).Within(0.001));  // (1+3)*2 = 8
-        Assert.That(y, Is.EqualTo(12).Within(0.001)); // (2+4)*2 = 12
+        Assert.AreEqual(8, x, 0.001);  // (1+3)*2 = 8
+        Assert.AreEqual(12, y, 0.001); // (2+4)*2 = 12
     }
 
-    [Test]
+    [TestMethod]
     public void Vec2_MultipleInstances_Independent()
     {
         var result = luaL_dostring(_L, @"
@@ -1181,11 +1181,11 @@ public class LuaRuntimeTests
         var v2x = lua_tonumber(_L, -1);
         var v1x = lua_tonumber(_L, -2);
 
-        Assert.That(v1x, Is.EqualTo(100).Within(0.001), "v1.x should be modified");
-        Assert.That(v2x, Is.EqualTo(3).Within(0.001), "v2.x should be unchanged");
+        Assert.AreEqual(100, v1x, 0.001, "v1.x should be modified");
+        Assert.AreEqual(3, v2x, 0.001, "v2.x should be unchanged");
     }
 
-    [Test]
+    [TestMethod]
     public void SampleClass_MultipleReferences_SameInstance()
     {
         // Unlike structs, class instances should share state
@@ -1200,11 +1200,11 @@ public class LuaRuntimeTests
         var name2 = lua_tostring(_L, -1);
         var name1 = lua_tostring(_L, -2);
 
-        Assert.That(name1, Is.EqualTo("Modified"), "obj1 should see modification");
-        Assert.That(name2, Is.EqualTo("Modified"), "obj2 should be Modified");
+        Assert.AreEqual("Modified", name1, "obj1 should see modification");
+        Assert.AreEqual("Modified", name2, "obj2 should be Modified");
     }
 
-    [Test]
+    [TestMethod]
     public void GarbageCollection_CleansUpStorage()
     {
         var initialCount = LuaBindings.ObjectCount;
@@ -1220,14 +1220,14 @@ public class LuaRuntimeTests
         AssertLuaOk(result);
 
         var afterCreate = LuaBindings.ObjectCount;
-        Assert.That(afterCreate, Is.GreaterThanOrEqualTo(initialCount), "Objects should be created");
+        Assert.IsTrue(afterCreate >= initialCount, "Objects should be created");
 
         // Force GC
         lua_gc(_L, LUA_GCCOLLECT, 0);
         lua_gc(_L, LUA_GCCOLLECT, 0);
 
         var afterGc = LuaBindings.ObjectCount;
-        Assert.That(afterGc, Is.LessThan(afterCreate), "Objects should be cleaned up after GC");
+        Assert.IsTrue(afterGc < afterCreate, "Objects should be cleaned up after GC");
     }
 
     #endregion

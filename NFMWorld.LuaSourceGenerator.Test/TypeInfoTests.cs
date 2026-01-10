@@ -6,10 +6,10 @@ namespace NFMWorld.LuaSourceGenerator.Test;
 /// <summary>
 /// Tests for the TypeInfo record and attribute handling.
 /// </summary>
-[TestFixture]
+[TestClass]
 public class TypeInfoTests
 {
-    [Test]
+    [TestMethod]
     public void TypeInfo_UsesCustomNameWhenProvided()
     {
         // Arrange
@@ -22,10 +22,10 @@ public class TypeInfoTests
         var typeInfo = new TypeInfo(type, attr);
 
         // Assert
-        Assert.That(typeInfo.LuaName, Is.EqualTo("Vec2"));
+        Assert.AreEqual("Vec2", typeInfo.LuaName);
     }
 
-    [Test]
+    [TestMethod]
     public void TypeInfo_UsesTypeNameWhenNoCustomName()
     {
         // Arrange
@@ -38,10 +38,10 @@ public class TypeInfoTests
         var typeInfo = new TypeInfo(type, attr);
 
         // Assert
-        Assert.That(typeInfo.LuaName, Is.EqualTo("SampleClass"));
+        Assert.AreEqual("SampleClass", typeInfo.LuaName);
     }
 
-    [Test]
+    [TestMethod]
     public void TypeInfo_StoresTypeReference()
     {
         // Arrange
@@ -52,6 +52,6 @@ public class TypeInfoTests
         var typeInfo = new TypeInfo(type, attr);
 
         // Assert
-        Assert.That(typeInfo.Type, Is.EqualTo(type));
+        Assert.AreEqual(type, typeInfo.Type);
     }
 }

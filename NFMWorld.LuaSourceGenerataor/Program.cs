@@ -4,6 +4,7 @@
 
 using System.Reflection;
 using System.Text;
+using Maxine.Extensions;
 using nfm_world_library.Lua;
 
 namespace NFMWorld.LuaSourceGenerator;
@@ -15,7 +16,7 @@ public static class Program
         // Parse arguments for output path
         string outputPath = args.Length > 0
             ? args[0]
-            : @"C:\Users\maxinelocal\Git\NFM-World\nfm-world\mad\Lua.Generated.cs";
+            : Path.Combine(ProjectUtils.TryGetSolutionDirectory() ?? "", @"nfm-world\mad\Lua.Generated.cs");
 
         // Load the library assembly
         var assembly = typeof(LuaVisibleAttribute).Assembly;
@@ -82,17 +83,15 @@ public class LuaBindingGenerator
         _sb.Append(text);
     }
 
-    private IDisposable Indent()
+    private IndentDisposable Indent()
     {
         _indent++;
         return new IndentDisposable(this);
     }
 
-    private class IndentDisposable : IDisposable
+    private readonly struct IndentDisposable(LuaBindingGenerator gen) : IDisposable
     {
-        private readonly LuaBindingGenerator _gen;
-        public IndentDisposable(LuaBindingGenerator gen) => _gen = gen;
-        public void Dispose() => _gen._indent--;
+        public void Dispose() => gen._indent--;
     }
 
     public string Generate(IEnumerable<Assembly> assemblies)
@@ -923,16 +922,10 @@ public class LuaBindingGenerator
 
     private static List<OperatorInfo> GetOperatorMethods(Type type)
     {
-        var operators = new List<OperatorInfo>();
-        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => m.IsSpecialName && m.Name.StartsWith("op_"));
-
-        foreach (var method in methods)
-        {
-            operators.Add(new OperatorInfo(method.Name, method.GetParameters()));
-        }
-
-        return operators;
+        return type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(m => m.IsSpecialName && m.Name.StartsWith("op_"))
+            .Select(method => new OperatorInfo(method.Name, method.GetParameters()))
+            .ToList();
     }
 
     private static string? GetLuaMetamethodName(string operatorName)

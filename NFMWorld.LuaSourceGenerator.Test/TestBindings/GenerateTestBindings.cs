@@ -12,16 +12,16 @@ namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
 /// Generates Lua bindings for the test sample types.
 /// Run <see cref="RegenerateBindings"/> to update the generated bindings file.
 /// </summary>
-[TestFixture]
+[TestClass]
 public class GenerateTestBindings
 {
     /// <summary>
     /// Regenerates the LuaBindings.Generated.cs file for the test project.
-    /// This test is marked as Explicit so it doesn't run automatically.
+    /// This test is marked as Ignore so it doesn't run automatically.
     /// Run it manually when you need to update the generated bindings.
     /// </summary>
-    [Test]
-    [Explicit("Run manually to regenerate bindings")]
+    [TestMethod]
+    [Ignore("Run manually to regenerate bindings")]
     public void RegenerateBindings()
     {
         var outputPath = GetOutputPath();
@@ -32,7 +32,7 @@ public class GenerateTestBindings
         Console.WriteLine($"Generated bindings to: {outputPath}");
         Console.WriteLine($"Generated {code.Split('\n').Length} lines of code");
 
-        Assert.Pass($"Successfully regenerated bindings to {outputPath}");
+        // Test passes if we reach here without exception
     }
 
     /// <summary>
