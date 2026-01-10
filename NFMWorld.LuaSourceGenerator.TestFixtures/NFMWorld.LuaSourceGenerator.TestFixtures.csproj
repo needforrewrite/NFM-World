@@ -10,6 +10,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
+      <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" />
     </ItemGroup>
 
 </Project>

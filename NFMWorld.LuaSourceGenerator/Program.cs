@@ -1,77 +1,47 @@
-// Utility to regenerate the LuaBindings.Generated.cs file for the test project.
-// Run the test "RegenerateBindings" to update the generated file.
+﻿// Lua Source Generator
+// This program uses reflection to find all types marked with [LuaVisible]
+// and generates Lua binding code for them.
 
 using System.Reflection;
 using System.Text;
+using Maxine.Extensions;
+using nfm_world_library;
 using nfm_world_library.Lua;
-using NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 
-namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
+namespace NFMWorld.LuaSourceGenerator;
 
-/// <summary>
-/// Generates Lua bindings for the test sample types.
-/// Run <see cref="RegenerateBindings"/> to update the generated bindings file.
-/// </summary>
-[TestClass]
-public class GenerateTestBindings
+public static class Program
 {
-    /// <summary>
-    /// Regenerates the LuaBindings.Generated.cs file for the test project.
-    /// This test is marked as Ignore so it doesn't run automatically.
-    /// Run it manually when you need to update the generated bindings.
-    /// </summary>
-    [TestMethod]
-    [Ignore("Run manually to regenerate bindings")]
-    public void RegenerateBindings()
+    public static void Main(string[] args)
     {
-        var outputPath = GetOutputPath();
-        var code = GenerateBindingsCode();
-
-        File.WriteAllText(outputPath, code);
-
-        Console.WriteLine($"Generated bindings to: {outputPath}");
-        Console.WriteLine($"Generated {code.Split('\n').Length} lines of code");
-
-        // Test passes if we reach here without exception
-    }
-
-    /// <summary>
-    /// Generates the bindings code as a string (useful for programmatic access).
-    /// </summary>
-    public static string GenerateBindingsCode()
-    {
-        var generator = new TestBindingGenerator();
-        return generator.Generate();
-    }
-
-    /// <summary>
-    /// Gets the output path for the generated bindings file.
-    /// </summary>
-    public static string GetOutputPath()
-    {
-        // Get the path relative to the test project
-        var testDir = Path.GetDirectoryName(typeof(GenerateTestBindings).Assembly.Location)!;
-
-        // Navigate up to find the project directory
-        var dir = new DirectoryInfo(testDir);
-        while (dir != null && !File.Exists(Path.Combine(dir.FullName, "NFMWorld.LuaSourceGenerator.Test.csproj")))
+        if (args.Length != 2)
         {
-            dir = dir.Parent;
+            Console.WriteLine("Usage: NFMWorld.LuaSourceGenerator <input-assembly-path> <output-file-path>");
+
+            args =
+            [
+                typeof(BackendGameSparker).Assembly.Location,
+                Path.Combine(ProjectUtils.TryGetSolutionDirectory() ?? "", "NFMWorld.Library", "Lua", "Lua.Generated.cs"),
+            ];
         }
 
-        if (dir == null)
-        {
-            throw new InvalidOperationException("Could not find project directory");
-        }
+        var inputAssemblyPath = args[0];
+        var outputFilePath = args[1];
+        var @namespace = args.Length >= 3 ? args[2] : "nfm_world_library.Lua";
 
-        return Path.Combine(dir.FullName, "TestBindings", "LuaBindings.Generated.cs");
+        var assembly = Assembly.LoadFrom(inputAssemblyPath);
+        var generator = new LuaBindingGenerator(assembly, @namespace);
+        var generatedCode = generator.Generate();
+
+        File.WriteAllText(outputFilePath, generatedCode);
+        Console.WriteLine($"Generated Lua bindings written to {outputFilePath}");
     }
 }
 
 /// <summary>
 /// Generator that creates Lua bindings for the test sample types.
 /// </summary>
-public class TestBindingGenerator
+public class LuaBindingGenerator(Assembly assembly, string @namespace)
 {
     private readonly StringBuilder _sb = new();
     private int _indent;
@@ -97,8 +67,8 @@ public class TestBindingGenerator
 
     private class IndentDisposable : IDisposable
     {
-        private readonly TestBindingGenerator _gen;
-        public IndentDisposable(TestBindingGenerator gen) => _gen = gen;
+        private readonly LuaBindingGenerator _gen;
+        public IndentDisposable(LuaBindingGenerator gen) => _gen = gen;
         public void Dispose() => _gen._indent--;
     }
 
@@ -108,7 +78,6 @@ public class TestBindingGenerator
     public string Generate()
     {
         // Find all types with [LuaVisible] in the test assembly
-        var assembly = typeof(SampleClass).Assembly;
         var types = new List<TypeInfo>();
 
         foreach (var type in assembly.GetTypes())
@@ -134,9 +103,8 @@ public class TestBindingGenerator
         AppendLine();
         AppendLine("using LuaNET.LuaJIT;");
         AppendLine("using static LuaNET.LuaJIT.Lua;");
-        AppendLine("using NFMWorld.LuaSourceGenerator.Test.SampleTypes;");
         AppendLine();
-        AppendLine("namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;");
+        AppendLine($"namespace {@namespace};");
         AppendLine();
         AppendLine("public partial class LuaBindings");
         AppendLine("{");
@@ -186,7 +154,7 @@ public class TestBindingGenerator
         AppendLine("{");
         using (Indent())
         {
-            AppendLine($"RegisterMetatable(typeof({fullTypeName}), \"{metatableName}\");");
+            AppendLine($"RegisterMetatable<{fullTypeName}>(\"{metatableName}\");");
             AppendLine();
             AppendLine("// Create metatable for instances");
             AppendLine($"luaL_newmetatable(L, \"{metatableName}\");");
@@ -277,7 +245,7 @@ public class TestBindingGenerator
         AppendLine();
 
         // Generate all method implementations
-        GenerateGcMethod(safeName);
+        GenerateGcMethod(safeName, fullTypeName);
         GenerateIndexMethod(type, safeName, isStruct, fullTypeName);
         GenerateNewIndexMethod(type, safeName, isStruct, fullTypeName);
         GenerateTostringMethod(safeName, isStruct, fullTypeName);
@@ -313,7 +281,7 @@ public class TestBindingGenerator
         }
     }
 
-    private void GenerateGcMethod(string safeName)
+    private void GenerateGcMethod(string safeName, string fullTypeName)
     {
         AppendLine($"private static int {safeName}__gc(lua_State L)");
         AppendLine("{");
@@ -329,7 +297,7 @@ public class TestBindingGenerator
                 using (Indent())
                 {
                     AppendLine("var id = *(int*)ptr;");
-                    AppendLine("RemoveObject(id);");
+                    AppendLine($"RemoveObject<{fullTypeName}>(id);");
                 }
                 AppendLine("}");
             }
@@ -464,7 +432,7 @@ public class TestBindingGenerator
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        AppendLine($"obj.{prop.Name} = ({propTypeName})ToObject(L, 3, typeof({propTypeName}))!;");
+                        AppendLine($"obj.{prop.Name} = ToObject<{propTypeName}>(L, 3)!;");
                         if (isStruct) AppendLine("UpdateStruct(L, 1, obj);");
                         AppendLine("break;");
                     }
@@ -482,7 +450,7 @@ public class TestBindingGenerator
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        AppendLine($"obj.{field.Name} = ({fieldTypeName})ToObject(L, 3, typeof({fieldTypeName}))!;");
+                        AppendLine($"obj.{field.Name} = ToObject<{fieldTypeName}>(L, 3)!;");
                         if (isStruct) AppendLine("UpdateStruct(L, 1, obj);");
                         AppendLine("break;");
                     }
@@ -536,8 +504,8 @@ public class TestBindingGenerator
                 {
                     var leftType = GetFullTypeName(parameters[0].ParameterType);
                     var rightType = GetFullTypeName(parameters[1].ParameterType);
-                    AppendLine($"var left = ({leftType})ToObject(L, 1, typeof({leftType}))!;");
-                    AppendLine($"var right = ({rightType})ToObject(L, 2, typeof({rightType}))!;");
+                    AppendLine($"var left = ToObject<{leftType}>(L, 1)!;");
+                    AppendLine($"var right = ToObject<{rightType}>(L, 2)!;");
 
                     // Use the actual operator syntax
                     var opSymbol = GetOperatorSymbol(op.Name);
@@ -563,7 +531,7 @@ public class TestBindingGenerator
                 else if (parameters.Length == 1)
                 {
                     var operandType = GetFullTypeName(parameters[0].ParameterType);
-                    AppendLine($"var operand = ({operandType})ToObject(L, 1, typeof({operandType}))!;");
+                    AppendLine($"var operand = ToObject<{operandType}>(L, 1)!;");
 
                     var opSymbol = GetOperatorSymbol(op.Name);
                     if (opSymbol != null)
@@ -625,7 +593,7 @@ public class TestBindingGenerator
                     {
                         var param = parameters[i];
                         var paramType = GetFullTypeName(param.ParameterType);
-                        AppendLine($"var arg{i} = ({paramType})ToObject(L, {i + 1}, typeof({paramType}))!;");
+                        AppendLine($"var arg{i} = ToObject<{paramType}>(L, {i + 1})!;");
                     }
 
                     var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
@@ -674,7 +642,7 @@ public class TestBindingGenerator
                         {
                             var param = parameters[i];
                             var paramType = GetFullTypeName(param.ParameterType);
-                            AppendLine($"var arg{i} = ({paramType})ToObject(L, {i + 1}, typeof({paramType}))!;");
+                            AppendLine($"var arg{i} = ToObject<{paramType}>(L, {i + 1})!;");
                         }
 
                         var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
@@ -751,7 +719,7 @@ public class TestBindingGenerator
                         {
                             var param = parameters[i];
                             var paramType = GetFullTypeName(param.ParameterType);
-                            AppendLine($"var arg{i} = ({paramType})ToObject(L, {i + 2}, typeof({paramType}))!;");
+                            AppendLine($"var arg{i} = ToObject<{paramType}>(L, {i + 2})!;");
                         }
 
                         var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
@@ -845,7 +813,7 @@ public class TestBindingGenerator
                         AppendLine($"case \"{luaName}\":");
                         using (Indent())
                         {
-                            AppendLine($"{fullTypeName}.{prop.Name} = ({propType})ToObject(L, 3, typeof({propType}))!;");
+                            AppendLine($"{fullTypeName}.{prop.Name} = ToObject<{propType}>(L, 3)!;");
                             AppendLine("return 0;");
                         }
                     }
@@ -878,7 +846,7 @@ public class TestBindingGenerator
         if (type == typeof(string)) return "string";
         if (type == typeof(void)) return "void";
         if (type == typeof(object)) return "object";
-        return type.Name;
+        return type.FullName ?? type.Name;
     }
 
     private static string GetSafeMethodName(string methodName) =>

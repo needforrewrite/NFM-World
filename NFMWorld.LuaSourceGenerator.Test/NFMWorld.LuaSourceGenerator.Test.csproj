@@ -22,7 +22,8 @@
 
     <ItemGroup>
       <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
-      <ProjectReference Include="..\NFMWorld.LuaSourceGenerataor\NFMWorld.LuaSourceGenerataor.csproj" />
+      <ProjectReference Include="..\NFMWorld.LuaSourceGenerator.TestFixtures\NFMWorld.LuaSourceGenerator.TestFixtures.csproj" />
+      <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" />
     </ItemGroup>
 
 </Project>

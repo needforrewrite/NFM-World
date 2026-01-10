@@ -19,6 +19,9 @@ public class LuaRuntimeTests
     {
         // Reset bindings state for test isolation
         LuaBindings.Reset();
+        LuaBindings.ResetType<SampleClass>();
+        LuaBindings.ResetType<SampleStruct>();
+        LuaBindings.ResetType<Vector3Struct>();
 
         // Create a new Lua state for each test
         _L = luaL_newstate();

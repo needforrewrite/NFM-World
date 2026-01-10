@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using MessagePack;
 using MessagePack.Formatters;
+using nfm_world_library.Lua;
 
 namespace nfm_world_library.util;
 

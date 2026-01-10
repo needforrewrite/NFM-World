@@ -31,7 +31,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FontStashSharp.Base", "Font
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FontStashSharp.Rasterizers.StbTrueTypeSharp", "FontStashSharp.Base\src\FontStashSharp.Rasterizers.StbTrueTypeSharp\FontStashSharp.Rasterizers.StbTrueTypeSharp.csproj", "{0F087793-93AC-4D3A-8A21-5867CE5CE604}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.LuaSourceGenerataor", "NFMWorld.LuaSourceGenerataor\NFMWorld.LuaSourceGenerataor.csproj", "{6DB28BE5-6977-42CB-AC64-AB991412DB2F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.LuaSourceGenerator", "NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj", "{6DB28BE5-6977-42CB-AC64-AB991412DB2F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMW.GenerateSinCosTable", "NFMW.GenerateSinCosTable\NFMW.GenerateSinCosTable.csproj", "{B5496802-627B-47F4-8B95-6B56AF2DA482}"
 EndProject
@@ -44,6 +44,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maxine.Extensions.MessagePack", "Maxine.Extensions\Maxine.Extensions.MessagePack\Maxine.Extensions.MessagePack.csproj", "{16F06DAB-D69F-4324-9023-91BA351A0B67}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.LuaSourceGenerator.Test", "NFMWorld.LuaSourceGenerator.Test\NFMWorld.LuaSourceGenerator.Test.csproj", "{B30E24D8-DF7B-4099-B0A3-6ACA370209CD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.LuaSourceGenerator.TestFixtures", "NFMWorld.LuaSourceGenerator.TestFixtures\NFMWorld.LuaSourceGenerator.TestFixtures.csproj", "{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -138,5 +140,9 @@ Global
 		{B30E24D8-DF7B-4099-B0A3-6ACA370209CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B30E24D8-DF7B-4099-B0A3-6ACA370209CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B30E24D8-DF7B-4099-B0A3-6ACA370209CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

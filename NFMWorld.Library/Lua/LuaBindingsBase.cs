@@ -7,65 +7,80 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using LuaNET.LuaJIT;
+using Maxine.Extensions;
+using Microsoft.Collections.Extensions;
 using static LuaNET.LuaJIT.Lua;
 
-namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
+namespace nfm_world_library.Lua;
 
 public partial class LuaBindings
 {
-    // Storage for managed objects referenced by Lua userdata
-    private static readonly Dictionary<int, object> _objects = new();
     private static int _nextObjectId = 1;
 
-    // Maps C# types to their Lua metatable names
-    private static readonly Dictionary<Type, string> _typeMetatables = new();
+    private static class TypeInfo<T>
+    {
+        // Maps C# types to their Lua metatable names
+        public static string? Name;
+
+        // Storage for managed objects referenced by Lua userdata
+        public static readonly DictionarySlim<int, T> Objects = [];
+    }
 
     // Keep delegates alive to prevent GC collection
-    private static readonly List<lua_CFunction> _delegates = new();
+    private static readonly HashSet<lua_CFunction> _delegates = [];
 
     /// <summary>
     /// Reset the bindings state (for test isolation).
     /// </summary>
     public static void Reset()
     {
-        _objects.Clear();
-        _nextObjectId = 1;
-        _typeMetatables.Clear();
         _delegates.Clear();
+        _objectCount = 0;
+        _nextObjectId = 1;
+    }
+    
+    public static void ResetType<T>()
+    {
+        TypeInfo<T>.Name = null;
+        TypeInfo<T>.Objects.Clear();
     }
 
     #region Object Storage
 
+    private static int _objectCount = 0;
+
     /// <summary>
     /// Store a managed object and return its ID.
     /// </summary>
-    private static int StoreObject(object obj)
+    private static int StoreObject<T>(T obj)
     {
         var id = _nextObjectId++;
-        _objects[id] = obj;
+        TypeInfo<T>.Objects.GetOrAddValueRef(id) = obj;
+        _objectCount++;
         return id;
     }
 
     /// <summary>
     /// Get a managed object by ID.
     /// </summary>
-    private static object? GetObject(int id)
+    private static T? GetObject<T>(int id)
     {
-        return _objects.TryGetValue(id, out var obj) ? obj : null;
+        return TypeInfo<T>.Objects.GetValueOrDefault(id);
     }
 
     /// <summary>
     /// Remove a managed object by ID.
     /// </summary>
-    private static void RemoveObject(int id)
+    private static void RemoveObject<T>(int id)
     {
-        _objects.Remove(id);
+        TypeInfo<T>.Objects.Remove(id);
+        _objectCount--;
     }
 
     /// <summary>
     /// Get the current object count (for testing).
     /// </summary>
-    public static int ObjectCount => _objects.Count;
+    public static int ObjectCount => _objectCount;
 
     #endregion
 
@@ -74,7 +89,7 @@ public partial class LuaBindings
     /// <summary>
     /// Push a userdata for a managed object onto the Lua stack.
     /// </summary>
-    private static void PushObject(lua_State L, object obj, string metatableName)
+    private static void PushObject<T>(lua_State L, T obj, string metatableName)
     {
         var id = StoreObject(obj);
         var ptr = lua_newuserdata(L, (ulong)sizeof(int));
@@ -93,7 +108,7 @@ public partial class LuaBindings
         unsafe
         {
             var id = *(int*)ptr;
-            return GetObject(id) as T;
+            return GetObject<T>(id);
         }
     }
 
@@ -107,7 +122,7 @@ public partial class LuaBindings
         unsafe
         {
             var id = *(int*)ptr;
-            var obj = GetObject(id);
+            var obj = GetObject<T>(id);
             if (obj is T value) return value;
             return default;
         }
@@ -124,14 +139,14 @@ public partial class LuaBindings
         unsafe
         {
             var id = *(int*)ptr;
-            _objects[id] = value;
+            TypeInfo<T>.Objects.GetOrAddValueRef(id) = value;
         }
     }
 
     /// <summary>
     /// Push a value to Lua stack based on its runtime type.
     /// </summary>
-    private static void PushValue(lua_State L, object? value)
+    private static void PushValue<T>(lua_State L, T value)
     {
         switch (value)
         {
@@ -144,8 +159,26 @@ public partial class LuaBindings
             case int i:
                 lua_pushinteger(L, i);
                 break;
+            case uint u:
+                lua_pushinteger(L, u);
+                break;
+            case byte by:
+                lua_pushinteger(L, by);
+                break;
+            case sbyte sb:
+                lua_pushinteger(L, sb);
+                break;
+            case short s:
+                lua_pushinteger(L, s);
+                break;
+            case ushort us:
+                lua_pushinteger(L, us);
+                break;
             case long l:
                 lua_pushinteger(L, l);
+                break;
+            case ulong ul:
+                lua_pushinteger(L, (long)ul);
                 break;
             case float f:
                 lua_pushnumber(L, f);
@@ -158,16 +191,16 @@ public partial class LuaBindings
                 break;
             default:
                 // For other types, push as userdata if we have a registered metatable
-                var type = value.GetType();
-                if (_typeMetatables.TryGetValue(type, out var metatable))
+                if (TypeInfo<T>.Name is {} metatable)
                 {
                     PushObject(L, value, metatable);
                 }
                 else
                 {
+                    throw new InvalidOperationException($"Type {typeof(T)} is not supported");
                     // Fallback: push as light userdata (pointer)
-                    var handle = GCHandle.Alloc(value);
-                    lua_pushlightuserdata(L, (nuint)GCHandle.ToIntPtr(handle));
+                    // var handle = GCHandle.Alloc(value);
+                    // lua_pushlightuserdata(L, (nuint)GCHandle.ToIntPtr(handle));
                 }
                 break;
         }
@@ -176,29 +209,25 @@ public partial class LuaBindings
     /// <summary>
     /// Convert Lua value at stack index to a C# object of the target type.
     /// </summary>
-    private static object? ToObject(lua_State L, int idx, Type targetType)
+    private static T? ToObject<T>(lua_State L, int idx)
     {
         var luaType = lua_type(L, idx);
 
-        if (luaType == LUA_TNIL) return null;
+        if (luaType == LUA_TNIL) return default;
 
-        if (targetType == typeof(bool) || luaType == LUA_TBOOLEAN)
-            return lua_toboolean(L, idx) != 0;
+        if (typeof(T) == typeof(bool) || luaType == LUA_TBOOLEAN) return (T)(object)(lua_toboolean(L, idx) != 0);
+        if (typeof(T) == typeof(int)) return (T)(object)(int)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(uint)) return (T)(object)(uint)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(byte)) return (T)(object)(byte)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
+        if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
 
-        if (targetType == typeof(int))
-            return (int)lua_tointeger(L, idx);
-
-        if (targetType == typeof(long))
-            return lua_tointeger(L, idx);
-
-        if (targetType == typeof(float))
-            return (float)lua_tonumber(L, idx);
-
-        if (targetType == typeof(double))
-            return lua_tonumber(L, idx);
-
-        if (targetType == typeof(string) || luaType == LUA_TSTRING)
-            return lua_tostring(L, idx);
+        if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
 
         if (luaType == LUA_TUSERDATA)
         {
@@ -208,12 +237,12 @@ public partial class LuaBindings
                 unsafe
                 {
                     var id = *(int*)ptr;
-                    return GetObject(id);
+                    return GetObject<T>(id);
                 }
             }
         }
 
-        return null;
+        throw new InvalidOperationException($"Cannot convert Lua type {luaType} to {typeof(T)}");
     }
 
     #endregion
@@ -236,10 +265,11 @@ public partial class LuaBindings
     /// <summary>
     /// Register a type's metatable name for use with PushValue.
     /// </summary>
-    private static void RegisterMetatable(Type type, string metatableName)
+    private static void RegisterMetatable<T>(string metatableName)
     {
-        _typeMetatables[type] = metatableName;
+        TypeInfo<T>.Name = metatableName;
     }
 
     #endregion
+
 }
