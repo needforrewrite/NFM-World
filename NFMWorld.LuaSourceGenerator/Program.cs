@@ -420,9 +420,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine("{");
             using (Indent())
             {
-                // Writable properties
+                // Writable properties (excluding init-only)
                 var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null && p.CanWrite)
+                    .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null && p.CanWrite && !IsInitOnly(p))
                     .ToList();
 
                 foreach (var prop in props)
@@ -791,8 +791,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         AppendLine("}");
         AppendLine();
 
-        // __newindex for static properties (if any writable)
-        var writableProps = staticProps.Where(p => p.CanWrite).ToList();
+        // __newindex for static properties (if any writable, excluding init-only)
+        var writableProps = staticProps.Where(p => p.CanWrite && !IsInitOnly(p)).ToList();
         if (writableProps.Count > 0)
         {
             AppendLine($"private static int {safeName}_type__newindex(lua_State L)");
@@ -833,6 +833,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     }
 
     #region Helpers
+
+    private static bool IsInitOnly(PropertyInfo property)
+    {
+        if (property.SetMethod == null) return false;
+        return property.SetMethod.ReturnParameter.GetRequiredCustomModifiers()
+            .Any(t => t.Name == "IsExternalInit");
+    }
 
     private static string GetSafeTypeName(Type type) => type.Name.Replace(".", "_").Replace("+", "_").Replace("`", "_");
 
