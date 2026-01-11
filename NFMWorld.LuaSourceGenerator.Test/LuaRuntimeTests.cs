@@ -27,6 +27,7 @@ public class LuaRuntimeTests
         LuaBindings.ResetType<TypeWithArrays>();
         LuaBindings.ResetType<TypeWithMultiDimArray>();
         LuaBindings.ResetType<TypeWithIndexers>();
+        LuaBindings.ResetType<TypeWithNestedGeneric>();
 
         // Create a new Lua state for each test
         _L = luaL_newstate();
@@ -2120,6 +2121,93 @@ public class LuaRuntimeTests
         Assert.AreEqual("grid_value", gridVal1);
         Assert.AreEqual(111, intVal2);
         Assert.AreEqual("grid_value", gridVal2);
+    }
+
+    #endregion
+
+    #region TypeWithNestedGeneric Tests (List<int>.Enumerator)
+
+    [TestMethod]
+    public void TypeWithNestedGeneric_GetEnumerator_Iterates()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithNestedGeneric.new()
+            local enumerator = obj:getEnumerator()
+            
+            local values = {}
+            while enumerator:moveNext() do
+                local current = enumerator.current
+                table.insert(values, current)
+            end
+            
+            return values[1], values[2], values[3], values[4], values[5]
+        ");
+        AssertLuaOk(result);
+
+        var val5 = lua_tointeger(_L, -1);
+        var val4 = lua_tointeger(_L, -2);
+        var val3 = lua_tointeger(_L, -3);
+        var val2 = lua_tointeger(_L, -4);
+        var val1 = lua_tointeger(_L, -5);
+
+        Assert.AreEqual(1, val1);
+        Assert.AreEqual(2, val2);
+        Assert.AreEqual(3, val3);
+        Assert.AreEqual(4, val4);
+        Assert.AreEqual(5, val5);
+    }
+
+    [TestMethod]
+    public void TypeWithNestedGeneric_StringEnumerator_Iterates()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithNestedGeneric.new()
+            local enumerator = obj:getStringEnumerator()
+            
+            local values = {}
+            while enumerator:moveNext() do
+                local current = enumerator.current
+                table.insert(values, current)
+            end
+            
+            return #values, values[1], values[2], values[3]
+        ");
+        AssertLuaOk(result);
+
+        var val3 = lua_tostring(_L, -1);
+        var val2 = lua_tostring(_L, -2);
+        var val1 = lua_tostring(_L, -3);
+        var count = lua_tointeger(_L, -4);
+
+        Assert.AreEqual(3, count);
+        Assert.AreEqual("x", val1);
+        Assert.AreEqual("y", val2);
+        Assert.AreEqual("z", val3);
+    }
+
+    [TestMethod]
+    public void TypeWithNestedGeneric_EnumeratorCurrent_BeforeMoveNext()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithNestedGeneric.new()
+            local enumerator = obj:getEnumerator()
+            
+            -- Access current before MoveNext (should be default value 0)
+            local currentBefore = enumerator.current
+            
+            -- Now move to first element
+            enumerator:moveNext()
+            local currentAfter = enumerator.current
+            
+            return currentBefore, currentAfter
+        ");
+        AssertLuaOk(result);
+
+        var after = lua_tointeger(_L, -1);
+        var before = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(0, before);
+        Assert.AreEqual(1, after);
     }
 
     #endregion
