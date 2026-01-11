@@ -20,6 +20,8 @@ public partial class LuaBindings
         Register_TypeWithMultiDimArray(L);
         Register_SampleClass(L);
         Register_SampleStruct(L);
+        Register_TypeWithByRefParameters(L);
+        Register_TypeWithNestedGeneric(L);
         Register_TypeWithReferences(L);
         Register_Vector3Struct(L);
         Register_Int32Array(L);
@@ -27,19 +29,28 @@ public partial class LuaBindings
         Register_SingleArray(L);
         Register_Int32Array2D(L);
         Register_SingleArray3D(L);
-        Register_ReferencedType(L);
         Register_List_Int32(L);
+        Register_List_Int32_Enumerator(L);
+        Register_List_String(L);
+        Register_List_String_Enumerator(L);
+        Register_ReferencedType(L);
         Register_List_ReferencedType(L);
         Register_Int64Array(L);
         Register_IEnumerable_Int32(L);
         Register_ReadOnlyCollection_Int32(L);
         Register_IComparer_Int32(L);
+        Register_IEnumerable_String(L);
+        Register_ReadOnlyCollection_String(L);
+        Register_IComparer_String(L);
         Register_IEnumerable_ReferencedType(L);
         Register_ReadOnlyCollection_ReferencedType(L);
         Register_IComparer_ReferencedType(L);
         Register_ReferencedTypeArray(L);
+        Register_List_ReferencedType_Enumerator(L);
         Register_IEnumerator_Int32(L);
         Register_IList_Int32(L);
+        Register_IEnumerator_String(L);
+        Register_IList_String(L);
         Register_IEnumerator_ReferencedType(L);
         Register_IList_ReferencedType(L);
     }

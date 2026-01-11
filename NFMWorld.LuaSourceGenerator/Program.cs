@@ -177,6 +177,30 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     }
 
     /// <summary>
+    /// Check if a type is a ref struct (cannot be marshalled to Lua).
+    /// </summary>
+    private static bool IsRefStruct(Type type)
+    {
+        return type.IsValueType && type.IsByRefLike;
+    }
+
+    /// <summary>
+    /// Check if a method has any byref parameters (ref, out, in).
+    /// </summary>
+    private static bool HasByRefParameters(MethodBase method)
+    {
+        return method.GetParameters().Any(p => p.ParameterType.IsByRef);
+    }
+
+    /// <summary>
+    /// Check if a property has a ref return type.
+    /// </summary>
+    private static bool HasRefReturn(PropertyInfo property)
+    {
+        return property.PropertyType.IsByRef;
+    }
+
+    /// <summary>
     /// Generate bindings for all sample types in the test project.
     /// </summary>
     public List<TypeInfo> Generate()
@@ -196,7 +220,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             if (luaVisibleAttr != null)
             {
-                Console.WriteLine($"Found [LuaVisible] type: {type.FullName}");
+                // Skip ref structs - they cannot be marshalled to Lua
+                if (IsRefStruct(type))
+            continue;
                 
                 // Extract the Name property if it exists
                 string? customName = null;
@@ -336,12 +362,34 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         if (IsPrimitiveOrKnownType(type) || discovered.Contains(type))
             return;
 
-        // Skip nested types from system assemblies (like List<T>.Enumerator)
+        // Skip nested types from system assemblies UNLESS they are from a constructed generic type
+        // (like List<int>.Enumerator which is valid and needed)
         if (type.IsNested && type.Assembly != assembly)
+        {
+            // Allow nested types of constructed generics (e.g., List<int>.Enumerator)
+            // The DeclaringType will be the generic definition (List`1), but if the nested type
+            // itself has all generic parameters resolved, it means it's from a constructed generic
+            bool isFromConstructedGeneric = type.DeclaringType != null && 
+                                           type.DeclaringType.IsGenericType && 
+                                           !type.ContainsGenericParameters;
+            
+            if (!isFromConstructedGeneric)
+                return;
+        }
+
+        // Skip ref structs - they cannot be marshalled to Lua
+        if (IsRefStruct(type))
             return;
 
         // For generic types, use the constructed generic type
         if (type.IsGenericType && !type.IsGenericTypeDefinition)
+        {
+            discovered.Add(type);
+            queue.Enqueue(type);
+            additional.Add(type);
+        }
+        // For nested types of constructed generics (like List<int>.Enumerator)
+        else if (type.IsNested && type.DeclaringType != null && type.DeclaringType.IsGenericType && !type.DeclaringType.IsGenericTypeDefinition)
         {
             discovered.Add(type);
             queue.Enqueue(type);
@@ -383,6 +431,38 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             else
             {
                 return $"ArrayOf{GetSimpleTypeName(elementType)}{rank}D";
+            }
+        }
+
+        // Handle nested types (like List<int>.Enumerator)
+        if (type.IsNested && type.DeclaringType != null)
+        {
+            // For nested types of generic types, we need to reconstruct the parent's generic arguments
+            // E.g., List<int>.Enumerator has DeclaringType = List`1, but we want "List_Int32"
+            if (type.DeclaringType.IsGenericType)
+            {
+                // Get the generic arguments that apply to the declaring type
+                // For List<int>.Enumerator, the Enumerator shares the same generic argument as List
+                var declaringTypeArgs = type.GetGenericArguments();
+                var declaringTypeArgCount = type.DeclaringType.GetGenericArguments().Length;
+                
+                // Build the declaring type name with its generic arguments
+                var declaringBaseName = type.DeclaringType.Name.Split('`')[0];
+                if (declaringTypeArgCount > 0 && declaringTypeArgs.Length >= declaringTypeArgCount)
+                {
+                    var declaringArgNames = string.Join("_", declaringTypeArgs.Take(declaringTypeArgCount).Select(t => GetSimpleTypeName(t)));
+                    var declaringName = $"{declaringBaseName}_{declaringArgNames}";
+                    return $"{declaringName}_{type.Name}";
+                }
+                else
+                {
+                    return $"{declaringBaseName}_{type.Name}";
+                }
+            }
+            else
+            {
+                var declaringName = GetGenericTypeLuaName(type.DeclaringType);
+                return $"{declaringName}_{type.Name}";
             }
         }
 
@@ -896,7 +976,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // Static methods
             var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod)
+                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod && !HasByRefParameters(m))
                 .GroupBy(m => GetLuaMethodName(m))
                 .ToList();
 
@@ -911,7 +991,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // Static properties metatable
             var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-                .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)))
+                .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
                 .ToList();
 
             if (staticProps.Count > 0)
@@ -948,7 +1028,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         GenerateInstanceMethods(type, safeName, isStruct, fullTypeName);
 
         var staticPropsForAccessors = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-            .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)))
+            .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
             .ToList();
 
         if (staticPropsForAccessors.Count > 0)
@@ -1022,6 +1102,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             var isArray = type.IsArray;
             var indexers = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
+                            !HasRefReturn(p) &&
                             p.CanRead &&
                             p.GetIndexParameters().Length > 0)
                 .ToList();
@@ -1173,6 +1254,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // Properties
                 var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                     .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
+                                !HasRefReturn(p) &&
                                 p.CanRead &&
                                 p.GetIndexParameters().Length == 0) // Skip indexers
                     .ToList();
@@ -1211,6 +1293,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     .Where(m => !m.IsSpecialName &&
                                 !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
                                 !m.IsGenericMethod &&
+                                !HasByRefParameters(m) &&
                                 (!type.IsArray || (m.DeclaringType != type && m.DeclaringType != typeof(Array) && m.DeclaringType != typeof(object)))) // Skip array-specific and inherited methods
                     .GroupBy(m => GetLuaMethodName(m))
                     .ToList();
@@ -1260,6 +1343,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             var isArray = type.IsArray;
             var indexers = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
+                            !HasRefReturn(p) &&
                             p.CanWrite &&
                             p.GetIndexParameters().Length > 0)
                 .ToList();
@@ -1410,6 +1494,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // Writable properties (excluding init-only)
                 var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                     .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
+                                !HasRefReturn(p) &&
                                 p.CanWrite &&
                                 !IsInitOnly(p) &&
                                 p.GetIndexParameters().Length == 0) // Skip indexers
@@ -1586,7 +1671,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // Group constructors by parameter count to handle overloads
             var ctorGroups = constructors
-                .Where(c => !isStruct || c.GetParameters().Length > 0)
+                .Where(c => !HasByRefParameters(c) && (!isStruct || c.GetParameters().Length > 0))
                 .GroupBy(c => c.GetParameters().Length)
                 .ToList();
 
@@ -1724,7 +1809,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private void GenerateStaticMethods(Type type, string safeName, string fullTypeName)
     {
         var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)))
+            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m))
             .GroupBy(m => GetLuaMethodName(m))
             .ToList();
 
@@ -1789,7 +1874,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .Where(m => !m.IsSpecialName &&
                         !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
-                        !m.IsGenericMethod) // Skip generic methods
+                        !m.IsGenericMethod &&
+                        !HasByRefParameters(m)) // Skip generic methods and byref parameters
             .GroupBy(m => GetLuaMethodName(m))
             .ToList();
 
@@ -1866,7 +1952,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private void GenerateStaticPropertyAccessors(Type type, string safeName, string fullTypeName)
     {
         var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-            .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)))
+            .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
             .ToList();
 
         // __index for static properties
@@ -2073,20 +2159,40 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         if (type.IsGenericType && !type.IsGenericTypeDefinition)
         {
             // Handle nested generic types like List<int>.Enumerator
-            if (type.IsNested && type.DeclaringType != null)
+            if (type.IsNested && type.DeclaringType != null && type.DeclaringType.IsGenericType)
             {
-                var declaringName = GetSafeTypeName(type.DeclaringType);
+                // For nested types of constructed generics (e.g., List<int>.Enumerator),
+                // the DeclaringType is the generic definition (List`1), but the nested type
+                // itself has the resolved generic arguments from the constructed parent.
+                // We need to build the declaring type name using those arguments.
+                var allGenericArgs = type.GetGenericArguments();
+                var declaringTypeArgCount = type.DeclaringType.GetGenericArguments().Length;
+                var declaringBaseName = type.DeclaringType.Name.Split('`')[0];
                 var nestedName = type.Name.Split('`')[0];
 
+                // Get generic args that belong to the declaring type
+                var declaringTypeArgs = allGenericArgs.Take(declaringTypeArgCount).ToArray();
+                
                 // Get generic args that belong to this nested type only
-                var nestedGenericArgs = type.GetGenericArguments()
-                    .Skip(type.DeclaringType.GetGenericArguments().Length)
-                    .ToArray();
+                var nestedGenericArgs = allGenericArgs.Skip(declaringTypeArgCount).ToArray();
 
+                // Build the declaring type name with its generic arguments
+                string declaringName;
+                if (declaringTypeArgs.Length > 0)
+                {
+                    var declaringArgNames = string.Join("_", declaringTypeArgs.Select(GetSafeTypeName));
+                    declaringName = $"{declaringBaseName}_{declaringArgNames}";
+                }
+                else
+                {
+                    declaringName = declaringBaseName;
+                }
+
+                // Build the full name
                 if (nestedGenericArgs.Length > 0)
                 {
-                    var argNames = string.Join("_", nestedGenericArgs.Select(GetSafeTypeName));
-                    return $"{declaringName}_{nestedName}_{argNames}";
+                    var nestedArgNames = string.Join("_", nestedGenericArgs.Select(GetSafeTypeName));
+                    return $"{declaringName}_{nestedName}_{nestedArgNames}";
                 }
                 else
                 {
@@ -2139,8 +2245,29 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // We need to handle the outer generic type first
             if (type.IsNested && type.DeclaringType != null && type.DeclaringType.IsGenericType)
             {
-                // Build the declaring type with its generic arguments
-                var declaringTypeName = GetFullTypeName(type.DeclaringType);
+                // For nested types of constructed generics (e.g., List<int>.Enumerator),
+                // the DeclaringType is the generic definition (List`1), but the nested type
+                // itself has the resolved generic arguments from the constructed parent.
+                // We need to reconstruct the declaring type with those arguments.
+                var allGenericArgs = type.GetGenericArguments();
+                var declaringTypeArgCount = type.DeclaringType.GetGenericArguments().Length;
+                
+                // Get the declaring type's base name and namespace
+                var declaringNamespace = type.DeclaringType.Namespace;
+                var declaringBaseName = type.DeclaringType.Name.Split('`')[0];
+                
+                // Build the full declaring type name with generic arguments
+                string declaringTypeName;
+                if (declaringTypeArgCount > 0 && allGenericArgs.Length >= declaringTypeArgCount)
+                {
+                    var declaringTypeArgs = allGenericArgs.Take(declaringTypeArgCount).ToArray();
+                    var argNames = string.Join(", ", declaringTypeArgs.Select(GetFullTypeName));
+                    declaringTypeName = $"{declaringNamespace}.{declaringBaseName}<{argNames}>";
+                }
+                else
+                {
+                    declaringTypeName = $"{declaringNamespace}.{declaringBaseName}";
+                }
 
                 // Get just the nested type's name (after the +)
                 var nestedName = type.Name;
@@ -2150,12 +2277,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     nestedName = nestedName.Substring(0, tickIndex);
                 }
 
-                // If the nested type itself has generic arguments, add them
-                var nestedGenericArgs = type.GetGenericArguments().Skip(type.DeclaringType.GetGenericArguments().Length).ToArray();
+                // If the nested type itself has generic arguments beyond the declaring type's, add them
+                var nestedGenericArgs = allGenericArgs.Skip(declaringTypeArgCount).ToArray();
                 if (nestedGenericArgs.Length > 0)
                 {
-                    var argNames = string.Join(", ", nestedGenericArgs.Select(GetFullTypeName));
-                    return $"{declaringTypeName}.{nestedName}<{argNames}>";
+                    var nestedArgNames = string.Join(", ", nestedGenericArgs.Select(GetFullTypeName));
+                    return $"{declaringTypeName}.{nestedName}<{nestedArgNames}>";
                 }
                 else
                 {
