@@ -1,10 +1,12 @@
-﻿// Lua Source Generator
+// Lua Source Generator
 // This program uses reflection to find all types marked with [LuaVisible]
 // and generates Lua binding code for them.
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
+using System.Text.Json;
 using Maxine.Extensions;
 using nfm_world_library;
 using nfm_world_library.Lua;
@@ -26,10 +28,95 @@ public static class Program
         var outputDirectory = args[1];
         var @namespace = args.Length >= 3 ? args[2] : "nfm_world_library.Lua";
 
-        var assembly = Assembly.LoadFrom(inputAssemblyPath);
+        // Convert to absolute paths
+        inputAssemblyPath = Path.GetFullPath(inputAssemblyPath);
+        outputDirectory = Path.GetFullPath(outputDirectory);
+
+        // Set up custom assembly load context to resolve dependencies from .deps.json
+        var loadContext = new DependencyLoadContext(inputAssemblyPath);
+        var assembly = loadContext.LoadFromAssemblyPath(inputAssemblyPath);
+        
         var generator = new LuaBindingGenerator(assembly, @namespace);
         generator.GenerateToFiles(outputDirectory);
         Console.WriteLine($"Generated Lua bindings written to {outputDirectory}");
+    }
+}
+
+/// <summary>
+/// Custom AssemblyLoadContext that resolves dependencies from .deps.json file.
+/// </summary>
+internal class DependencyLoadContext : AssemblyLoadContext
+{
+    private readonly AssemblyDependencyResolver _resolver;
+    private readonly Dictionary<string, string> _assemblyPaths = new();
+
+    public DependencyLoadContext(string mainAssemblyPath)
+    {
+        _resolver = new AssemblyDependencyResolver(mainAssemblyPath);
+        
+        // Try to load and parse .deps.json file
+        var depsJsonPath = Path.ChangeExtension(mainAssemblyPath, ".deps.json");
+        if (File.Exists(depsJsonPath))
+        {
+            try
+            {
+                LoadDependenciesFromDepsJson(depsJsonPath, Path.GetDirectoryName(mainAssemblyPath)!);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Warning: Failed to parse {depsJsonPath}: {ex.Message}");
+            }
+        }
+    }
+
+    private void LoadDependenciesFromDepsJson(string depsJsonPath, string assemblyDirectory)
+    {
+        var json = File.ReadAllText(depsJsonPath);
+        using var doc = JsonDocument.Parse(json);
+        
+        if (!doc.RootElement.TryGetProperty("targets", out var targets))
+            return;
+
+        // Get the first target (usually the runtime target)
+        foreach (var target in targets.EnumerateObject())
+        {
+            foreach (var library in target.Value.EnumerateObject())
+            {
+                if (!library.Value.TryGetProperty("runtime", out var runtime))
+                    continue;
+
+                foreach (var runtimeAssembly in runtime.EnumerateObject())
+                {
+                    var assemblyName = Path.GetFileNameWithoutExtension(runtimeAssembly.Name);
+                    var assemblyPath = Path.Combine(assemblyDirectory, runtimeAssembly.Name.Replace('/', Path.DirectorySeparatorChar));
+                    
+                    if (File.Exists(assemblyPath))
+                    {
+                        _assemblyPaths[assemblyName] = assemblyPath;
+                    }
+                }
+            }
+            break; // Only process first target
+        }
+    }
+
+    protected override Assembly? Load(AssemblyName assemblyName)
+    {
+        // Try using the resolver first
+        var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
+        if (assemblyPath != null)
+        {
+            return LoadFromAssemblyPath(assemblyPath);
+        }
+
+        // Fall back to our parsed deps.json paths
+        if (_assemblyPaths.TryGetValue(assemblyName.Name ?? "", out var path))
+        {
+            return LoadFromAssemblyPath(path);
+        }
+
+        // Let the default context handle it
+        return null;
     }
 }
 
@@ -68,6 +155,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     }
 
     /// <summary>
+    /// Check if a member has an attribute by name (to avoid assembly load context issues).
+    /// </summary>
+    private static bool HasAttribute(MemberInfo member, string attributeName)
+    {
+        return member.GetCustomAttributesData()
+            .Any(a => a.AttributeType.Name == attributeName);
+    }
+
+    /// <summary>
     /// Generate bindings for all sample types in the test project.
     /// </summary>
     public List<TypeInfo> Generate()
@@ -76,14 +172,35 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         var types = new List<TypeInfo>();
         var discoveredTypes = new HashSet<Type>();
 
+        Console.WriteLine($"Scanning assembly: {assembly.FullName}");
+        Console.WriteLine($"Type count: {assembly.GetTypes().Length}");
+
         foreach (var type in assembly.GetTypes())
         {
-            if (type.GetCustomAttribute<LuaVisibleAttribute>() is { } attr)
+            // Look for [LuaVisible] by name to avoid assembly load context issues
+            var luaVisibleAttr = type.GetCustomAttributesData()
+                .FirstOrDefault(a => a.AttributeType.Name == nameof(LuaVisibleAttribute));
+
+            if (luaVisibleAttr != null)
             {
+                Console.WriteLine($"Found [LuaVisible] type: {type.FullName}");
+                
+                // Extract the Name property if it exists
+                string? customName = null;
+                var nameProperty = luaVisibleAttr.NamedArguments
+                    .FirstOrDefault(a => a.MemberName == "Name");
+                if (nameProperty.TypedValue.Value is string name)
+                {
+                    customName = name;
+                }
+
+                var attr = new LuaVisibleAttribute { Name = customName };
                 types.Add(new TypeInfo(type, attr));
                 discoveredTypes.Add(type);
             }
         }
+
+        Console.WriteLine($"Total [LuaVisible] types found: {types.Count}");
 
         // Discover referenced types
         var additionalTypes = DiscoverReferencedTypes(types.Select(t => t.Type).ToList(), discoveredTypes);
@@ -110,21 +227,21 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // Check properties
             foreach (var prop in currentType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
-                if (prop.GetCustomAttribute<LuaHiddenAttribute>() != null) continue;
+                if (HasAttribute(prop, nameof(LuaHiddenAttribute))) continue;
                 ProcessType(prop.PropertyType, discovered, queue, additional);
             }
 
             // Check fields
             foreach (var field in currentType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
-                if (field.GetCustomAttribute<LuaHiddenAttribute>() != null) continue;
+                if (HasAttribute(field, nameof(LuaHiddenAttribute))) continue;
                 ProcessType(field.FieldType, discovered, queue, additional);
             }
 
             // Check methods
             foreach (var method in currentType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
-                if (method.IsSpecialName || method.GetCustomAttribute<LuaHiddenAttribute>() != null) continue;
+                if (method.IsSpecialName || HasAttribute(method, nameof(LuaHiddenAttribute))) continue;
 
                 // Return type
                 if (method.ReturnType != typeof(void))
@@ -142,7 +259,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // Check constructors
             foreach (var ctor in currentType.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
             {
-                if (ctor.GetCustomAttribute<LuaHiddenAttribute>() != null) continue;
+                if (HasAttribute(ctor, nameof(LuaHiddenAttribute))) continue;
 
                 foreach (var param in ctor.GetParameters())
                 {
@@ -766,7 +883,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // Static methods
             var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => !m.IsSpecialName && m.GetCustomAttribute<LuaHiddenAttribute>() == null && !m.IsGenericMethod)
+                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod)
                 .GroupBy(m => GetLuaMethodName(m))
                 .ToList();
 
@@ -781,7 +898,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // Static properties metatable
             var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-                .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null)
+                .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)))
                 .ToList();
 
             if (staticProps.Count > 0)
@@ -818,7 +935,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         GenerateInstanceMethods(type, safeName, isStruct, fullTypeName);
 
         var staticPropsForAccessors = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-            .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null)
+            .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)))
             .ToList();
 
         if (staticPropsForAccessors.Count > 0)
@@ -891,7 +1008,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // Check for array or indexer access first (when key is number or table)
             var isArray = type.IsArray;
             var indexers = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null &&
+                .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
                             p.CanRead &&
                             p.GetIndexParameters().Length > 0)
                 .ToList();
@@ -1042,7 +1159,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             {
                 // Properties
                 var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null &&
+                    .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
                                 p.CanRead &&
                                 p.GetIndexParameters().Length == 0) // Skip indexers
                     .ToList();
@@ -1060,7 +1177,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                 // Fields
                 var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(f => f.GetCustomAttribute<LuaHiddenAttribute>() == null)
+                    .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)))
                     .ToList();
 
                 foreach (var field in fields)
@@ -1079,7 +1196,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // as well as methods from Array and object base classes
                 var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                     .Where(m => !m.IsSpecialName &&
-                                m.GetCustomAttribute<LuaHiddenAttribute>() == null &&
+                                !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
                                 !m.IsGenericMethod &&
                                 (!type.IsArray || (m.DeclaringType != type && m.DeclaringType != typeof(Array) && m.DeclaringType != typeof(object)))) // Skip array-specific and inherited methods
                     .GroupBy(m => GetLuaMethodName(m))
@@ -1129,7 +1246,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // Check for array or indexer assignment first (when key is number or table)
             var isArray = type.IsArray;
             var indexers = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null &&
+                .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
                             p.CanWrite &&
                             p.GetIndexParameters().Length > 0)
                 .ToList();
@@ -1279,7 +1396,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             {
                 // Writable properties (excluding init-only)
                 var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null &&
+                    .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
                                 p.CanWrite &&
                                 !IsInitOnly(p) &&
                                 p.GetIndexParameters().Length == 0) // Skip indexers
@@ -1299,7 +1416,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                 // Writable fields
                 var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(f => f.GetCustomAttribute<LuaHiddenAttribute>() == null && !f.IsInitOnly)
+                    .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)) && !f.IsInitOnly)
                     .ToList();
 
                 foreach (var field in fields)
@@ -1427,7 +1544,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
 
         var constructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
-            .Where(c => c.GetCustomAttribute<LuaHiddenAttribute>() == null &&
+            .Where(c => !HasAttribute(c, nameof(LuaHiddenAttribute)) &&
                         !c.ContainsGenericParameters) // Skip constructors with generic parameters
             .OrderBy(c => c.GetParameters().Length)
             .ToList();
@@ -1488,7 +1605,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     {
                         // Multiple constructors with same arg count - need runtime disambiguation
                         // Sort: nullable constructors first (they have more specific conditions)
-                        var sortedCtors = ctorsForCount.OrderByDescending(c => 
+                        var sortedCtors = ctorsForCount.OrderByDescending(c =>
                             c.GetParameters().Any(p => IsNullableParameter(p) || IsNullable(p.ParameterType))
                         ).ToList();
 
@@ -1594,7 +1711,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private void GenerateStaticMethods(Type type, string safeName, string fullTypeName)
     {
         var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => !m.IsSpecialName && m.GetCustomAttribute<LuaHiddenAttribute>() == null)
+            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)))
             .GroupBy(m => GetLuaMethodName(m))
             .ToList();
 
@@ -1658,7 +1775,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .Where(m => !m.IsSpecialName &&
-                        m.GetCustomAttribute<LuaHiddenAttribute>() == null &&
+                        !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
                         !m.IsGenericMethod) // Skip generic methods
             .GroupBy(m => GetLuaMethodName(m))
             .ToList();
@@ -1736,7 +1853,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private void GenerateStaticPropertyAccessors(Type type, string safeName, string fullTypeName)
     {
         var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-            .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() == null)
+            .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)))
             .ToList();
 
         // __index for static properties
@@ -2067,20 +2184,41 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
     private static string GetLuaMethodName(MethodInfo method)
     {
-        var attr = method.GetCustomAttribute<LuaNameAttribute>();
-        return attr?.Name ?? ToCamelCase(method.Name);
+        var luaNameAttr = method.GetCustomAttributesData()
+            .FirstOrDefault(a => a.AttributeType.Name == nameof(LuaNameAttribute));
+        if (luaNameAttr != null)
+        {
+            var nameArg = luaNameAttr.ConstructorArguments.FirstOrDefault();
+            if (nameArg.Value is string name)
+                return name;
+        }
+        return ToCamelCase(method.Name);
     }
 
     private static string GetLuaPropertyName(PropertyInfo prop)
     {
-        var attr = prop.GetCustomAttribute<LuaNameAttribute>();
-        return attr?.Name ?? ToCamelCase(prop.Name);
+        var luaNameAttr = prop.GetCustomAttributesData()
+            .FirstOrDefault(a => a.AttributeType.Name == nameof(LuaNameAttribute));
+        if (luaNameAttr != null)
+        {
+            var nameArg = luaNameAttr.ConstructorArguments.FirstOrDefault();
+            if (nameArg.Value is string name)
+                return name;
+        }
+        return ToCamelCase(prop.Name);
     }
 
     private static string GetLuaFieldName(FieldInfo field)
     {
-        var attr = field.GetCustomAttribute<LuaNameAttribute>();
-        return attr?.Name ?? ToCamelCase(field.Name.TrimStart('_'));
+        var luaNameAttr = field.GetCustomAttributesData()
+            .FirstOrDefault(a => a.AttributeType.Name == nameof(LuaNameAttribute));
+        if (luaNameAttr != null)
+        {
+            var nameArg = luaNameAttr.ConstructorArguments.FirstOrDefault();
+            if (nameArg.Value is string name)
+                return name;
+        }
+        return ToCamelCase(field.Name.TrimStart('_'));
     }
 
     private static string ToCamelCase(string name)
