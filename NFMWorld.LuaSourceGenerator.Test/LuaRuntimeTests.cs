@@ -24,6 +24,7 @@ public class LuaRuntimeTests
         LuaBindings.ResetType<Vector3Struct>();
         LuaBindings.ResetType<ReferencedType>();
         LuaBindings.ResetType<TypeWithReferences>();
+        LuaBindings.ResetType<TypeWithArrays>();
 
         // Create a new Lua state for each test
         _L = luaL_newstate();
@@ -1747,4 +1748,74 @@ public class LuaRuntimeTests
     }
 
     #endregion
+
+    #region TypeWithArrays Tests
+
+    [TestMethod]
+    public void TypeWithArrays_Constructor_CreatesEmptyObject()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new()
+            return obj ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_GetLength_ReturnsZeroForNullArray()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new()
+            return obj:getLength()
+        ");
+        AssertLuaOk(result);
+
+        var length = lua_tointeger(_L, -1);
+        Assert.AreEqual(0, length);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_SumNumbers_ReturnsZeroForNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new()
+            return obj:sumNumbers()
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        Assert.AreEqual(0, sum);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_ConcatenateNames_ReturnsEmptyForNull()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new()
+            return obj:concatenateNames()
+        ");
+        AssertLuaOk(result);
+
+        var result2 = lua_tostring(_L, -1);
+        Assert.AreEqual("", result2);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_CreateSequence_ReturnsArray()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = TypeWithArrays.createSequence(5)
+            return arr ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil, "Should return a non-nil array");
+    }
+
+    #endregion
 }
+

@@ -6,40 +6,48 @@ namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
 public static class Program
 {
     /// <summary>
-    /// Regenerates the LuaBindings.Generated.cs file for the test project.
-    /// This test is marked as Ignore so it doesn't run automatically.
+    /// Regenerates the Lua bindings files for the test project.
+    /// Generates multiple files (one per type) in the current directory.
     /// Run it manually when you need to update the generated bindings.
     /// </summary>
     public static void Main()
     {
-        var outputPath = GetOutputPath();
-        var code = GenerateBindingsCode();
+        var outputDir = GetOutputDirectory();
+        GenerateBindingsFiles(outputDir);
 
-        File.WriteAllText(outputPath, code);
+        Console.WriteLine($"Generated bindings to: {outputDir}");
 
-        Console.WriteLine($"Generated bindings to: {outputPath}");
-        Console.WriteLine($"Generated {code.Split('\n').Length} lines of code");
+        // Count generated files
+        var files = Directory.GetFiles(outputDir, "*.g.cs");
+        Console.WriteLine($"Generated {files.Length} files");
 
         // Test passes if we reach here without exception
     }
 
     /// <summary>
-    /// Generates the bindings code as a string (useful for programmatic access).
+    /// Generates the bindings files to the specified directory.
     /// </summary>
-    public static string GenerateBindingsCode()
+    public static void GenerateBindingsFiles(string outputDirectory)
     {
         var generator = new LuaBindingGenerator(typeof(SampleClass).Assembly, "NFMWorld.LuaSourceGenerator.Test.TestBindings");
-        return generator.Generate();
+        generator.GenerateToFiles(outputDirectory);
     }
 
     /// <summary>
-    /// Gets the output path for the generated bindings file.
+    /// Gets the output directory for the generated bindings files.
     /// </summary>
-    public static string GetOutputPath()
+    public static string GetOutputDirectory()
     {
-        // Get the path relative to the test project
-        var testDir = ProjectUtils.TryGetProjectDirectory() ?? "";
-
-        return Path.Combine(testDir, "LuaBindings.Generated.cs");
+        // Generate directly in the test project directory
+        var assemblyLocation = System.Reflection.Assembly.GetExecutingAssembly().Location;
+        var binDir = Path.GetDirectoryName(assemblyLocation)!;
+        
+        // Navigate from bin\Debug\net10.0 to project root
+        var projectRoot = Path.GetFullPath(Path.Combine(binDir, "..", "..", ".."));
+        
+        // Go to the Test project which is sibling to TestFixtures
+        var testProjectDir = Path.Combine(projectRoot, "..", "NFMWorld.LuaSourceGenerator.Test");
+        
+        return Path.GetFullPath(testProjectDir);
     }
 }

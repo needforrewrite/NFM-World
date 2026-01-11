@@ -33,7 +33,7 @@ public class SampleClass
     // Public fields
     public int PublicField;
     public string PublicStringField = "";
-    
+
     // Nullable field
     public long? NullableLongField;
 

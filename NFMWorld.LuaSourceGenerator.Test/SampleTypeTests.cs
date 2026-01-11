@@ -508,4 +508,64 @@ public class SampleTypeTests
 
         Assert.AreEqual(15, sum);
     }
+
+    // Tests for TypeWithArrays
+    [TestMethod]
+    public void TypeWithArrays_Constructor_InitializesEmptyArrays()
+    {
+        var obj = new TypeWithArrays();
+
+        Assert.IsNull(obj.Numbers);
+        Assert.IsNull(obj.Names);
+        Assert.IsNull(obj.Values);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_ConstructorWithNumbers_SetsNumbers()
+    {
+        var numbers = new[] { 1, 2, 3, 4, 5 };
+        var obj = new TypeWithArrays(numbers);
+
+        Assert.AreEqual(5, obj.Numbers!.Length);
+        Assert.AreEqual(1, obj.Numbers[0]);
+        Assert.AreEqual(5, obj.Numbers[4]);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_SumNumbers_CalculatesSum()
+    {
+        var obj = new TypeWithArrays(new[] { 10, 20, 30 });
+        var sum = obj.SumNumbers();
+
+        Assert.AreEqual(60, sum);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_ConcatenateNames_JoinsStrings()
+    {
+        var obj = new TypeWithArrays { Names = new[] { "Alice", "Bob", "Charlie" } };
+        var result = obj.ConcatenateNames();
+
+        Assert.AreEqual("Alice, Bob, Charlie", result);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_GetAt_ReturnsElement()
+    {
+        var obj = new TypeWithArrays(new[] { 100, 200, 300 });
+        var value = obj.GetAt(1);
+
+        Assert.AreEqual(200, value);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_CreateSequence_ReturnsSequentialArray()
+    {
+        var arr = TypeWithArrays.CreateSequence(5);
+
+        Assert.AreEqual(5, arr.Length);
+        Assert.AreEqual(1, arr[0]);
+        Assert.AreEqual(5, arr[4]);
+    }
 }
+
