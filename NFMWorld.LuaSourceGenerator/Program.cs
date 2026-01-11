@@ -94,6 +94,19 @@ internal class DependencyLoadContext : AssemblyLoadContext
                     {
                         _assemblyPaths[assemblyName] = assemblyPath;
                     }
+                    else
+                    {
+                        assemblyPath = Path.Combine(
+                            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                            ".nuget", "packages",
+                            library.Name.ToLowerInvariant().Replace('/', Path.DirectorySeparatorChar),
+                            runtimeAssembly.Name.Replace('/', Path.DirectorySeparatorChar)
+                        );
+                        if (File.Exists(assemblyPath))
+                        {
+                            _assemblyPaths[assemblyName] = assemblyPath;
+                        }
+                    }
                 }
             }
             break; // Only process first target
