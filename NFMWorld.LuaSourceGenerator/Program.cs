@@ -79,17 +79,134 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         // Find all types with [LuaVisible] in the test assembly
         var types = new List<TypeInfo>();
+        var discoveredTypes = new HashSet<Type>();
 
         foreach (var type in assembly.GetTypes())
         {
             if (type.GetCustomAttribute<LuaVisibleAttribute>() is { } attr)
             {
                 types.Add(new TypeInfo(type, attr));
+                discoveredTypes.Add(type);
             }
+        }
+
+        // Discover referenced types
+        var additionalTypes = DiscoverReferencedTypes(types.Select(t => t.Type).ToList(), discoveredTypes);
+        foreach (var type in additionalTypes)
+        {
+            var luaName = type.IsGenericType 
+                ? GetGenericTypeLuaName(type)
+                : type.Name;
+            types.Add(new TypeInfo(type, new LuaVisibleAttribute { Name = luaName }));
         }
 
         GenerateCode(types);
         return _sb.ToString();
+    }
+
+    private List<Type> DiscoverReferencedTypes(List<Type> rootTypes, HashSet<Type> discovered)
+    {
+        var queue = new Queue<Type>(rootTypes);
+        var additional = new List<Type>();
+
+        while (queue.Count > 0)
+        {
+            var currentType = queue.Dequeue();
+
+            // Check properties
+            foreach (var prop in currentType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            {
+                if (prop.GetCustomAttribute<LuaHiddenAttribute>() != null) continue;
+                ProcessType(prop.PropertyType, discovered, queue, additional);
+            }
+
+            // Check fields
+            foreach (var field in currentType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            {
+                if (field.GetCustomAttribute<LuaHiddenAttribute>() != null) continue;
+                ProcessType(field.FieldType, discovered, queue, additional);
+            }
+
+            // Check methods
+            foreach (var method in currentType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            {
+                if (method.IsSpecialName || method.GetCustomAttribute<LuaHiddenAttribute>() != null) continue;
+                
+                // Return type
+                if (method.ReturnType != typeof(void))
+                {
+                    ProcessType(method.ReturnType, discovered, queue, additional);
+                }
+
+                // Parameters
+                foreach (var param in method.GetParameters())
+                {
+                    ProcessType(param.ParameterType, discovered, queue, additional);
+                }
+            }
+
+            // Check constructors
+            foreach (var ctor in currentType.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (ctor.GetCustomAttribute<LuaHiddenAttribute>() != null) continue;
+                
+                foreach (var param in ctor.GetParameters())
+                {
+                    ProcessType(param.ParameterType, discovered, queue, additional);
+                }
+            }
+        }
+
+        return additional;
+    }
+
+    private void ProcessType(Type type, HashSet<Type> discovered, Queue<Type> queue, List<Type> additional)
+    {
+        // Unwrap nullable
+        if (IsNullable(type))
+        {
+            type = Nullable.GetUnderlyingType(type)!;
+        }
+
+        // Skip primitives and already discovered
+        if (IsPrimitiveOrKnownType(type) || discovered.Contains(type))
+            return;
+
+        // For generic types, use the constructed generic type
+        if (type.IsGenericType && !type.IsGenericTypeDefinition)
+        {
+            discovered.Add(type);
+            queue.Enqueue(type);
+            additional.Add(type);
+        }
+        // For non-generic types from our assembly
+        else if (!type.IsGenericType && type.Assembly == assembly)
+        {
+            discovered.Add(type);
+            queue.Enqueue(type);
+            additional.Add(type);
+        }
+    }
+
+    private static bool IsPrimitiveOrKnownType(Type type)
+    {
+        return type.IsPrimitive || 
+               type == typeof(string) || 
+               type == typeof(object) || 
+               type == typeof(void) ||
+               type == typeof(decimal) ||
+               type.IsEnum;
+    }
+
+    private static string GetGenericTypeLuaName(Type type)
+    {
+        if (!type.IsGenericType)
+            return type.Name;
+
+        var baseName = type.Name.Split('`')[0];
+        var genericArgs = type.GetGenericArguments();
+        var argNames = string.Join("_", genericArgs.Select(t => t.Name));
+        return $"{baseName}_{argNames}";
     }
 
     private void GenerateCode(List<TypeInfo> types)
@@ -911,7 +1028,17 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
     }
 
-    private static string GetSafeTypeName(Type type) => type.Name.Replace(".", "_").Replace("+", "_").Replace("`", "_");
+    private static string GetSafeTypeName(Type type)
+    {
+        if (type.IsGenericType && !type.IsGenericTypeDefinition)
+        {
+            var baseName = type.Name.Split('`')[0];
+            var genericArgs = type.GetGenericArguments();
+            var argNames = string.Join("_", genericArgs.Select(t => t.Name));
+            return $"{baseName}_{argNames}".Replace(".", "_").Replace("+", "_");
+        }
+        return type.Name.Replace(".", "_").Replace("+", "_").Replace("`", "_");
+    }
 
     private static string GetFullTypeName(Type type)
     {
@@ -920,6 +1047,24 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         {
             var underlyingType = Nullable.GetUnderlyingType(type)!;
             return GetFullTypeName(underlyingType) + "?";
+        }
+        
+        // Handle generic types
+        if (type.IsGenericType && !type.IsGenericTypeDefinition)
+        {
+            var genericTypeDef = type.GetGenericTypeDefinition();
+            var baseName = genericTypeDef.FullName ?? genericTypeDef.Name;
+            
+            // Remove the `1, `2, etc. from the name
+            var tickIndex = baseName.IndexOf('`');
+            if (tickIndex > 0)
+            {
+                baseName = baseName.Substring(0, tickIndex);
+            }
+            
+            var genericArgs = type.GetGenericArguments();
+            var argNames = string.Join(", ", genericArgs.Select(GetFullTypeName));
+            return $"{baseName}<{argNames}>";
         }
         
         if (type == typeof(int)) return "int";

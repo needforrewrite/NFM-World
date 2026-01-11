@@ -22,6 +22,8 @@ public class LuaRuntimeTests
         LuaBindings.ResetType<SampleClass>();
         LuaBindings.ResetType<SampleStruct>();
         LuaBindings.ResetType<Vector3Struct>();
+        LuaBindings.ResetType<ReferencedType>();
+        LuaBindings.ResetType<TypeWithReferences>();
 
         // Create a new Lua state for each test
         _L = luaL_newstate();
@@ -1641,6 +1643,107 @@ public class LuaRuntimeTests
 
         var formatted = lua_tostring(_L, -1);
         Assert.AreEqual(">Test", formatted, "Should format with prefix only");
+    }
+
+    #endregion
+
+    #region Referenced Type Discovery Tests
+
+    [TestMethod]
+    public void ReferencedType_Constructor_WorksFromLua()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = ReferencedType.new(42, 'Test')
+            return obj.value, obj.name
+        ");
+        AssertLuaOk(result);
+
+        var name = lua_tostring(_L, -1);
+        var value = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(42, value);
+        Assert.AreEqual("Test", name);
+    }
+
+    [TestMethod]
+    public void ReferencedType_GetDescription_ReturnsFormatted()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = ReferencedType.new(10, 'Sample')
+            return obj:getDescription()
+        ");
+        AssertLuaOk(result);
+
+        var desc = lua_tostring(_L, -1);
+        Assert.AreEqual("ReferencedType: Sample = 10", desc);
+    }
+
+    [TestMethod]
+    public void TypeWithReferences_CreateReferenced_ReturnsReferencedType()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithReferences.new()
+            local ref = obj:createReferenced(99, 'Created')
+            return ref.value, ref.name
+        ");
+        AssertLuaOk(result);
+
+        var name = lua_tostring(_L, -1);
+        var value = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(99, value);
+        Assert.AreEqual("Created", name);
+    }
+
+    [TestMethod]
+    public void TypeWithReferences_ReferencedProperty_CanSetAndGet()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithReferences.new()
+            local ref = ReferencedType.new(50, 'Property')
+            obj.referenced = ref
+            return obj.referenced.value, obj.referenced.name
+        ");
+        AssertLuaOk(result);
+
+        var name = lua_tostring(_L, -1);
+        var value = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(50, value);
+        Assert.AreEqual("Property", name);
+    }
+
+    [TestMethod]
+    public void TypeWithReferences_CreateNumberList_ReturnsGenericList()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithReferences.new()
+            local list = obj:createNumberList(3)
+            -- Note: We can't directly access List<int> members from Lua yet,
+            -- but we can verify the method returns successfully
+            return list ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil, "Should return a non-nil list");
+    }
+
+    [TestMethod]
+    public void TypeWithReferences_ConstructorWithReferencedType_Works()
+    {
+        var result = luaL_dostring(_L, @"
+            local ref = ReferencedType.new(100, 'Constructor')
+            local obj = TypeWithReferences.new(ref)
+            return obj.referenced.value, obj.referenced.name
+        ");
+        AssertLuaOk(result);
+
+        var name = lua_tostring(_L, -1);
+        var value = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(100, value);
+        Assert.AreEqual("Constructor", name);
     }
 
     #endregion

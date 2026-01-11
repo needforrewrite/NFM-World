@@ -457,4 +457,55 @@ public class SampleTypeTests
         var result = obj.FormatWithOptional("[", "]");
         Assert.AreEqual("[Test]", result);
     }
+
+    // ========== Referenced Type Tests ==========
+
+    [TestMethod]
+    public void ReferencedType_Constructor_SetsValues()
+    {
+        var obj = new ReferencedType(42, "Test");
+
+        Assert.AreEqual(42, obj.Value);
+        Assert.AreEqual("Test", obj.Name);
+    }
+
+    [TestMethod]
+    public void ReferencedType_GetDescription_ReturnsFormatted()
+    {
+        var obj = new ReferencedType(10, "Sample");
+        var desc = obj.GetDescription();
+
+        Assert.AreEqual("ReferencedType: Sample = 10", desc);
+    }
+
+    [TestMethod]
+    public void TypeWithReferences_CreateReferenced_ReturnsNewInstance()
+    {
+        var obj = new TypeWithReferences();
+        var referenced = obj.CreateReferenced(99, "Created");
+
+        Assert.AreEqual(99, referenced.Value);
+        Assert.AreEqual("Created", referenced.Name);
+    }
+
+    [TestMethod]
+    public void TypeWithReferences_CreateNumberList_CreatesListWithCount()
+    {
+        var obj = new TypeWithReferences();
+        var numbers = obj.CreateNumberList(5);
+
+        Assert.AreEqual(5, numbers.Count);
+        Assert.AreEqual(0, numbers[0]);
+        Assert.AreEqual(4, numbers[4]);
+    }
+
+    [TestMethod]
+    public void TypeWithReferences_SumNumbers_CalculatesSum()
+    {
+        var obj = new TypeWithReferences();
+        var numbers = new System.Collections.Generic.List<int> { 1, 2, 3, 4, 5 };
+        var sum = obj.SumNumbers(numbers);
+
+        Assert.AreEqual(15, sum);
+    }
 }

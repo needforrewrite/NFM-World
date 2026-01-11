@@ -19,7 +19,44 @@ public partial class LuaBindings
     {
         Register_SampleClass(L);
         Register_SampleStruct(L);
+        Register_TypeWithReferences(L);
         Register_Vector3Struct(L);
+        Register_ReferencedType(L);
+        Register_List_Int32(L);
+        Register_List_ReferencedType(L);
+        Register_IEnumerable_Int32(L);
+        Register_ReadOnlyCollection_Int32(L);
+        Register_IComparer_Int32(L);
+        Register_List_TOutput(L);
+        Register_Converter_Int32_TOutput(L);
+        Register_Predicate_Int32(L);
+        Register_Action_Int32(L);
+        Register_Enumerator_Int32(L);
+        Register_Comparison_Int32(L);
+        Register_IEnumerable_ReferencedType(L);
+        Register_ReadOnlyCollection_ReferencedType(L);
+        Register_IComparer_ReferencedType(L);
+        Register_Converter_ReferencedType_TOutput(L);
+        Register_ReferencedType[](L);
+        Register_Predicate_ReferencedType(L);
+        Register_Action_ReferencedType(L);
+        Register_Enumerator_ReferencedType(L);
+        Register_Comparison_ReferencedType(L);
+        Register_IEnumerator_Int32(L);
+        Register_IList_Int32(L);
+        Register_IEnumerable_TOutput(L);
+        Register_ReadOnlyCollection_TOutput(L);
+        Register_IComparer_TOutput(L);
+        Register_Converter_TOutput_TOutput(L);
+        Register_Predicate_TOutput(L);
+        Register_Action_TOutput(L);
+        Register_Enumerator_TOutput(L);
+        Register_Comparison_TOutput(L);
+        Register_IEnumerator_ReferencedType(L);
+        Register_IList_ReferencedType(L);
+        Register_ReferencedType&(L);
+        Register_IEnumerator_TOutput(L);
+        Register_IList_TOutput(L);
     }
 
     // =========== Bindings for SampleClass (SampleClass) ===========
@@ -1207,6 +1244,339 @@ public partial class LuaBindings
         }
     }
 
+    // =========== Bindings for TypeWithReferences (TypeWithReferences) ===========
+    private static void Register_TypeWithReferences(lua_State L)
+    {
+        RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>("MT_TypeWithReferences");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_TypeWithReferences");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(TypeWithReferences__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(TypeWithReferences__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(TypeWithReferences__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(TypeWithReferences__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for TypeWithReferences
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(TypeWithReferences_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "TypeWithReferences");
+    }
+
+    private static int TypeWithReferences__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int TypeWithReferences__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "referenced":
+                PushValue(L, obj.Referenced);
+                return 1;
+            case "numbers":
+                PushValue(L, obj.Numbers);
+                return 1;
+            case "items":
+                PushValue(L, obj.Items);
+                return 1;
+            case "createReferenced":
+                lua_pushcfunction(L, KeepAlive(TypeWithReferences_method_createReferenced));
+                return 1;
+            case "createNumberList":
+                lua_pushcfunction(L, KeepAlive(TypeWithReferences_method_createNumberList));
+                return 1;
+            case "getItems":
+                lua_pushcfunction(L, KeepAlive(TypeWithReferences_method_getItems));
+                return 1;
+            case "sumNumbers":
+                lua_pushcfunction(L, KeepAlive(TypeWithReferences_method_sumNumbers));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(TypeWithReferences_method_toString));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(TypeWithReferences_method_getType));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(TypeWithReferences_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(TypeWithReferences_method_getHashCode));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int TypeWithReferences__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+            case "referenced":
+                obj.Referenced = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+                break;
+            case "numbers":
+                obj.Numbers = ToObject<System.Collections.Generic.List<int>>(L, 3)!;
+                break;
+            case "items":
+                obj.Items = ToObject<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 3)!;
+                break;
+        }
+        return 0;
+    }
+
+    private static int TypeWithReferences__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int TypeWithReferences_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences();
+            PushObject(L, obj, "MT_TypeWithReferences");
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 1)!;
+            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences(arg0);
+            PushObject(L, obj, "MT_TypeWithReferences");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for TypeWithReferences constructor");
+        return 0;
+    }
+
+    private static int TypeWithReferences_method_createReferenced(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithReferences as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<string>(L, 3)!;
+            var result = self.CreateReferenced(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for createReferenced");
+        return 0;
+    }
+
+    private static int TypeWithReferences_method_createNumberList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithReferences as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.CreateNumberList(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for createNumberList");
+        return 0;
+    }
+
+    private static int TypeWithReferences_method_getItems(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithReferences as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetItems();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getItems");
+        return 0;
+    }
+
+    private static int TypeWithReferences_method_sumNumbers(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithReferences as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.List<int>>(L, 2)!;
+            var result = self.SumNumbers(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for sumNumbers");
+        return 0;
+    }
+
+    private static int TypeWithReferences_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithReferences as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int TypeWithReferences_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithReferences as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int TypeWithReferences_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithReferences as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int TypeWithReferences_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithReferences as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
     // =========== Bindings for Vector3Struct (Vec3) ===========
     private static void Register_Vector3Struct(lua_State L)
     {
@@ -1605,6 +1975,12594 @@ public partial class LuaBindings
                 lua_rawget(L, 1);
                 return 1;
         }
+    }
+
+    // =========== Bindings for ReferencedType (ReferencedType) ===========
+    private static void Register_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>("MT_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "ReferencedType");
+    }
+
+    private static int ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "value":
+                PushValue(L, obj.Value);
+                return 1;
+            case "name":
+                PushValue(L, obj.Name);
+                return 1;
+            case "getDescription":
+                lua_pushcfunction(L, KeepAlive(ReferencedType_method_getDescription));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(ReferencedType_method_toString));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(ReferencedType_method_getType));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(ReferencedType_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(ReferencedType_method_getHashCode));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+            case "value":
+                obj.Value = ToObject<int>(L, 3)!;
+                break;
+            case "name":
+                obj.Name = ToObject<string>(L, 3)!;
+                break;
+        }
+        return 0;
+    }
+
+    private static int ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType();
+            PushObject(L, obj, "MT_ReferencedType");
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            var arg1 = ToObject<string>(L, 2)!;
+            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType(arg0, arg1);
+            PushObject(L, obj, "MT_ReferencedType");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for ReferencedType constructor");
+        return 0;
+    }
+
+    private static int ReferencedType_method_getDescription(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetDescription();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getDescription");
+        return 0;
+    }
+
+    private static int ReferencedType_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int ReferencedType_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int ReferencedType_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int ReferencedType_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    // =========== Bindings for List`1 (List_Int32) ===========
+    private static void Register_List_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.List<int>>("MT_List_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_List_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(List_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(List_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(List_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(List_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for List_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(List_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "List_Int32");
+    }
+
+    private static int List_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.List<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int List_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "capacity":
+                PushValue(L, obj.Capacity);
+                return 1;
+            case "count":
+                PushValue(L, obj.Count);
+                return 1;
+            case "item":
+                PushValue(L, obj.Item);
+                return 1;
+            case "add":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_add));
+                return 1;
+            case "addRange":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_addRange));
+                return 1;
+            case "asReadOnly":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_asReadOnly));
+                return 1;
+            case "binarySearch":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_binarySearch));
+                return 1;
+            case "clear":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_clear));
+                return 1;
+            case "contains":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_contains));
+                return 1;
+            case "convertAll":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_convertAll));
+                return 1;
+            case "copyTo":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_copyTo));
+                return 1;
+            case "ensureCapacity":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_ensureCapacity));
+                return 1;
+            case "exists":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_exists));
+                return 1;
+            case "find":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_find));
+                return 1;
+            case "findAll":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_findAll));
+                return 1;
+            case "findIndex":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_findIndex));
+                return 1;
+            case "findLast":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_findLast));
+                return 1;
+            case "findLastIndex":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_findLastIndex));
+                return 1;
+            case "forEach":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_forEach));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_getEnumerator));
+                return 1;
+            case "getRange":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_getRange));
+                return 1;
+            case "slice":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_slice));
+                return 1;
+            case "indexOf":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_indexOf));
+                return 1;
+            case "insert":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_insert));
+                return 1;
+            case "insertRange":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_insertRange));
+                return 1;
+            case "lastIndexOf":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_lastIndexOf));
+                return 1;
+            case "remove":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_remove));
+                return 1;
+            case "removeAll":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_removeAll));
+                return 1;
+            case "removeAt":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_removeAt));
+                return 1;
+            case "removeRange":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_removeRange));
+                return 1;
+            case "reverse":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_reverse));
+                return 1;
+            case "sort":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_sort));
+                return 1;
+            case "toArray":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_toArray));
+                return 1;
+            case "trimExcess":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_trimExcess));
+                return 1;
+            case "trueForAll":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_trueForAll));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_toString));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(List_Int32_method_getHashCode));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int List_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+            case "capacity":
+                obj.Capacity = ToObject<int>(L, 3)!;
+                break;
+            case "item":
+                obj.Item = ToObject<int>(L, 3)!;
+                break;
+        }
+        return 0;
+    }
+
+    private static int List_Int32__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int List_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            var obj = new System.Collections.Generic.List<int>();
+            PushObject(L, obj, "MT_List_Int32");
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            var obj = new System.Collections.Generic.List<int>(arg0);
+            PushObject(L, obj, "MT_List_Int32");
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IEnumerable<int>>(L, 1)!;
+            var obj = new System.Collections.Generic.List<int>(arg0);
+            PushObject(L, obj, "MT_List_Int32");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for List`1 constructor");
+        return 0;
+    }
+
+    private static int List_Int32_method_add(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            self.Add(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for add");
+        return 0;
+    }
+
+    private static int List_Int32_method_addRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IEnumerable<int>>(L, 2)!;
+            self.AddRange(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for addRange");
+        return 0;
+    }
+
+    private static int List_Int32_method_asReadOnly(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.AsReadOnly();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for asReadOnly");
+        return 0;
+    }
+
+    private static int List_Int32_method_binarySearch(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.BinarySearch(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Collections.Generic.IComparer<int>>(L, 3)!;
+            var result = self.BinarySearch(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var arg3 = ToObject<System.Collections.Generic.IComparer<int>>(L, 5)!;
+            var result = self.BinarySearch(arg0, arg1, arg2, arg3);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for binarySearch");
+        return 0;
+    }
+
+    private static int List_Int32_method_clear(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Clear();
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for clear");
+        return 0;
+    }
+
+    private static int List_Int32_method_contains(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.Contains(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for contains");
+        return 0;
+    }
+
+    private static int List_Int32_method_convertAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Converter<int, TOutput>>(L, 2)!;
+            var result = self.ConvertAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for convertAll");
+        return 0;
+    }
+
+    private static int List_Int32_method_copyTo(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Int32[]>(L, 2)!;
+            self.CopyTo(arg0);
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Int32[]>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.CopyTo(arg0, arg1);
+            return 0;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Int32[]>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var arg3 = ToObject<int>(L, 5)!;
+            self.CopyTo(arg0, arg1, arg2, arg3);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int List_Int32_method_ensureCapacity(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.EnsureCapacity(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for ensureCapacity");
+        return 0;
+    }
+
+    private static int List_Int32_method_exists(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
+            var result = self.Exists(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for exists");
+        return 0;
+    }
+
+    private static int List_Int32_method_find(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
+            var result = self.Find(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for find");
+        return 0;
+    }
+
+    private static int List_Int32_method_findAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
+            var result = self.FindAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findAll");
+        return 0;
+    }
+
+    private static int List_Int32_method_findIndex(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
+            var result = self.FindIndex(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Predicate<int>>(L, 3)!;
+            var result = self.FindIndex(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Predicate<int>>(L, 4)!;
+            var result = self.FindIndex(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findIndex");
+        return 0;
+    }
+
+    private static int List_Int32_method_findLast(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
+            var result = self.FindLast(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findLast");
+        return 0;
+    }
+
+    private static int List_Int32_method_findLastIndex(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
+            var result = self.FindLastIndex(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Predicate<int>>(L, 3)!;
+            var result = self.FindLastIndex(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Predicate<int>>(L, 4)!;
+            var result = self.FindLastIndex(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findLastIndex");
+        return 0;
+    }
+
+    private static int List_Int32_method_forEach(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Action<int>>(L, 2)!;
+            self.ForEach(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for forEach");
+        return 0;
+    }
+
+    private static int List_Int32_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    private static int List_Int32_method_getRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.GetRange(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getRange");
+        return 0;
+    }
+
+    private static int List_Int32_method_slice(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.Slice(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for slice");
+        return 0;
+    }
+
+    private static int List_Int32_method_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.IndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.IndexOf(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var result = self.IndexOf(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int List_Int32_method_insert(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.Insert(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for insert");
+        return 0;
+    }
+
+    private static int List_Int32_method_insertRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Collections.Generic.IEnumerable<int>>(L, 3)!;
+            self.InsertRange(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for insertRange");
+        return 0;
+    }
+
+    private static int List_Int32_method_lastIndexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.LastIndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.LastIndexOf(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var result = self.LastIndexOf(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for lastIndexOf");
+        return 0;
+    }
+
+    private static int List_Int32_method_remove(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.Remove(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for remove");
+        return 0;
+    }
+
+    private static int List_Int32_method_removeAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
+            var result = self.RemoveAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for removeAll");
+        return 0;
+    }
+
+    private static int List_Int32_method_removeAt(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            self.RemoveAt(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for removeAt");
+        return 0;
+    }
+
+    private static int List_Int32_method_removeRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.RemoveRange(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for removeRange");
+        return 0;
+    }
+
+    private static int List_Int32_method_reverse(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Reverse();
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.Reverse(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for reverse");
+        return 0;
+    }
+
+    private static int List_Int32_method_sort(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Sort();
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IComparer<int>>(L, 2)!;
+            self.Sort(arg0);
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Comparison<int>>(L, 2)!;
+            self.Sort(arg0);
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Collections.Generic.IComparer<int>>(L, 4)!;
+            self.Sort(arg0, arg1, arg2);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for sort");
+        return 0;
+    }
+
+    private static int List_Int32_method_toArray(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToArray();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toArray");
+        return 0;
+    }
+
+    private static int List_Int32_method_trimExcess(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.TrimExcess();
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for trimExcess");
+        return 0;
+    }
+
+    private static int List_Int32_method_trueForAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
+            var result = self.TrueForAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for trueForAll");
+        return 0;
+    }
+
+    private static int List_Int32_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int List_Int32_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int List_Int32_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int List_Int32_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    // =========== Bindings for List`1 (List_ReferencedType) ===========
+    private static void Register_List_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_List_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_List_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(List_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(List_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(List_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(List_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for List_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(List_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "List_ReferencedType");
+    }
+
+    private static int List_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int List_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "capacity":
+                PushValue(L, obj.Capacity);
+                return 1;
+            case "count":
+                PushValue(L, obj.Count);
+                return 1;
+            case "item":
+                PushValue(L, obj.Item);
+                return 1;
+            case "add":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_add));
+                return 1;
+            case "addRange":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_addRange));
+                return 1;
+            case "asReadOnly":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_asReadOnly));
+                return 1;
+            case "binarySearch":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_binarySearch));
+                return 1;
+            case "clear":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_clear));
+                return 1;
+            case "contains":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_contains));
+                return 1;
+            case "convertAll":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_convertAll));
+                return 1;
+            case "copyTo":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_copyTo));
+                return 1;
+            case "ensureCapacity":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_ensureCapacity));
+                return 1;
+            case "exists":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_exists));
+                return 1;
+            case "find":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_find));
+                return 1;
+            case "findAll":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_findAll));
+                return 1;
+            case "findIndex":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_findIndex));
+                return 1;
+            case "findLast":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_findLast));
+                return 1;
+            case "findLastIndex":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_findLastIndex));
+                return 1;
+            case "forEach":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_forEach));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_getEnumerator));
+                return 1;
+            case "getRange":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_getRange));
+                return 1;
+            case "slice":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_slice));
+                return 1;
+            case "indexOf":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_indexOf));
+                return 1;
+            case "insert":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_insert));
+                return 1;
+            case "insertRange":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_insertRange));
+                return 1;
+            case "lastIndexOf":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_lastIndexOf));
+                return 1;
+            case "remove":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_remove));
+                return 1;
+            case "removeAll":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_removeAll));
+                return 1;
+            case "removeAt":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_removeAt));
+                return 1;
+            case "removeRange":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_removeRange));
+                return 1;
+            case "reverse":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_reverse));
+                return 1;
+            case "sort":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_sort));
+                return 1;
+            case "toArray":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_toArray));
+                return 1;
+            case "trimExcess":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_trimExcess));
+                return 1;
+            case "trueForAll":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_trueForAll));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_toString));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(List_ReferencedType_method_getHashCode));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int List_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+            case "capacity":
+                obj.Capacity = ToObject<int>(L, 3)!;
+                break;
+            case "item":
+                obj.Item = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+                break;
+        }
+        return 0;
+    }
+
+    private static int List_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int List_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            var obj = new System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>();
+            PushObject(L, obj, "MT_List_ReferencedType");
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            var obj = new System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(arg0);
+            PushObject(L, obj, "MT_List_ReferencedType");
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1)!;
+            var obj = new System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(arg0);
+            PushObject(L, obj, "MT_List_ReferencedType");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for List`1 constructor");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_add(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            self.Add(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for add");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_addRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            self.AddRange(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for addRange");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_asReadOnly(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.AsReadOnly();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for asReadOnly");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_binarySearch(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.BinarySearch(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 3)!;
+            var result = self.BinarySearch(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 4)!;
+            var arg3 = ToObject<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 5)!;
+            var result = self.BinarySearch(arg0, arg1, arg2, arg3);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for binarySearch");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_clear(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Clear();
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for clear");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_contains(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.Contains(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for contains");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_convertAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 2)!;
+            var result = self.ConvertAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for convertAll");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_copyTo(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 2)!;
+            self.CopyTo(arg0);
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.CopyTo(arg0, arg1);
+            return 0;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var arg3 = ToObject<int>(L, 5)!;
+            self.CopyTo(arg0, arg1, arg2, arg3);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_ensureCapacity(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.EnsureCapacity(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for ensureCapacity");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_exists(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            var result = self.Exists(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for exists");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_find(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            var result = self.Find(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for find");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_findAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            var result = self.FindAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findAll");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_findIndex(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            var result = self.FindIndex(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 3)!;
+            var result = self.FindIndex(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 4)!;
+            var result = self.FindIndex(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findIndex");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_findLast(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            var result = self.FindLast(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findLast");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_findLastIndex(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            var result = self.FindLastIndex(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 3)!;
+            var result = self.FindLastIndex(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 4)!;
+            var result = self.FindLastIndex(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findLastIndex");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_forEach(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            self.ForEach(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for forEach");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_getRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.GetRange(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getRange");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_slice(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.Slice(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for slice");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.IndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.IndexOf(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var result = self.IndexOf(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_insert(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+            self.Insert(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for insert");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_insertRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 3)!;
+            self.InsertRange(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for insertRange");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_lastIndexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.LastIndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.LastIndexOf(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var result = self.LastIndexOf(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for lastIndexOf");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_remove(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.Remove(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for remove");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_removeAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            var result = self.RemoveAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for removeAll");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_removeAt(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            self.RemoveAt(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for removeAt");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_removeRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.RemoveRange(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for removeRange");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_reverse(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Reverse();
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.Reverse(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for reverse");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_sort(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Sort();
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            self.Sort(arg0);
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            self.Sort(arg0);
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 4)!;
+            self.Sort(arg0, arg1, arg2);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for sort");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_toArray(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToArray();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toArray");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_trimExcess(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.TrimExcess();
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for trimExcess");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_trueForAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+            var result = self.TrueForAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for trueForAll");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int List_ReferencedType_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    // =========== Bindings for IEnumerable`1 (IEnumerable_Int32) ===========
+    private static void Register_IEnumerable_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IEnumerable<int>>("MT_IEnumerable_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IEnumerable_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IEnumerable_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IEnumerable_Int32");
+    }
+
+    private static int IEnumerable_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IEnumerable<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IEnumerable_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerable<int>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(IEnumerable_Int32_method_getEnumerator));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IEnumerable_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerable<int>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int IEnumerable_Int32__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerable<int>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IEnumerable_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IEnumerable`1 constructor");
+        return 0;
+    }
+
+    private static int IEnumerable_Int32_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerable<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IEnumerable`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    // =========== Bindings for ReadOnlyCollection`1 (ReadOnlyCollection_Int32) ===========
+    private static void Register_ReadOnlyCollection_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Collections.ObjectModel.ReadOnlyCollection<int>>("MT_ReadOnlyCollection_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_ReadOnlyCollection_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for ReadOnlyCollection_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        // Create metatable for type table (static properties)
+        lua_newtable(L);
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        lua_setglobal(L, "ReadOnlyCollection_Int32");
+    }
+
+    private static int ReadOnlyCollection_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.ObjectModel.ReadOnlyCollection<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "count":
+                PushValue(L, obj.Count);
+                return 1;
+            case "item":
+                PushValue(L, obj.Item);
+                return 1;
+            case "contains":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_method_contains));
+                return 1;
+            case "copyTo":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_method_copyTo));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_method_getEnumerator));
+                return 1;
+            case "indexOf":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_method_indexOf));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_method_toString));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_Int32_method_getHashCode));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int ReadOnlyCollection_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int ReadOnlyCollection_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IList<int>>(L, 1)!;
+            var obj = new System.Collections.ObjectModel.ReadOnlyCollection<int>(arg0);
+            PushObject(L, obj, "MT_ReadOnlyCollection_Int32");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for ReadOnlyCollection`1 constructor");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32_method_contains(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.Contains(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for contains");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32_method_copyTo(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Int32[]>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.CopyTo(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32_method_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.IndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_Int32_type__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "empty":
+                PushValue(L, System.Collections.ObjectModel.ReadOnlyCollection<int>.Empty);
+                return 1;
+            default:
+                lua_rawget(L, 1);
+                return 1;
+        }
+    }
+
+    // =========== Bindings for IComparer`1 (IComparer_Int32) ===========
+    private static void Register_IComparer_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IComparer<int>>("MT_IComparer_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IComparer_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IComparer_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IComparer_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IComparer_Int32");
+    }
+
+    private static int IComparer_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IComparer<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IComparer_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IComparer<int>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "compare":
+                lua_pushcfunction(L, KeepAlive(IComparer_Int32_method_compare));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IComparer_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IComparer<int>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int IComparer_Int32__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IComparer<int>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IComparer_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IComparer`1 constructor");
+        return 0;
+    }
+
+    private static int IComparer_Int32_method_compare(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IComparer<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IComparer`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.Compare(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for compare");
+        return 0;
+    }
+
+    // =========== Bindings for List`1 (List_TOutput) ===========
+    private static void Register_List_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.List<TOutput>>("MT_List_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_List_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(List_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(List_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(List_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(List_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for List_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(List_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "List_TOutput");
+    }
+
+    private static int List_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.List<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int List_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "capacity":
+                PushValue(L, obj.Capacity);
+                return 1;
+            case "count":
+                PushValue(L, obj.Count);
+                return 1;
+            case "item":
+                PushValue(L, obj.Item);
+                return 1;
+            case "add":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_add));
+                return 1;
+            case "addRange":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_addRange));
+                return 1;
+            case "asReadOnly":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_asReadOnly));
+                return 1;
+            case "binarySearch":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_binarySearch));
+                return 1;
+            case "clear":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_clear));
+                return 1;
+            case "contains":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_contains));
+                return 1;
+            case "convertAll":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_convertAll));
+                return 1;
+            case "copyTo":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_copyTo));
+                return 1;
+            case "ensureCapacity":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_ensureCapacity));
+                return 1;
+            case "exists":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_exists));
+                return 1;
+            case "find":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_find));
+                return 1;
+            case "findAll":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_findAll));
+                return 1;
+            case "findIndex":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_findIndex));
+                return 1;
+            case "findLast":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_findLast));
+                return 1;
+            case "findLastIndex":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_findLastIndex));
+                return 1;
+            case "forEach":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_forEach));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_getEnumerator));
+                return 1;
+            case "getRange":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_getRange));
+                return 1;
+            case "slice":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_slice));
+                return 1;
+            case "indexOf":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_indexOf));
+                return 1;
+            case "insert":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_insert));
+                return 1;
+            case "insertRange":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_insertRange));
+                return 1;
+            case "lastIndexOf":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_lastIndexOf));
+                return 1;
+            case "remove":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_remove));
+                return 1;
+            case "removeAll":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_removeAll));
+                return 1;
+            case "removeAt":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_removeAt));
+                return 1;
+            case "removeRange":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_removeRange));
+                return 1;
+            case "reverse":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_reverse));
+                return 1;
+            case "sort":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_sort));
+                return 1;
+            case "toArray":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_toArray));
+                return 1;
+            case "trimExcess":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_trimExcess));
+                return 1;
+            case "trueForAll":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_trueForAll));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_toString));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(List_TOutput_method_getHashCode));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int List_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+            case "capacity":
+                obj.Capacity = ToObject<int>(L, 3)!;
+                break;
+            case "item":
+                obj.Item = ToObject<TOutput>(L, 3)!;
+                break;
+        }
+        return 0;
+    }
+
+    private static int List_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int List_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            var obj = new System.Collections.Generic.List<TOutput>();
+            PushObject(L, obj, "MT_List_TOutput");
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            var obj = new System.Collections.Generic.List<TOutput>(arg0);
+            PushObject(L, obj, "MT_List_TOutput");
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IEnumerable<TOutput>>(L, 1)!;
+            var obj = new System.Collections.Generic.List<TOutput>(arg0);
+            PushObject(L, obj, "MT_List_TOutput");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for List`1 constructor");
+        return 0;
+    }
+
+    private static int List_TOutput_method_add(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            self.Add(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for add");
+        return 0;
+    }
+
+    private static int List_TOutput_method_addRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IEnumerable<TOutput>>(L, 2)!;
+            self.AddRange(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for addRange");
+        return 0;
+    }
+
+    private static int List_TOutput_method_asReadOnly(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.AsReadOnly();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for asReadOnly");
+        return 0;
+    }
+
+    private static int List_TOutput_method_binarySearch(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.BinarySearch(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<System.Collections.Generic.IComparer<TOutput>>(L, 3)!;
+            var result = self.BinarySearch(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<TOutput>(L, 4)!;
+            var arg3 = ToObject<System.Collections.Generic.IComparer<TOutput>>(L, 5)!;
+            var result = self.BinarySearch(arg0, arg1, arg2, arg3);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for binarySearch");
+        return 0;
+    }
+
+    private static int List_TOutput_method_clear(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Clear();
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for clear");
+        return 0;
+    }
+
+    private static int List_TOutput_method_contains(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.Contains(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for contains");
+        return 0;
+    }
+
+    private static int List_TOutput_method_convertAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Converter<TOutput, TOutput>>(L, 2)!;
+            var result = self.ConvertAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for convertAll");
+        return 0;
+    }
+
+    private static int List_TOutput_method_copyTo(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput[]>(L, 2)!;
+            self.CopyTo(arg0);
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<TOutput[]>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.CopyTo(arg0, arg1);
+            return 0;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<TOutput[]>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var arg3 = ToObject<int>(L, 5)!;
+            self.CopyTo(arg0, arg1, arg2, arg3);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int List_TOutput_method_ensureCapacity(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.EnsureCapacity(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for ensureCapacity");
+        return 0;
+    }
+
+    private static int List_TOutput_method_exists(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<TOutput>>(L, 2)!;
+            var result = self.Exists(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for exists");
+        return 0;
+    }
+
+    private static int List_TOutput_method_find(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<TOutput>>(L, 2)!;
+            var result = self.Find(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for find");
+        return 0;
+    }
+
+    private static int List_TOutput_method_findAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<TOutput>>(L, 2)!;
+            var result = self.FindAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findAll");
+        return 0;
+    }
+
+    private static int List_TOutput_method_findIndex(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<TOutput>>(L, 2)!;
+            var result = self.FindIndex(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Predicate<TOutput>>(L, 3)!;
+            var result = self.FindIndex(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Predicate<TOutput>>(L, 4)!;
+            var result = self.FindIndex(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findIndex");
+        return 0;
+    }
+
+    private static int List_TOutput_method_findLast(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<TOutput>>(L, 2)!;
+            var result = self.FindLast(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findLast");
+        return 0;
+    }
+
+    private static int List_TOutput_method_findLastIndex(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<TOutput>>(L, 2)!;
+            var result = self.FindLastIndex(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Predicate<TOutput>>(L, 3)!;
+            var result = self.FindLastIndex(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Predicate<TOutput>>(L, 4)!;
+            var result = self.FindLastIndex(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for findLastIndex");
+        return 0;
+    }
+
+    private static int List_TOutput_method_forEach(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Action<TOutput>>(L, 2)!;
+            self.ForEach(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for forEach");
+        return 0;
+    }
+
+    private static int List_TOutput_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    private static int List_TOutput_method_getRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.GetRange(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getRange");
+        return 0;
+    }
+
+    private static int List_TOutput_method_slice(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.Slice(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for slice");
+        return 0;
+    }
+
+    private static int List_TOutput_method_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.IndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.IndexOf(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var result = self.IndexOf(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int List_TOutput_method_insert(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<TOutput>(L, 3)!;
+            self.Insert(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for insert");
+        return 0;
+    }
+
+    private static int List_TOutput_method_insertRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Collections.Generic.IEnumerable<TOutput>>(L, 3)!;
+            self.InsertRange(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for insertRange");
+        return 0;
+    }
+
+    private static int List_TOutput_method_lastIndexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.LastIndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.LastIndexOf(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var result = self.LastIndexOf(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for lastIndexOf");
+        return 0;
+    }
+
+    private static int List_TOutput_method_remove(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.Remove(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for remove");
+        return 0;
+    }
+
+    private static int List_TOutput_method_removeAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<TOutput>>(L, 2)!;
+            var result = self.RemoveAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for removeAll");
+        return 0;
+    }
+
+    private static int List_TOutput_method_removeAt(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            self.RemoveAt(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for removeAt");
+        return 0;
+    }
+
+    private static int List_TOutput_method_removeRange(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.RemoveRange(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for removeRange");
+        return 0;
+    }
+
+    private static int List_TOutput_method_reverse(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Reverse();
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.Reverse(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for reverse");
+        return 0;
+    }
+
+    private static int List_TOutput_method_sort(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Sort();
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IComparer<TOutput>>(L, 2)!;
+            self.Sort(arg0);
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Comparison<TOutput>>(L, 2)!;
+            self.Sort(arg0);
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Collections.Generic.IComparer<TOutput>>(L, 4)!;
+            self.Sort(arg0, arg1, arg2);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for sort");
+        return 0;
+    }
+
+    private static int List_TOutput_method_toArray(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToArray();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toArray");
+        return 0;
+    }
+
+    private static int List_TOutput_method_trimExcess(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.TrimExcess();
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for trimExcess");
+        return 0;
+    }
+
+    private static int List_TOutput_method_trueForAll(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Predicate<TOutput>>(L, 2)!;
+            var result = self.TrueForAll(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for trueForAll");
+        return 0;
+    }
+
+    private static int List_TOutput_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int List_TOutput_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int List_TOutput_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int List_TOutput_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected List`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    // =========== Bindings for Converter`2 (Converter_Int32_TOutput) ===========
+    private static void Register_Converter_Int32_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Converter<int, TOutput>>("MT_Converter_Int32_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Converter_Int32_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Converter_Int32_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Converter_Int32_TOutput");
+    }
+
+    private static int Converter_Int32_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Converter<int, TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Converter_Int32_TOutput_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Converter_Int32_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Converter_Int32_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Converter<int, TOutput>(arg0, arg1);
+            PushObject(L, obj, "MT_Converter_Int32_TOutput");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Converter`2 constructor");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.Invoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.AsyncCallback>(L, 3)!;
+            var arg2 = ToObject<object>(L, 4)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            var result = self.EndInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Converter_Int32_TOutput_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<int, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for Predicate`1 (Predicate_Int32) ===========
+    private static void Register_Predicate_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Predicate<int>>("MT_Predicate_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Predicate_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Predicate_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Predicate_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Predicate_Int32");
+    }
+
+    private static int Predicate_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Predicate<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Predicate_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Predicate_Int32_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Predicate_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Predicate_Int32__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Predicate_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Predicate<int>(arg0, arg1);
+            PushObject(L, obj, "MT_Predicate_Int32");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Predicate`1 constructor");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.Invoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.AsyncCallback>(L, 3)!;
+            var arg2 = ToObject<object>(L, 4)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            var result = self.EndInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Predicate_Int32_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for Action`1 (Action_Int32) ===========
+    private static void Register_Action_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Action<int>>("MT_Action_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Action_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Action_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Action_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Action_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Action_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Action_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Action_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Action_Int32");
+    }
+
+    private static int Action_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Action<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Action_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Action_Int32_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Action_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Action_Int32__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Action<int>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Action_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Action<int>(arg0, arg1);
+            PushObject(L, obj, "MT_Action_Int32");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Action`1 constructor");
+        return 0;
+    }
+
+    private static int Action_Int32_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            self.Invoke(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Action_Int32_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.AsyncCallback>(L, 3)!;
+            var arg2 = ToObject<object>(L, 4)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Action_Int32_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            self.EndInvoke(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Action_Int32_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Action_Int32_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Action_Int32_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Action_Int32_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Action_Int32_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Action_Int32_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Action_Int32_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Action_Int32_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for Enumerator (Enumerator_Int32) ===========
+    private static void Register_Enumerator_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.List<int>>("MT_Enumerator_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Enumerator_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Enumerator_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Enumerator_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Enumerator_Int32");
+    }
+
+    private static int Enumerator_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.List<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Enumerator_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetStructFromStack<System.Collections.Generic.List<int>>(L, 1);
+
+        switch (key)
+        {
+            case "current":
+                PushValue(L, obj.Current);
+                return 1;
+            case "dispose":
+                lua_pushcfunction(L, KeepAlive(Enumerator_Int32_method_dispose));
+                return 1;
+            case "moveNext":
+                lua_pushcfunction(L, KeepAlive(Enumerator_Int32_method_moveNext));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Enumerator_Int32_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Enumerator_Int32_method_getHashCode));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Enumerator_Int32_method_toString));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Enumerator_Int32_method_getType));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Enumerator_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetStructFromStack<System.Collections.Generic.List<int>>(L, 1);
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Enumerator_Int32__tostring(lua_State L)
+    {
+        var obj = GetStructFromStack<System.Collections.Generic.List<int>>(L, 1);
+        lua_pushstring(L, obj.ToString() ?? "");
+        return 1;
+    }
+
+    private static int Enumerator_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            var obj = new System.Collections.Generic.List<int>();
+            PushObject(L, obj, "MT_Enumerator_Int32");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Enumerator constructor");
+        return 0;
+    }
+
+    private static int Enumerator_Int32_method_dispose(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<int>>(L, 1);
+
+        if (argCount == 0)
+        {
+            self.Dispose();
+            UpdateStruct(L, 1, self);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for dispose");
+        return 0;
+    }
+
+    private static int Enumerator_Int32_method_moveNext(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<int>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.MoveNext();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for moveNext");
+        return 0;
+    }
+
+    private static int Enumerator_Int32_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<int>>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Enumerator_Int32_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<int>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Enumerator_Int32_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<int>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int Enumerator_Int32_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<int>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    // =========== Bindings for Comparison`1 (Comparison_Int32) ===========
+    private static void Register_Comparison_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Comparison<int>>("MT_Comparison_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Comparison_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Comparison_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Comparison_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Comparison_Int32");
+    }
+
+    private static int Comparison_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Comparison<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Comparison_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Comparison_Int32_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Comparison_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Comparison_Int32__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Comparison_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Comparison<int>(arg0, arg1);
+            PushObject(L, obj, "MT_Comparison_Int32");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Comparison`1 constructor");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.Invoke(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.AsyncCallback>(L, 4)!;
+            var arg3 = ToObject<object>(L, 5)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2, arg3);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            var result = self.EndInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Comparison_Int32_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for IEnumerable`1 (IEnumerable_ReferencedType) ===========
+    private static void Register_IEnumerable_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_IEnumerable_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IEnumerable_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IEnumerable_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IEnumerable_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IEnumerable_ReferencedType");
+    }
+
+    private static int IEnumerable_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IEnumerable_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(IEnumerable_ReferencedType_method_getEnumerator));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IEnumerable_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int IEnumerable_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IEnumerable_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IEnumerable`1 constructor");
+        return 0;
+    }
+
+    private static int IEnumerable_ReferencedType_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IEnumerable`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    // =========== Bindings for ReadOnlyCollection`1 (ReadOnlyCollection_ReferencedType) ===========
+    private static void Register_ReadOnlyCollection_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_ReadOnlyCollection_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_ReadOnlyCollection_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for ReadOnlyCollection_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        // Create metatable for type table (static properties)
+        lua_newtable(L);
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        lua_setglobal(L, "ReadOnlyCollection_ReferencedType");
+    }
+
+    private static int ReadOnlyCollection_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "count":
+                PushValue(L, obj.Count);
+                return 1;
+            case "item":
+                PushValue(L, obj.Item);
+                return 1;
+            case "contains":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_method_contains));
+                return 1;
+            case "copyTo":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_method_copyTo));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_method_getEnumerator));
+                return 1;
+            case "indexOf":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_method_indexOf));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_method_toString));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_ReferencedType_method_getHashCode));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int ReadOnlyCollection_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1)!;
+            var obj = new System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(arg0);
+            PushObject(L, obj, "MT_ReadOnlyCollection_ReferencedType");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for ReadOnlyCollection`1 constructor");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_method_contains(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.Contains(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for contains");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_method_copyTo(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.CopyTo(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_method_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.IndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_ReferencedType_type__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "empty":
+                PushValue(L, System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Empty);
+                return 1;
+            default:
+                lua_rawget(L, 1);
+                return 1;
+        }
+    }
+
+    // =========== Bindings for IComparer`1 (IComparer_ReferencedType) ===========
+    private static void Register_IComparer_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_IComparer_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IComparer_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IComparer_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IComparer_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IComparer_ReferencedType");
+    }
+
+    private static int IComparer_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IComparer_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "compare":
+                lua_pushcfunction(L, KeepAlive(IComparer_ReferencedType_method_compare));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IComparer_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int IComparer_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IComparer_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IComparer`1 constructor");
+        return 0;
+    }
+
+    private static int IComparer_ReferencedType_method_compare(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IComparer`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+            var result = self.Compare(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for compare");
+        return 0;
+    }
+
+    // =========== Bindings for Converter`2 (Converter_ReferencedType_TOutput) ===========
+    private static void Register_Converter_ReferencedType_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>("MT_Converter_ReferencedType_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Converter_ReferencedType_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Converter_ReferencedType_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Converter_ReferencedType_TOutput");
+    }
+
+    private static int Converter_ReferencedType_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Converter_ReferencedType_TOutput_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Converter_ReferencedType_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Converter_ReferencedType_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>(arg0, arg1);
+            PushObject(L, obj, "MT_Converter_ReferencedType_TOutput");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Converter`2 constructor");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.Invoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<System.AsyncCallback>(L, 3)!;
+            var arg2 = ToObject<object>(L, 4)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            var result = self.EndInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Converter_ReferencedType_TOutput_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for ReferencedType[] (ReferencedType[]) ===========
+    private static void Register_ReferencedType[](lua_State L)
+    {
+        RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>("MT_ReferencedType[]");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_ReferencedType[]");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType[]__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType[]__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType[]__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType[]__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for ReferencedType[]
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(ReferencedType[]_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "ReferencedType[]");
+    }
+
+    private static int ReferencedType[]__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int ReferencedType[]__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "length":
+                PushValue(L, obj.Length);
+                return 1;
+            case "longLength":
+                PushValue(L, obj.LongLength);
+                return 1;
+            case "rank":
+                PushValue(L, obj.Rank);
+                return 1;
+            case "syncRoot":
+                PushValue(L, obj.SyncRoot);
+                return 1;
+            case "isReadOnly":
+                PushValue(L, obj.IsReadOnly);
+                return 1;
+            case "isFixedSize":
+                PushValue(L, obj.IsFixedSize);
+                return 1;
+            case "isSynchronized":
+                PushValue(L, obj.IsSynchronized);
+                return 1;
+            case "get":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_get));
+                return 1;
+            case "set":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_set));
+                return 1;
+            case "address":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_address));
+                return 1;
+            case "initialize":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_initialize));
+                return 1;
+            case "getLength":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_getLength));
+                return 1;
+            case "getUpperBound":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_getUpperBound));
+                return 1;
+            case "getLowerBound":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_getLowerBound));
+                return 1;
+            case "getValue":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_getValue));
+                return 1;
+            case "setValue":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_setValue));
+                return 1;
+            case "getLongLength":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_getLongLength));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_clone));
+                return 1;
+            case "copyTo":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_copyTo));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_getEnumerator));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_toString));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(ReferencedType[]_method_getHashCode));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int ReferencedType[]__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int ReferencedType[]__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int ReferencedType[]_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[](arg0);
+            PushObject(L, obj, "MT_ReferencedType[]");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for ReferencedType[] constructor");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_get(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.Get(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for get");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_set(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+            self.Set(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for set");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_address(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.Address(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for address");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_initialize(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            self.Initialize();
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for initialize");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_getLength(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.GetLength(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getLength");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_getUpperBound(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.GetUpperBound(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getUpperBound");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_getLowerBound(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.GetLowerBound(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getLowerBound");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_getValue(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Int32[]>(L, 2)!;
+            var result = self.GetValue(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.GetValue(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<long>(L, 2)!;
+            var result = self.GetValue(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Int64[]>(L, 2)!;
+            var result = self.GetValue(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var result = self.GetValue(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<long>(L, 2)!;
+            var arg1 = ToObject<long>(L, 3)!;
+            var result = self.GetValue(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var result = self.GetValue(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<long>(L, 2)!;
+            var arg1 = ToObject<long>(L, 3)!;
+            var arg2 = ToObject<long>(L, 4)!;
+            var result = self.GetValue(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getValue");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_setValue(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.SetValue(arg0, arg1);
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var arg1 = ToObject<System.Int32[]>(L, 3)!;
+            self.SetValue(arg0, arg1);
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var arg1 = ToObject<long>(L, 3)!;
+            self.SetValue(arg0, arg1);
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var arg1 = ToObject<System.Int64[]>(L, 3)!;
+            self.SetValue(arg0, arg1);
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            self.SetValue(arg0, arg1, arg2);
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var arg1 = ToObject<long>(L, 3)!;
+            var arg2 = ToObject<long>(L, 4)!;
+            self.SetValue(arg0, arg1, arg2);
+            return 0;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var arg3 = ToObject<int>(L, 5)!;
+            self.SetValue(arg0, arg1, arg2, arg3);
+            return 0;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var arg1 = ToObject<long>(L, 3)!;
+            var arg2 = ToObject<long>(L, 4)!;
+            var arg3 = ToObject<long>(L, 5)!;
+            self.SetValue(arg0, arg1, arg2, arg3);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for setValue");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_getLongLength(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.GetLongLength(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getLongLength");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_copyTo(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Array>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.CopyTo(arg0, arg1);
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Array>(L, 2)!;
+            var arg1 = ToObject<long>(L, 3)!;
+            self.CopyTo(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int ReferencedType[]_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReferencedType[] as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    // =========== Bindings for Predicate`1 (Predicate_ReferencedType) ===========
+    private static void Register_Predicate_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_Predicate_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Predicate_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Predicate_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Predicate_ReferencedType");
+    }
+
+    private static int Predicate_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Predicate_ReferencedType_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Predicate_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Predicate_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(arg0, arg1);
+            PushObject(L, obj, "MT_Predicate_ReferencedType");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Predicate`1 constructor");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.Invoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<System.AsyncCallback>(L, 3)!;
+            var arg2 = ToObject<object>(L, 4)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            var result = self.EndInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Predicate_ReferencedType_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for Action`1 (Action_ReferencedType) ===========
+    private static void Register_Action_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_Action_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Action_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Action_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Action_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Action_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Action_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Action_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Action_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Action_ReferencedType");
+    }
+
+    private static int Action_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Action_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Action_ReferencedType_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Action_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Action_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Action_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(arg0, arg1);
+            PushObject(L, obj, "MT_Action_ReferencedType");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Action`1 constructor");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            self.Invoke(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<System.AsyncCallback>(L, 3)!;
+            var arg2 = ToObject<object>(L, 4)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            self.EndInvoke(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Action_ReferencedType_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for Enumerator (Enumerator_ReferencedType) ===========
+    private static void Register_Enumerator_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_Enumerator_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Enumerator_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Enumerator_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Enumerator_ReferencedType");
+    }
+
+    private static int Enumerator_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Enumerator_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+
+        switch (key)
+        {
+            case "current":
+                PushValue(L, obj.Current);
+                return 1;
+            case "dispose":
+                lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType_method_dispose));
+                return 1;
+            case "moveNext":
+                lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType_method_moveNext));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType_method_getHashCode));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType_method_toString));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Enumerator_ReferencedType_method_getType));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Enumerator_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Enumerator_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj.ToString() ?? "");
+        return 1;
+    }
+
+    private static int Enumerator_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            var obj = new System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>();
+            PushObject(L, obj, "MT_Enumerator_ReferencedType");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Enumerator constructor");
+        return 0;
+    }
+
+    private static int Enumerator_ReferencedType_method_dispose(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+
+        if (argCount == 0)
+        {
+            self.Dispose();
+            UpdateStruct(L, 1, self);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for dispose");
+        return 0;
+    }
+
+    private static int Enumerator_ReferencedType_method_moveNext(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.MoveNext();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for moveNext");
+        return 0;
+    }
+
+    private static int Enumerator_ReferencedType_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Enumerator_ReferencedType_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Enumerator_ReferencedType_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int Enumerator_ReferencedType_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    // =========== Bindings for Comparison`1 (Comparison_ReferencedType) ===========
+    private static void Register_Comparison_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_Comparison_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Comparison_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Comparison_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Comparison_ReferencedType");
+    }
+
+    private static int Comparison_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Comparison_ReferencedType_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Comparison_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Comparison_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(arg0, arg1);
+            PushObject(L, obj, "MT_Comparison_ReferencedType");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Comparison`1 constructor");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+            var result = self.Invoke(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+            var arg2 = ToObject<System.AsyncCallback>(L, 4)!;
+            var arg3 = ToObject<object>(L, 5)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2, arg3);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            var result = self.EndInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Comparison_ReferencedType_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for IEnumerator`1 (IEnumerator_Int32) ===========
+    private static void Register_IEnumerator_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IEnumerator<int>>("MT_IEnumerator_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IEnumerator_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IEnumerator_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IEnumerator_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IEnumerator_Int32");
+    }
+
+    private static int IEnumerator_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IEnumerator<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IEnumerator_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<int>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "current":
+                PushValue(L, obj.Current);
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IEnumerator_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<int>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int IEnumerator_Int32__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<int>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IEnumerator_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IEnumerator`1 constructor");
+        return 0;
+    }
+
+    // =========== Bindings for IList`1 (IList_Int32) ===========
+    private static void Register_IList_Int32(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IList<int>>("MT_IList_Int32");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IList_Int32");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IList_Int32__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IList_Int32__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IList_Int32__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IList_Int32__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IList_Int32
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IList_Int32_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IList_Int32");
+    }
+
+    private static int IList_Int32__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IList<int>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IList_Int32__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<int>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "item":
+                PushValue(L, obj.Item);
+                return 1;
+            case "indexOf":
+                lua_pushcfunction(L, KeepAlive(IList_Int32_method_indexOf));
+                return 1;
+            case "insert":
+                lua_pushcfunction(L, KeepAlive(IList_Int32_method_insert));
+                return 1;
+            case "removeAt":
+                lua_pushcfunction(L, KeepAlive(IList_Int32_method_removeAt));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IList_Int32__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<int>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+            case "item":
+                obj.Item = ToObject<int>(L, 3)!;
+                break;
+        }
+        return 0;
+    }
+
+    private static int IList_Int32__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<int>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IList_Int32_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IList`1 constructor");
+        return 0;
+    }
+
+    private static int IList_Int32_method_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IList<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var result = self.IndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int IList_Int32_method_insert(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IList<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.Insert(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for insert");
+        return 0;
+    }
+
+    private static int IList_Int32_method_removeAt(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IList<int>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            self.RemoveAt(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for removeAt");
+        return 0;
+    }
+
+    // =========== Bindings for IEnumerable`1 (IEnumerable_TOutput) ===========
+    private static void Register_IEnumerable_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IEnumerable<TOutput>>("MT_IEnumerable_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IEnumerable_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerable_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IEnumerable_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IEnumerable_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IEnumerable_TOutput");
+    }
+
+    private static int IEnumerable_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IEnumerable<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IEnumerable_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerable<TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(IEnumerable_TOutput_method_getEnumerator));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IEnumerable_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerable<TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int IEnumerable_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerable<TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IEnumerable_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IEnumerable`1 constructor");
+        return 0;
+    }
+
+    private static int IEnumerable_TOutput_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerable<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IEnumerable`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    // =========== Bindings for ReadOnlyCollection`1 (ReadOnlyCollection_TOutput) ===========
+    private static void Register_ReadOnlyCollection_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>("MT_ReadOnlyCollection_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_ReadOnlyCollection_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for ReadOnlyCollection_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        // Create metatable for type table (static properties)
+        lua_newtable(L);
+        lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        lua_setglobal(L, "ReadOnlyCollection_TOutput");
+    }
+
+    private static int ReadOnlyCollection_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "count":
+                PushValue(L, obj.Count);
+                return 1;
+            case "item":
+                PushValue(L, obj.Item);
+                return 1;
+            case "contains":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_method_contains));
+                return 1;
+            case "copyTo":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_method_copyTo));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_method_getEnumerator));
+                return 1;
+            case "indexOf":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_method_indexOf));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_method_toString));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(ReadOnlyCollection_TOutput_method_getHashCode));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int ReadOnlyCollection_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int ReadOnlyCollection_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Collections.Generic.IList<TOutput>>(L, 1)!;
+            var obj = new System.Collections.ObjectModel.ReadOnlyCollection<TOutput>(arg0);
+            PushObject(L, obj, "MT_ReadOnlyCollection_TOutput");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for ReadOnlyCollection`1 constructor");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput_method_contains(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.Contains(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for contains");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput_method_copyTo(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<TOutput[]>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            self.CopyTo(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetEnumerator();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput_method_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.IndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int ReadOnlyCollection_TOutput_type__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "empty":
+                PushValue(L, System.Collections.ObjectModel.ReadOnlyCollection<TOutput>.Empty);
+                return 1;
+            default:
+                lua_rawget(L, 1);
+                return 1;
+        }
+    }
+
+    // =========== Bindings for IComparer`1 (IComparer_TOutput) ===========
+    private static void Register_IComparer_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IComparer<TOutput>>("MT_IComparer_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IComparer_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IComparer_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IComparer_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IComparer_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IComparer_TOutput");
+    }
+
+    private static int IComparer_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IComparer<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IComparer_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IComparer<TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "compare":
+                lua_pushcfunction(L, KeepAlive(IComparer_TOutput_method_compare));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IComparer_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IComparer<TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int IComparer_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IComparer<TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IComparer_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IComparer`1 constructor");
+        return 0;
+    }
+
+    private static int IComparer_TOutput_method_compare(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IComparer<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IComparer`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<TOutput>(L, 3)!;
+            var result = self.Compare(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for compare");
+        return 0;
+    }
+
+    // =========== Bindings for Converter`2 (Converter_TOutput_TOutput) ===========
+    private static void Register_Converter_TOutput_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Converter<TOutput, TOutput>>("MT_Converter_TOutput_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Converter_TOutput_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Converter_TOutput_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Converter_TOutput_TOutput");
+    }
+
+    private static int Converter_TOutput_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Converter<TOutput, TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Converter_TOutput_TOutput_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Converter_TOutput_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Converter_TOutput_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Converter<TOutput, TOutput>(arg0, arg1);
+            PushObject(L, obj, "MT_Converter_TOutput_TOutput");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Converter`2 constructor");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.Invoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<System.AsyncCallback>(L, 3)!;
+            var arg2 = ToObject<object>(L, 4)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            var result = self.EndInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Converter_TOutput_TOutput_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Converter<TOutput, TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Converter`2 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for Predicate`1 (Predicate_TOutput) ===========
+    private static void Register_Predicate_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Predicate<TOutput>>("MT_Predicate_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Predicate_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Predicate_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Predicate_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Predicate_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Predicate_TOutput");
+    }
+
+    private static int Predicate_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Predicate<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Predicate_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Predicate_TOutput_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Predicate_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Predicate_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Predicate_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Predicate<TOutput>(arg0, arg1);
+            PushObject(L, obj, "MT_Predicate_TOutput");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Predicate`1 constructor");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.Invoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<System.AsyncCallback>(L, 3)!;
+            var arg2 = ToObject<object>(L, 4)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            var result = self.EndInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Predicate_TOutput_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Predicate<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Predicate`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for Action`1 (Action_TOutput) ===========
+    private static void Register_Action_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Action<TOutput>>("MT_Action_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Action_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Action_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Action_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Action_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Action_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Action_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Action_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Action_TOutput");
+    }
+
+    private static int Action_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Action<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Action_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Action_TOutput_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Action_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Action_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Action_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Action<TOutput>(arg0, arg1);
+            PushObject(L, obj, "MT_Action_TOutput");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Action`1 constructor");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            self.Invoke(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<System.AsyncCallback>(L, 3)!;
+            var arg2 = ToObject<object>(L, 4)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            self.EndInvoke(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Action_TOutput_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Action<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Action`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for Enumerator (Enumerator_TOutput) ===========
+    private static void Register_Enumerator_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.List<TOutput>>("MT_Enumerator_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Enumerator_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Enumerator_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Enumerator_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Enumerator_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Enumerator_TOutput");
+    }
+
+    private static int Enumerator_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.List<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Enumerator_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetStructFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+
+        switch (key)
+        {
+            case "current":
+                PushValue(L, obj.Current);
+                return 1;
+            case "dispose":
+                lua_pushcfunction(L, KeepAlive(Enumerator_TOutput_method_dispose));
+                return 1;
+            case "moveNext":
+                lua_pushcfunction(L, KeepAlive(Enumerator_TOutput_method_moveNext));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Enumerator_TOutput_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Enumerator_TOutput_method_getHashCode));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Enumerator_TOutput_method_toString));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Enumerator_TOutput_method_getType));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Enumerator_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetStructFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Enumerator_TOutput__tostring(lua_State L)
+    {
+        var obj = GetStructFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+        lua_pushstring(L, obj.ToString() ?? "");
+        return 1;
+    }
+
+    private static int Enumerator_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            var obj = new System.Collections.Generic.List<TOutput>();
+            PushObject(L, obj, "MT_Enumerator_TOutput");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Enumerator constructor");
+        return 0;
+    }
+
+    private static int Enumerator_TOutput_method_dispose(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+
+        if (argCount == 0)
+        {
+            self.Dispose();
+            UpdateStruct(L, 1, self);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for dispose");
+        return 0;
+    }
+
+    private static int Enumerator_TOutput_method_moveNext(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.MoveNext();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for moveNext");
+        return 0;
+    }
+
+    private static int Enumerator_TOutput_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Enumerator_TOutput_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Enumerator_TOutput_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int Enumerator_TOutput_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Collections.Generic.List<TOutput>>(L, 1);
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            UpdateStruct(L, 1, self);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    // =========== Bindings for Comparison`1 (Comparison_TOutput) ===========
+    private static void Register_Comparison_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Comparison<TOutput>>("MT_Comparison_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_Comparison_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(Comparison_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for Comparison_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(Comparison_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "Comparison_TOutput");
+    }
+
+    private static int Comparison_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Comparison<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int Comparison_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "target":
+                PushValue(L, obj.Target);
+                return 1;
+            case "method":
+                PushValue(L, obj.Method);
+                return 1;
+            case "invoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_invoke));
+                return 1;
+            case "beginInvoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_beginInvoke));
+                return 1;
+            case "endInvoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_endInvoke));
+                return 1;
+            case "getObjectData":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_getObjectData));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_equals));
+                return 1;
+            case "getInvocationList":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_getInvocationList));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_getHashCode));
+                return 1;
+            case "clone":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_clone));
+                return 1;
+            case "dynamicInvoke":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_dynamicInvoke));
+                return 1;
+            case "getType":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_getType));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, KeepAlive(Comparison_TOutput_method_toString));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int Comparison_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int Comparison_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int Comparison_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<object>(L, 1)!;
+            var arg1 = ToObject<System.IntPtr>(L, 2)!;
+            var obj = new System.Comparison<TOutput>(arg0, arg1);
+            PushObject(L, obj, "MT_Comparison_TOutput");
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for Comparison`1 constructor");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_invoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<TOutput>(L, 3)!;
+            var result = self.Invoke(arg0, arg1);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for invoke");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_beginInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var arg1 = ToObject<TOutput>(L, 3)!;
+            var arg2 = ToObject<System.AsyncCallback>(L, 4)!;
+            var arg3 = ToObject<object>(L, 5)!;
+            var result = self.BeginInvoke(arg0, arg1, arg2, arg3);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for beginInvoke");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_endInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.IAsyncResult>(L, 2)!;
+            var result = self.EndInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for endInvoke");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_getObjectData(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Runtime.Serialization.SerializationInfo>(L, 2)!;
+            var arg1 = ToObject<System.Runtime.Serialization.StreamingContext>(L, 3)!;
+            self.GetObjectData(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for getObjectData");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<object>(L, 2)!;
+            var result = self.Equals(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_getInvocationList(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetInvocationList();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getInvocationList");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_getHashCode(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetHashCode();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_clone(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.Clone();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for clone");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_dynamicInvoke(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Object[]>(L, 2)!;
+            var result = self.DynamicInvoke(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for dynamicInvoke");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.GetType();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Comparison_TOutput_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Comparison<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected Comparison`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            var result = self.ToString();
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    // =========== Bindings for IEnumerator`1 (IEnumerator_ReferencedType) ===========
+    private static void Register_IEnumerator_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_IEnumerator_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IEnumerator_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IEnumerator_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IEnumerator_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IEnumerator_ReferencedType");
+    }
+
+    private static int IEnumerator_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IEnumerator_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "current":
+                PushValue(L, obj.Current);
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IEnumerator_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int IEnumerator_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IEnumerator_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IEnumerator`1 constructor");
+        return 0;
+    }
+
+    // =========== Bindings for IList`1 (IList_ReferencedType) ===========
+    private static void Register_IList_ReferencedType(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_IList_ReferencedType");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IList_ReferencedType");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IList_ReferencedType__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IList_ReferencedType__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IList_ReferencedType__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IList_ReferencedType__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IList_ReferencedType
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IList_ReferencedType_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IList_ReferencedType");
+    }
+
+    private static int IList_ReferencedType__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IList_ReferencedType__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "item":
+                PushValue(L, obj.Item);
+                return 1;
+            case "indexOf":
+                lua_pushcfunction(L, KeepAlive(IList_ReferencedType_method_indexOf));
+                return 1;
+            case "insert":
+                lua_pushcfunction(L, KeepAlive(IList_ReferencedType_method_insert));
+                return 1;
+            case "removeAt":
+                lua_pushcfunction(L, KeepAlive(IList_ReferencedType_method_removeAt));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IList_ReferencedType__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+            case "item":
+                obj.Item = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+                break;
+        }
+        return 0;
+    }
+
+    private static int IList_ReferencedType__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IList_ReferencedType_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IList`1 constructor");
+        return 0;
+    }
+
+    private static int IList_ReferencedType_method_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            var result = self.IndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int IList_ReferencedType_method_insert(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+            self.Insert(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for insert");
+        return 0;
+    }
+
+    private static int IList_ReferencedType_method_removeAt(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            self.RemoveAt(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for removeAt");
+        return 0;
+    }
+
+    // =========== Bindings for ReferencedType& (ReferencedType&) ===========
+    private static void Register_ReferencedType&(lua_State L)
+    {
+        RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType&>("MT_ReferencedType&");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_ReferencedType&");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType&__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType&__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType&__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(ReferencedType&__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for ReferencedType&
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(ReferencedType&_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "ReferencedType&");
+    }
+
+    private static int ReferencedType&__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType&>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int ReferencedType&__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType&>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int ReferencedType&__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType&>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int ReferencedType&__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType&>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int ReferencedType&_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for ReferencedType& constructor");
+        return 0;
+    }
+
+    // =========== Bindings for IEnumerator`1 (IEnumerator_TOutput) ===========
+    private static void Register_IEnumerator_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IEnumerator<TOutput>>("MT_IEnumerator_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IEnumerator_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IEnumerator_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IEnumerator_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IEnumerator_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IEnumerator_TOutput");
+    }
+
+    private static int IEnumerator_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IEnumerator<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IEnumerator_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "current":
+                PushValue(L, obj.Current);
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IEnumerator_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+        }
+        return 0;
+    }
+
+    private static int IEnumerator_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IEnumerator_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IEnumerator`1 constructor");
+        return 0;
+    }
+
+    // =========== Bindings for IList`1 (IList_TOutput) ===========
+    private static void Register_IList_TOutput(lua_State L)
+    {
+        RegisterMetatable<System.Collections.Generic.IList<TOutput>>("MT_IList_TOutput");
+
+        // Create metatable for instances
+        luaL_newmetatable(L, "MT_IList_TOutput");
+
+        // __gc metamethod
+        lua_pushcfunction(L, KeepAlive(IList_TOutput__gc));
+        lua_setfield(L, -2, "__gc");
+
+        // __index metamethod
+        lua_pushcfunction(L, KeepAlive(IList_TOutput__index));
+        lua_setfield(L, -2, "__index");
+
+        // __newindex metamethod
+        lua_pushcfunction(L, KeepAlive(IList_TOutput__newindex));
+        lua_setfield(L, -2, "__newindex");
+
+        // __tostring metamethod
+        lua_pushcfunction(L, KeepAlive(IList_TOutput__tostring));
+        lua_setfield(L, -2, "__tostring");
+
+        lua_pop(L, 1);
+
+        // Create type table for IList_TOutput
+        lua_newtable(L);
+
+        // Constructor: new()
+        lua_pushcfunction(L, KeepAlive(IList_TOutput_new));
+        lua_setfield(L, -2, "new");
+
+        lua_setglobal(L, "IList_TOutput");
+    }
+
+    private static int IList_TOutput__gc(lua_State L)
+    {
+        var ptr = lua_touserdata(L, 1);
+        if (ptr != 0)
+        {
+            unsafe
+            {
+                var id = *(int*)ptr;
+                RemoveObject<System.Collections.Generic.IList<TOutput>>(id);
+            }
+        }
+        return 0;
+    }
+
+    private static int IList_TOutput__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<TOutput>>(L, 1);
+        if (obj == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "item":
+                PushValue(L, obj.Item);
+                return 1;
+            case "indexOf":
+                lua_pushcfunction(L, KeepAlive(IList_TOutput_method_indexOf));
+                return 1;
+            case "insert":
+                lua_pushcfunction(L, KeepAlive(IList_TOutput_method_insert));
+                return 1;
+            case "removeAt":
+                lua_pushcfunction(L, KeepAlive(IList_TOutput_method_removeAt));
+                return 1;
+            default:
+                lua_pushnil(L);
+                return 1;
+        }
+    }
+
+    private static int IList_TOutput__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<TOutput>>(L, 1);
+        if (obj == null) return 0;
+
+        switch (key)
+        {
+            case "item":
+                obj.Item = ToObject<TOutput>(L, 3)!;
+                break;
+        }
+        return 0;
+    }
+
+    private static int IList_TOutput__tostring(lua_State L)
+    {
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<TOutput>>(L, 1);
+        lua_pushstring(L, obj?.ToString() ?? "nil");
+        return 1;
+    }
+
+    private static int IList_TOutput_new(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        luaL_error(L, "Invalid arguments for IList`1 constructor");
+        return 0;
+    }
+
+    private static int IList_TOutput_method_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IList<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<TOutput>(L, 2)!;
+            var result = self.IndexOf(arg0);
+            PushValue(L, result);
+            return 1;
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int IList_TOutput_method_insert(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IList<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<TOutput>(L, 3)!;
+            self.Insert(arg0, arg1);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for insert");
+        return 0;
+    }
+
+    private static int IList_TOutput_method_removeAt(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IList<TOutput>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            self.RemoveAt(arg0);
+            return 0;
+        }
+
+        luaL_error(L, "Invalid arguments for removeAt");
+        return 0;
     }
 
 }
