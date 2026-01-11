@@ -45,7 +45,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Maxine.Extensions.MessagePa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.LuaSourceGenerator.Test", "NFMWorld.LuaSourceGenerator.Test\NFMWorld.LuaSourceGenerator.Test.csproj", "{B30E24D8-DF7B-4099-B0A3-6ACA370209CD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.LuaSourceGenerator.TestFixtures", "NFMWorld.LuaSourceGenerator.TestFixtures\NFMWorld.LuaSourceGenerator.TestFixtures.csproj", "{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.Lua", "NFMWorld.Lua\NFMWorld.Lua.csproj", "{68D7DE21-BA13-4F4A-98B9-DF9EE712F24F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NFMWorld.LuaSourceGenerator.TestFixtures", "NFMWorld.LuaSourceGenerator.TestFixtures\NFMWorld.LuaSourceGenerator.TestFixtures.csproj", "{92CF5D40-6E99-4286-B061-B92FD296B17F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -140,9 +142,13 @@ Global
 		{B30E24D8-DF7B-4099-B0A3-6ACA370209CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B30E24D8-DF7B-4099-B0A3-6ACA370209CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B30E24D8-DF7B-4099-B0A3-6ACA370209CD}.Release|Any CPU.Build.0 = Release|Any CPU
-		{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{38F3B3E7-B18C-4124-9075-CB244B4BC9E6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68D7DE21-BA13-4F4A-98B9-DF9EE712F24F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68D7DE21-BA13-4F4A-98B9-DF9EE712F24F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68D7DE21-BA13-4F4A-98B9-DF9EE712F24F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68D7DE21-BA13-4F4A-98B9-DF9EE712F24F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92CF5D40-6E99-4286-B061-B92FD296B17F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92CF5D40-6E99-4286-B061-B92FD296B17F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92CF5D40-6E99-4286-B061-B92FD296B17F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92CF5D40-6E99-4286-B061-B92FD296B17F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

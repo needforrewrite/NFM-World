@@ -5,9 +5,8 @@
 
 using LuaNET.LuaJIT;
 using static LuaNET.LuaJIT.Lua;
-using NFMWorld.LuaSourceGenerator.Test.TestBindings;
 
-namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
+namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
@@ -63,11 +62,20 @@ public partial class LuaBindings
 
     private static int IList_ReferencedType__index(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) { lua_pushnil(L); return 1; }
-
         var obj = GetObjectFromStack<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
+
+        // Check if key is a number (array/indexer access)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            var element = obj[index];
+            PushValue(L, element);
+            return 1;
+        }
+
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
         switch (key)
         {
@@ -88,11 +96,20 @@ public partial class LuaBindings
 
     private static int IList_ReferencedType__newindex(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
         var obj = GetObjectFromStack<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
         if (obj == null) return 0;
+
+        // Check if key is a number (array/indexer assignment)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            var value = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+            obj[index] = value;
+            return 0;
+        }
+
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
 
         switch (key)
         {
@@ -128,7 +145,11 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
             var result = self.IndexOf(arg0);
             PushValue(L, result);
             return 1;
@@ -152,7 +173,11 @@ public partial class LuaBindings
         if (argCount == 2)
         {
             var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+            NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType? arg1;
+            if (lua_isnil(L, 3) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
             self.Insert(arg0, arg1);
             return 0;
         }

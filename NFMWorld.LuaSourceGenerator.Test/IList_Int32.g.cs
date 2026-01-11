@@ -5,9 +5,8 @@
 
 using LuaNET.LuaJIT;
 using static LuaNET.LuaJIT.Lua;
-using NFMWorld.LuaSourceGenerator.Test.TestBindings;
 
-namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
+namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
@@ -63,11 +62,20 @@ public partial class LuaBindings
 
     private static int IList_Int32__index(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) { lua_pushnil(L); return 1; }
-
         var obj = GetObjectFromStack<System.Collections.Generic.IList<int>>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
+
+        // Check if key is a number (array/indexer access)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            var element = obj[index];
+            PushValue(L, element);
+            return 1;
+        }
+
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
         switch (key)
         {
@@ -88,11 +96,20 @@ public partial class LuaBindings
 
     private static int IList_Int32__newindex(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
         var obj = GetObjectFromStack<System.Collections.Generic.IList<int>>(L, 1);
         if (obj == null) return 0;
+
+        // Check if key is a number (array/indexer assignment)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            var value = ToObject<int>(L, 3)!;
+            obj[index] = value;
+            return 0;
+        }
+
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
 
         switch (key)
         {

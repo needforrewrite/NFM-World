@@ -189,28 +189,8 @@ public partial class LuaBindings
             case string s:
                 lua_pushstring(L, s);
                 break;
-            case Array array:
-                // Handle arrays by converting to Lua tables
-                lua_createtable(L, array.Length, 0);
-                for (int i = 0; i < array.Length; i++)
-                {
-                    var element = array.GetValue(i);
-                    PushValueDynamic(L, element);
-                    lua_rawseti(L, -2, i + 1); // Lua tables are 1-indexed
-                }
-                break;
-            case System.Collections.IList list when value.GetType().IsGenericType:
-                // Handle generic lists like List<T>
-                lua_createtable(L, list.Count, 0);
-                for (int i = 0; i < list.Count; i++)
-                {
-                    var element = list[i];
-                    PushValueDynamic(L, element);
-                    lua_rawseti(L, -2, i + 1); // Lua tables are 1-indexed
-                }
-                break;
             default:
-                // For other types, push as userdata if we have a registered metatable
+                // For all other types (including arrays), push as userdata if we have a registered metatable
                 if (TypeInfo<T>.Name is {} metatable)
                 {
                     PushObject(L, value, metatable);
@@ -223,71 +203,7 @@ public partial class LuaBindings
         }
     }
 
-    /// <summary>
-    /// Push a value to the Lua stack without knowing the type at compile time.
-    /// </summary>
-    private static void PushValueDynamic(lua_State L, object? value)
-    {
-        if (value == null)
-        {
-            lua_pushnil(L);
-            return;
-        }
 
-        switch (value)
-        {
-            case bool b:
-                lua_pushboolean(L, b ? 1 : 0);
-                break;
-            case byte by:
-                lua_pushinteger(L, by);
-                break;
-            case sbyte sb:
-                lua_pushinteger(L, sb);
-                break;
-            case short sh:
-                lua_pushinteger(L, sh);
-                break;
-            case ushort us:
-                lua_pushinteger(L, us);
-                break;
-            case int i:
-                lua_pushinteger(L, i);
-                break;
-            case uint ui:
-                lua_pushinteger(L, (long)ui);
-                break;
-            case long l:
-                lua_pushinteger(L, l);
-                break;
-            case ulong ul:
-                lua_pushinteger(L, (long)ul);
-                break;
-            case float f:
-                lua_pushnumber(L, f);
-                break;
-            case double d:
-                lua_pushnumber(L, d);
-                break;
-            case string s:
-                lua_pushstring(L, s);
-                break;
-            default:
-                // Try to find the generic PushValue method and invoke it
-                var pushMethod = typeof(LuaBindings).GetMethod(nameof(PushValue),
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                if (pushMethod != null)
-                {
-                    var genericMethod = pushMethod.MakeGenericMethod(value.GetType());
-                    genericMethod.Invoke(null, new object[] { L, value });
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Type {value.GetType()} is not supported");
-                }
-                break;
-        }
-    }
 
     /// <summary>
     /// Convert Lua value at stack index to a C# object of the target type.
@@ -312,37 +228,7 @@ public partial class LuaBindings
 
         if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
 
-        // Handle arrays by converting from Lua tables
-        if (typeof(T).IsArray && luaType == LUA_TTABLE)
-        {
-            var elementType = typeof(T).GetElementType()!;
-            // Get table length by iterating until we hit nil
-            var length = 0;
-            while (true)
-            {
-                lua_rawgeti(L, idx, length + 1);
-                if (lua_type(L, -1) == LUA_TNIL)
-                {
-                    lua_pop(L, 1);
-                    break;
-                }
-                lua_pop(L, 1);
-                length++;
-            }
-
-            var array = Array.CreateInstance(elementType, length);
-
-            for (int i = 0; i < length; i++)
-            {
-                lua_rawgeti(L, idx, i + 1); // Lua tables are 1-indexed
-                var element = ToObjectDynamic(L, -1, elementType);
-                array.SetValue(element, i);
-                lua_pop(L, 1);
-            }
-
-            return (T)(object)array;
-        }
-
+        // Handle userdata (objects, structs, arrays, etc.)
         if (luaType == LUA_TUSERDATA)
         {
             var ptr = lua_touserdata(L, idx);
@@ -357,40 +243,6 @@ public partial class LuaBindings
         }
 
         throw new InvalidOperationException($"Cannot convert Lua type {luaType} to {typeof(T)}");
-    }
-
-    /// <summary>
-    /// Convert Lua value at stack index to a C# object of the target type without knowing the type at compile time.
-    /// </summary>
-    private static object? ToObjectDynamic(lua_State L, int idx, Type targetType)
-    {
-        var luaType = lua_type(L, idx);
-
-        if (luaType == LUA_TNIL) return null;
-
-        if (targetType == typeof(bool) || luaType == LUA_TBOOLEAN) return lua_toboolean(L, idx) != 0;
-        if (targetType == typeof(int)) return (int)lua_tointeger(L, idx);
-        if (targetType == typeof(uint)) return (uint)lua_tointeger(L, idx);
-        if (targetType == typeof(byte)) return (byte)lua_tointeger(L, idx);
-        if (targetType == typeof(sbyte)) return (sbyte)lua_tointeger(L, idx);
-        if (targetType == typeof(short)) return (short)lua_tointeger(L, idx);
-        if (targetType == typeof(ushort)) return (ushort)lua_tointeger(L, idx);
-        if (targetType == typeof(long)) return lua_tointeger(L, idx);
-        if (targetType == typeof(ulong)) return (ulong)lua_tointeger(L, idx);
-        if (targetType == typeof(float)) return (float)lua_tonumber(L, idx);
-        if (targetType == typeof(double)) return lua_tonumber(L, idx);
-        if (targetType == typeof(string) || luaType == LUA_TSTRING) return lua_tostring(L, idx);
-
-        // Try to use the generic ToObject method via reflection
-        var toObjectMethod = typeof(LuaBindings).GetMethod(nameof(ToObject),
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        if (toObjectMethod != null)
-        {
-            var genericMethod = toObjectMethod.MakeGenericMethod(targetType);
-            return genericMethod.Invoke(null, new object[] { L, idx });
-        }
-
-        throw new InvalidOperationException($"Cannot convert Lua type {luaType} to {targetType}");
     }
 
     #endregion

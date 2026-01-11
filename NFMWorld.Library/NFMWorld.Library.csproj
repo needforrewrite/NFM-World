@@ -25,6 +25,7 @@
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.MessagePack\Maxine.Extensions.MessagePack.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.VFS\Maxine.VFS.csproj" />
+      <ProjectReference Include="..\NFMWorld.Lua\NFMWorld.Lua.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
@@ -37,5 +38,6 @@
 
     <ItemGroup>
       <Folder Include="data\" />
+      <Folder Include="Lua\" />
     </ItemGroup>
 </Project>

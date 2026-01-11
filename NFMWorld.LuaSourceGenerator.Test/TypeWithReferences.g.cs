@@ -5,9 +5,8 @@
 
 using LuaNET.LuaJIT;
 using static LuaNET.LuaJIT.Lua;
-using NFMWorld.LuaSourceGenerator.Test.TestBindings;
 
-namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
+namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
@@ -63,11 +62,11 @@ public partial class LuaBindings
 
     private static int TypeWithReferences__index(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) { lua_pushnil(L); return 1; }
-
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
+
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
         switch (key)
         {
@@ -112,11 +111,11 @@ public partial class LuaBindings
 
     private static int TypeWithReferences__newindex(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>(L, 1);
         if (obj == null) return 0;
+
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
 
         switch (key)
         {
@@ -312,7 +311,11 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<object>(L, 2)!;
+            object? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<object>(L, 2)!;
             var result = self.Equals(arg0);
             PushValue(L, result);
             return 1;

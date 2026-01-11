@@ -1,7 +1,7 @@
 using LuaNET.LuaJIT;
 using static LuaNET.LuaJIT.Lua;
 using NFMWorld.LuaSourceGenerator.Test.SampleTypes;
-using NFMWorld.LuaSourceGenerator.Test.TestBindings;
+using NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 namespace NFMWorld.LuaSourceGenerator.Test;
 
@@ -25,6 +25,8 @@ public class LuaRuntimeTests
         LuaBindings.ResetType<ReferencedType>();
         LuaBindings.ResetType<TypeWithReferences>();
         LuaBindings.ResetType<TypeWithArrays>();
+        LuaBindings.ResetType<TypeWithMultiDimArray>();
+        LuaBindings.ResetType<TypeWithIndexers>();
 
         // Create a new Lua state for each test
         _L = luaL_newstate();
@@ -1816,6 +1818,309 @@ public class LuaRuntimeTests
         Assert.AreEqual(1, notNil, "Should return a non-nil array");
     }
 
+    [TestMethod]
+    public void TypeWithArrays_ArrayIndexing_ReadElement()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = TypeWithArrays.createSequence(5)
+            return arr[1], arr[2], arr[5]
+        ");
+        AssertLuaOk(result);
+
+        var val3 = lua_tointeger(_L, -1);
+        var val2 = lua_tointeger(_L, -2);
+        var val1 = lua_tointeger(_L, -3);
+
+        Assert.AreEqual(1, val1);
+        Assert.AreEqual(2, val2);
+        Assert.AreEqual(5, val3);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_ArrayIndexing_WriteElement()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = TypeWithArrays.createSequence(5)
+            arr[1] = 100
+            arr[3] = 300
+            return arr[1], arr[2], arr[3]
+        ");
+        AssertLuaOk(result);
+
+        var val3 = lua_tointeger(_L, -1);
+        var val2 = lua_tointeger(_L, -2);
+        var val1 = lua_tointeger(_L, -3);
+
+        Assert.AreEqual(100, val1);
+        Assert.AreEqual(2, val2);
+        Assert.AreEqual(300, val3);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_ArrayMutation_StaysInSync()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new()
+            local arr = TypeWithArrays.createSequence(3)
+            obj.numbers = arr
+
+            -- Modify through array reference
+            arr[2] = 999
+
+            -- Should see change through object property
+            return obj.numbers[2]
+        ");
+        AssertLuaOk(result);
+
+        var val = lua_tointeger(_L, -1);
+        Assert.AreEqual(999, val, "Array mutations should be visible through object property");
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_PropertyArray_CanBeIndexed()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = TypeWithArrays.createSequence(5)
+            local obj = TypeWithArrays.new(arr)
+            return obj.numbers[1], obj.numbers[5]
+        ");
+        AssertLuaOk(result);
+
+        var val2 = lua_tointeger(_L, -1);
+        var val1 = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(1, val1);
+        Assert.AreEqual(5, val2);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_PropertyArray_CanBeModified()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = TypeWithArrays.createSequence(5)
+            local obj = TypeWithArrays.new(arr)
+            obj.numbers[3] = 777
+            return obj.numbers[3], obj:sumNumbers()
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        var val = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(777, val);
+        // Sum should be 1 + 2 + 777 + 4 + 5 = 789
+        Assert.AreEqual(789, sum);
+    }
+
+    #endregion
+
+    #region TypeWithMultiDimArray Tests
+
+    [TestMethod]
+    public void TypeWithMultiDimArray_Constructor_CreatesEmptyObject()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithMultiDimArray.new()
+            return obj ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil);
+    }
+
+    [TestMethod]
+    public void TypeWithMultiDimArray_CreateIdentityMatrix_ReturnsMatrix()
+    {
+        var result = luaL_dostring(_L, @"
+            local matrix = TypeWithMultiDimArray.createIdentityMatrix(3)
+            return matrix ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil);
+    }
+
+    [TestMethod]
+    public void TypeWithMultiDimArray_MatrixIndexing_TableSyntax_Read()
+    {
+        var result = luaL_dostring(_L, @"
+            local matrix = TypeWithMultiDimArray.createIdentityMatrix(3)
+            return matrix[{1,1}], matrix[{1,2}], matrix[{2,2}]
+        ");
+        AssertLuaOk(result);
+
+        var val3 = lua_tointeger(_L, -1);
+        var val2 = lua_tointeger(_L, -2);
+        var val1 = lua_tointeger(_L, -3);
+
+        Assert.AreEqual(1, val1, "matrix[0,0] should be 1");
+        Assert.AreEqual(0, val2, "matrix[0,1] should be 0");
+        Assert.AreEqual(1, val3, "matrix[1,1] should be 1");
+    }
+
+    [TestMethod]
+    public void TypeWithMultiDimArray_MatrixIndexing_TableSyntax_Write()
+    {
+        var result = luaL_dostring(_L, @"
+            local matrix = TypeWithMultiDimArray.createIdentityMatrix(3)
+            matrix[{1,2}] = 42
+            matrix[{2,1}] = 99
+            return matrix[{1,2}], matrix[{2,1}]
+        ");
+        AssertLuaOk(result);
+
+        var val2 = lua_tointeger(_L, -1);
+        var val1 = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(42, val1, "matrix[0,1] should be 42");
+        Assert.AreEqual(99, val2, "matrix[1,0] should be 99");
+    }
+
+    [TestMethod]
+    public void TypeWithMultiDimArray_PropertyMatrix_CanBeIndexed()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithMultiDimArray.new()
+            obj:initializeMatrix(2, 3)
+            return obj.matrix[{1,1}], obj.matrix[{1,3}], obj.matrix[{2,2}]
+        ");
+        AssertLuaOk(result);
+
+        var val3 = lua_tointeger(_L, -1);
+        var val2 = lua_tointeger(_L, -2);
+        var val1 = lua_tointeger(_L, -3);
+
+        // InitializeMatrix sets matrix[i,j] = i * cols + j
+        // So matrix[0,0] = 0, matrix[0,2] = 2, matrix[1,1] = 4
+        Assert.AreEqual(0, val1);
+        Assert.AreEqual(2, val2);
+        Assert.AreEqual(4, val3);
+    }
+
+    [TestMethod]
+    public void TypeWithMultiDimArray_PropertyMatrix_Modification_StaysInSync()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithMultiDimArray.new()
+            obj:initializeMatrix(2, 2)
+            obj.matrix[{2,2}] = 500
+            return obj:sumAll()
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        // Original: [0,1], [2,3] = 6 total
+        // Modified: [0,1], [2,500] = 503 total
+        Assert.AreEqual(503, sum);
+    }
+
+    #endregion
+
+    #region TypeWithIndexers Tests
+
+    [TestMethod]
+    public void TypeWithIndexers_Constructor_CreatesEmptyObject()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithIndexers.new()
+            return obj ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil);
+    }
+
+    [TestMethod]
+    public void TypeWithIndexers_IntIndexer_ReadAndWrite()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithIndexers.new()
+            obj[1] = 10
+            obj[5] = 50
+            return obj[1], obj[5]
+        ");
+        AssertLuaOk(result);
+
+        var val2 = lua_tointeger(_L, -1);
+        var val1 = lua_tointeger(_L, -2);
+
+        Assert.AreEqual(10, val1);
+        Assert.AreEqual(50, val2);
+    }
+
+    [TestMethod]
+    public void TypeWithIndexers_IntIndexer_StaysInSync()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithIndexers.new()
+            obj[3] = 123
+            return obj:getNumberAt(2)
+        ");
+        AssertLuaOk(result);
+
+        var val = lua_tointeger(_L, -1);
+        Assert.AreEqual(123, val, "Indexer and method should access same data");
+    }
+
+    [TestMethod]
+    public void TypeWithIndexers_MultiParamIndexer_TableSyntax_ReadAndWrite()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithIndexers.new()
+            obj[{1,2}] = 'hello'
+            obj[{3,4}] = 'world'
+            return obj[{1,2}], obj[{3,4}]
+        ");
+        AssertLuaOk(result);
+
+        var val2 = lua_tostring(_L, -1);
+        var val1 = lua_tostring(_L, -2);
+
+        Assert.AreEqual("hello", val1);
+        Assert.AreEqual("world", val2);
+    }
+
+    [TestMethod]
+    public void TypeWithIndexers_MultiParamIndexer_StaysInSync()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithIndexers.new()
+            obj[{5,6}] = 'test'
+            return obj:getGridValue(5, 6)
+        ");
+        AssertLuaOk(result);
+
+        var val = lua_tostring(_L, -1);
+        Assert.AreEqual("test", val, "Indexer and method should access same data");
+    }
+
+    [TestMethod]
+    public void TypeWithIndexers_MixedIndexerAccess()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithIndexers.new()
+            -- Int indexer (1D)
+            obj[1] = 111
+            -- Grid indexer (2D table)
+            obj[{10,20}] = 'grid_value'
+
+            return obj[1], obj[{10,20}], obj:getNumberAt(0), obj:getGridValue(10, 20)
+        ");
+        AssertLuaOk(result);
+
+        var gridVal2 = lua_tostring(_L, -1);
+        var intVal2 = lua_tointeger(_L, -2);
+        var gridVal1 = lua_tostring(_L, -3);
+        var intVal1 = lua_tointeger(_L, -4);
+
+        Assert.AreEqual(111, intVal1);
+        Assert.AreEqual("grid_value", gridVal1);
+        Assert.AreEqual(111, intVal2);
+        Assert.AreEqual("grid_value", gridVal2);
+    }
+
     #endregion
 }
-

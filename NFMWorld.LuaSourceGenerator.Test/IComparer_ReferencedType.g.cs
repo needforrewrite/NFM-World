@@ -5,9 +5,8 @@
 
 using LuaNET.LuaJIT;
 using static LuaNET.LuaJIT.Lua;
-using NFMWorld.LuaSourceGenerator.Test.TestBindings;
 
-namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
+namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
@@ -63,11 +62,11 @@ public partial class LuaBindings
 
     private static int IComparer_ReferencedType__index(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) { lua_pushnil(L); return 1; }
-
         var obj = GetObjectFromStack<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
+
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
         switch (key)
         {
@@ -82,11 +81,11 @@ public partial class LuaBindings
 
     private static int IComparer_ReferencedType__newindex(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
         var obj = GetObjectFromStack<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
         if (obj == null) return 0;
+
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
 
         switch (key)
         {
@@ -122,8 +121,16 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
-            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
+            NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 2)!;
+            NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType? arg1;
+            if (lua_isnil(L, 3) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
             var result = self.Compare(arg0, arg1);
             PushValue(L, result);
             return 1;

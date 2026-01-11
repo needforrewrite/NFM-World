@@ -5,9 +5,8 @@
 
 using LuaNET.LuaJIT;
 using static LuaNET.LuaJIT.Lua;
-using NFMWorld.LuaSourceGenerator.Test.TestBindings;
 
-namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
+namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
@@ -105,10 +104,10 @@ public partial class LuaBindings
 
     private static int SampleStruct__index(lua_State L)
     {
+        var obj = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1);
+
         var key = lua_tostring(L, 2);
         if (key == null) { lua_pushnil(L); return 1; }
-
-        var obj = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1);
 
         switch (key)
         {
@@ -153,10 +152,10 @@ public partial class LuaBindings
 
     private static int SampleStruct__newindex(lua_State L)
     {
+        var obj = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1);
+
         var key = lua_tostring(L, 2);
         if (key == null) return 0;
-
-        var obj = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1);
 
         switch (key)
         {
@@ -369,7 +368,11 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<object>(L, 2)!;
+            object? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<object>(L, 2)!;
             var result = self.Equals(arg0);
             UpdateStruct(L, 1, self);
             PushValue(L, result);

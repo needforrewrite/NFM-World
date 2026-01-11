@@ -5,9 +5,8 @@
 
 using LuaNET.LuaJIT;
 using static LuaNET.LuaJIT.Lua;
-using NFMWorld.LuaSourceGenerator.Test.TestBindings;
 
-namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
+namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
@@ -63,11 +62,20 @@ public partial class LuaBindings
 
     private static int List_Int32__index(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) { lua_pushnil(L); return 1; }
-
         var obj = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
+
+        // Check if key is a number (array/indexer access)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            var element = obj[index];
+            PushValue(L, element);
+            return 1;
+        }
+
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
         switch (key)
         {
@@ -190,11 +198,20 @@ public partial class LuaBindings
 
     private static int List_Int32__newindex(lua_State L)
     {
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
         var obj = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
         if (obj == null) return 0;
+
+        // Check if key is a number (array/indexer assignment)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            var value = ToObject<int>(L, 3)!;
+            obj[index] = value;
+            return 0;
+        }
+
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
 
         switch (key)
         {
@@ -226,14 +243,6 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<int>(L, 1)!;
-            var obj = new System.Collections.Generic.List<int>(arg0);
-            PushObject(L, obj, "MT_List_Int32");
-            return 1;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<System.Collections.Generic.IEnumerable<int>>(L, 1)!;
             var obj = new System.Collections.Generic.List<int>(arg0);
             PushObject(L, obj, "MT_List_Int32");
             return 1;
@@ -331,7 +340,11 @@ public partial class LuaBindings
         if (argCount == 2)
         {
             var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<System.Collections.Generic.IComparer<int>>(L, 3)!;
+            System.Collections.Generic.IComparer<int>? arg1;
+            if (lua_isnil(L, 3) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<System.Collections.Generic.IComparer<int>>(L, 3)!;
             var result = self.BinarySearch(arg0, arg1);
             PushValue(L, result);
             return 1;
@@ -342,7 +355,11 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
             var arg2 = ToObject<int>(L, 4)!;
-            var arg3 = ToObject<System.Collections.Generic.IComparer<int>>(L, 5)!;
+            System.Collections.Generic.IComparer<int>? arg3;
+            if (lua_isnil(L, 5) != 0)
+                arg3 = null;
+            else
+                arg3 = ToObject<System.Collections.Generic.IComparer<int>>(L, 5)!;
             var result = self.BinarySearch(arg0, arg1, arg2, arg3);
             PushValue(L, result);
             return 1;
@@ -996,7 +1013,11 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<System.Collections.Generic.IComparer<int>>(L, 2)!;
+            System.Collections.Generic.IComparer<int>? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<System.Collections.Generic.IComparer<int>>(L, 2)!;
             self.Sort(arg0);
             return 0;
         }
@@ -1012,7 +1033,11 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<System.Collections.Generic.IComparer<int>>(L, 4)!;
+            System.Collections.Generic.IComparer<int>? arg2;
+            if (lua_isnil(L, 4) != 0)
+                arg2 = null;
+            else
+                arg2 = ToObject<System.Collections.Generic.IComparer<int>>(L, 4)!;
             self.Sort(arg0, arg1, arg2);
             return 0;
         }
@@ -1144,7 +1169,11 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<object>(L, 2)!;
+            object? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<object>(L, 2)!;
             var result = self.Equals(arg0);
             PushValue(L, result);
             return 1;

@@ -5,9 +5,8 @@
 
 using LuaNET.LuaJIT;
 using static LuaNET.LuaJIT.Lua;
-using NFMWorld.LuaSourceGenerator.Test.TestBindings;
 
-namespace NFMWorld.LuaSourceGenerator.Test.TestBindings;
+namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
@@ -17,19 +16,28 @@ public partial class LuaBindings
     public static void Initialize(lua_State L)
     {
         Register_TypeWithArrays(L);
+        Register_TypeWithIndexers(L);
+        Register_TypeWithMultiDimArray(L);
         Register_SampleClass(L);
         Register_SampleStruct(L);
         Register_TypeWithReferences(L);
         Register_Vector3Struct(L);
+        Register_Int32Array(L);
+        Register_StringArray(L);
+        Register_SingleArray(L);
+        Register_Int32Array2D(L);
+        Register_SingleArray3D(L);
         Register_ReferencedType(L);
         Register_List_Int32(L);
         Register_List_ReferencedType(L);
+        Register_Int64Array(L);
         Register_IEnumerable_Int32(L);
         Register_ReadOnlyCollection_Int32(L);
         Register_IComparer_Int32(L);
         Register_IEnumerable_ReferencedType(L);
         Register_ReadOnlyCollection_ReferencedType(L);
         Register_IComparer_ReferencedType(L);
+        Register_ReferencedTypeArray(L);
         Register_IEnumerator_Int32(L);
         Register_IList_Int32(L);
         Register_IEnumerator_ReferencedType(L);
