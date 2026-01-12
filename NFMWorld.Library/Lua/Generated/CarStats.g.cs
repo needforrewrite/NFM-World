@@ -78,16 +78,46 @@ public partial class LuaBindings
         switch (key)
         {
             case "swits":
-                PushValue(L, obj.Swits);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Swits, "MT_Int3", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Swits = (Stride.Core.Mathematics.Int3)value);
+                        }
+                    }
+                }
                 return 1;
             case "acelf":
-                PushValue(L, obj.Acelf);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Acelf, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Acelf = (nfm_world_library.SoftFloat.f64Vector3)value);
+                        }
+                    }
+                }
                 return 1;
             case "handb":
                 PushValue(L, obj.Handb);
                 return 1;
             case "airs":
-                PushValue(L, obj.Airs);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Airs, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Airs = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "airc":
                 PushValue(L, obj.Airc);
@@ -96,25 +126,95 @@ public partial class LuaBindings
                 PushValue(L, obj.Turn);
                 return 1;
             case "grip":
-                PushValue(L, obj.Grip);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Grip, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Grip = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "bounce":
-                PushValue(L, obj.Bounce);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Bounce, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Bounce = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "simag":
-                PushValue(L, obj.Simag);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Simag, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Simag = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "moment":
-                PushValue(L, obj.Moment);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Moment, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Moment = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "comprad":
-                PushValue(L, obj.Comprad);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Comprad, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Comprad = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "push":
-                PushValue(L, obj.Push);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Push, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Push = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "revpush":
-                PushValue(L, obj.Revpush);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Revpush, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Revpush = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "lift":
                 PushValue(L, obj.Lift);
@@ -135,16 +235,46 @@ public partial class LuaBindings
                 PushValue(L, obj.Clrad);
                 return 1;
             case "dammult":
-                PushValue(L, obj.Dammult);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Dammult, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Dammult = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "maxmag":
                 PushValue(L, obj.Maxmag);
                 return 1;
             case "dishandle":
-                PushValue(L, obj.Dishandle);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Dishandle, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Dishandle = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "outdam":
-                PushValue(L, obj.Outdam);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Outdam, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.CarStats)obj).Outdam = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "name":
                 PushValue(L, obj.Name);

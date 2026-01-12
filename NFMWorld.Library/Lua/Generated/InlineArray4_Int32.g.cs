@@ -64,6 +64,21 @@ public partial class LuaBindings
     {
         var obj = GetStructFromStack<System.Runtime.CompilerServices.InlineArray4<int>>(L, 1);
 
+        // Check if key is a number (array/indexer access)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            // Inline array indexing (single int index)
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            if (index < 0 || index >= 4)
+            {
+                return luaL_error(L, "Index out of range");
+            }
+            var span = System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref System.Runtime.CompilerServices.Unsafe.As<System.Runtime.CompilerServices.InlineArray4<int>, int>(ref obj), 4);
+            var element = span[index];
+            PushValue(L, element);
+            return 1;
+        }
+
         var key = lua_tostring(L, 2);
         if (key == null) { lua_pushnil(L); return 1; }
 
@@ -90,6 +105,22 @@ public partial class LuaBindings
     private static int InlineArray4_Int32__newindex(lua_State L)
     {
         var obj = GetStructFromStack<System.Runtime.CompilerServices.InlineArray4<int>>(L, 1);
+
+        // Check if key is a number (array/indexer assignment)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            // Inline array indexing (single int index)
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            if (index < 0 || index >= 4)
+            {
+                return luaL_error(L, "Index out of range");
+            }
+            var span = System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref System.Runtime.CompilerServices.Unsafe.As<System.Runtime.CompilerServices.InlineArray4<int>, int>(ref obj), 4);
+            var value = ToObject<int>(L, 3)!;
+            span[index] = value;
+            UpdateStruct(L, 1, obj);
+            return 0;
+        }
 
         var key = lua_tostring(L, 2);
         if (key == null) return 0;

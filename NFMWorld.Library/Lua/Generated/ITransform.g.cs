@@ -74,10 +74,30 @@ public partial class LuaBindings
                 PushValue(L, obj.ChildTransforms);
                 return 1;
             case "position":
-                PushValue(L, obj.Position);
+                {
+                    var parentPtr = lua_touserdata(L, 1);
+                    if (parentPtr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)parentPtr;
+                            PushStructWithParent(L, obj.Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
+                        }
+                    }
+                }
                 return 1;
             case "rotation":
-                PushValue(L, obj.Rotation);
+                {
+                    var parentPtr = lua_touserdata(L, 1);
+                    if (parentPtr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)parentPtr;
+                            PushStructWithParent(L, obj.Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
+                        }
+                    }
+                }
                 return 1;
             case "parent":
                 PushValue(L, obj.Parent);

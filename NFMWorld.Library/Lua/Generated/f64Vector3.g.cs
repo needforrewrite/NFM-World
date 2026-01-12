@@ -196,13 +196,43 @@ public partial class LuaBindings
         switch (key)
         {
             case "x":
-                PushValue(L, obj.X);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.X, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Vector3)obj).X = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "y":
-                PushValue(L, obj.Y);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Y, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Vector3)obj).Y = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "z":
-                PushValue(L, obj.Z);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Z, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Vector3)obj).Z = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "equals":
                 lua_pushcfunction(L, KeepAlive(f64Vector3_method_equals));

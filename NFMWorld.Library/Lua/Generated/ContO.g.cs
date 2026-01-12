@@ -70,31 +70,111 @@ public partial class LuaBindings
         switch (key)
         {
             case "x":
-                PushValue(L, obj.X);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.X, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).X = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "y":
-                PushValue(L, obj.Y);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Y, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Y = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "z":
-                PushValue(L, obj.Z);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Z, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Z = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "xz":
-                PushValue(L, obj.Xz);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Xz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Xz = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "xy":
-                PushValue(L, obj.Xy);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Xy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Xy = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "zy":
-                PushValue(L, obj.Zy);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Zy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Zy = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "grat":
                 PushValue(L, obj.Grat);
                 return 1;
             case "wzy":
-                PushValue(L, obj.Wzy);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Wzy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Wzy = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "wxz":
-                PushValue(L, obj.Wxz);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Wxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Wxz = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "fcnt":
                 PushValue(L, obj.Fcnt);
@@ -103,10 +183,30 @@ public partial class LuaBindings
                 PushValue(L, obj.MaxR);
                 return 1;
             case "keyx":
-                PushValue(L, obj.Keyx);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Keyx, "MT_InlineArray4_Int32", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Keyx = (System.Runtime.CompilerServices.InlineArray4<int>)value);
+                        }
+                    }
+                }
                 return 1;
             case "keyz":
-                PushValue(L, obj.Keyz);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Keyz, "MT_InlineArray4_Int32", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Keyz = (System.Runtime.CompilerServices.InlineArray4<int>)value);
+                        }
+                    }
+                }
                 return 1;
             case "damageX":
                 lua_pushcfunction(L, KeepAlive(ContO_method_damageX));

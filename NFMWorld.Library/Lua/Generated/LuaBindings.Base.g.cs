@@ -19,11 +19,15 @@ public partial class LuaBindings
 {
     private static int _nextObjectId = 1;
 
-    // Global storage for all managed objects (non-generic to allow runtime type queries)
-    private static readonly DictionarySlim<int, object> _objects = [];
+    // Global storage for all managed objects (non-generic to allow runtime type queries), and  their .NET types (for overload resolution)
+    // Also track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
+    private static readonly DictionarySlim<int, (object Obj, Type Type, (int parentId, Action<object, object> updateStructInParent)? StructParents)> _objects = [];
 
     // Map object IDs to their .NET types (for overload resolution)
     private static readonly Dictionary<int, Type> _objectTypes = new();
+
+    // Track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
+    private static readonly Dictionary<int, (int parentId, string memberName, Type parentType)> _structParents = new();
 
     private static class TypeInfo<T>
     {
@@ -43,7 +47,6 @@ public partial class LuaBindings
         _objectCount = 0;
         _nextObjectId = 1;
         _objects.Clear();
-        _objectTypes.Clear();
         TypeInfo<nfm_world_library.mad.CarStats>.Name = null;
         TypeInfo<nfm_world_library.mad.Mad>.Name = null;
         TypeInfo<nfm_world_library.SoftFloat.f64Vector3>.Name = null;
@@ -79,11 +82,10 @@ public partial class LuaBindings
     /// <summary>
     /// Store a managed object and return its ID.
     /// </summary>
-    private static int StoreObject<T>(T obj)
+    private static int StoreObject<T>(T obj, in (int parentId, Action<object, object> updateStructInParent)? structParent = null)
     {
         var id = _nextObjectId++;
-        _objects.GetOrAddValueRef(id) = obj!;
-        _objectTypes[id] = typeof(T);
+        _objects.GetOrAddValueRef(id) = (obj!, typeof(T), structParent);
         _objectCount++;
         return id;
     }
@@ -93,7 +95,7 @@ public partial class LuaBindings
     /// </summary>
     private static T? GetObject<T>(int id)
     {
-        if (_objects.TryGetValue(id, out var obj) && obj is T typedObj)
+        if (_objects.TryGetValue(id, out var obj) && obj.Obj is T typedObj)
             return typedObj;
         return default;
     }
@@ -104,7 +106,6 @@ public partial class LuaBindings
     private static void RemoveObject<T>(int id)
     {
         _objects.Remove(id);
-        _objectTypes.Remove(id);
         _objectCount--;
     }
 
@@ -150,6 +151,19 @@ public partial class LuaBindings
     }
 
     /// <summary>
+    /// Push a struct userdata with parent tracking (for field/property access).
+    /// When the struct is modified, changes will be written back to the parent.
+    /// </summary>
+    private static void PushStructWithParent<T>(lua_State L, T obj, string metatableName, int parentId, Action<object, object> updateValueInParent) where T : struct
+    {
+        var id = StoreObject(obj, (parentId, updateValueInParent));
+        var ptr = lua_newuserdata(L, (ulong)sizeof(int));
+        unsafe { *(int*)ptr = id; }
+        luaL_getmetatable(L, metatableName);
+        lua_setmetatable(L, -2);
+    }
+
+    /// <summary>
     /// Get a managed reference type object from userdata at stack index.
     /// </summary>
     private static T? GetObjectFromStack<T>(lua_State L, int idx) where T : class
@@ -182,6 +196,7 @@ public partial class LuaBindings
     /// <summary>
     /// Update a struct in storage (for mutable operations that create copies).
     /// This maintains value type semantics where mutations create new values.
+    /// If the struct has a parent relationship, also writes it back to the parent's field.
     /// </summary>
     private static void UpdateStruct<T>(lua_State L, int idx, T value) where T : struct
     {
@@ -190,7 +205,18 @@ public partial class LuaBindings
         unsafe
         {
             var id = *(int*)ptr;
-            _objects.GetOrAddValueRef(id) = value;
+            ref var existingValue = ref _objects.GetOrAddValueRef(id);
+            existingValue = (value, typeof(T), existingValue.StructParents);
+
+            // If this struct has a parent, write it back to the parent's field
+            if (existingValue.StructParents is {} parentInfo)
+            {
+                var (parentId, updateStructInParent) = parentInfo;
+                if (_objects.TryGetValue(parentId, out var parentObj))
+                {
+                    updateStructInParent(parentObj.Obj, value);
+                }
+            }
         }
     }
 
@@ -208,7 +234,7 @@ public partial class LuaBindings
         unsafe
         {
             var id = *(int*)ptr;
-            return _objectTypes.GetValueOrDefault(id);
+            return _objects.GetValueOrDefault(id).Type;
         }
     }
 

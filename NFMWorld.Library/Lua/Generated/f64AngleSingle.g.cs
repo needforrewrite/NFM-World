@@ -156,16 +156,56 @@ public partial class LuaBindings
         switch (key)
         {
             case "degrees":
-                PushValue(L, obj.Degrees);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Degrees, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Degrees = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "minutes":
-                PushValue(L, obj.Minutes);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Minutes, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Minutes = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "seconds":
-                PushValue(L, obj.Seconds);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Seconds, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Seconds = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "radians":
-                PushValue(L, obj.Radians);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Radians, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Radians = (nfm_world_library.SoftFloat.fix64)value);
+                        }
+                    }
+                }
                 return 1;
             case "isRight":
                 PushValue(L, obj.IsRight);
@@ -189,10 +229,30 @@ public partial class LuaBindings
                 PushValue(L, obj.IsReflex);
                 return 1;
             case "complement":
-                PushValue(L, obj.Complement);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Complement, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Complement = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                        }
+                    }
+                }
                 return 1;
             case "supplement":
-                PushValue(L, obj.Supplement);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Supplement, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Supplement = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                        }
+                    }
+                }
                 return 1;
             case "wrap":
                 lua_pushcfunction(L, KeepAlive(f64AngleSingle_method_wrap));

@@ -108,22 +108,82 @@ public partial class LuaBindings
         switch (key)
         {
             case "yaw":
-                PushValue(L, obj.Yaw);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Yaw, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Euler)obj).Yaw = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                        }
+                    }
+                }
                 return 1;
             case "pitch":
-                PushValue(L, obj.Pitch);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Pitch, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Euler)obj).Pitch = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                        }
+                    }
+                }
                 return 1;
             case "roll":
-                PushValue(L, obj.Roll);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Roll, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Euler)obj).Roll = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                        }
+                    }
+                }
                 return 1;
             case "xz":
-                PushValue(L, obj.Xz);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Xz, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Euler)obj).Xz = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                        }
+                    }
+                }
                 return 1;
             case "zy":
-                PushValue(L, obj.Zy);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Zy, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Euler)obj).Zy = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                        }
+                    }
+                }
                 return 1;
             case "xy":
-                PushValue(L, obj.Xy);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Xy, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Euler)obj).Xy = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                        }
+                    }
+                }
                 return 1;
             case "wrap":
                 lua_pushcfunction(L, KeepAlive(f64Euler_method_wrap));

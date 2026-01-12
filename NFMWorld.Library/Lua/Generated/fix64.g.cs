@@ -355,7 +355,17 @@ public partial class LuaBindings
                 PushValue(L, obj.Raw);
                 return 1;
             case "value":
-                PushValue(L, obj.Value);
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, obj.Value, "MT_Fixed64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.fix64)obj).Value = (FixedMathSharp.Fixed64)value);
+                        }
+                    }
+                }
                 return 1;
             case "toString":
                 lua_pushcfunction(L, KeepAlive(fix64_method_toString));
