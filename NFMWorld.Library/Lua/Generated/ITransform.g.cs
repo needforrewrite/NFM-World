@@ -75,12 +75,12 @@ public partial class LuaBindings
                 return 1;
             case "position":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
                         }
                     }
@@ -88,12 +88,12 @@ public partial class LuaBindings
                 return 1;
             case "rotation":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
                         }
                     }

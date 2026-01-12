@@ -87,12 +87,12 @@ public partial class LuaBindings
                 return 1;
             case "stat":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Stat, "MT_CarStats", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Stat = (nfm_world_library.mad.CarStats)value);
                         }
                     }
@@ -118,12 +118,12 @@ public partial class LuaBindings
                 return 1;
             case "cxz":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Cxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Cxz = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -134,12 +134,12 @@ public partial class LuaBindings
                 return 1;
             case "dcomp":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Dcomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Dcomp = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -153,12 +153,12 @@ public partial class LuaBindings
                 return 1;
             case "drag":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj._drag, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._drag = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -169,12 +169,12 @@ public partial class LuaBindings
                 return 1;
             case "forca":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj._forca, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._forca = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -185,12 +185,12 @@ public partial class LuaBindings
                 return 1;
             case "fxz":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj._fxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._fxz = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -210,12 +210,12 @@ public partial class LuaBindings
                 return 1;
             case "lcomp":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Lcomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Lcomp = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -226,12 +226,12 @@ public partial class LuaBindings
                 return 1;
             case "lxz":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj._lxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._lxz = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -242,12 +242,12 @@ public partial class LuaBindings
                 return 1;
             case "mxz":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Mxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Mxz = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -285,12 +285,12 @@ public partial class LuaBindings
                 return 1;
             case "power":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Power, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Power = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -298,12 +298,12 @@ public partial class LuaBindings
                 return 1;
             case "powerup":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Powerup, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Powerup = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -320,12 +320,12 @@ public partial class LuaBindings
                 return 1;
             case "pxy":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Pxy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Pxy = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -333,12 +333,12 @@ public partial class LuaBindings
                 return 1;
             case "pzy":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Pzy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Pzy = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -346,12 +346,12 @@ public partial class LuaBindings
                 return 1;
             case "rcomp":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Rcomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Rcomp = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -362,12 +362,12 @@ public partial class LuaBindings
                 return 1;
             case "scx":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Scx, "MT_InlineArray4_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Scx = (System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>)value);
                         }
                     }
@@ -375,12 +375,12 @@ public partial class LuaBindings
                 return 1;
             case "scy":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Scy, "MT_InlineArray4_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Scy = (System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>)value);
                         }
                     }
@@ -388,12 +388,12 @@ public partial class LuaBindings
                 return 1;
             case "scz":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Scz, "MT_InlineArray4_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Scz = (System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>)value);
                         }
                     }
@@ -407,12 +407,12 @@ public partial class LuaBindings
                 return 1;
             case "speed":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Speed, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Speed = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -429,12 +429,12 @@ public partial class LuaBindings
                 return 1;
             case "tilt":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj._tilt, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._tilt = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -442,12 +442,12 @@ public partial class LuaBindings
                 return 1;
             case "travxy":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Travxy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Travxy = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -455,12 +455,12 @@ public partial class LuaBindings
                 return 1;
             case "travxz":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Travxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Travxz = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -468,12 +468,12 @@ public partial class LuaBindings
                 return 1;
             case "travzy":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Travzy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Travzy = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -484,12 +484,12 @@ public partial class LuaBindings
                 return 1;
             case "txz":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Txz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Txz = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }
@@ -497,12 +497,12 @@ public partial class LuaBindings
                 return 1;
             case "ucomp":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.Ucomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Ucomp = (nfm_world_library.SoftFloat.fix64)value);
                         }
                     }

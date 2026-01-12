@@ -362,7 +362,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Value, "MT_Fixed64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.fix64)obj).Value = (FixedMathSharp.Fixed64)value);
+                            PushStructWithParent(L, obj.Value, "MT_Fixed64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Value' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }

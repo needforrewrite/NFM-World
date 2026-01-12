@@ -203,7 +203,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.X, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Vector3)obj).X = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.X, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'X' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -216,7 +216,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Y, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Vector3)obj).Y = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Y, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Y' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -229,7 +229,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Z, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64Vector3)obj).Z = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Z, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Z' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }

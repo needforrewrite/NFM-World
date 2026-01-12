@@ -516,12 +516,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // Also track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
                 private static readonly DictionarySlim<int, (object Obj, Type Type, (int parentId, Action<object, object> updateStructInParent)? StructParents)> _objects = [];
                 
-                // Map object IDs to their .NET types (for overload resolution)
-                private static readonly Dictionary<int, Type> _objectTypes = new();
-
-                // Track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
-                private static readonly Dictionary<int, (int parentId, string memberName, Type parentType)> _structParents = new();
-
                 private static class TypeInfo<T>
                 {
                     // Maps C# types to their Lua metatable names
@@ -2925,56 +2919,35 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             var metatable = GetSafeTypeName(type);
             var parentTypeName = GetFullTypeName(parentType);
 
-            if (isStruct)
+            // For structs, we need to get the ID from userdata on the stack
+            AppendLine("{");
+            using (Indent())
             {
-                // For structs, we need to get the ID from userdata on the stack
+                AppendLine("var ptr = lua_touserdata(L, 1);");
+                AppendLine("if (ptr != 0)");
                 AppendLine("{");
                 using (Indent())
                 {
-                    AppendLine("var ptr = lua_touserdata(L, 1);");
-                    AppendLine("if (ptr != 0)");
+                    AppendLine("unsafe");
                     AppendLine("{");
                     using (Indent())
                     {
-                        AppendLine("unsafe");
-                        AppendLine("{");
-                        using (Indent())
+                        AppendLine("var parentId = *(int*)ptr;");
+                        if (parentType.IsValueType)
                         {
-                            AppendLine("var parentId = *(int*)ptr;");
+                            AppendLine($"PushStructWithParent(L, obj.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {{ System.Diagnostics.Debug.WriteLine($\"Attempted to assign value of struct {{obj}} ({{obj.GetType()}}) member '{memberExpression}' to {{value}} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set.\"); }});");
+                        }
+                        else
+                        {
                             AppendLine($"PushStructWithParent(L, obj.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => (({parentTypeName})obj).{memberExpression} = ({typeName})value);");
                         }
-                        AppendLine("}");
                     }
                     AppendLine("}");
                 }
                 AppendLine("}");
-                AppendLine("return 1;");
             }
-            else
-            {
-                // For reference types (classes), we need to store the parent ID
-                AppendLine("{");
-                using (Indent())
-                {
-                    AppendLine($"var parentPtr = lua_touserdata(L, 1);");
-                    AppendLine("if (parentPtr != 0)");
-                    AppendLine("{");
-                    using (Indent())
-                    {
-                        AppendLine("unsafe");
-                        AppendLine("{");
-                        using (Indent())
-                        {
-                            AppendLine("var parentId = *(int*)parentPtr;");
-                            AppendLine($"PushStructWithParent(L, obj.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => (({parentTypeName})obj).{memberExpression} = ({typeName})value);");
-                        }
-                        AppendLine("}");
-                    }
-                    AppendLine("}");
-                }
-                AppendLine("}");
-                AppendLine("return 1;");
-            }
+            AppendLine("}");
+            AppendLine("return 1;");
         }
         else
         {

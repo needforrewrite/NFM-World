@@ -77,7 +77,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.X, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).X = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.X, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'X' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -90,7 +90,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Y, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Y = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Y, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Y' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -103,7 +103,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Z, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Z = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Z, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Z' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -116,7 +116,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Xz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Xz = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Xz, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Xz' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -129,7 +129,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Xy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Xy = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Xy, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Xy' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -142,7 +142,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Zy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Zy = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Zy, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Zy' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -158,7 +158,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Wzy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Wzy = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Wzy, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Wzy' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -171,7 +171,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Wxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Wxz = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Wxz, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Wxz' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -190,7 +190,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Keyx, "MT_InlineArray4_Int32", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Keyx = (System.Runtime.CompilerServices.InlineArray4<int>)value);
+                            PushStructWithParent(L, obj.Keyx, "MT_InlineArray4_Int32", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Keyx' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -203,7 +203,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Keyz, "MT_InlineArray4_Int32", parentId, static (obj, value) => ((nfm_world_library.mad.ContO)obj).Keyz = (System.Runtime.CompilerServices.InlineArray4<int>)value);
+                            PushStructWithParent(L, obj.Keyz, "MT_InlineArray4_Int32", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Keyz' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }

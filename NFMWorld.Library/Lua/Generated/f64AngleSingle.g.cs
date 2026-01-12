@@ -163,7 +163,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Degrees, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Degrees = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Degrees, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Degrees' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -176,7 +176,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Minutes, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Minutes = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Minutes, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Minutes' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -189,7 +189,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Seconds, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Seconds = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Seconds, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Seconds' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -202,7 +202,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Radians, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Radians = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj.Radians, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Radians' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -236,7 +236,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Complement, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Complement = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                            PushStructWithParent(L, obj.Complement, "MT_f64AngleSingle", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Complement' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -249,7 +249,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Supplement, "MT_f64AngleSingle", parentId, static (obj, value) => ((nfm_world_library.SoftFloat.f64AngleSingle)obj).Supplement = (nfm_world_library.SoftFloat.f64AngleSingle)value);
+                            PushStructWithParent(L, obj.Supplement, "MT_f64AngleSingle", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Supplement' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }

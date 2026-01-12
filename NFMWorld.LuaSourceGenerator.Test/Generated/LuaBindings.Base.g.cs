@@ -23,12 +23,6 @@ public partial class LuaBindings
     // Also track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
     private static readonly DictionarySlim<int, (object Obj, Type Type, (int parentId, Action<object, object> updateStructInParent)? StructParents)> _objects = [];
 
-    // Map object IDs to their .NET types (for overload resolution)
-    private static readonly Dictionary<int, Type> _objectTypes = new();
-
-    // Track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
-    private static readonly Dictionary<int, (int parentId, string memberName, Type parentType)> _structParents = new();
-
     private static class TypeInfo<T>
     {
         // Maps C# types to their Lua metatable names
@@ -621,8 +615,7 @@ private static T? ToObject<T>(lua_State L, int idx)
     /// </summary>
     private static lua_CFunction KeepAlive(lua_CFunction func)
     {
-        // Static methods are not collected, so no need to track them
-        // _delegates.Add(func);
+        _delegates.Add(func);
         return func;
     }
 
