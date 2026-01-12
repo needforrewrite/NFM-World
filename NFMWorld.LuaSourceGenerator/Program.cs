@@ -206,12 +206,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         var attr = type.GetCustomAttributesData()
             .FirstOrDefault(a => a.AttributeType.Name == "InlineArrayAttribute" || a.AttributeType.FullName == "System.Runtime.CompilerServices.InlineArrayAttribute");
-        
+
         if (attr != null && attr.ConstructorArguments.Count > 0)
         {
             return (int)attr.ConstructorArguments[0].Value!;
         }
-        
+
         return null;
     }
 
@@ -695,7 +695,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     {
                         var id = *(int*)ptr;
                         _objects.GetOrAddValueRef(id) = value;
-                        
+
                         // If this struct has a parent, write it back to the parent's field
                         if (_structParents.TryGetValue(id, out var parentInfo))
                         {
@@ -1128,7 +1128,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         AppendLine($"local {luaName}Instance = {{}}");
         AppendLine();
-        
+
         // Generate class annotation
         if (type.BaseType != null && type.BaseType != typeof(object) && type.BaseType != typeof(ValueType))
         {
@@ -1168,7 +1168,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 foreach (var ctor in constructors)
                 {
                     var parameters = ctor.GetParameters();
-                    
+
                     AppendLine($"---Creates a new {luaName}");
                     foreach (var param in parameters)
                     {
@@ -1178,7 +1178,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         AppendLine($"---@param {paramName}{optional} {paramType}");
                     }
                     AppendLine($"---@return {GetLuaStubTypeName(typeInfo.Type)}");
-                    
+
                     var paramNames = string.Join(", ", parameters.Select(p => p.Name ?? $"param{p.Position}"));
                     AppendLine($"function {luaName}.new({paramNames}) end");
                     AppendLine();
@@ -2940,7 +2940,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         {
             var metatable = GetSafeTypeName(type);
             var parentTypeName = GetFullTypeName(parentType);
-            
+
             if (isStruct)
             {
                 // For structs, we need to get the ID from userdata on the stack

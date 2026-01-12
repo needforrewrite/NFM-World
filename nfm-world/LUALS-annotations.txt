@@ -1,0 +1,180 @@
+Lua Language Server – Wiki
+Annotations
+
+Annotations add additional context to your code and type checking.
+The language server infers types through contextual analysis, but manual documentation improves completion and signature information.
+
+LuaCATS (Lua Comment And Type System) annotations are based on EmmyLua.
+Annotations are prefixed with --- (three dashes).
+
+Warning: LuaCATS annotations are no longer cross‑compatible with EmmyLua as of v3.
+
+ANNOTATION FORMATTING
+Annotations support most Markdown syntax:
+- headings
+- bold
+- italic
+- strikethrough
+- ordered lists
+- unordered lists
+- blockquote
+- code
+- code block
+- horizontal rule
+- link
+- image
+
+Newlines:
+- Add a line containing only --- (paragraph break)
+- HTML <br> tag (recommended)
+- \n escape
+- Two trailing spaces
+- Markdown backslash (not recommended)
+
+REFERRING TO SYMBOLS
+As of v3.9.2 you can refer to workspace symbols using Markdown links:
+Example:
+---@alias MyCustomType integer
+---Calculate a value using [my custom type](lua://MyCustomType)
+function calculate(x) end
+
+TIP: Typing --- above a function triggers a snippet with @param and @return.
+
+DOCUMENTING TYPES
+Recognized Lua types:
+nil, any, boolean, string, number, integer, function, table, thread, userdata, lightuserdata
+
+Optional types: boolean? means boolean|nil.
+
+Advanced type forms:
+Union: TYPE1 | TYPE2
+Array: VALUE_TYPE[]
+Tuple: [TYPE, TYPE]
+Dictionary: { [string]: TYPE }
+Key‑Value Table: table<KEY, VALUE>
+Table literal: { key: TYPE }
+Function: fun(PARAM: TYPE): RETURN_TYPE
+
+Example requiring parentheses:
+---@type (string | integer)[] myArray = {}
+
+SYNTAX LEGEND
+<value> required
+[value] optional
+[value...] repeatable
+value1 | value2 alternatives
+Other symbols literal.
+
+ANNOTATIONS LIST
+
+@alias
+Create your own type or enum (non‑runtime).
+Syntax: ---@alias <name> <type>
+
+@as
+Force a type onto an expression.
+Must use --[[@as <type>]]
+Arrays require --[=[@as string[]]=]
+
+@async
+Mark a function as asynchronous.
+---@async
+
+@cast
+Cast a variable to a type or types.
+---@cast <value> [+|-]type[, ...]
+
+@class
+Define a class.
+Supports inheritance and (exact).
+---@class [(exact)] <name>[: parent[, parent...]]
+
+@deprecated
+Mark a function as deprecated.
+---@deprecated
+
+@diagnostic
+Enable/disable diagnostics.
+---@diagnostic <state>:<diagnostic>[, ...]
+
+States: disable-next-line, disable-line, disable, enable.
+
+@enum
+Mark a table as an enum.
+---@enum [(key)] <name>
+
+@field
+Define a field inside a class.
+---@field [scope] <name?> <type> [description]
+Scopes: private, protected, public, package.
+
+@generic
+Define generics.
+---@generic <name>[:parent][, ...]
+
+Capturing generics uses backticks: `T`
+
+@meta
+Mark a file as a meta definition file.
+---@meta [name]
+
+@module
+Simulate require.
+---@module 'module_name'
+
+@nodiscard
+Mark a function’s return values as required.
+---@nodiscard
+
+@operator
+Declare operator metamethod types.
+---@operator <operation>[(param)]:return
+
+@overload
+Add an additional function signature.
+---@overload fun(params): returns
+
+@package
+Mark a function as private to the file.
+---@package
+
+@param
+Define a function parameter.
+---@param <name?> <type> [description]
+
+@private
+Mark a function as private to a class.
+---@private
+
+@protected
+Mark a function as protected within a class.
+---@protected
+
+@return
+Define a return value.
+---@return <type> [name [comment] | name #comment]
+
+@see
+Reference a symbol.
+---@see <symbol>
+
+@source
+Point to source code in another file.
+---@source <path>
+
+@type
+Mark a variable as a type.
+---@type <type>
+
+@vararg
+Legacy EmmyLua vararg annotation.
+Deprecated.
+---@vararg <type>
+
+@version
+Mark required Lua version.
+---@version [<|>]version[, ...]
+
+Possible versions: 5.1, 5.2, 5.3, 5.4, JIT.
+
+END OF DOCUMENT
