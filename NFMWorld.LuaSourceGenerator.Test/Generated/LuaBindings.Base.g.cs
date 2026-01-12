@@ -283,6 +283,37 @@ public partial class LuaBindings
 
         if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
 
+        // Handle Lua tables being converted to arrays
+        if (luaType == LUA_TTABLE && typeof(T).IsArray)
+        {
+            var elementType = typeof(T).GetElementType()!;
+            
+            // Get the length of the table
+            var length = (int)lua_objlen(L, idx);
+            
+            // Create the array
+            var array = Array.CreateInstance(elementType, length);
+            
+            // Convert each element
+            var toObjectMethod = typeof(LuaBindings).GetMethod("ToObject", BindingFlags.NonPublic | BindingFlags.Static)!
+                .MakeGenericMethod(elementType);
+            
+            for (int i = 0; i < length; i++)
+            {
+                // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                lua_rawgeti(L, idx, i + 1);
+                
+                // Convert the element
+                var element = toObjectMethod.Invoke(null, new object[] { L, -1 });
+                array.SetValue(element, i);
+                
+                // Pop the element from stack
+                lua_pop(L, 1);
+            }
+            
+            return (T)(object)array;
+        }
+
         // Handle userdata (objects, structs, arrays, etc.)
         if (luaType == LUA_TUSERDATA)
         {

@@ -35,7 +35,7 @@ public static class Program
         // Set up custom assembly load context to resolve dependencies from .deps.json
         var loadContext = new DependencyLoadContext(inputAssemblyPath);
         var assembly = loadContext.LoadFromAssemblyPath(inputAssemblyPath);
-        
+
         var generator = new LuaBindingGenerator(assembly, @namespace);
         generator.GenerateToFiles(outputDirectory);
         Console.WriteLine($"Generated Lua bindings written to {outputDirectory}");
@@ -53,7 +53,7 @@ internal class DependencyLoadContext : AssemblyLoadContext
     public DependencyLoadContext(string mainAssemblyPath)
     {
         _resolver = new AssemblyDependencyResolver(mainAssemblyPath);
-        
+
         // Try to load and parse .deps.json file
         var depsJsonPath = Path.ChangeExtension(mainAssemblyPath, ".deps.json");
         if (File.Exists(depsJsonPath))
@@ -73,7 +73,7 @@ internal class DependencyLoadContext : AssemblyLoadContext
     {
         var json = File.ReadAllText(depsJsonPath);
         using var doc = JsonDocument.Parse(json);
-        
+
         if (!doc.RootElement.TryGetProperty("targets", out var targets))
             return;
 
@@ -89,7 +89,7 @@ internal class DependencyLoadContext : AssemblyLoadContext
                 {
                     var assemblyName = Path.GetFileNameWithoutExtension(runtimeAssembly.Name);
                     var assemblyPath = Path.Combine(assemblyDirectory, runtimeAssembly.Name.Replace('/', Path.DirectorySeparatorChar));
-                    
+
                     if (File.Exists(assemblyPath))
                     {
                         _assemblyPaths[assemblyName] = assemblyPath;
@@ -223,7 +223,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // Skip ref structs - they cannot be marshalled to Lua
                 if (IsRefStruct(type))
             continue;
-                
+
                 // Extract the Name property if it exists
                 string? customName = null;
                 var nameProperty = luaVisibleAttr.NamedArguments
@@ -369,10 +369,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // Allow nested types of constructed generics (e.g., List<int>.Enumerator)
             // The DeclaringType will be the generic definition (List`1), but if the nested type
             // itself has all generic parameters resolved, it means it's from a constructed generic
-            bool isFromConstructedGeneric = type.DeclaringType != null && 
-                                           type.DeclaringType.IsGenericType && 
+            bool isFromConstructedGeneric = type.DeclaringType != null &&
+                                           type.DeclaringType.IsGenericType &&
                                            !type.ContainsGenericParameters;
-            
+
             if (!isFromConstructedGeneric)
                 return;
         }
@@ -445,7 +445,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // For List<int>.Enumerator, the Enumerator shares the same generic argument as List
                 var declaringTypeArgs = type.GetGenericArguments();
                 var declaringTypeArgCount = type.DeclaringType.GetGenericArguments().Length;
-                
+
                 // Build the declaring type name with its generic arguments
                 var declaringBaseName = type.DeclaringType.Name.Split('`')[0];
                 if (declaringTypeArgCount > 0 && declaringTypeArgs.Length >= declaringTypeArgCount)
@@ -796,6 +796,37 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
 
                     if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
+
+                    // Handle Lua tables being converted to arrays
+                    if (luaType == LUA_TTABLE && typeof(T).IsArray)
+                    {
+                        var elementType = typeof(T).GetElementType()!;
+                        
+                        // Get the length of the table
+                        var length = (int)lua_objlen(L, idx);
+                        
+                        // Create the array
+                        var array = Array.CreateInstance(elementType, length);
+                        
+                        // Convert each element
+                        var toObjectMethod = typeof(LuaBindings).GetMethod("ToObject", BindingFlags.NonPublic | BindingFlags.Static)!
+                            .MakeGenericMethod(elementType);
+                        
+                        for (int i = 0; i < length; i++)
+                        {
+                            // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                            lua_rawgeti(L, idx, i + 1);
+                            
+                            // Convert the element
+                            var element = toObjectMethod.Invoke(null, new object[] { L, -1 });
+                            array.SetValue(element, i);
+                            
+                            // Pop the element from stack
+                            lua_pop(L, 1);
+                        }
+                        
+                        return (T)(object)array;
+                    }
 
                     // Handle userdata (objects, structs, arrays, etc.)
                     if (luaType == LUA_TUSERDATA)
@@ -2172,7 +2203,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                 // Get generic args that belong to the declaring type
                 var declaringTypeArgs = allGenericArgs.Take(declaringTypeArgCount).ToArray();
-                
+
                 // Get generic args that belong to this nested type only
                 var nestedGenericArgs = allGenericArgs.Skip(declaringTypeArgCount).ToArray();
 
@@ -2251,11 +2282,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // We need to reconstruct the declaring type with those arguments.
                 var allGenericArgs = type.GetGenericArguments();
                 var declaringTypeArgCount = type.DeclaringType.GetGenericArguments().Length;
-                
+
                 // Get the declaring type's base name and namespace
                 var declaringNamespace = type.DeclaringType.Namespace;
                 var declaringBaseName = type.DeclaringType.Name.Split('`')[0];
-                
+
                 // Build the full declaring type name with generic arguments
                 string declaringTypeName;
                 if (declaringTypeArgCount > 0 && allGenericArgs.Length >= declaringTypeArgCount)

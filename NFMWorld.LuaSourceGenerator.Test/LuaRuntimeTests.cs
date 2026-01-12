@@ -2133,13 +2133,13 @@ public class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             local obj = TypeWithNestedGeneric.new()
             local enumerator = obj:getEnumerator()
-            
+
             local values = {}
             while enumerator:moveNext() do
                 local current = enumerator.current
                 table.insert(values, current)
             end
-            
+
             return values[1], values[2], values[3], values[4], values[5]
         ");
         AssertLuaOk(result);
@@ -2163,13 +2163,13 @@ public class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             local obj = TypeWithNestedGeneric.new()
             local enumerator = obj:getStringEnumerator()
-            
+
             local values = {}
             while enumerator:moveNext() do
                 local current = enumerator.current
                 table.insert(values, current)
             end
-            
+
             return #values, values[1], values[2], values[3]
         ");
         AssertLuaOk(result);
@@ -2191,14 +2191,14 @@ public class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             local obj = TypeWithNestedGeneric.new()
             local enumerator = obj:getEnumerator()
-            
+
             -- Access current before MoveNext (should be default value 0)
             local currentBefore = enumerator.current
-            
+
             -- Now move to first element
             enumerator:moveNext()
             local currentAfter = enumerator.current
-            
+
             return currentBefore, currentAfter
         ");
         AssertLuaOk(result);
@@ -2208,6 +2208,93 @@ public class LuaRuntimeTests
 
         Assert.AreEqual(0, before);
         Assert.AreEqual(1, after);
+    }
+
+    #endregion
+
+    #region TypeWithArrays Tests (Table to Array Conversion)
+
+    [TestMethod]
+    public void TypeWithArrays_Constructor_AcceptsLuaTable()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new({1, 2, 3, 4, 5})
+            return obj:sumNumbers()
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        Assert.AreEqual(15, sum);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_MethodParameter_AcceptsLuaTable()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new()
+            obj:setNumbers({10, 20, 30})
+            return obj:sumNumbers()
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        Assert.AreEqual(60, sum);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_PropertySetter_AcceptsLuaTable()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new()
+            obj.numbers = {5, 10, 15}
+            return obj:getLength()
+        ");
+        AssertLuaOk(result);
+
+        var length = lua_tointeger(_L, -1);
+        Assert.AreEqual(3, length);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_StringArray_AcceptsLuaTable()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new()
+            obj:setNames({'Alice', 'Bob', 'Charlie'})
+            return obj:concatenateNames()
+        ");
+        AssertLuaOk(result);
+
+        var names = lua_tostring(_L, -1);
+        Assert.AreEqual("Alice, Bob, Charlie", names);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_EmptyTable_CreatesEmptyArray()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new()
+            obj:setNumbers({})
+            return obj:getLength()
+        ");
+        AssertLuaOk(result);
+
+        var length = lua_tointeger(_L, -1);
+        Assert.AreEqual(0, length);
+    }
+
+    [TestMethod]
+    public void TypeWithArrays_MultipleArrayParameters_AcceptsLuaTables()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithArrays.new({'John', 'Jane'}, {1.1, 2.2, 3.3})
+            local names = obj:concatenateNames()
+            return names
+        ");
+        AssertLuaOk(result);
+
+        var names = lua_tostring(_L, -1);
+        Assert.AreEqual("John, Jane", names);
     }
 
     #endregion
