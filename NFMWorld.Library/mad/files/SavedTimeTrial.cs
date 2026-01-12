@@ -8,7 +8,7 @@ using nfm_world.multiplayer.packets;
 
 namespace nfm_world.files;
 
-[MessagePackObject]
+[MessagePackObject(AllowPrivate = true)]
 public partial class SavedTimeTrial
 {
     public const int CURRENT_VERSION = 2;
