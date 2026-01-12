@@ -621,7 +621,8 @@ private static T? ToObject<T>(lua_State L, int idx)
     /// </summary>
     private static lua_CFunction KeepAlive(lua_CFunction func)
     {
-        _delegates.Add(func);
+        // Static methods are not collected, so no need to track them
+        // _delegates.Add(func);
         return func;
     }
 
