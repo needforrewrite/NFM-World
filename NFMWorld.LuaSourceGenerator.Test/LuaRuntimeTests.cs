@@ -2289,4 +2289,122 @@ public class LuaRuntimeTests
     }
 
     #endregion
+
+    #region InlineArray Tests
+
+    [TestMethod]
+    public void InlineBuffer_CanReadIndices()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithInlineArray.new()
+            return obj.buffer[1], obj.buffer[5], obj.buffer[10]
+        ");
+        AssertLuaOk(result);
+
+        var val1 = lua_tointeger(_L, -3);
+        var val5 = lua_tointeger(_L, -2);
+        var val10 = lua_tointeger(_L, -1);
+        Assert.AreEqual(0, val1);   // buffer[0] = 0 * 10
+        Assert.AreEqual(40, val5);  // buffer[4] = 4 * 10
+        Assert.AreEqual(90, val10); // buffer[9] = 9 * 10
+    }
+
+    [TestMethod]
+    public void InlineBuffer_CanWriteIndices()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithInlineArray.new()
+            obj.buffer[1] = 100
+            obj.buffer[5] = 200
+            obj.buffer[10] = 300
+            return obj:sumBuffer()
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        // Original sum: 0+10+20+30+40+50+60+70+80+90 = 450
+        // After changes: 100+10+20+30+200+50+60+70+80+300 = 920
+        Assert.AreEqual(920, sum);
+    }
+
+    [TestMethod]
+    public void InlineBuffer_OutOfRangeIndex_ThrowsError()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithInlineArray.new()
+            return obj.buffer[11]
+        ");
+        
+        Assert.AreNotEqual(LUA_OK, result);
+        var error = lua_tostring(_L, -1);
+        Assert.IsTrue(error?.Contains("Index out of range") == true);
+    }
+
+    [TestMethod]
+    public void InlineBuffer_ZeroIndex_ThrowsError()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithInlineArray.new()
+            return obj.buffer[0]
+        ");
+        
+        Assert.AreNotEqual(LUA_OK, result);
+        var error = lua_tostring(_L, -1);
+        Assert.IsTrue(error?.Contains("Index out of range") == true);
+    }
+
+    [TestMethod]
+    public void InlineBuffer_IterateAllElements()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithInlineArray.new()
+            local sum = 0
+            for i = 1, 10 do
+                sum = sum + obj.buffer[i]
+            end
+            return sum
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        // 0+10+20+30+40+50+60+70+80+90 = 450
+        Assert.AreEqual(450, sum);
+    }
+
+    [TestMethod]
+    public void InlineBuffer_ModifyThroughMethods()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithInlineArray.new()
+            obj:setBufferValue(0, 999)
+            return obj:getBufferValue(0)
+        ");
+        AssertLuaOk(result);
+
+        var value = lua_tointeger(_L, -1);
+        Assert.AreEqual(999, value);
+    }
+
+    [TestMethod]
+    public void InlineBuffer_DirectCreation_CanReadWrite()
+    {
+        // When InlineBuffer is created directly (not as a field), read/write works
+        var result = luaL_dostring(_L, @"
+            local buf = InlineBuffer.new()
+            buf[1] = 10
+            buf[5] = 50
+            buf[10] = 100
+            return buf[1], buf[5], buf[10]
+        ");
+        AssertLuaOk(result);
+
+        var val1 = lua_tointeger(_L, -3);
+        var val5 = lua_tointeger(_L, -2);
+        var val10 = lua_tointeger(_L, -1);
+        Assert.AreEqual(10, val1);
+        Assert.AreEqual(50, val5);
+        Assert.AreEqual(100, val10);
+    }
+
+    #endregion
 }

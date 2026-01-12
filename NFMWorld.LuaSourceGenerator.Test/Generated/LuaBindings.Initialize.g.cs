@@ -15,6 +15,8 @@ public partial class LuaBindings
     /// </summary>
     public static void Initialize(lua_State L)
     {
+        Register_InlineBuffer(L);
+        Register_TypeWithInlineArray(L);
         Register_TypeWithArrays(L);
         Register_TypeWithIndexers(L);
         Register_TypeWithMultiDimArray(L);

@@ -190,6 +190,41 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     }
 
     /// <summary>
+    /// Check if a type has the InlineArrayAttribute (indexable types without reflection-visible indexers).
+    /// </summary>
+    private static bool HasInlineArrayAttribute(Type type)
+    {
+        return type.GetCustomAttributesData()
+            .Any(a => a.AttributeType.Name == "InlineArrayAttribute" || a.AttributeType.FullName == "System.Runtime.CompilerServices.InlineArrayAttribute");
+    }
+
+    /// <summary>
+    /// Get the length of an inline array from its InlineArrayAttribute.
+    /// Returns null if the type doesn't have the attribute.
+    /// </summary>
+    private static int? GetInlineArrayLength(Type type)
+    {
+        var attr = type.GetCustomAttributesData()
+            .FirstOrDefault(a => a.AttributeType.Name == "InlineArrayAttribute" || a.AttributeType.FullName == "System.Runtime.CompilerServices.InlineArrayAttribute");
+        
+        if (attr != null && attr.ConstructorArguments.Count > 0)
+        {
+            return (int)attr.ConstructorArguments[0].Value!;
+        }
+        
+        return null;
+    }
+
+    /// <summary>
+    /// Get the element type of an inline array by finding its first field.
+    /// </summary>
+    private static Type? GetInlineArrayElementType(Type type)
+    {
+        var field = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).FirstOrDefault();
+        return field?.FieldType;
+    }
+
+    /// <summary>
     /// Check if a method has any byref parameters (ref, out, in).
     /// </summary>
     private static bool HasByRefParameters(MethodBase method)
@@ -483,6 +518,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // Map object IDs to their .NET types (for overload resolution)
                 private static readonly Dictionary<int, Type> _objectTypes = new();
 
+                // Track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
+                private static readonly Dictionary<int, (int parentId, string memberName, Type parentType)> _structParents = new();
+
                 private static class TypeInfo<T>
                 {
                     // Maps C# types to their Lua metatable names
@@ -502,6 +540,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     _nextObjectId = 1;
                     _objects.Clear();
                     _objectTypes.Clear();
+                    _structParents.Clear();
             """);
 
         _indent += 2;
@@ -554,6 +593,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 {
                     _objects.Remove(id);
                     _objectTypes.Remove(id);
+                    _structParents.Remove(id);
                     _objectCount--;
                 }
 
@@ -599,6 +639,20 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 }
 
                 /// <summary>
+                /// Push a struct userdata with parent tracking (for field/property access).
+                /// When the struct is modified, changes will be written back to the parent.
+                /// </summary>
+                private static void PushStructWithParent<T>(lua_State L, T obj, string metatableName, int parentId, string memberName, Type parentType) where T : struct
+                {
+                    var id = StoreObject(obj);
+                    _structParents[id] = (parentId, memberName, parentType);
+                    var ptr = lua_newuserdata(L, (ulong)sizeof(int));
+                    unsafe { *(int*)ptr = id; }
+                    luaL_getmetatable(L, metatableName);
+                    lua_setmetatable(L, -2);
+                }
+
+                /// <summary>
                 /// Get a managed reference type object from userdata at stack index.
                 /// </summary>
                 private static T? GetObjectFromStack<T>(lua_State L, int idx) where T : class
@@ -631,6 +685,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// <summary>
                 /// Update a struct in storage (for mutable operations that create copies).
                 /// This maintains value type semantics where mutations create new values.
+                /// If the struct has a parent relationship, also writes it back to the parent's field.
                 /// </summary>
                 private static void UpdateStruct<T>(lua_State L, int idx, T value) where T : struct
                 {
@@ -640,6 +695,29 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     {
                         var id = *(int*)ptr;
                         _objects.GetOrAddValueRef(id) = value;
+                        
+                        // If this struct has a parent, write it back to the parent's field
+                        if (_structParents.TryGetValue(id, out var parentInfo))
+                        {
+                            var (parentId, memberName, parentType) = parentInfo;
+                            if (_objects.TryGetValue(parentId, out var parentObj))
+                            {
+                                // Use reflection to set the field/property on the parent
+                                var field = parentType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance);
+                                if (field != null)
+                                {
+                                    field.SetValue(parentObj, value);
+                                }
+                                else
+                                {
+                                    var property = parentType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);
+                                    if (property != null && property.CanWrite)
+                                    {
+                                        property.SetValue(parentObj, value);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -1515,7 +1593,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             p.GetIndexParameters().Length > 0)
                 .ToList();
 
-            if (isArray || indexers.Count > 0)
+            var isInlineArray = HasInlineArrayAttribute(type);
+            var inlineArrayLength = isInlineArray ? GetInlineArrayLength(type) : null;
+            var inlineArrayElementType = isInlineArray ? GetInlineArrayElementType(type) : null;
+
+            if (isArray || indexers.Count > 0 || isInlineArray)
             {
                 AppendLine("// Check if key is a number (array/indexer access)");
                 AppendLine("if (lua_type(L, 2) == LUA_TNUMBER)");
@@ -1569,6 +1651,27 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             AppendLine("lua_pushnil(L);");
                             AppendLine("return 1;");
                         }
+                    }
+                    else if (isInlineArray && inlineArrayElementType != null)
+                    {
+                        // Handle inline array indexing
+                        AppendLine("// Inline array indexing (single int index)");
+                        AppendLine("var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed");
+                        if (inlineArrayLength.HasValue)
+                        {
+                            AppendLine($"if (index < 0 || index >= {inlineArrayLength.Value})");
+                            AppendLine("{");
+                            using (Indent())
+                            {
+                                AppendLine("return luaL_error(L, \"Index out of range\");");
+                            }
+                            AppendLine("}");
+                        }
+                        var elementTypeName = GetFullTypeName(inlineArrayElementType);
+                        AppendLine($"var span = System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref System.Runtime.CompilerServices.Unsafe.As<{fullTypeName}, {elementTypeName}>(ref obj), {inlineArrayLength ?? 1});");
+                        AppendLine("var element = span[index];");
+                        GeneratePushValue("element", inlineArrayElementType);
+                        AppendLine("return 1;");
                     }
                 }
                 AppendLine("}");
@@ -1673,8 +1776,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        GeneratePushValue($"obj.{prop.Name}", prop.PropertyType);
-                        AppendLine("return 1;");
+                        GeneratePushValueWithParentTracking($"obj.{prop.Name}", prop.PropertyType, type, prop.Name, isStruct);
                     }
                 }
 
@@ -1689,8 +1791,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        GeneratePushValue($"obj.{field.Name}", field.FieldType);
-                        AppendLine("return 1;");
+                        GeneratePushValueWithParentTracking($"obj.{field.Name}", field.FieldType, type, field.Name, isStruct);
                     }
                 }
 
@@ -1757,7 +1858,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             p.GetIndexParameters().Length > 0)
                 .ToList();
 
-            if (isArray || indexers.Count > 0)
+            var isInlineArray = HasInlineArrayAttribute(type);
+            var inlineArrayLength = isInlineArray ? GetInlineArrayLength(type) : null;
+            var inlineArrayElementType = isInlineArray ? GetInlineArrayElementType(type) : null;
+
+            if (isArray || indexers.Count > 0 || isInlineArray)
             {
                 AppendLine("// Check if key is a number (array/indexer assignment)");
                 AppendLine("if (lua_type(L, 2) == LUA_TNUMBER)");
@@ -1809,6 +1914,31 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         {
                             AppendLine("return 0;");
                         }
+                    }
+                    else if (isInlineArray && inlineArrayElementType != null)
+                    {
+                        // Handle inline array indexing
+                        AppendLine("// Inline array indexing (single int index)");
+                        AppendLine("var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed");
+                        if (inlineArrayLength.HasValue)
+                        {
+                            AppendLine($"if (index < 0 || index >= {inlineArrayLength.Value})");
+                            AppendLine("{");
+                            using (Indent())
+                            {
+                                AppendLine("return luaL_error(L, \"Index out of range\");");
+                            }
+                            AppendLine("}");
+                        }
+                        var elementTypeName = GetFullTypeName(inlineArrayElementType);
+                        AppendLine($"var span = System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref System.Runtime.CompilerServices.Unsafe.As<{fullTypeName}, {elementTypeName}>(ref obj), {inlineArrayLength ?? 1});");
+                        AppendLine($"var value = ToObject<{elementTypeName}>(L, 3)!;");
+                        AppendLine("span[index] = value;");
+                        if (isStruct)
+                        {
+                            AppendLine("UpdateStruct(L, 1, obj);");
+                        }
+                        AppendLine("return 0;");
                     }
                 }
                 AppendLine("}");
@@ -2800,6 +2930,72 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         else
         {
             AppendLine($"PushValue(L, {valueExpression});");
+        }
+    }
+
+    private void GeneratePushValueWithParentTracking(string valueExpression, Type type, Type parentType, string memberName, bool isStruct)
+    {
+        // Only use parent tracking for value types (structs)
+        if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && !IsNullable(type))
+        {
+            var metatable = GetSafeTypeName(type);
+            var parentTypeName = GetFullTypeName(parentType);
+            
+            if (isStruct)
+            {
+                // For structs, we need to get the ID from userdata on the stack
+                AppendLine("{");
+                using (Indent())
+                {
+                    AppendLine("var ptr = lua_touserdata(L, 1);");
+                    AppendLine("if (ptr != 0)");
+                    AppendLine("{");
+                    using (Indent())
+                    {
+                        AppendLine("unsafe");
+                        AppendLine("{");
+                        using (Indent())
+                        {
+                            AppendLine("var parentId = *(int*)ptr;");
+                            AppendLine($"PushStructWithParent(L, {valueExpression}, \"MT_{metatable}\", parentId, \"{memberName}\", typeof({parentTypeName}));");
+                        }
+                        AppendLine("}");
+                    }
+                    AppendLine("}");
+                }
+                AppendLine("}");
+                AppendLine("return 1;");
+            }
+            else
+            {
+                // For reference types (classes), we need to store the parent ID
+                AppendLine("{");
+                using (Indent())
+                {
+                    AppendLine($"var parentPtr = lua_touserdata(L, 1);");
+                    AppendLine("if (parentPtr != 0)");
+                    AppendLine("{");
+                    using (Indent())
+                    {
+                        AppendLine("unsafe");
+                        AppendLine("{");
+                        using (Indent())
+                        {
+                            AppendLine("var parentId = *(int*)parentPtr;");
+                            AppendLine($"PushStructWithParent(L, {valueExpression}, \"MT_{metatable}\", parentId, \"{memberName}\", typeof({parentTypeName}));");
+                        }
+                        AppendLine("}");
+                    }
+                    AppendLine("}");
+                }
+                AppendLine("}");
+                AppendLine("return 1;");
+            }
+        }
+        else
+        {
+            GeneratePushValue(valueExpression, type);
+            AppendLine("return 1;");
         }
     }
 
