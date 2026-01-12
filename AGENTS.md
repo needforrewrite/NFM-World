@@ -343,6 +343,16 @@ for (int i = 0; i < length; i++)
 }
 ```
 
+### 5. Constructor Overload Resolution
+
+**Behavior:** The generator scores constructor candidates and selects the best match based on parameter type compatibility.
+
+**Critical Distinction:** `int` vs `int?` (Nullable<int>) are **different types** at runtime:
+- `SampleClass.new(50, nil)` calls `(int, string)` constructor (exact match for first parameter)
+- `SampleClass.new(nil, "text")` calls `(int?, string?)` constructor (requires nullable for first parameter)
+
+**Implication:** If only the non-nullable constructor exists, passing `nil` for reference type parameters will pass `null` to C# without any null-coalescing. Test assumptions about which constructor is called carefully.
+
 ---
 
 ## LuaJIT FFI Function Reference
@@ -421,14 +431,31 @@ Applied to:
 
 **Result:** Now you can write: `obj:setNumbers({1, 2, 3})` in Lua!
 
+### 5. Overload Resolution System
+**Issue:** Multiple overloads with same argument count generated duplicate/broken code.
+
+**Solution:** Implemented intelligent overload resolution:
+- Refactored to non-generic object storage (`_objects`, `_objectTypes`) for runtime type queries
+- Added `GetUserdataType()` and `GetLuaStackValueType()` for type detection
+- Created `ScoreParameterCompatibility()` with range-aware numeric type matching:
+  - Integer values: Prefers `int`/`long` with range checking (2147483648 → `long`, not `int`)
+  - Floating-point values: Prefers `double`/`float`
+  - Exact type matches score 100, compatible conversions score lower
+- Applied overload resolution to operators, constructors, static methods, instance methods
+- Fixed switch case scope issues by wrapping cases in braces
+
+**Test Coverage:** Added `TypeWithOverloads` fixture with 22 tests:
+- 3 constructor overloads (int/float/string)
+- 16 method overloads (ProcessNumber, ProcessData, Combine, StaticProcess)
+- 6 operator overloads (unary minus, 3 addition variants, 2 subtraction variants)
+
+**Result:** Generator now correctly handles methods like `ProcessNumber(int)`, `ProcessNumber(double)`, `ProcessNumber(long)`, `ProcessNumber(float)` and selects the best match based on Lua argument types.
+
 ---
 
 ## Test Status
 
-**Total Tests:** 190
-- **Original:** 184
-- **Nested Generic Tests:** 3
-- **Array Conversion Tests:** 6
+**Total Tests:** 245
 - **Status:** ✅ All passing
 
 ---
