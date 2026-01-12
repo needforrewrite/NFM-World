@@ -166,8 +166,30 @@ public partial class LuaBindings
 
     private static int Int32Array2D_new(lua_State L)
     {
-        luaL_error(L, "Cannot directly construct arrays. Use array creation methods instead.");
-        return 0;
+        var argCount = lua_gettop(L);
+
+        if (argCount != 2)
+        {
+            luaL_error(L, "Expected 2 arguments (dimensions) for 2D array constructor");
+            return 0;
+        }
+
+        var dim0 = (int)lua_tointeger(L, 1);
+        if (dim0 < 0)
+        {
+            luaL_error(L, "Array dimension 0 must be non-negative");
+            return 0;
+        }
+        var dim1 = (int)lua_tointeger(L, 2);
+        if (dim1 < 0)
+        {
+            luaL_error(L, "Array dimension 1 must be non-negative");
+            return 0;
+        }
+
+        var array = new int[dim0, dim1];
+        PushObject(L, array, "MT_Int32Array2D");
+        return 1;
     }
 
 }

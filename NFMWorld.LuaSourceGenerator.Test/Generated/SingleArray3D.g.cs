@@ -166,8 +166,36 @@ public partial class LuaBindings
 
     private static int SingleArray3D_new(lua_State L)
     {
-        luaL_error(L, "Cannot directly construct arrays. Use array creation methods instead.");
-        return 0;
+        var argCount = lua_gettop(L);
+
+        if (argCount != 3)
+        {
+            luaL_error(L, "Expected 3 arguments (dimensions) for 3D array constructor");
+            return 0;
+        }
+
+        var dim0 = (int)lua_tointeger(L, 1);
+        if (dim0 < 0)
+        {
+            luaL_error(L, "Array dimension 0 must be non-negative");
+            return 0;
+        }
+        var dim1 = (int)lua_tointeger(L, 2);
+        if (dim1 < 0)
+        {
+            luaL_error(L, "Array dimension 1 must be non-negative");
+            return 0;
+        }
+        var dim2 = (int)lua_tointeger(L, 3);
+        if (dim2 < 0)
+        {
+            luaL_error(L, "Array dimension 2 must be non-negative");
+            return 0;
+        }
+
+        var array = new float[dim0, dim1, dim2];
+        PushObject(L, array, "MT_SingleArray3D");
+        return 1;
     }
 
 }

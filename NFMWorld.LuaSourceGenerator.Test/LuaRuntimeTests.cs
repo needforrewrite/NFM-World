@@ -2287,6 +2287,249 @@ public class LuaRuntimeTests
 
     #endregion
 
+    #region Array Constructor Tests
+
+    [TestMethod]
+    public void Array1D_ConstructorWithLength_CreatesArray()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt32.new(5)
+            return arr ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil);
+    }
+
+    [TestMethod]
+    public void Array1D_ConstructorWithLength_CanReadWrite()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt32.new(5)
+            arr[1] = 10
+            arr[2] = 20
+            arr[5] = 50
+            return arr[1], arr[2], arr[5]
+        ");
+        AssertLuaOk(result);
+
+        var val1 = lua_tointeger(_L, -3);
+        var val2 = lua_tointeger(_L, -2);
+        var val5 = lua_tointeger(_L, -1);
+        Assert.AreEqual(10, val1);
+        Assert.AreEqual(20, val2);
+        Assert.AreEqual(50, val5);
+    }
+
+    [TestMethod]
+    public void Array1D_ConstructorWithZeroLength_CreatesEmptyArray()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt32.new(0)
+            return arr ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil);
+    }
+
+    [TestMethod]
+    public void Array1D_ConstructorWithNegativeLength_ThrowsError()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt32.new(-5)
+            return arr
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var error = lua_tostring(_L, -1);
+        Assert.IsTrue(error?.Contains("must be non-negative") == true);
+    }
+
+    [TestMethod]
+    public void Array1D_StringArray_ConstructorWithLength()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfString.new(3)
+            arr[1] = 'hello'
+            arr[2] = 'world'
+            arr[3] = '!'
+            return arr[1], arr[2], arr[3]
+        ");
+        AssertLuaOk(result);
+
+        var val1 = lua_tostring(_L, -3);
+        var val2 = lua_tostring(_L, -2);
+        var val3 = lua_tostring(_L, -1);
+        Assert.AreEqual("hello", val1);
+        Assert.AreEqual("world", val2);
+        Assert.AreEqual("!", val3);
+    }
+
+    [TestMethod]
+    public void Array2D_ConstructorWithDimensions_CreatesArray()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt322D.new(3, 4)
+            return arr ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil);
+    }
+
+    [TestMethod]
+    public void Array2D_ConstructorWithDimensions_CanReadWrite()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt322D.new(3, 4)
+            arr[{1, 1}] = 11
+            arr[{1, 2}] = 12
+            arr[{2, 3}] = 23
+            arr[{3, 4}] = 34
+            return arr[{1, 1}], arr[{1, 2}], arr[{2, 3}], arr[{3, 4}]
+        ");
+        AssertLuaOk(result);
+
+        var val11 = lua_tointeger(_L, -4);
+        var val12 = lua_tointeger(_L, -3);
+        var val23 = lua_tointeger(_L, -2);
+        var val34 = lua_tointeger(_L, -1);
+        Assert.AreEqual(11, val11);
+        Assert.AreEqual(12, val12);
+        Assert.AreEqual(23, val23);
+        Assert.AreEqual(34, val34);
+    }
+
+    [TestMethod]
+    public void Array2D_ConstructorWrongArgCount_ThrowsError()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt322D.new(3)
+            return arr
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var error = lua_tostring(_L, -1);
+        Assert.IsTrue(error?.Contains("Expected 2 arguments") == true);
+    }
+
+    [TestMethod]
+    public void Array2D_ConstructorWithZeroDimension_CreatesArray()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt322D.new(0, 5)
+            return arr ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil);
+    }
+
+    [TestMethod]
+    public void Array2D_ConstructorWithNegativeDimension_ThrowsError()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt322D.new(3, -4)
+            return arr
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var error = lua_tostring(_L, -1);
+        Assert.IsTrue(error?.Contains("must be non-negative") == true);
+    }
+
+    [TestMethod]
+    public void Array3D_ConstructorWithDimensions_CreatesArray()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfSingle3D.new(2, 3, 4)
+            return arr ~= nil
+        ");
+        AssertLuaOk(result);
+
+        var notNil = lua_toboolean(_L, -1);
+        Assert.AreEqual(1, notNil);
+    }
+
+    [TestMethod]
+    public void Array3D_ConstructorWithDimensions_CanReadWrite()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfSingle3D.new(2, 3, 4)
+            arr[{1, 1, 1}] = 1.5
+            arr[{1, 2, 3}] = 2.5
+            arr[{2, 3, 4}] = 9.5
+            return arr[{1, 1, 1}], arr[{1, 2, 3}], arr[{2, 3, 4}]
+        ");
+        AssertLuaOk(result);
+
+        var val111 = lua_tonumber(_L, -3);
+        var val123 = lua_tonumber(_L, -2);
+        var val234 = lua_tonumber(_L, -1);
+        Assert.AreEqual(1.5, val111, 0.01);
+        Assert.AreEqual(2.5, val123, 0.01);
+        Assert.AreEqual(9.5, val234, 0.01);
+    }
+
+    [TestMethod]
+    public void Array3D_ConstructorWrongArgCount_ThrowsError()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfSingle3D.new(2, 3)
+            return arr
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var error = lua_tostring(_L, -1);
+        Assert.IsTrue(error?.Contains("Expected 3 arguments") == true);
+    }
+
+    [TestMethod]
+    public void ArrayConstructor_CanPassToMethod()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt32.new(5)
+            arr[1] = 1
+            arr[2] = 2
+            arr[3] = 3
+            arr[4] = 4
+            arr[5] = 5
+
+            local obj = TypeWithArrays.new(arr)
+            return obj:sumNumbers()
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        Assert.AreEqual(15, sum);
+    }
+
+    [TestMethod]
+    public void Array2DConstructor_CanPassToTypeWithMultiDimArray()
+    {
+        var result = luaL_dostring(_L, @"
+            local arr = ArrayOfInt322D.new(2, 2)
+            arr[{1, 1}] = 1
+            arr[{1, 2}] = 2
+            arr[{2, 1}] = 3
+            arr[{2, 2}] = 4
+
+            local obj = TypeWithMultiDimArray.new(arr)
+            return obj:sumAll()
+        ");
+        AssertLuaOk(result);
+
+        var sum = lua_tointeger(_L, -1);
+        Assert.AreEqual(10, sum);
+    }
+
+    #endregion
+
     #region InlineArray Tests
 
     [TestMethod]

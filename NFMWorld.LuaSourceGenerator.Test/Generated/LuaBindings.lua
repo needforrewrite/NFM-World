@@ -1368,9 +1368,10 @@ local ArrayOfInt322DInstance = {}
 
 ---@class (exact) ArrayOfInt322D : Array
 ---Creates a new ArrayOfInt322D
----@param length integer
+---@param dim0 integer
+---@param dim1 integer
 ---@return integer[]
-function ArrayOfInt322D.new(length) end
+function ArrayOfInt322D.new(dim0, dim1) end
 
 ---@param self integer[]
 ---@param param0 integer
@@ -1548,9 +1549,11 @@ local ArrayOfSingle3DInstance = {}
 
 ---@class (exact) ArrayOfSingle3D : Array
 ---Creates a new ArrayOfSingle3D
----@param length integer
+---@param dim0 integer
+---@param dim1 integer
+---@param dim2 integer
 ---@return number[]
-function ArrayOfSingle3D.new(length) end
+function ArrayOfSingle3D.new(dim0, dim1, dim2) end
 
 ---@param self number[]
 ---@param param0 integer

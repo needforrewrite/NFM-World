@@ -146,8 +146,24 @@ public partial class LuaBindings
 
     private static int Int32Array_new(lua_State L)
     {
-        luaL_error(L, "Cannot directly construct arrays. Use array creation methods instead.");
-        return 0;
+        var argCount = lua_gettop(L);
+
+        if (argCount != 1)
+        {
+            luaL_error(L, "Expected 1 argument (length) for 1D array constructor");
+            return 0;
+        }
+
+        var dim0 = (int)lua_tointeger(L, 1);
+        if (dim0 < 0)
+        {
+            luaL_error(L, "Array dimension 0 must be non-negative");
+            return 0;
+        }
+
+        var array = new int[dim0];
+        PushObject(L, array, "MT_Int32Array");
+        return 1;
     }
 
 }

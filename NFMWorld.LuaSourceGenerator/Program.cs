@@ -511,11 +511,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             public partial class LuaBindings
             {
                 private static int _nextObjectId = 1;
-            
+
                 // Global storage for all managed objects (non-generic to allow runtime type queries), and  their .NET types (for overload resolution)
                 // Also track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
                 private static readonly DictionarySlim<int, (object Obj, Type Type, (int parentId, Action<object, object> updateStructInParent)? StructParents)> _objects = [];
-                
+
                 private static class TypeInfo<T>
                 {
                     // Maps C# types to their Lua metatable names
@@ -685,7 +685,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         var id = *(int*)ptr;
                         ref var existingValue = ref _objects.GetOrAddValueRef(id);
                         existingValue = (value, typeof(T), existingValue.StructParents);
-                        
+
                         // If this struct has a parent, write it back to the parent's field
                         if (existingValue.StructParents is {} parentInfo)
                         {
@@ -917,7 +917,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 #endregion
 
                 #region Overload Resolution
-            
+
                 /// <summary>
                 /// Score how compatible a Lua value is with a .NET parameter type.
                 /// Higher scores indicate better compatibility. -1 indicates incompatible.
@@ -925,34 +925,34 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 private static int ScoreParameterCompatibility<T>(lua_State L, int stackIdx)
                 {
                     var (luaType, dotnetType) = GetLuaStackValueType(L, stackIdx);
-                
+
                     // Nil can match nullable/reference types
                     if (luaType == LUA_TNIL)
                     {
                         return !typeof(T).IsValueType || Nullable.GetUnderlyingType(typeof(T)) != null ? 0 : -1;
                     }
-                
+
                     // Boolean matches
                     if (luaType == LUA_TBOOLEAN)
                     {
                         if (typeof(T) == typeof(bool)) return 100; // Exact match
                         return -1; // No implicit conversions from bool
                     }
-                
+
                     // String matches
                     if (luaType == LUA_TSTRING)
                     {
                         if (typeof(T) == typeof(string)) return 100; // Exact match
                         return -1; // No implicit conversions from string
                     }
-                
+
                     // Number matches (Lua numbers are always double)
                     if (luaType == LUA_TNUMBER)
                     {
                         // Check if the number is an integer value (no fractional part)
                         var numVal = lua_tonumber(L, stackIdx);
                         var isInteger = Math.Floor(numVal) == numVal;
-                
+
                         if (isInteger)
                         {
                             // For integer values, check range compatibility and prefer appropriate integer types
@@ -989,7 +989,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         }
                         return -1; // Not a numeric type
                     }
-                
+
                     // Table matches (can convert to 1D array)
                     if (luaType == LUA_TTABLE)
                     {
@@ -999,7 +999,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         }
                         return -1; // Tables don't convert to other types
                     }
-                
+
                     // Userdata matches (custom .NET types)
                     if (luaType == LUA_TUSERDATA && dotnetType != null)
                     {
@@ -1007,7 +1007,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         if (typeof(T).IsAssignableFrom(dotnetType)) return 80; // Inheritance/interface match
                         return -1; // Type mismatch
                     }
-                
+
                     return -1; // Unknown or incompatible
                 }
 
@@ -1165,11 +1165,33 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
         else
         {
-            // Array constructor
+            // Array constructor - generate based on rank
+            var rank = type.GetArrayRank();
             AppendLine($"---Creates a new {luaName}");
-            AppendLine($"---@param length integer");
+
+            if (rank == 1)
+            {
+                AppendLine($"---@param length integer");
+            }
+            else
+            {
+                for (int i = 0; i < rank; i++)
+                {
+                    AppendLine($"---@param dim{i} integer");
+                }
+            }
+
             AppendLine($"---@return {GetLuaStubTypeName(typeInfo.Type)}");
-            AppendLine($"function {luaName}.new(length) end");
+
+            if (rank == 1)
+            {
+                AppendLine($"function {luaName}.new(length) end");
+            }
+            else
+            {
+                var paramList = string.Join(", ", Enumerable.Range(0, rank).Select(i => $"dim{i}"));
+                AppendLine($"function {luaName}.new({paramList}) end");
+            }
             AppendLine();
         }
 
@@ -2270,15 +2292,65 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
     private void GenerateConstructorMethod(Type type, string safeName, bool isStruct, string fullTypeName)
     {
-        // Arrays don't have constructors - they're created via static methods or new T[size]
+        // Arrays have special constructor logic - create array with specified dimensions
         if (type.IsArray)
         {
+            var rank = type.GetArrayRank();
+            var elementType = type.GetElementType()!;
+            var elementTypeName = GetFullTypeName(elementType);
+
             AppendLine($"private static int {safeName}_new(lua_State L)");
             AppendLine("{");
             using (Indent())
             {
-                AppendLine($"luaL_error(L, \"Cannot directly construct arrays. Use array creation methods instead.\");");
-                AppendLine("return 0;");
+                AppendLine("var argCount = lua_gettop(L);");
+                AppendLine();
+
+                AppendLine($"if (argCount != {rank})");
+                AppendLine("{");
+                using (Indent())
+                {
+                    if (rank == 1)
+                    {
+                        AppendLine($"luaL_error(L, \"Expected 1 argument (length) for 1D array constructor\");");
+                    }
+                    else
+                    {
+                        AppendLine($"luaL_error(L, \"Expected {rank} arguments (dimensions) for {rank}D array constructor\");");
+                    }
+                    AppendLine("return 0;");
+                }
+                AppendLine("}");
+                AppendLine();
+
+                // Read dimension arguments
+                for (int i = 0; i < rank; i++)
+                {
+                    AppendLine($"var dim{i} = (int)lua_tointeger(L, {i + 1});");
+                    AppendLine($"if (dim{i} < 0)");
+                    AppendLine("{");
+                    using (Indent())
+                    {
+                        AppendLine($"luaL_error(L, \"Array dimension {i} must be non-negative\");");
+                        AppendLine("return 0;");
+                    }
+                    AppendLine("}");
+                }
+                AppendLine();
+
+                // Create the array
+                if (rank == 1)
+                {
+                    AppendLine($"var array = new {elementTypeName}[dim0];");
+                }
+                else
+                {
+                    var dimList = string.Join(", ", Enumerable.Range(0, rank).Select(i => $"dim{i}"));
+                    AppendLine($"var array = new {elementTypeName}[{dimList}];");
+                }
+
+                AppendLine($"PushObject(L, array, \"MT_{safeName}\");");
+                AppendLine("return 1;");
             }
             AppendLine("}");
             AppendLine();
