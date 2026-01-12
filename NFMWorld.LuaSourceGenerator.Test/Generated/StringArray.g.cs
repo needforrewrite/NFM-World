@@ -10,7 +10,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
-    // =========== Bindings for String[] (String[]) ===========
+    // =========== Bindings for String[] (ArrayOfString) ===========
     private static void Register_StringArray(lua_State L)
     {
         RegisterMetatable<string[]>("MT_StringArray");
@@ -36,14 +36,14 @@ public partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for String[]
+        // Create type table for ArrayOfString
         lua_newtable(L);
 
         // Constructor: new()
         lua_pushcfunction(L, KeepAlive(StringArray_new));
         lua_setfield(L, -2, "new");
 
-        lua_setglobal(L, "String[]");
+        lua_setglobal(L, "ArrayOfString");
     }
 
     private static int StringArray__gc(lua_State L)

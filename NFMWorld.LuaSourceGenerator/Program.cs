@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Maxine.Extensions;
 using nfm_world_library;
 using nfm_world_library.Lua;
@@ -149,8 +150,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
         else
         {
-            _sb.Append(new string(' ', _indent * 4));
-            _sb.AppendLine(line);
+            var indent = new string(' ', _indent * 4);
+            foreach (var range in line.AsSpan().Split('\n'))
+            {
+                _sb.Append(indent);
+                _sb.AppendLine($"{line.AsSpan(range).TrimEnd()}");
+            }
         }
     }
 
@@ -222,7 +227,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             {
                 // Skip ref structs - they cannot be marshalled to Lua
                 if (IsRefStruct(type))
-            continue;
+                    continue;
 
                 // Extract the Name property if it exists
                 string? customName = null;
@@ -245,10 +250,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         var additionalTypes = DiscoverReferencedTypes(types.Select(t => t.Type).ToList(), discoveredTypes);
         foreach (var type in additionalTypes)
         {
-            var luaName = type.IsGenericType
-                ? GetGenericTypeLuaName(type)
-                : type.Name;
-            types.Add(new TypeInfo(type, new LuaVisibleAttribute { Name = luaName }));
+            types.Add(new TypeInfo(type));
         }
 
         return types;
@@ -418,78 +420,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                typeof(MulticastDelegate).IsAssignableFrom(type);
     }
 
-    private static string GetGenericTypeLuaName(Type type)
-    {
-        if (type.IsArray)
-        {
-            var elementType = type.GetElementType()!;
-            var rank = type.GetArrayRank();
-            if (rank == 1)
-            {
-                return $"ArrayOf{GetSimpleTypeName(elementType)}";
-            }
-            else
-            {
-                return $"ArrayOf{GetSimpleTypeName(elementType)}{rank}D";
-            }
-        }
-
-        // Handle nested types (like List<int>.Enumerator)
-        if (type.IsNested && type.DeclaringType != null)
-        {
-            // For nested types of generic types, we need to reconstruct the parent's generic arguments
-            // E.g., List<int>.Enumerator has DeclaringType = List`1, but we want "List_Int32"
-            if (type.DeclaringType.IsGenericType)
-            {
-                // Get the generic arguments that apply to the declaring type
-                // For List<int>.Enumerator, the Enumerator shares the same generic argument as List
-                var declaringTypeArgs = type.GetGenericArguments();
-                var declaringTypeArgCount = type.DeclaringType.GetGenericArguments().Length;
-
-                // Build the declaring type name with its generic arguments
-                var declaringBaseName = type.DeclaringType.Name.Split('`')[0];
-                if (declaringTypeArgCount > 0 && declaringTypeArgs.Length >= declaringTypeArgCount)
-                {
-                    var declaringArgNames = string.Join("_", declaringTypeArgs.Take(declaringTypeArgCount).Select(t => GetSimpleTypeName(t)));
-                    var declaringName = $"{declaringBaseName}_{declaringArgNames}";
-                    return $"{declaringName}_{type.Name}";
-                }
-                else
-                {
-                    return $"{declaringBaseName}_{type.Name}";
-                }
-            }
-            else
-            {
-                var declaringName = GetGenericTypeLuaName(type.DeclaringType);
-                return $"{declaringName}_{type.Name}";
-            }
-        }
-
-        if (!type.IsGenericType)
-            return type.Name;
-
-        var baseName = type.Name.Split('`')[0];
-        var genericArgs = type.GetGenericArguments();
-        var argNames = string.Join("_", genericArgs.Select(t => GetSimpleTypeName(t)));
-        return $"{baseName}_{argNames}";
-    }
-
-    private static string GetSimpleTypeName(Type type)
-    {
-        if (type.IsArray)
-        {
-            var elementType = type.GetElementType()!;
-            var rank = type.GetArrayRank();
-            return rank == 1 ? $"{GetSimpleTypeName(elementType)}Array" : $"{GetSimpleTypeName(elementType)}{rank}DArray";
-        }
-        if (type.IsGenericType)
-        {
-            return GetGenericTypeLuaName(type);
-        }
-        return type.Name;
-    }
-
     public void GenerateToFiles(string outputDirectory)
     {
         Directory.CreateDirectory(outputDirectory);
@@ -505,12 +435,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             GenerateTypeFile(outputDirectory, typeInfo);
         }
 
-        GenerateLuaBindingsBaseFile(outputDirectory);
+        GenerateLuaBindingsBaseFile(outputDirectory, types);
     }
 
-    private void GenerateLuaBindingsBaseFile(string outputDirectory)
+    private void GenerateLuaBindingsBaseFile(string outputDirectory, IEnumerable<TypeInfo> types)
     {
-        var luaBindingsBaseFile =
+        _sb.Clear();
+        _indent = 0;
+        
+        AppendLine(
             $$"""
             // <auto-generated />
             // This file is auto-generated by NFMWorld.LuaSourceGenerator.
@@ -553,12 +486,24 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     _delegates.Clear();
                     _objectCount = 0;
                     _nextObjectId = 1;
-                }
+            """);
 
-                public static void ResetType<T>()
-                {
-                    TypeInfo<T>.Name = null;
-                    TypeInfo<T>.Objects.Clear();
+        _indent += 2;
+        foreach (var typeInfo in types)
+        {
+            var type = typeInfo.Type;
+            var fullTypeName = GetFullTypeName(type);
+            AppendLine(
+                $"""
+                TypeInfo<{fullTypeName}>.Objects.Clear();
+                TypeInfo<{fullTypeName}>.Name = null;
+                """
+            );
+        }
+        _indent -= 2;
+
+        AppendLine(
+            $$"""
                 }
 
                 #region Object Storage
@@ -620,23 +565,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 private static string? GetMetatableNameForType(Type type)
                 {
                     return _typeToMetatable.GetValueOrDefault(type);
-                }
-
-                /// <summary>
-                /// Push a userdata for a managed object onto the Lua stack (dynamic version for runtime types).
-                /// </summary>
-                private static void PushObjectDynamic(lua_State L, object obj, string metatableName)
-                {
-                    // We need to call StoreObject with the correct generic type at runtime
-                    var objType = obj.GetType();
-                    var storeMethod = typeof(LuaBindings).GetMethod("StoreObject", BindingFlags.NonPublic | BindingFlags.Static)!
-                        .MakeGenericMethod(objType);
-                    var id = (int)storeMethod.Invoke(null, new[] { obj })!;
-
-                    var ptr = lua_newuserdata(L, (ulong)sizeof(int));
-                    unsafe { *(int*)ptr = id; }
-                    luaL_getmetatable(L, metatableName);
-                    lua_setmetatable(L, -2);
                 }
 
                 /// <summary>
@@ -742,25 +670,40 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         case string s:
                             lua_pushstring(L, s);
                             break;
+            """
+        );
+        
+        _indent += 3;
+
+        foreach (var typeInfo in types)
+        {
+            var type = typeInfo.Type;
+            var luaName = typeInfo.LuaName;
+            var safeName = GetSafeTypeName(type);
+            var metatableName = $"MT_{safeName}";
+            var isStruct = type.IsValueType;
+            var fullTypeName = GetFullTypeName(type);
+            
+            if (typeInfo.Type.IsArray)
+            {
+                AppendLine(
+                    $"""
+                    // Special case: Handle array type: {fullTypeName} since arrays need runtime type info
+                    case {fullTypeName} arr_{luaName}:
+                        PushObject(L, arr_{luaName}, "{metatableName}");
+                        break;
+                    """
+                );
+            }
+        }
+        
+        _indent -= 3;
+        
+        AppendLine(
+            $$"""
                         default:
-                            // For arrays, we need to check the actual runtime type since we don't have compile-time metatable info
-                            var t = typeof(T);
-                            if (t.IsArray)
-                            {
-                                // Use the array's actual type to find the metatable
-                                var arrayType = value!.GetType();
-                                var metatableName = GetMetatableNameForType(arrayType);
-                                if (metatableName != null)
-                                {
-                                    PushObjectDynamic(L, value, metatableName);
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException($"Array type {arrayType} is not registered");
-                                }
-                            }
                             // For all other types, push as userdata if we have a registered metatable
-                            else if (TypeInfo<T>.Name is {} metatable)
+                            if (TypeInfo<T>.Name is {} metatable)
                             {
                                 PushObject(L, value, metatable);
                             }
@@ -771,8 +714,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             break;
                     }
                 }
-
-
 
                 /// <summary>
                 /// Convert Lua value at stack index to a C# object of the target type.
@@ -796,36 +737,55 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
 
                     if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
-
+                    
                     // Handle Lua tables being converted to arrays
                     if (luaType == LUA_TTABLE && typeof(T).IsArray)
                     {
-                        var elementType = typeof(T).GetElementType()!;
-                        
-                        // Get the length of the table
-                        var length = (int)lua_objlen(L, idx);
-                        
-                        // Create the array
-                        var array = Array.CreateInstance(elementType, length);
-                        
-                        // Convert each element
-                        var toObjectMethod = typeof(LuaBindings).GetMethod("ToObject", BindingFlags.NonPublic | BindingFlags.Static)!
-                            .MakeGenericMethod(elementType);
-                        
-                        for (int i = 0; i < length; i++)
-                        {
-                            // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                            lua_rawgeti(L, idx, i + 1);
-                            
-                            // Convert the element
-                            var element = toObjectMethod.Invoke(null, new object[] { L, -1 });
-                            array.SetValue(element, i);
-                            
-                            // Pop the element from stack
-                            lua_pop(L, 1);
-                        }
-                        
-                        return (T)(object)array;
+                        #region Handle Lua tables being converted to arrays
+                """);
+        
+        _indent += 2;
+
+        foreach (var typeInfo in types)
+        {
+            if (!typeInfo.Type.IsArray || !typeInfo.Type.HasElementType || typeInfo.Type.GetArrayRank() != 1) continue;
+            
+            var elementType = typeInfo.Type.GetElementType()!;
+            var fullElementTypeName = GetFullTypeName(elementType);
+            var fullTypeName = GetFullTypeName(typeInfo.Type);
+            
+            AppendLine(
+                $$"""
+                if (typeof(T) == typeof({{fullTypeName}}))
+                {
+                    // Get the length of the table
+                    var length = (int)lua_objlen(L, idx);
+
+                    // Create the array
+                    var array = new {{fullElementTypeName}}[length];
+
+                    for (int i = 0; i < length; i++)
+                    {
+                        // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                        lua_rawgeti(L, idx, i + 1);
+
+                        // Convert the element
+                        array[i] = ToObject<{{fullElementTypeName}}>(L, -1)!;
+
+                        // Pop the element from stack
+                        lua_pop(L, 1);
+                    }
+
+                    return (T)(object)array;
+                }
+                """);
+        }
+        
+        _indent -= 2;
+        
+        AppendLine(
+            $$"""
+                    #endregion
                     }
 
                     // Handle userdata (objects, structs, arrays, etc.)
@@ -861,10 +821,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 #endregion
 
             }
-            """;
+            """
+        );
 
         var filePath = Path.Combine(outputDirectory, "LuaBindings.Base.g.cs");
-        File.WriteAllText(filePath, luaBindingsBaseFile);
+        File.WriteAllText(filePath, _sb.ToString());
     }
 
     private void GenerateInitializeFile(string outputDirectory, List<TypeInfo> types)
@@ -2441,9 +2402,81 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     #endregion
 }
 
-public record TypeInfo(Type Type, LuaVisibleAttribute Attribute)
+public partial record TypeInfo(Type Type, LuaVisibleAttribute? Attribute = null)
 {
-    public string LuaName => Attribute.Name ?? Type.Name;
+    public string LuaName => Attribute?.Name ?? GetGenericTypeLuaName(Type);
+
+    private static string GetGenericTypeLuaName(Type type)
+    {
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType()!;
+            var rank = type.GetArrayRank();
+            if (rank == 1)
+            {
+                return $"ArrayOf{GetSimpleTypeName(elementType)}";
+            }
+            else
+            {
+                return $"ArrayOf{GetSimpleTypeName(elementType)}{rank}D";
+            }
+        }
+
+        // Handle nested types (like List<int>.Enumerator)
+        if (type.IsNested && type.DeclaringType != null)
+        {
+            // For nested types of generic types, we need to reconstruct the parent's generic arguments
+            // E.g., List<int>.Enumerator has DeclaringType = List`1, but we want "List_Int32"
+            if (type.DeclaringType.IsGenericType)
+            {
+                // Get the generic arguments that apply to the declaring type
+                // For List<int>.Enumerator, the Enumerator shares the same generic argument as List
+                var declaringTypeArgs = type.GetGenericArguments();
+                var declaringTypeArgCount = type.DeclaringType.GetGenericArguments().Length;
+
+                // Build the declaring type name with its generic arguments
+                var declaringBaseName = type.DeclaringType.Name.Split('`')[0];
+                if (declaringTypeArgCount > 0 && declaringTypeArgs.Length >= declaringTypeArgCount)
+                {
+                    var declaringArgNames = string.Join("_", declaringTypeArgs.Take(declaringTypeArgCount).Select(t => GetSimpleTypeName(t)));
+                    var declaringName = $"{declaringBaseName}_{declaringArgNames}";
+                    return $"{declaringName}_{type.Name}";
+                }
+                else
+                {
+                    return $"{declaringBaseName}_{type.Name}";
+                }
+            }
+            else
+            {
+                var declaringName = GetGenericTypeLuaName(type.DeclaringType);
+                return $"{declaringName}_{type.Name}";
+            }
+        }
+
+        if (!type.IsGenericType)
+            return type.Name;
+
+        var baseName = type.Name.Split('`')[0];
+        var genericArgs = type.GetGenericArguments();
+        var argNames = string.Join("_", genericArgs.Select(t => GetSimpleTypeName(t)));
+        return $"{baseName}_{argNames}";
+    }
+
+    private static string GetSimpleTypeName(Type type)
+    {
+        if (type.IsArray)
+        {
+            var elementType = type.GetElementType()!;
+            var rank = type.GetArrayRank();
+            return rank == 1 ? $"{GetSimpleTypeName(elementType)}Array" : $"{GetSimpleTypeName(elementType)}{rank}DArray";
+        }
+        if (type.IsGenericType)
+        {
+            return GetGenericTypeLuaName(type);
+        }
+        return type.Name;
+    }
 }
 
 public record OperatorInfo(string Name, ParameterInfo[] Parameters, MethodInfo Method);

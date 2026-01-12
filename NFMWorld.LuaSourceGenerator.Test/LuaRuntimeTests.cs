@@ -19,15 +19,6 @@ public class LuaRuntimeTests
     {
         // Reset bindings state for test isolation
         LuaBindings.Reset();
-        LuaBindings.ResetType<SampleClass>();
-        LuaBindings.ResetType<SampleStruct>();
-        LuaBindings.ResetType<Vector3Struct>();
-        LuaBindings.ResetType<ReferencedType>();
-        LuaBindings.ResetType<TypeWithReferences>();
-        LuaBindings.ResetType<TypeWithArrays>();
-        LuaBindings.ResetType<TypeWithMultiDimArray>();
-        LuaBindings.ResetType<TypeWithIndexers>();
-        LuaBindings.ResetType<TypeWithNestedGeneric>();
 
         // Create a new Lua state for each test
         _L = luaL_newstate();

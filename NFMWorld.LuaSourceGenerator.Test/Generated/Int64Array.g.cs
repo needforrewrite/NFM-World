@@ -10,7 +10,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
-    // =========== Bindings for Int64[] (Int64[]) ===========
+    // =========== Bindings for Int64[] (ArrayOfInt64) ===========
     private static void Register_Int64Array(lua_State L)
     {
         RegisterMetatable<long[]>("MT_Int64Array");
@@ -36,14 +36,14 @@ public partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for Int64[]
+        // Create type table for ArrayOfInt64
         lua_newtable(L);
 
         // Constructor: new()
         lua_pushcfunction(L, KeepAlive(Int64Array_new));
         lua_setfield(L, -2, "new");
 
-        lua_setglobal(L, "Int64[]");
+        lua_setglobal(L, "ArrayOfInt64");
     }
 
     private static int Int64Array__gc(lua_State L)

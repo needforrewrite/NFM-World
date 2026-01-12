@@ -10,7 +10,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
-    // =========== Bindings for Int32[] (Int32[]) ===========
+    // =========== Bindings for Int32[] (ArrayOfInt32) ===========
     private static void Register_Int32Array(lua_State L)
     {
         RegisterMetatable<int[]>("MT_Int32Array");
@@ -36,14 +36,14 @@ public partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for Int32[]
+        // Create type table for ArrayOfInt32
         lua_newtable(L);
 
         // Constructor: new()
         lua_pushcfunction(L, KeepAlive(Int32Array_new));
         lua_setfield(L, -2, "new");
 
-        lua_setglobal(L, "Int32[]");
+        lua_setglobal(L, "ArrayOfInt32");
     }
 
     private static int Int32Array__gc(lua_State L)

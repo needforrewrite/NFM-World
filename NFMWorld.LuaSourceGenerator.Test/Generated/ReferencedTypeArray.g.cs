@@ -10,7 +10,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
-    // =========== Bindings for ReferencedType[] (ReferencedType[]) ===========
+    // =========== Bindings for ReferencedType[] (ArrayOfReferencedType) ===========
     private static void Register_ReferencedTypeArray(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>("MT_ReferencedTypeArray");
@@ -36,14 +36,14 @@ public partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for ReferencedType[]
+        // Create type table for ArrayOfReferencedType
         lua_newtable(L);
 
         // Constructor: new()
         lua_pushcfunction(L, KeepAlive(ReferencedTypeArray_new));
         lua_setfield(L, -2, "new");
 
-        lua_setglobal(L, "ReferencedType[]");
+        lua_setglobal(L, "ArrayOfReferencedType");
     }
 
     private static int ReferencedTypeArray__gc(lua_State L)

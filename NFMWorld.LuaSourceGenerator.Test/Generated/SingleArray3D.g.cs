@@ -10,7 +10,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
-    // =========== Bindings for Single[,,] (Single[,,]) ===========
+    // =========== Bindings for Single[,,] (ArrayOfSingle3D) ===========
     private static void Register_SingleArray3D(lua_State L)
     {
         RegisterMetatable<float[,,]>("MT_SingleArray3D");
@@ -36,14 +36,14 @@ public partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for Single[,,]
+        // Create type table for ArrayOfSingle3D
         lua_newtable(L);
 
         // Constructor: new()
         lua_pushcfunction(L, KeepAlive(SingleArray3D_new));
         lua_setfield(L, -2, "new");
 
-        lua_setglobal(L, "Single[,,]");
+        lua_setglobal(L, "ArrayOfSingle3D");
     }
 
     private static int SingleArray3D__gc(lua_State L)

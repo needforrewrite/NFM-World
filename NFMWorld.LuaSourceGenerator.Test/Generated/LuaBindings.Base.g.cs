@@ -39,12 +39,82 @@ public partial class LuaBindings
         _delegates.Clear();
         _objectCount = 0;
         _nextObjectId = 1;
-    }
-
-    public static void ResetType<T>()
-    {
-        TypeInfo<T>.Name = null;
-        TypeInfo<T>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithArrays>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithArrays>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>.Name = null;
+        TypeInfo<int[]>.Objects.Clear();
+        TypeInfo<int[]>.Name = null;
+        TypeInfo<string[]>.Objects.Clear();
+        TypeInfo<string[]>.Name = null;
+        TypeInfo<float[]>.Objects.Clear();
+        TypeInfo<float[]>.Name = null;
+        TypeInfo<int[,]>.Objects.Clear();
+        TypeInfo<int[,]>.Name = null;
+        TypeInfo<float[,,]>.Objects.Clear();
+        TypeInfo<float[,,]>.Name = null;
+        TypeInfo<System.Collections.Generic.List<int>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.List<int>>.Name = null;
+        TypeInfo<System.Collections.Generic.List<int>.Enumerator>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.List<int>.Enumerator>.Name = null;
+        TypeInfo<System.Collections.Generic.List<string>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.List<string>>.Name = null;
+        TypeInfo<System.Collections.Generic.List<string>.Enumerator>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.List<string>.Enumerator>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Name = null;
+        TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
+        TypeInfo<long[]>.Objects.Clear();
+        TypeInfo<long[]>.Name = null;
+        TypeInfo<System.Collections.Generic.IEnumerable<int>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IEnumerable<int>>.Name = null;
+        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<int>>.Objects.Clear();
+        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<int>>.Name = null;
+        TypeInfo<System.Collections.Generic.IComparer<int>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IComparer<int>>.Name = null;
+        TypeInfo<System.Collections.Generic.IEnumerable<string>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IEnumerable<string>>.Name = null;
+        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<string>>.Objects.Clear();
+        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<string>>.Name = null;
+        TypeInfo<System.Collections.Generic.IComparer<string>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IComparer<string>>.Name = null;
+        TypeInfo<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
+        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
+        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
+        TypeInfo<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>.Name = null;
+        TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>.Name = null;
+        TypeInfo<System.Collections.Generic.IEnumerator<int>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IEnumerator<int>>.Name = null;
+        TypeInfo<System.Collections.Generic.IList<int>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IList<int>>.Name = null;
+        TypeInfo<System.Collections.Generic.IEnumerator<string>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IEnumerator<string>>.Name = null;
+        TypeInfo<System.Collections.Generic.IList<string>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IList<string>>.Name = null;
+        TypeInfo<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
+        TypeInfo<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
+        TypeInfo<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
     }
 
     #region Object Storage
@@ -106,23 +176,6 @@ public partial class LuaBindings
     private static string? GetMetatableNameForType(Type type)
     {
         return _typeToMetatable.GetValueOrDefault(type);
-    }
-
-    /// <summary>
-    /// Push a userdata for a managed object onto the Lua stack (dynamic version for runtime types).
-    /// </summary>
-    private static void PushObjectDynamic(lua_State L, object obj, string metatableName)
-    {
-        // We need to call StoreObject with the correct generic type at runtime
-        var objType = obj.GetType();
-        var storeMethod = typeof(LuaBindings).GetMethod("StoreObject", BindingFlags.NonPublic | BindingFlags.Static)!
-            .MakeGenericMethod(objType);
-        var id = (int)storeMethod.Invoke(null, new[] { obj })!;
-
-        var ptr = lua_newuserdata(L, (ulong)sizeof(int));
-        unsafe { *(int*)ptr = id; }
-        luaL_getmetatable(L, metatableName);
-        lua_setmetatable(L, -2);
     }
 
     /// <summary>
@@ -228,90 +281,186 @@ public partial class LuaBindings
             case string s:
                 lua_pushstring(L, s);
                 break;
-            default:
-                // For arrays, we need to check the actual runtime type since we don't have compile-time metatable info
-                var t = typeof(T);
-                if (t.IsArray)
-                {
-                    // Use the array's actual type to find the metatable
-                    var arrayType = value!.GetType();
-                    var metatableName = GetMetatableNameForType(arrayType);
-                    if (metatableName != null)
-                    {
-                        PushObjectDynamic(L, value, metatableName);
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Array type {arrayType} is not registered");
-                    }
-                }
-                // For all other types, push as userdata if we have a registered metatable
-                else if (TypeInfo<T>.Name is {} metatable)
-                {
-                    PushObject(L, value, metatable);
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Type {typeof(T)} is not supported");
-                }
+            // Special case: Handle array type: int[] since arrays need runtime type info
+            case int[] arr_ArrayOfInt32:
+                PushObject(L, arr_ArrayOfInt32, "MT_Int32Array");
                 break;
-        }
+            // Special case: Handle array type: string[] since arrays need runtime type info
+            case string[] arr_ArrayOfString:
+                PushObject(L, arr_ArrayOfString, "MT_StringArray");
+                break;
+            // Special case: Handle array type: float[] since arrays need runtime type info
+            case float[] arr_ArrayOfSingle:
+                PushObject(L, arr_ArrayOfSingle, "MT_SingleArray");
+                break;
+            // Special case: Handle array type: int[,] since arrays need runtime type info
+            case int[,] arr_ArrayOfInt322D:
+                PushObject(L, arr_ArrayOfInt322D, "MT_Int32Array2D");
+                break;
+            // Special case: Handle array type: float[,,] since arrays need runtime type info
+            case float[,,] arr_ArrayOfSingle3D:
+                PushObject(L, arr_ArrayOfSingle3D, "MT_SingleArray3D");
+                break;
+            // Special case: Handle array type: long[] since arrays need runtime type info
+            case long[] arr_ArrayOfInt64:
+                PushObject(L, arr_ArrayOfInt64, "MT_Int64Array");
+                break;
+            // Special case: Handle array type: NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[] since arrays need runtime type info
+            case NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[] arr_ArrayOfReferencedType:
+                PushObject(L, arr_ArrayOfReferencedType, "MT_ReferencedTypeArray");
+                break;
+        default:
+            // For all other types, push as userdata if we have a registered metatable
+            if (TypeInfo<T>.Name is {} metatable)
+            {
+                PushObject(L, value, metatable);
+            }
+            else
+            {
+                throw new InvalidOperationException($"Type {typeof(T)} is not supported");
+            }
+            break;
     }
+}
 
+/// <summary>
+/// Convert Lua value at stack index to a C# object of the target type.
+/// </summary>
+private static T? ToObject<T>(lua_State L, int idx)
+{
+    var luaType = lua_type(L, idx);
 
+    if (luaType == LUA_TNIL) return default;
 
-    /// <summary>
-    /// Convert Lua value at stack index to a C# object of the target type.
-    /// </summary>
-    private static T? ToObject<T>(lua_State L, int idx)
+    if (typeof(T) == typeof(bool) || luaType == LUA_TBOOLEAN) return (T)(object)(lua_toboolean(L, idx) != 0);
+    if (typeof(T) == typeof(int)) return (T)(object)(int)lua_tointeger(L, idx);
+    if (typeof(T) == typeof(uint)) return (T)(object)(uint)lua_tointeger(L, idx);
+    if (typeof(T) == typeof(byte)) return (T)(object)(byte)lua_tointeger(L, idx);
+    if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
+    if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
+    if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
+    if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
+    if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
+    if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
+    if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
+
+    if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
+
+    // Handle Lua tables being converted to arrays
+    if (luaType == LUA_TTABLE && typeof(T).IsArray)
     {
-        var luaType = lua_type(L, idx);
-
-        if (luaType == LUA_TNIL) return default;
-
-        if (typeof(T) == typeof(bool) || luaType == LUA_TBOOLEAN) return (T)(object)(lua_toboolean(L, idx) != 0);
-        if (typeof(T) == typeof(int)) return (T)(object)(int)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(uint)) return (T)(object)(uint)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(byte)) return (T)(object)(byte)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
-        if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
-
-        if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
-
-        // Handle Lua tables being converted to arrays
-        if (luaType == LUA_TTABLE && typeof(T).IsArray)
+        #region Handle Lua tables being converted to arrays
+        if (typeof(T) == typeof(int[]))
         {
-            var elementType = typeof(T).GetElementType()!;
-            
             // Get the length of the table
             var length = (int)lua_objlen(L, idx);
-            
+        
             // Create the array
-            var array = Array.CreateInstance(elementType, length);
-            
-            // Convert each element
-            var toObjectMethod = typeof(LuaBindings).GetMethod("ToObject", BindingFlags.NonPublic | BindingFlags.Static)!
-                .MakeGenericMethod(elementType);
-            
+            var array = new int[length];
+        
             for (int i = 0; i < length; i++)
             {
                 // Push table[i+1] onto stack (Lua arrays are 1-indexed)
                 lua_rawgeti(L, idx, i + 1);
-                
+        
                 // Convert the element
-                var element = toObjectMethod.Invoke(null, new object[] { L, -1 });
-                array.SetValue(element, i);
-                
+                array[i] = ToObject<int>(L, -1)!;
+        
                 // Pop the element from stack
                 lua_pop(L, 1);
             }
-            
+        
             return (T)(object)array;
+        }
+        if (typeof(T) == typeof(string[]))
+        {
+            // Get the length of the table
+            var length = (int)lua_objlen(L, idx);
+        
+            // Create the array
+            var array = new string[length];
+        
+            for (int i = 0; i < length; i++)
+            {
+                // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                lua_rawgeti(L, idx, i + 1);
+        
+                // Convert the element
+                array[i] = ToObject<string>(L, -1)!;
+        
+                // Pop the element from stack
+                lua_pop(L, 1);
+            }
+        
+            return (T)(object)array;
+        }
+        if (typeof(T) == typeof(float[]))
+        {
+            // Get the length of the table
+            var length = (int)lua_objlen(L, idx);
+        
+            // Create the array
+            var array = new float[length];
+        
+            for (int i = 0; i < length; i++)
+            {
+                // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                lua_rawgeti(L, idx, i + 1);
+        
+                // Convert the element
+                array[i] = ToObject<float>(L, -1)!;
+        
+                // Pop the element from stack
+                lua_pop(L, 1);
+            }
+        
+            return (T)(object)array;
+        }
+        if (typeof(T) == typeof(long[]))
+        {
+            // Get the length of the table
+            var length = (int)lua_objlen(L, idx);
+        
+            // Create the array
+            var array = new long[length];
+        
+            for (int i = 0; i < length; i++)
+            {
+                // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                lua_rawgeti(L, idx, i + 1);
+        
+                // Convert the element
+                array[i] = ToObject<long>(L, -1)!;
+        
+                // Pop the element from stack
+                lua_pop(L, 1);
+            }
+        
+            return (T)(object)array;
+        }
+        if (typeof(T) == typeof(NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]))
+        {
+            // Get the length of the table
+            var length = (int)lua_objlen(L, idx);
+        
+            // Create the array
+            var array = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[length];
+        
+            for (int i = 0; i < length; i++)
+            {
+                // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                lua_rawgeti(L, idx, i + 1);
+        
+                // Convert the element
+                array[i] = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, -1)!;
+        
+                // Pop the element from stack
+                lua_pop(L, 1);
+            }
+        
+            return (T)(object)array;
+        }
+        #endregion
         }
 
         // Handle userdata (objects, structs, arrays, etc.)
