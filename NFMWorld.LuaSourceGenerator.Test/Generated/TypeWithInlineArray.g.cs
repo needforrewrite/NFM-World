@@ -72,12 +72,12 @@ public partial class LuaBindings
         {
             case "buffer":
                 {
-                    var parentPtr = lua_touserdata(L, 1);
-                    if (parentPtr != 0)
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
                     {
                         unsafe
                         {
-                            var parentId = *(int*)parentPtr;
+                            var parentId = *(int*)ptr;
                             PushStructWithParent(L, obj.buffer, "MT_InlineBuffer", parentId, static (obj, value) => ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)obj).buffer = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)value);
                         }
                     }

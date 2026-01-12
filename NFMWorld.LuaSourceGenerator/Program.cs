@@ -810,50 +810,50 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         AppendLine(
             $$"""
-                        default:
-                            // For all other types, push as userdata if we have a registered metatable
-                            if (TypeInfo<T>.Name is {} metatable)
-                            {
-                                PushObject(L, value, metatable);
-                            }
-                            else
-                            {
-                                throw new InvalidOperationException($"Type {typeof(T)} is not supported");
-                            }
-                            break;
+                            default:
+                                // For all other types, push as userdata if we have a registered metatable
+                                if (TypeInfo<T>.Name is {} metatable)
+                                {
+                                    PushObject(L, value, metatable);
+                                }
+                                else
+                                {
+                                    throw new InvalidOperationException($"Type {typeof(T)} is not supported");
+                                }
+                                break;
+                        }
                     }
-                }
 
-                /// <summary>
-                /// Convert Lua value at stack index to a C# object of the target type.
-                /// </summary>
-                private static T? ToObject<T>(lua_State L, int idx)
-                {
-                    var luaType = lua_type(L, idx);
-
-                    if (luaType == LUA_TNIL) return default;
-
-                    if (typeof(T) == typeof(bool) || luaType == LUA_TBOOLEAN) return (T)(object)(lua_toboolean(L, idx) != 0);
-                    if (typeof(T) == typeof(int)) return (T)(object)(int)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(uint)) return (T)(object)(uint)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(byte)) return (T)(object)(byte)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
-                    if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
-
-                    if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
-
-                    // Handle Lua tables being converted to arrays
-                    if (luaType == LUA_TTABLE && typeof(T).IsArray)
+                    /// <summary>
+                    /// Convert Lua value at stack index to a C# object of the target type.
+                    /// </summary>
+                    private static T? ToObject<T>(lua_State L, int idx)
                     {
-                        #region Handle Lua tables being converted to arrays
+                        var luaType = lua_type(L, idx);
+
+                        if (luaType == LUA_TNIL) return default;
+
+                        if (typeof(T) == typeof(bool) || luaType == LUA_TBOOLEAN) return (T)(object)(lua_toboolean(L, idx) != 0);
+                        if (typeof(T) == typeof(int)) return (T)(object)(int)lua_tointeger(L, idx);
+                        if (typeof(T) == typeof(uint)) return (T)(object)(uint)lua_tointeger(L, idx);
+                        if (typeof(T) == typeof(byte)) return (T)(object)(byte)lua_tointeger(L, idx);
+                        if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
+                        if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
+                        if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
+                        if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
+                        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
+                        if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
+                        if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
+
+                        if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
+
+                        // Handle Lua tables being converted to arrays
+                        if (luaType == LUA_TTABLE && typeof(T).IsArray)
+                        {
+                            #region Handle Lua tables being converted to arrays
                 """);
 
-        _indent += 2;
+        _indent += 3;
 
         foreach (var typeInfo in types)
         {
@@ -890,11 +890,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 """);
         }
 
-        _indent -= 2;
+        _indent -= 3;
 
         AppendLine(
             $$"""
-                    #endregion
+                        #endregion
                     }
 
                     // Handle userdata (objects, structs, arrays, etc.)

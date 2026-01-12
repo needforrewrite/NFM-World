@@ -315,136 +315,136 @@ public partial class LuaBindings
             case long[] arr_ArrayOfInt64:
                 PushObject(L, arr_ArrayOfInt64, "MT_Int64Array");
                 break;
-        default:
-            // For all other types, push as userdata if we have a registered metatable
-            if (TypeInfo<T>.Name is {} metatable)
-            {
-                PushObject(L, value, metatable);
-            }
-            else
-            {
-                throw new InvalidOperationException($"Type {typeof(T)} is not supported");
-            }
-            break;
+            default:
+                // For all other types, push as userdata if we have a registered metatable
+                if (TypeInfo<T>.Name is {} metatable)
+                {
+                    PushObject(L, value, metatable);
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Type {typeof(T)} is not supported");
+                }
+                break;
+        }
     }
-}
 
-/// <summary>
-/// Convert Lua value at stack index to a C# object of the target type.
-/// </summary>
-private static T? ToObject<T>(lua_State L, int idx)
-{
-    var luaType = lua_type(L, idx);
-
-    if (luaType == LUA_TNIL) return default;
-
-    if (typeof(T) == typeof(bool) || luaType == LUA_TBOOLEAN) return (T)(object)(lua_toboolean(L, idx) != 0);
-    if (typeof(T) == typeof(int)) return (T)(object)(int)lua_tointeger(L, idx);
-    if (typeof(T) == typeof(uint)) return (T)(object)(uint)lua_tointeger(L, idx);
-    if (typeof(T) == typeof(byte)) return (T)(object)(byte)lua_tointeger(L, idx);
-    if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
-    if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
-    if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
-    if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
-    if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
-    if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
-    if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
-
-    if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
-
-    // Handle Lua tables being converted to arrays
-    if (luaType == LUA_TTABLE && typeof(T).IsArray)
+    /// <summary>
+    /// Convert Lua value at stack index to a C# object of the target type.
+    /// </summary>
+    private static T? ToObject<T>(lua_State L, int idx)
     {
-        #region Handle Lua tables being converted to arrays
-        if (typeof(T) == typeof(nfm_world_library.SoftFloat.f64Vector3[]))
+        var luaType = lua_type(L, idx);
+
+        if (luaType == LUA_TNIL) return default;
+
+        if (typeof(T) == typeof(bool) || luaType == LUA_TBOOLEAN) return (T)(object)(lua_toboolean(L, idx) != 0);
+        if (typeof(T) == typeof(int)) return (T)(object)(int)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(uint)) return (T)(object)(uint)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(byte)) return (T)(object)(byte)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
+        if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
+
+        if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
+
+        // Handle Lua tables being converted to arrays
+        if (luaType == LUA_TTABLE && typeof(T).IsArray)
         {
-            // Get the length of the table
-            var length = (int)lua_objlen(L, idx);
-        
-            // Create the array
-            var array = new nfm_world_library.SoftFloat.f64Vector3[length];
-        
-            for (int i = 0; i < length; i++)
+            #region Handle Lua tables being converted to arrays
+            if (typeof(T) == typeof(nfm_world_library.SoftFloat.f64Vector3[]))
             {
-                // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                lua_rawgeti(L, idx, i + 1);
-        
-                // Convert the element
-                array[i] = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, -1)!;
-        
-                // Pop the element from stack
-                lua_pop(L, 1);
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new nfm_world_library.SoftFloat.f64Vector3[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
             }
-        
-            return (T)(object)array;
-        }
-        if (typeof(T) == typeof(bool[]))
-        {
-            // Get the length of the table
-            var length = (int)lua_objlen(L, idx);
-        
-            // Create the array
-            var array = new bool[length];
-        
-            for (int i = 0; i < length; i++)
+            if (typeof(T) == typeof(bool[]))
             {
-                // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                lua_rawgeti(L, idx, i + 1);
-        
-                // Convert the element
-                array[i] = ToObject<bool>(L, -1)!;
-        
-                // Pop the element from stack
-                lua_pop(L, 1);
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new bool[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<bool>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
             }
-        
-            return (T)(object)array;
-        }
-        if (typeof(T) == typeof(int[]))
-        {
-            // Get the length of the table
-            var length = (int)lua_objlen(L, idx);
-        
-            // Create the array
-            var array = new int[length];
-        
-            for (int i = 0; i < length; i++)
+            if (typeof(T) == typeof(int[]))
             {
-                // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                lua_rawgeti(L, idx, i + 1);
-        
-                // Convert the element
-                array[i] = ToObject<int>(L, -1)!;
-        
-                // Pop the element from stack
-                lua_pop(L, 1);
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new int[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<int>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
             }
-        
-            return (T)(object)array;
-        }
-        if (typeof(T) == typeof(long[]))
-        {
-            // Get the length of the table
-            var length = (int)lua_objlen(L, idx);
-        
-            // Create the array
-            var array = new long[length];
-        
-            for (int i = 0; i < length; i++)
+            if (typeof(T) == typeof(long[]))
             {
-                // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                lua_rawgeti(L, idx, i + 1);
-        
-                // Convert the element
-                array[i] = ToObject<long>(L, -1)!;
-        
-                // Pop the element from stack
-                lua_pop(L, 1);
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new long[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<long>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
             }
-        
-            return (T)(object)array;
-        }
-        #endregion
+            #endregion
         }
 
         // Handle userdata (objects, structs, arrays, etc.)
