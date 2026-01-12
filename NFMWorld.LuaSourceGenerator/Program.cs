@@ -2166,17 +2166,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         using (Indent())
                         {
                             AppendLine("int score = 0;");
-                            AppendLine("bool compatible = true;");
 
                             for (int i = 0; i < parameters.Length; i++)
                             {
                                 var paramTypeName = GetFullTypeName(parameters[i].ParameterType);
                                 AppendLine($"int score{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 1});");
-                                AppendLine($"if (score{i} < 0) compatible = false;");
+                                AppendLine($"if (score{i} < 0) goto next{opIdx};");
                                 AppendLine($"else score += score{i};");
                             }
 
-                            AppendLine("if (compatible && score > bestScore)");
+                            AppendLine("if (score > bestScore)");
                             AppendLine("{");
                             using (Indent())
                             {
@@ -2186,6 +2185,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             AppendLine("}");
                         }
                         AppendLine("}");
+                        AppendLine($"next{opIdx}:");
                         AppendLine();
                     }
 
@@ -2359,27 +2359,27 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             AppendLine("{");
                             using (Indent())
                             {
-                                AppendLine($"int score{ctorIdx} = 0;");
-                                AppendLine($"bool compatible{ctorIdx} = true;");
+                                AppendLine($"int score = 0;");
 
                                 for (int i = 0; i < parameters.Length; i++)
                                 {
                                     var paramTypeName = GetFullTypeName(parameters[i].ParameterType);
-                                    AppendLine($"int score{ctorIdx}_{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 1});");
-                                    AppendLine($"if (score{ctorIdx}_{i} < 0) compatible{ctorIdx} = false;");
-                                    AppendLine($"else score{ctorIdx} += score{ctorIdx}_{i};");
+                                    AppendLine($"int score{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 1});");
+                                    AppendLine($"if (score{i} < 0) goto next{ctorIdx};");
+                                    AppendLine($"else score += score{i};");
                                 }
 
-                                AppendLine($"if (compatible{ctorIdx} && score{ctorIdx} > bestScore)");
+                                AppendLine($"if (score > bestScore)");
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine($"bestScore = score{ctorIdx};");
+                                    AppendLine($"bestScore = score;");
                                     AppendLine($"bestIndex = {ctorIdx};");
                                 }
                                 AppendLine("}");
                             }
                             AppendLine("}");
+                            AppendLine($"next{ctorIdx}:");
                             AppendLine();
                         }
 
@@ -2507,27 +2507,27 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine($"int score{methodIdx} = 0;");
-                                    AppendLine($"bool compatible{methodIdx} = true;");
+                                    AppendLine($"int score = 0;");
 
                                     for (int i = 0; i < parameters.Length; i++)
                                     {
                                         var paramTypeName = GetFullTypeName(parameters[i].ParameterType);
-                                        AppendLine($"int score{methodIdx}_{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 1});");
-                                        AppendLine($"if (score{methodIdx}_{i} < 0) compatible{methodIdx} = false;");
-                                        AppendLine($"else score{methodIdx} += score{methodIdx}_{i};");
+                                        AppendLine($"int score{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 1});");
+                                        AppendLine($"if (score{i} < 0) goto next{methodIdx};");
+                                        AppendLine($"else score += score{i};");
                                     }
 
-                                    AppendLine($"if (compatible{methodIdx} && score{methodIdx} > bestScore)");
+                                    AppendLine($"if (score > bestScore)");
                                     AppendLine("{");
                                     using (Indent())
                                     {
-                                        AppendLine($"bestScore = score{methodIdx};");
+                                        AppendLine($"bestScore = score;");
                                         AppendLine($"bestIndex = {methodIdx};");
                                     }
                                     AppendLine("}");
                                 }
                                 AppendLine("}");
+                                AppendLine($"next{methodIdx}:");
                                 AppendLine();
                             }
 
@@ -2695,27 +2695,27 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine($"int score{methodIdx} = 0;");
-                                    AppendLine($"bool compatible{methodIdx} = true;");
+                                    AppendLine($"int score = 0;");
 
                                     for (int i = 0; i < parameters.Length; i++)
                                     {
                                         var paramTypeName = GetFullTypeName(parameters[i].ParameterType);
-                                        AppendLine($"int score{methodIdx}_{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 2});");
-                                        AppendLine($"if (score{methodIdx}_{i} < 0) compatible{methodIdx} = false;");
-                                        AppendLine($"else score{methodIdx} += score{methodIdx}_{i};");
+                                        AppendLine($"int score{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 2});");
+                                        AppendLine($"if (score{i} < 0) goto next{methodIdx};");
+                                        AppendLine($"else score += score{i};");
                                     }
 
-                                    AppendLine($"if (compatible{methodIdx} && score{methodIdx} > bestScore)");
+                                    AppendLine($"if (score > bestScore)");
                                     AppendLine("{");
                                     using (Indent())
                                     {
-                                        AppendLine($"bestScore = score{methodIdx};");
+                                        AppendLine($"bestScore = score;");
                                         AppendLine($"bestIndex = {methodIdx};");
                                     }
                                     AppendLine("}");
                                 }
                                 AppendLine("}");
+                                AppendLine($"next{methodIdx}:");
                                 AppendLine();
                             }
 

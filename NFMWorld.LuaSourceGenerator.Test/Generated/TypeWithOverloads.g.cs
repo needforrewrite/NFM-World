@@ -175,53 +175,53 @@ public partial class LuaBindings
         // Try overload 0: op_Addition(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads, NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next0;
             else score += score0;
             int score1 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next0;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 0;
             }
         }
+        next0:
 
         // Try overload 1: op_Addition(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads, int)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next1;
             else score += score0;
             int score1 = ScoreParameterCompatibility<int>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next1;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 1;
             }
         }
+        next1:
 
         // Try overload 2: op_Addition(int, NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<int>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next2;
             else score += score0;
             int score1 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next2;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 2;
             }
         }
+        next2:
 
         switch (bestIndex)
         {
@@ -264,36 +264,36 @@ public partial class LuaBindings
         // Try overload 0: op_Subtraction(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads, NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next0;
             else score += score0;
             int score1 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next0;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 0;
             }
         }
+        next0:
 
         // Try overload 1: op_Subtraction(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads, int)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next1;
             else score += score0;
             int score1 = ScoreParameterCompatibility<int>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next1;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 1;
             }
         }
+        next1:
 
         switch (bestIndex)
         {
@@ -331,45 +331,45 @@ public partial class LuaBindings
 
             // Try constructor 0: new TypeWithOverloads(int)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<int>(L, 1);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try constructor 1: new TypeWithOverloads(float)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<float>(L, 1);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             // Try constructor 2: new TypeWithOverloads(string)
             {
-                int score2 = 0;
-                bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility<string>(L, 1);
-                if (score2_0 < 0) compatible2 = false;
-                else score2 += score2_0;
-                if (compatible2 && score2 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 1);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score2;
+                    bestScore = score;
                     bestIndex = 2;
                 }
             }
+            next2:
 
             switch (bestIndex)
             {
@@ -416,45 +416,45 @@ public partial class LuaBindings
 
             // Try overload 0: StaticProcess(int)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<int>(L, 1);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: StaticProcess(double)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<double>(L, 1);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<double>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             // Try overload 2: StaticProcess(string)
             {
-                int score2 = 0;
-                bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility<string>(L, 1);
-                if (score2_0 < 0) compatible2 = false;
-                else score2 += score2_0;
-                if (compatible2 && score2 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 1);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score2;
+                    bestScore = score;
                     bestIndex = 2;
                 }
             }
+            next2:
 
             switch (bestIndex)
             {
@@ -508,59 +508,59 @@ public partial class LuaBindings
 
             // Try overload 0: ProcessNumber(int)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<int>(L, 2);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: ProcessNumber(double)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<double>(L, 2);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<double>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             // Try overload 2: ProcessNumber(long)
             {
-                int score2 = 0;
-                bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility<long>(L, 2);
-                if (score2_0 < 0) compatible2 = false;
-                else score2 += score2_0;
-                if (compatible2 && score2 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<long>(L, 2);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score2;
+                    bestScore = score;
                     bestIndex = 2;
                 }
             }
+            next2:
 
             // Try overload 3: ProcessNumber(float)
             {
-                int score3 = 0;
-                bool compatible3 = true;
-                int score3_0 = ScoreParameterCompatibility<float>(L, 2);
-                if (score3_0 < 0) compatible3 = false;
-                else score3 += score3_0;
-                if (compatible3 && score3 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float>(L, 2);
+                if (score0 < 0) goto next3;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score3;
+                    bestScore = score;
                     bestIndex = 3;
                 }
             }
+            next3:
 
             switch (bestIndex)
             {
@@ -621,59 +621,59 @@ public partial class LuaBindings
 
             // Try overload 0: ProcessData(string)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<string>(L, 2);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: ProcessData(int[])
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<int[]>(L, 2);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int[]>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             // Try overload 2: ProcessData(float[])
             {
-                int score2 = 0;
-                bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility<float[]>(L, 2);
-                if (score2_0 < 0) compatible2 = false;
-                else score2 += score2_0;
-                if (compatible2 && score2 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float[]>(L, 2);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score2;
+                    bestScore = score;
                     bestIndex = 2;
                 }
             }
+            next2:
 
             // Try overload 3: ProcessData(bool)
             {
-                int score3 = 0;
-                bool compatible3 = true;
-                int score3_0 = ScoreParameterCompatibility<bool>(L, 2);
-                if (score3_0 < 0) compatible3 = false;
-                else score3 += score3_0;
-                if (compatible3 && score3 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<bool>(L, 2);
+                if (score0 < 0) goto next3;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score3;
+                    bestScore = score;
                     bestIndex = 3;
                 }
             }
+            next3:
 
             switch (bestIndex)
             {
@@ -734,88 +734,88 @@ public partial class LuaBindings
 
             // Try overload 0: Combine(int, int)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<int>(L, 2);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility<int>(L, 3);
-                if (score0_1 < 0) compatible0 = false;
-                else score0 += score0_1;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<int>(L, 3);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: Combine(float, float)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<float>(L, 2);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility<float>(L, 3);
-                if (score1_1 < 0) compatible1 = false;
-                else score1 += score1_1;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<float>(L, 3);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             // Try overload 2: Combine(string, string)
             {
-                int score2 = 0;
-                bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility<string>(L, 2);
-                if (score2_0 < 0) compatible2 = false;
-                else score2 += score2_0;
-                int score2_1 = ScoreParameterCompatibility<string>(L, 3);
-                if (score2_1 < 0) compatible2 = false;
-                else score2 += score2_1;
-                if (compatible2 && score2 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 2);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<string>(L, 3);
+                if (score1 < 0) goto next2;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score2;
+                    bestScore = score;
                     bestIndex = 2;
                 }
             }
+            next2:
 
             // Try overload 3: Combine(int, string)
             {
-                int score3 = 0;
-                bool compatible3 = true;
-                int score3_0 = ScoreParameterCompatibility<int>(L, 2);
-                if (score3_0 < 0) compatible3 = false;
-                else score3 += score3_0;
-                int score3_1 = ScoreParameterCompatibility<string>(L, 3);
-                if (score3_1 < 0) compatible3 = false;
-                else score3 += score3_1;
-                if (compatible3 && score3 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 2);
+                if (score0 < 0) goto next3;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<string>(L, 3);
+                if (score1 < 0) goto next3;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score3;
+                    bestScore = score;
                     bestIndex = 3;
                 }
             }
+            next3:
 
             // Try overload 4: Combine(string, int)
             {
-                int score4 = 0;
-                bool compatible4 = true;
-                int score4_0 = ScoreParameterCompatibility<string>(L, 2);
-                if (score4_0 < 0) compatible4 = false;
-                else score4 += score4_0;
-                int score4_1 = ScoreParameterCompatibility<int>(L, 3);
-                if (score4_1 < 0) compatible4 = false;
-                else score4 += score4_1;
-                if (compatible4 && score4 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 2);
+                if (score0 < 0) goto next4;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<int>(L, 3);
+                if (score1 < 0) goto next4;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score4;
+                    bestScore = score;
                     bestIndex = 4;
                 }
             }
+            next4:
 
             switch (bestIndex)
             {

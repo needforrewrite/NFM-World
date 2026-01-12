@@ -336,53 +336,53 @@ public partial class LuaBindings
         // Try overload 0: op_Multiply(nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.f64Vector3)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next0;
             else score += score0;
             int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next0;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 0;
             }
         }
+        next0:
 
         // Try overload 1: op_Multiply(nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.fix64)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next1;
             else score += score0;
             int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next1;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 1;
             }
         }
+        next1:
 
         // Try overload 2: op_Multiply(nfm_world_library.SoftFloat.fix64, nfm_world_library.SoftFloat.f64Vector3)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next2;
             else score += score0;
             int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next2;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 2;
             }
         }
+        next2:
 
         switch (bestIndex)
         {
@@ -425,36 +425,36 @@ public partial class LuaBindings
         // Try overload 0: op_Division(nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.f64Vector3)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next0;
             else score += score0;
             int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next0;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 0;
             }
         }
+        next0:
 
         // Try overload 1: op_Division(nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.fix64)
         {
             int score = 0;
-            bool compatible = true;
             int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-            if (score0 < 0) compatible = false;
+            if (score0 < 0) goto next1;
             else score += score0;
             int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
-            if (score1 < 0) compatible = false;
+            if (score1 < 0) goto next1;
             else score += score1;
-            if (compatible && score > bestScore)
+            if (score > bestScore)
             {
                 bestScore = score;
                 bestIndex = 1;
             }
         }
+        next1:
 
         switch (bestIndex)
         {
@@ -660,37 +660,37 @@ public partial class LuaBindings
 
             // Try overload 0: Divide(nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.f64Vector3)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
-                if (score0_1 < 0) compatible0 = false;
-                else score0 += score0_1;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: Divide(nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.fix64)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
-                if (score1_1 < 0) compatible1 = false;
-                else score1 += score1_1;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {
@@ -749,55 +749,55 @@ public partial class LuaBindings
 
             // Try overload 0: Hermite(nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.fix64)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
-                if (score0_1 < 0) compatible0 = false;
-                else score0 += score0_1;
-                int score0_2 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 3);
-                if (score0_2 < 0) compatible0 = false;
-                else score0 += score0_2;
-                int score0_3 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 4);
-                if (score0_3 < 0) compatible0 = false;
-                else score0 += score0_3;
-                int score0_4 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 5);
-                if (score0_4 < 0) compatible0 = false;
-                else score0 += score0_4;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                int score2 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 3);
+                if (score2 < 0) goto next0;
+                else score += score2;
+                int score3 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 4);
+                if (score3 < 0) goto next0;
+                else score += score3;
+                int score4 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 5);
+                if (score4 < 0) goto next0;
+                else score += score4;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: Hermite(nfm_world_library.SoftFloat.fix64, nfm_world_library.SoftFloat.fix64, nfm_world_library.SoftFloat.fix64, nfm_world_library.SoftFloat.fix64, nfm_world_library.SoftFloat.fix64)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 1);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
-                if (score1_1 < 0) compatible1 = false;
-                else score1 += score1_1;
-                int score1_2 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 3);
-                if (score1_2 < 0) compatible1 = false;
-                else score1 += score1_2;
-                int score1_3 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 4);
-                if (score1_3 < 0) compatible1 = false;
-                else score1 += score1_3;
-                int score1_4 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 5);
-                if (score1_4 < 0) compatible1 = false;
-                else score1 += score1_4;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                int score2 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 3);
+                if (score2 < 0) goto next1;
+                else score += score2;
+                int score3 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 4);
+                if (score3 < 0) goto next1;
+                else score += score3;
+                int score4 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 5);
+                if (score4 < 0) goto next1;
+                else score += score4;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {
@@ -897,37 +897,37 @@ public partial class LuaBindings
 
             // Try overload 0: Multiply(nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.f64Vector3)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
-                if (score0_1 < 0) compatible0 = false;
-                else score0 += score0_1;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: Multiply(nfm_world_library.SoftFloat.f64Vector3, nfm_world_library.SoftFloat.fix64)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
-                if (score1_1 < 0) compatible1 = false;
-                else score1 += score1_1;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {
@@ -1053,37 +1053,37 @@ public partial class LuaBindings
 
             // Try overload 0: Transform(nfm_world_library.SoftFloat.f64Vector3, Microsoft.Xna.Framework.Matrix)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Matrix>(L, 2);
-                if (score0_1 < 0) compatible0 = false;
-                else score0 += score0_1;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Matrix>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: Transform(nfm_world_library.SoftFloat.f64Vector3, Microsoft.Xna.Framework.Quaternion)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Quaternion>(L, 2);
-                if (score1_1 < 0) compatible1 = false;
-                else score1 += score1_1;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Quaternion>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {
@@ -1144,31 +1144,31 @@ public partial class LuaBindings
 
             // Try overload 0: Equals(object)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<object>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: Equals(nfm_world_library.SoftFloat.f64Vector3)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {

@@ -332,45 +332,45 @@ public partial class LuaBindings
 
             // Try overload 0: Equals(Maxine.Extensions.Nibble<System.Byte>)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: Equals(System.Byte)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<System.Byte>(L, 2);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Byte>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             // Try overload 2: Equals(object)
             {
-                int score2 = 0;
-                bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score2_0 < 0) compatible2 = false;
-                else score2 += score2_0;
-                if (compatible2 && score2 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<object>(L, 2);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score2;
+                    bestScore = score;
                     bestIndex = 2;
                 }
             }
+            next2:
 
             switch (bestIndex)
             {
@@ -426,31 +426,31 @@ public partial class LuaBindings
 
             // Try overload 0: CompareTo(Maxine.Extensions.Nibble<System.Byte>)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: CompareTo(System.Byte)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<System.Byte>(L, 2);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Byte>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {

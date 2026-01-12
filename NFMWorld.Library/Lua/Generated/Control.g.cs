@@ -267,31 +267,31 @@ public partial class LuaBindings
 
             // Try overload 0: Decode(Maxine.Extensions.Nibble<System.Byte>)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: Decode(System.ValueTuple<bool, bool, bool, bool, bool>)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {

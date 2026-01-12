@@ -643,31 +643,31 @@ public partial class LuaBindings
 
             // Try overload 0: CompareTo(object)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<object>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: CompareTo(nfm_world_library.SoftFloat.f64AngleSingle)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64AngleSingle>(L, 2);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64AngleSingle>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {
@@ -715,31 +715,31 @@ public partial class LuaBindings
 
             // Try overload 0: Equals(nfm_world_library.SoftFloat.f64AngleSingle)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64AngleSingle>(L, 2);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64AngleSingle>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try overload 1: Equals(object)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<object>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {

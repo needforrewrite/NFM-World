@@ -273,37 +273,37 @@ public partial class LuaBindings
 
             // Try constructor 0: new SampleClass(int, string)
             {
-                int score0 = 0;
-                bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility<int>(L, 1);
-                if (score0_0 < 0) compatible0 = false;
-                else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility<string>(L, 2);
-                if (score0_1 < 0) compatible0 = false;
-                else score0 += score0_1;
-                if (compatible0 && score0 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<string>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score0;
+                    bestScore = score;
                     bestIndex = 0;
                 }
             }
+            next0:
 
             // Try constructor 1: new SampleClass(int?, string)
             {
-                int score1 = 0;
-                bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility<int?>(L, 1);
-                if (score1_0 < 0) compatible1 = false;
-                else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility<string>(L, 2);
-                if (score1_1 < 0) compatible1 = false;
-                else score1 += score1_1;
-                if (compatible1 && score1 > bestScore)
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int?>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<string>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
                 {
-                    bestScore = score1;
+                    bestScore = score;
                     bestIndex = 1;
                 }
             }
+            next1:
 
             switch (bestIndex)
             {
