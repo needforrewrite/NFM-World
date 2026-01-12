@@ -615,7 +615,8 @@ public partial class LuaBindings
     /// </summary>
     private static lua_CFunction KeepAlive(lua_CFunction func)
     {
-        _delegates.Add(func);
+        // Unnecessary, static delegates are not collected
+        // _delegates.Add(func);
         return func;
     }
 

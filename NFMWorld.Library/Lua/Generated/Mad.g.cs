@@ -159,7 +159,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj._drag, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._drag = (nfm_world_library.SoftFloat.fix64)value);
+                            PushStructWithParent(L, obj._drag, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member '_drag' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }

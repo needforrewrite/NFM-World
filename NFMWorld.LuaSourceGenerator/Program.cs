@@ -1020,7 +1020,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// </summary>
                 private static lua_CFunction KeepAlive(lua_CFunction func)
                 {
-                    _delegates.Add(func);
+                    // Unnecessary, static delegates are not collected
+                    // _delegates.Add(func);
                     return func;
                 }
 
@@ -1753,7 +1754,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        GeneratePushValueWithParentTracking($"{prop.Name}", prop.PropertyType, type, prop.Name, isStruct);
+                        GeneratePushValueWithParentTracking($"{prop.Name}", prop.PropertyType, type, prop.Name, isStruct, prop.SetMethod == null);
                     }
                 }
 
@@ -1768,7 +1769,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        GeneratePushValueWithParentTracking($"{field.Name}", field.FieldType, type, field.Name, isStruct);
+                        GeneratePushValueWithParentTracking($"{field.Name}", field.FieldType, type, field.Name, isStruct, field.IsInitOnly);
                     }
                 }
 
@@ -2910,7 +2911,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
     }
 
-    private void GeneratePushValueWithParentTracking(string memberExpression, Type type, Type parentType, string memberName, bool isStruct)
+    private void GeneratePushValueWithParentTracking(string memberExpression, Type type, Type parentType, string memberName, bool isStruct, bool isReadOnly)
     {
         // Only use parent tracking for value types (structs)
         if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && !IsNullable(type))
@@ -2936,6 +2937,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         if (parentType.IsValueType)
                         {
                             AppendLine($"PushStructWithParent(L, obj.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {{ System.Diagnostics.Debug.WriteLine($\"Attempted to assign value of struct {{obj}} ({{obj.GetType()}}) member '{memberExpression}' to {{value}} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set.\"); }});");
+                        }
+                        else if (isReadOnly)
+                        {
+                            AppendLine($"PushStructWithParent(L, obj.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {{ System.Diagnostics.Debug.WriteLine($\"Attempted to assign value of struct {{obj}} ({{obj.GetType()}}) member '{memberExpression}' to {{value}} but the field is read-only. Nothing will be set.\"); }});");
                         }
                         else
                         {
