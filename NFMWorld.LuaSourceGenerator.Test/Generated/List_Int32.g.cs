@@ -250,7 +250,7 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 1, typeof(int));
+                int score0_0 = ScoreParameterCompatibility<int>(L, 1);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
                 if (compatible0 && score0 > bestScore)
@@ -264,7 +264,7 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 1, typeof(System.Collections.Generic.IEnumerable<int>));
+                int score1_0 = ScoreParameterCompatibility<System.Collections.Generic.IEnumerable<int>>(L, 1);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
                 if (compatible1 && score1 > bestScore)
@@ -1069,7 +1069,7 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 2, typeof(System.Collections.Generic.IComparer<int>));
+                int score0_0 = ScoreParameterCompatibility<System.Collections.Generic.IComparer<int>>(L, 2);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
                 if (compatible0 && score0 > bestScore)
@@ -1083,7 +1083,7 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 2, typeof(System.Comparison<int>));
+                int score1_0 = ScoreParameterCompatibility<System.Comparison<int>>(L, 2);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
                 if (compatible1 && score1 > bestScore)

@@ -176,10 +176,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads));
+            int score0 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads));
+            int score1 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -193,10 +193,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads));
+            int score0 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(int));
+            int score1 = ScoreParameterCompatibility<int>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -210,10 +210,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(int));
+            int score0 = ScoreParameterCompatibility<int>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads));
+            int score1 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -265,10 +265,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads));
+            int score0 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads));
+            int score1 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -282,10 +282,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads));
+            int score0 = ScoreParameterCompatibility<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(int));
+            int score1 = ScoreParameterCompatibility<int>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -333,7 +333,7 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 1, typeof(int));
+                int score0_0 = ScoreParameterCompatibility<int>(L, 1);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
                 if (compatible0 && score0 > bestScore)
@@ -347,7 +347,7 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 1, typeof(float));
+                int score1_0 = ScoreParameterCompatibility<float>(L, 1);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
                 if (compatible1 && score1 > bestScore)
@@ -361,7 +361,7 @@ public partial class LuaBindings
             {
                 int score2 = 0;
                 bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility(L, 1, typeof(string));
+                int score2_0 = ScoreParameterCompatibility<string>(L, 1);
                 if (score2_0 < 0) compatible2 = false;
                 else score2 += score2_0;
                 if (compatible2 && score2 > bestScore)
@@ -418,7 +418,7 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 1, typeof(int));
+                int score0_0 = ScoreParameterCompatibility<int>(L, 1);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
                 if (compatible0 && score0 > bestScore)
@@ -432,7 +432,7 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 1, typeof(double));
+                int score1_0 = ScoreParameterCompatibility<double>(L, 1);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
                 if (compatible1 && score1 > bestScore)
@@ -446,7 +446,7 @@ public partial class LuaBindings
             {
                 int score2 = 0;
                 bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility(L, 1, typeof(string));
+                int score2_0 = ScoreParameterCompatibility<string>(L, 1);
                 if (score2_0 < 0) compatible2 = false;
                 else score2 += score2_0;
                 if (compatible2 && score2 > bestScore)
@@ -510,7 +510,7 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 2, typeof(int));
+                int score0_0 = ScoreParameterCompatibility<int>(L, 2);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
                 if (compatible0 && score0 > bestScore)
@@ -524,7 +524,7 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 2, typeof(double));
+                int score1_0 = ScoreParameterCompatibility<double>(L, 2);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
                 if (compatible1 && score1 > bestScore)
@@ -538,7 +538,7 @@ public partial class LuaBindings
             {
                 int score2 = 0;
                 bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility(L, 2, typeof(long));
+                int score2_0 = ScoreParameterCompatibility<long>(L, 2);
                 if (score2_0 < 0) compatible2 = false;
                 else score2 += score2_0;
                 if (compatible2 && score2 > bestScore)
@@ -552,7 +552,7 @@ public partial class LuaBindings
             {
                 int score3 = 0;
                 bool compatible3 = true;
-                int score3_0 = ScoreParameterCompatibility(L, 2, typeof(float));
+                int score3_0 = ScoreParameterCompatibility<float>(L, 2);
                 if (score3_0 < 0) compatible3 = false;
                 else score3 += score3_0;
                 if (compatible3 && score3 > bestScore)
@@ -623,7 +623,7 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 2, typeof(string));
+                int score0_0 = ScoreParameterCompatibility<string>(L, 2);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
                 if (compatible0 && score0 > bestScore)
@@ -637,7 +637,7 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 2, typeof(int[]));
+                int score1_0 = ScoreParameterCompatibility<int[]>(L, 2);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
                 if (compatible1 && score1 > bestScore)
@@ -651,7 +651,7 @@ public partial class LuaBindings
             {
                 int score2 = 0;
                 bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility(L, 2, typeof(float[]));
+                int score2_0 = ScoreParameterCompatibility<float[]>(L, 2);
                 if (score2_0 < 0) compatible2 = false;
                 else score2 += score2_0;
                 if (compatible2 && score2 > bestScore)
@@ -665,7 +665,7 @@ public partial class LuaBindings
             {
                 int score3 = 0;
                 bool compatible3 = true;
-                int score3_0 = ScoreParameterCompatibility(L, 2, typeof(bool));
+                int score3_0 = ScoreParameterCompatibility<bool>(L, 2);
                 if (score3_0 < 0) compatible3 = false;
                 else score3 += score3_0;
                 if (compatible3 && score3 > bestScore)
@@ -736,10 +736,10 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 2, typeof(int));
+                int score0_0 = ScoreParameterCompatibility<int>(L, 2);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility(L, 3, typeof(int));
+                int score0_1 = ScoreParameterCompatibility<int>(L, 3);
                 if (score0_1 < 0) compatible0 = false;
                 else score0 += score0_1;
                 if (compatible0 && score0 > bestScore)
@@ -753,10 +753,10 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 2, typeof(float));
+                int score1_0 = ScoreParameterCompatibility<float>(L, 2);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility(L, 3, typeof(float));
+                int score1_1 = ScoreParameterCompatibility<float>(L, 3);
                 if (score1_1 < 0) compatible1 = false;
                 else score1 += score1_1;
                 if (compatible1 && score1 > bestScore)
@@ -770,10 +770,10 @@ public partial class LuaBindings
             {
                 int score2 = 0;
                 bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility(L, 2, typeof(string));
+                int score2_0 = ScoreParameterCompatibility<string>(L, 2);
                 if (score2_0 < 0) compatible2 = false;
                 else score2 += score2_0;
-                int score2_1 = ScoreParameterCompatibility(L, 3, typeof(string));
+                int score2_1 = ScoreParameterCompatibility<string>(L, 3);
                 if (score2_1 < 0) compatible2 = false;
                 else score2 += score2_1;
                 if (compatible2 && score2 > bestScore)
@@ -787,10 +787,10 @@ public partial class LuaBindings
             {
                 int score3 = 0;
                 bool compatible3 = true;
-                int score3_0 = ScoreParameterCompatibility(L, 2, typeof(int));
+                int score3_0 = ScoreParameterCompatibility<int>(L, 2);
                 if (score3_0 < 0) compatible3 = false;
                 else score3 += score3_0;
-                int score3_1 = ScoreParameterCompatibility(L, 3, typeof(string));
+                int score3_1 = ScoreParameterCompatibility<string>(L, 3);
                 if (score3_1 < 0) compatible3 = false;
                 else score3 += score3_1;
                 if (compatible3 && score3 > bestScore)
@@ -804,10 +804,10 @@ public partial class LuaBindings
             {
                 int score4 = 0;
                 bool compatible4 = true;
-                int score4_0 = ScoreParameterCompatibility(L, 2, typeof(string));
+                int score4_0 = ScoreParameterCompatibility<string>(L, 2);
                 if (score4_0 < 0) compatible4 = false;
                 else score4 += score4_0;
-                int score4_1 = ScoreParameterCompatibility(L, 3, typeof(int));
+                int score4_1 = ScoreParameterCompatibility<int>(L, 3);
                 if (score4_1 < 0) compatible4 = false;
                 else score4 += score4_1;
                 if (compatible4 && score4 > bestScore)

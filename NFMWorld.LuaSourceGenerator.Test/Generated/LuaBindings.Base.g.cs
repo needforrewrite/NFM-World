@@ -517,27 +517,27 @@ public partial class LuaBindings
     /// Score how compatible a Lua value is with a .NET parameter type.
     /// Higher scores indicate better compatibility. -1 indicates incompatible.
     /// </summary>
-    private static int ScoreParameterCompatibility(lua_State L, int stackIdx, Type paramType)
+    private static int ScoreParameterCompatibility<T>(lua_State L, int stackIdx)
     {
         var (luaType, dotnetType) = GetLuaStackValueType(L, stackIdx);
 
         // Nil can match nullable/reference types
         if (luaType == LUA_TNIL)
         {
-            return !paramType.IsValueType || Nullable.GetUnderlyingType(paramType) != null ? 0 : -1;
+            return !typeof(T).IsValueType || Nullable.GetUnderlyingType(typeof(T)) != null ? 0 : -1;
         }
 
         // Boolean matches
         if (luaType == LUA_TBOOLEAN)
         {
-            if (paramType == typeof(bool)) return 100; // Exact match
+            if (typeof(T) == typeof(bool)) return 100; // Exact match
             return -1; // No implicit conversions from bool
         }
 
         // String matches
         if (luaType == LUA_TSTRING)
         {
-            if (paramType == typeof(string)) return 100; // Exact match
+            if (typeof(T) == typeof(string)) return 100; // Exact match
             return -1; // No implicit conversions from string
         }
 
@@ -552,35 +552,35 @@ public partial class LuaBindings
             {
                 // For integer values, check range compatibility and prefer appropriate integer types
                 // Priority: most appropriate integer type > double > float > other integer types
-                if (paramType == typeof(int) && numVal >= int.MinValue && numVal <= int.MaxValue) return 100;
-                if (paramType == typeof(long) && numVal >= long.MinValue && numVal <= long.MaxValue) return 100;
-                if (paramType == typeof(double)) return 90;   // Can hold any integer
-                if (paramType == typeof(float) && numVal >= float.MinValue && numVal <= float.MaxValue) return 85;
-                if (paramType == typeof(uint) && numVal >= uint.MinValue && numVal <= uint.MaxValue) return 80;
-                if (paramType == typeof(ulong) && numVal >= 0 && numVal <= ulong.MaxValue) return 80;
-                if (paramType == typeof(short) && numVal >= short.MinValue && numVal <= short.MaxValue) return 75;
-                if (paramType == typeof(ushort) && numVal >= ushort.MinValue && numVal <= ushort.MaxValue) return 75;
-                if (paramType == typeof(byte) && numVal >= byte.MinValue && numVal <= byte.MaxValue) return 70;
-                if (paramType == typeof(sbyte) && numVal >= sbyte.MinValue && numVal <= sbyte.MaxValue) return 70;
+                if (typeof(T) == typeof(int) && numVal >= int.MinValue && numVal <= int.MaxValue) return 100;
+                if (typeof(T) == typeof(long) && numVal >= long.MinValue && numVal <= long.MaxValue) return 100;
+                if (typeof(T) == typeof(double)) return 90;   // Can hold any integer
+                if (typeof(T) == typeof(float) && numVal >= float.MinValue && numVal <= float.MaxValue) return 85;
+                if (typeof(T) == typeof(uint) && numVal >= uint.MinValue && numVal <= uint.MaxValue) return 80;
+                if (typeof(T) == typeof(ulong) && numVal >= 0 && numVal <= ulong.MaxValue) return 80;
+                if (typeof(T) == typeof(short) && numVal >= short.MinValue && numVal <= short.MaxValue) return 75;
+                if (typeof(T) == typeof(ushort) && numVal >= ushort.MinValue && numVal <= ushort.MaxValue) return 75;
+                if (typeof(T) == typeof(byte) && numVal >= byte.MinValue && numVal <= byte.MaxValue) return 70;
+                if (typeof(T) == typeof(sbyte) && numVal >= sbyte.MinValue && numVal <= sbyte.MaxValue) return 70;
                 // Out of range for all integer types
-                if (paramType == typeof(double)) return 90;
-                if (paramType == typeof(float)) return 85;
+                if (typeof(T) == typeof(double)) return 90;
+                if (typeof(T) == typeof(float)) return 85;
                 return -1; // Can't fit in any numeric type
             }
             else
             {
                 // For floating-point values, prefer floating-point types
                 // Priority: double > float > long > ulong > int > uint > other integer types
-                if (paramType == typeof(double)) return 100; // Exact match to Lua's number type
-                if (paramType == typeof(float)) return 90;   // Slight precision loss
-                if (paramType == typeof(long)) return 80;    // Large range, signed
-                if (paramType == typeof(ulong)) return 75;   // Large range, unsigned
-                if (paramType == typeof(int)) return 70;     // Standard integer
-                if (paramType == typeof(uint)) return 65;    // Unsigned variant
-                if (paramType == typeof(short)) return 60;   // Smaller range
-                if (paramType == typeof(ushort)) return 55;  // Smaller range, unsigned
-                if (paramType == typeof(byte)) return 50;    // Smallest range
-                if (paramType == typeof(sbyte)) return 45;   // Smallest range, signed
+                if (typeof(T) == typeof(double)) return 100; // Exact match to Lua's number type
+                if (typeof(T) == typeof(float)) return 90;   // Slight precision loss
+                if (typeof(T) == typeof(long)) return 80;    // Large range, signed
+                if (typeof(T) == typeof(ulong)) return 75;   // Large range, unsigned
+                if (typeof(T) == typeof(int)) return 70;     // Standard integer
+                if (typeof(T) == typeof(uint)) return 65;    // Unsigned variant
+                if (typeof(T) == typeof(short)) return 60;   // Smaller range
+                if (typeof(T) == typeof(ushort)) return 55;  // Smaller range, unsigned
+                if (typeof(T) == typeof(byte)) return 50;    // Smallest range
+                if (typeof(T) == typeof(sbyte)) return 45;   // Smallest range, signed
             }
             return -1; // Not a numeric type
         }
@@ -588,7 +588,7 @@ public partial class LuaBindings
         // Table matches (can convert to 1D array)
         if (luaType == LUA_TTABLE)
         {
-            if (paramType.IsArray && paramType.GetArrayRank() == 1)
+            if (typeof(T).IsArray && typeof(T).GetArrayRank() == 1)
             {
                 return 50; // Table can convert to array (but we can't check element types easily)
             }
@@ -598,8 +598,8 @@ public partial class LuaBindings
         // Userdata matches (custom .NET types)
         if (luaType == LUA_TUSERDATA && dotnetType != null)
         {
-            if (paramType == dotnetType) return 100; // Exact type match
-            if (paramType.IsAssignableFrom(dotnetType)) return 80; // Inheritance/interface match
+            if (typeof(T) == dotnetType) return 100; // Exact type match
+            if (typeof(T).IsAssignableFrom(dotnetType)) return 80; // Inheritance/interface match
             return -1; // Type mismatch
         }
 

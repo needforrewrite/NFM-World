@@ -334,7 +334,7 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 2, typeof(Maxine.Extensions.Nibble<System.Byte>));
+                int score0_0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
                 if (compatible0 && score0 > bestScore)
@@ -348,7 +348,7 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 2, typeof(System.Byte));
+                int score1_0 = ScoreParameterCompatibility<System.Byte>(L, 2);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
                 if (compatible1 && score1 > bestScore)
@@ -362,7 +362,7 @@ public partial class LuaBindings
             {
                 int score2 = 0;
                 bool compatible2 = true;
-                int score2_0 = ScoreParameterCompatibility(L, 2, typeof(object));
+                int score2_0 = ScoreParameterCompatibility<object>(L, 2);
                 if (score2_0 < 0) compatible2 = false;
                 else score2 += score2_0;
                 if (compatible2 && score2 > bestScore)
@@ -428,7 +428,7 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 2, typeof(Maxine.Extensions.Nibble<System.Byte>));
+                int score0_0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
                 if (compatible0 && score0 > bestScore)
@@ -442,7 +442,7 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 2, typeof(System.Byte));
+                int score1_0 = ScoreParameterCompatibility<System.Byte>(L, 2);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
                 if (compatible1 && score1 > bestScore)

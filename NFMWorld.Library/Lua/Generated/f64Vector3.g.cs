@@ -337,10 +337,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+            int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.f64Vector3));
+            int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -354,10 +354,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+            int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.fix64));
+            int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -371,10 +371,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.fix64));
+            int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.f64Vector3));
+            int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -426,10 +426,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+            int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.f64Vector3));
+            int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -443,10 +443,10 @@ public partial class LuaBindings
         {
             int score = 0;
             bool compatible = true;
-            int score0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+            int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
             if (score0 < 0) compatible = false;
             else score += score0;
-            int score1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.fix64));
+            int score1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
             if (score1 < 0) compatible = false;
             else score += score1;
             if (compatible && score > bestScore)
@@ -662,10 +662,10 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score0_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score0_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
                 if (score0_1 < 0) compatible0 = false;
                 else score0 += score0_1;
                 if (compatible0 && score0 > bestScore)
@@ -679,10 +679,10 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.fix64));
+                int score1_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
                 if (score1_1 < 0) compatible1 = false;
                 else score1 += score1_1;
                 if (compatible1 && score1 > bestScore)
@@ -751,19 +751,19 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score0_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score0_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
                 if (score0_1 < 0) compatible0 = false;
                 else score0 += score0_1;
-                int score0_2 = ScoreParameterCompatibility(L, 3, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score0_2 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 3);
                 if (score0_2 < 0) compatible0 = false;
                 else score0 += score0_2;
-                int score0_3 = ScoreParameterCompatibility(L, 4, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score0_3 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 4);
                 if (score0_3 < 0) compatible0 = false;
                 else score0 += score0_3;
-                int score0_4 = ScoreParameterCompatibility(L, 5, typeof(nfm_world_library.SoftFloat.fix64));
+                int score0_4 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 5);
                 if (score0_4 < 0) compatible0 = false;
                 else score0 += score0_4;
                 if (compatible0 && score0 > bestScore)
@@ -777,19 +777,19 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.fix64));
+                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 1);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.fix64));
+                int score1_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
                 if (score1_1 < 0) compatible1 = false;
                 else score1 += score1_1;
-                int score1_2 = ScoreParameterCompatibility(L, 3, typeof(nfm_world_library.SoftFloat.fix64));
+                int score1_2 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 3);
                 if (score1_2 < 0) compatible1 = false;
                 else score1 += score1_2;
-                int score1_3 = ScoreParameterCompatibility(L, 4, typeof(nfm_world_library.SoftFloat.fix64));
+                int score1_3 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 4);
                 if (score1_3 < 0) compatible1 = false;
                 else score1 += score1_3;
-                int score1_4 = ScoreParameterCompatibility(L, 5, typeof(nfm_world_library.SoftFloat.fix64));
+                int score1_4 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 5);
                 if (score1_4 < 0) compatible1 = false;
                 else score1 += score1_4;
                 if (compatible1 && score1 > bestScore)
@@ -899,10 +899,10 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score0_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score0_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
                 if (score0_1 < 0) compatible0 = false;
                 else score0 += score0_1;
                 if (compatible0 && score0 > bestScore)
@@ -916,10 +916,10 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.fix64));
+                int score1_1 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
                 if (score1_1 < 0) compatible1 = false;
                 else score1 += score1_1;
                 if (compatible1 && score1 > bestScore)
@@ -1055,10 +1055,10 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score0_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
-                int score0_1 = ScoreParameterCompatibility(L, 2, typeof(Microsoft.Xna.Framework.Matrix));
+                int score0_1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Matrix>(L, 2);
                 if (score0_1 < 0) compatible0 = false;
                 else score0 += score0_1;
                 if (compatible0 && score0 > bestScore)
@@ -1072,10 +1072,10 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 1, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
-                int score1_1 = ScoreParameterCompatibility(L, 2, typeof(Microsoft.Xna.Framework.Quaternion));
+                int score1_1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Quaternion>(L, 2);
                 if (score1_1 < 0) compatible1 = false;
                 else score1 += score1_1;
                 if (compatible1 && score1 > bestScore)
@@ -1146,7 +1146,7 @@ public partial class LuaBindings
             {
                 int score0 = 0;
                 bool compatible0 = true;
-                int score0_0 = ScoreParameterCompatibility(L, 2, typeof(object));
+                int score0_0 = ScoreParameterCompatibility<object>(L, 2);
                 if (score0_0 < 0) compatible0 = false;
                 else score0 += score0_0;
                 if (compatible0 && score0 > bestScore)
@@ -1160,7 +1160,7 @@ public partial class LuaBindings
             {
                 int score1 = 0;
                 bool compatible1 = true;
-                int score1_0 = ScoreParameterCompatibility(L, 2, typeof(nfm_world_library.SoftFloat.f64Vector3));
+                int score1_0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.f64Vector3>(L, 2);
                 if (score1_0 < 0) compatible1 = false;
                 else score1 += score1_0;
                 if (compatible1 && score1 > bestScore)
