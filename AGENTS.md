@@ -451,11 +451,42 @@ Applied to:
 
 **Result:** Generator now correctly handles methods like `ProcessNumber(int)`, `ProcessNumber(double)`, `ProcessNumber(long)`, `ProcessNumber(float)` and selects the best match based on Lua argument types.
 
+### 6. Array Constructor Implementation (January 12, 2026)
+**Issue:** Array types exposed to Lua (e.g., `ArrayOfInt32`, `ArrayOfString`) had non-functional constructors that threw "not implemented" errors.
+
+**Solution:** Implemented full array constructor support with multidimensional capabilities:
+- Modified `GenerateConstructorMethod()` to detect array types via `type.IsArray`
+- Used `type.GetArrayRank()` to determine dimensionality (1D, 2D, 3D+)
+- Generated rank-specific constructor code:
+  - 1D arrays: `new elementType[dim0]`
+  - 2D arrays: `new elementType[dim0, dim1]`
+  - 3D+ arrays: `new elementType[dim0, dim1, dim2, ...]`
+- Added validation for non-negative dimensions and correct argument count
+- Updated `GenerateLuaTypeStub()` to generate correct stub signatures:
+  - 1D: `function ArrayOfInt32.new(length) end`
+  - 2D: `function ArrayOfInt322D.new(dim0, dim1) end`
+  - 3D: `function ArrayOfSingle3D.new(dim0, dim1, dim2) end`
+
+**Test Coverage:** Added 17 comprehensive tests covering:
+- 1D array creation, read/write, zero-length, negative validation, string arrays (6 tests)
+- 2D array creation, read/write, wrong arg count, zero dimensions, negative validation (5 tests)
+- 3D array creation, read/write, wrong arg count (3 tests)
+- Integration tests passing constructed arrays to type methods/constructors (3 tests)
+
+**Naming Convention Clarification:** Arrays follow the pattern:
+- `int[]` → `ArrayOfInt32` (NOT `Int32Array`)
+- `int[,]` → `ArrayOfInt32_2D` (in code) / `ArrayOfInt322D` (Lua global name)
+- `float[,,]` → `ArrayOfSingle_3D` (in code) / `ArrayOfSingle3D` (Lua global name)
+
+**Result:** Lua scripts can now create arrays with: `local arr = ArrayOfInt32.new(10)` or `local arr2d = ArrayOfInt322D.new(5, 3)`
+
+**Total Array Tests:** 45 (all passing)
+
 ---
 
 ## Test Status
 
-**Total Tests:** 245
+**Total Tests:** 262
 - **Status:** ✅ All passing
 
 ---
@@ -540,11 +571,11 @@ The binding system is fully type-safe:
 ## Future Considerations
 
 ### Potential Improvements
-1. **Multi-dimensional array support** - Currently only 1D arrays convert from tables
-2. **Dictionary support** - Convert Lua tables with string keys to C# dictionaries
-3. **Nullable value type handling** - Better support for `Nullable<T>`
-4. **Performance optimization** - Cache reflected methods instead of looking up on every call
-5. **Error messages** - Include file/line info in Lua error messages
+1. **Dictionary support** - Convert Lua tables with string keys to C# dictionaries
+2. **Nullable value type handling** - Better support for `Nullable<T>`
+3. **Performance optimization** - Cache reflected methods instead of looking up on every call
+4. **Error messages** - Include file/line info in Lua error messages
+5. **Jagged array support** - Support for arrays of arrays (e.g., `int[][]`)
 
 ### Known Limitations
 1. Cannot bind `ref struct` types (by design - not marshallable)
@@ -552,6 +583,7 @@ The binding system is fully type-safe:
 3. No support for events (not yet implemented)
 4. No support for async methods (Lua is synchronous)
 5. Generic methods not supported (only generic types)
+6. Lua table → array conversion only supports 1D arrays (multidimensional array constructors use dimension parameters)
 
 ---
 
