@@ -1,8 +1,105 @@
-# Agent Guide: NFMWorld Lua Source Generator
+# AGENTS.md
 
-**Last Updated:** January 12, 2026
+This document contains critical knowledge about the NFMWorld project for future AI agents working on this codebase.
 
-This document contains critical knowledge about the NFMWorld Lua Source Generator project for future AI agents working on this codebase.
+## Project Context
+
+This is an FNA 3D world rendering engine called NFM-World. The project uses custom HLSL shaders for rendering polygons with advanced features like instancing, shadow mapping, fog, and lighting.
+NFM-World uses a niche rendering system with outlines and flat n-gon shading and meshes take n-gons as input which are then triangulated to produce polygons. The project also includes a polygon triangulation system for handling self-intersecting polygons, holes, and curved surfaces.
+
+## Polygon Triangulation System
+
+The project includes a complex polygon triangulation system (`PolygonTriangulator` class) for handling:
+- Self-intersecting polygons
+- Polygons with holes
+- Nearly-planar curved surfaces
+- Best-fit plane projection with fallback to axis-aligned projections
+
+**Key Features**:
+- Vertex deduplication with epsilon tolerance (1e-5f)
+- Region extraction for self-intersecting paths
+- Hole merging via bridge vertices
+- Ear-clipping triangulation with relaxed fallback
+- Projection validation to prevent vertex collapse
+
+**Known Issues**:
+- Curved surfaces may collapse when projected to best-fit plane
+- Solution: Try axis-aligned projections (YZ, XZ, XY) when best-fit fails
+- Self-intersecting polygons with 3 holes should produce 4 regions (8 triangles)
+
+### Coordinate System
+
+- Uses right-handed coordinate system
+- Y-axis is up
+- Light direction specified in world space
+- Camera position tracked for lighting calculations
+
+### Rendering Features
+
+**Lighting**:
+- Directional diffuse lighting
+- Environment light (ambient + directional components in `float2`)
+- Per-vertex or fullbright options
+- Face orientation detection (front vs back facing)
+
+**Fog**:
+- Distance-based exponential fog
+- Configurable density and fade distance
+- Applied in view space
+
+**Material Properties**:
+- Per-vertex colors or uniform base color
+- Alpha blending support
+- Color snapping effect
+- Brightness control (darken parameter)
+
+### Common Pitfalls
+
+1. **Triangulation Failures**: When triangulating:
+   - Check for duplicate consecutive vertices (including first/last wrap-around)
+   - Validate projection doesn't collapse 3D points to same 2D location
+   - Ensure signed area calculation for winding order detection
+
+### Shader Conversion Notes
+
+When converting from Three.js to FNA:
+- `vec2/vec3/vec4` → `float2/float3/float4`
+- `mat4` → `float4x4` or `matrix`
+- `mix()` → `lerp()`
+- `mod()` → `fmod()`
+- Three.js built-in uniforms map to:
+  - `modelMatrix` → custom `world` parameter
+  - `modelViewMatrix` → `mul(world, View)`
+  - `projectionMatrix` → `Projection`
+  - `normalMatrix` → `mul(float4(normal, 0), world).xyz` for world-space normals
+  - `cameraPosition` → `CameraPosition` uniform
+
+### Best Practices
+
+1. Always maintain consistent matrix multiplication order across all shader techniques
+2. Use the same world transform for both main rendering and shadow map generation
+3. Apply vertex modifications (decal offset, expansion) before any matrix transformations
+4. Validate projection methods when triangulating to prevent vertex collapse
+5. Use epsilon comparisons for floating-point vertex deduplication
+6. When debugging shader issues, start by commenting out all optional features and adding them back one at a time
+
+### Debug Strategies
+
+For shader issues:
+1. Output solid colors first to verify geometry is visible
+2. Check WorldPos values aren't NaN/Inf
+3. Verify View and Projection matrices are valid
+4. Test with Expand=false, IsFullbright=true to isolate issues
+5. Compare instance world matrix values with non-instanced rendering
+
+For triangulation issues:
+1. Log the 2D projected vertices and signed area
+2. Verify unique vertex count matches expectation
+3. Check for wrap-around duplicate vertices
+4. Validate projection preserves vertex distinctness
+5. Count expected triangles: simple polygon needs (n-2) triangles, but polygon-with-holes may need fewer
+
+## Lua Source Generator
 
 ---
 
