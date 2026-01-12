@@ -267,29 +267,73 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            if (lua_isnil(L, 1) != 0 || lua_isnil(L, 2) != 0)
+            // Multiple constructors with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try constructor 0: new SampleClass(int, string)
             {
-                int? arg0;
-                if (lua_isnil(L, 1) != 0)
-                    arg0 = null;
-                else
-                    arg0 = ToObject<int>(L, 1)!;
-                string? arg1;
-                if (lua_isnil(L, 2) != 0)
-                    arg1 = null;
-                else
-                    arg1 = ToObject<string>(L, 2)!;
-                var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1);
-                PushObject(L, obj, "MT_SampleClass");
-                return 1;
+                int score0 = 0;
+                bool compatible0 = true;
+                int score0_0 = ScoreParameterCompatibility(L, 1, typeof(int));
+                if (score0_0 < 0) compatible0 = false;
+                else score0 += score0_0;
+                int score0_1 = ScoreParameterCompatibility(L, 2, typeof(string));
+                if (score0_1 < 0) compatible0 = false;
+                else score0 += score0_1;
+                if (compatible0 && score0 > bestScore)
+                {
+                    bestScore = score0;
+                    bestIndex = 0;
+                }
             }
-            else
+
+            // Try constructor 1: new SampleClass(int?, string)
             {
-                var arg0 = ToObject<int>(L, 1)!;
-                var arg1 = ToObject<string>(L, 2)!;
-                var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1);
-                PushObject(L, obj, "MT_SampleClass");
-                return 1;
+                int score1 = 0;
+                bool compatible1 = true;
+                int score1_0 = ScoreParameterCompatibility(L, 1, typeof(int?));
+                if (score1_0 < 0) compatible1 = false;
+                else score1 += score1_0;
+                int score1_1 = ScoreParameterCompatibility(L, 2, typeof(string));
+                if (score1_1 < 0) compatible1 = false;
+                else score1 += score1_1;
+                if (compatible1 && score1 > bestScore)
+                {
+                    bestScore = score1;
+                    bestIndex = 1;
+                }
+            }
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<int>(L, 1)!;
+                        var arg1 = ToObject<string>(L, 2)!;
+                        var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1);
+                        PushObject(L, obj, "MT_SampleClass");
+                        return 1;
+                    }
+                case 1:
+                    {
+                        int? arg0;
+                        if (lua_isnil(L, 1) != 0)
+                            arg0 = null;
+                        else
+                            arg0 = ToObject<int>(L, 1)!;
+                        string? arg1;
+                        if (lua_isnil(L, 2) != 0)
+                            arg1 = null;
+                        else
+                            arg1 = ToObject<string>(L, 2)!;
+                        var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1);
+                        PushObject(L, obj, "MT_SampleClass");
+                        return 1;
+                    }
+                default:
+                    luaL_error(L, "No compatible constructor found for SampleClass");
+                    return 0;
             }
         }
 

@@ -242,10 +242,58 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<int>(L, 1)!;
-            var obj = new System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(arg0);
-            PushObject(L, obj, "MT_List_ReferencedType");
-            return 1;
+            // Multiple constructors with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try constructor 0: new List`1(int)
+            {
+                int score0 = 0;
+                bool compatible0 = true;
+                int score0_0 = ScoreParameterCompatibility(L, 1, typeof(int));
+                if (score0_0 < 0) compatible0 = false;
+                else score0 += score0_0;
+                if (compatible0 && score0 > bestScore)
+                {
+                    bestScore = score0;
+                    bestIndex = 0;
+                }
+            }
+
+            // Try constructor 1: new List`1(System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>)
+            {
+                int score1 = 0;
+                bool compatible1 = true;
+                int score1_0 = ScoreParameterCompatibility(L, 1, typeof(System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>));
+                if (score1_0 < 0) compatible1 = false;
+                else score1 += score1_0;
+                if (compatible1 && score1 > bestScore)
+                {
+                    bestScore = score1;
+                    bestIndex = 1;
+                }
+            }
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<int>(L, 1)!;
+                        var obj = new System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(arg0);
+                        PushObject(L, obj, "MT_List_ReferencedType");
+                        return 1;
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1)!;
+                        var obj = new System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(arg0);
+                        PushObject(L, obj, "MT_List_ReferencedType");
+                        return 1;
+                    }
+                default:
+                    luaL_error(L, "No compatible constructor found for List`1");
+                    return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for List`1 constructor");
@@ -1065,20 +1113,60 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
-            self.Sort(arg0);
-            return 0;
-        }
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
 
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
-            self.Sort(arg0);
-            return 0;
+            // Try overload 0: Sort(System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>)
+            {
+                int score0 = 0;
+                bool compatible0 = true;
+                int score0_0 = ScoreParameterCompatibility(L, 2, typeof(System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>));
+                if (score0_0 < 0) compatible0 = false;
+                else score0 += score0_0;
+                if (compatible0 && score0 > bestScore)
+                {
+                    bestScore = score0;
+                    bestIndex = 0;
+                }
+            }
+
+            // Try overload 1: Sort(System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>)
+            {
+                int score1 = 0;
+                bool compatible1 = true;
+                int score1_0 = ScoreParameterCompatibility(L, 2, typeof(System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>));
+                if (score1_0 < 0) compatible1 = false;
+                else score1 += score1_0;
+                if (compatible1 && score1 > bestScore)
+                {
+                    bestScore = score1;
+                    bestIndex = 1;
+                }
+            }
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>? arg0;
+                        if (lua_isnil(L, 2) != 0)
+                            arg0 = null;
+                        else
+                            arg0 = ToObject<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+                        self.Sort(arg0);
+                        return 0;
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<System.Comparison<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 2)!;
+                        self.Sort(arg0);
+                        return 0;
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for sort");
+                    return 0;
+            }
         }
 
         if (argCount == 3)

@@ -19,13 +19,16 @@ public partial class LuaBindings
 {
     private static int _nextObjectId = 1;
 
+    // Global storage for all managed objects (non-generic to allow runtime type queries)
+    private static readonly DictionarySlim<int, object> _objects = [];
+
+    // Map object IDs to their .NET types (for overload resolution)
+    private static readonly Dictionary<int, Type> _objectTypes = new();
+
     private static class TypeInfo<T>
     {
         // Maps C# types to their Lua metatable names
         public static string? Name;
-
-        // Storage for managed objects referenced by Lua userdata
-        public static readonly DictionarySlim<int, T> Objects = [];
     }
 
     // Keep delegates alive to prevent GC collection
@@ -39,81 +42,46 @@ public partial class LuaBindings
         _delegates.Clear();
         _objectCount = 0;
         _nextObjectId = 1;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithArrays>.Objects.Clear();
+        _objects.Clear();
+        _objectTypes.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithArrays>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>.Objects.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>.Objects.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>.Objects.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>.Objects.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>.Objects.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>.Objects.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>.Objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>.Objects.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>.Name = null;
-        TypeInfo<int[]>.Objects.Clear();
         TypeInfo<int[]>.Name = null;
-        TypeInfo<string[]>.Objects.Clear();
         TypeInfo<string[]>.Name = null;
-        TypeInfo<float[]>.Objects.Clear();
         TypeInfo<float[]>.Name = null;
-        TypeInfo<int[,]>.Objects.Clear();
         TypeInfo<int[,]>.Name = null;
-        TypeInfo<float[,,]>.Objects.Clear();
         TypeInfo<float[,,]>.Name = null;
-        TypeInfo<System.Collections.Generic.List<int>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.List<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.List<int>.Enumerator>.Objects.Clear();
         TypeInfo<System.Collections.Generic.List<int>.Enumerator>.Name = null;
-        TypeInfo<System.Collections.Generic.List<string>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.List<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.List<string>.Enumerator>.Objects.Clear();
         TypeInfo<System.Collections.Generic.List<string>.Enumerator>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Objects.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Name = null;
-        TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<long[]>.Objects.Clear();
         TypeInfo<long[]>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerable<int>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IEnumerable<int>>.Name = null;
-        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<int>>.Objects.Clear();
         TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.IComparer<int>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IComparer<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerable<string>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IEnumerable<string>>.Name = null;
-        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<string>>.Objects.Clear();
         TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.IComparer<string>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IComparer<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
         TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>.Objects.Clear();
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>.Name = null;
-        TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>.Objects.Clear();
         TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerator<int>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IEnumerator<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.IList<int>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IList<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerator<string>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IEnumerator<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.IList<string>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IList<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Objects.Clear();
         TypeInfo<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
     }
 
@@ -127,7 +95,8 @@ public partial class LuaBindings
     private static int StoreObject<T>(T obj)
     {
         var id = _nextObjectId++;
-        TypeInfo<T>.Objects.GetOrAddValueRef(id) = obj;
+        _objects.GetOrAddValueRef(id) = obj!;
+        _objectTypes[id] = typeof(T);
         _objectCount++;
         return id;
     }
@@ -137,7 +106,9 @@ public partial class LuaBindings
     /// </summary>
     private static T? GetObject<T>(int id)
     {
-        return TypeInfo<T>.Objects.GetValueOrDefault(id);
+        if (_objects.TryGetValue(id, out var obj) && obj is T typedObj)
+            return typedObj;
+        return default;
     }
 
     /// <summary>
@@ -145,7 +116,8 @@ public partial class LuaBindings
     /// </summary>
     private static void RemoveObject<T>(int id)
     {
-        TypeInfo<T>.Objects.Remove(id);
+        _objects.Remove(id);
+        _objectTypes.Remove(id);
         _objectCount--;
     }
 
@@ -231,8 +203,43 @@ public partial class LuaBindings
         unsafe
         {
             var id = *(int*)ptr;
-            TypeInfo<T>.Objects.GetOrAddValueRef(id) = value;
+            _objects.GetOrAddValueRef(id) = value;
         }
+    }
+
+    /// <summary>
+    /// Get the .NET type of an object stored in Lua userdata at the given stack index.
+    /// Returns null if the value is not userdata or the object is not found.
+    /// </summary>
+    private static Type? GetUserdataType(lua_State L, int idx)
+    {
+        if (lua_type(L, idx) != LUA_TUSERDATA) return null;
+
+        var ptr = lua_touserdata(L, idx);
+        if (ptr == 0) return null;
+
+        unsafe
+        {
+            var id = *(int*)ptr;
+            return _objectTypes.GetValueOrDefault(id);
+        }
+    }
+
+    /// <summary>
+    /// Get information about the type of value at a Lua stack position.
+    /// Returns (luaType, dotnetType) where dotnetType is non-null only for userdata.
+    /// </summary>
+    private static (int luaType, Type? dotnetType) GetLuaStackValueType(lua_State L, int idx)
+    {
+        var luaType = lua_type(L, idx);
+        Type? dotnetType = null;
+
+        if (luaType == LUA_TUSERDATA)
+        {
+            dotnetType = GetUserdataType(L, idx);
+        }
+
+        return (luaType, dotnetType);
     }
 
     /// <summary>
@@ -478,6 +485,103 @@ private static T? ToObject<T>(lua_State L, int idx)
         }
 
         throw new InvalidOperationException($"Cannot convert Lua type {luaType} to {typeof(T)}");
+    }
+
+    #endregion
+
+    #region Overload Resolution
+
+    /// <summary>
+    /// Score how compatible a Lua value is with a .NET parameter type.
+    /// Higher scores indicate better compatibility. -1 indicates incompatible.
+    /// </summary>
+    private static int ScoreParameterCompatibility(lua_State L, int stackIdx, Type paramType)
+    {
+        var (luaType, dotnetType) = GetLuaStackValueType(L, stackIdx);
+
+        // Nil can match nullable/reference types
+        if (luaType == LUA_TNIL)
+        {
+            return !paramType.IsValueType || Nullable.GetUnderlyingType(paramType) != null ? 0 : -1;
+        }
+
+        // Boolean matches
+        if (luaType == LUA_TBOOLEAN)
+        {
+            if (paramType == typeof(bool)) return 100; // Exact match
+            return -1; // No implicit conversions from bool
+        }
+
+        // String matches
+        if (luaType == LUA_TSTRING)
+        {
+            if (paramType == typeof(string)) return 100; // Exact match
+            return -1; // No implicit conversions from string
+        }
+
+        // Number matches (Lua numbers are always double)
+        if (luaType == LUA_TNUMBER)
+        {
+            // Check if the number is an integer value (no fractional part)
+            var numVal = lua_tonumber(L, stackIdx);
+            var isInteger = Math.Floor(numVal) == numVal;
+
+            if (isInteger)
+            {
+                // For integer values, check range compatibility and prefer appropriate integer types
+                // Priority: most appropriate integer type > double > float > other integer types
+                if (paramType == typeof(int) && numVal >= int.MinValue && numVal <= int.MaxValue) return 100;
+                if (paramType == typeof(long) && numVal >= long.MinValue && numVal <= long.MaxValue) return 100;
+                if (paramType == typeof(double)) return 90;   // Can hold any integer
+                if (paramType == typeof(float) && numVal >= float.MinValue && numVal <= float.MaxValue) return 85;
+                if (paramType == typeof(uint) && numVal >= uint.MinValue && numVal <= uint.MaxValue) return 80;
+                if (paramType == typeof(ulong) && numVal >= 0 && numVal <= ulong.MaxValue) return 80;
+                if (paramType == typeof(short) && numVal >= short.MinValue && numVal <= short.MaxValue) return 75;
+                if (paramType == typeof(ushort) && numVal >= ushort.MinValue && numVal <= ushort.MaxValue) return 75;
+                if (paramType == typeof(byte) && numVal >= byte.MinValue && numVal <= byte.MaxValue) return 70;
+                if (paramType == typeof(sbyte) && numVal >= sbyte.MinValue && numVal <= sbyte.MaxValue) return 70;
+                // Out of range for all integer types
+                if (paramType == typeof(double)) return 90;
+                if (paramType == typeof(float)) return 85;
+                return -1; // Can't fit in any numeric type
+            }
+            else
+            {
+                // For floating-point values, prefer floating-point types
+                // Priority: double > float > long > ulong > int > uint > other integer types
+                if (paramType == typeof(double)) return 100; // Exact match to Lua's number type
+                if (paramType == typeof(float)) return 90;   // Slight precision loss
+                if (paramType == typeof(long)) return 80;    // Large range, signed
+                if (paramType == typeof(ulong)) return 75;   // Large range, unsigned
+                if (paramType == typeof(int)) return 70;     // Standard integer
+                if (paramType == typeof(uint)) return 65;    // Unsigned variant
+                if (paramType == typeof(short)) return 60;   // Smaller range
+                if (paramType == typeof(ushort)) return 55;  // Smaller range, unsigned
+                if (paramType == typeof(byte)) return 50;    // Smallest range
+                if (paramType == typeof(sbyte)) return 45;   // Smallest range, signed
+            }
+            return -1; // Not a numeric type
+        }
+
+        // Table matches (can convert to 1D array)
+        if (luaType == LUA_TTABLE)
+        {
+            if (paramType.IsArray && paramType.GetArrayRank() == 1)
+            {
+                return 50; // Table can convert to array (but we can't check element types easily)
+            }
+            return -1; // Tables don't convert to other types
+        }
+
+        // Userdata matches (custom .NET types)
+        if (luaType == LUA_TUSERDATA && dotnetType != null)
+        {
+            if (paramType == dotnetType) return 100; // Exact type match
+            if (paramType.IsAssignableFrom(dotnetType)) return 80; // Inheritance/interface match
+            return -1; // Type mismatch
+        }
+
+        return -1; // Unknown or incompatible
     }
 
     #endregion

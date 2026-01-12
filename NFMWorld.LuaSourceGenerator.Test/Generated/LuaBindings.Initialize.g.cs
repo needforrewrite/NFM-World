@@ -22,6 +22,7 @@ public partial class LuaBindings
         Register_SampleStruct(L);
         Register_TypeWithByRefParameters(L);
         Register_TypeWithNestedGeneric(L);
+        Register_TypeWithOverloads(L);
         Register_TypeWithReferences(L);
         Register_Vector3Struct(L);
         Register_Int32Array(L);
