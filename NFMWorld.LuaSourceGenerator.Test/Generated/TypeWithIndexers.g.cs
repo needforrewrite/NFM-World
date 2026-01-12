@@ -221,9 +221,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var obj = new NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers();
-            PushObject(L, obj, "MT_TypeWithIndexers");
-            return 1;
+            try
+            {
+                var obj = new NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers();
+                PushObject(L, obj, "MT_TypeWithIndexers");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for TypeWithIndexers constructor");
@@ -236,9 +244,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers.Create();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers.Create();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for create");
@@ -260,8 +276,16 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
-            self.SetNumberAt(arg0, arg1);
-            return 0;
+            try
+            {
+                self.SetNumberAt(arg0, arg1);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for setNumberAt");
@@ -282,9 +306,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<int>(L, 2)!;
-            var result = self.GetNumberAt(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetNumberAt(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getNumberAt");
@@ -306,8 +338,16 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<string>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
-            self.SetValue(arg0, arg1);
-            return 0;
+            try
+            {
+                self.SetValue(arg0, arg1);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for setValue");
@@ -328,9 +368,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<string>(L, 2)!;
-            var result = self.GetValue(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetValue(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getValue");
@@ -353,8 +401,16 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
             var arg2 = ToObject<string>(L, 4)!;
-            self.SetGridValue(arg0, arg1, arg2);
-            return 0;
+            try
+            {
+                self.SetGridValue(arg0, arg1, arg2);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for setGridValue");
@@ -376,9 +432,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
-            var result = self.GetGridValue(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetGridValue(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getGridValue");
@@ -398,9 +462,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetNumbersLength();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetNumbersLength();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getNumbersLength");
@@ -420,9 +492,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetDataCount();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetDataCount();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getDataCount");
@@ -442,9 +522,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetGridCount();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetGridCount();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getGridCount");
@@ -464,9 +552,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");
@@ -486,9 +582,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -513,9 +617,17 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<object>(L, 2)!;
-            var result = self.Equals(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Equals(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for equals");
@@ -535,9 +647,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");

@@ -149,15 +149,39 @@ public partial class LuaBindings
         switch (key)
         {
             case "x":
-                obj.X = ToObject<float>(L, 3)!;
+                try
+                {
+                    obj.X = ToObject<float>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "y":
-                obj.Y = ToObject<float>(L, 3)!;
+                try
+                {
+                    obj.Y = ToObject<float>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "z":
-                obj.Z = ToObject<float>(L, 3)!;
+                try
+                {
+                    obj.Z = ToObject<float>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
         }
@@ -222,9 +246,17 @@ public partial class LuaBindings
             var arg0 = ToObject<float>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
             var arg2 = ToObject<float>(L, 3)!;
-            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct(arg0, arg1, arg2);
-            PushObject(L, obj, "MT_Vector3Struct");
-            return 1;
+            try
+            {
+                var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct(arg0, arg1, arg2);
+                PushObject(L, obj, "MT_Vector3Struct");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for Vector3Struct constructor");
@@ -239,9 +271,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
             var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 2)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.Cross(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.Cross(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for cross");
@@ -256,9 +296,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
             var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 2)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.Dot(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.Dot(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for dot");
@@ -273,9 +321,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.FromVec2(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.FromVec2(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for fromVec2");
@@ -290,10 +346,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.Normalized();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Normalized();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for normalized");
@@ -308,10 +372,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToVec2();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToVec2();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toVec2");
@@ -326,10 +398,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -349,10 +429,18 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<object>(L, 2)!;
-            var result = self.Equals(arg0);
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for equals");
@@ -367,10 +455,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
@@ -385,10 +481,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");

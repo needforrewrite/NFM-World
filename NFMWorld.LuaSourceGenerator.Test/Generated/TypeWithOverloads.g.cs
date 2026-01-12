@@ -142,10 +142,26 @@ public partial class LuaBindings
         switch (key)
         {
             case "value":
-                obj.Value = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Value = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "text":
-                obj.Text = ToObject<string>(L, 3)!;
+                try
+                {
+                    obj.Text = ToObject<string>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
         }
         return 0;
@@ -376,23 +392,47 @@ public partial class LuaBindings
                 case 0:
                     {
                         var arg0 = ToObject<int>(L, 1)!;
-                        var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads(arg0);
-                        PushObject(L, obj, "MT_TypeWithOverloads");
-                        return 1;
+                        try
+                        {
+                            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads(arg0);
+                            PushObject(L, obj, "MT_TypeWithOverloads");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<float>(L, 1)!;
-                        var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads(arg0);
-                        PushObject(L, obj, "MT_TypeWithOverloads");
-                        return 1;
+                        try
+                        {
+                            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads(arg0);
+                            PushObject(L, obj, "MT_TypeWithOverloads");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 2:
                     {
                         var arg0 = ToObject<string>(L, 1)!;
-                        var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads(arg0);
-                        PushObject(L, obj, "MT_TypeWithOverloads");
-                        return 1;
+                        try
+                        {
+                            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads(arg0);
+                            PushObject(L, obj, "MT_TypeWithOverloads");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible constructor found for TypeWithOverloads");
@@ -461,23 +501,47 @@ public partial class LuaBindings
                 case 0:
                     {
                         var arg0 = ToObject<int>(L, 1)!;
-                        var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<double>(L, 1)!;
-                        var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 2:
                     {
                         var arg0 = ToObject<string>(L, 1)!;
-                        var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for staticProcess");
@@ -567,30 +631,62 @@ public partial class LuaBindings
                 case 0:
                     {
                         var arg0 = ToObject<int>(L, 2)!;
-                        var result = self.ProcessNumber(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.ProcessNumber(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<double>(L, 2)!;
-                        var result = self.ProcessNumber(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.ProcessNumber(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 2:
                     {
                         var arg0 = ToObject<long>(L, 2)!;
-                        var result = self.ProcessNumber(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.ProcessNumber(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 3:
                     {
                         var arg0 = ToObject<float>(L, 2)!;
-                        var result = self.ProcessNumber(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.ProcessNumber(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for processNumber");
@@ -680,30 +776,62 @@ public partial class LuaBindings
                 case 0:
                     {
                         var arg0 = ToObject<string>(L, 2)!;
-                        var result = self.ProcessData(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.ProcessData(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<int[]>(L, 2)!;
-                        var result = self.ProcessData(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.ProcessData(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 2:
                     {
                         var arg0 = ToObject<float[]>(L, 2)!;
-                        var result = self.ProcessData(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.ProcessData(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 3:
                     {
                         var arg0 = ToObject<bool>(L, 2)!;
-                        var result = self.ProcessData(arg0);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.ProcessData(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for processData");
@@ -823,41 +951,81 @@ public partial class LuaBindings
                     {
                         var arg0 = ToObject<int>(L, 2)!;
                         var arg1 = ToObject<int>(L, 3)!;
-                        var result = self.Combine(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<float>(L, 2)!;
                         var arg1 = ToObject<float>(L, 3)!;
-                        var result = self.Combine(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 2:
                     {
                         var arg0 = ToObject<string>(L, 2)!;
                         var arg1 = ToObject<string>(L, 3)!;
-                        var result = self.Combine(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 3:
                     {
                         var arg0 = ToObject<int>(L, 2)!;
                         var arg1 = ToObject<string>(L, 3)!;
-                        var result = self.Combine(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 4:
                     {
                         var arg0 = ToObject<string>(L, 2)!;
                         var arg1 = ToObject<int>(L, 3)!;
-                        var result = self.Combine(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for combine");
@@ -882,9 +1050,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");
@@ -904,9 +1080,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -931,9 +1115,17 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<object>(L, 2)!;
-            var result = self.Equals(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Equals(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for equals");
@@ -953,9 +1145,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");

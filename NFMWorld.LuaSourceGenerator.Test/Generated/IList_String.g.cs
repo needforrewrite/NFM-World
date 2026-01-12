@@ -150,9 +150,17 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<string>(L, 2)!;
-            var result = self.IndexOf(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.IndexOf(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for indexOf");
@@ -178,8 +186,16 @@ public partial class LuaBindings
                 arg1 = null;
             else
                 arg1 = ToObject<string>(L, 3)!;
-            self.Insert(arg0, arg1);
-            return 0;
+            try
+            {
+                self.Insert(arg0, arg1);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for insert");
@@ -200,8 +216,16 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<int>(L, 2)!;
-            self.RemoveAt(arg0);
-            return 0;
+            try
+            {
+                self.RemoveAt(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for removeAt");

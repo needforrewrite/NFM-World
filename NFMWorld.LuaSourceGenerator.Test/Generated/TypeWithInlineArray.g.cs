@@ -121,7 +121,15 @@ public partial class LuaBindings
         switch (key)
         {
             case "buffer":
-                obj.buffer = ToObject<NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer>(L, 3)!;
+                try
+                {
+                    obj.buffer = ToObject<NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
         }
         return 0;
@@ -140,9 +148,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var obj = new NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray();
-            PushObject(L, obj, "MT_TypeWithInlineArray");
-            return 1;
+            try
+            {
+                var obj = new NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray();
+                PushObject(L, obj, "MT_TypeWithInlineArray");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for TypeWithInlineArray constructor");
@@ -163,9 +179,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<int>(L, 2)!;
-            var result = self.GetBufferValue(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetBufferValue(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getBufferValue");
@@ -187,8 +211,16 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
-            self.SetBufferValue(arg0, arg1);
-            return 0;
+            try
+            {
+                self.SetBufferValue(arg0, arg1);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for setBufferValue");
@@ -208,9 +240,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.SumBuffer();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.SumBuffer();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for sumBuffer");
@@ -230,9 +270,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");
@@ -252,9 +300,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -279,9 +335,17 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<object>(L, 2)!;
-            var result = self.Equals(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Equals(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for equals");
@@ -301,9 +365,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");

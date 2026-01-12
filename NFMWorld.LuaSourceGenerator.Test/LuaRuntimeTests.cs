@@ -2647,4 +2647,101 @@ public class LuaRuntimeTests
     }
 
     #endregion
+
+    #region Exception Propagation Tests
+
+    [TestMethod]
+    public void Exception_Constructor_PropagatesAsLuaError()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithExceptions.new(-1)
+            return obj
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var errorMessage = lua_tostring(_L, -1) ?? "";
+        Assert.IsTrue(errorMessage.Contains("ArgumentException"), $"Expected ArgumentException in error: {errorMessage}");
+        Assert.IsTrue(errorMessage.Contains("Value cannot be negative"), $"Expected message in error: {errorMessage}");
+    }
+
+    [TestMethod]
+    public void Exception_InstanceMethod_PropagatesAsLuaError()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithExceptions.new(10)
+            obj:throwsException()
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var errorMessage = lua_tostring(_L, -1) ?? "";
+        Assert.IsTrue(errorMessage.Contains("InvalidOperationException"), $"Expected InvalidOperationException in error: {errorMessage}");
+        Assert.IsTrue(errorMessage.Contains("This method always throws"), $"Expected message in error: {errorMessage}");
+    }
+
+    [TestMethod]
+    public void Exception_InstanceMethodWithParam_PropagatesAsLuaError()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithExceptions.new(10)
+            return obj:throwsExceptionWithParam(0)
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var errorMessage = lua_tostring(_L, -1) ?? "";
+        Assert.IsTrue(errorMessage.Contains("DivideByZeroException"), $"Expected DivideByZeroException in error: {errorMessage}");
+        Assert.IsTrue(errorMessage.Contains("Cannot divide by zero"), $"Expected message in error: {errorMessage}");
+    }
+
+    [TestMethod]
+    public void Exception_PropertySetter_PropagatesAsLuaError()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithExceptions.new(10)
+            obj.writableProperty = -5
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var errorMessage = lua_tostring(_L, -1) ?? "";
+        Assert.IsTrue(errorMessage.Contains("ArgumentException"), $"Expected ArgumentException in error: {errorMessage}");
+        Assert.IsTrue(errorMessage.Contains("Property cannot be negative"), $"Expected message in error: {errorMessage}");
+    }
+
+    [TestMethod]
+    public void Exception_StaticMethod_PropagatesAsLuaError()
+    {
+        var result = luaL_dostring(_L, @"
+            return TypeWithExceptions.staticThrows(-10)
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var errorMessage = lua_tostring(_L, -1) ?? "";
+        Assert.IsTrue(errorMessage.Contains("ArgumentException"), $"Expected ArgumentException in error: {errorMessage}");
+        Assert.IsTrue(errorMessage.Contains("x cannot be negative"), $"Expected message in error: {errorMessage}");
+    }
+
+    [TestMethod]
+    public void Exception_SuccessfulExecution_ReturnsCorrectly()
+    {
+        // Verify that non-throwing calls still work correctly
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithExceptions.new(10)
+            obj.writableProperty = 20
+            local result1 = obj:throwsExceptionWithParam(5)
+            local result2 = TypeWithExceptions.staticThrows(3)
+            return obj.value, obj.writableProperty, result1, result2
+        ");
+
+        AssertLuaOk(result);
+        var value = lua_tointeger(_L, -4);
+        var property = lua_tointeger(_L, -3);
+        var result1 = lua_tointeger(_L, -2);
+        var result2 = lua_tointeger(_L, -1);
+
+        Assert.AreEqual(20, value);
+        Assert.AreEqual(20, property);
+        Assert.AreEqual(20, result1); // 100 / 5 = 20
+        Assert.AreEqual(6, result2); // 3 * 2 = 6
+    }
+
+    #endregion
 }

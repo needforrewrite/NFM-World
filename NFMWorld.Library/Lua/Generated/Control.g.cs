@@ -153,52 +153,180 @@ public partial class LuaBindings
         switch (key)
         {
             case "arrace":
-                obj.Arrace = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Arrace = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "chatup":
-                obj.Chatup = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Chatup = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "down":
-                obj.Down = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Down = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "enter":
-                obj.Enter = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Enter = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "exit":
-                obj.Exit = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Exit = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "handb":
-                obj.Handb = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Handb = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "multion":
-                obj.Multion = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Multion = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "mutem":
-                obj.Mutem = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Mutem = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "mutes":
-                obj.Mutes = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Mutes = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "radar":
-                obj.Radar = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Radar = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "right":
-                obj.Right = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Right = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "up":
-                obj.Up = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Up = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "left":
-                obj.Left = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Left = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "lookback":
-                obj.Lookback = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Lookback = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "wall":
-                obj.Wall = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Wall = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "zyinv":
-                obj.Zyinv = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Zyinv = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
         }
         return 0;
@@ -217,9 +345,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var obj = new nfm_world_library.mad.Control();
-            PushObject(L, obj, "MT_Control");
-            return 1;
+            try
+            {
+                var obj = new nfm_world_library.mad.Control();
+                PushObject(L, obj, "MT_Control");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for Control constructor");
@@ -239,9 +375,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.Encode();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Encode();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for encode");
@@ -298,14 +442,30 @@ public partial class LuaBindings
                 case 0:
                     {
                         var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
-                        self.Decode(arg0);
-                        return 0;
+                        try
+                        {
+                            self.Decode(arg0);
+                            return 0;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2)!;
-                        self.Decode(arg0);
-                        return 0;
+                        try
+                        {
+                            self.Decode(arg0);
+                            return 0;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for decode");
@@ -330,9 +490,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");
@@ -352,9 +520,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -379,9 +555,17 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<object>(L, 2)!;
-            var result = self.Equals(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Equals(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for equals");
@@ -401,9 +585,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");

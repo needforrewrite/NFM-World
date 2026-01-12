@@ -160,11 +160,27 @@ public partial class LuaBindings
         switch (key)
         {
             case "x":
-                obj.X = ToObject<float>(L, 3)!;
+                try
+                {
+                    obj.X = ToObject<float>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "y":
-                obj.Y = ToObject<float>(L, 3)!;
+                try
+                {
+                    obj.Y = ToObject<float>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
         }
@@ -245,9 +261,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<float>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
-            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct(arg0, arg1);
-            PushObject(L, obj, "MT_SampleStruct");
-            return 1;
+            try
+            {
+                var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct(arg0, arg1);
+                PushObject(L, obj, "MT_SampleStruct");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for SampleStruct constructor");
@@ -262,9 +286,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1)!;
             var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 2)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.Distance(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.Distance(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for distance");
@@ -278,9 +310,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<float>(L, 1)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.FromAngle(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.FromAngle(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for fromAngle");
@@ -295,9 +335,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1)!;
             var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 2)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.Dot(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.Dot(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for dot");
@@ -312,10 +360,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.Normalized();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Normalized();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for normalized");
@@ -331,10 +387,18 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<float>(L, 2)!;
-            var result = self.Scale(arg0);
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Scale(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for scale");
@@ -351,9 +415,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<float>(L, 2)!;
             var arg1 = ToObject<float>(L, 3)!;
-            self.Set(arg0, arg1);
-            UpdateStruct(L, 1, self);
-            return 0;
+            try
+            {
+                self.Set(arg0, arg1);
+                UpdateStruct(L, 1, self);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for set");
@@ -373,10 +445,18 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<object>(L, 2)!;
-            var result = self.Equals(arg0);
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for equals");
@@ -391,10 +471,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
@@ -409,10 +497,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -427,10 +523,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");

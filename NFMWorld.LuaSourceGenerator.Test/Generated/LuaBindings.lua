@@ -541,6 +541,47 @@ function TypeWithByRefParametersInstance:equals(obj) end
 function TypeWithByRefParametersInstance:getHashCode() end
 
 
+---@class (exact) TypeWithExceptionsInstance
+---@field value integer
+---@field writableProperty integer
+local TypeWithExceptionsInstance = {}
+
+---@class (exact) TypeWithExceptions
+---Creates a new TypeWithExceptions
+---@param value integer
+---@return TypeWithExceptionsInstance
+function TypeWithExceptions.new(value) end
+
+---@param x integer
+---@return integer
+function TypeWithExceptions.staticThrows(x) end
+
+---@param self TypeWithExceptionsInstance
+function TypeWithExceptionsInstance:throwsException() end
+
+---@param self TypeWithExceptionsInstance
+---@param x integer
+---@return integer
+function TypeWithExceptionsInstance:throwsExceptionWithParam(x) end
+
+---@param self TypeWithExceptionsInstance
+---@return TypeInstance
+function TypeWithExceptionsInstance:getType() end
+
+---@param self TypeWithExceptionsInstance
+---@return string
+function TypeWithExceptionsInstance:toString() end
+
+---@param self TypeWithExceptionsInstance
+---@param obj? ObjectInstance
+---@return boolean
+function TypeWithExceptionsInstance:equals(obj) end
+
+---@param self TypeWithExceptionsInstance
+---@return integer
+function TypeWithExceptionsInstance:getHashCode() end
+
+
 ---@class (exact) TypeWithNestedGenericInstance
 ---@field numbers List_Int32Instance
 local TypeWithNestedGenericInstance = {}

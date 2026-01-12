@@ -119,10 +119,26 @@ public partial class LuaBindings
         switch (key)
         {
             case "position":
-                obj.Position = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
+                try
+                {
+                    obj.Position = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "rotation":
-                obj.Rotation = ToObject<nfm_world_library.SoftFloat.f64Euler>(L, 3)!;
+                try
+                {
+                    obj.Rotation = ToObject<nfm_world_library.SoftFloat.f64Euler>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
         }
         return 0;

@@ -138,22 +138,70 @@ public partial class LuaBindings
         switch (key)
         {
             case "currentCheckpoint":
-                obj.currentCheckpoint = ToObject<System.UInt16>(L, 3)!;
+                try
+                {
+                    obj.currentCheckpoint = ToObject<System.UInt16>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "currentLap":
-                obj.currentLap = ToObject<System.Byte>(L, 3)!;
+                try
+                {
+                    obj.currentLap = ToObject<System.Byte>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "totalCheckpoint":
-                obj.totalCheckpoint = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.totalCheckpoint = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "lastCheckpointNode":
-                obj.lastCheckpointNode = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.lastCheckpointNode = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "placement":
-                obj.placement = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.placement = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "bot":
-                obj.Bot = ToObject<nfm_world_library.backend.ai.BaseAi>(L, 3)!;
+                try
+                {
+                    obj.Bot = ToObject<nfm_world_library.backend.ai.BaseAi>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
         }
         return 0;
@@ -197,8 +245,16 @@ public partial class LuaBindings
             var arg7 = ToObject<int>(L, 9)!;
             var arg8 = ToObject<bool>(L, 10)!;
             var arg9 = ToObject<int>(L, 11)!;
-            self.AddDust(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-            return 0;
+            try
+            {
+                self.AddDust(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for addDust");
@@ -226,8 +282,16 @@ public partial class LuaBindings
             var arg5 = ToObject<float>(L, 7)!;
             var arg6 = ToObject<int>(L, 8)!;
             var arg7 = ToObject<int>(L, 9)!;
-            self.Spark(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-            return 0;
+            try
+            {
+                self.Spark(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for spark");
@@ -250,8 +314,16 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.CarStats>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
-            self.DamageX(arg0, arg1, arg2);
-            return 0;
+            try
+            {
+                self.DamageX(arg0, arg1, arg2);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for damageX");
@@ -277,8 +349,16 @@ public partial class LuaBindings
             var arg3 = ToObject<bool>(L, 5)!;
             var arg4 = ToObject<int>(L, 6)!;
             var arg5 = ToObject<int>(L, 7)!;
-            self.DamageY(arg0, arg1, arg2, arg3, arg4, arg5);
-            return 0;
+            try
+            {
+                self.DamageY(arg0, arg1, arg2, arg3, arg4, arg5);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for damageY");
@@ -301,8 +381,16 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.CarStats>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
-            self.DamageZ(arg0, arg1, arg2);
-            return 0;
+            try
+            {
+                self.DamageZ(arg0, arg1, arg2);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for damageZ");
@@ -323,8 +411,16 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<nfm_world_library.mad.IStage>(L, 2)!;
-            self.Drive(arg0);
-            return 0;
+            try
+            {
+                self.Drive(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for drive");
@@ -345,8 +441,16 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<nfm_world_library.mad.IInGameCar>(L, 2)!;
-            self.Collide(arg0);
-            return 0;
+            try
+            {
+                self.Collide(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for collide");
@@ -366,8 +470,16 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            self.ResetPosition();
-            return 0;
+            try
+            {
+                self.ResetPosition();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for resetPosition");

@@ -175,17 +175,33 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var obj = new nfm_world_library.util.UnlimitedArray<bool>();
-            PushObject(L, obj, "MT_UnlimitedArray_Boolean");
-            return 1;
+            try
+            {
+                var obj = new nfm_world_library.util.UnlimitedArray<bool>();
+                PushObject(L, obj, "MT_UnlimitedArray_Boolean");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         if (argCount == 1)
         {
             var arg0 = ToObject<int>(L, 1)!;
-            var obj = new nfm_world_library.util.UnlimitedArray<bool>(arg0);
-            PushObject(L, obj, "MT_UnlimitedArray_Boolean");
-            return 1;
+            try
+            {
+                var obj = new nfm_world_library.util.UnlimitedArray<bool>(arg0);
+                PushObject(L, obj, "MT_UnlimitedArray_Boolean");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for UnlimitedArray`1 constructor");
@@ -205,9 +221,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetEnumerator();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetEnumerator();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getEnumerator");
@@ -228,9 +252,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<int>(L, 2)!;
-            var result = self.EnsureCapacity(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.EnsureCapacity(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for ensureCapacity");
@@ -251,8 +283,16 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<bool>(L, 2)!;
-            self.Add(arg0);
-            return 0;
+            try
+            {
+                self.Add(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for add");
@@ -272,8 +312,16 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            self.Clear();
-            return 0;
+            try
+            {
+                self.Clear();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for clear");
@@ -294,9 +342,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<bool>(L, 2)!;
-            var result = self.Contains(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Contains(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for contains");
@@ -318,8 +374,16 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<bool[]>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
-            self.CopyTo(arg0, arg1);
-            return 0;
+            try
+            {
+                self.CopyTo(arg0, arg1);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for copyTo");
@@ -340,9 +404,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<bool>(L, 2)!;
-            var result = self.Remove(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Remove(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for remove");
@@ -363,9 +435,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<bool>(L, 2)!;
-            var result = self.IndexOf(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.IndexOf(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for indexOf");
@@ -387,8 +467,16 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<bool>(L, 3)!;
-            self.Insert(arg0, arg1);
-            return 0;
+            try
+            {
+                self.Insert(arg0, arg1);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for insert");
@@ -409,8 +497,16 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<int>(L, 2)!;
-            self.RemoveAt(arg0);
-            return 0;
+            try
+            {
+                self.RemoveAt(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for removeAt");
@@ -430,9 +526,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToArray();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToArray();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toArray");
@@ -453,8 +557,16 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<System.Comparison<bool>>(L, 2)!;
-            self.Sort(arg0);
-            return 0;
+            try
+            {
+                self.Sort(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for sort");
@@ -474,9 +586,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");
@@ -496,9 +616,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -523,9 +651,17 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<object>(L, 2)!;
-            var result = self.Equals(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Equals(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for equals");
@@ -545,9 +681,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");

@@ -171,7 +171,15 @@ public partial class LuaBindings
         switch (key)
         {
             case "value":
-                obj.Value = ToObject<System.Byte>(L, 3)!;
+                try
+                {
+                    obj.Value = ToObject<System.Byte>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
         }
@@ -288,9 +296,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<System.Byte>(L, 1)!;
-            var obj = new Maxine.Extensions.Nibble<System.Byte>(arg0);
-            PushObject(L, obj, "MT_Nibble_Byte");
-            return 1;
+            try
+            {
+                var obj = new Maxine.Extensions.Nibble<System.Byte>(arg0);
+                PushObject(L, obj, "MT_Nibble_Byte");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for Nibble`1 constructor");
@@ -309,9 +325,17 @@ public partial class LuaBindings
                 arg1 = null;
             else
                 arg1 = ToObject<System.IFormatProvider>(L, 2)!;
-            var result = Maxine.Extensions.Nibble<System.Byte>.Parse(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = Maxine.Extensions.Nibble<System.Byte>.Parse(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for parse");
@@ -377,18 +401,34 @@ public partial class LuaBindings
                 case 0:
                     {
                         var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
-                        var result = self.Equals(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Equals(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<System.Byte>(L, 2)!;
-                        var result = self.Equals(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Equals(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 2:
                     {
@@ -397,10 +437,18 @@ public partial class LuaBindings
                             arg0 = null;
                         else
                             arg0 = ToObject<object>(L, 2)!;
-                        var result = self.Equals(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Equals(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for equals");
@@ -457,18 +505,34 @@ public partial class LuaBindings
                 case 0:
                     {
                         var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
-                        var result = self.CompareTo(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.CompareTo(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<System.Byte>(L, 2)!;
-                        var result = self.CompareTo(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.CompareTo(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for compareTo");
@@ -488,10 +552,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
@@ -506,10 +578,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         if (argCount == 2)
@@ -524,10 +604,18 @@ public partial class LuaBindings
                 arg1 = null;
             else
                 arg1 = ToObject<System.IFormatProvider>(L, 3)!;
-            var result = self.ToString(arg0, arg1);
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString(arg0, arg1);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -542,10 +630,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");

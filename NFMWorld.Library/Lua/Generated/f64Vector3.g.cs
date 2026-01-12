@@ -271,15 +271,39 @@ public partial class LuaBindings
         switch (key)
         {
             case "x":
-                obj.X = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.X = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "y":
-                obj.Y = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Y = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "z":
-                obj.Z = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Z = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
         }
@@ -494,18 +518,34 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 1)!;
-            var obj = new nfm_world_library.SoftFloat.f64Vector3(arg0);
-            PushObject(L, obj, "MT_f64Vector3");
-            return 1;
+            try
+            {
+                var obj = new nfm_world_library.SoftFloat.f64Vector3(arg0);
+                PushObject(L, obj, "MT_f64Vector3");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         if (argCount == 2)
         {
             var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
-            var obj = new nfm_world_library.SoftFloat.f64Vector3(arg0, arg1);
-            PushObject(L, obj, "MT_f64Vector3");
-            return 1;
+            try
+            {
+                var obj = new nfm_world_library.SoftFloat.f64Vector3(arg0, arg1);
+                PushObject(L, obj, "MT_f64Vector3");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         if (argCount == 3)
@@ -513,9 +553,17 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
-            var obj = new nfm_world_library.SoftFloat.f64Vector3(arg0, arg1, arg2);
-            PushObject(L, obj, "MT_f64Vector3");
-            return 1;
+            try
+            {
+                var obj = new nfm_world_library.SoftFloat.f64Vector3(arg0, arg1, arg2);
+                PushObject(L, obj, "MT_f64Vector3");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for f64Vector3 constructor");
@@ -530,9 +578,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Add(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Add(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for add");
@@ -550,9 +606,17 @@ public partial class LuaBindings
             var arg2 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
             var arg3 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
             var arg4 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 5)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Barycentric(arg0, arg1, arg2, arg3, arg4);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Barycentric(arg0, arg1, arg2, arg3, arg4);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for barycentric");
@@ -570,9 +634,17 @@ public partial class LuaBindings
             var arg2 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
             var arg3 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 4)!;
             var arg4 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 5)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.CatmullRom(arg0, arg1, arg2, arg3, arg4);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.CatmullRom(arg0, arg1, arg2, arg3, arg4);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for catmullRom");
@@ -588,9 +660,17 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Clamp(arg0, arg1, arg2);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Clamp(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for clamp");
@@ -605,9 +685,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Cross(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Cross(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for cross");
@@ -622,9 +710,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Distance(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Distance(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for distance");
@@ -639,9 +735,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.DistanceSquared(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.DistanceSquared(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for distanceSquared");
@@ -698,17 +802,33 @@ public partial class LuaBindings
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
                         var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-                        var result = nfm_world_library.SoftFloat.f64Vector3.Divide(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.f64Vector3.Divide(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
                         var arg1 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
-                        var result = nfm_world_library.SoftFloat.f64Vector3.Divide(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.f64Vector3.Divide(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for divide");
@@ -728,9 +848,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Dot(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Dot(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for dot");
@@ -808,9 +936,17 @@ public partial class LuaBindings
                         var arg2 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
                         var arg3 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 4)!;
                         var arg4 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 5)!;
-                        var result = nfm_world_library.SoftFloat.f64Vector3.Hermite(arg0, arg1, arg2, arg3, arg4);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.f64Vector3.Hermite(arg0, arg1, arg2, arg3, arg4);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
@@ -819,9 +955,17 @@ public partial class LuaBindings
                         var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
                         var arg3 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
                         var arg4 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 5)!;
-                        var result = nfm_world_library.SoftFloat.f64Vector3.Hermite(arg0, arg1, arg2, arg3, arg4);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.f64Vector3.Hermite(arg0, arg1, arg2, arg3, arg4);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for hermite");
@@ -842,9 +986,17 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Lerp(arg0, arg1, arg2);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Lerp(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for lerp");
@@ -859,9 +1011,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Max(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Max(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for max");
@@ -876,9 +1036,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Min(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Min(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for min");
@@ -935,17 +1103,33 @@ public partial class LuaBindings
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
                         var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-                        var result = nfm_world_library.SoftFloat.f64Vector3.Multiply(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.f64Vector3.Multiply(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
                         var arg1 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
-                        var result = nfm_world_library.SoftFloat.f64Vector3.Multiply(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.f64Vector3.Multiply(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for multiply");
@@ -964,9 +1148,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Negate(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Negate(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for negate");
@@ -980,9 +1172,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Normalize(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Normalize(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for normalize");
@@ -997,9 +1197,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Reflect(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Reflect(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for reflect");
@@ -1015,9 +1223,17 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.SmoothStep(arg0, arg1, arg2);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.SmoothStep(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for smoothStep");
@@ -1032,9 +1248,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.Subtract(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.Subtract(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for subtract");
@@ -1091,17 +1315,33 @@ public partial class LuaBindings
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
                         var arg1 = ToObject<Microsoft.Xna.Framework.Matrix>(L, 2)!;
-                        var result = nfm_world_library.SoftFloat.f64Vector3.Transform(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.f64Vector3.Transform(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
                         var arg1 = ToObject<Microsoft.Xna.Framework.Quaternion>(L, 2)!;
-                        var result = nfm_world_library.SoftFloat.f64Vector3.Transform(arg0, arg1);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.f64Vector3.Transform(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for transform");
@@ -1121,9 +1361,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<Microsoft.Xna.Framework.Matrix>(L, 2)!;
-            var result = nfm_world_library.SoftFloat.f64Vector3.TransformNormal(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.f64Vector3.TransformNormal(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for transformNormal");
@@ -1175,18 +1423,34 @@ public partial class LuaBindings
                 case 0:
                     {
                         var arg0 = ToObject<object>(L, 2)!;
-                        var result = self.Equals(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Equals(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
-                        var result = self.Equals(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Equals(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for equals");
@@ -1206,10 +1470,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
@@ -1224,10 +1496,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.Length();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Length();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for length");
@@ -1242,10 +1522,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.LengthSquared();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.LengthSquared();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for lengthSquared");
@@ -1260,9 +1548,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            self.Normalize();
-            UpdateStruct(L, 1, self);
-            return 0;
+            try
+            {
+                self.Normalize();
+                UpdateStruct(L, 1, self);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for normalize");
@@ -1277,10 +1573,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -1295,10 +1599,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");

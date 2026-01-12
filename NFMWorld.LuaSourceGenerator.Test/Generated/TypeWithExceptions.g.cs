@@ -10,43 +10,47 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public partial class LuaBindings
 {
-    // =========== Bindings for TypeWithByRefParameters (TypeWithByRefParameters) ===========
-    private static void Register_TypeWithByRefParameters(lua_State L)
+    // =========== Bindings for TypeWithExceptions (TypeWithExceptions) ===========
+    private static void Register_TypeWithExceptions(lua_State L)
     {
-        RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>("MT_TypeWithByRefParameters");
+        RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>("MT_TypeWithExceptions");
 
         // Create metatable for instances
-        luaL_newmetatable(L, "MT_TypeWithByRefParameters");
+        luaL_newmetatable(L, "MT_TypeWithExceptions");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters__gc));
+        lua_pushcfunction(L, KeepAlive(TypeWithExceptions__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters__index));
+        lua_pushcfunction(L, KeepAlive(TypeWithExceptions__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters__newindex));
+        lua_pushcfunction(L, KeepAlive(TypeWithExceptions__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters__tostring));
+        lua_pushcfunction(L, KeepAlive(TypeWithExceptions__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithByRefParameters
+        // Create type table for TypeWithExceptions
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters_new));
+        lua_pushcfunction(L, KeepAlive(TypeWithExceptions_new));
         lua_setfield(L, -2, "new");
 
-        lua_setglobal(L, "TypeWithByRefParameters");
+        // Static method: staticThrows
+        lua_pushcfunction(L, KeepAlive(TypeWithExceptions_static_staticThrows));
+        lua_setfield(L, -2, "staticThrows");
+
+        lua_setglobal(L, "TypeWithExceptions");
     }
 
-    private static int TypeWithByRefParameters__gc(lua_State L)
+    private static int TypeWithExceptions__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
         if (ptr != 0)
@@ -54,15 +58,15 @@ public partial class LuaBindings
             unsafe
             {
                 var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(id);
+                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(id);
             }
         }
         return 0;
     }
 
-    private static int TypeWithByRefParameters__index(lua_State L)
+    private static int TypeWithExceptions__index(lua_State L)
     {
-        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
 
         var key = lua_tostring(L, 2);
@@ -73,20 +77,26 @@ public partial class LuaBindings
             case "value":
                 PushValue(L, obj.Value);
                 return 1;
-            case "getValue":
-                lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters_method_getValue));
+            case "writableProperty":
+                PushValue(L, obj.WritableProperty);
+                return 1;
+            case "throwsException":
+                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_throwsException));
+                return 1;
+            case "throwsExceptionWithParam":
+                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_throwsExceptionWithParam));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters_method_getType));
+                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters_method_toString));
+                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters_method_equals));
+                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(TypeWithByRefParameters_method_getHashCode));
+                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -94,9 +104,9 @@ public partial class LuaBindings
         }
     }
 
-    private static int TypeWithByRefParameters__newindex(lua_State L)
+    private static int TypeWithExceptions__newindex(lua_State L)
     {
-        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(L, 1);
         if (obj == null) return 0;
 
         var key = lua_tostring(L, 2);
@@ -115,43 +125,39 @@ public partial class LuaBindings
                     return 0;
                 }
                 break;
+            case "writableProperty":
+                try
+                {
+                    obj.WritableProperty = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
+                break;
         }
         return 0;
     }
 
-    private static int TypeWithByRefParameters__tostring(lua_State L)
+    private static int TypeWithExceptions__tostring(lua_State L)
     {
-        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
+        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(L, 1);
         lua_pushstring(L, obj?.ToString() ?? "nil");
         return 1;
     }
 
-    private static int TypeWithByRefParameters_new(lua_State L)
+    private static int TypeWithExceptions_new(lua_State L)
     {
         var argCount = lua_gettop(L);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters();
-                PushObject(L, obj, "MT_TypeWithByRefParameters");
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
-                return 0;
-            }
-        }
 
         if (argCount == 1)
         {
             var arg0 = ToObject<int>(L, 1)!;
             try
             {
-                var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters(arg0);
-                PushObject(L, obj, "MT_TypeWithByRefParameters");
+                var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions(arg0);
+                PushObject(L, obj, "MT_TypeWithExceptions");
                 return 1;
             }
             catch (System.Exception ex)
@@ -161,26 +167,20 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for TypeWithByRefParameters constructor");
+        luaL_error(L, "Invalid arguments for TypeWithExceptions constructor");
         return 0;
     }
 
-    private static int TypeWithByRefParameters_method_getValue(lua_State L)
+    private static int TypeWithExceptions_static_staticThrows(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
+        var argCount = lua_gettop(L);
 
-        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
-        if (self == null)
+        if (argCount == 1)
         {
-            luaL_error(L, "Expected TypeWithByRefParameters as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
+            var arg0 = ToObject<int>(L, 1)!;
             try
             {
-                var result = self.GetValue();
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions.StaticThrows(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -191,18 +191,78 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for getValue");
+        luaL_error(L, "Invalid arguments for staticThrows");
         return 0;
     }
 
-    private static int TypeWithByRefParameters_method_getType(lua_State L)
+    private static int TypeWithExceptions_method_throwsException(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(L, 1);
         if (self == null)
         {
-            luaL_error(L, "Expected TypeWithByRefParameters as first argument");
+            luaL_error(L, "Expected TypeWithExceptions as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                self.ThrowsException();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for throwsException");
+        return 0;
+    }
+
+    private static int TypeWithExceptions_method_throwsExceptionWithParam(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithExceptions as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            try
+            {
+                var result = self.ThrowsExceptionWithParam(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for throwsExceptionWithParam");
+        return 0;
+    }
+
+    private static int TypeWithExceptions_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithExceptions as first argument");
             return 0;
         }
 
@@ -225,14 +285,14 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithByRefParameters_method_toString(lua_State L)
+    private static int TypeWithExceptions_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(L, 1);
         if (self == null)
         {
-            luaL_error(L, "Expected TypeWithByRefParameters as first argument");
+            luaL_error(L, "Expected TypeWithExceptions as first argument");
             return 0;
         }
 
@@ -255,14 +315,14 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithByRefParameters_method_equals(lua_State L)
+    private static int TypeWithExceptions_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(L, 1);
         if (self == null)
         {
-            luaL_error(L, "Expected TypeWithByRefParameters as first argument");
+            luaL_error(L, "Expected TypeWithExceptions as first argument");
             return 0;
         }
 
@@ -290,14 +350,14 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithByRefParameters_method_getHashCode(lua_State L)
+    private static int TypeWithExceptions_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>(L, 1);
         if (self == null)
         {
-            luaL_error(L, "Expected TypeWithByRefParameters as first argument");
+            luaL_error(L, "Expected TypeWithExceptions as first argument");
             return 0;
         }
 

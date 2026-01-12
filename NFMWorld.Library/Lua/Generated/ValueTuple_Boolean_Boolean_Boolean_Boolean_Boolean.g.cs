@@ -115,23 +115,63 @@ public partial class LuaBindings
         switch (key)
         {
             case "item1":
-                obj.Item1 = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Item1 = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "item2":
-                obj.Item2 = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Item2 = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "item3":
-                obj.Item3 = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Item3 = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "item4":
-                obj.Item4 = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Item4 = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "item5":
-                obj.Item5 = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Item5 = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
         }
@@ -163,9 +203,17 @@ public partial class LuaBindings
             var arg2 = ToObject<bool>(L, 3)!;
             var arg3 = ToObject<bool>(L, 4)!;
             var arg4 = ToObject<bool>(L, 5)!;
-            var obj = new System.ValueTuple<bool, bool, bool, bool, bool>(arg0, arg1, arg2, arg3, arg4);
-            PushObject(L, obj, "MT_ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean");
-            return 1;
+            try
+            {
+                var obj = new System.ValueTuple<bool, bool, bool, bool, bool>(arg0, arg1, arg2, arg3, arg4);
+                PushObject(L, obj, "MT_ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for ValueTuple`5 constructor");
@@ -221,18 +269,34 @@ public partial class LuaBindings
                             arg0 = null;
                         else
                             arg0 = ToObject<object>(L, 2)!;
-                        var result = self.Equals(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Equals(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
                         var arg0 = ToObject<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2)!;
-                        var result = self.Equals(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Equals(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for equals");
@@ -253,10 +317,18 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2)!;
-            var result = self.CompareTo(arg0);
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.CompareTo(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for compareTo");
@@ -271,10 +343,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
@@ -289,10 +369,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -307,10 +395,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");

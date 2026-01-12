@@ -2411,9 +2411,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         }
 
                         var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
-                        AppendLine($"var obj = new {fullTypeName}({argList});");
-                        AppendLine($"PushObject(L, obj, \"MT_{safeName}\");");
-                        AppendLine("return 1;");
+                        AppendLine("try");
+                        AppendLine("{");
+                        using (Indent())
+                        {
+                            AppendLine($"var obj = new {fullTypeName}({argList});");
+                            AppendLine($"PushObject(L, obj, \"MT_{safeName}\");");
+                            AppendLine("return 1;");
+                        }
+                        AppendLine("}");
+                        AppendLine("catch (System.Exception ex)");
+                        AppendLine("{");
+                        using (Indent())
+                        {
+                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                            AppendLine("return 0;");
+                        }
+                        AppendLine("}");
                     }
                     else
                     {
@@ -2478,9 +2492,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                         }
 
                                         var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
-                                        AppendLine($"var obj = new {fullTypeName}({argList});");
-                                        AppendLine($"PushObject(L, obj, \"MT_{safeName}\");");
-                                        AppendLine("return 1;");
+                                        AppendLine("try");
+                                        AppendLine("{");
+                                        using (Indent())
+                                        {
+                                            AppendLine($"var obj = new {fullTypeName}({argList});");
+                                            AppendLine($"PushObject(L, obj, \"MT_{safeName}\");");
+                                            AppendLine("return 1;");
+                                        }
+                                        AppendLine("}");
+                                        AppendLine("catch (System.Exception ex)");
+                                        AppendLine("{");
+                                        using (Indent())
+                                        {
+                                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                            AppendLine("return 0;");
+                                        }
+                                        AppendLine("}");
                                     }
                                     AppendLine("}");
                                 }
@@ -2553,14 +2581,42 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                             if (method.ReturnType == typeof(void))
                             {
-                                AppendLine($"{fullTypeName}.{method.Name}({argList});");
-                                AppendLine("return 0;");
+                                AppendLine("try");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine($"{fullTypeName}.{method.Name}({argList});");
+                                    AppendLine("return 0;");
+                                }
+                                AppendLine("}");
+                                AppendLine("catch (System.Exception ex)");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                    AppendLine("return 0;");
+                                }
+                                AppendLine("}");
                             }
                             else
                             {
-                                AppendLine($"var result = {fullTypeName}.{method.Name}({argList});");
-                                GeneratePushValue("result", method.ReturnType);
-                                AppendLine("return 1;");
+                                AppendLine("try");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine($"var result = {fullTypeName}.{method.Name}({argList});");
+                                    GeneratePushValue("result", method.ReturnType);
+                                    AppendLine("return 1;");
+                                }
+                                AppendLine("}");
+                                AppendLine("catch (System.Exception ex)");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                    AppendLine("return 0;");
+                                }
+                                AppendLine("}");
                             }
                         }
                         else
@@ -2629,14 +2685,42 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                                             if (method.ReturnType == typeof(void))
                                             {
-                                                AppendLine($"{fullTypeName}.{method.Name}({argList});");
-                                                AppendLine("return 0;");
+                                                AppendLine("try");
+                                                AppendLine("{");
+                                                using (Indent())
+                                                {
+                                                    AppendLine($"{fullTypeName}.{method.Name}({argList});");
+                                                    AppendLine("return 0;");
+                                                }
+                                                AppendLine("}");
+                                                AppendLine("catch (System.Exception ex)");
+                                                AppendLine("{");
+                                                using (Indent())
+                                                {
+                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                                    AppendLine("return 0;");
+                                                }
+                                                AppendLine("}");
                                             }
                                             else
                                             {
-                                                AppendLine($"var result = {fullTypeName}.{method.Name}({argList});");
-                                                GeneratePushValue("result", method.ReturnType);
-                                                AppendLine("return 1;");
+                                                AppendLine("try");
+                                                AppendLine("{");
+                                                using (Indent())
+                                                {
+                                                    AppendLine($"var result = {fullTypeName}.{method.Name}({argList});");
+                                                    GeneratePushValue("result", method.ReturnType);
+                                                    AppendLine("return 1;");
+                                                }
+                                                AppendLine("}");
+                                                AppendLine("catch (System.Exception ex)");
+                                                AppendLine("{");
+                                                using (Indent())
+                                                {
+                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                                    AppendLine("return 0;");
+                                                }
+                                                AppendLine("}");
                                             }
                                         }
                                         AppendLine("}");
@@ -2739,16 +2823,44 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                             if (method.ReturnType == typeof(void))
                             {
-                                AppendLine($"self.{method.Name}({argList});");
-                                if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
-                                AppendLine("return 0;");
+                                AppendLine("try");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine($"self.{method.Name}({argList});");
+                                    if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
+                                    AppendLine("return 0;");
+                                }
+                                AppendLine("}");
+                                AppendLine("catch (System.Exception ex)");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                    AppendLine("return 0;");
+                                }
+                                AppendLine("}");
                             }
                             else
                             {
-                                AppendLine($"var result = self.{method.Name}({argList});");
-                                if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
-                                GeneratePushValue("result", method.ReturnType);
-                                AppendLine("return 1;");
+                                AppendLine("try");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine($"var result = self.{method.Name}({argList});");
+                                    if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
+                                    GeneratePushValue("result", method.ReturnType);
+                                    AppendLine("return 1;");
+                                }
+                                AppendLine("}");
+                                AppendLine("catch (System.Exception ex)");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                    AppendLine("return 0;");
+                                }
+                                AppendLine("}");
                             }
                         }
                         else
@@ -2817,16 +2929,44 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                                             if (method.ReturnType == typeof(void))
                                             {
-                                                AppendLine($"self.{method.Name}({argList});");
-                                                if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
-                                                AppendLine("return 0;");
+                                                AppendLine("try");
+                                                AppendLine("{");
+                                                using (Indent())
+                                                {
+                                                    AppendLine($"self.{method.Name}({argList});");
+                                                    if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
+                                                    AppendLine("return 0;");
+                                                }
+                                                AppendLine("}");
+                                                AppendLine("catch (System.Exception ex)");
+                                                AppendLine("{");
+                                                using (Indent())
+                                                {
+                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                                    AppendLine("return 0;");
+                                                }
+                                                AppendLine("}");
                                             }
                                             else
                                             {
-                                                AppendLine($"var result = self.{method.Name}({argList});");
-                                                if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
-                                                GeneratePushValue("result", method.ReturnType);
-                                                AppendLine("return 1;");
+                                                AppendLine("try");
+                                                AppendLine("{");
+                                                using (Indent())
+                                                {
+                                                    AppendLine($"var result = self.{method.Name}({argList});");
+                                                    if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
+                                                    GeneratePushValue("result", method.ReturnType);
+                                                    AppendLine("return 1;");
+                                                }
+                                                AppendLine("}");
+                                                AppendLine("catch (System.Exception ex)");
+                                                AppendLine("{");
+                                                using (Indent())
+                                                {
+                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                                    AppendLine("return 0;");
+                                                }
+                                                AppendLine("}");
                                             }
                                         }
                                         AppendLine("}");
@@ -3036,25 +3176,39 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private void GenerateToObjectCode(string targetExpression, Type type, string luaStackIndex)
     {
         var fullTypeName = GetFullTypeName(type);
-        if (IsNullable(type))
+        AppendLine("try");
+        AppendLine("{");
+        using (Indent())
         {
-            var underlyingType = Nullable.GetUnderlyingType(type)!;
-            var underlyingTypeName = GetFullTypeName(underlyingType);
-            AppendLine($"if (lua_isnil(L, {luaStackIndex}) != 0)");
-            using (Indent())
+            if (IsNullable(type))
             {
-                AppendLine($"{targetExpression} = null;");
+                var underlyingType = Nullable.GetUnderlyingType(type)!;
+                var underlyingTypeName = GetFullTypeName(underlyingType);
+                AppendLine($"if (lua_isnil(L, {luaStackIndex}) != 0)");
+                using (Indent())
+                {
+                    AppendLine($"{targetExpression} = null;");
+                }
+                AppendLine("else");
+                using (Indent())
+                {
+                    AppendLine($"{targetExpression} = ToObject<{underlyingTypeName}>(L, {luaStackIndex})!;");
+                }
             }
-            AppendLine("else");
-            using (Indent())
+            else
             {
-                AppendLine($"{targetExpression} = ToObject<{underlyingTypeName}>(L, {luaStackIndex})!;");
+                AppendLine($"{targetExpression} = ToObject<{fullTypeName}>(L, {luaStackIndex})!;");
             }
         }
-        else
+        AppendLine("}");
+        AppendLine("catch (System.Exception ex)");
+        AppendLine("{");
+        using (Indent())
         {
-            AppendLine($"{targetExpression} = ToObject<{fullTypeName}>(L, {luaStackIndex})!;");
+            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+            AppendLine("return 0;");
         }
+        AppendLine("}");
     }
 
     private void GenerateParameterRead(ParameterInfo param, int index, int stackOffset = 1)

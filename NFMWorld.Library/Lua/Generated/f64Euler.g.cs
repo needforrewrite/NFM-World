@@ -219,27 +219,75 @@ public partial class LuaBindings
         switch (key)
         {
             case "yaw":
-                obj.Yaw = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                try
+                {
+                    obj.Yaw = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "pitch":
-                obj.Pitch = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                try
+                {
+                    obj.Pitch = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "roll":
-                obj.Roll = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                try
+                {
+                    obj.Roll = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "xz":
-                obj.Xz = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                try
+                {
+                    obj.Xz = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "zy":
-                obj.Zy = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                try
+                {
+                    obj.Zy = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
             case "xy":
-                obj.Xy = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                try
+                {
+                    obj.Xy = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 UpdateStruct(L, 1, obj);
                 break;
         }
@@ -401,9 +449,17 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 3)!;
-            var obj = new nfm_world_library.SoftFloat.f64Euler(arg0, arg1, arg2);
-            PushObject(L, obj, "MT_f64Euler");
-            return 1;
+            try
+            {
+                var obj = new nfm_world_library.SoftFloat.f64Euler(arg0, arg1, arg2);
+                PushObject(L, obj, "MT_f64Euler");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for f64Euler constructor");
@@ -418,10 +474,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.Wrap();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Wrap();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for wrap");
@@ -436,10 +500,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.WrapPositive();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.WrapPositive();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for wrapPositive");
@@ -491,10 +563,18 @@ public partial class LuaBindings
                 case 0:
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Euler>(L, 2)!;
-                        var result = self.Equals(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Equals(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
@@ -503,10 +583,18 @@ public partial class LuaBindings
                             arg0 = null;
                         else
                             arg0 = ToObject<object>(L, 2)!;
-                        var result = self.Equals(arg0);
-                        UpdateStruct(L, 1, self);
-                        PushValue(L, result);
-                        return 1;
+                        try
+                        {
+                            var result = self.Equals(arg0);
+                            UpdateStruct(L, 1, self);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible overload found for equals");
@@ -526,10 +614,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
@@ -544,10 +640,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -562,10 +666,18 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            UpdateStruct(L, 1, self);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");

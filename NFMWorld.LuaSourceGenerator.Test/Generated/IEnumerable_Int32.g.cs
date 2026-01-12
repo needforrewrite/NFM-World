@@ -121,9 +121,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetEnumerator();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetEnumerator();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getEnumerator");

@@ -199,49 +199,137 @@ public partial class LuaBindings
         switch (key)
         {
             case "id":
-                obj.Id = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Id = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "name":
-                obj.Name = ToObject<string>(L, 3)!;
+                try
+                {
+                    obj.Name = ToObject<string>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "isActive":
-                obj.IsActive = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.IsActive = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "value":
-                obj.Value = ToObject<float>(L, 3)!;
+                try
+                {
+                    obj.Value = ToObject<float>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "preciseValue":
-                obj.PreciseValue = ToObject<double>(L, 3)!;
+                try
+                {
+                    obj.PreciseValue = ToObject<double>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "nullableInt":
-                if (lua_isnil(L, 3) != 0)
-                    obj.NullableInt = null;
-                else
-                    obj.NullableInt = ToObject<int>(L, 3)!;
+                try
+                {
+                    if (lua_isnil(L, 3) != 0)
+                        obj.NullableInt = null;
+                    else
+                        obj.NullableInt = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "nullableFloat":
-                if (lua_isnil(L, 3) != 0)
-                    obj.NullableFloat = null;
-                else
-                    obj.NullableFloat = ToObject<float>(L, 3)!;
+                try
+                {
+                    if (lua_isnil(L, 3) != 0)
+                        obj.NullableFloat = null;
+                    else
+                        obj.NullableFloat = ToObject<float>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "nullableBool":
-                if (lua_isnil(L, 3) != 0)
-                    obj.NullableBool = null;
-                else
-                    obj.NullableBool = ToObject<bool>(L, 3)!;
+                try
+                {
+                    if (lua_isnil(L, 3) != 0)
+                        obj.NullableBool = null;
+                    else
+                        obj.NullableBool = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "publicField":
-                obj.PublicField = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.PublicField = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "publicStringField":
-                obj.PublicStringField = ToObject<string>(L, 3)!;
+                try
+                {
+                    obj.PublicStringField = ToObject<string>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "nullableLongField":
-                if (lua_isnil(L, 3) != 0)
-                    obj.NullableLongField = null;
-                else
-                    obj.NullableLongField = ToObject<long>(L, 3)!;
+                try
+                {
+                    if (lua_isnil(L, 3) != 0)
+                        obj.NullableLongField = null;
+                    else
+                        obj.NullableLongField = ToObject<long>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
         }
         return 0;
@@ -260,9 +348,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass();
-            PushObject(L, obj, "MT_SampleClass");
-            return 1;
+            try
+            {
+                var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass();
+                PushObject(L, obj, "MT_SampleClass");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         if (argCount == 2)
@@ -311,9 +407,17 @@ public partial class LuaBindings
                     {
                         var arg0 = ToObject<int>(L, 1)!;
                         var arg1 = ToObject<string>(L, 2)!;
-                        var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1);
-                        PushObject(L, obj, "MT_SampleClass");
-                        return 1;
+                        try
+                        {
+                            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1);
+                            PushObject(L, obj, "MT_SampleClass");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 case 1:
                     {
@@ -327,9 +431,17 @@ public partial class LuaBindings
                             arg1 = null;
                         else
                             arg1 = ToObject<string>(L, 2)!;
-                        var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1);
-                        PushObject(L, obj, "MT_SampleClass");
-                        return 1;
+                        try
+                        {
+                            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1);
+                            PushObject(L, obj, "MT_SampleClass");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            return 0;
+                        }
                     }
                 default:
                     luaL_error(L, "No compatible constructor found for SampleClass");
@@ -343,9 +455,17 @@ public partial class LuaBindings
             var arg1 = ToObject<string>(L, 2)!;
             var arg2 = ToObject<bool>(L, 3)!;
             var arg3 = ToObject<float>(L, 4)!;
-            var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1, arg2, arg3);
-            PushObject(L, obj, "MT_SampleClass");
-            return 1;
+            try
+            {
+                var obj = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass(arg0, arg1, arg2, arg3);
+                PushObject(L, obj, "MT_SampleClass");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for SampleClass constructor");
@@ -360,9 +480,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<int>(L, 1)!;
             var arg1 = ToObject<int>(L, 2)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.Add(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.Add(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for add");
@@ -377,9 +505,17 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<string>(L, 1)!;
             var arg1 = ToObject<string>(L, 2)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.Concat(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.Concat(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for concat");
@@ -392,8 +528,16 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.IncrementCounter();
-            return 0;
+            try
+            {
+                NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.IncrementCounter();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for incrementCounter");
@@ -416,9 +560,17 @@ public partial class LuaBindings
                 arg1 = null;
             else
                 arg1 = ToObject<int>(L, 2)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.AddNullable(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.AddNullable(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for addNullable");
@@ -433,12 +585,20 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<bool>(L, 1)!;
             var arg1 = ToObject<int>(L, 2)!;
-            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.GetNullableValue(arg0, arg1);
-            if (result.HasValue)
-                PushValue(L, result.Value);
-            else
-                lua_pushnil(L);
-            return 1;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.GetNullableValue(arg0, arg1);
+                if (result.HasValue)
+                    PushValue(L, result.Value);
+                else
+                    lua_pushnil(L);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getNullableValue");
@@ -458,9 +618,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetDoubleId();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetDoubleId();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getDoubleId");
@@ -481,9 +649,17 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<string>(L, 2)!;
-            var result = self.GetGreeting(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetGreeting(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getGreeting");
@@ -504,8 +680,16 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<float>(L, 2)!;
-            self.SetValue(arg0);
-            return 0;
+            try
+            {
+                self.SetValue(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for setValue");
@@ -528,9 +712,17 @@ public partial class LuaBindings
             var arg0 = ToObject<float>(L, 2)!;
             var arg1 = ToObject<float>(L, 3)!;
             var arg2 = ToObject<bool>(L, 4)!;
-            var result = self.Calculate(arg0, arg1, arg2);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Calculate(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for calculate");
@@ -550,9 +742,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.Clone();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Clone();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for clone");
@@ -577,8 +777,16 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<float>(L, 2)!;
-            self.SetNullableValue(arg0);
-            return 0;
+            try
+            {
+                self.SetNullableValue(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for setNullableValue");
@@ -603,12 +811,20 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<int>(L, 2)!;
-            var result = self.MultiplyByNullable(arg0);
-            if (result.HasValue)
-                PushValue(L, result.Value);
-            else
-                lua_pushnil(L);
-            return 1;
+            try
+            {
+                var result = self.MultiplyByNullable(arg0);
+                if (result.HasValue)
+                    PushValue(L, result.Value);
+                else
+                    lua_pushnil(L);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for multiplyByNullable");
@@ -638,9 +854,17 @@ public partial class LuaBindings
                 arg1 = null;
             else
                 arg1 = ToObject<string>(L, 3)!;
-            var result = self.FormatWithOptional(arg0, arg1);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.FormatWithOptional(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for formatWithOptional");
@@ -660,9 +884,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.MethodWithCustomName();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.MethodWithCustomName();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for customName");
@@ -682,9 +914,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -704,9 +944,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");
@@ -731,9 +979,17 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<object>(L, 2)!;
-            var result = self.Equals(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Equals(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for equals");
@@ -753,9 +1009,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
@@ -795,13 +1059,29 @@ public partial class LuaBindings
         switch (key)
         {
             case "staticCounter":
-                NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticCounter = ToObject<int>(L, 3)!;
+                try
+                {
+                    NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticCounter = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 return 0;
             case "staticNullableDouble":
-                if (lua_isnil(L, 3) != 0)
-                    NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticNullableDouble = null;
-                else
-                    NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticNullableDouble = ToObject<double>(L, 3)!;
+                try
+                {
+                    if (lua_isnil(L, 3) != 0)
+                        NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticNullableDouble = null;
+                    else
+                        NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.StaticNullableDouble = ToObject<double>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 return 0;
             default:
                 lua_rawset(L, 1);

@@ -561,193 +561,697 @@ public partial class LuaBindings
         switch (key)
         {
             case "halted":
-                obj.Halted = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Halted = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "btab":
-                obj.Btab = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Btab = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "capcnt":
-                obj.Capcnt = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Capcnt = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "badLanding":
-                obj.BadLanding = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.BadLanding = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "stat":
-                obj.Stat = ToObject<nfm_world_library.mad.CarStats>(L, 3)!;
+                try
+                {
+                    obj.Stat = ToObject<nfm_world_library.mad.CarStats>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "cn":
-                obj.Cn = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Cn = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "cntdest":
-                obj.Cntdest = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Cntdest = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "cntouch":
-                obj._cntouch = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj._cntouch = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "colidim":
-                obj._colidim = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj._colidim = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "cxz":
-                obj.Cxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Cxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "dcnt":
-                obj._dcnt = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj._dcnt = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "dcomp":
-                obj.Dcomp = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Dcomp = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "wasted":
-                obj.Wasted = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Wasted = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "fixes":
-                obj._fixes = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj._fixes = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "forca":
-                obj._forca = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj._forca = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "ftab":
-                obj.Ftab = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Ftab = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "fxz":
-                obj._fxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj._fxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "gtouch":
-                obj.Gtouch = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Gtouch = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "hitmag":
-                obj.Hitmag = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Hitmag = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "im":
-                obj.Im = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Im = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "lastcolido":
-                obj.Lastcolido = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Lastcolido = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "lcomp":
-                obj.Lcomp = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Lcomp = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "loop":
-                obj.Loop = ToObject<System.SByte>(L, 3)!;
+                try
+                {
+                    obj.Loop = ToObject<System.SByte>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "lxz":
-                obj._lxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj._lxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "mtouch":
-                obj.Mtouch = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Mtouch = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "mxz":
-                obj.Mxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Mxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "nbsq":
-                obj._nbsq = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj._nbsq = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "newcar":
-                obj.Newcar = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Newcar = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "newedcar":
-                obj.Newedcar = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Newedcar = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "nmlt":
-                obj._nmlt = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj._nmlt = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "nofocus":
-                obj.Nofocus = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Nofocus = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "outshakedam":
-                obj.Outshakedam = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Outshakedam = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "pd":
-                obj.Pd = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Pd = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "pl":
-                obj.Pl = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Pl = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "pmlt":
-                obj._pmlt = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj._pmlt = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "point":
-                obj.Point = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Point = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "power":
-                obj.Power = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Power = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "powerup":
-                obj.Powerup = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Powerup = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "pr":
-                obj.Pr = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Pr = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "pu":
-                obj.Pu = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Pu = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "pushed":
-                obj.Pushed = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Pushed = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "pxy":
-                obj.Pxy = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Pxy = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "pzy":
-                obj.Pzy = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Pzy = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "rcomp":
-                obj.Rcomp = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Rcomp = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "rtab":
-                obj.Rtab = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Rtab = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "scx":
-                obj.Scx = ToObject<System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>>(L, 3)!;
+                try
+                {
+                    obj.Scx = ToObject<System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "scy":
-                obj.Scy = ToObject<System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>>(L, 3)!;
+                try
+                {
+                    obj.Scy = ToObject<System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "scz":
-                obj.Scz = ToObject<System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>>(L, 3)!;
+                try
+                {
+                    obj.Scz = ToObject<System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "shakedam":
-                obj.Shakedam = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Shakedam = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "skid":
-                obj.Skid = ToObject<System.SByte>(L, 3)!;
+                try
+                {
+                    obj.Skid = ToObject<System.SByte>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "speed":
-                obj.Speed = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Speed = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "squash":
-                obj.Squash = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Squash = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "srfcnt":
-                obj._srfcnt = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj._srfcnt = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "surfer":
-                obj.Surfer = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Surfer = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "tilt":
-                obj._tilt = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj._tilt = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "travxy":
-                obj.Travxy = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Travxy = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "travxz":
-                obj.Travxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Travxz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "travzy":
-                obj.Travzy = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Travzy = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "trcnt":
-                obj.Trcnt = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj.Trcnt = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "txz":
-                obj.Txz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Txz = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "ucomp":
-                obj.Ucomp = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                try
+                {
+                    obj.Ucomp = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "wtouch":
-                obj.Wtouch = ToObject<bool>(L, 3)!;
+                try
+                {
+                    obj.Wtouch = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
             case "xtpower":
-                obj._xtpower = ToObject<int>(L, 3)!;
+                try
+                {
+                    obj._xtpower = ToObject<int>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    return 0;
+                }
                 break;
         }
         return 0;
@@ -769,9 +1273,17 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.CarStats>(L, 1)!;
             var arg1 = ToObject<int>(L, 2)!;
             var arg2 = ToObject<bool>(L, 3)!;
-            var obj = new nfm_world_library.mad.Mad(arg0, arg1, arg2);
-            PushObject(L, obj, "MT_Mad");
-            return 1;
+            try
+            {
+                var obj = new nfm_world_library.mad.Mad(arg0, arg1, arg2);
+                PushObject(L, obj, "MT_Mad");
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for Mad constructor");
@@ -792,8 +1304,16 @@ public partial class LuaBindings
         if (argCount == 1)
         {
             var arg0 = ToObject<nfm_world_library.mad.CarStats>(L, 2)!;
-            self.SetStat(arg0);
-            return 0;
+            try
+            {
+                self.SetStat(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for setStat");
@@ -822,9 +1342,17 @@ public partial class LuaBindings
             var arg6 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 8)!;
             var arg7 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 9)!;
             var arg8 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 10)!;
-            var result = self.pointInBox(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.pointInBox(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for pointInBox");
@@ -847,8 +1375,16 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.ContO>(L, 2)!;
             var arg1 = ToObject<nfm_world_library.mad.Mad>(L, 3)!;
             var arg2 = ToObject<nfm_world_library.mad.ContO>(L, 4)!;
-            self.Colide(arg0, arg1, arg2);
-            return 0;
+            try
+            {
+                self.Colide(arg0, arg1, arg2);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for colide");
@@ -871,8 +1407,16 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<nfm_world_library.mad.ContO>(L, 3)!;
             var arg2 = ToObject<FixedMathSharp.Utility.DeterministicRandom>(L, 4)!;
-            self.bounceRebound(arg0, arg1, arg2);
-            return 0;
+            try
+            {
+                self.bounceRebound(arg0, arg1, arg2);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for bounceRebound");
@@ -895,8 +1439,16 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.Control>(L, 2)!;
             var arg1 = ToObject<nfm_world_library.mad.ContO>(L, 3)!;
             var arg2 = ToObject<nfm_world_library.mad.IStage>(L, 4)!;
-            self.Drive(arg0, arg1, arg2);
-            return 0;
+            try
+            {
+                self.Drive(arg0, arg1, arg2);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for drive");
@@ -918,8 +1470,16 @@ public partial class LuaBindings
         {
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<nfm_world_library.mad.ContO>(L, 3)!;
-            self.Reseto(arg0, arg1);
-            return 0;
+            try
+            {
+                self.Reseto(arg0, arg1);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for reseto");
@@ -939,9 +1499,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetType();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetType();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getType");
@@ -961,9 +1529,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.ToString();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.ToString();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for toString");
@@ -988,9 +1564,17 @@ public partial class LuaBindings
                 arg0 = null;
             else
                 arg0 = ToObject<object>(L, 2)!;
-            var result = self.Equals(arg0);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.Equals(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for equals");
@@ -1010,9 +1594,17 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var result = self.GetHashCode();
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.GetHashCode();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");

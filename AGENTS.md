@@ -482,11 +482,42 @@ Applied to:
 
 **Total Array Tests:** 45 (all passing)
 
+### 7. Exception Handling Implementation (January 12, 2026)
+**Issue:** .NET exceptions thrown from C# methods/constructors/properties were not propagated as Lua errors, causing crashes or silent failures when Lua code called into C# code that threw exceptions.
+
+**Solution:** Implemented comprehensive exception handling throughout the source generator:
+- Wrapped all constructor invocations in try-catch blocks (both single and overloaded constructors)
+- Wrapped all static method invocations in try-catch blocks (both void and non-void return types)
+- Wrapped all instance method invocations in try-catch blocks (both void and non-void return types)
+- Modified `GenerateToObjectCode()` to wrap property and field setter assignments in try-catch blocks
+- All caught exceptions are propagated to Lua using `luaL_error(L, $"{ex.GetType().Name}: {ex.Message}")`
+
+**Implementation Details:**
+- Exception handling wraps the actual C# invocation/assignment, not the entire method
+- Error message format: `"ExceptionTypeName: ExceptionMessage"` (e.g., `"ArgumentException: Value cannot be negative"`)
+- Lua's `luaL_error` is used to properly propagate errors up the Lua call stack
+- After calling `luaL_error`, the function returns 0 (though `luaL_error` actually longjmps)
+
+**Test Coverage:** Added 6 comprehensive tests covering:
+- Constructor exceptions (ArgumentException from validation)
+- Instance method exceptions (InvalidOperationException)
+- Instance method with parameters exceptions (DivideByZeroException)
+- Property setter exceptions (ArgumentException)
+- Static method exceptions (ArgumentException)
+- Successful execution verification (ensuring normal calls still work)
+
+**Result:** All C# exceptions are now properly caught and converted to Lua errors, providing:
+- Safe error handling without crashing the application
+- Clear error messages visible to Lua scripts
+- Consistent behavior across all binding types (constructors, methods, properties)
+
+**Total Tests:** 248 (all passing)
+
 ---
 
 ## Test Status
 
-**Total Tests:** 262
+**Total Tests:** 248
 - **Status:** ✅ All passing
 
 ---

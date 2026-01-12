@@ -141,9 +141,17 @@ public partial class LuaBindings
             var arg2 = ToObject<int>(L, 4)!;
             var arg3 = ToObject<int>(L, 5)!;
             var arg4 = ToObject<int>(L, 6)!;
-            var result = self.CreateObject(arg0, arg1, arg2, arg3, arg4);
-            PushValue(L, result);
-            return 1;
+            try
+            {
+                var result = self.CreateObject(arg0, arg1, arg2, arg3, arg4);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                return 0;
+            }
         }
 
         luaL_error(L, "Invalid arguments for createObject");

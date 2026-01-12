@@ -49,6 +49,7 @@ public partial class LuaBindings
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>.Name = null;
