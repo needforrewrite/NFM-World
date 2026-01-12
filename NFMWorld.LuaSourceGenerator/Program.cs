@@ -2424,7 +2424,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         AppendLine("{");
                         using (Indent())
                         {
-                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                             AppendLine("return 0;");
                         }
                         AppendLine("}");
@@ -2505,7 +2505,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                         AppendLine("{");
                                         using (Indent())
                                         {
-                                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace});");
                                             AppendLine("return 0;");
                                         }
                                         AppendLine("}");
@@ -2593,7 +2593,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -2613,7 +2613,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -2697,7 +2697,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                                                     AppendLine("return 0;");
                                                 }
                                                 AppendLine("}");
@@ -2717,7 +2717,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                                                     AppendLine("return 0;");
                                                 }
                                                 AppendLine("}");
@@ -2836,7 +2836,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -2857,7 +2857,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -2942,7 +2942,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                                                     AppendLine("return 0;");
                                                 }
                                                 AppendLine("}");
@@ -2963,7 +2963,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                                                     AppendLine("return 0;");
                                                 }
                                                 AppendLine("}");
@@ -3205,7 +3205,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         AppendLine("{");
         using (Indent())
         {
-            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\");");
+            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
             AppendLine("return 0;");
         }
         AppendLine("}");

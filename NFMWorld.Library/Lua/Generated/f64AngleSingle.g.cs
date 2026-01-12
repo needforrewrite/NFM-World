@@ -297,7 +297,7 @@ public partial class LuaBindings
                 }
                 catch (System.Exception ex)
                 {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                     return 0;
                 }
                 UpdateStruct(L, 1, obj);
@@ -309,7 +309,7 @@ public partial class LuaBindings
                 }
                 catch (System.Exception ex)
                 {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                     return 0;
                 }
                 UpdateStruct(L, 1, obj);
@@ -321,7 +321,7 @@ public partial class LuaBindings
                 }
                 catch (System.Exception ex)
                 {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                     return 0;
                 }
                 UpdateStruct(L, 1, obj);
@@ -333,7 +333,7 @@ public partial class LuaBindings
                 }
                 catch (System.Exception ex)
                 {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                     return 0;
                 }
                 UpdateStruct(L, 1, obj);
@@ -460,7 +460,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -484,7 +484,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -508,7 +508,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -532,7 +532,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -556,7 +556,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -581,7 +581,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -606,7 +606,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -631,7 +631,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -656,7 +656,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -681,7 +681,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -706,7 +706,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -731,7 +731,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -756,7 +756,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -823,7 +823,7 @@ public partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                             return 0;
                         }
                     }
@@ -839,7 +839,7 @@ public partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                             return 0;
                         }
                     }
@@ -907,7 +907,7 @@ public partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                             return 0;
                         }
                     }
@@ -927,7 +927,7 @@ public partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                             return 0;
                         }
                     }
@@ -958,7 +958,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -984,7 +984,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -1010,7 +1010,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
@@ -1036,7 +1036,7 @@ public partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
                 return 0;
             }
         }
