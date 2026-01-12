@@ -194,7 +194,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     /// </summary>
     private static bool HasByRefParameters(MethodBase method)
     {
-        return method.GetParameters().Any(p => p.ParameterType.IsByRef);
+        return method.GetParameters().Any(p => p.ParameterType.IsByRef || IsRefStruct(p.ParameterType));
     }
 
     /// <summary>
@@ -202,7 +202,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     /// </summary>
     private static bool HasRefReturn(PropertyInfo property)
     {
-        return property.PropertyType.IsByRef;
+        return property.PropertyType.IsByRef || IsRefStruct(property.PropertyType);
+    }
+
+    /// <summary>
+    /// Check if a method has a ref return type.
+    /// </summary>
+    private static bool HasRefReturn(MethodInfo method)
+    {
+        return method.ReturnType.IsByRef || IsRefStruct(method.ReturnType);
     }
 
     /// <summary>
@@ -1108,8 +1116,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // Static methods
             var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod && !HasByRefParameters(m))
-                .GroupBy(m => GetLuaMethodName(m))
+                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod && !HasByRefParameters(m) && !HasRefReturn(m))
+                .GroupBy(GetLuaMethodName)
                 .ToList();
 
             foreach (var methodGroup in staticMethods)
@@ -1426,6 +1434,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
                                 !m.IsGenericMethod &&
                                 !HasByRefParameters(m) &&
+                                !HasRefReturn(m) &&
                                 (!type.IsArray || (m.DeclaringType != type && m.DeclaringType != typeof(Array) && m.DeclaringType != typeof(object)))) // Skip array-specific and inherited methods
                     .GroupBy(m => GetLuaMethodName(m))
                     .ToList();
@@ -2053,7 +2062,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private void GenerateStaticMethods(Type type, string safeName, string fullTypeName)
     {
         var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m))
+            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m))
             .GroupBy(m => GetLuaMethodName(m))
             .ToList();
 
@@ -2220,7 +2229,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             .Where(m => !m.IsSpecialName &&
                         !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
                         !m.IsGenericMethod &&
-                        !HasByRefParameters(m)) // Skip generic methods and byref parameters
+                        !HasByRefParameters(m) &&
+                        !HasRefReturn(m)) // Skip generic methods and byref parameters
             .GroupBy(m => GetLuaMethodName(m))
             .ToList();
 
@@ -2840,6 +2850,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         "op_Equality" => "__eq",
         "op_LessThan" => "__lt",
         "op_LessThanOrEqual" => "__le",
+        "op_GreaterThan" => "__gt",
+        "op_GreaterThanOrEqual" => "__ge",
         _ => null
     };
 
@@ -2852,6 +2864,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         "op_Modulus" => "%",
         "op_UnaryNegation" => "-",
         "op_Equality" => "==",
+        "op_LessThan" => "<",
+        "op_LessThanOrEqual" => "<=",
+        "op_GreaterThan" => ">",
+        "op_GreaterThanOrEqual" => ">=",
         _ => null
     };
 
