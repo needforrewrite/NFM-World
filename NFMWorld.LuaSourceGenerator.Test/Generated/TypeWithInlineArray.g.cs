@@ -78,7 +78,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)parentPtr;
-                            PushStructWithParent(L, obj.buffer, "MT_InlineBuffer", parentId, "buffer", typeof(NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray));
+                            PushStructWithParent(L, obj.buffer, "MT_InlineBuffer", parentId, static (obj, value) => ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)obj).buffer = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)value);
                         }
                     }
                 }
