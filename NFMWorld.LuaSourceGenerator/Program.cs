@@ -350,6 +350,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     ProcessType(param.ParameterType, discovered, queue, additional);
                 }
             }
+
+            // Check events
+            foreach (var evt in currentType.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+            {
+                if (HasAttribute(evt, nameof(LuaHiddenAttribute))) continue;
+                ProcessType(evt.EventHandlerType!, discovered, queue, additional);
+
+                foreach (var param in evt.EventHandlerType!.GetMethod("Invoke")!.GetParameters())
+                {
+                    ProcessType(param.ParameterType, discovered, queue, additional);
+                }
+            }
         }
 
         return additional;
@@ -440,6 +452,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             queue.Enqueue(type);
             additional.Add(type);
         }
+        // Special case: allow System.Object and EventArgs types for event handlers
+        else if (type == typeof(object) || type == typeof(EventArgs))
+        {
+            discovered.Add(type);
+            queue.Enqueue(type);
+            additional.Add(type);
+        }
         // For non-generic types from our assembly
         else if (!type.IsGenericType && type.Assembly == assembly)
         {
@@ -453,7 +472,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         return type.IsPrimitive ||
                type == typeof(string) ||
-               type == typeof(object) ||
                type == typeof(void) ||
                type == typeof(decimal) ||
                type.IsEnum ||
@@ -894,139 +912,253 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         AppendLine(
             $$"""
-                        #endregion
-                    }
+                            #endregion
+                        }
 
-                    // Handle userdata (objects, structs, arrays, etc.)
-                    if (luaType == LUA_TUSERDATA)
-                    {
-                        var ptr = lua_touserdata(L, idx);
-                        if (ptr != 0)
+                        // Handle userdata (objects, structs, arrays, etc.)
+                        if (luaType == LUA_TUSERDATA)
                         {
-                            unsafe
+                            var ptr = lua_touserdata(L, idx);
+                            if (ptr != 0)
                             {
-                                var id = *(int*)ptr;
-                                return GetObject<T>(id);
+                                unsafe
+                                {
+                                    var id = *(int*)ptr;
+                                    return GetObject<T>(id);
+                                }
                             }
                         }
+
+                        throw new InvalidOperationException($"Cannot convert Lua type {luaType} to {typeof(T)}");
                     }
 
-                    throw new InvalidOperationException($"Cannot convert Lua type {luaType} to {typeof(T)}");
-                }
+                    #endregion
 
-                #endregion
+                    #region Overload Resolution
 
-                #region Overload Resolution
+                    /// <summary>
+                    /// Score how compatible a Lua value is with a .NET parameter type.
+                    /// Higher scores indicate better compatibility. -1 indicates incompatible.
+                    /// </summary>
+                    private static int ScoreParameterCompatibility<T>(lua_State L, int stackIdx)
+                    {
+                        var (luaType, dotnetType) = GetLuaStackValueType(L, stackIdx);
 
-                /// <summary>
-                /// Score how compatible a Lua value is with a .NET parameter type.
-                /// Higher scores indicate better compatibility. -1 indicates incompatible.
-                /// </summary>
-                private static int ScoreParameterCompatibility<T>(lua_State L, int stackIdx)
+                        // Nil can match nullable/reference types
+                        if (luaType == LUA_TNIL)
+                        {
+                            return !typeof(T).IsValueType || Nullable.GetUnderlyingType(typeof(T)) != null ? 0 : -1;
+                        }
+
+                        // Boolean matches
+                        if (luaType == LUA_TBOOLEAN)
+                        {
+                            if (typeof(T) == typeof(bool)) return 100; // Exact match
+                            return -1; // No implicit conversions from bool
+                        }
+
+                        // String matches
+                        if (luaType == LUA_TSTRING)
+                        {
+                            if (typeof(T) == typeof(string)) return 100; // Exact match
+                            return -1; // No implicit conversions from string
+                        }
+
+                        // Number matches (Lua numbers are always double)
+                        if (luaType == LUA_TNUMBER)
+                        {
+                            // Check if the number is an integer value (no fractional part)
+                            var numVal = lua_tonumber(L, stackIdx);
+                            var isInteger = Math.Floor(numVal) == numVal;
+
+                            if (isInteger)
+                            {
+                                // For integer values, check range compatibility and prefer appropriate integer types
+                                // Priority: most appropriate integer type > double > float > other integer types
+                                if (typeof(T) == typeof(int) && numVal >= int.MinValue && numVal <= int.MaxValue) return 100;
+                                if (typeof(T) == typeof(long) && numVal >= long.MinValue && numVal <= long.MaxValue) return 100;
+                                if (typeof(T) == typeof(double)) return 90;   // Can hold any integer
+                                if (typeof(T) == typeof(float) && numVal >= float.MinValue && numVal <= float.MaxValue) return 85;
+                                if (typeof(T) == typeof(uint) && numVal >= uint.MinValue && numVal <= uint.MaxValue) return 80;
+                                if (typeof(T) == typeof(ulong) && numVal >= 0 && numVal <= ulong.MaxValue) return 80;
+                                if (typeof(T) == typeof(short) && numVal >= short.MinValue && numVal <= short.MaxValue) return 75;
+                                if (typeof(T) == typeof(ushort) && numVal >= ushort.MinValue && numVal <= ushort.MaxValue) return 75;
+                                if (typeof(T) == typeof(byte) && numVal >= byte.MinValue && numVal <= byte.MaxValue) return 70;
+                                if (typeof(T) == typeof(sbyte) && numVal >= sbyte.MinValue && numVal <= sbyte.MaxValue) return 70;
+                                // Out of range for all integer types
+                                if (typeof(T) == typeof(double)) return 90;
+                                if (typeof(T) == typeof(float)) return 85;
+                                return -1; // Can't fit in any numeric type
+                            }
+                            else
+                            {
+                                // For floating-point values, prefer floating-point types
+                                // Priority: double > float > long > ulong > int > uint > other integer types
+                                if (typeof(T) == typeof(double)) return 100; // Exact match to Lua's number type
+                                if (typeof(T) == typeof(float)) return 90;   // Slight precision loss
+                                if (typeof(T) == typeof(long)) return 80;    // Large range, signed
+                                if (typeof(T) == typeof(ulong)) return 75;   // Large range, unsigned
+                                if (typeof(T) == typeof(int)) return 70;     // Standard integer
+                                if (typeof(T) == typeof(uint)) return 65;    // Unsigned variant
+                                if (typeof(T) == typeof(short)) return 60;   // Smaller range
+                                if (typeof(T) == typeof(ushort)) return 55;  // Smaller range, unsigned
+                                if (typeof(T) == typeof(byte)) return 50;    // Smallest range
+                                if (typeof(T) == typeof(sbyte)) return 45;   // Smallest range, signed
+                            }
+                            return -1; // Not a numeric type
+                        }
+
+                        // Table matches (can convert to 1D array)
+                        if (luaType == LUA_TTABLE)
+                        {
+                            if (typeof(T).IsArray && typeof(T).GetArrayRank() == 1)
+                            {
+                                return 50; // Table can convert to array (but we can't check element types easily)
+                            }
+                            return -1; // Tables don't convert to other types
+                        }
+
+                        // Userdata matches (custom .NET types)
+                        if (luaType == LUA_TUSERDATA && dotnetType != null)
+                        {
+                            if (typeof(T) == dotnetType) return 100; // Exact type match
+                            if (typeof(T).IsAssignableFrom(dotnetType)) return 80; // Inheritance/interface match
+                            return -1; // Type mismatch
+                        }
+
+                        return -1; // Unknown or incompatible
+                    }
+
+                    #endregion
+
+                    #region Delegate Management
+
+                    /// <summary>
+                    /// Keep a delegate alive to prevent GC collection while registered with Lua.
+                    /// </summary>
+                    private static lua_CFunction KeepAlive(lua_CFunction func)
+                    {
+                        // Unnecessary, static delegates are not collected
+                        // _delegates.Add(func);
+                        return func;
+                    }
+
+                    #endregion
+
+                    #region Event Support
+
+                    /// <summary>
+                    /// Create a .NET delegate from a Lua function for event subscription.
+                    /// The delegate will call back into Lua when the event is raised.
+                    /// </summary>
+                    private static TDelegate CreateEventDelegate<TDelegate>(lua_State L, int funcIdx) where TDelegate : Delegate
+                    {
+                        // Get the Lua function reference
+                        lua_pushvalue(L, funcIdx);
+                        var funcRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+                        // Create a delegate that calls back into Lua
+                """);
+
+        _indent += 2;
+
+        var delegateTypes = types
+            .SelectMany(
+                static type => type.Type.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                    .Where(evt => !HasAttribute(evt, nameof(LuaHiddenAttribute)))
+            )
+            .Select(static evt => evt.EventHandlerType)
+            .Where(static evtType => evtType != null)
+            .Distinct();
+
+        foreach (var delegateType in delegateTypes)
+        {
+            var parameters = delegateType!.GetMethod("Invoke")!.GetParameters();
+            var argumentCount = parameters.Length;
+            var fullTypeName = GetFullTypeName(delegateType);
+
+            var t = argumentCount > 0 ? $"<{string.Join(", ", parameters.Select(p => GetFullTypeName(p.ParameterType)))}>" : "";
+
+            AppendLine(
+                $$"""
+                if (typeof(TDelegate) == typeof({{fullTypeName}}))
                 {
-                    var (luaType, dotnetType) = GetLuaStackValueType(L, stackIdx);
-
-                    // Nil can match nullable/reference types
-                    if (luaType == LUA_TNIL)
-                    {
-                        return !typeof(T).IsValueType || Nullable.GetUnderlyingType(typeof(T)) != null ? 0 : -1;
-                    }
-
-                    // Boolean matches
-                    if (luaType == LUA_TBOOLEAN)
-                    {
-                        if (typeof(T) == typeof(bool)) return 100; // Exact match
-                        return -1; // No implicit conversions from bool
-                    }
-
-                    // String matches
-                    if (luaType == LUA_TSTRING)
-                    {
-                        if (typeof(T) == typeof(string)) return 100; // Exact match
-                        return -1; // No implicit conversions from string
-                    }
-
-                    // Number matches (Lua numbers are always double)
-                    if (luaType == LUA_TNUMBER)
-                    {
-                        // Check if the number is an integer value (no fractional part)
-                        var numVal = lua_tonumber(L, stackIdx);
-                        var isInteger = Math.Floor(numVal) == numVal;
-
-                        if (isInteger)
-                        {
-                            // For integer values, check range compatibility and prefer appropriate integer types
-                            // Priority: most appropriate integer type > double > float > other integer types
-                            if (typeof(T) == typeof(int) && numVal >= int.MinValue && numVal <= int.MaxValue) return 100;
-                            if (typeof(T) == typeof(long) && numVal >= long.MinValue && numVal <= long.MaxValue) return 100;
-                            if (typeof(T) == typeof(double)) return 90;   // Can hold any integer
-                            if (typeof(T) == typeof(float) && numVal >= float.MinValue && numVal <= float.MaxValue) return 85;
-                            if (typeof(T) == typeof(uint) && numVal >= uint.MinValue && numVal <= uint.MaxValue) return 80;
-                            if (typeof(T) == typeof(ulong) && numVal >= 0 && numVal <= ulong.MaxValue) return 80;
-                            if (typeof(T) == typeof(short) && numVal >= short.MinValue && numVal <= short.MaxValue) return 75;
-                            if (typeof(T) == typeof(ushort) && numVal >= ushort.MinValue && numVal <= ushort.MaxValue) return 75;
-                            if (typeof(T) == typeof(byte) && numVal >= byte.MinValue && numVal <= byte.MaxValue) return 70;
-                            if (typeof(T) == typeof(sbyte) && numVal >= sbyte.MinValue && numVal <= sbyte.MaxValue) return 70;
-                            // Out of range for all integer types
-                            if (typeof(T) == typeof(double)) return 90;
-                            if (typeof(T) == typeof(float)) return 85;
-                            return -1; // Can't fit in any numeric type
-                        }
-                        else
-                        {
-                            // For floating-point values, prefer floating-point types
-                            // Priority: double > float > long > ulong > int > uint > other integer types
-                            if (typeof(T) == typeof(double)) return 100; // Exact match to Lua's number type
-                            if (typeof(T) == typeof(float)) return 90;   // Slight precision loss
-                            if (typeof(T) == typeof(long)) return 80;    // Large range, signed
-                            if (typeof(T) == typeof(ulong)) return 75;   // Large range, unsigned
-                            if (typeof(T) == typeof(int)) return 70;     // Standard integer
-                            if (typeof(T) == typeof(uint)) return 65;    // Unsigned variant
-                            if (typeof(T) == typeof(short)) return 60;   // Smaller range
-                            if (typeof(T) == typeof(ushort)) return 55;  // Smaller range, unsigned
-                            if (typeof(T) == typeof(byte)) return 50;    // Smallest range
-                            if (typeof(T) == typeof(sbyte)) return 45;   // Smallest range, signed
-                        }
-                        return -1; // Not a numeric type
-                    }
-
-                    // Table matches (can convert to 1D array)
-                    if (luaType == LUA_TTABLE)
-                    {
-                        if (typeof(T).IsArray && typeof(T).GetArrayRank() == 1)
-                        {
-                            return 50; // Table can convert to array (but we can't check element types easily)
-                        }
-                        return -1; // Tables don't convert to other types
-                    }
-
-                    // Userdata matches (custom .NET types)
-                    if (luaType == LUA_TUSERDATA && dotnetType != null)
-                    {
-                        if (typeof(T) == dotnetType) return 100; // Exact type match
-                        if (typeof(T).IsAssignableFrom(dotnetType)) return 80; // Inheritance/interface match
-                        return -1; // Type mismatch
-                    }
-
-                    return -1; // Unknown or incompatible
+                    var invoker = new EventInvoker{{argumentCount}}{{t}} { L = L, FuncRef = funcRef };
+                    return (TDelegate)(Delegate)({{fullTypeName}})(({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"arg{i}"))}}) => invoker.Invoke({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"arg{i}"))}}));
                 }
+                """);
 
+        }
+
+        _indent -= 2;
+
+        AppendLine(
+            $$"""
+                        throw new NotSupportedException($"Event delegate type {typeof(TDelegate)} is not supported");
+                    }
+
+                    private class EventInvoker0
+                    {
+                        public lua_State L;
+                        public int FuncRef;
+
+                        public void Invoke()
+                        {
+                            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+                            lua_pcall(L, 0, 0, 0);
+                        }
+                    }
+                """);
+
+        _indent += 1;
+
+        foreach (var argumentCount in delegateTypes
+                     .Select(delegateType => delegateType!.GetMethod("Invoke")!.GetParameters().Length)
+                     .Except(0)
+                     .Distinct()
+                     .Order())
+        {
+            AppendLine(
+                $$"""
+                  private class EventInvoker{{argumentCount}}<{{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"T{i}"))}}>
+                  {
+                      public lua_State L;
+                      public int FuncRef;
+
+                      public void Invoke({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"T{i} arg{i}"))}})
+                      {
+                          lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+                  """);
+
+            _indent += 2;
+
+            for (int i = 0; i < argumentCount; i++)
+            {
+                AppendLine($"PushValue(L, arg{i});");
+            }
+
+            _indent -= 2;
+
+            AppendLine(
+                $$"""
+                          lua_pcall(L, {{argumentCount}}, 0, 0);
+                      }
+
+                      ~EventInvoker{{argumentCount}}()
+                      {
+                          // Clean up Lua function reference when the invoker is garbage collected
+                          luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+                      }
+                  }
+                  """);
+
+        }
+
+        _indent -= 1;
+
+        AppendLine(
+            $$"""
                 #endregion
-
-                #region Delegate Management
-
-                /// <summary>
-                /// Keep a delegate alive to prevent GC collection while registered with Lua.
-                /// </summary>
-                private static lua_CFunction KeepAlive(lua_CFunction func)
-                {
-                    // Unnecessary, static delegates are not collected
-                    // _delegates.Add(func);
-                    return func;
-                }
-
-                #endregion
-
             }
             """
         );
@@ -1253,6 +1385,70 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine($"function {luaName}Instance:{luaMethodName}({paramNames}) end");
             AppendLine();
         }
+
+        // Generate event stubs (instance events)
+        var instanceEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Instance)
+            .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
+            .ToList();
+
+        foreach (var evt in instanceEvents)
+        {
+            var eventName = evt.Name;
+            var delegateType = evt.EventHandlerType!;
+            var invokeMethod = delegateType.GetMethod("Invoke")!;
+            var parameters = invokeMethod.GetParameters();
+
+            // Generate AddListener stub
+            AppendLine($"---@param self {GetLuaStubTypeName(typeInfo.Type)}");
+            AppendLine($"---@param callback fun(");
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                var param = parameters[i];
+                var paramType = GetLuaStubTypeName(param.ParameterType);
+                var paramName = param.Name ?? $"arg{i}";
+                var separator = i < parameters.Length - 1 ? ", " : "";
+                AppendLine($"---    {paramName}: {paramType}{separator}");
+            }
+            AppendLine($"---)");
+            AppendLine($"function {luaName}Instance:AddListener_{eventName}(callback) end");
+            AppendLine();
+
+            // Generate RemoveListener stub
+            AppendLine($"---@param self {GetLuaStubTypeName(typeInfo.Type)}");
+            AppendLine($"function {luaName}Instance:RemoveListener_{eventName}() end");
+            AppendLine();
+        }
+
+        // Generate event stubs (static events)
+        var staticEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Static)
+            .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
+            .ToList();
+
+        foreach (var evt in staticEvents)
+        {
+            var eventName = evt.Name;
+            var delegateType = evt.EventHandlerType!;
+            var invokeMethod = delegateType.GetMethod("Invoke")!;
+            var parameters = invokeMethod.GetParameters();
+
+            // Generate AddListener stub
+            AppendLine($"---@param callback fun(");
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                var param = parameters[i];
+                var paramType = GetLuaStubTypeName(param.ParameterType);
+                var paramName = param.Name ?? $"arg{i}";
+                var separator = i < parameters.Length - 1 ? ", " : "";
+                AppendLine($"---    {paramName}: {paramType}{separator}");
+            }
+            AppendLine($"---)");
+            AppendLine($"function {luaName}.AddListener_{eventName}(callback) end");
+            AppendLine();
+
+            // Generate RemoveListener stub
+            AppendLine($"function {luaName}.RemoveListener_{eventName}() end");
+            AppendLine();
+        }
     }
 
     private static string GetLuaStubTypeName(Type type)
@@ -1475,6 +1671,22 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine();
             }
 
+            // Static events
+            var staticEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Static)
+                .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
+                .ToList();
+
+            foreach (var evt in staticEvents)
+            {
+                var eventName = evt.Name;
+                AppendLine($"// Static event: {eventName}");
+                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_AddListener_{eventName}));");
+                AppendLine($"lua_setfield(L, -2, \"AddListener_{eventName}\");");
+                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_RemoveListener_{eventName}));");
+                AppendLine($"lua_setfield(L, -2, \"RemoveListener_{eventName}\");");
+                AppendLine();
+            }
+
             // Static properties metatable
             var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
                 .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
@@ -1520,6 +1732,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         if (staticPropsForAccessors.Count > 0)
         {
             GenerateStaticPropertyAccessors(type, safeName, fullTypeName);
+        }
+
+        // Generate event subscription methods
+        var events = type.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+            .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
+            .ToList();
+
+        if (events.Count > 0)
+        {
+            GenerateEventMethods(type, safeName, isStruct, fullTypeName, events);
         }
     }
 
@@ -1815,6 +2037,28 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     using (Indent())
                     {
                         AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_method_{GetSafeMethodName(methodName)}));");
+                        AppendLine("return 1;");
+                    }
+                }
+
+                // Instance events
+                var instanceEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
+                    .ToList();
+
+                foreach (var evt in instanceEvents)
+                {
+                    var eventName = evt.Name;
+                    AppendLine($"case \"AddListener_{eventName}\":");
+                    using (Indent())
+                    {
+                        AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_AddListener_{eventName}));");
+                        AppendLine("return 1;");
+                    }
+                    AppendLine($"case \"RemoveListener_{eventName}\":");
+                    using (Indent())
+                    {
+                        AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_RemoveListener_{eventName}));");
                         AppendLine("return 1;");
                     }
                 }
@@ -2505,7 +2749,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                         AppendLine("{");
                                         using (Indent())
                                         {
-                                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace});");
+                                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
                                             AppendLine("return 0;");
                                         }
                                         AppendLine("}");
@@ -3074,6 +3318,97 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine("}");
             AppendLine();
         }
+    }
+
+    private void GenerateEventMethods(Type type, string safeName, bool isStruct, string fullTypeName, List<EventInfo> events)
+    {
+        foreach (var evt in events)
+        {
+            var eventName = evt.Name;
+            var delegateType = evt.EventHandlerType!;
+            var isStatic = evt.AddMethod!.IsStatic;
+
+            // Generate AddListener method
+            GenerateEventAddMethod(safeName, fullTypeName, eventName, delegateType, isStatic, isStruct);
+
+            // Generate RemoveListener method
+            GenerateEventRemoveMethod(safeName, fullTypeName, eventName, delegateType, isStatic, isStruct);
+        }
+    }
+
+    private void GenerateEventAddMethod(string safeName, string fullTypeName, string eventName, Type delegateType, bool isStatic, bool isStruct)
+    {
+        AppendLine($"private static int {safeName}_AddListener_{eventName}(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            if (!isStatic)
+            {
+                if (isStruct)
+                {
+                    AppendLine($"var obj = GetStructFromStack<{fullTypeName}>(L, 1);");
+                }
+                else
+                {
+                    AppendLine($"var obj = GetObjectFromStack<{fullTypeName}>(L, 1);");
+                    AppendLine("if (obj == null) { lua_pushstring(L, \"Invalid object\"); lua_error(L); return 0; }");
+                }
+            }
+
+            AppendLine("if (lua_type(L, " + (isStatic ? "1" : "2") + ") != LUA_TFUNCTION) { lua_pushstring(L, \"Expected function as listener\"); lua_error(L); return 0; }");
+            AppendLine();
+
+            // Convert Lua function to delegate
+            AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, " + (isStatic ? "1" : "2") + ");");
+            AppendLine();
+
+            // Subscribe to event
+            if (isStatic)
+            {
+                AppendLine($"{fullTypeName}.{eventName} += listener;");
+            }
+            else
+            {
+                AppendLine($"obj.{eventName} += listener;");
+                if (isStruct)
+                {
+                    AppendLine("UpdateStruct(L, 1, obj);");
+                }
+            }
+
+            AppendLine("return 0;");
+        }
+        AppendLine("}");
+        AppendLine();
+    }
+
+    private void GenerateEventRemoveMethod(string safeName, string fullTypeName, string eventName, Type delegateType, bool isStatic, bool isStruct)
+    {
+        AppendLine($"private static int {safeName}_RemoveListener_{eventName}(lua_State L)");
+        AppendLine("{");
+        using (Indent())
+        {
+            if (!isStatic)
+            {
+                if (isStruct)
+                {
+                    AppendLine($"var obj = GetStructFromStack<{fullTypeName}>(L, 1);");
+                }
+                else
+                {
+                    AppendLine($"var obj = GetObjectFromStack<{fullTypeName}>(L, 1);");
+                    AppendLine("if (obj == null) { lua_pushstring(L, \"Invalid object\"); lua_error(L); return 0; }");
+                }
+            }
+
+            AppendLine("// Note: Removing specific Lua function listeners is not currently supported");
+            AppendLine("// Event listeners will be automatically cleaned up when the Lua state is closed");
+            AppendLine("// or when the object is garbage collected");
+
+            AppendLine("return 0;");
+        }
+        AppendLine("}");
+        AppendLine();
     }
 
     #region Helpers

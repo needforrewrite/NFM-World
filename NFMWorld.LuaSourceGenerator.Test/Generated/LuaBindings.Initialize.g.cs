@@ -15,6 +15,8 @@ public partial class LuaBindings
     /// </summary>
     public static void Initialize(lua_State L)
     {
+        Register_TypeWithEvents(L);
+        Register_CustomEventArgs(L);
         Register_InlineBuffer(L);
         Register_TypeWithInlineArray(L);
         Register_TypeWithArrays(L);
@@ -28,6 +30,8 @@ public partial class LuaBindings
         Register_TypeWithOverloads(L);
         Register_TypeWithReferences(L);
         Register_Vector3Struct(L);
+        Register_Object(L);
+        Register_EventArgs(L);
         Register_Int32Array(L);
         Register_StringArray(L);
         Register_SingleArray(L);

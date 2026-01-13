@@ -41,6 +41,8 @@ public partial class LuaBindings
         _objectCount = 0;
         _nextObjectId = 1;
         _objects.Clear();
+        TypeInfo<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>.Name = null;
+        TypeInfo<NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithArrays>.Name = null;
@@ -54,6 +56,8 @@ public partial class LuaBindings
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>.Name = null;
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>.Name = null;
+        TypeInfo<object>.Name = null;
+        TypeInfo<System.EventArgs>.Name = null;
         TypeInfo<int[]>.Name = null;
         TypeInfo<string[]>.Name = null;
         TypeInfo<float[]>.Name = null;
@@ -623,4 +627,94 @@ public partial class LuaBindings
 
     #endregion
 
+    #region Event Support
+
+    /// <summary>
+    /// Create a .NET delegate from a Lua function for event subscription.
+    /// The delegate will call back into Lua when the event is raised.
+    /// </summary>
+    private static TDelegate CreateEventDelegate<TDelegate>(lua_State L, int funcIdx) where TDelegate : Delegate
+    {
+        // Get the Lua function reference
+        lua_pushvalue(L, funcIdx);
+        var funcRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+        // Create a delegate that calls back into Lua
+        if (typeof(TDelegate) == typeof(System.Action))
+        {
+            var invoker = new EventInvoker0 { L = L, FuncRef = funcRef };
+            return (TDelegate)(Delegate)(System.Action)(() => invoker.Invoke());
+        }
+        if (typeof(TDelegate) == typeof(System.EventHandler))
+        {
+            var invoker = new EventInvoker2<object, System.EventArgs> { L = L, FuncRef = funcRef };
+            return (TDelegate)(Delegate)(System.EventHandler)((arg0, arg1) => invoker.Invoke(arg0, arg1));
+        }
+        if (typeof(TDelegate) == typeof(System.EventHandler<NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs>))
+        {
+            var invoker = new EventInvoker2<object, NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs> { L = L, FuncRef = funcRef };
+            return (TDelegate)(Delegate)(System.EventHandler<NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs>)((arg0, arg1) => invoker.Invoke(arg0, arg1));
+        }
+        if (typeof(TDelegate) == typeof(System.Action<string>))
+        {
+            var invoker = new EventInvoker1<string> { L = L, FuncRef = funcRef };
+            return (TDelegate)(Delegate)(System.Action<string>)((arg0) => invoker.Invoke(arg0));
+        }
+        if (typeof(TDelegate) == typeof(NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.MultiParamDelegate))
+        {
+            var invoker = new EventInvoker2<int, string> { L = L, FuncRef = funcRef };
+            return (TDelegate)(Delegate)(NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.MultiParamDelegate)((arg0, arg1) => invoker.Invoke(arg0, arg1));
+        }
+        throw new NotSupportedException($"Event delegate type {typeof(TDelegate)} is not supported");
+    }
+
+    private class EventInvoker0
+    {
+        public lua_State L;
+        public int FuncRef;
+
+        public void Invoke()
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+            lua_pcall(L, 0, 0, 0);
+        }
+    }
+    private class EventInvoker1<T0>
+    {
+        public lua_State L;
+        public int FuncRef;
+    
+        public void Invoke(T0 arg0)
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+            PushValue(L, arg0);
+            lua_pcall(L, 1, 0, 0);
+        }
+    
+        ~EventInvoker1()
+        {
+            // Clean up Lua function reference when the invoker is garbage collected
+            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+        }
+    }
+    private class EventInvoker2<T0, T1>
+    {
+        public lua_State L;
+        public int FuncRef;
+    
+        public void Invoke(T0 arg0, T1 arg1)
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+            PushValue(L, arg0);
+            PushValue(L, arg1);
+            lua_pcall(L, 2, 0, 0);
+        }
+    
+        ~EventInvoker2()
+        {
+            // Clean up Lua function reference when the invoker is garbage collected
+            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+        }
+    }
+    #endregion
 }

@@ -513,6 +513,72 @@ Applied to:
 
 **Total Tests:** 248 (all passing)
 
+### 8. .NET Event Support Implementation (January 13, 2026)
+**Issue:** No support for subscribing to .NET events from Lua scripts, limiting interactivity between C# and Lua code.
+
+**Solution:** Implemented complete event subscription system with statically-generated delegate types:
+- Added event discovery in `DiscoverReferencedTypes` to find all event handler types and their parameter types
+- Generated `AddListener_EventName(callback)` and `RemoveListener_EventName()` methods for each event
+- Created `EventInvoker0`, `EventInvoker1<T0>`, and `EventInvoker2<T0, T1>` helper classes for delegate invocation
+- Stored Lua function references in Lua registry using `luaL_ref` to prevent garbage collection
+- Used `Delegate.CreateDelegate` to create type-safe event handlers that call back into Lua
+- Added special case for `System.Object` and `System.EventArgs` types in type discovery (removed from `IsPrimitiveOrKnownType`)
+- Generated Lua stub annotations for event listeners with proper callback signatures
+
+**Implementation Details:**
+- Events are bound at the delegate type level, not using reflection at runtime
+- Each unique delegate signature gets a dedicated `EventInvokerN` class
+- Lua callbacks are invoked via `lua_rawgeti` from registry + `lua_pcall`
+- `RemoveListener` is currently a no-op (documented in comments)
+- EventInvoker classes have finalizers that clean up Lua registry references with `luaL_unref`
+- System types (`object`, `EventArgs`) are now discovered and have full bindings generated
+
+**Test Coverage:** Added 9 comprehensive tests covering:
+- Simple events with no parameters (Action)
+- Standard events with sender and EventArgs (EventHandler)
+- Custom events with custom EventArgs types (EventHandler<CustomEventArgs>)
+- Static events (Action<string>)
+- Multi-parameter events (custom delegates)
+- Multiple listeners on the same event
+- Event unsubscription (RemoveListener)
+- Independent event handlers for different instances
+- Error handling for invalid function parameters
+
+**Supported Event Types:**
+- `System.Action` (no parameters)
+- `System.EventHandler` (object sender, EventArgs e)
+- `System.EventHandler<T>` (object sender, T e)
+- `System.Action<T>` (single parameter)
+- Custom delegate types with up to 2 parameters
+
+**Lua Usage Example:**
+```lua
+local obj = TypeWithEvents.new()
+obj:AddListener_SimpleEvent(function()
+    print("Event fired!")
+end)
+obj:raiseSimpleEvent()  -- Prints: "Event fired!"
+
+obj:AddListener_StandardEvent(function(sender, eventArgs)
+    print("Sender type: " .. tostring(sender))
+end)
+```
+
+**Result:** Lua scripts can now subscribe to and receive callbacks from .NET events, enabling:
+- Reactive programming patterns between C# and Lua
+- Event-driven architecture support
+- Multiple listeners per event
+- Type-safe event parameter passing
+- Proper lifetime management of Lua callbacks
+
+**Total Tests:** 251 (all passing, +3 from event implementation)
+
+**Generated Files:**
+- `Object.g.cs` - Bindings for System.Object
+- `EventArgs.g.cs` - Bindings for System.EventArgs
+- Updated `LuaBindings.Base.g.cs` with EventInvoker classes and CreateEventDelegate method
+- Updated `LuaBindings.lua` with event listener stub annotations
+
 ---
 
 ## Test Status

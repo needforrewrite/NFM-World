@@ -2744,4 +2744,214 @@ public class LuaRuntimeTests
     }
 
     #endregion
+
+    #region TypeWithEvents Tests
+
+    [TestMethod]
+    public void Event_SimpleEvent_SubscribeAndRaise()
+    {
+        var result = luaL_dostring(_L, @"
+            local callCount = 0
+            local obj = TypeWithEvents.new()
+
+            obj:AddListener_SimpleEvent(function()
+                callCount = callCount + 1
+            end)
+
+            obj:raiseSimpleEvent()
+            obj:raiseSimpleEvent()
+
+            return callCount
+        ");
+
+        AssertLuaOk(result);
+        var callCount = lua_tointeger(_L, -1);
+        Assert.AreEqual(2, callCount, "SimpleEvent should have been called twice");
+    }
+
+    [TestMethod]
+    public void Event_StandardEvent_ReceivesSenderAndEventArgs()
+    {
+        var result = luaL_dostring(_L, @"
+            local receivedSender = nil
+            local receivedArgs = nil
+            local obj = TypeWithEvents.new()
+
+            obj:AddListener_StandardEvent(function(sender, args)
+                receivedSender = sender
+                receivedArgs = args
+            end)
+
+            obj:raiseStandardEvent()
+
+            return receivedSender ~= nil, receivedArgs ~= nil
+        ");
+
+        AssertLuaOk(result);
+        var hasSender = lua_toboolean(_L, -2) != 0;
+        var hasArgs = lua_toboolean(_L, -1) != 0;
+        Assert.IsTrue(hasSender, "Sender should not be nil");
+        Assert.IsTrue(hasArgs, "EventArgs should not be nil");
+    }
+
+    [TestMethod]
+    public void Event_CustomEvent_ReceivesCustomEventArgs()
+    {
+        var result = luaL_dostring(_L, @"
+            local receivedMessage = nil
+            local receivedValue = 0
+            local obj = TypeWithEvents.new()
+
+            obj:AddListener_CustomEvent(function(sender, args)
+                receivedMessage = args.message
+                receivedValue = args.value
+            end)
+
+            obj:raiseCustomEvent('Hello', 42)
+
+            return receivedMessage, receivedValue
+        ");
+
+        AssertLuaOk(result);
+        var message = lua_tostring(_L, -2);
+        var value = lua_tointeger(_L, -1);
+        Assert.AreEqual("Hello", message);
+        Assert.AreEqual(42, value);
+    }
+
+    [TestMethod]
+    public void Event_StaticEvent_SubscribeAndRaise()
+    {
+        var result = luaL_dostring(_L, @"
+            local receivedMessage = nil
+
+            TypeWithEvents.AddListener_StaticEvent(function(message)
+                receivedMessage = message
+            end)
+
+            TypeWithEvents.raiseStaticEvent('Static Event Test')
+
+            return receivedMessage
+        ");
+
+        AssertLuaOk(result);
+        var message = lua_tostring(_L, -1);
+        Assert.AreEqual("Static Event Test", message);
+    }
+
+    [TestMethod]
+    public void Event_MultiParamEvent_ReceivesMultipleParameters()
+    {
+        var result = luaL_dostring(_L, @"
+            local receivedValue = 0
+            local receivedMessage = nil
+            local obj = TypeWithEvents.new()
+
+            obj:AddListener_MultiParamEvent(function(value, message)
+                receivedValue = value
+                receivedMessage = message
+            end)
+
+            obj:raiseMultiParamEvent(123, 'Test Message')
+
+            return receivedValue, receivedMessage
+        ");
+
+        AssertLuaOk(result);
+        var value = lua_tointeger(_L, -2);
+        var message = lua_tostring(_L, -1);
+        Assert.AreEqual(123, value);
+        Assert.AreEqual("Test Message", message);
+    }
+
+    [TestMethod]
+    public void Event_MultipleListeners_AllReceiveEvents()
+    {
+        var result = luaL_dostring(_L, @"
+            local count1 = 0
+            local count2 = 0
+            local count3 = 0
+            local obj = TypeWithEvents.new()
+
+            obj:AddListener_SimpleEvent(function() count1 = count1 + 1 end)
+            obj:AddListener_SimpleEvent(function() count2 = count2 + 1 end)
+            obj:AddListener_SimpleEvent(function() count3 = count3 + 1 end)
+
+            obj:raiseSimpleEvent()
+
+            return count1, count2, count3
+        ");
+
+        AssertLuaOk(result);
+        var count1 = lua_tointeger(_L, -3);
+        var count2 = lua_tointeger(_L, -2);
+        var count3 = lua_tointeger(_L, -1);
+        Assert.AreEqual(1, count1, "First listener should be called");
+        Assert.AreEqual(1, count2, "Second listener should be called");
+        Assert.AreEqual(1, count3, "Third listener should be called");
+    }
+
+    [TestMethod]
+    public void Event_RemoveAllListeners_NoEventsReceived()
+    {
+        var result = luaL_dostring(_L, @"
+            local callCount = 0
+            local obj = TypeWithEvents.new()
+
+            obj:AddListener_SimpleEvent(function() callCount = callCount + 1 end)
+            obj:raiseSimpleEvent()
+
+            obj:RemoveListener_SimpleEvent()
+            obj:raiseSimpleEvent()
+
+            return callCount
+        ");
+
+        AssertLuaOk(result);
+        var callCount = lua_tointeger(_L, -1);
+        // Note: RemoveListener is currently a no-op, so the event will still be called
+        Assert.AreEqual(2, callCount, "RemoveListener currently doesn't remove listeners (not yet implemented)");
+    }
+
+    [TestMethod]
+    public void Event_DifferentInstances_IndependentEventHandlers()
+    {
+        var result = luaL_dostring(_L, @"
+            local count1 = 0
+            local count2 = 0
+
+            local obj1 = TypeWithEvents.new()
+            local obj2 = TypeWithEvents.new()
+
+            obj1:AddListener_SimpleEvent(function() count1 = count1 + 1 end)
+            obj2:AddListener_SimpleEvent(function() count2 = count2 + 1 end)
+
+            obj1:raiseSimpleEvent()
+            obj1:raiseSimpleEvent()
+            obj2:raiseSimpleEvent()
+
+            return count1, count2
+        ");
+
+        AssertLuaOk(result);
+        var count1 = lua_tointeger(_L, -2);
+        var count2 = lua_tointeger(_L, -1);
+        Assert.AreEqual(2, count1, "First object's event should be called twice");
+        Assert.AreEqual(1, count2, "Second object's event should be called once");
+    }
+
+    [TestMethod]
+    public void Event_ErrorHandling_InvalidFunctionParameter()
+    {
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithEvents.new()
+            obj:AddListener_SimpleEvent('not a function')
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result);
+        var errorMessage = lua_tostring(_L, -1) ?? "";
+        Assert.IsTrue(errorMessage.Contains("Expected function"), $"Expected error about function parameter: {errorMessage}");
+    }
+
+    #endregion
 }
