@@ -6,6 +6,7 @@ GM:AddListener_OnEnter(function()
     for i = 1, #GM.players do
         local player = GM.players[i]
         GM.carsInRace[i] = GM:createBackendCar(player.carName, i, fix64.create(0), fix64.create(0))
+        print("Created car for player " .. player.name .. " with car name " .. player.carName)
     end
 
     GM:reset()
@@ -15,6 +16,7 @@ GM:AddListener_OnExit(function()
 end)
 
 GM:AddListener_OnGameTick(function()
+    FrameTrace.AddMessage("Hello from Lua")
     FrameTrace.AddMessage("contox: " .. GM.carsInRace[1].position.x .. ", contoz: " .. GM.carsInRace[1].position.z .. ", contoy: " .. GM.carsInRace[1].position.y)
 
     -- TODO enums

@@ -91,6 +91,9 @@ public partial class LuaBindings
             case "raceState":
                 PushValue(L, obj.RaceState);
                 return 1;
+            case "isClient":
+                PushValue(L, obj.IsClient);
+                return 1;
             case "finishRace":
                 lua_pushcfunction(L, (LuaGamemode_method_finishRace));
                 return 1;
@@ -166,23 +169,6 @@ public partial class LuaBindings
     private static int LuaGamemode_new(lua_State L)
     {
         var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<nfm_world_library.backend.gamemodes.BaseGamemodeParameters>(L, 1)!;
-            var arg1 = ToObject<nfm_world_library.backend.IRaceValues>(L, 2)!;
-            try
-            {
-                var obj = new nfm_world_library.backend.gamemodes.LuaGamemode(arg0, arg1);
-                PushObject(L, obj, "MT_LuaGamemode");
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
 
         luaL_error(L, "Invalid arguments for LuaGamemode constructor");
         return 0;

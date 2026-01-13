@@ -205,8 +205,6 @@ declare class BaseGamemodeParameters {
 }
 
 declare class LuaGamemode {
-    /** @customName new */
-    static inst(gamemodeParameters: BaseGamemodeParameters | null, raceValues: IRaceValues | null): LuaGamemode;
     readonly playerCarIndex: number;
     readonly players: IReadOnlyList_PlayerParameters;
     readonly player: PlayerParameters | null;
@@ -214,6 +212,7 @@ declare class LuaGamemode {
     readonly currentStage: BackendStage | null;
     readonly numPlayers: number;
     readonly raceState: number;
+    readonly isClient: boolean;
     finishRace(playerStandings: ByteArray): void;
     createBackendCar(name: string, idx: number, x: fix64, y: fix64): BackendCar | null;
     reset(): void;

@@ -805,7 +805,24 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             }
                             else
                             {
-                                throw new InvalidOperationException($"Type {typeof(T)} is not supported");
+                                // Slow path: attempt to push a base type's metatable
+                                if (value.GetType() != typeof(T))
+                                {
+                                    Type? baseType;
+                                    while ((baseType = value.GetType().BaseType) != null)
+                                    {
+                                        if (GetMetatableNameForType(baseType) is { } baseMetatable)
+                                        {
+                                            PushObject(L, value, baseMetatable);
+                                            return;
+                                        }
+                                        
+                                        if (baseType == typeof(T))
+                                            break;
+                                    }
+                                }
+
+                                throw new InvalidOperationException($"Type {value.GetType()} is not supported");
                             }
                             break;
                     }
@@ -1087,7 +1104,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         public void Invoke()
                         {
                             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
-                            lua_pcall(L, 0, 0, 0);
+                            if (lua_pcall(L, 0, 0, 0) != LUA_OK)
+                            {
+                                var errorMsg = lua_tostring(L, -1);
+                                lua_pop(L, 1); // Remove error message from stack
+                                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+                            }
                         }
 
                         ~EventInvoker0()
@@ -1126,7 +1148,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             AppendLine(
                 $$"""
-                          lua_pcall(L, {{argumentCount}}, 0, 0);
+                          if (lua_pcall(L, {{argumentCount}}, 0, 0) != LUA_OK)
+                          {
+                              var errorMsg = lua_tostring(L, -1);
+                              lua_pop(L, 1); // Remove error message from stack
+                              throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+                          }
                       }
 
                       ~EventInvoker{{argumentCount}}()
@@ -1258,6 +1285,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         return 1;
                     }));
                     lua_setglobal(L, name);
+                }
+            }
+            
+            public class LuaException : Exception
+            {
+                public LuaException(string message) : base(message)
+                {
                 }
             }
             """

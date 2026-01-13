@@ -4,7 +4,9 @@ using nfm_world_library.SoftFloat;
 namespace nfm_world_library.backend.gamemodes;
 
 [LuaVisible]
-public class LuaGamemode : BaseGamemode
+[method: LuaHidden]
+public class LuaGamemode(string path, BaseGamemodeParameters gamemodeParameters, IRaceValues raceValues, bool isClient = false)
+    : BaseGamemode(gamemodeParameters, raceValues)
 {
     [LuaHidden]
     public override event EventHandler<byte[]>? RaceFinished;
@@ -14,15 +16,10 @@ public class LuaGamemode : BaseGamemode
     public event Action? OnGameTick;
     public event Action? OnReset;
     
-    public readonly bool IsClient;
+    public readonly bool IsClient = isClient;
 
-    [LuaHidden] public lua_State L;
-
-    public LuaGamemode(string path, BaseGamemodeParameters gamemodeParameters, IRaceValues raceValues, bool isClient = false) : base(gamemodeParameters, raceValues)
-    {
-        IsClient = isClient;
-        L = LuaManager.LoadGamemodeLua(this, path);
-    }
+    [LuaHidden] public lua_State? L;
+    private readonly string _path = path;
 
     public void FinishRace(byte[] playerStandings)
     {
@@ -37,6 +34,7 @@ public class LuaGamemode : BaseGamemode
     [LuaHidden]
     public override void Enter()
     {
+        L = LuaManager.LoadGamemodeLua(this, path);
         base.Enter();
         OnEnter?.Invoke();
     }
@@ -46,6 +44,8 @@ public class LuaGamemode : BaseGamemode
     {
         base.Exit();
         OnExit?.Invoke();
+        if (L is {} l)
+            LuaManager.Destroy(l);
     }
 
     [LuaHidden]

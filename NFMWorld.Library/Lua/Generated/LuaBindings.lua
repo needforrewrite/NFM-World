@@ -546,16 +546,11 @@ function BaseGamemodeParametersInstance:getHashCode() end
 ---@field currentStage BackendStageInstance
 ---@field numPlayers integer
 ---@field raceState RaceStateInstance
+---@field isClient boolean
 LuaGamemodeInstance = {}
 LuaGamemode = {}
 
 ---@class (exact) LuaGamemode : BaseGamemode
----Creates a new LuaGamemode
----@param gamemodeParameters BaseGamemodeParametersInstance
----@param raceValues IRaceValuesInstance
----@return LuaGamemodeInstance
-function LuaGamemode.new(gamemodeParameters, raceValues) end
-
 ---@param self LuaGamemodeInstance
 ---@param playerStandings integer[]
 function LuaGamemodeInstance:finishRace(playerStandings) end

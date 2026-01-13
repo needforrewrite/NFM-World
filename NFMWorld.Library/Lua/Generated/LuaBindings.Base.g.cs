@@ -278,7 +278,24 @@ public partial class LuaBindings
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Type {typeof(T)} is not supported");
+                    // Slow path: attempt to push a base type's metatable
+                    if (value.GetType() != typeof(T))
+                    {
+                        Type? baseType;
+                        while ((baseType = value.GetType().BaseType) != null)
+                        {
+                            if (GetMetatableNameForType(baseType) is { } baseMetatable)
+                            {
+                                PushObject(L, value, baseMetatable);
+                                return;
+                            }
+
+                            if (baseType == typeof(T))
+                                break;
+                        }
+                    }
+
+                    throw new InvalidOperationException($"Type {value.GetType()} is not supported");
                 }
                 break;
         }
@@ -1124,7 +1141,12 @@ public partial class LuaBindings
         public void Invoke()
         {
             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
-            lua_pcall(L, 0, 0, 0);
+            if (lua_pcall(L, 0, 0, 0) != LUA_OK)
+            {
+                var errorMsg = lua_tostring(L, -1);
+                lua_pop(L, 1); // Remove error message from stack
+                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+            }
         }
 
         ~EventInvoker0()
@@ -1140,7 +1162,12 @@ public partial class LuaBindings
             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
             PushValue(L, arg0);
             PushValue(L, arg1);
-            lua_pcall(L, 2, 0, 0);
+            if (lua_pcall(L, 2, 0, 0) != LUA_OK)
+            {
+                var errorMsg = lua_tostring(L, -1);
+                lua_pop(L, 1); // Remove error message from stack
+                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+            }
         }
     
         ~EventInvoker2()
@@ -1157,7 +1184,12 @@ public partial class LuaBindings
             PushValue(L, arg0);
             PushValue(L, arg1);
             PushValue(L, arg2);
-            lua_pcall(L, 3, 0, 0);
+            if (lua_pcall(L, 3, 0, 0) != LUA_OK)
+            {
+                var errorMsg = lua_tostring(L, -1);
+                lua_pop(L, 1); // Remove error message from stack
+                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+            }
         }
     
         ~EventInvoker3()
@@ -1177,7 +1209,12 @@ public partial class LuaBindings
             PushValue(L, arg3);
             PushValue(L, arg4);
             PushValue(L, arg5);
-            lua_pcall(L, 6, 0, 0);
+            if (lua_pcall(L, 6, 0, 0) != LUA_OK)
+            {
+                var errorMsg = lua_tostring(L, -1);
+                lua_pop(L, 1); // Remove error message from stack
+                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+            }
         }
     
         ~EventInvoker6()
@@ -1199,7 +1236,12 @@ public partial class LuaBindings
             PushValue(L, arg5);
             PushValue(L, arg6);
             PushValue(L, arg7);
-            lua_pcall(L, 8, 0, 0);
+            if (lua_pcall(L, 8, 0, 0) != LUA_OK)
+            {
+                var errorMsg = lua_tostring(L, -1);
+                lua_pop(L, 1); // Remove error message from stack
+                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+            }
         }
     
         ~EventInvoker8()
@@ -1223,7 +1265,12 @@ public partial class LuaBindings
             PushValue(L, arg7);
             PushValue(L, arg8);
             PushValue(L, arg9);
-            lua_pcall(L, 10, 0, 0);
+            if (lua_pcall(L, 10, 0, 0) != LUA_OK)
+            {
+                var errorMsg = lua_tostring(L, -1);
+                lua_pop(L, 1); // Remove error message from stack
+                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+            }
         }
     
         ~EventInvoker10()
@@ -1347,5 +1394,12 @@ public partial class LuaBindings
             return 1;
         }));
         lua_setglobal(L, name);
+    }
+}
+
+public class LuaException : Exception
+{
+    public LuaException(string message) : base(message)
+    {
     }
 }

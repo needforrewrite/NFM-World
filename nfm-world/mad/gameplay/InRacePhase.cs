@@ -16,7 +16,7 @@ public class InRacePhase(GraphicsDevice graphicsDevice) : BaseRacePhase(graphics
     {
         get;
         set;
-    } = GameModes.Racing;
+    } = GameModes.Sandbox;
 
     public void SetGamemode(GameModes mode)
     {

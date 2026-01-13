@@ -45,4 +45,10 @@ public static class LuaManager
 
         return L;
     }
+
+    public static void Destroy(lua_State luaState)
+    {
+        LuaBindings.CleanupEventDelegates();
+        lua_close(luaState);
+    }
 }
