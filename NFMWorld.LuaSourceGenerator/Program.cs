@@ -524,14 +524,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 private static int _nextObjectId = 1;
 
                 // Global storage for all managed objects (non-generic to allow runtime type queries), and  their .NET types (for overload resolution)
-                // Also track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
+                // Also track parent relationships for struct fields (structId -> (parentId, updateStructInParent))
                 private static readonly DictionarySlim<int, (object Obj, Type Type, (int parentId, Action<object, object> updateStructInParent)? StructParents)> _objects = [];
-
-                private static class TypeInfo<T>
-                {
-                    // Maps C# types to their Lua metatable names
-                    public static string? Name;
-                }
 
                 // Keep delegates alive to prevent GC collection
                 private static readonly HashSet<lua_CFunction> _delegates = [];
@@ -548,23 +542,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     // Having this here crashes the runtime because it could be unrefing variables from a lua_State that is already closed.
                     // CleanupEventDelegates();
                     _eventDelegateRefs.Clear();
-            """);
-
-        _indent += 2;
-        foreach (var typeInfo in types)
-        {
-            var type = typeInfo.Type;
-            var fullTypeName = GetFullTypeName(type);
-            AppendLine(
-                $"""
-                TypeInfo<{fullTypeName}>.Name = null;
-                """
-            );
-        }
-        _indent -= 2;
-
-        AppendLine(
-            $$"""
                 }
 
                 #region Object Storage
@@ -574,10 +551,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// <summary>
                 /// Store a managed object and return its ID.
                 /// </summary>
-                private static int StoreObject<T>(T obj, in (int parentId, Action<object, object> updateStructInParent)? structParent = null)
+                private static int StoreObject(object obj, in (int parentId, Action<object, object> updateStructInParent)? structParent = null)
                 {
                     var id = _nextObjectId++;
-                    _objects.GetOrAddValueRef(id) = (obj!, typeof(T), structParent);
+                    _objects.GetOrAddValueRef(id) = (obj, obj.GetType(), structParent);
                     _objectCount++;
                     return id;
                 }
@@ -587,8 +564,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// </summary>
                 private static T? GetObject<T>(int id)
                 {
-                    if (_objects.TryGetValue(id, out var obj) && obj.Obj is T typedObj)
-                        return typedObj;
+                    if (_objects.TryGetValue(id, out var obj))
+                    {
+                        if (obj.Obj is T typedObj) return typedObj;
+                        throw new InvalidCastException($"Stored object of type {obj.Type} cannot be cast to the requested type {typeof(T)}");
+                    }
+                
                     return default;
                 }
 
@@ -618,7 +599,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// </summary>
                 private static void RegisterMetatable<T>(string metatableName)
                 {
-                    TypeInfo<T>.Name = metatableName;
                     _typeToMetatable[typeof(T)] = metatableName;
                 }
 
@@ -633,7 +613,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// <summary>
                 /// Push a userdata for a managed object onto the Lua stack.
                 /// </summary>
-                private static void PushObject<T>(lua_State L, T obj, string metatableName)
+                private static void PushObject(lua_State L, object obj, string metatableName)
                 {
                     var id = StoreObject(obj);
                     var ptr = lua_newuserdata(L, (ulong)sizeof(int));
@@ -646,7 +626,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// Push a struct userdata with parent tracking (for field/property access).
                 /// When the struct is modified, changes will be written back to the parent.
                 /// </summary>
-                private static void PushStructWithParent<T>(lua_State L, T obj, string metatableName, int parentId, Action<object, object> updateValueInParent) where T : struct
+                private static void PushStructWithParent(lua_State L, object obj, string metatableName, int parentId, Action<object, object> updateValueInParent)
                 {
                     var id = StoreObject(obj, (parentId, updateValueInParent));
                     var ptr = lua_newuserdata(L, (ulong)sizeof(int));
@@ -690,7 +670,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// This maintains value type semantics where mutations create new values.
                 /// If the struct has a parent relationship, also writes it back to the parent's field.
                 /// </summary>
-                private static void UpdateStruct<T>(lua_State L, int idx, T value) where T : struct
+                private static void UpdateStruct(lua_State L, int idx, object value)
                 {
                     var ptr = lua_touserdata(L, idx);
                     if (ptr == 0) return;
@@ -698,8 +678,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     {
                         var id = *(int*)ptr;
                         ref var existingValue = ref _objects.GetOrAddValueRef(id);
-                        existingValue = (value, typeof(T), existingValue.StructParents);
-
+                        existingValue = existingValue with { Obj = value };
+            
                         // If this struct has a parent, write it back to the parent's field
                         if (existingValue.StructParents is {} parentInfo)
                         {
@@ -793,79 +773,48 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         case string s:
                             lua_pushstring(L, s);
                             break;
-            """
-        );
-
-        _indent += 3;
-
-        foreach (var typeInfo in types)
-        {
-            var type = typeInfo.Type;
-            var luaName = typeInfo.LuaName;
-            var safeName = GetSafeTypeName(type);
-            var metatableName = $"MT_{safeName}";
-            var isStruct = type.IsValueType;
-            var fullTypeName = GetFullTypeName(type);
-
-            if (typeInfo.Type.IsArray)
-            {
-                AppendLine(
-                    $"""
-                    // Special case: Handle array type: {fullTypeName} since arrays need runtime type info
-                    case {fullTypeName} arr_{luaName}:
-                        PushObject(L, arr_{luaName}, "{metatableName}");
-                        break;
-                    """
-                );
-            }
-        }
-
-        _indent -= 3;
-
-        AppendLine(
-            $$"""
-                            default:
-                                // For all other types, push as userdata if we have a registered metatable
-                                if (TypeInfo<T>.Name is {} metatable)
-                                {
-                                    PushObject(L, value, metatable);
-                                }
-                                else
-                                {
-                                    throw new InvalidOperationException($"Type {typeof(T)} is not supported");
-                                }
-                                break;
-                        }
+                        default:
+                            // For all other types, push as userdata if we have a registered metatable
+                            if (GetMetatableNameForType(value.GetType()) is {} metatable)
+                            {
+                                PushObject(L, value, metatable);
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException($"Type {typeof(T)} is not supported");
+                            }
+                            break;
                     }
+                }
 
-                    /// <summary>
-                    /// Convert Lua value at stack index to a C# object of the target type.
-                    /// </summary>
-                    private static T? ToObject<T>(lua_State L, int idx)
+                /// <summary>
+                /// Convert Lua value at stack index to a C# object of the target type.
+                /// </summary>
+                private static T? ToObject<T>(lua_State L, int idx)
+                {
+                    var luaType = lua_type(L, idx);
+
+                    if (luaType == LUA_TNIL) return default;
+
+                    if (typeof(T) == typeof(bool) || luaType == LUA_TBOOLEAN) return (T)(object)(lua_toboolean(L, idx) != 0);
+                    if (typeof(T) == typeof(int)) return (T)(object)(int)lua_tointeger(L, idx);
+                    if (typeof(T) == typeof(uint)) return (T)(object)(uint)lua_tointeger(L, idx);
+                    if (typeof(T) == typeof(byte)) return (T)(object)(byte)lua_tointeger(L, idx);
+                    if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
+                    if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
+                    if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
+                    if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
+                    if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
+                    if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
+                    if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
+
+                    if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
+
+                    // Handle Lua tables being converted to arrays
+                    if (luaType == LUA_TTABLE && typeof(T).IsArray)
                     {
-                        var luaType = lua_type(L, idx);
-
-                        if (luaType == LUA_TNIL) return default;
-
-                        if (typeof(T) == typeof(bool) || luaType == LUA_TBOOLEAN) return (T)(object)(lua_toboolean(L, idx) != 0);
-                        if (typeof(T) == typeof(int)) return (T)(object)(int)lua_tointeger(L, idx);
-                        if (typeof(T) == typeof(uint)) return (T)(object)(uint)lua_tointeger(L, idx);
-                        if (typeof(T) == typeof(byte)) return (T)(object)(byte)lua_tointeger(L, idx);
-                        if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
-                        if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
-                        if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
-                        if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
-                        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
-                        if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
-                        if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
-
-                        if (typeof(T) == typeof(string) || luaType == LUA_TSTRING) return (T)(object)lua_tostring(L, idx)!;
-
-                        // Handle Lua tables being converted to arrays
-                        if (luaType == LUA_TTABLE && typeof(T).IsArray)
-                        {
-                            #region Handle Lua tables being converted to arrays
-                """);
+                        #region Handle Lua tables being converted to arrays
+            """);
 
         _indent += 3;
 
@@ -1042,11 +991,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     #endregion
 
                     #region Event Support
-                
+
                     private static ConditionalWeakTable<BaseEventInvoker, DelegateRef> _eventDelegateRefs = new();
-                    
+
                     private record DelegateRef(int FuncRef, Action Unsubscribe);
-                    
+
                     /// <summary>
                     /// Create a .NET delegate from a Lua function for event subscription.
                     /// The delegate will call back into Lua when the event is raised.
@@ -1102,13 +1051,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             $$"""
                         throw new NotSupportedException($"Event delegate type {typeof(TDelegate)} is not supported");
                     }
-                
+
                     private abstract class BaseEventInvoker
                     {
                         public lua_State L;
                         public int FuncRef;
                     }
-                    
+
                     private sealed class EventInvoker0 : BaseEventInvoker
                     {
                         public void Invoke()
@@ -1197,7 +1146,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }));
                     lua_setglobal(L, name);
                 }
-                
+
                 public void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
@@ -1208,7 +1157,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }));
                     lua_setglobal(L, name);
                 }
-                
+
                 public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
@@ -1220,7 +1169,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }));
                     lua_setglobal(L, name);
                 }
-                
+
                 public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
@@ -1232,7 +1181,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }));
                     lua_setglobal(L, name);
                 }
-                
+
                 public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
@@ -1245,7 +1194,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }));
                     lua_setglobal(L, name);
                 }
-                
+
                 public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
@@ -1258,7 +1207,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }));
                     lua_setglobal(L, name);
                 }
-                
+
                 public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
@@ -1272,7 +1221,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }));
                     lua_setglobal(L, name);
                 }
-                
+
                 public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
@@ -1397,7 +1346,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         // Generate static methods namespace
         var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m))
+            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
             .ToList();
 
         AppendLine($"declare class {luaName} {{");
@@ -1465,7 +1414,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // Instance methods
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m))
+                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
                 .ToList();
 
             foreach (var method in methods)
@@ -1520,6 +1469,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             }
         }
         AppendLine("}");
+    }
+
+    private static bool IsCompilerMethod(MethodInfo methodInfo)
+    {
+        return methodInfo.GetCustomAttributes()
+            .Any(attr => attr.GetType().FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
+            || methodInfo.Name.Contains("<") && methodInfo.Name.Contains(">");
     }
 
     private static string GetTypeScriptTypeName(Type type)
@@ -1708,7 +1664,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         // Generate static method stubs
         var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m))
+            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
             .ToList();
 
         foreach (var method in staticMethods)
@@ -1737,7 +1693,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         // Generate instance method stubs
         var instanceMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
-            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m))
+            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
             .ToList();
 
         foreach (var method in instanceMethods)
@@ -2033,7 +1989,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // Static methods
             var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod && !HasByRefParameters(m) && !HasRefReturn(m))
+                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
                 .GroupBy(GetLuaMethodName)
                 .ToList();
 
@@ -2373,7 +2329,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        GeneratePushValueWithParentTracking($"{prop.Name}", prop.PropertyType, type, prop.Name, isStruct, prop.SetMethod == null);
+                        GeneratePushValueWithParentTracking($"{prop.Name}", prop.PropertyType, type, prop.Name, isStruct, prop.SetMethod == null || IsInitOnly(prop));
                     }
                 }
 
@@ -2400,6 +2356,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
                                 !m.IsGenericMethod &&
                                 !HasByRefParameters(m) &&
+                                !IsCompilerMethod(m) &&
                                 !HasRefReturn(m) &&
                                 (!type.IsArray || (m.DeclaringType != type && m.DeclaringType != typeof(Array) && m.DeclaringType != typeof(object)))) // Skip array-specific and inherited methods
                     .GroupBy(m => GetLuaMethodName(m))
@@ -3157,7 +3114,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private void GenerateStaticMethods(Type type, string safeName, string fullTypeName)
     {
         var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m))
+            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
             .GroupBy(m => GetLuaMethodName(m))
             .ToList();
 
@@ -3381,6 +3338,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
                         !m.IsGenericMethod &&
                         !HasByRefParameters(m) &&
+                        !IsCompilerMethod(m) &&
                         !HasRefReturn(m)) // Skip generic methods and byref parameters
             .GroupBy(m => GetLuaMethodName(m))
             .ToList();
@@ -4045,7 +4003,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             var elementType = type.GetElementType()!;
             return GetFullTypeName(elementType);
         }
-        
+
         // Handle array types
         if (type.IsArray)
         {
@@ -4200,7 +4158,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         var operators = new List<OperatorInfo>();
         var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => m.IsSpecialName && m.Name.StartsWith("op_") && !HasByRefParameters(m));
+            .Where(m => m.IsSpecialName && m.Name.StartsWith("op_") && !HasByRefParameters(m) && !IsCompilerMethod(m));
 
         foreach (var method in methods)
         {

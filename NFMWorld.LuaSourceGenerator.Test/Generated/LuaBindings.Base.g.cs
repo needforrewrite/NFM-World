@@ -21,14 +21,8 @@ public partial class LuaBindings
     private static int _nextObjectId = 1;
 
     // Global storage for all managed objects (non-generic to allow runtime type queries), and  their .NET types (for overload resolution)
-    // Also track parent relationships for struct fields (structId -> (parentId, memberName, parentType))
+    // Also track parent relationships for struct fields (structId -> (parentId, updateStructInParent))
     private static readonly DictionarySlim<int, (object Obj, Type Type, (int parentId, Action<object, object> updateStructInParent)? StructParents)> _objects = [];
-
-    private static class TypeInfo<T>
-    {
-        // Maps C# types to their Lua metatable names
-        public static string? Name;
-    }
 
     // Keep delegates alive to prevent GC collection
     private static readonly HashSet<lua_CFunction> _delegates = [];
@@ -45,53 +39,6 @@ public partial class LuaBindings
         // Having this here crashes the runtime because it could be unrefing variables from a lua_State that is already closed.
         // CleanupEventDelegates();
         _eventDelegateRefs.Clear();
-        TypeInfo<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithArrays>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>.Name = null;
-        TypeInfo<object>.Name = null;
-        TypeInfo<System.EventArgs>.Name = null;
-        TypeInfo<int[]>.Name = null;
-        TypeInfo<string[]>.Name = null;
-        TypeInfo<float[]>.Name = null;
-        TypeInfo<int[,]>.Name = null;
-        TypeInfo<float[,,]>.Name = null;
-        TypeInfo<System.Collections.Generic.List<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.List<int>.Enumerator>.Name = null;
-        TypeInfo<System.Collections.Generic.List<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.List<string>.Enumerator>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Name = null;
-        TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<long[]>.Name = null;
-        TypeInfo<System.Collections.IEnumerator>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerable<int>>.Name = null;
-        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.IComparer<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerable<string>>.Name = null;
-        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.IComparer<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>.Name = null;
-        TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerator<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.IList<int>>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerator<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.IList<string>>.Name = null;
-        TypeInfo<System.Collections.Generic.IEnumerator<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
-        TypeInfo<System.Collections.Generic.IList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
     }
 
     #region Object Storage
@@ -101,10 +48,10 @@ public partial class LuaBindings
     /// <summary>
     /// Store a managed object and return its ID.
     /// </summary>
-    private static int StoreObject<T>(T obj, in (int parentId, Action<object, object> updateStructInParent)? structParent = null)
+    private static int StoreObject(object obj, in (int parentId, Action<object, object> updateStructInParent)? structParent = null)
     {
         var id = _nextObjectId++;
-        _objects.GetOrAddValueRef(id) = (obj!, typeof(T), structParent);
+        _objects.GetOrAddValueRef(id) = (obj, obj.GetType(), structParent);
         _objectCount++;
         return id;
     }
@@ -114,8 +61,12 @@ public partial class LuaBindings
     /// </summary>
     private static T? GetObject<T>(int id)
     {
-        if (_objects.TryGetValue(id, out var obj) && obj.Obj is T typedObj)
-            return typedObj;
+        if (_objects.TryGetValue(id, out var obj))
+        {
+            if (obj.Obj is T typedObj) return typedObj;
+            throw new InvalidCastException($"Stored object of type {obj.Type} cannot be cast to the requested type {typeof(T)}");
+        }
+
         return default;
     }
 
@@ -145,7 +96,6 @@ public partial class LuaBindings
     /// </summary>
     private static void RegisterMetatable<T>(string metatableName)
     {
-        TypeInfo<T>.Name = metatableName;
         _typeToMetatable[typeof(T)] = metatableName;
     }
 
@@ -160,7 +110,7 @@ public partial class LuaBindings
     /// <summary>
     /// Push a userdata for a managed object onto the Lua stack.
     /// </summary>
-    private static void PushObject<T>(lua_State L, T obj, string metatableName)
+    private static void PushObject(lua_State L, object obj, string metatableName)
     {
         var id = StoreObject(obj);
         var ptr = lua_newuserdata(L, (ulong)sizeof(int));
@@ -173,7 +123,7 @@ public partial class LuaBindings
     /// Push a struct userdata with parent tracking (for field/property access).
     /// When the struct is modified, changes will be written back to the parent.
     /// </summary>
-    private static void PushStructWithParent<T>(lua_State L, T obj, string metatableName, int parentId, Action<object, object> updateValueInParent) where T : struct
+    private static void PushStructWithParent(lua_State L, object obj, string metatableName, int parentId, Action<object, object> updateValueInParent)
     {
         var id = StoreObject(obj, (parentId, updateValueInParent));
         var ptr = lua_newuserdata(L, (ulong)sizeof(int));
@@ -217,7 +167,7 @@ public partial class LuaBindings
     /// This maintains value type semantics where mutations create new values.
     /// If the struct has a parent relationship, also writes it back to the parent's field.
     /// </summary>
-    private static void UpdateStruct<T>(lua_State L, int idx, T value) where T : struct
+    private static void UpdateStruct(lua_State L, int idx, object value)
     {
         var ptr = lua_touserdata(L, idx);
         if (ptr == 0) return;
@@ -225,7 +175,7 @@ public partial class LuaBindings
         {
             var id = *(int*)ptr;
             ref var existingValue = ref _objects.GetOrAddValueRef(id);
-            existingValue = (value, typeof(T), existingValue.StructParents);
+            existingValue = existingValue with { Obj = value };
 
             // If this struct has a parent, write it back to the parent's field
             if (existingValue.StructParents is {} parentInfo)
@@ -320,37 +270,9 @@ public partial class LuaBindings
             case string s:
                 lua_pushstring(L, s);
                 break;
-            // Special case: Handle array type: int[] since arrays need runtime type info
-            case int[] arr_ArrayOfInt32:
-                PushObject(L, arr_ArrayOfInt32, "MT_Int32Array");
-                break;
-            // Special case: Handle array type: string[] since arrays need runtime type info
-            case string[] arr_ArrayOfString:
-                PushObject(L, arr_ArrayOfString, "MT_StringArray");
-                break;
-            // Special case: Handle array type: float[] since arrays need runtime type info
-            case float[] arr_ArrayOfSingle:
-                PushObject(L, arr_ArrayOfSingle, "MT_SingleArray");
-                break;
-            // Special case: Handle array type: int[,] since arrays need runtime type info
-            case int[,] arr_ArrayOfInt322D:
-                PushObject(L, arr_ArrayOfInt322D, "MT_Int32Array2D");
-                break;
-            // Special case: Handle array type: float[,,] since arrays need runtime type info
-            case float[,,] arr_ArrayOfSingle3D:
-                PushObject(L, arr_ArrayOfSingle3D, "MT_SingleArray3D");
-                break;
-            // Special case: Handle array type: long[] since arrays need runtime type info
-            case long[] arr_ArrayOfInt64:
-                PushObject(L, arr_ArrayOfInt64, "MT_Int64Array");
-                break;
-            // Special case: Handle array type: NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[] since arrays need runtime type info
-            case NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[] arr_ArrayOfReferencedType:
-                PushObject(L, arr_ArrayOfReferencedType, "MT_ReferencedTypeArray");
-                break;
             default:
                 // For all other types, push as userdata if we have a registered metatable
-                if (TypeInfo<T>.Name is {} metatable)
+                if (GetMetatableNameForType(value.GetType()) is {} metatable)
                 {
                     PushObject(L, value, metatable);
                 }

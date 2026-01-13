@@ -76,6 +76,9 @@ public partial class LuaBindings
             case "getValue":
                 lua_pushcfunction(L, (TypeWithByRefParameters_method_getValue));
                 return 1;
+            case "methodWithInParam":
+                lua_pushcfunction(L, (TypeWithByRefParameters_method_methodWithInParam));
+                return 1;
             case "getType":
                 lua_pushcfunction(L, (TypeWithByRefParameters_method_getType));
                 return 1;
@@ -192,6 +195,36 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getValue");
+        return 0;
+    }
+
+    private static int TypeWithByRefParameters_method_methodWithInParam(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected TypeWithByRefParameters as first argument");
+            return 0;
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            try
+            {
+                self.MethodWithInParam(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for methodWithInParam");
         return 0;
     }
 

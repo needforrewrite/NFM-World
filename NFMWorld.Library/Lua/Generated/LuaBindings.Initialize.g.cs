@@ -17,6 +17,8 @@ public partial class LuaBindings
     {
         Register_CarStats(L);
         Register_Mad(L);
+        Register_IRaceValues(L);
+        Register_BaseGamemodeParameters(L);
         Register_Int3(L);
         Register_f64Vector3(L);
         Register_fix64(L);
@@ -31,6 +33,9 @@ public partial class LuaBindings
         Register_ValueTuple_Int32_Single(L);
         Register_ValueTuple_Int32_Int32_Int32(L);
         Register_EventArgs(L);
+        Register_UnlimitedArray_IInGameCar(L);
+        Register_BackendStage(L);
+        Register_IReadOnlyList_PlayerParameters(L);
         Register_Int32Array(L);
         Register_IFormatProvider(L);
         Register_Vector2(L);
@@ -49,6 +54,12 @@ public partial class LuaBindings
         Register_IReadOnlyList_ITransform(L);
         Register_IReadOnlyList_IAiNode(L);
         Register_ITransform(L);
+        Register_UnlimitedArray_IInGameCar_Enumerator(L);
+        Register_IInGameCarArray(L);
+        Register_UnlimitedArray_ITransform(L);
+        Register_UnlimitedArray_StageObject(L);
+        Register_StageLoader(L);
+        Register_PlayerParameters(L);
         Register_SingleArray(L);
         Register_Vector2Array(L);
         Register_Quaternion(L);
@@ -61,6 +72,14 @@ public partial class LuaBindings
         Register_BaseAi(L);
         Register_IAiNode(L);
         Register_f64Euler(L);
+        Register_UnlimitedArray_ITransform_Enumerator(L);
+        Register_ITransformArray(L);
+        Register_StageObject(L);
+        Register_UnlimitedArray_StageObject_Enumerator(L);
+        Register_StageObjectArray(L);
+        Register_Color3(L);
+        Register_UnlimitedArray_PiecePlacement(L);
+        Register_UnlimitedArray_Rad3dBoxDef(L);
         Register_Vector3(L);
         Register_QuaternionArray(L);
         Register_Plane(L);
@@ -70,11 +89,24 @@ public partial class LuaBindings
         Register_BoundingSphere(L);
         Register_BoundingFrustum(L);
         Register_f64AngleSingle(L);
+        Register_Rad3d(L);
+        Register_Rad3dBoxDefArray(L);
+        Register_Rad3dBoxDef(L);
+        Register_PiecePlacement(L);
+        Register_UnlimitedArray_PiecePlacement_Enumerator(L);
+        Register_PiecePlacementArray(L);
+        Register_UnlimitedArray_Rad3dBoxDef_Enumerator(L);
         Register_Vector3Array(L);
         Register_PlaneArray(L);
         Register_Vector4Array(L);
         Register_Ray(L);
         Register_IEnumerable_Vector3(L);
+        Register_Color3Array(L);
+        Register_Rad3dWheelDefArray(L);
+        Register_Rad3dWheelDef(L);
+        Register_Rad3dRimsDef(L);
+        Register_Rad3dPolyArray(L);
+        Register_Rad3dPoly(L);
         Register_IEnumerator_Vector3(L);
     }
 

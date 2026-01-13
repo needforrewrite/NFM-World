@@ -80,24 +80,6 @@ function CarStats.validateStats(stats, fileName) end
 function CarStatsInstance:validate(fileName) end
 
 ---@param self CarStatsInstance
----@return string
-function CarStatsInstance:toString() end
-
----@param self CarStatsInstance
----@return integer
-function CarStatsInstance:getHashCode() end
-
----@param self CarStatsInstance
----@param obj ObjectInstance
----@return boolean
-function CarStatsInstance:equals(obj) end
-
----@param self CarStatsInstance
----@param other CarStatsInstance
----@return boolean
-function CarStatsInstance:equals(other) end
-
----@param self CarStatsInstance
 ---@return TypeInstance
 function CarStatsInstance:getType() end
 
@@ -297,6 +279,42 @@ function MadInstance:AddListener_Distruct(callback) end
 
 ---@param self MadInstance
 function MadInstance:RemoveListener_Distruct() end
+
+
+---@class (exact) IRaceValuesInstance
+---@field carsInRace UnlimitedArray_IInGameCarInstance
+---@field currentStage BackendStageInstance
+---@field raceState RaceStateInstance
+local IRaceValuesInstance = {}
+
+---@class (exact) IRaceValues
+
+---@class (exact) BaseGamemodeParametersInstance
+---@field playerCarIndex integer
+---@field players IReadOnlyList_PlayerParametersInstance
+local BaseGamemodeParametersInstance = {}
+
+---@class (exact) BaseGamemodeParameters
+---Creates a new BaseGamemodeParameters
+---@return BaseGamemodeParametersInstance
+function BaseGamemodeParameters.new() end
+
+---@param self BaseGamemodeParametersInstance
+---@return TypeInstance
+function BaseGamemodeParametersInstance:getType() end
+
+---@param self BaseGamemodeParametersInstance
+---@return string
+function BaseGamemodeParametersInstance:toString() end
+
+---@param self BaseGamemodeParametersInstance
+---@param obj? ObjectInstance
+---@return boolean
+function BaseGamemodeParametersInstance:equals(obj) end
+
+---@param self BaseGamemodeParametersInstance
+---@return integer
+function BaseGamemodeParametersInstance:getHashCode() end
 
 
 ---@class (exact) Int3Instance
@@ -1540,6 +1558,154 @@ function EventArgsInstance:equals(obj) end
 ---@return integer
 function EventArgsInstance:getHashCode() end
 
+
+---@class (exact) UnlimitedArray_IInGameCarInstance
+---@field count integer
+---@field isReadOnly boolean
+---@field item IInGameCarInstance
+local UnlimitedArray_IInGameCarInstance = {}
+
+---@class (exact) UnlimitedArray_IInGameCar
+---Creates a new UnlimitedArray_IInGameCar
+---@return UnlimitedArray_IInGameCarInstance
+function UnlimitedArray_IInGameCar.new() end
+
+---Creates a new UnlimitedArray_IInGameCar
+---@param capacity integer
+---@return UnlimitedArray_IInGameCarInstance
+function UnlimitedArray_IInGameCar.new(capacity) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@return UnlimitedArray_IInGameCar_EnumeratorInstance
+function UnlimitedArray_IInGameCarInstance:getEnumerator() end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param capacity integer
+---@return integer
+function UnlimitedArray_IInGameCarInstance:ensureCapacity(capacity) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param item? IInGameCarInstance
+function UnlimitedArray_IInGameCarInstance:add(item) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+function UnlimitedArray_IInGameCarInstance:clear() end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param item? IInGameCarInstance
+---@return boolean
+function UnlimitedArray_IInGameCarInstance:contains(item) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param array IInGameCarInstance[]
+---@param arrayIndex integer
+function UnlimitedArray_IInGameCarInstance:copyTo(array, arrayIndex) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param item? IInGameCarInstance
+---@return boolean
+function UnlimitedArray_IInGameCarInstance:remove(item) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param item? IInGameCarInstance
+---@return integer
+function UnlimitedArray_IInGameCarInstance:indexOf(item) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param index integer
+---@param item? IInGameCarInstance
+function UnlimitedArray_IInGameCarInstance:insert(index, item) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param index integer
+function UnlimitedArray_IInGameCarInstance:removeAt(index) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@return IInGameCarInstance[]
+function UnlimitedArray_IInGameCarInstance:toArray() end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param compareFunc Comparison_IInGameCarInstance
+function UnlimitedArray_IInGameCarInstance:sort(compareFunc) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@return TypeInstance
+function UnlimitedArray_IInGameCarInstance:getType() end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@return string
+function UnlimitedArray_IInGameCarInstance:toString() end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_IInGameCarInstance:equals(obj) end
+
+---@param self UnlimitedArray_IInGameCarInstance
+---@return integer
+function UnlimitedArray_IInGameCarInstance:getHashCode() end
+
+
+---@class (exact) BackendStageInstance
+---@field pieces UnlimitedArray_ITransformInstance
+---@field nodes UnlimitedArray_StageObjectInstance
+---@field checkpoints UnlimitedArray_StageObjectInstance
+---@field fixHoops UnlimitedArray_StageObjectInstance
+---@field nlaps integer
+---@field stagePartCount integer
+---@field name string
+---@field path string
+---@field sx integer
+---@field sz integer
+---@field ncx integer
+---@field ncz integer
+---@field stageLoader StageLoaderInstance
+local BackendStageInstance = {}
+
+---@class (exact) BackendStage
+---Creates a new BackendStage
+---@param stageName string
+---@param stageLoader StageLoaderInstance
+---@return BackendStageInstance
+function BackendStage.new(stageName, stageLoader) end
+
+---Creates a new BackendStage
+---@param stageName string
+---@return BackendStageInstance
+function BackendStage.new(stageName) end
+
+---@param self BackendStageInstance
+---@param objectName string
+---@param x integer
+---@param y integer
+---@param z integer
+---@param r integer
+---@return ITransformInstance
+function BackendStageInstance:createObject(objectName, x, y, z, r) end
+
+---@param self BackendStageInstance
+---@return TypeInstance
+function BackendStageInstance:getType() end
+
+---@param self BackendStageInstance
+---@return string
+function BackendStageInstance:toString() end
+
+---@param self BackendStageInstance
+---@param obj? ObjectInstance
+---@return boolean
+function BackendStageInstance:equals(obj) end
+
+---@param self BackendStageInstance
+---@return integer
+function BackendStageInstance:getHashCode() end
+
+
+---@class (exact) IReadOnlyList_PlayerParametersInstance
+---@field item PlayerParametersInstance
+local IReadOnlyList_PlayerParametersInstance = {}
+
+---@class (exact) IReadOnlyList_PlayerParameters
 
 ---@class (exact) ArrayOfInt32Instance : ArrayInstance
 ---@field length integer
@@ -3524,6 +3690,496 @@ local IReadOnlyList_IAiNodeInstance = {}
 local ITransformInstance = {}
 
 ---@class (exact) ITransform
+
+---@class (exact) UnlimitedArray_IInGameCar_EnumeratorInstance
+---@field current IInGameCarInstance
+local UnlimitedArray_IInGameCar_EnumeratorInstance = {}
+
+---@class (exact) UnlimitedArray_IInGameCar_Enumerator
+---Creates a new UnlimitedArray_IInGameCar_Enumerator
+---@return UnlimitedArray_IInGameCar_Enumerator
+function UnlimitedArray_IInGameCar_Enumerator.new() end
+
+---Creates a new UnlimitedArray_IInGameCar_Enumerator
+---@param array UnlimitedArray_IInGameCarInstance
+---@return UnlimitedArray_IInGameCar_EnumeratorInstance
+function UnlimitedArray_IInGameCar_Enumerator.new(array) end
+
+---@param self UnlimitedArray_IInGameCar_EnumeratorInstance
+---@return boolean
+function UnlimitedArray_IInGameCar_EnumeratorInstance:moveNext() end
+
+---@param self UnlimitedArray_IInGameCar_EnumeratorInstance
+function UnlimitedArray_IInGameCar_EnumeratorInstance:reset() end
+
+---@param self UnlimitedArray_IInGameCar_EnumeratorInstance
+function UnlimitedArray_IInGameCar_EnumeratorInstance:dispose() end
+
+---@param self UnlimitedArray_IInGameCar_EnumeratorInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_IInGameCar_EnumeratorInstance:equals(obj) end
+
+---@param self UnlimitedArray_IInGameCar_EnumeratorInstance
+---@return integer
+function UnlimitedArray_IInGameCar_EnumeratorInstance:getHashCode() end
+
+---@param self UnlimitedArray_IInGameCar_EnumeratorInstance
+---@return string
+function UnlimitedArray_IInGameCar_EnumeratorInstance:toString() end
+
+---@param self UnlimitedArray_IInGameCar_EnumeratorInstance
+---@return TypeInstance
+function UnlimitedArray_IInGameCar_EnumeratorInstance:getType() end
+
+
+---@class (exact) ArrayOfIInGameCarInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] IInGameCarInstance
+local ArrayOfIInGameCarInstance = {}
+
+---@class (exact) ArrayOfIInGameCar : Array
+---Creates a new ArrayOfIInGameCar
+---@param length integer
+---@return IInGameCarInstance[]
+function ArrayOfIInGameCar.new(length) end
+
+---@param self IInGameCarInstance[]
+---@param param0 integer
+---@return IInGameCarInstance
+function ArrayOfIInGameCarInstance:get(param0) end
+
+---@param self IInGameCarInstance[]
+---@param param0 integer
+---@param param1 IInGameCarInstance
+function ArrayOfIInGameCarInstance:set(param0, param1) end
+
+---@param self IInGameCarInstance[]
+function ArrayOfIInGameCarInstance:initialize() end
+
+---@param self IInGameCarInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfIInGameCarInstance:getLength(dimension) end
+
+---@param self IInGameCarInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfIInGameCarInstance:getUpperBound(dimension) end
+
+---@param self IInGameCarInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfIInGameCarInstance:getLowerBound(dimension) end
+
+---@param self IInGameCarInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfIInGameCarInstance:getValue(indices) end
+
+---@param self IInGameCarInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfIInGameCarInstance:getValue(index) end
+
+---@param self IInGameCarInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfIInGameCarInstance:getValue(index1, index2) end
+
+---@param self IInGameCarInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfIInGameCarInstance:getValue(index1, index2, index3) end
+
+---@param self IInGameCarInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfIInGameCarInstance:setValue(value, index) end
+
+---@param self IInGameCarInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfIInGameCarInstance:setValue(value, index1, index2) end
+
+---@param self IInGameCarInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfIInGameCarInstance:setValue(value, index1, index2, index3) end
+
+---@param self IInGameCarInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfIInGameCarInstance:setValue(value, indices) end
+
+---@param self IInGameCarInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfIInGameCarInstance:getValue(index) end
+
+---@param self IInGameCarInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfIInGameCarInstance:getValue(index1, index2) end
+
+---@param self IInGameCarInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfIInGameCarInstance:getValue(index1, index2, index3) end
+
+---@param self IInGameCarInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfIInGameCarInstance:getValue(indices) end
+
+---@param self IInGameCarInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfIInGameCarInstance:setValue(value, index) end
+
+---@param self IInGameCarInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfIInGameCarInstance:setValue(value, index1, index2) end
+
+---@param self IInGameCarInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfIInGameCarInstance:setValue(value, index1, index2, index3) end
+
+---@param self IInGameCarInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfIInGameCarInstance:setValue(value, indices) end
+
+---@param self IInGameCarInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfIInGameCarInstance:getLongLength(dimension) end
+
+---@param self IInGameCarInstance[]
+---@return ObjectInstance
+function ArrayOfIInGameCarInstance:clone() end
+
+---@param self IInGameCarInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfIInGameCarInstance:copyTo(array, index) end
+
+---@param self IInGameCarInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfIInGameCarInstance:copyTo(array, index) end
+
+---@param self IInGameCarInstance[]
+---@return IEnumeratorInstance
+function ArrayOfIInGameCarInstance:getEnumerator() end
+
+---@param self IInGameCarInstance[]
+---@return TypeInstance
+function ArrayOfIInGameCarInstance:getType() end
+
+---@param self IInGameCarInstance[]
+---@return string
+function ArrayOfIInGameCarInstance:toString() end
+
+---@param self IInGameCarInstance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfIInGameCarInstance:equals(obj) end
+
+---@param self IInGameCarInstance[]
+---@return integer
+function ArrayOfIInGameCarInstance:getHashCode() end
+
+
+---@class (exact) UnlimitedArray_ITransformInstance
+---@field count integer
+---@field isReadOnly boolean
+---@field item ITransformInstance
+local UnlimitedArray_ITransformInstance = {}
+
+---@class (exact) UnlimitedArray_ITransform
+---Creates a new UnlimitedArray_ITransform
+---@return UnlimitedArray_ITransformInstance
+function UnlimitedArray_ITransform.new() end
+
+---Creates a new UnlimitedArray_ITransform
+---@param capacity integer
+---@return UnlimitedArray_ITransformInstance
+function UnlimitedArray_ITransform.new(capacity) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@return UnlimitedArray_ITransform_EnumeratorInstance
+function UnlimitedArray_ITransformInstance:getEnumerator() end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param capacity integer
+---@return integer
+function UnlimitedArray_ITransformInstance:ensureCapacity(capacity) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param item? ITransformInstance
+function UnlimitedArray_ITransformInstance:add(item) end
+
+---@param self UnlimitedArray_ITransformInstance
+function UnlimitedArray_ITransformInstance:clear() end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param item? ITransformInstance
+---@return boolean
+function UnlimitedArray_ITransformInstance:contains(item) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param array ITransformInstance[]
+---@param arrayIndex integer
+function UnlimitedArray_ITransformInstance:copyTo(array, arrayIndex) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param item? ITransformInstance
+---@return boolean
+function UnlimitedArray_ITransformInstance:remove(item) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param item? ITransformInstance
+---@return integer
+function UnlimitedArray_ITransformInstance:indexOf(item) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param index integer
+---@param item? ITransformInstance
+function UnlimitedArray_ITransformInstance:insert(index, item) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param index integer
+function UnlimitedArray_ITransformInstance:removeAt(index) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@return ITransformInstance[]
+function UnlimitedArray_ITransformInstance:toArray() end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param compareFunc Comparison_ITransformInstance
+function UnlimitedArray_ITransformInstance:sort(compareFunc) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@return TypeInstance
+function UnlimitedArray_ITransformInstance:getType() end
+
+---@param self UnlimitedArray_ITransformInstance
+---@return string
+function UnlimitedArray_ITransformInstance:toString() end
+
+---@param self UnlimitedArray_ITransformInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_ITransformInstance:equals(obj) end
+
+---@param self UnlimitedArray_ITransformInstance
+---@return integer
+function UnlimitedArray_ITransformInstance:getHashCode() end
+
+
+---@class (exact) UnlimitedArray_StageObjectInstance
+---@field count integer
+---@field isReadOnly boolean
+---@field item StageObjectInstance
+local UnlimitedArray_StageObjectInstance = {}
+
+---@class (exact) UnlimitedArray_StageObject
+---Creates a new UnlimitedArray_StageObject
+---@return UnlimitedArray_StageObjectInstance
+function UnlimitedArray_StageObject.new() end
+
+---Creates a new UnlimitedArray_StageObject
+---@param capacity integer
+---@return UnlimitedArray_StageObjectInstance
+function UnlimitedArray_StageObject.new(capacity) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@return UnlimitedArray_StageObject_EnumeratorInstance
+function UnlimitedArray_StageObjectInstance:getEnumerator() end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param capacity integer
+---@return integer
+function UnlimitedArray_StageObjectInstance:ensureCapacity(capacity) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param item? StageObjectInstance
+function UnlimitedArray_StageObjectInstance:add(item) end
+
+---@param self UnlimitedArray_StageObjectInstance
+function UnlimitedArray_StageObjectInstance:clear() end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param item? StageObjectInstance
+---@return boolean
+function UnlimitedArray_StageObjectInstance:contains(item) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param array StageObjectInstance[]
+---@param arrayIndex integer
+function UnlimitedArray_StageObjectInstance:copyTo(array, arrayIndex) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param item? StageObjectInstance
+---@return boolean
+function UnlimitedArray_StageObjectInstance:remove(item) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param item? StageObjectInstance
+---@return integer
+function UnlimitedArray_StageObjectInstance:indexOf(item) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param index integer
+---@param item? StageObjectInstance
+function UnlimitedArray_StageObjectInstance:insert(index, item) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param index integer
+function UnlimitedArray_StageObjectInstance:removeAt(index) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@return StageObjectInstance[]
+function UnlimitedArray_StageObjectInstance:toArray() end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param compareFunc Comparison_StageObjectInstance
+function UnlimitedArray_StageObjectInstance:sort(compareFunc) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@return TypeInstance
+function UnlimitedArray_StageObjectInstance:getType() end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@return string
+function UnlimitedArray_StageObjectInstance:toString() end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_StageObjectInstance:equals(obj) end
+
+---@param self UnlimitedArray_StageObjectInstance
+---@return integer
+function UnlimitedArray_StageObjectInstance:getHashCode() end
+
+
+---@class (exact) StageLoaderInstance
+---@field path string
+---@field nlaps integer
+---@field musicPath string
+---@field remasteredMusicPath string
+---@field musicFreqMul number
+---@field musicTempoMul number
+---@field name string
+---@field indexOffset integer
+---@field sx integer
+---@field sz integer
+---@field ncx integer
+---@field ncz integer
+---@field snap Color3Instance?
+---@field sky Color3Instance?
+---@field groundColor Color3Instance?
+---@field groundPolysColor Color3Instance?
+---@field drawPolys boolean
+---@field fog Color3Instance?
+---@field texture InlineArray4_Int32Instance?
+---@field clouds InlineArray5_Int32Instance?
+---@field drawClouds boolean
+---@field cloudCoverage number?
+---@field fogDensity integer?
+---@field fadeFrom integer?
+---@field lightsOn boolean
+---@field drawMountains boolean
+---@field mountainSeed integer?
+---@field mountainCoverage number?
+---@field lightDirection Vector3Instance?
+---@field pieces UnlimitedArray_PiecePlacementInstance
+---@field walls UnlimitedArray_Rad3dBoxDefInstance
+---@field maxr integer
+---@field maxl integer
+---@field maxt integer
+---@field maxb integer
+local StageLoaderInstance = {}
+
+---@class (exact) StageLoader
+---Creates a new StageLoader
+---@param stageName string
+---@return StageLoaderInstance
+function StageLoader.new(stageName) end
+
+---Creates a new StageLoader
+---@return StageLoaderInstance
+function StageLoader.new() end
+
+---@param self StageLoaderInstance
+---@return TypeInstance
+function StageLoaderInstance:getType() end
+
+---@param self StageLoaderInstance
+---@return string
+function StageLoaderInstance:toString() end
+
+---@param self StageLoaderInstance
+---@param obj? ObjectInstance
+---@return boolean
+function StageLoaderInstance:equals(obj) end
+
+---@param self StageLoaderInstance
+---@return integer
+function StageLoaderInstance:getHashCode() end
+
+
+---@class (exact) PlayerParametersInstance
+---@field playerName string
+---@field carName string
+---@field color Color3Instance
+---@field isBot boolean
+local PlayerParametersInstance = {}
+
+---@class (exact) PlayerParameters
+---Creates a new PlayerParameters
+---@return PlayerParametersInstance
+function PlayerParameters.new() end
+
+---@param self PlayerParametersInstance
+---@return TypeInstance
+function PlayerParametersInstance:getType() end
+
+---@param self PlayerParametersInstance
+---@return string
+function PlayerParametersInstance:toString() end
+
+---@param self PlayerParametersInstance
+---@param obj? ObjectInstance
+---@return boolean
+function PlayerParametersInstance:equals(obj) end
+
+---@param self PlayerParametersInstance
+---@return integer
+function PlayerParametersInstance:getHashCode() end
+
 
 ---@class (exact) ArrayOfSingleInstance : ArrayInstance
 ---@field length integer
@@ -5527,6 +6183,705 @@ function f64EulerInstance:toString() end
 function f64EulerInstance:getType() end
 
 
+---@class (exact) UnlimitedArray_ITransform_EnumeratorInstance
+---@field current ITransformInstance
+local UnlimitedArray_ITransform_EnumeratorInstance = {}
+
+---@class (exact) UnlimitedArray_ITransform_Enumerator
+---Creates a new UnlimitedArray_ITransform_Enumerator
+---@return UnlimitedArray_ITransform_Enumerator
+function UnlimitedArray_ITransform_Enumerator.new() end
+
+---Creates a new UnlimitedArray_ITransform_Enumerator
+---@param array UnlimitedArray_ITransformInstance
+---@return UnlimitedArray_ITransform_EnumeratorInstance
+function UnlimitedArray_ITransform_Enumerator.new(array) end
+
+---@param self UnlimitedArray_ITransform_EnumeratorInstance
+---@return boolean
+function UnlimitedArray_ITransform_EnumeratorInstance:moveNext() end
+
+---@param self UnlimitedArray_ITransform_EnumeratorInstance
+function UnlimitedArray_ITransform_EnumeratorInstance:reset() end
+
+---@param self UnlimitedArray_ITransform_EnumeratorInstance
+function UnlimitedArray_ITransform_EnumeratorInstance:dispose() end
+
+---@param self UnlimitedArray_ITransform_EnumeratorInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_ITransform_EnumeratorInstance:equals(obj) end
+
+---@param self UnlimitedArray_ITransform_EnumeratorInstance
+---@return integer
+function UnlimitedArray_ITransform_EnumeratorInstance:getHashCode() end
+
+---@param self UnlimitedArray_ITransform_EnumeratorInstance
+---@return string
+function UnlimitedArray_ITransform_EnumeratorInstance:toString() end
+
+---@param self UnlimitedArray_ITransform_EnumeratorInstance
+---@return TypeInstance
+function UnlimitedArray_ITransform_EnumeratorInstance:getType() end
+
+
+---@class (exact) ArrayOfITransformInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] ITransformInstance
+local ArrayOfITransformInstance = {}
+
+---@class (exact) ArrayOfITransform : Array
+---Creates a new ArrayOfITransform
+---@param length integer
+---@return ITransformInstance[]
+function ArrayOfITransform.new(length) end
+
+---@param self ITransformInstance[]
+---@param param0 integer
+---@return ITransformInstance
+function ArrayOfITransformInstance:get(param0) end
+
+---@param self ITransformInstance[]
+---@param param0 integer
+---@param param1 ITransformInstance
+function ArrayOfITransformInstance:set(param0, param1) end
+
+---@param self ITransformInstance[]
+function ArrayOfITransformInstance:initialize() end
+
+---@param self ITransformInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfITransformInstance:getLength(dimension) end
+
+---@param self ITransformInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfITransformInstance:getUpperBound(dimension) end
+
+---@param self ITransformInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfITransformInstance:getLowerBound(dimension) end
+
+---@param self ITransformInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfITransformInstance:getValue(indices) end
+
+---@param self ITransformInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfITransformInstance:getValue(index) end
+
+---@param self ITransformInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfITransformInstance:getValue(index1, index2) end
+
+---@param self ITransformInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfITransformInstance:getValue(index1, index2, index3) end
+
+---@param self ITransformInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfITransformInstance:setValue(value, index) end
+
+---@param self ITransformInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfITransformInstance:setValue(value, index1, index2) end
+
+---@param self ITransformInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfITransformInstance:setValue(value, index1, index2, index3) end
+
+---@param self ITransformInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfITransformInstance:setValue(value, indices) end
+
+---@param self ITransformInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfITransformInstance:getValue(index) end
+
+---@param self ITransformInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfITransformInstance:getValue(index1, index2) end
+
+---@param self ITransformInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfITransformInstance:getValue(index1, index2, index3) end
+
+---@param self ITransformInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfITransformInstance:getValue(indices) end
+
+---@param self ITransformInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfITransformInstance:setValue(value, index) end
+
+---@param self ITransformInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfITransformInstance:setValue(value, index1, index2) end
+
+---@param self ITransformInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfITransformInstance:setValue(value, index1, index2, index3) end
+
+---@param self ITransformInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfITransformInstance:setValue(value, indices) end
+
+---@param self ITransformInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfITransformInstance:getLongLength(dimension) end
+
+---@param self ITransformInstance[]
+---@return ObjectInstance
+function ArrayOfITransformInstance:clone() end
+
+---@param self ITransformInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfITransformInstance:copyTo(array, index) end
+
+---@param self ITransformInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfITransformInstance:copyTo(array, index) end
+
+---@param self ITransformInstance[]
+---@return IEnumeratorInstance
+function ArrayOfITransformInstance:getEnumerator() end
+
+---@param self ITransformInstance[]
+---@return TypeInstance
+function ArrayOfITransformInstance:getType() end
+
+---@param self ITransformInstance[]
+---@return string
+function ArrayOfITransformInstance:toString() end
+
+---@param self ITransformInstance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfITransformInstance:equals(obj) end
+
+---@param self ITransformInstance[]
+---@return integer
+function ArrayOfITransformInstance:getHashCode() end
+
+
+---@class (exact) StageObjectInstance
+---@field rad Rad3dInstance
+---@field childTransforms IReadOnlyList_ITransformInstance
+---@field position f64Vector3Instance
+---@field rotation f64EulerInstance
+---@field parent ITransformInstance
+---@field kind AiNodeKindInstance
+---@field isSpecial boolean
+---@field boxes Rad3dBoxDefInstance[]
+---@field maxRadius integer
+---@field fileName string
+local StageObjectInstance = {}
+
+---@class (exact) StageObject
+---Creates a new StageObject
+---@param rad Rad3dInstance
+---@return StageObjectInstance
+function StageObject.new(rad) end
+
+---Creates a new StageObject
+---@param rad Rad3dInstance
+---@param position f64Vector3Instance
+---@param rotation f64EulerInstance
+---@return StageObjectInstance
+function StageObject.new(rad, position, rotation) end
+
+---@param self StageObjectInstance
+function StageObjectInstance:gameTick() end
+
+---@param self StageObjectInstance
+---@return TypeInstance
+function StageObjectInstance:getType() end
+
+---@param self StageObjectInstance
+---@return string
+function StageObjectInstance:toString() end
+
+---@param self StageObjectInstance
+---@param obj? ObjectInstance
+---@return boolean
+function StageObjectInstance:equals(obj) end
+
+---@param self StageObjectInstance
+---@return integer
+function StageObjectInstance:getHashCode() end
+
+
+---@class (exact) UnlimitedArray_StageObject_EnumeratorInstance
+---@field current StageObjectInstance
+local UnlimitedArray_StageObject_EnumeratorInstance = {}
+
+---@class (exact) UnlimitedArray_StageObject_Enumerator
+---Creates a new UnlimitedArray_StageObject_Enumerator
+---@return UnlimitedArray_StageObject_Enumerator
+function UnlimitedArray_StageObject_Enumerator.new() end
+
+---Creates a new UnlimitedArray_StageObject_Enumerator
+---@param array UnlimitedArray_StageObjectInstance
+---@return UnlimitedArray_StageObject_EnumeratorInstance
+function UnlimitedArray_StageObject_Enumerator.new(array) end
+
+---@param self UnlimitedArray_StageObject_EnumeratorInstance
+---@return boolean
+function UnlimitedArray_StageObject_EnumeratorInstance:moveNext() end
+
+---@param self UnlimitedArray_StageObject_EnumeratorInstance
+function UnlimitedArray_StageObject_EnumeratorInstance:reset() end
+
+---@param self UnlimitedArray_StageObject_EnumeratorInstance
+function UnlimitedArray_StageObject_EnumeratorInstance:dispose() end
+
+---@param self UnlimitedArray_StageObject_EnumeratorInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_StageObject_EnumeratorInstance:equals(obj) end
+
+---@param self UnlimitedArray_StageObject_EnumeratorInstance
+---@return integer
+function UnlimitedArray_StageObject_EnumeratorInstance:getHashCode() end
+
+---@param self UnlimitedArray_StageObject_EnumeratorInstance
+---@return string
+function UnlimitedArray_StageObject_EnumeratorInstance:toString() end
+
+---@param self UnlimitedArray_StageObject_EnumeratorInstance
+---@return TypeInstance
+function UnlimitedArray_StageObject_EnumeratorInstance:getType() end
+
+
+---@class (exact) ArrayOfStageObjectInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] StageObjectInstance
+local ArrayOfStageObjectInstance = {}
+
+---@class (exact) ArrayOfStageObject : Array
+---Creates a new ArrayOfStageObject
+---@param length integer
+---@return StageObjectInstance[]
+function ArrayOfStageObject.new(length) end
+
+---@param self StageObjectInstance[]
+---@param param0 integer
+---@return StageObjectInstance
+function ArrayOfStageObjectInstance:get(param0) end
+
+---@param self StageObjectInstance[]
+---@param param0 integer
+---@param param1 StageObjectInstance
+function ArrayOfStageObjectInstance:set(param0, param1) end
+
+---@param self StageObjectInstance[]
+function ArrayOfStageObjectInstance:initialize() end
+
+---@param self StageObjectInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfStageObjectInstance:getLength(dimension) end
+
+---@param self StageObjectInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfStageObjectInstance:getUpperBound(dimension) end
+
+---@param self StageObjectInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfStageObjectInstance:getLowerBound(dimension) end
+
+---@param self StageObjectInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfStageObjectInstance:getValue(indices) end
+
+---@param self StageObjectInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfStageObjectInstance:getValue(index) end
+
+---@param self StageObjectInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfStageObjectInstance:getValue(index1, index2) end
+
+---@param self StageObjectInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfStageObjectInstance:getValue(index1, index2, index3) end
+
+---@param self StageObjectInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfStageObjectInstance:setValue(value, index) end
+
+---@param self StageObjectInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfStageObjectInstance:setValue(value, index1, index2) end
+
+---@param self StageObjectInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfStageObjectInstance:setValue(value, index1, index2, index3) end
+
+---@param self StageObjectInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfStageObjectInstance:setValue(value, indices) end
+
+---@param self StageObjectInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfStageObjectInstance:getValue(index) end
+
+---@param self StageObjectInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfStageObjectInstance:getValue(index1, index2) end
+
+---@param self StageObjectInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfStageObjectInstance:getValue(index1, index2, index3) end
+
+---@param self StageObjectInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfStageObjectInstance:getValue(indices) end
+
+---@param self StageObjectInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfStageObjectInstance:setValue(value, index) end
+
+---@param self StageObjectInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfStageObjectInstance:setValue(value, index1, index2) end
+
+---@param self StageObjectInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfStageObjectInstance:setValue(value, index1, index2, index3) end
+
+---@param self StageObjectInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfStageObjectInstance:setValue(value, indices) end
+
+---@param self StageObjectInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfStageObjectInstance:getLongLength(dimension) end
+
+---@param self StageObjectInstance[]
+---@return ObjectInstance
+function ArrayOfStageObjectInstance:clone() end
+
+---@param self StageObjectInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfStageObjectInstance:copyTo(array, index) end
+
+---@param self StageObjectInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfStageObjectInstance:copyTo(array, index) end
+
+---@param self StageObjectInstance[]
+---@return IEnumeratorInstance
+function ArrayOfStageObjectInstance:getEnumerator() end
+
+---@param self StageObjectInstance[]
+---@return TypeInstance
+function ArrayOfStageObjectInstance:getType() end
+
+---@param self StageObjectInstance[]
+---@return string
+function ArrayOfStageObjectInstance:toString() end
+
+---@param self StageObjectInstance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfStageObjectInstance:equals(obj) end
+
+---@param self StageObjectInstance[]
+---@return integer
+function ArrayOfStageObjectInstance:getHashCode() end
+
+
+---@class (exact) Color3Instance
+---@field r integer
+---@field g integer
+---@field b integer
+---@field item integer
+local Color3Instance = {}
+
+---@class (exact) Color3
+---Creates a new Color3
+---@return Color3
+function Color3.new() end
+
+---Creates a new Color3
+---@param R integer
+---@param G integer
+---@param B integer
+---@return Color3Instance
+function Color3.new(R, G, B) end
+
+---@param hue number
+---@param saturation number
+---@param brightness number
+---@return Color3
+function Color3.fromHSB(hue, saturation, brightness) end
+
+---@param self Color3Instance
+---@return Color3Instance
+function Color3Instance:darker() end
+
+---@param self Color3Instance
+---@return Color3Instance
+function Color3Instance:brighter() end
+
+---@param self Color3Instance
+---@return TypeInstance
+function Color3Instance:getType() end
+
+
+---@class (exact) UnlimitedArray_PiecePlacementInstance
+---@field count integer
+---@field isReadOnly boolean
+---@field item PiecePlacementInstance
+local UnlimitedArray_PiecePlacementInstance = {}
+
+---@class (exact) UnlimitedArray_PiecePlacement
+---Creates a new UnlimitedArray_PiecePlacement
+---@return UnlimitedArray_PiecePlacementInstance
+function UnlimitedArray_PiecePlacement.new() end
+
+---Creates a new UnlimitedArray_PiecePlacement
+---@param capacity integer
+---@return UnlimitedArray_PiecePlacementInstance
+function UnlimitedArray_PiecePlacement.new(capacity) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@return UnlimitedArray_PiecePlacement_EnumeratorInstance
+function UnlimitedArray_PiecePlacementInstance:getEnumerator() end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param capacity integer
+---@return integer
+function UnlimitedArray_PiecePlacementInstance:ensureCapacity(capacity) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param item PiecePlacementInstance
+function UnlimitedArray_PiecePlacementInstance:add(item) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+function UnlimitedArray_PiecePlacementInstance:clear() end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param item PiecePlacementInstance
+---@return boolean
+function UnlimitedArray_PiecePlacementInstance:contains(item) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param array PiecePlacementInstance[]
+---@param arrayIndex integer
+function UnlimitedArray_PiecePlacementInstance:copyTo(array, arrayIndex) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param item PiecePlacementInstance
+---@return boolean
+function UnlimitedArray_PiecePlacementInstance:remove(item) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param item PiecePlacementInstance
+---@return integer
+function UnlimitedArray_PiecePlacementInstance:indexOf(item) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param index integer
+---@param item PiecePlacementInstance
+function UnlimitedArray_PiecePlacementInstance:insert(index, item) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param index integer
+function UnlimitedArray_PiecePlacementInstance:removeAt(index) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@return PiecePlacementInstance[]
+function UnlimitedArray_PiecePlacementInstance:toArray() end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param compareFunc Comparison_PiecePlacementInstance
+function UnlimitedArray_PiecePlacementInstance:sort(compareFunc) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@return TypeInstance
+function UnlimitedArray_PiecePlacementInstance:getType() end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@return string
+function UnlimitedArray_PiecePlacementInstance:toString() end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_PiecePlacementInstance:equals(obj) end
+
+---@param self UnlimitedArray_PiecePlacementInstance
+---@return integer
+function UnlimitedArray_PiecePlacementInstance:getHashCode() end
+
+
+---@class (exact) UnlimitedArray_Rad3dBoxDefInstance
+---@field count integer
+---@field isReadOnly boolean
+---@field item Rad3dBoxDefInstance
+local UnlimitedArray_Rad3dBoxDefInstance = {}
+
+---@class (exact) UnlimitedArray_Rad3dBoxDef
+---Creates a new UnlimitedArray_Rad3dBoxDef
+---@return UnlimitedArray_Rad3dBoxDefInstance
+function UnlimitedArray_Rad3dBoxDef.new() end
+
+---Creates a new UnlimitedArray_Rad3dBoxDef
+---@param capacity integer
+---@return UnlimitedArray_Rad3dBoxDefInstance
+function UnlimitedArray_Rad3dBoxDef.new(capacity) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@return UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+function UnlimitedArray_Rad3dBoxDefInstance:getEnumerator() end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param capacity integer
+---@return integer
+function UnlimitedArray_Rad3dBoxDefInstance:ensureCapacity(capacity) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param item Rad3dBoxDefInstance
+function UnlimitedArray_Rad3dBoxDefInstance:add(item) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+function UnlimitedArray_Rad3dBoxDefInstance:clear() end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param item Rad3dBoxDefInstance
+---@return boolean
+function UnlimitedArray_Rad3dBoxDefInstance:contains(item) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param array Rad3dBoxDefInstance[]
+---@param arrayIndex integer
+function UnlimitedArray_Rad3dBoxDefInstance:copyTo(array, arrayIndex) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param item Rad3dBoxDefInstance
+---@return boolean
+function UnlimitedArray_Rad3dBoxDefInstance:remove(item) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param item Rad3dBoxDefInstance
+---@return integer
+function UnlimitedArray_Rad3dBoxDefInstance:indexOf(item) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param index integer
+---@param item Rad3dBoxDefInstance
+function UnlimitedArray_Rad3dBoxDefInstance:insert(index, item) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param index integer
+function UnlimitedArray_Rad3dBoxDefInstance:removeAt(index) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@return Rad3dBoxDefInstance[]
+function UnlimitedArray_Rad3dBoxDefInstance:toArray() end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param compareFunc Comparison_Rad3dBoxDefInstance
+function UnlimitedArray_Rad3dBoxDefInstance:sort(compareFunc) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@return TypeInstance
+function UnlimitedArray_Rad3dBoxDefInstance:getType() end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@return string
+function UnlimitedArray_Rad3dBoxDefInstance:toString() end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_Rad3dBoxDefInstance:equals(obj) end
+
+---@param self UnlimitedArray_Rad3dBoxDefInstance
+---@return integer
+function UnlimitedArray_Rad3dBoxDefInstance:getHashCode() end
+
+
 ---@class (exact) Vector3Instance
 ---@field isNormalized boolean
 ---@field item number
@@ -6999,6 +8354,556 @@ function f64AngleSingleInstance:equals(obj) end
 function f64AngleSingleInstance:getType() end
 
 
+---@class (exact) Rad3dInstance
+---@field colors Color3Instance[]
+---@field stats CarStatsInstance
+---@field wheels Rad3dWheelDefInstance[]
+---@field rims Rad3dRimsDefInstance?
+---@field boxes Rad3dBoxDefInstance[]
+---@field polys Rad3dPolyInstance[]
+---@field castsShadow boolean
+---@field atp Vector2Instance[]
+---@field fileName string
+---@field maxRadius integer
+local Rad3dInstance = {}
+
+---@class (exact) Rad3d
+---Creates a new Rad3d
+---@param Colors Color3Instance[]
+---@param Stats CarStatsInstance
+---@param Wheels Rad3dWheelDefInstance[]
+---@param Rims? Rad3dRimsDefInstance?
+---@param Boxes Rad3dBoxDefInstance[]
+---@param Polys Rad3dPolyInstance[]
+---@param CastsShadow boolean
+---@param Atp Vector2Instance[]
+---@param FileName string
+---@return Rad3dInstance
+function Rad3d.new(Colors, Stats, Wheels, Rims, Boxes, Polys, CastsShadow, Atp, FileName) end
+
+---Creates a new Rad3d
+---@param polys Rad3dPolyInstance[]
+---@param castsShadow boolean
+---@param fileName string
+---@return Rad3dInstance
+function Rad3d.new(polys, castsShadow, fileName) end
+
+---@param self Rad3dInstance
+---@param other? Rad3dInstance
+---@return boolean
+function Rad3dInstance:equals(other) end
+
+---@param self Rad3dInstance
+---@return integer
+function Rad3dInstance:getHashCode() end
+
+---@param self Rad3dInstance
+---@return TypeInstance
+function Rad3dInstance:getType() end
+
+
+---@class (exact) ArrayOfRad3dBoxDefInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Rad3dBoxDefInstance
+local ArrayOfRad3dBoxDefInstance = {}
+
+---@class (exact) ArrayOfRad3dBoxDef : Array
+---Creates a new ArrayOfRad3dBoxDef
+---@param length integer
+---@return Rad3dBoxDefInstance[]
+function ArrayOfRad3dBoxDef.new(length) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param param0 integer
+---@return Rad3dBoxDefInstance
+function ArrayOfRad3dBoxDefInstance:get(param0) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param param0 integer
+---@param param1 Rad3dBoxDefInstance
+function ArrayOfRad3dBoxDefInstance:set(param0, param1) end
+
+---@param self Rad3dBoxDefInstance[]
+function ArrayOfRad3dBoxDefInstance:initialize() end
+
+---@param self Rad3dBoxDefInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dBoxDefInstance:getLength(dimension) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dBoxDefInstance:getUpperBound(dimension) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dBoxDefInstance:getLowerBound(dimension) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfRad3dBoxDefInstance:getValue(indices) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfRad3dBoxDefInstance:getValue(index) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfRad3dBoxDefInstance:getValue(index1, index2) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfRad3dBoxDefInstance:getValue(index1, index2, index3) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfRad3dBoxDefInstance:setValue(value, index) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfRad3dBoxDefInstance:setValue(value, index1, index2) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfRad3dBoxDefInstance:setValue(value, index1, index2, index3) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfRad3dBoxDefInstance:setValue(value, indices) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfRad3dBoxDefInstance:getValue(index) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfRad3dBoxDefInstance:getValue(index1, index2) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfRad3dBoxDefInstance:getValue(index1, index2, index3) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfRad3dBoxDefInstance:getValue(indices) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfRad3dBoxDefInstance:setValue(value, index) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfRad3dBoxDefInstance:setValue(value, index1, index2) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfRad3dBoxDefInstance:setValue(value, index1, index2, index3) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfRad3dBoxDefInstance:setValue(value, indices) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dBoxDefInstance:getLongLength(dimension) end
+
+---@param self Rad3dBoxDefInstance[]
+---@return ObjectInstance
+function ArrayOfRad3dBoxDefInstance:clone() end
+
+---@param self Rad3dBoxDefInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfRad3dBoxDefInstance:copyTo(array, index) end
+
+---@param self Rad3dBoxDefInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfRad3dBoxDefInstance:copyTo(array, index) end
+
+---@param self Rad3dBoxDefInstance[]
+---@return IEnumeratorInstance
+function ArrayOfRad3dBoxDefInstance:getEnumerator() end
+
+---@param self Rad3dBoxDefInstance[]
+---@return TypeInstance
+function ArrayOfRad3dBoxDefInstance:getType() end
+
+---@param self Rad3dBoxDefInstance[]
+---@return string
+function ArrayOfRad3dBoxDefInstance:toString() end
+
+---@param self Rad3dBoxDefInstance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfRad3dBoxDefInstance:equals(obj) end
+
+---@param self Rad3dBoxDefInstance[]
+---@return integer
+function ArrayOfRad3dBoxDefInstance:getHashCode() end
+
+
+---@class (exact) Rad3dBoxDefInstance
+---@field xy integer
+---@field zy integer
+---@field radius f64Vector3Instance
+---@field translation f64Vector3Instance
+---@field skid integer
+---@field damage integer
+---@field notWall boolean
+---@field color Color3Instance
+local Rad3dBoxDefInstance = {}
+
+---@class (exact) Rad3dBoxDef
+---Creates a new Rad3dBoxDef
+---@return Rad3dBoxDef
+function Rad3dBoxDef.new() end
+
+---Creates a new Rad3dBoxDef
+---@param Xy integer
+---@param Zy integer
+---@param Radius f64Vector3Instance
+---@param Translation f64Vector3Instance
+---@param Skid integer
+---@param Damage integer
+---@param NotWall boolean
+---@param Color Color3Instance
+---@return Rad3dBoxDefInstance
+function Rad3dBoxDef.new(Xy, Zy, Radius, Translation, Skid, Damage, NotWall, Color) end
+
+---@param self Rad3dBoxDefInstance
+---@return TypeInstance
+function Rad3dBoxDefInstance:getType() end
+
+
+---@class (exact) PiecePlacementInstance
+---@field type PiecePlacementTypeInstance
+---@field object Rad3dInstance
+---@field position f64Vector3Instance
+---@field rotation f64EulerInstance
+---@field nodeKind AiNodeKindInstance?
+---@field isSpecial boolean
+local PiecePlacementInstance = {}
+
+---@class (exact) PiecePlacement
+---Creates a new PiecePlacement
+---@return PiecePlacement
+function PiecePlacement.new() end
+
+---Creates a new PiecePlacement
+---@param Type PiecePlacementTypeInstance
+---@param Object Rad3dInstance
+---@param Position f64Vector3Instance
+---@param Rotation f64EulerInstance
+---@param NodeKind? AiNodeKindInstance?
+---@param IsSpecial boolean
+---@return PiecePlacementInstance
+function PiecePlacement.new(Type, Object, Position, Rotation, NodeKind, IsSpecial) end
+
+---@param self PiecePlacementInstance
+---@return TypeInstance
+function PiecePlacementInstance:getType() end
+
+
+---@class (exact) UnlimitedArray_PiecePlacement_EnumeratorInstance
+---@field current PiecePlacementInstance
+local UnlimitedArray_PiecePlacement_EnumeratorInstance = {}
+
+---@class (exact) UnlimitedArray_PiecePlacement_Enumerator
+---Creates a new UnlimitedArray_PiecePlacement_Enumerator
+---@return UnlimitedArray_PiecePlacement_Enumerator
+function UnlimitedArray_PiecePlacement_Enumerator.new() end
+
+---Creates a new UnlimitedArray_PiecePlacement_Enumerator
+---@param array UnlimitedArray_PiecePlacementInstance
+---@return UnlimitedArray_PiecePlacement_EnumeratorInstance
+function UnlimitedArray_PiecePlacement_Enumerator.new(array) end
+
+---@param self UnlimitedArray_PiecePlacement_EnumeratorInstance
+---@return boolean
+function UnlimitedArray_PiecePlacement_EnumeratorInstance:moveNext() end
+
+---@param self UnlimitedArray_PiecePlacement_EnumeratorInstance
+function UnlimitedArray_PiecePlacement_EnumeratorInstance:reset() end
+
+---@param self UnlimitedArray_PiecePlacement_EnumeratorInstance
+function UnlimitedArray_PiecePlacement_EnumeratorInstance:dispose() end
+
+---@param self UnlimitedArray_PiecePlacement_EnumeratorInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_PiecePlacement_EnumeratorInstance:equals(obj) end
+
+---@param self UnlimitedArray_PiecePlacement_EnumeratorInstance
+---@return integer
+function UnlimitedArray_PiecePlacement_EnumeratorInstance:getHashCode() end
+
+---@param self UnlimitedArray_PiecePlacement_EnumeratorInstance
+---@return string
+function UnlimitedArray_PiecePlacement_EnumeratorInstance:toString() end
+
+---@param self UnlimitedArray_PiecePlacement_EnumeratorInstance
+---@return TypeInstance
+function UnlimitedArray_PiecePlacement_EnumeratorInstance:getType() end
+
+
+---@class (exact) ArrayOfPiecePlacementInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] PiecePlacementInstance
+local ArrayOfPiecePlacementInstance = {}
+
+---@class (exact) ArrayOfPiecePlacement : Array
+---Creates a new ArrayOfPiecePlacement
+---@param length integer
+---@return PiecePlacementInstance[]
+function ArrayOfPiecePlacement.new(length) end
+
+---@param self PiecePlacementInstance[]
+---@param param0 integer
+---@return PiecePlacementInstance
+function ArrayOfPiecePlacementInstance:get(param0) end
+
+---@param self PiecePlacementInstance[]
+---@param param0 integer
+---@param param1 PiecePlacementInstance
+function ArrayOfPiecePlacementInstance:set(param0, param1) end
+
+---@param self PiecePlacementInstance[]
+function ArrayOfPiecePlacementInstance:initialize() end
+
+---@param self PiecePlacementInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfPiecePlacementInstance:getLength(dimension) end
+
+---@param self PiecePlacementInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfPiecePlacementInstance:getUpperBound(dimension) end
+
+---@param self PiecePlacementInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfPiecePlacementInstance:getLowerBound(dimension) end
+
+---@param self PiecePlacementInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfPiecePlacementInstance:getValue(indices) end
+
+---@param self PiecePlacementInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfPiecePlacementInstance:getValue(index) end
+
+---@param self PiecePlacementInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfPiecePlacementInstance:getValue(index1, index2) end
+
+---@param self PiecePlacementInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfPiecePlacementInstance:getValue(index1, index2, index3) end
+
+---@param self PiecePlacementInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfPiecePlacementInstance:setValue(value, index) end
+
+---@param self PiecePlacementInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfPiecePlacementInstance:setValue(value, index1, index2) end
+
+---@param self PiecePlacementInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfPiecePlacementInstance:setValue(value, index1, index2, index3) end
+
+---@param self PiecePlacementInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfPiecePlacementInstance:setValue(value, indices) end
+
+---@param self PiecePlacementInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfPiecePlacementInstance:getValue(index) end
+
+---@param self PiecePlacementInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfPiecePlacementInstance:getValue(index1, index2) end
+
+---@param self PiecePlacementInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfPiecePlacementInstance:getValue(index1, index2, index3) end
+
+---@param self PiecePlacementInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfPiecePlacementInstance:getValue(indices) end
+
+---@param self PiecePlacementInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfPiecePlacementInstance:setValue(value, index) end
+
+---@param self PiecePlacementInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfPiecePlacementInstance:setValue(value, index1, index2) end
+
+---@param self PiecePlacementInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfPiecePlacementInstance:setValue(value, index1, index2, index3) end
+
+---@param self PiecePlacementInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfPiecePlacementInstance:setValue(value, indices) end
+
+---@param self PiecePlacementInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfPiecePlacementInstance:getLongLength(dimension) end
+
+---@param self PiecePlacementInstance[]
+---@return ObjectInstance
+function ArrayOfPiecePlacementInstance:clone() end
+
+---@param self PiecePlacementInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfPiecePlacementInstance:copyTo(array, index) end
+
+---@param self PiecePlacementInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfPiecePlacementInstance:copyTo(array, index) end
+
+---@param self PiecePlacementInstance[]
+---@return IEnumeratorInstance
+function ArrayOfPiecePlacementInstance:getEnumerator() end
+
+---@param self PiecePlacementInstance[]
+---@return TypeInstance
+function ArrayOfPiecePlacementInstance:getType() end
+
+---@param self PiecePlacementInstance[]
+---@return string
+function ArrayOfPiecePlacementInstance:toString() end
+
+---@param self PiecePlacementInstance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfPiecePlacementInstance:equals(obj) end
+
+---@param self PiecePlacementInstance[]
+---@return integer
+function ArrayOfPiecePlacementInstance:getHashCode() end
+
+
+---@class (exact) UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+---@field current Rad3dBoxDefInstance
+local UnlimitedArray_Rad3dBoxDef_EnumeratorInstance = {}
+
+---@class (exact) UnlimitedArray_Rad3dBoxDef_Enumerator
+---Creates a new UnlimitedArray_Rad3dBoxDef_Enumerator
+---@return UnlimitedArray_Rad3dBoxDef_Enumerator
+function UnlimitedArray_Rad3dBoxDef_Enumerator.new() end
+
+---Creates a new UnlimitedArray_Rad3dBoxDef_Enumerator
+---@param array UnlimitedArray_Rad3dBoxDefInstance
+---@return UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+function UnlimitedArray_Rad3dBoxDef_Enumerator.new(array) end
+
+---@param self UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+---@return boolean
+function UnlimitedArray_Rad3dBoxDef_EnumeratorInstance:moveNext() end
+
+---@param self UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+function UnlimitedArray_Rad3dBoxDef_EnumeratorInstance:reset() end
+
+---@param self UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+function UnlimitedArray_Rad3dBoxDef_EnumeratorInstance:dispose() end
+
+---@param self UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+---@param obj? ObjectInstance
+---@return boolean
+function UnlimitedArray_Rad3dBoxDef_EnumeratorInstance:equals(obj) end
+
+---@param self UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+---@return integer
+function UnlimitedArray_Rad3dBoxDef_EnumeratorInstance:getHashCode() end
+
+---@param self UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+---@return string
+function UnlimitedArray_Rad3dBoxDef_EnumeratorInstance:toString() end
+
+---@param self UnlimitedArray_Rad3dBoxDef_EnumeratorInstance
+---@return TypeInstance
+function UnlimitedArray_Rad3dBoxDef_EnumeratorInstance:getType() end
+
+
 ---@class (exact) ArrayOfVector3Instance : ArrayInstance
 ---@field length integer
 ---@field longLength integer
@@ -7599,6 +9504,628 @@ local IEnumerable_Vector3Instance = {}
 ---@param self IEnumerable_Vector3Instance
 ---@return IEnumerator_Vector3Instance
 function IEnumerable_Vector3Instance:getEnumerator() end
+
+
+---@class (exact) ArrayOfColor3Instance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Color3Instance
+local ArrayOfColor3Instance = {}
+
+---@class (exact) ArrayOfColor3 : Array
+---Creates a new ArrayOfColor3
+---@param length integer
+---@return Color3Instance[]
+function ArrayOfColor3.new(length) end
+
+---@param self Color3Instance[]
+---@param param0 integer
+---@return Color3Instance
+function ArrayOfColor3Instance:get(param0) end
+
+---@param self Color3Instance[]
+---@param param0 integer
+---@param param1 Color3Instance
+function ArrayOfColor3Instance:set(param0, param1) end
+
+---@param self Color3Instance[]
+function ArrayOfColor3Instance:initialize() end
+
+---@param self Color3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfColor3Instance:getLength(dimension) end
+
+---@param self Color3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfColor3Instance:getUpperBound(dimension) end
+
+---@param self Color3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfColor3Instance:getLowerBound(dimension) end
+
+---@param self Color3Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfColor3Instance:getValue(indices) end
+
+---@param self Color3Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfColor3Instance:getValue(index) end
+
+---@param self Color3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfColor3Instance:getValue(index1, index2) end
+
+---@param self Color3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfColor3Instance:getValue(index1, index2, index3) end
+
+---@param self Color3Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfColor3Instance:setValue(value, index) end
+
+---@param self Color3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfColor3Instance:setValue(value, index1, index2) end
+
+---@param self Color3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfColor3Instance:setValue(value, index1, index2, index3) end
+
+---@param self Color3Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfColor3Instance:setValue(value, indices) end
+
+---@param self Color3Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfColor3Instance:getValue(index) end
+
+---@param self Color3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfColor3Instance:getValue(index1, index2) end
+
+---@param self Color3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfColor3Instance:getValue(index1, index2, index3) end
+
+---@param self Color3Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfColor3Instance:getValue(indices) end
+
+---@param self Color3Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfColor3Instance:setValue(value, index) end
+
+---@param self Color3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfColor3Instance:setValue(value, index1, index2) end
+
+---@param self Color3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfColor3Instance:setValue(value, index1, index2, index3) end
+
+---@param self Color3Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfColor3Instance:setValue(value, indices) end
+
+---@param self Color3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfColor3Instance:getLongLength(dimension) end
+
+---@param self Color3Instance[]
+---@return ObjectInstance
+function ArrayOfColor3Instance:clone() end
+
+---@param self Color3Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfColor3Instance:copyTo(array, index) end
+
+---@param self Color3Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfColor3Instance:copyTo(array, index) end
+
+---@param self Color3Instance[]
+---@return IEnumeratorInstance
+function ArrayOfColor3Instance:getEnumerator() end
+
+---@param self Color3Instance[]
+---@return TypeInstance
+function ArrayOfColor3Instance:getType() end
+
+---@param self Color3Instance[]
+---@return string
+function ArrayOfColor3Instance:toString() end
+
+---@param self Color3Instance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfColor3Instance:equals(obj) end
+
+---@param self Color3Instance[]
+---@return integer
+function ArrayOfColor3Instance:getHashCode() end
+
+
+---@class (exact) ArrayOfRad3dWheelDefInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Rad3dWheelDefInstance
+local ArrayOfRad3dWheelDefInstance = {}
+
+---@class (exact) ArrayOfRad3dWheelDef : Array
+---Creates a new ArrayOfRad3dWheelDef
+---@param length integer
+---@return Rad3dWheelDefInstance[]
+function ArrayOfRad3dWheelDef.new(length) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param param0 integer
+---@return Rad3dWheelDefInstance
+function ArrayOfRad3dWheelDefInstance:get(param0) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param param0 integer
+---@param param1 Rad3dWheelDefInstance
+function ArrayOfRad3dWheelDefInstance:set(param0, param1) end
+
+---@param self Rad3dWheelDefInstance[]
+function ArrayOfRad3dWheelDefInstance:initialize() end
+
+---@param self Rad3dWheelDefInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dWheelDefInstance:getLength(dimension) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dWheelDefInstance:getUpperBound(dimension) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dWheelDefInstance:getLowerBound(dimension) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfRad3dWheelDefInstance:getValue(indices) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfRad3dWheelDefInstance:getValue(index) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfRad3dWheelDefInstance:getValue(index1, index2) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfRad3dWheelDefInstance:getValue(index1, index2, index3) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfRad3dWheelDefInstance:setValue(value, index) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfRad3dWheelDefInstance:setValue(value, index1, index2) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfRad3dWheelDefInstance:setValue(value, index1, index2, index3) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfRad3dWheelDefInstance:setValue(value, indices) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfRad3dWheelDefInstance:getValue(index) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfRad3dWheelDefInstance:getValue(index1, index2) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfRad3dWheelDefInstance:getValue(index1, index2, index3) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfRad3dWheelDefInstance:getValue(indices) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfRad3dWheelDefInstance:setValue(value, index) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfRad3dWheelDefInstance:setValue(value, index1, index2) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfRad3dWheelDefInstance:setValue(value, index1, index2, index3) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfRad3dWheelDefInstance:setValue(value, indices) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dWheelDefInstance:getLongLength(dimension) end
+
+---@param self Rad3dWheelDefInstance[]
+---@return ObjectInstance
+function ArrayOfRad3dWheelDefInstance:clone() end
+
+---@param self Rad3dWheelDefInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfRad3dWheelDefInstance:copyTo(array, index) end
+
+---@param self Rad3dWheelDefInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfRad3dWheelDefInstance:copyTo(array, index) end
+
+---@param self Rad3dWheelDefInstance[]
+---@return IEnumeratorInstance
+function ArrayOfRad3dWheelDefInstance:getEnumerator() end
+
+---@param self Rad3dWheelDefInstance[]
+---@return TypeInstance
+function ArrayOfRad3dWheelDefInstance:getType() end
+
+---@param self Rad3dWheelDefInstance[]
+---@return string
+function ArrayOfRad3dWheelDefInstance:toString() end
+
+---@param self Rad3dWheelDefInstance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfRad3dWheelDefInstance:equals(obj) end
+
+---@param self Rad3dWheelDefInstance[]
+---@return integer
+function ArrayOfRad3dWheelDefInstance:getHashCode() end
+
+
+---@class (exact) Rad3dWheelDefInstance
+---@field position f64Vector3Instance
+---@field rotates integer
+---@field width fix64Instance
+---@field height fix64Instance
+---@field sparkat integer
+---@field ground integer
+local Rad3dWheelDefInstance = {}
+
+---@class (exact) Rad3dWheelDef
+---Creates a new Rad3dWheelDef
+---@return Rad3dWheelDef
+function Rad3dWheelDef.new() end
+
+---Creates a new Rad3dWheelDef
+---@param Position f64Vector3Instance
+---@param Rotates integer
+---@param Width fix64Instance
+---@param Height fix64Instance
+---@return Rad3dWheelDefInstance
+function Rad3dWheelDef.new(Position, Rotates, Width, Height) end
+
+---@param self Rad3dWheelDefInstance
+---@return TypeInstance
+function Rad3dWheelDefInstance:getType() end
+
+
+---@class (exact) Rad3dRimsDefInstance
+---@field color Color3Instance
+---@field size number
+---@field depth number
+local Rad3dRimsDefInstance = {}
+
+---@class (exact) Rad3dRimsDef
+---Creates a new Rad3dRimsDef
+---@return Rad3dRimsDef
+function Rad3dRimsDef.new() end
+
+---Creates a new Rad3dRimsDef
+---@param Color Color3Instance
+---@param Size number
+---@param Depth number
+---@return Rad3dRimsDefInstance
+function Rad3dRimsDef.new(Color, Size, Depth) end
+
+---@param self Rad3dRimsDefInstance
+---@return TypeInstance
+function Rad3dRimsDefInstance:getType() end
+
+
+---@class (exact) ArrayOfRad3dPolyInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Rad3dPolyInstance
+local ArrayOfRad3dPolyInstance = {}
+
+---@class (exact) ArrayOfRad3dPoly : Array
+---Creates a new ArrayOfRad3dPoly
+---@param length integer
+---@return Rad3dPolyInstance[]
+function ArrayOfRad3dPoly.new(length) end
+
+---@param self Rad3dPolyInstance[]
+---@param param0 integer
+---@return Rad3dPolyInstance
+function ArrayOfRad3dPolyInstance:get(param0) end
+
+---@param self Rad3dPolyInstance[]
+---@param param0 integer
+---@param param1 Rad3dPolyInstance
+function ArrayOfRad3dPolyInstance:set(param0, param1) end
+
+---@param self Rad3dPolyInstance[]
+function ArrayOfRad3dPolyInstance:initialize() end
+
+---@param self Rad3dPolyInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dPolyInstance:getLength(dimension) end
+
+---@param self Rad3dPolyInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dPolyInstance:getUpperBound(dimension) end
+
+---@param self Rad3dPolyInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dPolyInstance:getLowerBound(dimension) end
+
+---@param self Rad3dPolyInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfRad3dPolyInstance:getValue(indices) end
+
+---@param self Rad3dPolyInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfRad3dPolyInstance:getValue(index) end
+
+---@param self Rad3dPolyInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfRad3dPolyInstance:getValue(index1, index2) end
+
+---@param self Rad3dPolyInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfRad3dPolyInstance:getValue(index1, index2, index3) end
+
+---@param self Rad3dPolyInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfRad3dPolyInstance:setValue(value, index) end
+
+---@param self Rad3dPolyInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfRad3dPolyInstance:setValue(value, index1, index2) end
+
+---@param self Rad3dPolyInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfRad3dPolyInstance:setValue(value, index1, index2, index3) end
+
+---@param self Rad3dPolyInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfRad3dPolyInstance:setValue(value, indices) end
+
+---@param self Rad3dPolyInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfRad3dPolyInstance:getValue(index) end
+
+---@param self Rad3dPolyInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfRad3dPolyInstance:getValue(index1, index2) end
+
+---@param self Rad3dPolyInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfRad3dPolyInstance:getValue(index1, index2, index3) end
+
+---@param self Rad3dPolyInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfRad3dPolyInstance:getValue(indices) end
+
+---@param self Rad3dPolyInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfRad3dPolyInstance:setValue(value, index) end
+
+---@param self Rad3dPolyInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfRad3dPolyInstance:setValue(value, index1, index2) end
+
+---@param self Rad3dPolyInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfRad3dPolyInstance:setValue(value, index1, index2, index3) end
+
+---@param self Rad3dPolyInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfRad3dPolyInstance:setValue(value, indices) end
+
+---@param self Rad3dPolyInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfRad3dPolyInstance:getLongLength(dimension) end
+
+---@param self Rad3dPolyInstance[]
+---@return ObjectInstance
+function ArrayOfRad3dPolyInstance:clone() end
+
+---@param self Rad3dPolyInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfRad3dPolyInstance:copyTo(array, index) end
+
+---@param self Rad3dPolyInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfRad3dPolyInstance:copyTo(array, index) end
+
+---@param self Rad3dPolyInstance[]
+---@return IEnumeratorInstance
+function ArrayOfRad3dPolyInstance:getEnumerator() end
+
+---@param self Rad3dPolyInstance[]
+---@return TypeInstance
+function ArrayOfRad3dPolyInstance:getType() end
+
+---@param self Rad3dPolyInstance[]
+---@return string
+function ArrayOfRad3dPolyInstance:toString() end
+
+---@param self Rad3dPolyInstance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfRad3dPolyInstance:equals(obj) end
+
+---@param self Rad3dPolyInstance[]
+---@return integer
+function ArrayOfRad3dPolyInstance:getHashCode() end
+
+
+---@class (exact) Rad3dPolyInstance
+---@field color Color3Instance
+---@field colNum integer?
+---@field polyType PolyTypeInstance
+---@field lineType LineTypeInstance?
+---@field decalOffset number
+---@field points Vector3Instance[]
+local Rad3dPolyInstance = {}
+
+---@class (exact) Rad3dPoly
+---Creates a new Rad3dPoly
+---@return Rad3dPoly
+function Rad3dPoly.new() end
+
+---Creates a new Rad3dPoly
+---@param Color Color3Instance
+---@param ColNum? integer?
+---@param PolyType PolyTypeInstance
+---@param LineType? LineTypeInstance?
+---@param DecalOffset number
+---@param Points Vector3Instance[]
+---@return Rad3dPolyInstance
+function Rad3dPoly.new(Color, ColNum, PolyType, LineType, DecalOffset, Points) end
+
+---@param self Rad3dPolyInstance
+---@param other Rad3dPolyInstance
+---@return boolean
+function Rad3dPolyInstance:equals(other) end
+
+---@param self Rad3dPolyInstance
+---@return integer
+function Rad3dPolyInstance:getHashCode() end
+
+---@param self Rad3dPolyInstance
+---@return TypeInstance
+function Rad3dPolyInstance:getType() end
 
 
 ---@class (exact) IEnumerator_Vector3Instance

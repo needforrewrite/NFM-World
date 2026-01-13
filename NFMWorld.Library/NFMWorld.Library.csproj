@@ -38,6 +38,5 @@
 
     <ItemGroup>
       <Folder Include="data\" />
-      <Folder Include="Lua\" />
     </ItemGroup>
 </Project>

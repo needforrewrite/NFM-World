@@ -642,6 +642,10 @@ function TypeWithByRefParameters.new(value) end
 function TypeWithByRefParametersInstance:getValue() end
 
 ---@param self TypeWithByRefParametersInstance
+---@param value Int32&Instance
+function TypeWithByRefParametersInstance:methodWithInParam(value) end
+
+---@param self TypeWithByRefParametersInstance
 ---@return TypeInstance
 function TypeWithByRefParametersInstance:getType() end
 

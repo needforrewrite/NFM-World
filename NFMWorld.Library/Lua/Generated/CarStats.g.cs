@@ -30,10 +30,6 @@ public partial class LuaBindings
         lua_pushcfunction(L, (CarStats__newindex));
         lua_setfield(L, -2, "__newindex");
 
-        // Operator: __eq
-        lua_pushcfunction(L, (CarStats_op_op_Equality));
-        lua_setfield(L, -2, "__eq");
-
         // __tostring metamethod
         lua_pushcfunction(L, (CarStats__tostring));
         lua_setfield(L, -2, "__tostring");
@@ -285,15 +281,6 @@ public partial class LuaBindings
             case "validate":
                 lua_pushcfunction(L, (CarStats_method_validate));
                 return 1;
-            case "toString":
-                lua_pushcfunction(L, (CarStats_method_toString));
-                return 1;
-            case "getHashCode":
-                lua_pushcfunction(L, (CarStats_method_getHashCode));
-                return 1;
-            case "equals":
-                lua_pushcfunction(L, (CarStats_method_equals));
-                return 1;
             case "getType":
                 lua_pushcfunction(L, (CarStats_method_getType));
                 return 1;
@@ -320,14 +307,6 @@ public partial class LuaBindings
     {
         var obj = GetStructFromStack<nfm_world_library.mad.CarStats>(L, 1);
         lua_pushstring(L, obj.ToString() ?? "");
-        return 1;
-    }
-
-    private static int CarStats_op_op_Equality(lua_State L)
-    {
-        var left = ToObject<nfm_world_library.mad.CarStats>(L, 1)!;
-        var right = ToObject<nfm_world_library.mad.CarStats>(L, 2)!;
-        lua_pushboolean(L, left == right ? 1 : 0);
         return 1;
     }
 
@@ -487,142 +466,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for validate");
-        return 0;
-    }
-
-    private static int CarStats_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.mad.CarStats>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int CarStats_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.mad.CarStats>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = self.GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int CarStats_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.mad.CarStats>(L, 1);
-
-        if (argCount == 1)
-        {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(object)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
-            }
-            next0:
-
-            // Try overload 1: Equals(nfm_world_library.mad.CarStats)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<nfm_world_library.mad.CarStats>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<nfm_world_library.mad.CarStats>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
         return 0;
     }
 

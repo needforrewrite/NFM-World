@@ -37,10 +37,6 @@ declare class CarStats {
     readonly name: string;
     readonly enginsignature: number;
     validate(fileName: string): string;
-    toString(): string;
-    getHashCode(): number;
-    equals(obj: Object): boolean;
-    equals(other: CarStats): boolean;
     getType(): Type | null;
 }
 
@@ -137,6 +133,23 @@ declare class Mad {
     RemoveListener_PowerUp(): void;
     AddListener_Distruct(callback: (...args: any[]) => void): void;
     RemoveListener_Distruct(): void;
+}
+
+declare class IRaceValues {
+    readonly carsInRace: UnlimitedArray_IInGameCar;
+    readonly currentStage: BackendStage | null;
+    readonly raceState: number;
+}
+
+declare class BaseGamemodeParameters {
+    /** @customName new */
+    static inst(): BaseGamemodeParameters;
+    readonly playerCarIndex: number;
+    readonly players: IReadOnlyList_PlayerParameters;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
 }
 
 declare class Int3 {
@@ -450,6 +463,61 @@ declare class EventArgs {
     toString(): string;
     equals(obj: Object): boolean;
     getHashCode(): number;
+}
+
+declare class UnlimitedArray_IInGameCar {
+    /** @customName new */
+    static inst(): UnlimitedArray_IInGameCar;
+    /** @customName new */
+    static inst(capacity: number): UnlimitedArray_IInGameCar;
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    getEnumerator(): UnlimitedArray_IInGameCar_Enumerator;
+    ensureCapacity(capacity: number): number;
+    add(item: IInGameCar | null): void;
+    clear(): void;
+    contains(item: IInGameCar | null): boolean;
+    copyTo(array: IInGameCarArray, arrayIndex: number): void;
+    remove(item: IInGameCar | null): boolean;
+    indexOf(item: IInGameCar | null): number;
+    insert(index: number, item: IInGameCar | null): void;
+    removeAt(index: number): void;
+    toArray(): IInGameCarArray;
+    sort(compareFunc: Comparison_IInGameCar): void;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    [index: number]: IInGameCar | null;
+}
+
+declare class BackendStage {
+    /** @customName new */
+    static inst(stageName: string, stageLoader: StageLoader | null): BackendStage;
+    /** @customName new */
+    static inst(stageName: string): BackendStage;
+    readonly pieces: UnlimitedArray_ITransform;
+    readonly nodes: UnlimitedArray_StageObject;
+    readonly checkpoints: UnlimitedArray_StageObject;
+    readonly fixHoops: UnlimitedArray_StageObject;
+    nlaps: number;
+    readonly stagePartCount: number;
+    name: string;
+    readonly path: string;
+    sx: number;
+    sz: number;
+    ncx: number;
+    ncz: number;
+    readonly stageLoader: StageLoader | null;
+    createObject(objectName: string, x: number, y: number, z: number, r: number): ITransform | null;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+}
+
+declare class IReadOnlyList_PlayerParameters {
+    [index: number]: PlayerParameters | null;
 }
 
 declare class ArrayOfInt32 {
@@ -820,6 +888,139 @@ declare class ITransform {
     position: f64Vector3;
     rotation: f64Euler;
     readonly parent: ITransform | null;
+}
+
+declare class UnlimitedArray_IInGameCar_Enumerator {
+    /** @customName new */
+    static inst(): UnlimitedArray_IInGameCar_Enumerator;
+    /** @customName new */
+    static inst(array: UnlimitedArray_IInGameCar): UnlimitedArray_IInGameCar_Enumerator;
+    readonly current: IInGameCar | null;
+    moveNext(): boolean;
+    reset(): void;
+    dispose(): void;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
+declare class ArrayOfIInGameCar {
+    /** @customName new */
+    static inst(length: number): ArrayOfIInGameCar;
+    [index: number]: IInGameCar | null;
+    readonly length: number;
+}
+
+declare class UnlimitedArray_ITransform {
+    /** @customName new */
+    static inst(): UnlimitedArray_ITransform;
+    /** @customName new */
+    static inst(capacity: number): UnlimitedArray_ITransform;
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    getEnumerator(): UnlimitedArray_ITransform_Enumerator;
+    ensureCapacity(capacity: number): number;
+    add(item: ITransform | null): void;
+    clear(): void;
+    contains(item: ITransform | null): boolean;
+    copyTo(array: ITransformArray, arrayIndex: number): void;
+    remove(item: ITransform | null): boolean;
+    indexOf(item: ITransform | null): number;
+    insert(index: number, item: ITransform | null): void;
+    removeAt(index: number): void;
+    toArray(): ITransformArray;
+    sort(compareFunc: Comparison_ITransform): void;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    [index: number]: ITransform | null;
+}
+
+declare class UnlimitedArray_StageObject {
+    /** @customName new */
+    static inst(): UnlimitedArray_StageObject;
+    /** @customName new */
+    static inst(capacity: number): UnlimitedArray_StageObject;
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    getEnumerator(): UnlimitedArray_StageObject_Enumerator;
+    ensureCapacity(capacity: number): number;
+    add(item: StageObject | null): void;
+    clear(): void;
+    contains(item: StageObject | null): boolean;
+    copyTo(array: StageObjectArray, arrayIndex: number): void;
+    remove(item: StageObject | null): boolean;
+    indexOf(item: StageObject | null): number;
+    insert(index: number, item: StageObject | null): void;
+    removeAt(index: number): void;
+    toArray(): StageObjectArray;
+    sort(compareFunc: Comparison_StageObject): void;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    [index: number]: StageObject | null;
+}
+
+declare class StageLoader {
+    /** @customName new */
+    static inst(stageName: string): StageLoader;
+    /** @customName new */
+    static inst(): StageLoader;
+    readonly path: string;
+    nlaps: number;
+    musicPath: string;
+    remasteredMusicPath: string;
+    musicFreqMul: number;
+    musicTempoMul: number;
+    name: string;
+    indexOffset: number;
+    sx: number;
+    sz: number;
+    ncx: number;
+    ncz: number;
+    snap: Color3 | null;
+    sky: Color3 | null;
+    groundColor: Color3 | null;
+    groundPolysColor: Color3 | null;
+    drawPolys: boolean;
+    fog: Color3 | null;
+    texture: InlineArray4_Int32 | null;
+    clouds: InlineArray5_Int32 | null;
+    drawClouds: boolean;
+    cloudCoverage: number | null;
+    fogDensity: number | null;
+    fadeFrom: number | null;
+    lightsOn: boolean;
+    drawMountains: boolean;
+    mountainSeed: number | null;
+    mountainCoverage: number | null;
+    lightDirection: Vector3 | null;
+    pieces: UnlimitedArray_PiecePlacement;
+    walls: UnlimitedArray_Rad3dBoxDef;
+    maxr: number;
+    maxl: number;
+    maxt: number;
+    maxb: number;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+}
+
+declare class PlayerParameters {
+    /** @customName new */
+    static inst(): PlayerParameters;
+    readonly playerName: string;
+    readonly carName: string;
+    readonly color: Color3;
+    readonly isBot: boolean;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
 }
 
 declare class ArrayOfSingle {
@@ -1194,6 +1395,139 @@ declare class f64Euler {
     getType(): Type | null;
 }
 
+declare class UnlimitedArray_ITransform_Enumerator {
+    /** @customName new */
+    static inst(): UnlimitedArray_ITransform_Enumerator;
+    /** @customName new */
+    static inst(array: UnlimitedArray_ITransform): UnlimitedArray_ITransform_Enumerator;
+    readonly current: ITransform | null;
+    moveNext(): boolean;
+    reset(): void;
+    dispose(): void;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
+declare class ArrayOfITransform {
+    /** @customName new */
+    static inst(length: number): ArrayOfITransform;
+    [index: number]: ITransform | null;
+    readonly length: number;
+}
+
+declare class StageObject {
+    /** @customName new */
+    static inst(rad: Rad3d | null): StageObject;
+    /** @customName new */
+    static inst(rad: Rad3d | null, position: f64Vector3, rotation: f64Euler): StageObject;
+    readonly rad: Rad3d | null;
+    readonly childTransforms: IReadOnlyList_ITransform;
+    position: f64Vector3;
+    rotation: f64Euler;
+    parent: ITransform | null;
+    kind: number;
+    isSpecial: boolean;
+    readonly boxes: Rad3dBoxDefArray;
+    readonly maxRadius: number;
+    readonly fileName: string;
+    gameTick(): void;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+}
+
+declare class UnlimitedArray_StageObject_Enumerator {
+    /** @customName new */
+    static inst(): UnlimitedArray_StageObject_Enumerator;
+    /** @customName new */
+    static inst(array: UnlimitedArray_StageObject): UnlimitedArray_StageObject_Enumerator;
+    readonly current: StageObject | null;
+    moveNext(): boolean;
+    reset(): void;
+    dispose(): void;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
+declare class ArrayOfStageObject {
+    /** @customName new */
+    static inst(length: number): ArrayOfStageObject;
+    [index: number]: StageObject | null;
+    readonly length: number;
+}
+
+declare class Color3 {
+    /** @customName new */
+    static inst(): Color3;
+    /** @customName new */
+    static inst(r: number, g: number, b: number): Color3;
+    static fromHSB(hue: number, saturation: number, brightness: number): Color3;
+    r: number;
+    g: number;
+    b: number;
+    darker(): Color3;
+    brighter(): Color3;
+    getType(): Type | null;
+    [index: number]: number;
+}
+
+declare class UnlimitedArray_PiecePlacement {
+    /** @customName new */
+    static inst(): UnlimitedArray_PiecePlacement;
+    /** @customName new */
+    static inst(capacity: number): UnlimitedArray_PiecePlacement;
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    getEnumerator(): UnlimitedArray_PiecePlacement_Enumerator;
+    ensureCapacity(capacity: number): number;
+    add(item: PiecePlacement): void;
+    clear(): void;
+    contains(item: PiecePlacement): boolean;
+    copyTo(array: PiecePlacementArray, arrayIndex: number): void;
+    remove(item: PiecePlacement): boolean;
+    indexOf(item: PiecePlacement): number;
+    insert(index: number, item: PiecePlacement): void;
+    removeAt(index: number): void;
+    toArray(): PiecePlacementArray;
+    sort(compareFunc: Comparison_PiecePlacement): void;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    [index: number]: PiecePlacement;
+}
+
+declare class UnlimitedArray_Rad3dBoxDef {
+    /** @customName new */
+    static inst(): UnlimitedArray_Rad3dBoxDef;
+    /** @customName new */
+    static inst(capacity: number): UnlimitedArray_Rad3dBoxDef;
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    getEnumerator(): UnlimitedArray_Rad3dBoxDef_Enumerator;
+    ensureCapacity(capacity: number): number;
+    add(item: Rad3dBoxDef): void;
+    clear(): void;
+    contains(item: Rad3dBoxDef): boolean;
+    copyTo(array: Rad3dBoxDefArray, arrayIndex: number): void;
+    remove(item: Rad3dBoxDef): boolean;
+    indexOf(item: Rad3dBoxDef): number;
+    insert(index: number, item: Rad3dBoxDef): void;
+    removeAt(index: number): void;
+    toArray(): Rad3dBoxDefArray;
+    sort(compareFunc: Comparison_Rad3dBoxDef): void;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    [index: number]: Rad3dBoxDef;
+}
+
 declare class Vector3 {
     /** @customName new */
     static inst(): Vector3;
@@ -1496,6 +1830,100 @@ declare class f64AngleSingle {
     getType(): Type | null;
 }
 
+declare class Rad3d {
+    /** @customName new */
+    static inst(colors: Color3Array, stats: CarStats, wheels: Rad3dWheelDefArray, rims: Rad3dRimsDef | null, boxes: Rad3dBoxDefArray, polys: Rad3dPolyArray, castsShadow: boolean, atp: Vector2Array, fileName: string): Rad3d;
+    /** @customName new */
+    static inst(polys: Rad3dPolyArray, castsShadow: boolean, fileName: string): Rad3d;
+    readonly colors: Color3Array;
+    readonly stats: CarStats;
+    readonly wheels: Rad3dWheelDefArray;
+    readonly rims: Rad3dRimsDef | null;
+    readonly boxes: Rad3dBoxDefArray;
+    readonly polys: Rad3dPolyArray;
+    readonly castsShadow: boolean;
+    readonly atp: Vector2Array;
+    readonly fileName: string;
+    readonly maxRadius: number;
+    equals(other: Rad3d | null): boolean;
+    getHashCode(): number;
+    getType(): Type | null;
+}
+
+declare class ArrayOfRad3dBoxDef {
+    /** @customName new */
+    static inst(length: number): ArrayOfRad3dBoxDef;
+    [index: number]: Rad3dBoxDef;
+    readonly length: number;
+}
+
+declare class Rad3dBoxDef {
+    /** @customName new */
+    static inst(): Rad3dBoxDef;
+    /** @customName new */
+    static inst(xy: number, zy: number, radius: f64Vector3, translation: f64Vector3, skid: number, damage: number, notWall: boolean, color: Color3): Rad3dBoxDef;
+    readonly xy: number;
+    readonly zy: number;
+    readonly radius: f64Vector3;
+    readonly translation: f64Vector3;
+    readonly skid: number;
+    readonly damage: number;
+    readonly notWall: boolean;
+    readonly color: Color3;
+    getType(): Type | null;
+}
+
+declare class PiecePlacement {
+    /** @customName new */
+    static inst(): PiecePlacement;
+    /** @customName new */
+    static inst(type: number, object: Rad3d | null, position: f64Vector3, rotation: f64Euler, nodeKind: number | null, isSpecial: boolean): PiecePlacement;
+    readonly type: number;
+    readonly object: Rad3d | null;
+    readonly position: f64Vector3;
+    readonly rotation: f64Euler;
+    readonly nodeKind: number | null;
+    readonly isSpecial: boolean;
+    getType(): Type | null;
+}
+
+declare class UnlimitedArray_PiecePlacement_Enumerator {
+    /** @customName new */
+    static inst(): UnlimitedArray_PiecePlacement_Enumerator;
+    /** @customName new */
+    static inst(array: UnlimitedArray_PiecePlacement): UnlimitedArray_PiecePlacement_Enumerator;
+    readonly current: PiecePlacement;
+    moveNext(): boolean;
+    reset(): void;
+    dispose(): void;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
+declare class ArrayOfPiecePlacement {
+    /** @customName new */
+    static inst(length: number): ArrayOfPiecePlacement;
+    [index: number]: PiecePlacement;
+    readonly length: number;
+}
+
+declare class UnlimitedArray_Rad3dBoxDef_Enumerator {
+    /** @customName new */
+    static inst(): UnlimitedArray_Rad3dBoxDef_Enumerator;
+    /** @customName new */
+    static inst(array: UnlimitedArray_Rad3dBoxDef): UnlimitedArray_Rad3dBoxDef_Enumerator;
+    readonly current: Rad3dBoxDef;
+    moveNext(): boolean;
+    reset(): void;
+    dispose(): void;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
 declare class ArrayOfVector3 {
     /** @customName new */
     static inst(length: number): ArrayOfVector3;
@@ -1537,6 +1965,68 @@ declare class Ray {
 
 declare class IEnumerable_Vector3 {
     getEnumerator(): IEnumerator_Vector3;
+}
+
+declare class ArrayOfColor3 {
+    /** @customName new */
+    static inst(length: number): ArrayOfColor3;
+    [index: number]: Color3;
+    readonly length: number;
+}
+
+declare class ArrayOfRad3dWheelDef {
+    /** @customName new */
+    static inst(length: number): ArrayOfRad3dWheelDef;
+    [index: number]: Rad3dWheelDef;
+    readonly length: number;
+}
+
+declare class Rad3dWheelDef {
+    /** @customName new */
+    static inst(): Rad3dWheelDef;
+    /** @customName new */
+    static inst(position: f64Vector3, rotates: number, width: fix64, height: fix64): Rad3dWheelDef;
+    readonly position: f64Vector3;
+    readonly rotates: number;
+    readonly width: fix64;
+    readonly height: fix64;
+    readonly sparkat: number;
+    readonly ground: number;
+    getType(): Type | null;
+}
+
+declare class Rad3dRimsDef {
+    /** @customName new */
+    static inst(): Rad3dRimsDef;
+    /** @customName new */
+    static inst(color: Color3, size: number, depth: number): Rad3dRimsDef;
+    readonly color: Color3;
+    readonly size: number;
+    readonly depth: number;
+    getType(): Type | null;
+}
+
+declare class ArrayOfRad3dPoly {
+    /** @customName new */
+    static inst(length: number): ArrayOfRad3dPoly;
+    [index: number]: Rad3dPoly;
+    readonly length: number;
+}
+
+declare class Rad3dPoly {
+    /** @customName new */
+    static inst(): Rad3dPoly;
+    /** @customName new */
+    static inst(color: Color3, colNum: number | null, polyType: number, lineType: number | null, decalOffset: number, points: Vector3Array): Rad3dPoly;
+    readonly color: Color3;
+    readonly colNum: number | null;
+    readonly polyType: number;
+    readonly lineType: number | null;
+    readonly decalOffset: number;
+    readonly points: Vector3Array;
+    equals(other: Rad3dPoly): boolean;
+    getHashCode(): number;
+    getType(): Type | null;
 }
 
 declare class IEnumerator_Vector3 {

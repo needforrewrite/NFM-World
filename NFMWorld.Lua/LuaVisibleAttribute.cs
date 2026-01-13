@@ -4,7 +4,7 @@ namespace nfm_world_library.Lua;
 /// Marks a type to be exposed to Lua via the source generator.
 /// The type will be available as a global variable in Lua with the same name.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, Inherited = false)]
 public sealed class LuaVisibleAttribute : Attribute
 {
     /// <summary>

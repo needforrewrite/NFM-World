@@ -204,6 +204,7 @@ declare class TypeWithByRefParameters {
     static inst(value: number): TypeWithByRefParameters;
     value: number;
     getValue(): number;
+    methodWithInParam(value: Int32& | null): void;
     getType(): Type | null;
     toString(): string;
     equals(obj: Object): boolean;
