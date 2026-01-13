@@ -47,35 +47,65 @@ public partial class LuaBindings
         _eventDelegateRefs.Clear();
         TypeInfo<nfm_world_library.mad.CarStats>.Name = null;
         TypeInfo<nfm_world_library.mad.Mad>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Int3>.Name = null;
         TypeInfo<nfm_world_library.SoftFloat.f64Vector3>.Name = null;
         TypeInfo<nfm_world_library.SoftFloat.fix64>.Name = null;
         TypeInfo<object>.Name = null;
         TypeInfo<nfm_world_library.util.UnlimitedArray<bool>>.Name = null;
         TypeInfo<int[,]>.Name = null;
-        TypeInfo<System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>>.Name = null;
         TypeInfo<nfm_world_library.mad.ContO>.Name = null;
+        TypeInfo<FixedMathSharp.Utility.DeterministicRandom>.Name = null;
         TypeInfo<nfm_world_library.mad.Control>.Name = null;
         TypeInfo<nfm_world_library.mad.IStage>.Name = null;
         TypeInfo<System.ValueTuple<float, int>>.Name = null;
         TypeInfo<System.ValueTuple<int, float>>.Name = null;
         TypeInfo<System.ValueTuple<int, int, int>>.Name = null;
         TypeInfo<System.EventArgs>.Name = null;
+        TypeInfo<int[]>.Name = null;
+        TypeInfo<System.IFormatProvider>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Vector2>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Matrix>.Name = null;
         TypeInfo<nfm_world_library.SoftFloat.f64Vector3[]>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Quaternion>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Vector2>.Name = null;
+        TypeInfo<FixedMathSharp.Fixed64>.Name = null;
         TypeInfo<nfm_world_library.util.UnlimitedArray<bool>.Enumerator>.Name = null;
         TypeInfo<bool[]>.Name = null;
-        TypeInfo<int[]>.Name = null;
         TypeInfo<long[]>.Name = null;
-        TypeInfo<System.Runtime.CompilerServices.InlineArray4<int>>.Name = null;
+        TypeInfo<System.Collections.IEnumerator>.Name = null;
         TypeInfo<nfm_world_library.mad.IInGameCar>.Name = null;
         TypeInfo<Maxine.Extensions.Nibble<System.Byte>>.Name = null;
         TypeInfo<System.ValueTuple<bool, bool, bool, bool, bool>>.Name = null;
         TypeInfo<System.Collections.Generic.IReadOnlyList<nfm_world_library.mad.ITransform>>.Name = null;
         TypeInfo<System.Collections.Generic.IReadOnlyList<nfm_world_library.mad.IAiNode>>.Name = null;
         TypeInfo<nfm_world_library.mad.ITransform>.Name = null;
+        TypeInfo<float[]>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Vector2[]>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Quaternion>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Vector4>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Matrix>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Vector4[]>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Vector3>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Plane>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Vector2[]>.Name = null;
         TypeInfo<nfm_world_library.backend.ai.BaseAi>.Name = null;
         TypeInfo<nfm_world_library.mad.IAiNode>.Name = null;
         TypeInfo<nfm_world_library.SoftFloat.f64Euler>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Vector3>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Quaternion[]>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Plane>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Vector3[]>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Vector4>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.BoundingBox>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.BoundingSphere>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.BoundingFrustum>.Name = null;
         TypeInfo<nfm_world_library.SoftFloat.f64AngleSingle>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Vector3[]>.Name = null;
+        TypeInfo<Stride.Core.Mathematics.Plane[]>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Vector4[]>.Name = null;
+        TypeInfo<Microsoft.Xna.Framework.Ray>.Name = null;
+        TypeInfo<System.Collections.Generic.IEnumerable<Microsoft.Xna.Framework.Vector3>>.Name = null;
+        TypeInfo<System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>>.Name = null;
     }
 
     #region Object Storage
@@ -308,6 +338,10 @@ public partial class LuaBindings
             case int[,] arr_ArrayOfInt322D:
                 PushObject(L, arr_ArrayOfInt322D, "MT_Int32Array2D");
                 break;
+            // Special case: Handle array type: int[] since arrays need runtime type info
+            case int[] arr_ArrayOfInt32:
+                PushObject(L, arr_ArrayOfInt32, "MT_Int32Array");
+                break;
             // Special case: Handle array type: nfm_world_library.SoftFloat.f64Vector3[] since arrays need runtime type info
             case nfm_world_library.SoftFloat.f64Vector3[] arr_ArrayOff64Vector3:
                 PushObject(L, arr_ArrayOff64Vector3, "MT_f64Vector3Array");
@@ -316,13 +350,45 @@ public partial class LuaBindings
             case bool[] arr_ArrayOfBoolean:
                 PushObject(L, arr_ArrayOfBoolean, "MT_BooleanArray");
                 break;
-            // Special case: Handle array type: int[] since arrays need runtime type info
-            case int[] arr_ArrayOfInt32:
-                PushObject(L, arr_ArrayOfInt32, "MT_Int32Array");
-                break;
             // Special case: Handle array type: long[] since arrays need runtime type info
             case long[] arr_ArrayOfInt64:
                 PushObject(L, arr_ArrayOfInt64, "MT_Int64Array");
+                break;
+            // Special case: Handle array type: float[] since arrays need runtime type info
+            case float[] arr_ArrayOfSingle:
+                PushObject(L, arr_ArrayOfSingle, "MT_SingleArray");
+                break;
+            // Special case: Handle array type: Stride.Core.Mathematics.Vector2[] since arrays need runtime type info
+            case Stride.Core.Mathematics.Vector2[] arr_ArrayOfVector2:
+                PushObject(L, arr_ArrayOfVector2, "MT_Vector2Array");
+                break;
+            // Special case: Handle array type: Stride.Core.Mathematics.Vector4[] since arrays need runtime type info
+            case Stride.Core.Mathematics.Vector4[] arr_ArrayOfVector4:
+                PushObject(L, arr_ArrayOfVector4, "MT_Vector4Array");
+                break;
+            // Special case: Handle array type: Microsoft.Xna.Framework.Vector2[] since arrays need runtime type info
+            case Microsoft.Xna.Framework.Vector2[] arr_ArrayOfVector2:
+                PushObject(L, arr_ArrayOfVector2, "MT_Vector2Array");
+                break;
+            // Special case: Handle array type: Stride.Core.Mathematics.Quaternion[] since arrays need runtime type info
+            case Stride.Core.Mathematics.Quaternion[] arr_ArrayOfQuaternion:
+                PushObject(L, arr_ArrayOfQuaternion, "MT_QuaternionArray");
+                break;
+            // Special case: Handle array type: Microsoft.Xna.Framework.Vector3[] since arrays need runtime type info
+            case Microsoft.Xna.Framework.Vector3[] arr_ArrayOfVector3:
+                PushObject(L, arr_ArrayOfVector3, "MT_Vector3Array");
+                break;
+            // Special case: Handle array type: Stride.Core.Mathematics.Vector3[] since arrays need runtime type info
+            case Stride.Core.Mathematics.Vector3[] arr_ArrayOfVector3:
+                PushObject(L, arr_ArrayOfVector3, "MT_Vector3Array");
+                break;
+            // Special case: Handle array type: Stride.Core.Mathematics.Plane[] since arrays need runtime type info
+            case Stride.Core.Mathematics.Plane[] arr_ArrayOfPlane:
+                PushObject(L, arr_ArrayOfPlane, "MT_PlaneArray");
+                break;
+            // Special case: Handle array type: Microsoft.Xna.Framework.Vector4[] since arrays need runtime type info
+            case Microsoft.Xna.Framework.Vector4[] arr_ArrayOfVector4:
+                PushObject(L, arr_ArrayOfVector4, "MT_Vector4Array");
                 break;
             default:
                 // For all other types, push as userdata if we have a registered metatable
@@ -365,6 +431,28 @@ public partial class LuaBindings
         if (luaType == LUA_TTABLE && typeof(T).IsArray)
         {
             #region Handle Lua tables being converted to arrays
+            if (typeof(T) == typeof(int[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new int[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<int>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
             if (typeof(T) == typeof(nfm_world_library.SoftFloat.f64Vector3[]))
             {
                 // Get the length of the table
@@ -409,28 +497,6 @@ public partial class LuaBindings
             
                 return (T)(object)array;
             }
-            if (typeof(T) == typeof(int[]))
-            {
-                // Get the length of the table
-                var length = (int)lua_objlen(L, idx);
-            
-                // Create the array
-                var array = new int[length];
-            
-                for (int i = 0; i < length; i++)
-                {
-                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                    lua_rawgeti(L, idx, i + 1);
-            
-                    // Convert the element
-                    array[i] = ToObject<int>(L, -1)!;
-            
-                    // Pop the element from stack
-                    lua_pop(L, 1);
-                }
-            
-                return (T)(object)array;
-            }
             if (typeof(T) == typeof(long[]))
             {
                 // Get the length of the table
@@ -446,6 +512,204 @@ public partial class LuaBindings
             
                     // Convert the element
                     array[i] = ToObject<long>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(float[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new float[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<float>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(Stride.Core.Mathematics.Vector2[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Stride.Core.Mathematics.Vector2[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Stride.Core.Mathematics.Vector2>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(Stride.Core.Mathematics.Vector4[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Stride.Core.Mathematics.Vector4[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Stride.Core.Mathematics.Vector4>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(Microsoft.Xna.Framework.Vector2[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Microsoft.Xna.Framework.Vector2[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Microsoft.Xna.Framework.Vector2>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(Stride.Core.Mathematics.Quaternion[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Stride.Core.Mathematics.Quaternion[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Stride.Core.Mathematics.Quaternion>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(Microsoft.Xna.Framework.Vector3[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Microsoft.Xna.Framework.Vector3[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Microsoft.Xna.Framework.Vector3>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(Stride.Core.Mathematics.Vector3[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Stride.Core.Mathematics.Vector3[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Stride.Core.Mathematics.Vector3>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(Stride.Core.Mathematics.Plane[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Stride.Core.Mathematics.Plane[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Stride.Core.Mathematics.Plane>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(Microsoft.Xna.Framework.Vector4[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Microsoft.Xna.Framework.Vector4[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Microsoft.Xna.Framework.Vector4>(L, -1)!;
             
                     // Pop the element from stack
                     lua_pop(L, 1);

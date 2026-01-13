@@ -988,13 +988,13 @@ local ObjectInstance = {}
 ---@return ObjectInstance
 function Object.new() end
 
----@param objA? any
----@param objB? any
+---@param objA? Object
+---@param objB? Object
 ---@return boolean
 function Object.equals(objA, objB) end
 
----@param objA? any
----@param objB? any
+---@param objA? Object
+---@param objB? Object
 ---@return boolean
 function Object.referenceEquals(objA, objB) end
 
@@ -3069,6 +3069,19 @@ function ArrayOfInt64Instance:equals(obj) end
 ---@param self integer[]
 ---@return integer
 function ArrayOfInt64Instance:getHashCode() end
+
+
+---@class (exact) IEnumeratorInstance
+---@field current ObjectInstance
+local IEnumeratorInstance = {}
+
+---@class (exact) IEnumerator
+---@param self IEnumeratorInstance
+---@return boolean
+function IEnumeratorInstance:moveNext() end
+
+---@param self IEnumeratorInstance
+function IEnumeratorInstance:reset() end
 
 
 ---@class (exact) IEnumerable_Int32Instance

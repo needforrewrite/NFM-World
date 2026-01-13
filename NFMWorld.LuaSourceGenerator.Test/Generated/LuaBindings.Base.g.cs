@@ -74,6 +74,7 @@ public partial class LuaBindings
         TypeInfo<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Name = null;
         TypeInfo<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>.Name = null;
         TypeInfo<long[]>.Name = null;
+        TypeInfo<System.Collections.IEnumerator>.Name = null;
         TypeInfo<System.Collections.Generic.IEnumerable<int>>.Name = null;
         TypeInfo<System.Collections.ObjectModel.ReadOnlyCollection<int>>.Name = null;
         TypeInfo<System.Collections.Generic.IComparer<int>>.Name = null;

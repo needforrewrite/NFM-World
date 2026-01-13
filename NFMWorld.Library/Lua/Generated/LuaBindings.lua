@@ -299,6 +299,157 @@ function MadInstance:AddListener_Distruct(callback) end
 function MadInstance:RemoveListener_Distruct() end
 
 
+---@class (exact) Int3Instance
+---@field item integer
+---@field x integer
+---@field y integer
+---@field z integer
+local Int3Instance = {}
+
+---@class (exact) Int3
+---Creates a new Int3
+---@return Int3
+function Int3.new() end
+
+---Creates a new Int3
+---@param value integer
+---@return Int3Instance
+function Int3.new(value) end
+
+---Creates a new Int3
+---@param x integer
+---@param y integer
+---@param z integer
+---@return Int3Instance
+function Int3.new(x, y, z) end
+
+---Creates a new Int3
+---@param value Vector2Instance
+---@param z integer
+---@return Int3Instance
+function Int3.new(value, z) end
+
+---Creates a new Int3
+---@param values integer[]
+---@return Int3Instance
+function Int3.new(values) end
+
+---@param left Int3
+---@param right Int3
+---@return Int3
+function Int3.add(left, right) end
+
+---@param left Int3
+---@param right Int3
+---@return Int3
+function Int3.subtract(left, right) end
+
+---@param value Int3
+---@param scale integer
+---@return Int3
+function Int3.multiply(value, scale) end
+
+---@param left Int3
+---@param right Int3
+---@return Int3
+function Int3.modulate(left, right) end
+
+---@param value Int3
+---@param scale integer
+---@return Int3
+function Int3.divide(value, scale) end
+
+---@param value Int3
+---@return Int3
+function Int3.negate(value) end
+
+---@param value Int3
+---@param min Int3
+---@param max Int3
+---@return Int3
+function Int3.clamp(value, min, max) end
+
+---@param left Int3
+---@param right Int3
+---@return integer
+function Int3.dot(left, right) end
+
+---@param start Int3
+---@param end Int3
+---@param amount number
+---@return Int3
+function Int3.lerp(start, end, amount) end
+
+---@param start Int3
+---@param end Int3
+---@param amount number
+---@return Int3
+function Int3.smoothStep(start, end, amount) end
+
+---@param left Int3
+---@param right Int3
+---@return Int3
+function Int3.max(left, right) end
+
+---@param left Int3
+---@param right Int3
+---@return Int3
+function Int3.min(left, right) end
+
+---@param value Vector3&
+---@param rounding MidpointRounding
+---@return Int3
+function Int3.round(value, rounding) end
+
+---@param self Int3Instance
+---@return integer
+function Int3Instance:length() end
+
+---@param self Int3Instance
+---@return number
+function Int3Instance:lengthUntruncated() end
+
+---@param self Int3Instance
+---@return integer
+function Int3Instance:lengthSquared() end
+
+---@param self Int3Instance
+---@param exponent integer
+function Int3Instance:pow(exponent) end
+
+---@param self Int3Instance
+---@return integer[]
+function Int3Instance:toArray() end
+
+---@param self Int3Instance
+---@return string
+function Int3Instance:toString() end
+
+---@param self Int3Instance
+---@param format? string
+---@param formatProvider? IFormatProviderInstance
+---@return string
+function Int3Instance:toString(format, formatProvider) end
+
+---@param self Int3Instance
+---@return integer
+function Int3Instance:getHashCode() end
+
+---@param self Int3Instance
+---@param other Int3Instance
+---@return boolean
+function Int3Instance:equals(other) end
+
+---@param self Int3Instance
+---@param value? ObjectInstance
+---@return boolean
+function Int3Instance:equals(value) end
+
+---@param self Int3Instance
+---@return TypeInstance
+function Int3Instance:getType() end
+
+
 ---@class (exact) f64Vector3Instance
 ---@field x fix64Instance
 ---@field y fix64Instance
@@ -697,13 +848,13 @@ local ObjectInstance = {}
 ---@return ObjectInstance
 function Object.new() end
 
----@param objA? any
----@param objB? any
+---@param objA? Object
+---@param objB? Object
 ---@return boolean
 function Object.equals(objA, objB) end
 
----@param objA? any
----@param objB? any
+---@param objA? Object
+---@param objB? Object
 ---@return boolean
 function Object.referenceEquals(objA, objB) end
 
@@ -993,32 +1144,6 @@ function ArrayOfInt322DInstance:equals(obj) end
 function ArrayOfInt322DInstance:getHashCode() end
 
 
----@class (exact) InlineArray4_fix64Instance
-local InlineArray4_fix64Instance = {}
-
----@class (exact) InlineArray4_fix64
----Creates a new InlineArray4_fix64
----@return InlineArray4_fix64
-function InlineArray4_fix64.new() end
-
----@param self InlineArray4_fix64Instance
----@param obj? ObjectInstance
----@return boolean
-function InlineArray4_fix64Instance:equals(obj) end
-
----@param self InlineArray4_fix64Instance
----@return integer
-function InlineArray4_fix64Instance:getHashCode() end
-
----@param self InlineArray4_fix64Instance
----@return string
-function InlineArray4_fix64Instance:toString() end
-
----@param self InlineArray4_fix64Instance
----@return TypeInstance
-function InlineArray4_fix64Instance:getType() end
-
-
 ---@class (exact) ContOInstance
 ---@field x fix64Instance
 ---@field y fix64Instance
@@ -1106,6 +1231,81 @@ function ContOInstance:toString() end
 ---@param self ContOInstance
 ---@return TypeInstance
 function ContOInstance:getType() end
+
+
+---@class (exact) DeterministicRandomInstance
+local DeterministicRandomInstance = {}
+
+---@class (exact) DeterministicRandom
+---Creates a new DeterministicRandom
+---@return DeterministicRandom
+function DeterministicRandom.new() end
+
+---Creates a new DeterministicRandom
+---@param seed integer
+---@return DeterministicRandomInstance
+function DeterministicRandom.new(seed) end
+
+---@param worldSeed integer
+---@param featureKey integer
+---@param index integer
+---@return DeterministicRandom
+function DeterministicRandom.fromWorldFeature(worldSeed, featureKey, index) end
+
+---@param self DeterministicRandomInstance
+---@return integer
+function DeterministicRandomInstance:nextU64() end
+
+---@param self DeterministicRandomInstance
+---@return integer
+function DeterministicRandomInstance:next() end
+
+---@param self DeterministicRandomInstance
+---@param maxExclusive integer
+---@return integer
+function DeterministicRandomInstance:next(maxExclusive) end
+
+---@param self DeterministicRandomInstance
+---@param minInclusive integer
+---@param maxExclusive integer
+---@return integer
+function DeterministicRandomInstance:next(minInclusive, maxExclusive) end
+
+---@param self DeterministicRandomInstance
+---@return number
+function DeterministicRandomInstance:nextDouble() end
+
+---@param self DeterministicRandomInstance
+---@return Fixed64Instance
+function DeterministicRandomInstance:nextFixed6401() end
+
+---@param self DeterministicRandomInstance
+---@param maxExclusive Fixed64Instance
+---@return Fixed64Instance
+function DeterministicRandomInstance:nextFixed64(maxExclusive) end
+
+---@param self DeterministicRandomInstance
+---@param minInclusive Fixed64Instance
+---@param maxExclusive Fixed64Instance
+---@return Fixed64Instance
+function DeterministicRandomInstance:nextFixed64(minInclusive, maxExclusive) end
+
+---@param self DeterministicRandomInstance
+---@param obj? ObjectInstance
+---@return boolean
+function DeterministicRandomInstance:equals(obj) end
+
+---@param self DeterministicRandomInstance
+---@return integer
+function DeterministicRandomInstance:getHashCode() end
+
+---@param self DeterministicRandomInstance
+---@return string
+function DeterministicRandomInstance:toString() end
+
+---@param self DeterministicRandomInstance
+---@return TypeInstance
+function DeterministicRandomInstance:getType() end
 
 
 ---@class (exact) ControlInstance
@@ -1341,6 +1541,693 @@ function EventArgsInstance:equals(obj) end
 function EventArgsInstance:getHashCode() end
 
 
+---@class (exact) ArrayOfInt32Instance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] integer
+local ArrayOfInt32Instance = {}
+
+---@class (exact) ArrayOfInt32 : Array
+---Creates a new ArrayOfInt32
+---@param length integer
+---@return integer[]
+function ArrayOfInt32.new(length) end
+
+---@param self integer[]
+---@param param0 integer
+---@return integer
+function ArrayOfInt32Instance:get(param0) end
+
+---@param self integer[]
+---@param param0 integer
+---@param param1 integer
+function ArrayOfInt32Instance:set(param0, param1) end
+
+---@param self integer[]
+function ArrayOfInt32Instance:initialize() end
+
+---@param self integer[]
+---@param dimension integer
+---@return integer
+function ArrayOfInt32Instance:getLength(dimension) end
+
+---@param self integer[]
+---@param dimension integer
+---@return integer
+function ArrayOfInt32Instance:getUpperBound(dimension) end
+
+---@param self integer[]
+---@param dimension integer
+---@return integer
+function ArrayOfInt32Instance:getLowerBound(dimension) end
+
+---@param self integer[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfInt32Instance:getValue(indices) end
+
+---@param self integer[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfInt32Instance:getValue(index) end
+
+---@param self integer[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfInt32Instance:getValue(index1, index2) end
+
+---@param self integer[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfInt32Instance:getValue(index1, index2, index3) end
+
+---@param self integer[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfInt32Instance:setValue(value, index) end
+
+---@param self integer[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfInt32Instance:setValue(value, index1, index2) end
+
+---@param self integer[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfInt32Instance:setValue(value, index1, index2, index3) end
+
+---@param self integer[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfInt32Instance:setValue(value, indices) end
+
+---@param self integer[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfInt32Instance:getValue(index) end
+
+---@param self integer[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfInt32Instance:getValue(index1, index2) end
+
+---@param self integer[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfInt32Instance:getValue(index1, index2, index3) end
+
+---@param self integer[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfInt32Instance:getValue(indices) end
+
+---@param self integer[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfInt32Instance:setValue(value, index) end
+
+---@param self integer[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfInt32Instance:setValue(value, index1, index2) end
+
+---@param self integer[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfInt32Instance:setValue(value, index1, index2, index3) end
+
+---@param self integer[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfInt32Instance:setValue(value, indices) end
+
+---@param self integer[]
+---@param dimension integer
+---@return integer
+function ArrayOfInt32Instance:getLongLength(dimension) end
+
+---@param self integer[]
+---@return ObjectInstance
+function ArrayOfInt32Instance:clone() end
+
+---@param self integer[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfInt32Instance:copyTo(array, index) end
+
+---@param self integer[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfInt32Instance:copyTo(array, index) end
+
+---@param self integer[]
+---@return IEnumeratorInstance
+function ArrayOfInt32Instance:getEnumerator() end
+
+---@param self integer[]
+---@return TypeInstance
+function ArrayOfInt32Instance:getType() end
+
+---@param self integer[]
+---@return string
+function ArrayOfInt32Instance:toString() end
+
+---@param self integer[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfInt32Instance:equals(obj) end
+
+---@param self integer[]
+---@return integer
+function ArrayOfInt32Instance:getHashCode() end
+
+
+---@class (exact) IFormatProviderInstance
+local IFormatProviderInstance = {}
+
+---@class (exact) IFormatProvider
+---@param self IFormatProviderInstance
+---@param formatType? TypeInstance
+---@return ObjectInstance
+function IFormatProviderInstance:getFormat(formatType) end
+
+
+---@class (exact) Vector2Instance
+---@field isNormalized boolean
+---@field item number
+---@field x number
+---@field y number
+local Vector2Instance = {}
+
+---@class (exact) Vector2
+---Creates a new Vector2
+---@return Vector2
+function Vector2.new() end
+
+---Creates a new Vector2
+---@param value number
+---@return Vector2Instance
+function Vector2.new(value) end
+
+---Creates a new Vector2
+---@param x number
+---@param y number
+---@return Vector2Instance
+function Vector2.new(x, y) end
+
+---Creates a new Vector2
+---@param values number[]
+---@return Vector2Instance
+function Vector2.new(values) end
+
+---@param from Vector2&
+---@param to Vector2&
+---@param maxTravelDistance number
+---@return Vector2
+function Vector2.moveTo(from, to, maxTravelDistance) end
+
+---@param left Vector2
+---@param right Vector2
+---@return Vector2
+function Vector2.add(left, right) end
+
+---@param left Vector2&
+---@param right Vector2&
+---@return Vector2
+function Vector2.subtract(left, right) end
+
+---@param value Vector2
+---@param scale number
+---@return Vector2
+function Vector2.multiply(value, scale) end
+
+---@param left Vector2
+---@param right Vector2
+---@return Vector2
+function Vector2.modulate(left, right) end
+
+---@param value Vector2
+---@param scale number
+---@return Vector2
+function Vector2.divide(value, scale) end
+
+---@param left Vector2
+---@param right Vector2
+---@return Vector2
+function Vector2.demodulate(left, right) end
+
+---@param value Vector2
+---@return Vector2
+function Vector2.negate(value) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@param value3 Vector2
+---@param amount1 number
+---@param amount2 number
+---@return Vector2
+function Vector2.barycentric(value1, value2, value3, amount1, amount2) end
+
+---@param value Vector2
+---@param min Vector2
+---@param max Vector2
+---@return Vector2
+function Vector2.clamp(value, min, max) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return number
+function Vector2.distance(value1, value2) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return number
+function Vector2.distanceSquared(value1, value2) end
+
+---@param left Vector2
+---@param right Vector2
+---@return number
+function Vector2.dot(left, right) end
+
+---@param value Vector2
+---@return Vector2
+function Vector2.normalize(value) end
+
+---@param start Vector2
+---@param end Vector2
+---@param amount number
+---@return Vector2
+function Vector2.lerp(start, end, amount) end
+
+---@param start Vector2
+---@param end Vector2
+---@param amount number
+---@return Vector2
+function Vector2.smoothStep(start, end, amount) end
+
+---@param value1 Vector2
+---@param tangent1 Vector2
+---@param value2 Vector2
+---@param tangent2 Vector2
+---@param amount number
+---@return Vector2
+function Vector2.hermite(value1, tangent1, value2, tangent2, amount) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@param value3 Vector2
+---@param value4 Vector2
+---@param amount number
+---@return Vector2
+function Vector2.catmullRom(value1, value2, value3, value4, amount) end
+
+---@param left Vector2
+---@param right Vector2
+---@return Vector2
+function Vector2.max(left, right) end
+
+---@param left Vector2
+---@param right Vector2
+---@return Vector2
+function Vector2.min(left, right) end
+
+---@param vector Vector2
+---@param normal Vector2
+---@return Vector2
+function Vector2.reflect(vector, normal) end
+
+---@param destination Vector2[]
+---@param source Vector2[]
+function Vector2.orthogonalize(destination, source) end
+
+---@param destination Vector2[]
+---@param source Vector2[]
+function Vector2.orthonormalize(destination, source) end
+
+---@param vector Vector2
+---@param rotation Quaternion
+---@return Vector2
+function Vector2.transform(vector, rotation) end
+
+---@param source Vector2[]
+---@param rotation Quaternion&
+---@param destination Vector2[]
+function Vector2.transform(source, rotation, destination) end
+
+---@param vector Vector2
+---@param transform Matrix
+---@return Vector4
+function Vector2.transform(vector, transform) end
+
+---@param source Vector2[]
+---@param transform Matrix&
+---@param destination Vector4[]
+function Vector2.transform(source, transform, destination) end
+
+---@param coordinate Vector2
+---@param transform Matrix
+---@return Vector2
+function Vector2.transformCoordinate(coordinate, transform) end
+
+---@param source Vector2[]
+---@param transform Matrix&
+---@param destination Vector2[]
+function Vector2.transformCoordinate(source, transform, destination) end
+
+---@param normal Vector2
+---@param transform Matrix
+---@return Vector2
+function Vector2.transformNormal(normal, transform) end
+
+---@param source Vector2[]
+---@param transform Matrix&
+---@param destination Vector2[]
+function Vector2.transformNormal(source, transform, destination) end
+
+---@param self Vector2Instance
+---@return number
+function Vector2Instance:length() end
+
+---@param self Vector2Instance
+---@return number
+function Vector2Instance:lengthSquared() end
+
+---@param self Vector2Instance
+function Vector2Instance:normalize() end
+
+---@param self Vector2Instance
+---@return number[]
+function Vector2Instance:toArray() end
+
+---@param self Vector2Instance
+---@return string
+function Vector2Instance:toString() end
+
+---@param self Vector2Instance
+---@param format? string
+---@param formatProvider? IFormatProviderInstance
+---@return string
+function Vector2Instance:toString(format, formatProvider) end
+
+---@param self Vector2Instance
+---@return integer
+function Vector2Instance:getHashCode() end
+
+---@param self Vector2Instance
+---@param other Vector2Instance
+---@return boolean
+function Vector2Instance:equalsStrict(other) end
+
+---@param self Vector2Instance
+---@param other Vector2Instance
+---@return boolean
+function Vector2Instance:equals(other) end
+
+---@param self Vector2Instance
+---@param value? ObjectInstance
+---@return boolean
+function Vector2Instance:equals(value) end
+
+---@param self Vector2Instance
+---@return TypeInstance
+function Vector2Instance:getType() end
+
+
+---@class (exact) MatrixInstance
+---@field backward Vector3Instance
+---@field down Vector3Instance
+---@field forward Vector3Instance
+---@field left Vector3Instance
+---@field right Vector3Instance
+---@field translation Vector3Instance
+---@field up Vector3Instance
+---@field m11 number
+---@field m12 number
+---@field m13 number
+---@field m14 number
+---@field m21 number
+---@field m22 number
+---@field m23 number
+---@field m24 number
+---@field m31 number
+---@field m32 number
+---@field m33 number
+---@field m34 number
+---@field m41 number
+---@field m42 number
+---@field m43 number
+---@field m44 number
+local MatrixInstance = {}
+
+---@class (exact) Matrix
+---@field identity MatrixInstance
+---Creates a new Matrix
+---@return Matrix
+function Matrix.new() end
+
+---Creates a new Matrix
+---@param m11 number
+---@param m12 number
+---@param m13 number
+---@param m14 number
+---@param m21 number
+---@param m22 number
+---@param m23 number
+---@param m24 number
+---@param m31 number
+---@param m32 number
+---@param m33 number
+---@param m34 number
+---@param m41 number
+---@param m42 number
+---@param m43 number
+---@param m44 number
+---@return MatrixInstance
+function Matrix.new(m11, m12, m13, m14, m21, m22, m23, m24, m31, m32, m33, m34, m41, m42, m43, m44) end
+
+---@param matrix1 Matrix
+---@param matrix2 Matrix
+---@return Matrix
+function Matrix.add(matrix1, matrix2) end
+
+---@param objectPosition Vector3
+---@param cameraPosition Vector3
+---@param cameraUpVector Vector3
+---@param cameraForwardVector? Vector3?
+---@return Matrix
+function Matrix.createBillboard(objectPosition, cameraPosition, cameraUpVector, cameraForwardVector) end
+
+---@param objectPosition Vector3
+---@param cameraPosition Vector3
+---@param rotateAxis Vector3
+---@param cameraForwardVector? Vector3?
+---@param objectForwardVector? Vector3?
+---@return Matrix
+function Matrix.createConstrainedBillboard(objectPosition, cameraPosition, rotateAxis, cameraForwardVector, objectForwardVector) end
+
+---@param axis Vector3
+---@param angle number
+---@return Matrix
+function Matrix.createFromAxisAngle(axis, angle) end
+
+---@param quaternion Quaternion
+---@return Matrix
+function Matrix.createFromQuaternion(quaternion) end
+
+---@param yaw number
+---@param pitch number
+---@param roll number
+---@return Matrix
+function Matrix.createFromYawPitchRoll(yaw, pitch, roll) end
+
+---@param cameraPosition Vector3
+---@param cameraTarget Vector3
+---@param cameraUpVector Vector3
+---@return Matrix
+function Matrix.createLookAt(cameraPosition, cameraTarget, cameraUpVector) end
+
+---@param width number
+---@param height number
+---@param zNearPlane number
+---@param zFarPlane number
+---@return Matrix
+function Matrix.createOrthographic(width, height, zNearPlane, zFarPlane) end
+
+---@param left number
+---@param right number
+---@param bottom number
+---@param top number
+---@param zNearPlane number
+---@param zFarPlane number
+---@return Matrix
+function Matrix.createOrthographicOffCenter(left, right, bottom, top, zNearPlane, zFarPlane) end
+
+---@param width number
+---@param height number
+---@param nearPlaneDistance number
+---@param farPlaneDistance number
+---@return Matrix
+function Matrix.createPerspective(width, height, nearPlaneDistance, farPlaneDistance) end
+
+---@param fieldOfView number
+---@param aspectRatio number
+---@param nearPlaneDistance number
+---@param farPlaneDistance number
+---@return Matrix
+function Matrix.createPerspectiveFieldOfView(fieldOfView, aspectRatio, nearPlaneDistance, farPlaneDistance) end
+
+---@param left number
+---@param right number
+---@param bottom number
+---@param top number
+---@param nearPlaneDistance number
+---@param farPlaneDistance number
+---@return Matrix
+function Matrix.createPerspectiveOffCenter(left, right, bottom, top, nearPlaneDistance, farPlaneDistance) end
+
+---@param radians number
+---@return Matrix
+function Matrix.createRotationX(radians) end
+
+---@param radians number
+---@return Matrix
+function Matrix.createRotationY(radians) end
+
+---@param radians number
+---@return Matrix
+function Matrix.createRotationZ(radians) end
+
+---@param scale number
+---@return Matrix
+function Matrix.createScale(scale) end
+
+---@param xScale number
+---@param yScale number
+---@param zScale number
+---@return Matrix
+function Matrix.createScale(xScale, yScale, zScale) end
+
+---@param scales Vector3
+---@return Matrix
+function Matrix.createScale(scales) end
+
+---@param lightDirection Vector3
+---@param plane Plane
+---@return Matrix
+function Matrix.createShadow(lightDirection, plane) end
+
+---@param xPosition number
+---@param yPosition number
+---@param zPosition number
+---@return Matrix
+function Matrix.createTranslation(xPosition, yPosition, zPosition) end
+
+---@param position Vector3
+---@return Matrix
+function Matrix.createTranslation(position) end
+
+---@param value Plane
+---@return Matrix
+function Matrix.createReflection(value) end
+
+---@param position Vector3
+---@param forward Vector3
+---@param up Vector3
+---@return Matrix
+function Matrix.createWorld(position, forward, up) end
+
+---@param matrix1 Matrix
+---@param matrix2 Matrix
+---@return Matrix
+function Matrix.divide(matrix1, matrix2) end
+
+---@param matrix1 Matrix
+---@param divider number
+---@return Matrix
+function Matrix.divide(matrix1, divider) end
+
+---@param matrix Matrix
+---@return Matrix
+function Matrix.invert(matrix) end
+
+---@param matrix1 Matrix
+---@param matrix2 Matrix
+---@param amount number
+---@return Matrix
+function Matrix.lerp(matrix1, matrix2, amount) end
+
+---@param matrix1 Matrix
+---@param matrix2 Matrix
+---@return Matrix
+function Matrix.multiply(matrix1, matrix2) end
+
+---@param matrix1 Matrix
+---@param scaleFactor number
+---@return Matrix
+function Matrix.multiply(matrix1, scaleFactor) end
+
+---@param matrix Matrix
+---@return Matrix
+function Matrix.negate(matrix) end
+
+---@param matrix1 Matrix
+---@param matrix2 Matrix
+---@return Matrix
+function Matrix.subtract(matrix1, matrix2) end
+
+---@param matrix Matrix
+---@return Matrix
+function Matrix.transpose(matrix) end
+
+---@param value Matrix
+---@param rotation Quaternion
+---@return Matrix
+function Matrix.transform(value, rotation) end
+
+---@param self MatrixInstance
+---@return number
+function MatrixInstance:determinant() end
+
+---@param self MatrixInstance
+---@param other MatrixInstance
+---@return boolean
+function MatrixInstance:equals(other) end
+
+---@param self MatrixInstance
+---@param obj ObjectInstance
+---@return boolean
+function MatrixInstance:equals(obj) end
+
+---@param self MatrixInstance
+---@return integer
+function MatrixInstance:getHashCode() end
+
+---@param self MatrixInstance
+---@return string
+function MatrixInstance:toString() end
+
+---@param self MatrixInstance
+---@return TypeInstance
+function MatrixInstance:getType() end
+
+
 ---@class (exact) ArrayOff64Vector3Instance : ArrayInstance
 ---@field length integer
 ---@field longLength integer
@@ -1517,6 +2404,436 @@ function ArrayOff64Vector3Instance:equals(obj) end
 ---@param self f64Vector3Instance[]
 ---@return integer
 function ArrayOff64Vector3Instance:getHashCode() end
+
+
+---@class (exact) QuaternionInstance
+---@field x number
+---@field y number
+---@field z number
+---@field w number
+local QuaternionInstance = {}
+
+---@class (exact) Quaternion
+---@field identity QuaternionInstance
+---Creates a new Quaternion
+---@return Quaternion
+function Quaternion.new() end
+
+---Creates a new Quaternion
+---@param x number
+---@param y number
+---@param z number
+---@param w number
+---@return QuaternionInstance
+function Quaternion.new(x, y, z, w) end
+
+---Creates a new Quaternion
+---@param vectorPart Vector3Instance
+---@param scalarPart number
+---@return QuaternionInstance
+function Quaternion.new(vectorPart, scalarPart) end
+
+---@param quaternion1 Quaternion
+---@param quaternion2 Quaternion
+---@return Quaternion
+function Quaternion.add(quaternion1, quaternion2) end
+
+---@param value1 Quaternion
+---@param value2 Quaternion
+---@return Quaternion
+function Quaternion.concatenate(value1, value2) end
+
+---@param value Quaternion
+---@return Quaternion
+function Quaternion.conjugate(value) end
+
+---@param axis Vector3
+---@param angle number
+---@return Quaternion
+function Quaternion.createFromAxisAngle(axis, angle) end
+
+---@param matrix Matrix
+---@return Quaternion
+function Quaternion.createFromRotationMatrix(matrix) end
+
+---@param yaw number
+---@param pitch number
+---@param roll number
+---@return Quaternion
+function Quaternion.createFromYawPitchRoll(yaw, pitch, roll) end
+
+---@param quaternion1 Quaternion
+---@param quaternion2 Quaternion
+---@return Quaternion
+function Quaternion.divide(quaternion1, quaternion2) end
+
+---@param quaternion1 Quaternion
+---@param quaternion2 Quaternion
+---@return number
+function Quaternion.dot(quaternion1, quaternion2) end
+
+---@param quaternion Quaternion
+---@return Quaternion
+function Quaternion.inverse(quaternion) end
+
+---@param quaternion1 Quaternion
+---@param quaternion2 Quaternion
+---@param amount number
+---@return Quaternion
+function Quaternion.lerp(quaternion1, quaternion2, amount) end
+
+---@param quaternion1 Quaternion
+---@param quaternion2 Quaternion
+---@param amount number
+---@return Quaternion
+function Quaternion.slerp(quaternion1, quaternion2, amount) end
+
+---@param quaternion1 Quaternion
+---@param quaternion2 Quaternion
+---@return Quaternion
+function Quaternion.subtract(quaternion1, quaternion2) end
+
+---@param quaternion1 Quaternion
+---@param quaternion2 Quaternion
+---@return Quaternion
+function Quaternion.multiply(quaternion1, quaternion2) end
+
+---@param quaternion1 Quaternion
+---@param scaleFactor number
+---@return Quaternion
+function Quaternion.multiply(quaternion1, scaleFactor) end
+
+---@param quaternion Quaternion
+---@return Quaternion
+function Quaternion.negate(quaternion) end
+
+---@param quaternion Quaternion
+---@return Quaternion
+function Quaternion.normalize(quaternion) end
+
+---@param self QuaternionInstance
+function QuaternionInstance:conjugate() end
+
+---@param self QuaternionInstance
+---@param obj ObjectInstance
+---@return boolean
+function QuaternionInstance:equals(obj) end
+
+---@param self QuaternionInstance
+---@param other QuaternionInstance
+---@return boolean
+function QuaternionInstance:equals(other) end
+
+---@param self QuaternionInstance
+---@return integer
+function QuaternionInstance:getHashCode() end
+
+---@param self QuaternionInstance
+---@return number
+function QuaternionInstance:length() end
+
+---@param self QuaternionInstance
+---@return number
+function QuaternionInstance:lengthSquared() end
+
+---@param self QuaternionInstance
+function QuaternionInstance:normalize() end
+
+---@param self QuaternionInstance
+---@return string
+function QuaternionInstance:toString() end
+
+---@param self QuaternionInstance
+---@return TypeInstance
+function QuaternionInstance:getType() end
+
+
+---@class (exact) Vector2Instance
+---@field x number
+---@field y number
+local Vector2Instance = {}
+
+---@class (exact) Vector2
+---@field zero Vector2Instance
+---@field one Vector2Instance
+---@field unitX Vector2Instance
+---@field unitY Vector2Instance
+---Creates a new Vector2
+---@return Vector2
+function Vector2.new() end
+
+---Creates a new Vector2
+---@param x number
+---@param y number
+---@return Vector2Instance
+function Vector2.new(x, y) end
+
+---Creates a new Vector2
+---@param value number
+---@return Vector2Instance
+function Vector2.new(value) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return Vector2
+function Vector2.add(value1, value2) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@param value3 Vector2
+---@param amount1 number
+---@param amount2 number
+---@return Vector2
+function Vector2.barycentric(value1, value2, value3, amount1, amount2) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@param value3 Vector2
+---@param value4 Vector2
+---@param amount number
+---@return Vector2
+function Vector2.catmullRom(value1, value2, value3, value4, amount) end
+
+---@param value1 Vector2
+---@param min Vector2
+---@param max Vector2
+---@return Vector2
+function Vector2.clamp(value1, min, max) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return number
+function Vector2.distance(value1, value2) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return number
+function Vector2.distanceSquared(value1, value2) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return Vector2
+function Vector2.divide(value1, value2) end
+
+---@param value1 Vector2
+---@param divider number
+---@return Vector2
+function Vector2.divide(value1, divider) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return number
+function Vector2.dot(value1, value2) end
+
+---@param value1 Vector2
+---@param tangent1 Vector2
+---@param value2 Vector2
+---@param tangent2 Vector2
+---@param amount number
+---@return Vector2
+function Vector2.hermite(value1, tangent1, value2, tangent2, amount) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@param amount number
+---@return Vector2
+function Vector2.lerp(value1, value2, amount) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return Vector2
+function Vector2.max(value1, value2) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return Vector2
+function Vector2.min(value1, value2) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return Vector2
+function Vector2.multiply(value1, value2) end
+
+---@param value1 Vector2
+---@param scaleFactor number
+---@return Vector2
+function Vector2.multiply(value1, scaleFactor) end
+
+---@param value Vector2
+---@return Vector2
+function Vector2.negate(value) end
+
+---@param value Vector2
+---@return Vector2
+function Vector2.normalize(value) end
+
+---@param vector Vector2
+---@param normal Vector2
+---@return Vector2
+function Vector2.reflect(vector, normal) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@param amount number
+---@return Vector2
+function Vector2.smoothStep(value1, value2, amount) end
+
+---@param value1 Vector2
+---@param value2 Vector2
+---@return Vector2
+function Vector2.subtract(value1, value2) end
+
+---@param position Vector2
+---@param matrix Matrix
+---@return Vector2
+function Vector2.transform(position, matrix) end
+
+---@param value Vector2
+---@param rotation Quaternion
+---@return Vector2
+function Vector2.transform(value, rotation) end
+
+---@param normal Vector2
+---@param matrix Matrix
+---@return Vector2
+function Vector2.transformNormal(normal, matrix) end
+
+---@param self Vector2Instance
+---@param obj ObjectInstance
+---@return boolean
+function Vector2Instance:equals(obj) end
+
+---@param self Vector2Instance
+---@param other Vector2Instance
+---@return boolean
+function Vector2Instance:equals(other) end
+
+---@param self Vector2Instance
+---@return integer
+function Vector2Instance:getHashCode() end
+
+---@param self Vector2Instance
+---@return number
+function Vector2Instance:length() end
+
+---@param self Vector2Instance
+---@return number
+function Vector2Instance:lengthSquared() end
+
+---@param self Vector2Instance
+function Vector2Instance:normalize() end
+
+---@param self Vector2Instance
+---@return string
+function Vector2Instance:toString() end
+
+---@param self Vector2Instance
+---@return TypeInstance
+function Vector2Instance:getType() end
+
+
+---@class (exact) Fixed64Instance
+---@field m_rawValue integer
+local Fixed64Instance = {}
+
+---@class (exact) Fixed64
+---Creates a new Fixed64
+---@return Fixed64
+function Fixed64.new() end
+
+---Creates a new Fixed64
+---@param value integer
+---@return Fixed64Instance
+function Fixed64.new(value) end
+
+---Creates a new Fixed64
+---@param value number
+---@return Fixed64Instance
+function Fixed64.new(value) end
+
+---@param numerator number
+---@param denominator number
+---@return Fixed64
+function Fixed64.fraction(numerator, denominator) end
+
+---@param value Fixed64
+---@return integer
+function Fixed64.sign(value) end
+
+---@param value Fixed64
+---@return boolean
+function Fixed64.isInteger(value) end
+
+---@param s string
+---@return Fixed64
+function Fixed64.parse(s) end
+
+---@param rawValue integer
+---@return Fixed64
+function Fixed64.fromRaw(rawValue) end
+
+---@param f1 integer
+---@return number
+function Fixed64.toDouble(f1) end
+
+---@param f1 integer
+---@return number
+function Fixed64.toFloat(f1) end
+
+---@param f1 integer
+---@return number
+function Fixed64.toDecimal(f1) end
+
+---@param self Fixed64Instance
+---@param x integer
+function Fixed64Instance:offset(x) end
+
+---@param self Fixed64Instance
+---@return string
+function Fixed64Instance:rawToString() end
+
+---@param self Fixed64Instance
+---@return string
+function Fixed64Instance:toString() end
+
+---@param self Fixed64Instance
+---@param format string
+---@return string
+function Fixed64Instance:toString(format) end
+
+---@param self Fixed64Instance
+---@param obj? ObjectInstance
+---@return boolean
+function Fixed64Instance:equals(obj) end
+
+---@param self Fixed64Instance
+---@param other Fixed64Instance
+---@return boolean
+function Fixed64Instance:equals(other) end
+
+---@param self Fixed64Instance
+---@param x Fixed64Instance
+---@param y Fixed64Instance
+---@return boolean
+function Fixed64Instance:equals(x, y) end
+
+---@param self Fixed64Instance
+---@return integer
+function Fixed64Instance:getHashCode() end
+
+---@param self Fixed64Instance
+---@param obj Fixed64Instance
+---@return integer
+function Fixed64Instance:getHashCode(obj) end
+
+---@param self Fixed64Instance
+---@param other Fixed64Instance
+---@return integer
+function Fixed64Instance:compareTo(other) end
+
+---@param self Fixed64Instance
+---@return TypeInstance
+function Fixed64Instance:getType() end
 
 
 ---@class (exact) UnlimitedArray_Boolean_EnumeratorInstance
@@ -1739,184 +3056,6 @@ function ArrayOfBooleanInstance:equals(obj) end
 function ArrayOfBooleanInstance:getHashCode() end
 
 
----@class (exact) ArrayOfInt32Instance : ArrayInstance
----@field length integer
----@field longLength integer
----@field rank integer
----@field syncRoot ObjectInstance
----@field isReadOnly boolean
----@field isFixedSize boolean
----@field isSynchronized boolean
----@field [integer] integer
-local ArrayOfInt32Instance = {}
-
----@class (exact) ArrayOfInt32 : Array
----Creates a new ArrayOfInt32
----@param length integer
----@return integer[]
-function ArrayOfInt32.new(length) end
-
----@param self integer[]
----@param param0 integer
----@return integer
-function ArrayOfInt32Instance:get(param0) end
-
----@param self integer[]
----@param param0 integer
----@param param1 integer
-function ArrayOfInt32Instance:set(param0, param1) end
-
----@param self integer[]
-function ArrayOfInt32Instance:initialize() end
-
----@param self integer[]
----@param dimension integer
----@return integer
-function ArrayOfInt32Instance:getLength(dimension) end
-
----@param self integer[]
----@param dimension integer
----@return integer
-function ArrayOfInt32Instance:getUpperBound(dimension) end
-
----@param self integer[]
----@param dimension integer
----@return integer
-function ArrayOfInt32Instance:getLowerBound(dimension) end
-
----@param self integer[]
----@param indices integer[]
----@return ObjectInstance
-function ArrayOfInt32Instance:getValue(indices) end
-
----@param self integer[]
----@param index integer
----@return ObjectInstance
-function ArrayOfInt32Instance:getValue(index) end
-
----@param self integer[]
----@param index1 integer
----@param index2 integer
----@return ObjectInstance
-function ArrayOfInt32Instance:getValue(index1, index2) end
-
----@param self integer[]
----@param index1 integer
----@param index2 integer
----@param index3 integer
----@return ObjectInstance
-function ArrayOfInt32Instance:getValue(index1, index2, index3) end
-
----@param self integer[]
----@param value? ObjectInstance
----@param index integer
-function ArrayOfInt32Instance:setValue(value, index) end
-
----@param self integer[]
----@param value? ObjectInstance
----@param index1 integer
----@param index2 integer
-function ArrayOfInt32Instance:setValue(value, index1, index2) end
-
----@param self integer[]
----@param value? ObjectInstance
----@param index1 integer
----@param index2 integer
----@param index3 integer
-function ArrayOfInt32Instance:setValue(value, index1, index2, index3) end
-
----@param self integer[]
----@param value? ObjectInstance
----@param indices integer[]
-function ArrayOfInt32Instance:setValue(value, indices) end
-
----@param self integer[]
----@param index integer
----@return ObjectInstance
-function ArrayOfInt32Instance:getValue(index) end
-
----@param self integer[]
----@param index1 integer
----@param index2 integer
----@return ObjectInstance
-function ArrayOfInt32Instance:getValue(index1, index2) end
-
----@param self integer[]
----@param index1 integer
----@param index2 integer
----@param index3 integer
----@return ObjectInstance
-function ArrayOfInt32Instance:getValue(index1, index2, index3) end
-
----@param self integer[]
----@param indices integer[]
----@return ObjectInstance
-function ArrayOfInt32Instance:getValue(indices) end
-
----@param self integer[]
----@param value? ObjectInstance
----@param index integer
-function ArrayOfInt32Instance:setValue(value, index) end
-
----@param self integer[]
----@param value? ObjectInstance
----@param index1 integer
----@param index2 integer
-function ArrayOfInt32Instance:setValue(value, index1, index2) end
-
----@param self integer[]
----@param value? ObjectInstance
----@param index1 integer
----@param index2 integer
----@param index3 integer
-function ArrayOfInt32Instance:setValue(value, index1, index2, index3) end
-
----@param self integer[]
----@param value? ObjectInstance
----@param indices integer[]
-function ArrayOfInt32Instance:setValue(value, indices) end
-
----@param self integer[]
----@param dimension integer
----@return integer
-function ArrayOfInt32Instance:getLongLength(dimension) end
-
----@param self integer[]
----@return ObjectInstance
-function ArrayOfInt32Instance:clone() end
-
----@param self integer[]
----@param array ArrayInstance
----@param index integer
-function ArrayOfInt32Instance:copyTo(array, index) end
-
----@param self integer[]
----@param array ArrayInstance
----@param index integer
-function ArrayOfInt32Instance:copyTo(array, index) end
-
----@param self integer[]
----@return IEnumeratorInstance
-function ArrayOfInt32Instance:getEnumerator() end
-
----@param self integer[]
----@return TypeInstance
-function ArrayOfInt32Instance:getType() end
-
----@param self integer[]
----@return string
-function ArrayOfInt32Instance:toString() end
-
----@param self integer[]
----@param obj? ObjectInstance
----@return boolean
-function ArrayOfInt32Instance:equals(obj) end
-
----@param self integer[]
----@return integer
-function ArrayOfInt32Instance:getHashCode() end
-
-
 ---@class (exact) ArrayOfInt64Instance : ArrayInstance
 ---@field length integer
 ---@field longLength integer
@@ -2095,30 +3234,17 @@ function ArrayOfInt64Instance:equals(obj) end
 function ArrayOfInt64Instance:getHashCode() end
 
 
----@class (exact) InlineArray4_Int32Instance
-local InlineArray4_Int32Instance = {}
+---@class (exact) IEnumeratorInstance
+---@field current ObjectInstance
+local IEnumeratorInstance = {}
 
----@class (exact) InlineArray4_Int32
----Creates a new InlineArray4_Int32
----@return InlineArray4_Int32
-function InlineArray4_Int32.new() end
-
----@param self InlineArray4_Int32Instance
----@param obj? ObjectInstance
+---@class (exact) IEnumerator
+---@param self IEnumeratorInstance
 ---@return boolean
-function InlineArray4_Int32Instance:equals(obj) end
+function IEnumeratorInstance:moveNext() end
 
----@param self InlineArray4_Int32Instance
----@return integer
-function InlineArray4_Int32Instance:getHashCode() end
-
----@param self InlineArray4_Int32Instance
----@return string
-function InlineArray4_Int32Instance:toString() end
-
----@param self InlineArray4_Int32Instance
----@return TypeInstance
-function InlineArray4_Int32Instance:getType() end
+---@param self IEnumeratorInstance
+function IEnumeratorInstance:reset() end
 
 
 ---@class (exact) IInGameCarInstance
@@ -2399,6 +3525,1918 @@ local ITransformInstance = {}
 
 ---@class (exact) ITransform
 
+---@class (exact) ArrayOfSingleInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] number
+local ArrayOfSingleInstance = {}
+
+---@class (exact) ArrayOfSingle : Array
+---Creates a new ArrayOfSingle
+---@param length integer
+---@return number[]
+function ArrayOfSingle.new(length) end
+
+---@param self number[]
+---@param param0 integer
+---@return number
+function ArrayOfSingleInstance:get(param0) end
+
+---@param self number[]
+---@param param0 integer
+---@param param1 number
+function ArrayOfSingleInstance:set(param0, param1) end
+
+---@param self number[]
+function ArrayOfSingleInstance:initialize() end
+
+---@param self number[]
+---@param dimension integer
+---@return integer
+function ArrayOfSingleInstance:getLength(dimension) end
+
+---@param self number[]
+---@param dimension integer
+---@return integer
+function ArrayOfSingleInstance:getUpperBound(dimension) end
+
+---@param self number[]
+---@param dimension integer
+---@return integer
+function ArrayOfSingleInstance:getLowerBound(dimension) end
+
+---@param self number[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfSingleInstance:getValue(indices) end
+
+---@param self number[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfSingleInstance:getValue(index) end
+
+---@param self number[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfSingleInstance:getValue(index1, index2) end
+
+---@param self number[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfSingleInstance:getValue(index1, index2, index3) end
+
+---@param self number[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfSingleInstance:setValue(value, index) end
+
+---@param self number[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfSingleInstance:setValue(value, index1, index2) end
+
+---@param self number[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfSingleInstance:setValue(value, index1, index2, index3) end
+
+---@param self number[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfSingleInstance:setValue(value, indices) end
+
+---@param self number[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfSingleInstance:getValue(index) end
+
+---@param self number[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfSingleInstance:getValue(index1, index2) end
+
+---@param self number[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfSingleInstance:getValue(index1, index2, index3) end
+
+---@param self number[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfSingleInstance:getValue(indices) end
+
+---@param self number[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfSingleInstance:setValue(value, index) end
+
+---@param self number[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfSingleInstance:setValue(value, index1, index2) end
+
+---@param self number[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfSingleInstance:setValue(value, index1, index2, index3) end
+
+---@param self number[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfSingleInstance:setValue(value, indices) end
+
+---@param self number[]
+---@param dimension integer
+---@return integer
+function ArrayOfSingleInstance:getLongLength(dimension) end
+
+---@param self number[]
+---@return ObjectInstance
+function ArrayOfSingleInstance:clone() end
+
+---@param self number[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfSingleInstance:copyTo(array, index) end
+
+---@param self number[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfSingleInstance:copyTo(array, index) end
+
+---@param self number[]
+---@return IEnumeratorInstance
+function ArrayOfSingleInstance:getEnumerator() end
+
+---@param self number[]
+---@return TypeInstance
+function ArrayOfSingleInstance:getType() end
+
+---@param self number[]
+---@return string
+function ArrayOfSingleInstance:toString() end
+
+---@param self number[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfSingleInstance:equals(obj) end
+
+---@param self number[]
+---@return integer
+function ArrayOfSingleInstance:getHashCode() end
+
+
+---@class (exact) ArrayOfVector2Instance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Vector2Instance
+local ArrayOfVector2Instance = {}
+
+---@class (exact) ArrayOfVector2 : Array
+---Creates a new ArrayOfVector2
+---@param length integer
+---@return Vector2Instance[]
+function ArrayOfVector2.new(length) end
+
+---@param self Vector2Instance[]
+---@param param0 integer
+---@return Vector2Instance
+function ArrayOfVector2Instance:get(param0) end
+
+---@param self Vector2Instance[]
+---@param param0 integer
+---@param param1 Vector2Instance
+function ArrayOfVector2Instance:set(param0, param1) end
+
+---@param self Vector2Instance[]
+function ArrayOfVector2Instance:initialize() end
+
+---@param self Vector2Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector2Instance:getLength(dimension) end
+
+---@param self Vector2Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector2Instance:getUpperBound(dimension) end
+
+---@param self Vector2Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector2Instance:getLowerBound(dimension) end
+
+---@param self Vector2Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(indices) end
+
+---@param self Vector2Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index) end
+
+---@param self Vector2Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index1, index2) end
+
+---@param self Vector2Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index1, index2, index3) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector2Instance:setValue(value, index) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector2Instance:setValue(value, index1, index2) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector2Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector2Instance:setValue(value, indices) end
+
+---@param self Vector2Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index) end
+
+---@param self Vector2Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index1, index2) end
+
+---@param self Vector2Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index1, index2, index3) end
+
+---@param self Vector2Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(indices) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector2Instance:setValue(value, index) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector2Instance:setValue(value, index1, index2) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector2Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector2Instance:setValue(value, indices) end
+
+---@param self Vector2Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector2Instance:getLongLength(dimension) end
+
+---@param self Vector2Instance[]
+---@return ObjectInstance
+function ArrayOfVector2Instance:clone() end
+
+---@param self Vector2Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector2Instance:copyTo(array, index) end
+
+---@param self Vector2Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector2Instance:copyTo(array, index) end
+
+---@param self Vector2Instance[]
+---@return IEnumeratorInstance
+function ArrayOfVector2Instance:getEnumerator() end
+
+---@param self Vector2Instance[]
+---@return TypeInstance
+function ArrayOfVector2Instance:getType() end
+
+---@param self Vector2Instance[]
+---@return string
+function ArrayOfVector2Instance:toString() end
+
+---@param self Vector2Instance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfVector2Instance:equals(obj) end
+
+---@param self Vector2Instance[]
+---@return integer
+function ArrayOfVector2Instance:getHashCode() end
+
+
+---@class (exact) QuaternionInstance
+---@field isIdentity boolean
+---@field isNormalized boolean
+---@field angle number
+---@field axis Vector3Instance
+---@field yawPitchRoll Vector3Instance
+---@field item number
+---@field x number
+---@field y number
+---@field z number
+---@field w number
+local QuaternionInstance = {}
+
+---@class (exact) Quaternion
+---Creates a new Quaternion
+---@return Quaternion
+function Quaternion.new() end
+
+---Creates a new Quaternion
+---@param value number
+---@return QuaternionInstance
+function Quaternion.new(value) end
+
+---Creates a new Quaternion
+---@param value Vector4Instance
+---@return QuaternionInstance
+function Quaternion.new(value) end
+
+---Creates a new Quaternion
+---@param value Vector3Instance
+---@param w number
+---@return QuaternionInstance
+function Quaternion.new(value, w) end
+
+---Creates a new Quaternion
+---@param value Vector2Instance
+---@param z number
+---@param w number
+---@return QuaternionInstance
+function Quaternion.new(value, z, w) end
+
+---Creates a new Quaternion
+---@param x number
+---@param y number
+---@param z number
+---@param w number
+---@return QuaternionInstance
+function Quaternion.new(x, y, z, w) end
+
+---Creates a new Quaternion
+---@param values number[]
+---@return QuaternionInstance
+function Quaternion.new(values) end
+
+---@param left Quaternion
+---@param right Quaternion
+---@return Quaternion
+function Quaternion.add(left, right) end
+
+---@param left Quaternion
+---@param right Quaternion
+---@return Quaternion
+function Quaternion.subtract(left, right) end
+
+---@param value Quaternion
+---@param scale number
+---@return Quaternion
+function Quaternion.multiply(value, scale) end
+
+---@param left Quaternion&
+---@param right Quaternion&
+---@return Quaternion
+function Quaternion.multiply(left, right) end
+
+---@param value Quaternion
+---@return Quaternion
+function Quaternion.negate(value) end
+
+---@param value1 Quaternion
+---@param value2 Quaternion
+---@param value3 Quaternion
+---@param amount1 number
+---@param amount2 number
+---@return Quaternion
+function Quaternion.barycentric(value1, value2, value3, amount1, amount2) end
+
+---@param value Quaternion&
+---@return Quaternion
+function Quaternion.conjugate(value) end
+
+---@param left Quaternion&
+---@param right Quaternion&
+---@return number
+function Quaternion.dot(left, right) end
+
+---@param a Quaternion&
+---@param b Quaternion&
+---@return number
+function Quaternion.angleBetween(a, b) end
+
+---@param value Quaternion
+---@return Quaternion
+function Quaternion.exponential(value) end
+
+---@param value Quaternion
+---@return Quaternion
+function Quaternion.invert(value) end
+
+---@param start Quaternion
+---@param end Quaternion
+---@param amount number
+---@return Quaternion
+function Quaternion.lerp(start, end, amount) end
+
+---@param forward Vector3&
+---@param up Vector3&
+---@return Quaternion
+function Quaternion.lookRotation(forward, up) end
+
+---@param value Quaternion
+---@return Quaternion
+function Quaternion.logarithm(value) end
+
+---@param value Quaternion
+---@return Quaternion
+function Quaternion.normalize(value) end
+
+---@param axis Vector3
+---@param angle number
+---@return Quaternion
+function Quaternion.rotationAxis(axis, angle) end
+
+---@param matrix Matrix
+---@return Quaternion
+function Quaternion.rotationMatrix(matrix) end
+
+---@param angle number
+---@return Quaternion
+function Quaternion.rotationX(angle) end
+
+---@param angle number
+---@return Quaternion
+function Quaternion.rotationY(angle) end
+
+---@param angle number
+---@return Quaternion
+function Quaternion.rotationZ(angle) end
+
+---@param yaw number
+---@param pitch number
+---@param roll number
+---@return Quaternion
+function Quaternion.rotationYawPitchRoll(yaw, pitch, roll) end
+
+---@param source Vector3
+---@param target Vector3
+---@return Quaternion
+function Quaternion.betweenDirections(source, target) end
+
+---@param start Quaternion&
+---@param end Quaternion&
+---@param amount number
+---@return Quaternion
+function Quaternion.slerp(start, end, amount) end
+
+---@param current Quaternion&
+---@param target Quaternion&
+---@param angle number
+---@return Quaternion
+function Quaternion.rotateTowards(current, target, angle) end
+
+---@param value1 Quaternion
+---@param value2 Quaternion
+---@param value3 Quaternion
+---@param value4 Quaternion
+---@param amount number
+---@return Quaternion
+function Quaternion.squad(value1, value2, value3, value4, amount) end
+
+---@param value1 Quaternion
+---@param value2 Quaternion
+---@param value3 Quaternion
+---@param value4 Quaternion
+---@return Quaternion[]
+function Quaternion.squadSetup(value1, value2, value3, value4) end
+
+---@param self QuaternionInstance
+function QuaternionInstance:conjugate() end
+
+---@param self QuaternionInstance
+function QuaternionInstance:invert() end
+
+---@param self QuaternionInstance
+---@return number
+function QuaternionInstance:length() end
+
+---@param self QuaternionInstance
+---@return number
+function QuaternionInstance:lengthSquared() end
+
+---@param self QuaternionInstance
+function QuaternionInstance:normalize() end
+
+---@param self QuaternionInstance
+---@return number[]
+function QuaternionInstance:toArray() end
+
+---@param self QuaternionInstance
+---@return string
+function QuaternionInstance:toString() end
+
+---@param self QuaternionInstance
+---@param format? string
+---@param formatProvider? IFormatProviderInstance
+---@return string
+function QuaternionInstance:toString(format, formatProvider) end
+
+---@param self QuaternionInstance
+---@return integer
+function QuaternionInstance:getHashCode() end
+
+---@param self QuaternionInstance
+---@param other QuaternionInstance
+---@return boolean
+function QuaternionInstance:equalsStrict(other) end
+
+---@param self QuaternionInstance
+---@param other QuaternionInstance
+---@return boolean
+function QuaternionInstance:equals(other) end
+
+---@param self QuaternionInstance
+---@param value? ObjectInstance
+---@return boolean
+function QuaternionInstance:equals(value) end
+
+---@param self QuaternionInstance
+---@return TypeInstance
+function QuaternionInstance:getType() end
+
+
+---@class (exact) Vector4Instance
+---@field isNormalized boolean
+---@field item number
+---@field x number
+---@field y number
+---@field z number
+---@field w number
+local Vector4Instance = {}
+
+---@class (exact) Vector4
+---Creates a new Vector4
+---@return Vector4
+function Vector4.new() end
+
+---Creates a new Vector4
+---@param value number
+---@return Vector4Instance
+function Vector4.new(value) end
+
+---Creates a new Vector4
+---@param x number
+---@param y number
+---@param z number
+---@param w number
+---@return Vector4Instance
+function Vector4.new(x, y, z, w) end
+
+---Creates a new Vector4
+---@param value Vector3Instance
+---@param w number
+---@return Vector4Instance
+function Vector4.new(value, w) end
+
+---Creates a new Vector4
+---@param value Vector2Instance
+---@param z number
+---@param w number
+---@return Vector4Instance
+function Vector4.new(value, z, w) end
+
+---Creates a new Vector4
+---@param values number[]
+---@return Vector4Instance
+function Vector4.new(values) end
+
+---@param from Vector4&
+---@param to Vector4&
+---@param maxTravelDistance number
+---@return Vector4
+function Vector4.moveto(from, to, maxTravelDistance) end
+
+---@param left Vector4
+---@param right Vector4
+---@return Vector4
+function Vector4.add(left, right) end
+
+---@param left Vector4&
+---@param right Vector4&
+---@return Vector4
+function Vector4.subtract(left, right) end
+
+---@param value Vector4
+---@param scale number
+---@return Vector4
+function Vector4.multiply(value, scale) end
+
+---@param left Vector4
+---@param right Vector4
+---@return Vector4
+function Vector4.modulate(left, right) end
+
+---@param value Vector4
+---@param scale number
+---@return Vector4
+function Vector4.divide(value, scale) end
+
+---@param left Vector4
+---@param right Vector4
+---@return Vector4
+function Vector4.demodulate(left, right) end
+
+---@param value Vector4
+---@return Vector4
+function Vector4.negate(value) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@param value3 Vector4
+---@param amount1 number
+---@param amount2 number
+---@return Vector4
+function Vector4.barycentric(value1, value2, value3, amount1, amount2) end
+
+---@param value Vector4
+---@param min Vector4
+---@param max Vector4
+---@return Vector4
+function Vector4.clamp(value, min, max) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return number
+function Vector4.distance(value1, value2) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return number
+function Vector4.distanceSquared(value1, value2) end
+
+---@param left Vector4
+---@param right Vector4
+---@return number
+function Vector4.dot(left, right) end
+
+---@param value Vector4
+---@return Vector4
+function Vector4.normalize(value) end
+
+---@param start Vector4
+---@param end Vector4
+---@param amount number
+---@return Vector4
+function Vector4.lerp(start, end, amount) end
+
+---@param start Vector4
+---@param end Vector4
+---@param amount number
+---@return Vector4
+function Vector4.smoothStep(start, end, amount) end
+
+---@param value1 Vector4
+---@param tangent1 Vector4
+---@param value2 Vector4
+---@param tangent2 Vector4
+---@param amount number
+---@return Vector4
+function Vector4.hermite(value1, tangent1, value2, tangent2, amount) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@param value3 Vector4
+---@param value4 Vector4
+---@param amount number
+---@return Vector4
+function Vector4.catmullRom(value1, value2, value3, value4, amount) end
+
+---@param left Vector4
+---@param right Vector4
+---@return Vector4
+function Vector4.max(left, right) end
+
+---@param left Vector4
+---@param right Vector4
+---@return Vector4
+function Vector4.min(left, right) end
+
+---@param destination Vector4[]
+---@param source Vector4[]
+function Vector4.orthogonalize(destination, source) end
+
+---@param destination Vector4[]
+---@param source Vector4[]
+function Vector4.orthonormalize(destination, source) end
+
+---@param vector Vector4
+---@param rotation Quaternion
+---@return Vector4
+function Vector4.transform(vector, rotation) end
+
+---@param source Vector4[]
+---@param rotation Quaternion&
+---@param destination Vector4[]
+function Vector4.transform(source, rotation, destination) end
+
+---@param vector Vector4
+---@param transform Matrix
+---@return Vector4
+function Vector4.transform(vector, transform) end
+
+---@param source Vector4[]
+---@param transform Matrix&
+---@param destination Vector4[]
+function Vector4.transform(source, transform, destination) end
+
+---@param self Vector4Instance
+---@return number
+function Vector4Instance:length() end
+
+---@param self Vector4Instance
+---@return number
+function Vector4Instance:lengthSquared() end
+
+---@param self Vector4Instance
+function Vector4Instance:normalize() end
+
+---@param self Vector4Instance
+---@param exponent number
+function Vector4Instance:pow(exponent) end
+
+---@param self Vector4Instance
+---@return number[]
+function Vector4Instance:toArray() end
+
+---@param self Vector4Instance
+---@return string
+function Vector4Instance:toString() end
+
+---@param self Vector4Instance
+---@param format? string
+---@param formatProvider? IFormatProviderInstance
+---@return string
+function Vector4Instance:toString(format, formatProvider) end
+
+---@param self Vector4Instance
+---@return integer
+function Vector4Instance:getHashCode() end
+
+---@param self Vector4Instance
+---@param other Vector4Instance
+---@return boolean
+function Vector4Instance:equalsStrict(other) end
+
+---@param self Vector4Instance
+---@param other Vector4Instance
+---@return boolean
+function Vector4Instance:equals(other) end
+
+---@param self Vector4Instance
+---@param value? ObjectInstance
+---@return boolean
+function Vector4Instance:equals(value) end
+
+---@param self Vector4Instance
+---@return TypeInstance
+function Vector4Instance:getType() end
+
+
+---@class (exact) MatrixInstance
+---@field row1 Vector4Instance
+---@field row2 Vector4Instance
+---@field row3 Vector4Instance
+---@field row4 Vector4Instance
+---@field column1 Vector4Instance
+---@field column2 Vector4Instance
+---@field column3 Vector4Instance
+---@field column4 Vector4Instance
+---@field translationVector Vector3Instance
+---@field scaleVector Vector3Instance
+---@field up Vector3Instance
+---@field down Vector3Instance
+---@field right Vector3Instance
+---@field left Vector3Instance
+---@field forward Vector3Instance
+---@field backward Vector3Instance
+---@field isIdentity boolean
+---@field item number
+---@field item number
+---@field m11 number
+---@field m21 number
+---@field m31 number
+---@field m41 number
+---@field m12 number
+---@field m22 number
+---@field m32 number
+---@field m42 number
+---@field m13 number
+---@field m23 number
+---@field m33 number
+---@field m43 number
+---@field m14 number
+---@field m24 number
+---@field m34 number
+---@field m44 number
+local MatrixInstance = {}
+
+---@class (exact) Matrix
+---Creates a new Matrix
+---@return Matrix
+function Matrix.new() end
+
+---Creates a new Matrix
+---@param value number
+---@return MatrixInstance
+function Matrix.new(value) end
+
+---Creates a new Matrix
+---@param M11 number
+---@param M12 number
+---@param M13 number
+---@param M14 number
+---@param M21 number
+---@param M22 number
+---@param M23 number
+---@param M24 number
+---@param M31 number
+---@param M32 number
+---@param M33 number
+---@param M34 number
+---@param M41 number
+---@param M42 number
+---@param M43 number
+---@param M44 number
+---@return MatrixInstance
+function Matrix.new(M11, M12, M13, M14, M21, M22, M23, M24, M31, M32, M33, M34, M41, M42, M43, M44) end
+
+---Creates a new Matrix
+---@param values number[]
+---@return MatrixInstance
+function Matrix.new(values) end
+
+---@param left Matrix
+---@param right Matrix
+---@return Matrix
+function Matrix.add(left, right) end
+
+---@param left Matrix
+---@param right Matrix
+---@return Matrix
+function Matrix.subtract(left, right) end
+
+---@param left Matrix
+---@param right number
+---@return Matrix
+function Matrix.multiply(left, right) end
+
+---@param left Matrix&
+---@param right Matrix&
+---@return Matrix
+function Matrix.multiply(left, right) end
+
+---@param left Matrix
+---@param right number
+---@return Matrix
+function Matrix.divide(left, right) end
+
+---@param left Matrix
+---@param right Matrix
+---@return Matrix
+function Matrix.divide(left, right) end
+
+---@param value Matrix
+---@param exponent integer
+---@return Matrix
+function Matrix.exponent(value, exponent) end
+
+---@param value Matrix
+---@return Matrix
+function Matrix.negate(value) end
+
+---@param start Matrix
+---@param end Matrix
+---@param amount number
+---@return Matrix
+function Matrix.lerp(start, end, amount) end
+
+---@param start Matrix
+---@param end Matrix
+---@param amount number
+---@return Matrix
+function Matrix.smoothStep(start, end, amount) end
+
+---@param value Matrix&
+---@return Matrix
+function Matrix.transpose(value) end
+
+---@param value Matrix
+---@return Matrix
+function Matrix.invert(value) end
+
+---@param value Matrix
+---@return Matrix
+function Matrix.orthogonalize(value) end
+
+---@param value Matrix
+---@return Matrix
+function Matrix.orthonormalize(value) end
+
+---@param value Matrix
+---@return Matrix
+function Matrix.upperTriangularForm(value) end
+
+---@param value Matrix
+---@return Matrix
+function Matrix.lowerTriangularForm(value) end
+
+---@param value Matrix
+---@return Matrix
+function Matrix.rowEchelonForm(value) end
+
+---@param objectPosition Vector3
+---@param cameraPosition Vector3
+---@param cameraUpVector Vector3
+---@param cameraForwardVector Vector3
+---@return Matrix
+function Matrix.billboard(objectPosition, cameraPosition, cameraUpVector, cameraForwardVector) end
+
+---@param eye Vector3
+---@param target Vector3
+---@param up Vector3
+---@return Matrix
+function Matrix.lookAtLH(eye, target, up) end
+
+---@param eye Vector3
+---@param target Vector3
+---@param up Vector3
+---@return Matrix
+function Matrix.lookAtRH(eye, target, up) end
+
+---@param width number
+---@param height number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.orthoLH(width, height, znear, zfar) end
+
+---@param width number
+---@param height number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.orthoRH(width, height, znear, zfar) end
+
+---@param left number
+---@param right number
+---@param bottom number
+---@param top number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.orthoOffCenterLH(left, right, bottom, top, znear, zfar) end
+
+---@param left number
+---@param right number
+---@param bottom number
+---@param top number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.orthoOffCenterRH(left, right, bottom, top, znear, zfar) end
+
+---@param width number
+---@param height number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.perspectiveLH(width, height, znear, zfar) end
+
+---@param width number
+---@param height number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.perspectiveRH(width, height, znear, zfar) end
+
+---@param fov number
+---@param aspect number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.perspectiveFovLH(fov, aspect, znear, zfar) end
+
+---@param fov number
+---@param aspect number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.perspectiveFovRH(fov, aspect, znear, zfar) end
+
+---@param left number
+---@param right number
+---@param bottom number
+---@param top number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.perspectiveOffCenterLH(left, right, bottom, top, znear, zfar) end
+
+---@param left number
+---@param right number
+---@param bottom number
+---@param top number
+---@param znear number
+---@param zfar number
+---@return Matrix
+function Matrix.perspectiveOffCenterRH(left, right, bottom, top, znear, zfar) end
+
+---@param plane Plane
+---@return Matrix
+function Matrix.reflection(plane) end
+
+---@param light Vector4
+---@param plane Plane
+---@return Matrix
+function Matrix.shadow(light, plane) end
+
+---@param scale Vector3
+---@return Matrix
+function Matrix.scaling(scale) end
+
+---@param x number
+---@param y number
+---@param z number
+---@return Matrix
+function Matrix.scaling(x, y, z) end
+
+---@param scale number
+---@return Matrix
+function Matrix.scaling(scale) end
+
+---@param angle number
+---@return Matrix
+function Matrix.rotationX(angle) end
+
+---@param angle number
+---@return Matrix
+function Matrix.rotationY(angle) end
+
+---@param angle number
+---@return Matrix
+function Matrix.rotationZ(angle) end
+
+---@param axis Vector3
+---@param angle number
+---@return Matrix
+function Matrix.rotationAxis(axis, angle) end
+
+---@param rotation Quaternion
+---@return Matrix
+function Matrix.rotationQuaternion(rotation) end
+
+---@param yaw number
+---@param pitch number
+---@param roll number
+---@return Matrix
+function Matrix.rotationYawPitchRoll(yaw, pitch, roll) end
+
+---@param value Vector3
+---@return Matrix
+function Matrix.translation(value) end
+
+---@param x number
+---@param y number
+---@param z number
+---@return Matrix
+function Matrix.translation(x, y, z) end
+
+---@param scaling number
+---@param rotation Quaternion
+---@param translation Vector3
+---@return Matrix
+function Matrix.affineTransformation(scaling, rotation, translation) end
+
+---@param scaling number
+---@param rotationCenter Vector3
+---@param rotation Quaternion
+---@param translation Vector3
+---@return Matrix
+function Matrix.affineTransformation(scaling, rotationCenter, rotation, translation) end
+
+---@param scaling number
+---@param rotation number
+---@param translation Vector2
+---@return Matrix
+function Matrix.affineTransformation2D(scaling, rotation, translation) end
+
+---@param scaling number
+---@param rotationCenter Vector2
+---@param rotation number
+---@param translation Vector2
+---@return Matrix
+function Matrix.affineTransformation2D(scaling, rotationCenter, rotation, translation) end
+
+---@param scalingCenter Vector3
+---@param scalingRotation Quaternion
+---@param scaling Vector3
+---@param rotationCenter Vector3
+---@param rotation Quaternion
+---@param translation Vector3
+---@return Matrix
+function Matrix.transformation(scalingCenter, scalingRotation, scaling, rotationCenter, rotation, translation) end
+
+---@param scalingCenter Vector2
+---@param scalingRotation number
+---@param scaling Vector2
+---@param rotationCenter Vector2
+---@param rotation number
+---@param translation Vector2
+---@return Matrix
+function Matrix.transformation2D(scalingCenter, scalingRotation, scaling, rotationCenter, rotation, translation) end
+
+---@param self MatrixInstance
+---@return number
+function MatrixInstance:determinant() end
+
+---@param self MatrixInstance
+function MatrixInstance:invert() end
+
+---@param self MatrixInstance
+function MatrixInstance:transpose() end
+
+---@param self MatrixInstance
+function MatrixInstance:orthogonalize() end
+
+---@param self MatrixInstance
+function MatrixInstance:orthonormalize() end
+
+---@param self MatrixInstance
+---@param firstRow integer
+---@param secondRow integer
+function MatrixInstance:exchangeRows(firstRow, secondRow) end
+
+---@param self MatrixInstance
+---@param firstColumn integer
+---@param secondColumn integer
+function MatrixInstance:exchangeColumns(firstColumn, secondColumn) end
+
+---@param self MatrixInstance
+---@return number[]
+function MatrixInstance:toArray() end
+
+---@param self MatrixInstance
+---@return string
+function MatrixInstance:toString() end
+
+---@param self MatrixInstance
+---@param format? string
+---@param formatProvider? IFormatProviderInstance
+---@return string
+function MatrixInstance:toString(format, formatProvider) end
+
+---@param self MatrixInstance
+---@return integer
+function MatrixInstance:getHashCode() end
+
+---@param self MatrixInstance
+---@param other MatrixInstance
+---@return boolean
+function MatrixInstance:equals(other) end
+
+---@param self MatrixInstance
+---@param value? ObjectInstance
+---@return boolean
+function MatrixInstance:equals(value) end
+
+---@param self MatrixInstance
+---@return TypeInstance
+function MatrixInstance:getType() end
+
+
+---@class (exact) ArrayOfVector4Instance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Vector4Instance
+local ArrayOfVector4Instance = {}
+
+---@class (exact) ArrayOfVector4 : Array
+---Creates a new ArrayOfVector4
+---@param length integer
+---@return Vector4Instance[]
+function ArrayOfVector4.new(length) end
+
+---@param self Vector4Instance[]
+---@param param0 integer
+---@return Vector4Instance
+function ArrayOfVector4Instance:get(param0) end
+
+---@param self Vector4Instance[]
+---@param param0 integer
+---@param param1 Vector4Instance
+function ArrayOfVector4Instance:set(param0, param1) end
+
+---@param self Vector4Instance[]
+function ArrayOfVector4Instance:initialize() end
+
+---@param self Vector4Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector4Instance:getLength(dimension) end
+
+---@param self Vector4Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector4Instance:getUpperBound(dimension) end
+
+---@param self Vector4Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector4Instance:getLowerBound(dimension) end
+
+---@param self Vector4Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(indices) end
+
+---@param self Vector4Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index) end
+
+---@param self Vector4Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index1, index2) end
+
+---@param self Vector4Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index1, index2, index3) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector4Instance:setValue(value, index) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector4Instance:setValue(value, index1, index2) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector4Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector4Instance:setValue(value, indices) end
+
+---@param self Vector4Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index) end
+
+---@param self Vector4Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index1, index2) end
+
+---@param self Vector4Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index1, index2, index3) end
+
+---@param self Vector4Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(indices) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector4Instance:setValue(value, index) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector4Instance:setValue(value, index1, index2) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector4Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector4Instance:setValue(value, indices) end
+
+---@param self Vector4Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector4Instance:getLongLength(dimension) end
+
+---@param self Vector4Instance[]
+---@return ObjectInstance
+function ArrayOfVector4Instance:clone() end
+
+---@param self Vector4Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector4Instance:copyTo(array, index) end
+
+---@param self Vector4Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector4Instance:copyTo(array, index) end
+
+---@param self Vector4Instance[]
+---@return IEnumeratorInstance
+function ArrayOfVector4Instance:getEnumerator() end
+
+---@param self Vector4Instance[]
+---@return TypeInstance
+function ArrayOfVector4Instance:getType() end
+
+---@param self Vector4Instance[]
+---@return string
+function ArrayOfVector4Instance:toString() end
+
+---@param self Vector4Instance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfVector4Instance:equals(obj) end
+
+---@param self Vector4Instance[]
+---@return integer
+function ArrayOfVector4Instance:getHashCode() end
+
+
+---@class (exact) Vector3Instance
+---@field x number
+---@field y number
+---@field z number
+local Vector3Instance = {}
+
+---@class (exact) Vector3
+---@field zero Vector3Instance
+---@field one Vector3Instance
+---@field unitX Vector3Instance
+---@field unitY Vector3Instance
+---@field unitZ Vector3Instance
+---@field up Vector3Instance
+---@field down Vector3Instance
+---@field right Vector3Instance
+---@field left Vector3Instance
+---@field forward Vector3Instance
+---@field backward Vector3Instance
+---Creates a new Vector3
+---@return Vector3
+function Vector3.new() end
+
+---Creates a new Vector3
+---@param x number
+---@param y number
+---@param z number
+---@return Vector3Instance
+function Vector3.new(x, y, z) end
+
+---Creates a new Vector3
+---@param value number
+---@return Vector3Instance
+function Vector3.new(value) end
+
+---Creates a new Vector3
+---@param value Vector2Instance
+---@param z number
+---@return Vector3Instance
+function Vector3.new(value, z) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@return Vector3
+function Vector3.add(value1, value2) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@param value3 Vector3
+---@param amount1 number
+---@param amount2 number
+---@return Vector3
+function Vector3.barycentric(value1, value2, value3, amount1, amount2) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@param value3 Vector3
+---@param value4 Vector3
+---@param amount number
+---@return Vector3
+function Vector3.catmullRom(value1, value2, value3, value4, amount) end
+
+---@param value1 Vector3
+---@param min Vector3
+---@param max Vector3
+---@return Vector3
+function Vector3.clamp(value1, min, max) end
+
+---@param vector1 Vector3
+---@param vector2 Vector3
+---@return Vector3
+function Vector3.cross(vector1, vector2) end
+
+---@param vector1 Vector3
+---@param vector2 Vector3
+---@return number
+function Vector3.distance(vector1, vector2) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@return number
+function Vector3.distanceSquared(value1, value2) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@return Vector3
+function Vector3.divide(value1, value2) end
+
+---@param value1 Vector3
+---@param value2 number
+---@return Vector3
+function Vector3.divide(value1, value2) end
+
+---@param vector1 Vector3
+---@param vector2 Vector3
+---@return number
+function Vector3.dot(vector1, vector2) end
+
+---@param value1 Vector3
+---@param tangent1 Vector3
+---@param value2 Vector3
+---@param tangent2 Vector3
+---@param amount number
+---@return Vector3
+function Vector3.hermite(value1, tangent1, value2, tangent2, amount) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@param amount number
+---@return Vector3
+function Vector3.lerp(value1, value2, amount) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@return Vector3
+function Vector3.max(value1, value2) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@return Vector3
+function Vector3.min(value1, value2) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@return Vector3
+function Vector3.multiply(value1, value2) end
+
+---@param value1 Vector3
+---@param scaleFactor number
+---@return Vector3
+function Vector3.multiply(value1, scaleFactor) end
+
+---@param value Vector3
+---@return Vector3
+function Vector3.negate(value) end
+
+---@param value Vector3
+---@return Vector3
+function Vector3.normalize(value) end
+
+---@param vector Vector3
+---@param normal Vector3
+---@return Vector3
+function Vector3.reflect(vector, normal) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@param amount number
+---@return Vector3
+function Vector3.smoothStep(value1, value2, amount) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@return Vector3
+function Vector3.subtract(value1, value2) end
+
+---@param position Vector3
+---@param matrix Matrix
+---@return Vector3
+function Vector3.transform(position, matrix) end
+
+---@param value Vector3
+---@param rotation Quaternion
+---@return Vector3
+function Vector3.transform(value, rotation) end
+
+---@param normal Vector3
+---@param matrix Matrix
+---@return Vector3
+function Vector3.transformNormal(normal, matrix) end
+
+---@param self Vector3Instance
+---@param obj ObjectInstance
+---@return boolean
+function Vector3Instance:equals(obj) end
+
+---@param self Vector3Instance
+---@param other Vector3Instance
+---@return boolean
+function Vector3Instance:equals(other) end
+
+---@param self Vector3Instance
+---@return integer
+function Vector3Instance:getHashCode() end
+
+---@param self Vector3Instance
+---@return number
+function Vector3Instance:length() end
+
+---@param self Vector3Instance
+---@return number
+function Vector3Instance:lengthSquared() end
+
+---@param self Vector3Instance
+function Vector3Instance:normalize() end
+
+---@param self Vector3Instance
+---@return string
+function Vector3Instance:toString() end
+
+---@param self Vector3Instance
+---@return TypeInstance
+function Vector3Instance:getType() end
+
+
+---@class (exact) PlaneInstance
+---@field normal Vector3Instance
+---@field d number
+local PlaneInstance = {}
+
+---@class (exact) Plane
+---Creates a new Plane
+---@return Plane
+function Plane.new() end
+
+---Creates a new Plane
+---@param value Vector4Instance
+---@return PlaneInstance
+function Plane.new(value) end
+
+---Creates a new Plane
+---@param normal Vector3Instance
+---@param d number
+---@return PlaneInstance
+function Plane.new(normal, d) end
+
+---Creates a new Plane
+---@param a Vector3Instance
+---@param b Vector3Instance
+---@param c Vector3Instance
+---@return PlaneInstance
+function Plane.new(a, b, c) end
+
+---Creates a new Plane
+---@param a number
+---@param b number
+---@param c number
+---@param d number
+---@return PlaneInstance
+function Plane.new(a, b, c, d) end
+
+---@param value Plane
+---@return Plane
+function Plane.normalize(value) end
+
+---@param plane Plane
+---@param matrix Matrix
+---@return Plane
+function Plane.transform(plane, matrix) end
+
+---@param plane Plane
+---@param rotation Quaternion
+---@return Plane
+function Plane.transform(plane, rotation) end
+
+---@param self PlaneInstance
+---@param value Vector4Instance
+---@return number
+function PlaneInstance:dot(value) end
+
+---@param self PlaneInstance
+---@param value Vector3Instance
+---@return number
+function PlaneInstance:dotCoordinate(value) end
+
+---@param self PlaneInstance
+---@param value Vector3Instance
+---@return number
+function PlaneInstance:dotNormal(value) end
+
+---@param self PlaneInstance
+function PlaneInstance:normalize() end
+
+---@param self PlaneInstance
+---@param box BoundingBoxInstance
+---@return PlaneIntersectionTypeInstance
+function PlaneInstance:intersects(box) end
+
+---@param self PlaneInstance
+---@param sphere BoundingSphereInstance
+---@return PlaneIntersectionTypeInstance
+function PlaneInstance:intersects(sphere) end
+
+---@param self PlaneInstance
+---@param frustum BoundingFrustumInstance
+---@return PlaneIntersectionTypeInstance
+function PlaneInstance:intersects(frustum) end
+
+---@param self PlaneInstance
+---@param obj ObjectInstance
+---@return boolean
+function PlaneInstance:equals(obj) end
+
+---@param self PlaneInstance
+---@param other PlaneInstance
+---@return boolean
+function PlaneInstance:equals(other) end
+
+---@param self PlaneInstance
+---@return integer
+function PlaneInstance:getHashCode() end
+
+---@param self PlaneInstance
+---@return string
+function PlaneInstance:toString() end
+
+---@param self PlaneInstance
+---@return TypeInstance
+function PlaneInstance:getType() end
+
+
+---@class (exact) ArrayOfVector2Instance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Vector2Instance
+local ArrayOfVector2Instance = {}
+
+---@class (exact) ArrayOfVector2 : Array
+---Creates a new ArrayOfVector2
+---@param length integer
+---@return Vector2Instance[]
+function ArrayOfVector2.new(length) end
+
+---@param self Vector2Instance[]
+---@param param0 integer
+---@return Vector2Instance
+function ArrayOfVector2Instance:get(param0) end
+
+---@param self Vector2Instance[]
+---@param param0 integer
+---@param param1 Vector2Instance
+function ArrayOfVector2Instance:set(param0, param1) end
+
+---@param self Vector2Instance[]
+function ArrayOfVector2Instance:initialize() end
+
+---@param self Vector2Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector2Instance:getLength(dimension) end
+
+---@param self Vector2Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector2Instance:getUpperBound(dimension) end
+
+---@param self Vector2Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector2Instance:getLowerBound(dimension) end
+
+---@param self Vector2Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(indices) end
+
+---@param self Vector2Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index) end
+
+---@param self Vector2Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index1, index2) end
+
+---@param self Vector2Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index1, index2, index3) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector2Instance:setValue(value, index) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector2Instance:setValue(value, index1, index2) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector2Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector2Instance:setValue(value, indices) end
+
+---@param self Vector2Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index) end
+
+---@param self Vector2Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index1, index2) end
+
+---@param self Vector2Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(index1, index2, index3) end
+
+---@param self Vector2Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector2Instance:getValue(indices) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector2Instance:setValue(value, index) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector2Instance:setValue(value, index1, index2) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector2Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector2Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector2Instance:setValue(value, indices) end
+
+---@param self Vector2Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector2Instance:getLongLength(dimension) end
+
+---@param self Vector2Instance[]
+---@return ObjectInstance
+function ArrayOfVector2Instance:clone() end
+
+---@param self Vector2Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector2Instance:copyTo(array, index) end
+
+---@param self Vector2Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector2Instance:copyTo(array, index) end
+
+---@param self Vector2Instance[]
+---@return IEnumeratorInstance
+function ArrayOfVector2Instance:getEnumerator() end
+
+---@param self Vector2Instance[]
+---@return TypeInstance
+function ArrayOfVector2Instance:getType() end
+
+---@param self Vector2Instance[]
+---@return string
+function ArrayOfVector2Instance:toString() end
+
+---@param self Vector2Instance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfVector2Instance:equals(obj) end
+
+---@param self Vector2Instance[]
+---@return integer
+function ArrayOfVector2Instance:getHashCode() end
+
+
 ---@class (exact) BaseAiInstance
 local BaseAiInstance = {}
 
@@ -2487,6 +5525,1350 @@ function f64EulerInstance:toString() end
 ---@param self f64EulerInstance
 ---@return TypeInstance
 function f64EulerInstance:getType() end
+
+
+---@class (exact) Vector3Instance
+---@field isNormalized boolean
+---@field item number
+---@field x number
+---@field y number
+---@field z number
+local Vector3Instance = {}
+
+---@class (exact) Vector3
+---Creates a new Vector3
+---@return Vector3
+function Vector3.new() end
+
+---Creates a new Vector3
+---@param value number
+---@return Vector3Instance
+function Vector3.new(value) end
+
+---Creates a new Vector3
+---@param x number
+---@param y number
+---@param z number
+---@return Vector3Instance
+function Vector3.new(x, y, z) end
+
+---Creates a new Vector3
+---@param value Vector2Instance
+---@param z number
+---@return Vector3Instance
+function Vector3.new(value, z) end
+
+---Creates a new Vector3
+---@param values number[]
+---@return Vector3Instance
+function Vector3.new(values) end
+
+---@param from Vector3&
+---@param to Vector3&
+---@param maxTravelDistance number
+---@return Vector3
+function Vector3.moveTo(from, to, maxTravelDistance) end
+
+---@param left Vector3
+---@param right Vector3
+---@return Vector3
+function Vector3.add(left, right) end
+
+---@param left Vector3&
+---@param right Vector3&
+---@return Vector3
+function Vector3.subtract(left, right) end
+
+---@param value Vector3
+---@param scale number
+---@return Vector3
+function Vector3.multiply(value, scale) end
+
+---@param left Vector3
+---@param right Vector3
+---@return Vector3
+function Vector3.modulate(left, right) end
+
+---@param value Vector3
+---@param scale number
+---@return Vector3
+function Vector3.divide(value, scale) end
+
+---@param left Vector3
+---@param right Vector3
+---@return Vector3
+function Vector3.demodulate(left, right) end
+
+---@param value Vector3
+---@return Vector3
+function Vector3.negate(value) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@param value3 Vector3
+---@param amount1 number
+---@param amount2 number
+---@return Vector3
+function Vector3.barycentric(value1, value2, value3, amount1, amount2) end
+
+---@param value Vector3
+---@param min Vector3
+---@param max Vector3
+---@return Vector3
+function Vector3.clamp(value, min, max) end
+
+---@param left Vector3&
+---@param right Vector3&
+---@return Vector3
+function Vector3.cross(left, right) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@return number
+function Vector3.distance(value1, value2) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@return number
+function Vector3.distanceSquared(value1, value2) end
+
+---@param left Vector3
+---@param right Vector3
+---@return number
+function Vector3.dot(left, right) end
+
+---@param value Vector3
+---@return Vector3
+function Vector3.normalize(value) end
+
+---@param start Vector3
+---@param end Vector3
+---@param amount number
+---@return Vector3
+function Vector3.lerp(start, end, amount) end
+
+---@param start Vector3
+---@param end Vector3
+---@param amount number
+---@return Vector3
+function Vector3.smoothStep(start, end, amount) end
+
+---@param value1 Vector3
+---@param tangent1 Vector3
+---@param value2 Vector3
+---@param tangent2 Vector3
+---@param amount number
+---@return Vector3
+function Vector3.hermite(value1, tangent1, value2, tangent2, amount) end
+
+---@param value1 Vector3
+---@param value2 Vector3
+---@param value3 Vector3
+---@param value4 Vector3
+---@param amount number
+---@return Vector3
+function Vector3.catmullRom(value1, value2, value3, value4, amount) end
+
+---@param left Vector3
+---@param right Vector3
+---@return Vector3
+function Vector3.mod(left, right) end
+
+---@param left Vector3
+---@param right Vector3
+---@return Vector3
+function Vector3.max(left, right) end
+
+---@param left Vector3
+---@param right Vector3
+---@return Vector3
+function Vector3.min(left, right) end
+
+---@param vector Vector3
+---@param x number
+---@param y number
+---@param width number
+---@param height number
+---@param minZ number
+---@param maxZ number
+---@param worldViewProjection Matrix
+---@return Vector3
+function Vector3.project(vector, x, y, width, height, minZ, maxZ, worldViewProjection) end
+
+---@param vector Vector3
+---@param x number
+---@param y number
+---@param width number
+---@param height number
+---@param minZ number
+---@param maxZ number
+---@param worldViewProjection Matrix
+---@return Vector3
+function Vector3.unproject(vector, x, y, width, height, minZ, maxZ, worldViewProjection) end
+
+---@param vector Vector3
+---@param normal Vector3
+---@return Vector3
+function Vector3.reflect(vector, normal) end
+
+---@param destination Vector3[]
+---@param source Vector3[]
+function Vector3.orthogonalize(destination, source) end
+
+---@param destination Vector3[]
+---@param source Vector3[]
+function Vector3.orthonormalize(destination, source) end
+
+---@param vector Vector3
+---@param rotation Quaternion
+---@return Vector3
+function Vector3.transform(vector, rotation) end
+
+---@param source Vector3[]
+---@param rotation Quaternion&
+---@param destination Vector3[]
+function Vector3.transform(source, rotation, destination) end
+
+---@param vector Vector3
+---@param transform Matrix
+---@return Vector4
+function Vector3.transform(vector, transform) end
+
+---@param source Vector3[]
+---@param transform Matrix&
+---@param destination Vector4[]
+function Vector3.transform(source, transform, destination) end
+
+---@param coordinate Vector3
+---@param transform Matrix
+---@return Vector3
+function Vector3.transformCoordinate(coordinate, transform) end
+
+---@param source Vector3[]
+---@param transform Matrix&
+---@param destination Vector3[]
+function Vector3.transformCoordinate(source, transform, destination) end
+
+---@param normal Vector3
+---@param transform Matrix
+---@return Vector3
+function Vector3.transformNormal(normal, transform) end
+
+---@param source Vector3[]
+---@param transform Matrix&
+---@param destination Vector3[]
+function Vector3.transformNormal(source, transform, destination) end
+
+---@param quaternion Quaternion
+---@return Vector3
+function Vector3.rotationYawPitchRoll(quaternion) end
+
+---@param source Vector3&
+---@param target Vector3&
+---@param axis Vector3&
+---@param angle number
+---@return Vector3
+function Vector3.rotateAround(source, target, axis, angle) end
+
+---@param left Vector3&
+---@param right Vector3&
+---@param epsilon Vector3&
+---@return boolean
+function Vector3.nearEqual(left, right, epsilon) end
+
+---@param self Vector3Instance
+---@return number
+function Vector3Instance:length() end
+
+---@param self Vector3Instance
+---@return number
+function Vector3Instance:lengthSquared() end
+
+---@param self Vector3Instance
+function Vector3Instance:normalize() end
+
+---@param self Vector3Instance
+---@param exponent number
+function Vector3Instance:pow(exponent) end
+
+---@param self Vector3Instance
+---@return number[]
+function Vector3Instance:toArray() end
+
+---@param self Vector3Instance
+---@return string
+function Vector3Instance:toString() end
+
+---@param self Vector3Instance
+---@param format? string
+---@param formatProvider? IFormatProviderInstance
+---@return string
+function Vector3Instance:toString(format, formatProvider) end
+
+---@param self Vector3Instance
+---@return integer
+function Vector3Instance:getHashCode() end
+
+---@param self Vector3Instance
+---@param other Vector3Instance
+---@return boolean
+function Vector3Instance:equalsStrict(other) end
+
+---@param self Vector3Instance
+---@param other Vector3Instance
+---@return boolean
+function Vector3Instance:equals(other) end
+
+---@param self Vector3Instance
+---@param value? ObjectInstance
+---@return boolean
+function Vector3Instance:equals(value) end
+
+---@param self Vector3Instance
+---@return TypeInstance
+function Vector3Instance:getType() end
+
+
+---@class (exact) ArrayOfQuaternionInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] QuaternionInstance
+local ArrayOfQuaternionInstance = {}
+
+---@class (exact) ArrayOfQuaternion : Array
+---Creates a new ArrayOfQuaternion
+---@param length integer
+---@return QuaternionInstance[]
+function ArrayOfQuaternion.new(length) end
+
+---@param self QuaternionInstance[]
+---@param param0 integer
+---@return QuaternionInstance
+function ArrayOfQuaternionInstance:get(param0) end
+
+---@param self QuaternionInstance[]
+---@param param0 integer
+---@param param1 QuaternionInstance
+function ArrayOfQuaternionInstance:set(param0, param1) end
+
+---@param self QuaternionInstance[]
+function ArrayOfQuaternionInstance:initialize() end
+
+---@param self QuaternionInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfQuaternionInstance:getLength(dimension) end
+
+---@param self QuaternionInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfQuaternionInstance:getUpperBound(dimension) end
+
+---@param self QuaternionInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfQuaternionInstance:getLowerBound(dimension) end
+
+---@param self QuaternionInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfQuaternionInstance:getValue(indices) end
+
+---@param self QuaternionInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfQuaternionInstance:getValue(index) end
+
+---@param self QuaternionInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfQuaternionInstance:getValue(index1, index2) end
+
+---@param self QuaternionInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfQuaternionInstance:getValue(index1, index2, index3) end
+
+---@param self QuaternionInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfQuaternionInstance:setValue(value, index) end
+
+---@param self QuaternionInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfQuaternionInstance:setValue(value, index1, index2) end
+
+---@param self QuaternionInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfQuaternionInstance:setValue(value, index1, index2, index3) end
+
+---@param self QuaternionInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfQuaternionInstance:setValue(value, indices) end
+
+---@param self QuaternionInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfQuaternionInstance:getValue(index) end
+
+---@param self QuaternionInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfQuaternionInstance:getValue(index1, index2) end
+
+---@param self QuaternionInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfQuaternionInstance:getValue(index1, index2, index3) end
+
+---@param self QuaternionInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfQuaternionInstance:getValue(indices) end
+
+---@param self QuaternionInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfQuaternionInstance:setValue(value, index) end
+
+---@param self QuaternionInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfQuaternionInstance:setValue(value, index1, index2) end
+
+---@param self QuaternionInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfQuaternionInstance:setValue(value, index1, index2, index3) end
+
+---@param self QuaternionInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfQuaternionInstance:setValue(value, indices) end
+
+---@param self QuaternionInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfQuaternionInstance:getLongLength(dimension) end
+
+---@param self QuaternionInstance[]
+---@return ObjectInstance
+function ArrayOfQuaternionInstance:clone() end
+
+---@param self QuaternionInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfQuaternionInstance:copyTo(array, index) end
+
+---@param self QuaternionInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfQuaternionInstance:copyTo(array, index) end
+
+---@param self QuaternionInstance[]
+---@return IEnumeratorInstance
+function ArrayOfQuaternionInstance:getEnumerator() end
+
+---@param self QuaternionInstance[]
+---@return TypeInstance
+function ArrayOfQuaternionInstance:getType() end
+
+---@param self QuaternionInstance[]
+---@return string
+function ArrayOfQuaternionInstance:toString() end
+
+---@param self QuaternionInstance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfQuaternionInstance:equals(obj) end
+
+---@param self QuaternionInstance[]
+---@return integer
+function ArrayOfQuaternionInstance:getHashCode() end
+
+
+---@class (exact) PlaneInstance
+---@field item number
+---@field normal Vector3Instance
+---@field d number
+local PlaneInstance = {}
+
+---@class (exact) Plane
+---Creates a new Plane
+---@return Plane
+function Plane.new() end
+
+---Creates a new Plane
+---@param value number
+---@return PlaneInstance
+function Plane.new(value) end
+
+---Creates a new Plane
+---@param a number
+---@param b number
+---@param c number
+---@param d number
+---@return PlaneInstance
+function Plane.new(a, b, c, d) end
+
+---Creates a new Plane
+---@param point Vector3Instance
+---@param normal Vector3Instance
+---@return PlaneInstance
+function Plane.new(point, normal) end
+
+---Creates a new Plane
+---@param value Vector3Instance
+---@param d number
+---@return PlaneInstance
+function Plane.new(value, d) end
+
+---Creates a new Plane
+---@param point1 Vector3Instance
+---@param point2 Vector3Instance
+---@param point3 Vector3Instance
+---@return PlaneInstance
+function Plane.new(point1, point2, point3) end
+
+---Creates a new Plane
+---@param values number[]
+---@return PlaneInstance
+function Plane.new(values) end
+
+---@param value Plane
+---@param scale number
+---@return Plane
+function Plane.multiply(value, scale) end
+
+---@param left Plane
+---@param right Vector4
+---@return number
+function Plane.dot(left, right) end
+
+---@param left Plane
+---@param right Vector3
+---@return number
+function Plane.dotCoordinate(left, right) end
+
+---@param left Plane
+---@param right Vector3
+---@return number
+function Plane.dotNormal(left, right) end
+
+---@param plane Plane
+---@param point Vector3
+---@return Vector3
+function Plane.project(plane, point) end
+
+---@param plane Plane
+---@return Plane
+function Plane.normalize(plane) end
+
+---@param plane Plane
+---@return Plane
+function Plane.negate(plane) end
+
+---@param plane Plane
+---@param rotation Quaternion
+---@return Plane
+function Plane.transform(plane, rotation) end
+
+---@param planes Plane[]
+---@param rotation Quaternion&
+function Plane.transform(planes, rotation) end
+
+---@param plane Plane
+---@param transformation Matrix
+---@return Plane
+function Plane.transform(plane, transformation) end
+
+---@param planes Plane[]
+---@param transformation Matrix&
+function Plane.transform(planes, transformation) end
+
+---@param self PlaneInstance
+function PlaneInstance:negate() end
+
+---@param self PlaneInstance
+function PlaneInstance:normalize() end
+
+---@param self PlaneInstance
+---@return number[]
+function PlaneInstance:toArray() end
+
+---@param self PlaneInstance
+---@param point Vector3&Instance
+---@return PlaneIntersectionTypeInstance
+function PlaneInstance:intersects(point) end
+
+---@param self PlaneInstance
+---@param ray Ray&Instance
+---@return boolean
+function PlaneInstance:intersects(ray) end
+
+---@param self PlaneInstance
+---@param plane Plane&Instance
+---@return boolean
+function PlaneInstance:intersects(plane) end
+
+---@param self PlaneInstance
+---@param vertex1 Vector3&Instance
+---@param vertex2 Vector3&Instance
+---@param vertex3 Vector3&Instance
+---@return PlaneIntersectionTypeInstance
+function PlaneInstance:intersects(vertex1, vertex2, vertex3) end
+
+---@param self PlaneInstance
+---@param box BoundingBox&Instance
+---@return PlaneIntersectionTypeInstance
+function PlaneInstance:intersects(box) end
+
+---@param self PlaneInstance
+---@param sphere BoundingSphere&Instance
+---@return PlaneIntersectionTypeInstance
+function PlaneInstance:intersects(sphere) end
+
+---@param self PlaneInstance
+---@return string
+function PlaneInstance:toString() end
+
+---@param self PlaneInstance
+---@param format? string
+---@param formatProvider? IFormatProviderInstance
+---@return string
+function PlaneInstance:toString(format, formatProvider) end
+
+---@param self PlaneInstance
+---@return integer
+function PlaneInstance:getHashCode() end
+
+---@param self PlaneInstance
+---@param value PlaneInstance
+---@return boolean
+function PlaneInstance:equals(value) end
+
+---@param self PlaneInstance
+---@param value? ObjectInstance
+---@return boolean
+function PlaneInstance:equals(value) end
+
+---@param self PlaneInstance
+---@return TypeInstance
+function PlaneInstance:getType() end
+
+
+---@class (exact) ArrayOfVector3Instance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Vector3Instance
+local ArrayOfVector3Instance = {}
+
+---@class (exact) ArrayOfVector3 : Array
+---Creates a new ArrayOfVector3
+---@param length integer
+---@return Vector3Instance[]
+function ArrayOfVector3.new(length) end
+
+---@param self Vector3Instance[]
+---@param param0 integer
+---@return Vector3Instance
+function ArrayOfVector3Instance:get(param0) end
+
+---@param self Vector3Instance[]
+---@param param0 integer
+---@param param1 Vector3Instance
+function ArrayOfVector3Instance:set(param0, param1) end
+
+---@param self Vector3Instance[]
+function ArrayOfVector3Instance:initialize() end
+
+---@param self Vector3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector3Instance:getLength(dimension) end
+
+---@param self Vector3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector3Instance:getUpperBound(dimension) end
+
+---@param self Vector3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector3Instance:getLowerBound(dimension) end
+
+---@param self Vector3Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(indices) end
+
+---@param self Vector3Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index) end
+
+---@param self Vector3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index1, index2) end
+
+---@param self Vector3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index1, index2, index3) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector3Instance:setValue(value, index) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector3Instance:setValue(value, index1, index2) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector3Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector3Instance:setValue(value, indices) end
+
+---@param self Vector3Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index) end
+
+---@param self Vector3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index1, index2) end
+
+---@param self Vector3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index1, index2, index3) end
+
+---@param self Vector3Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(indices) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector3Instance:setValue(value, index) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector3Instance:setValue(value, index1, index2) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector3Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector3Instance:setValue(value, indices) end
+
+---@param self Vector3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector3Instance:getLongLength(dimension) end
+
+---@param self Vector3Instance[]
+---@return ObjectInstance
+function ArrayOfVector3Instance:clone() end
+
+---@param self Vector3Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector3Instance:copyTo(array, index) end
+
+---@param self Vector3Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector3Instance:copyTo(array, index) end
+
+---@param self Vector3Instance[]
+---@return IEnumeratorInstance
+function ArrayOfVector3Instance:getEnumerator() end
+
+---@param self Vector3Instance[]
+---@return TypeInstance
+function ArrayOfVector3Instance:getType() end
+
+---@param self Vector3Instance[]
+---@return string
+function ArrayOfVector3Instance:toString() end
+
+---@param self Vector3Instance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfVector3Instance:equals(obj) end
+
+---@param self Vector3Instance[]
+---@return integer
+function ArrayOfVector3Instance:getHashCode() end
+
+
+---@class (exact) Vector4Instance
+---@field x number
+---@field y number
+---@field z number
+---@field w number
+local Vector4Instance = {}
+
+---@class (exact) Vector4
+---@field zero Vector4Instance
+---@field one Vector4Instance
+---@field unitX Vector4Instance
+---@field unitY Vector4Instance
+---@field unitZ Vector4Instance
+---@field unitW Vector4Instance
+---Creates a new Vector4
+---@return Vector4
+function Vector4.new() end
+
+---Creates a new Vector4
+---@param x number
+---@param y number
+---@param z number
+---@param w number
+---@return Vector4Instance
+function Vector4.new(x, y, z, w) end
+
+---Creates a new Vector4
+---@param value Vector2Instance
+---@param z number
+---@param w number
+---@return Vector4Instance
+function Vector4.new(value, z, w) end
+
+---Creates a new Vector4
+---@param value Vector3Instance
+---@param w number
+---@return Vector4Instance
+function Vector4.new(value, w) end
+
+---Creates a new Vector4
+---@param value number
+---@return Vector4Instance
+function Vector4.new(value) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return Vector4
+function Vector4.add(value1, value2) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@param value3 Vector4
+---@param amount1 number
+---@param amount2 number
+---@return Vector4
+function Vector4.barycentric(value1, value2, value3, amount1, amount2) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@param value3 Vector4
+---@param value4 Vector4
+---@param amount number
+---@return Vector4
+function Vector4.catmullRom(value1, value2, value3, value4, amount) end
+
+---@param value1 Vector4
+---@param min Vector4
+---@param max Vector4
+---@return Vector4
+function Vector4.clamp(value1, min, max) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return number
+function Vector4.distance(value1, value2) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return number
+function Vector4.distanceSquared(value1, value2) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return Vector4
+function Vector4.divide(value1, value2) end
+
+---@param value1 Vector4
+---@param divider number
+---@return Vector4
+function Vector4.divide(value1, divider) end
+
+---@param vector1 Vector4
+---@param vector2 Vector4
+---@return number
+function Vector4.dot(vector1, vector2) end
+
+---@param value1 Vector4
+---@param tangent1 Vector4
+---@param value2 Vector4
+---@param tangent2 Vector4
+---@param amount number
+---@return Vector4
+function Vector4.hermite(value1, tangent1, value2, tangent2, amount) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@param amount number
+---@return Vector4
+function Vector4.lerp(value1, value2, amount) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return Vector4
+function Vector4.max(value1, value2) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return Vector4
+function Vector4.min(value1, value2) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return Vector4
+function Vector4.multiply(value1, value2) end
+
+---@param value1 Vector4
+---@param scaleFactor number
+---@return Vector4
+function Vector4.multiply(value1, scaleFactor) end
+
+---@param value Vector4
+---@return Vector4
+function Vector4.negate(value) end
+
+---@param vector Vector4
+---@return Vector4
+function Vector4.normalize(vector) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@param amount number
+---@return Vector4
+function Vector4.smoothStep(value1, value2, amount) end
+
+---@param value1 Vector4
+---@param value2 Vector4
+---@return Vector4
+function Vector4.subtract(value1, value2) end
+
+---@param position Vector2
+---@param matrix Matrix
+---@return Vector4
+function Vector4.transform(position, matrix) end
+
+---@param position Vector3
+---@param matrix Matrix
+---@return Vector4
+function Vector4.transform(position, matrix) end
+
+---@param vector Vector4
+---@param matrix Matrix
+---@return Vector4
+function Vector4.transform(vector, matrix) end
+
+---@param value Vector2
+---@param rotation Quaternion
+---@return Vector4
+function Vector4.transform(value, rotation) end
+
+---@param value Vector3
+---@param rotation Quaternion
+---@return Vector4
+function Vector4.transform(value, rotation) end
+
+---@param value Vector4
+---@param rotation Quaternion
+---@return Vector4
+function Vector4.transform(value, rotation) end
+
+---@param self Vector4Instance
+---@param obj ObjectInstance
+---@return boolean
+function Vector4Instance:equals(obj) end
+
+---@param self Vector4Instance
+---@param other Vector4Instance
+---@return boolean
+function Vector4Instance:equals(other) end
+
+---@param self Vector4Instance
+---@return integer
+function Vector4Instance:getHashCode() end
+
+---@param self Vector4Instance
+---@return number
+function Vector4Instance:length() end
+
+---@param self Vector4Instance
+---@return number
+function Vector4Instance:lengthSquared() end
+
+---@param self Vector4Instance
+function Vector4Instance:normalize() end
+
+---@param self Vector4Instance
+---@return string
+function Vector4Instance:toString() end
+
+---@param self Vector4Instance
+---@return TypeInstance
+function Vector4Instance:getType() end
+
+
+---@class (exact) BoundingBoxInstance
+---@field min Vector3Instance
+---@field max Vector3Instance
+local BoundingBoxInstance = {}
+
+---@class (exact) BoundingBox
+---Creates a new BoundingBox
+---@return BoundingBox
+function BoundingBox.new() end
+
+---Creates a new BoundingBox
+---@param min Vector3Instance
+---@param max Vector3Instance
+---@return BoundingBoxInstance
+function BoundingBox.new(min, max) end
+
+---@param points IEnumerable_Vector3
+---@return BoundingBox
+function BoundingBox.createFromPoints(points) end
+
+---@param sphere BoundingSphere
+---@return BoundingBox
+function BoundingBox.createFromSphere(sphere) end
+
+---@param original BoundingBox
+---@param additional BoundingBox
+---@return BoundingBox
+function BoundingBox.createMerged(original, additional) end
+
+---@param self BoundingBoxInstance
+---@param point Vector3Instance
+---@return ContainmentTypeInstance
+function BoundingBoxInstance:contains(point) end
+
+---@param self BoundingBoxInstance
+---@param box BoundingBoxInstance
+---@return ContainmentTypeInstance
+function BoundingBoxInstance:contains(box) end
+
+---@param self BoundingBoxInstance
+---@param frustum BoundingFrustumInstance
+---@return ContainmentTypeInstance
+function BoundingBoxInstance:contains(frustum) end
+
+---@param self BoundingBoxInstance
+---@param sphere BoundingSphereInstance
+---@return ContainmentTypeInstance
+function BoundingBoxInstance:contains(sphere) end
+
+---@param self BoundingBoxInstance
+---@return Vector3Instance[]
+function BoundingBoxInstance:getCorners() end
+
+---@param self BoundingBoxInstance
+---@param corners Vector3Instance[]
+function BoundingBoxInstance:getCorners(corners) end
+
+---@param self BoundingBoxInstance
+---@param ray RayInstance
+---@return number?
+function BoundingBoxInstance:intersects(ray) end
+
+---@param self BoundingBoxInstance
+---@param frustum BoundingFrustumInstance
+---@return boolean
+function BoundingBoxInstance:intersects(frustum) end
+
+---@param self BoundingBoxInstance
+---@param box BoundingBoxInstance
+---@return boolean
+function BoundingBoxInstance:intersects(box) end
+
+---@param self BoundingBoxInstance
+---@param plane PlaneInstance
+---@return PlaneIntersectionTypeInstance
+function BoundingBoxInstance:intersects(plane) end
+
+---@param self BoundingBoxInstance
+---@param sphere BoundingSphereInstance
+---@return boolean
+function BoundingBoxInstance:intersects(sphere) end
+
+---@param self BoundingBoxInstance
+---@param other BoundingBoxInstance
+---@return boolean
+function BoundingBoxInstance:equals(other) end
+
+---@param self BoundingBoxInstance
+---@param obj ObjectInstance
+---@return boolean
+function BoundingBoxInstance:equals(obj) end
+
+---@param self BoundingBoxInstance
+---@return integer
+function BoundingBoxInstance:getHashCode() end
+
+---@param self BoundingBoxInstance
+---@return string
+function BoundingBoxInstance:toString() end
+
+---@param self BoundingBoxInstance
+---@return TypeInstance
+function BoundingBoxInstance:getType() end
+
+
+---@class (exact) BoundingSphereInstance
+---@field center Vector3Instance
+---@field radius number
+local BoundingSphereInstance = {}
+
+---@class (exact) BoundingSphere
+---Creates a new BoundingSphere
+---@return BoundingSphere
+function BoundingSphere.new() end
+
+---Creates a new BoundingSphere
+---@param center Vector3Instance
+---@param radius number
+---@return BoundingSphereInstance
+function BoundingSphere.new(center, radius) end
+
+---@param box BoundingBox
+---@return BoundingSphere
+function BoundingSphere.createFromBoundingBox(box) end
+
+---@param frustum BoundingFrustum
+---@return BoundingSphere
+function BoundingSphere.createFromFrustum(frustum) end
+
+---@param points IEnumerable_Vector3
+---@return BoundingSphere
+function BoundingSphere.createFromPoints(points) end
+
+---@param original BoundingSphere
+---@param additional BoundingSphere
+---@return BoundingSphere
+function BoundingSphere.createMerged(original, additional) end
+
+---@param self BoundingSphereInstance
+---@param matrix MatrixInstance
+---@return BoundingSphereInstance
+function BoundingSphereInstance:transform(matrix) end
+
+---@param self BoundingSphereInstance
+---@param box BoundingBoxInstance
+---@return ContainmentTypeInstance
+function BoundingSphereInstance:contains(box) end
+
+---@param self BoundingSphereInstance
+---@param frustum BoundingFrustumInstance
+---@return ContainmentTypeInstance
+function BoundingSphereInstance:contains(frustum) end
+
+---@param self BoundingSphereInstance
+---@param sphere BoundingSphereInstance
+---@return ContainmentTypeInstance
+function BoundingSphereInstance:contains(sphere) end
+
+---@param self BoundingSphereInstance
+---@param point Vector3Instance
+---@return ContainmentTypeInstance
+function BoundingSphereInstance:contains(point) end
+
+---@param self BoundingSphereInstance
+---@param other BoundingSphereInstance
+---@return boolean
+function BoundingSphereInstance:equals(other) end
+
+---@param self BoundingSphereInstance
+---@param box BoundingBoxInstance
+---@return boolean
+function BoundingSphereInstance:intersects(box) end
+
+---@param self BoundingSphereInstance
+---@param frustum BoundingFrustumInstance
+---@return boolean
+function BoundingSphereInstance:intersects(frustum) end
+
+---@param self BoundingSphereInstance
+---@param sphere BoundingSphereInstance
+---@return boolean
+function BoundingSphereInstance:intersects(sphere) end
+
+---@param self BoundingSphereInstance
+---@param ray RayInstance
+---@return number?
+function BoundingSphereInstance:intersects(ray) end
+
+---@param self BoundingSphereInstance
+---@param plane PlaneInstance
+---@return PlaneIntersectionTypeInstance
+function BoundingSphereInstance:intersects(plane) end
+
+---@param self BoundingSphereInstance
+---@param obj ObjectInstance
+---@return boolean
+function BoundingSphereInstance:equals(obj) end
+
+---@param self BoundingSphereInstance
+---@return integer
+function BoundingSphereInstance:getHashCode() end
+
+---@param self BoundingSphereInstance
+---@return string
+function BoundingSphereInstance:toString() end
+
+---@param self BoundingSphereInstance
+---@return TypeInstance
+function BoundingSphereInstance:getType() end
+
+
+---@class (exact) BoundingFrustumInstance
+---@field matrix MatrixInstance
+---@field near PlaneInstance
+---@field far PlaneInstance
+---@field left PlaneInstance
+---@field right PlaneInstance
+---@field top PlaneInstance
+---@field bottom PlaneInstance
+local BoundingFrustumInstance = {}
+
+---@class (exact) BoundingFrustum
+---Creates a new BoundingFrustum
+---@param value MatrixInstance
+---@return BoundingFrustumInstance
+function BoundingFrustum.new(value) end
+
+---@param self BoundingFrustumInstance
+---@param frustum BoundingFrustumInstance
+---@return ContainmentTypeInstance
+function BoundingFrustumInstance:contains(frustum) end
+
+---@param self BoundingFrustumInstance
+---@param box BoundingBoxInstance
+---@return ContainmentTypeInstance
+function BoundingFrustumInstance:contains(box) end
+
+---@param self BoundingFrustumInstance
+---@param sphere BoundingSphereInstance
+---@return ContainmentTypeInstance
+function BoundingFrustumInstance:contains(sphere) end
+
+---@param self BoundingFrustumInstance
+---@param point Vector3Instance
+---@return ContainmentTypeInstance
+function BoundingFrustumInstance:contains(point) end
+
+---@param self BoundingFrustumInstance
+---@return Vector3Instance[]
+function BoundingFrustumInstance:getCorners() end
+
+---@param self BoundingFrustumInstance
+---@param corners Vector3Instance[]
+function BoundingFrustumInstance:getCorners(corners) end
+
+---@param self BoundingFrustumInstance
+---@param frustum BoundingFrustumInstance
+---@return boolean
+function BoundingFrustumInstance:intersects(frustum) end
+
+---@param self BoundingFrustumInstance
+---@param box BoundingBoxInstance
+---@return boolean
+function BoundingFrustumInstance:intersects(box) end
+
+---@param self BoundingFrustumInstance
+---@param sphere BoundingSphereInstance
+---@return boolean
+function BoundingFrustumInstance:intersects(sphere) end
+
+---@param self BoundingFrustumInstance
+---@param plane PlaneInstance
+---@return PlaneIntersectionTypeInstance
+function BoundingFrustumInstance:intersects(plane) end
+
+---@param self BoundingFrustumInstance
+---@param ray RayInstance
+---@return number?
+function BoundingFrustumInstance:intersects(ray) end
+
+---@param self BoundingFrustumInstance
+---@param other BoundingFrustumInstance
+---@return boolean
+function BoundingFrustumInstance:equals(other) end
+
+---@param self BoundingFrustumInstance
+---@param obj ObjectInstance
+---@return boolean
+function BoundingFrustumInstance:equals(obj) end
+
+---@param self BoundingFrustumInstance
+---@return string
+function BoundingFrustumInstance:toString() end
+
+---@param self BoundingFrustumInstance
+---@return integer
+function BoundingFrustumInstance:getHashCode() end
+
+---@param self BoundingFrustumInstance
+---@return TypeInstance
+function BoundingFrustumInstance:getType() end
 
 
 ---@class (exact) f64AngleSingleInstance
@@ -2616,4 +6998,612 @@ function f64AngleSingleInstance:equals(obj) end
 ---@return TypeInstance
 function f64AngleSingleInstance:getType() end
 
+
+---@class (exact) ArrayOfVector3Instance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Vector3Instance
+local ArrayOfVector3Instance = {}
+
+---@class (exact) ArrayOfVector3 : Array
+---Creates a new ArrayOfVector3
+---@param length integer
+---@return Vector3Instance[]
+function ArrayOfVector3.new(length) end
+
+---@param self Vector3Instance[]
+---@param param0 integer
+---@return Vector3Instance
+function ArrayOfVector3Instance:get(param0) end
+
+---@param self Vector3Instance[]
+---@param param0 integer
+---@param param1 Vector3Instance
+function ArrayOfVector3Instance:set(param0, param1) end
+
+---@param self Vector3Instance[]
+function ArrayOfVector3Instance:initialize() end
+
+---@param self Vector3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector3Instance:getLength(dimension) end
+
+---@param self Vector3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector3Instance:getUpperBound(dimension) end
+
+---@param self Vector3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector3Instance:getLowerBound(dimension) end
+
+---@param self Vector3Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(indices) end
+
+---@param self Vector3Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index) end
+
+---@param self Vector3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index1, index2) end
+
+---@param self Vector3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index1, index2, index3) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector3Instance:setValue(value, index) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector3Instance:setValue(value, index1, index2) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector3Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector3Instance:setValue(value, indices) end
+
+---@param self Vector3Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index) end
+
+---@param self Vector3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index1, index2) end
+
+---@param self Vector3Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(index1, index2, index3) end
+
+---@param self Vector3Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector3Instance:getValue(indices) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector3Instance:setValue(value, index) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector3Instance:setValue(value, index1, index2) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector3Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector3Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector3Instance:setValue(value, indices) end
+
+---@param self Vector3Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector3Instance:getLongLength(dimension) end
+
+---@param self Vector3Instance[]
+---@return ObjectInstance
+function ArrayOfVector3Instance:clone() end
+
+---@param self Vector3Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector3Instance:copyTo(array, index) end
+
+---@param self Vector3Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector3Instance:copyTo(array, index) end
+
+---@param self Vector3Instance[]
+---@return IEnumeratorInstance
+function ArrayOfVector3Instance:getEnumerator() end
+
+---@param self Vector3Instance[]
+---@return TypeInstance
+function ArrayOfVector3Instance:getType() end
+
+---@param self Vector3Instance[]
+---@return string
+function ArrayOfVector3Instance:toString() end
+
+---@param self Vector3Instance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfVector3Instance:equals(obj) end
+
+---@param self Vector3Instance[]
+---@return integer
+function ArrayOfVector3Instance:getHashCode() end
+
+
+---@class (exact) ArrayOfPlaneInstance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] PlaneInstance
+local ArrayOfPlaneInstance = {}
+
+---@class (exact) ArrayOfPlane : Array
+---Creates a new ArrayOfPlane
+---@param length integer
+---@return PlaneInstance[]
+function ArrayOfPlane.new(length) end
+
+---@param self PlaneInstance[]
+---@param param0 integer
+---@return PlaneInstance
+function ArrayOfPlaneInstance:get(param0) end
+
+---@param self PlaneInstance[]
+---@param param0 integer
+---@param param1 PlaneInstance
+function ArrayOfPlaneInstance:set(param0, param1) end
+
+---@param self PlaneInstance[]
+function ArrayOfPlaneInstance:initialize() end
+
+---@param self PlaneInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfPlaneInstance:getLength(dimension) end
+
+---@param self PlaneInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfPlaneInstance:getUpperBound(dimension) end
+
+---@param self PlaneInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfPlaneInstance:getLowerBound(dimension) end
+
+---@param self PlaneInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfPlaneInstance:getValue(indices) end
+
+---@param self PlaneInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfPlaneInstance:getValue(index) end
+
+---@param self PlaneInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfPlaneInstance:getValue(index1, index2) end
+
+---@param self PlaneInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfPlaneInstance:getValue(index1, index2, index3) end
+
+---@param self PlaneInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfPlaneInstance:setValue(value, index) end
+
+---@param self PlaneInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfPlaneInstance:setValue(value, index1, index2) end
+
+---@param self PlaneInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfPlaneInstance:setValue(value, index1, index2, index3) end
+
+---@param self PlaneInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfPlaneInstance:setValue(value, indices) end
+
+---@param self PlaneInstance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfPlaneInstance:getValue(index) end
+
+---@param self PlaneInstance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfPlaneInstance:getValue(index1, index2) end
+
+---@param self PlaneInstance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfPlaneInstance:getValue(index1, index2, index3) end
+
+---@param self PlaneInstance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfPlaneInstance:getValue(indices) end
+
+---@param self PlaneInstance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfPlaneInstance:setValue(value, index) end
+
+---@param self PlaneInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfPlaneInstance:setValue(value, index1, index2) end
+
+---@param self PlaneInstance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfPlaneInstance:setValue(value, index1, index2, index3) end
+
+---@param self PlaneInstance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfPlaneInstance:setValue(value, indices) end
+
+---@param self PlaneInstance[]
+---@param dimension integer
+---@return integer
+function ArrayOfPlaneInstance:getLongLength(dimension) end
+
+---@param self PlaneInstance[]
+---@return ObjectInstance
+function ArrayOfPlaneInstance:clone() end
+
+---@param self PlaneInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfPlaneInstance:copyTo(array, index) end
+
+---@param self PlaneInstance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfPlaneInstance:copyTo(array, index) end
+
+---@param self PlaneInstance[]
+---@return IEnumeratorInstance
+function ArrayOfPlaneInstance:getEnumerator() end
+
+---@param self PlaneInstance[]
+---@return TypeInstance
+function ArrayOfPlaneInstance:getType() end
+
+---@param self PlaneInstance[]
+---@return string
+function ArrayOfPlaneInstance:toString() end
+
+---@param self PlaneInstance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfPlaneInstance:equals(obj) end
+
+---@param self PlaneInstance[]
+---@return integer
+function ArrayOfPlaneInstance:getHashCode() end
+
+
+---@class (exact) ArrayOfVector4Instance : ArrayInstance
+---@field length integer
+---@field longLength integer
+---@field rank integer
+---@field syncRoot ObjectInstance
+---@field isReadOnly boolean
+---@field isFixedSize boolean
+---@field isSynchronized boolean
+---@field [integer] Vector4Instance
+local ArrayOfVector4Instance = {}
+
+---@class (exact) ArrayOfVector4 : Array
+---Creates a new ArrayOfVector4
+---@param length integer
+---@return Vector4Instance[]
+function ArrayOfVector4.new(length) end
+
+---@param self Vector4Instance[]
+---@param param0 integer
+---@return Vector4Instance
+function ArrayOfVector4Instance:get(param0) end
+
+---@param self Vector4Instance[]
+---@param param0 integer
+---@param param1 Vector4Instance
+function ArrayOfVector4Instance:set(param0, param1) end
+
+---@param self Vector4Instance[]
+function ArrayOfVector4Instance:initialize() end
+
+---@param self Vector4Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector4Instance:getLength(dimension) end
+
+---@param self Vector4Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector4Instance:getUpperBound(dimension) end
+
+---@param self Vector4Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector4Instance:getLowerBound(dimension) end
+
+---@param self Vector4Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(indices) end
+
+---@param self Vector4Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index) end
+
+---@param self Vector4Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index1, index2) end
+
+---@param self Vector4Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index1, index2, index3) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector4Instance:setValue(value, index) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector4Instance:setValue(value, index1, index2) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector4Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector4Instance:setValue(value, indices) end
+
+---@param self Vector4Instance[]
+---@param index integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index) end
+
+---@param self Vector4Instance[]
+---@param index1 integer
+---@param index2 integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index1, index2) end
+
+---@param self Vector4Instance[]
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(index1, index2, index3) end
+
+---@param self Vector4Instance[]
+---@param indices integer[]
+---@return ObjectInstance
+function ArrayOfVector4Instance:getValue(indices) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index integer
+function ArrayOfVector4Instance:setValue(value, index) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+function ArrayOfVector4Instance:setValue(value, index1, index2) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param index1 integer
+---@param index2 integer
+---@param index3 integer
+function ArrayOfVector4Instance:setValue(value, index1, index2, index3) end
+
+---@param self Vector4Instance[]
+---@param value? ObjectInstance
+---@param indices integer[]
+function ArrayOfVector4Instance:setValue(value, indices) end
+
+---@param self Vector4Instance[]
+---@param dimension integer
+---@return integer
+function ArrayOfVector4Instance:getLongLength(dimension) end
+
+---@param self Vector4Instance[]
+---@return ObjectInstance
+function ArrayOfVector4Instance:clone() end
+
+---@param self Vector4Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector4Instance:copyTo(array, index) end
+
+---@param self Vector4Instance[]
+---@param array ArrayInstance
+---@param index integer
+function ArrayOfVector4Instance:copyTo(array, index) end
+
+---@param self Vector4Instance[]
+---@return IEnumeratorInstance
+function ArrayOfVector4Instance:getEnumerator() end
+
+---@param self Vector4Instance[]
+---@return TypeInstance
+function ArrayOfVector4Instance:getType() end
+
+---@param self Vector4Instance[]
+---@return string
+function ArrayOfVector4Instance:toString() end
+
+---@param self Vector4Instance[]
+---@param obj? ObjectInstance
+---@return boolean
+function ArrayOfVector4Instance:equals(obj) end
+
+---@param self Vector4Instance[]
+---@return integer
+function ArrayOfVector4Instance:getHashCode() end
+
+
+---@class (exact) RayInstance
+---@field position Vector3Instance
+---@field direction Vector3Instance
+local RayInstance = {}
+
+---@class (exact) Ray
+---Creates a new Ray
+---@return Ray
+function Ray.new() end
+
+---Creates a new Ray
+---@param position Vector3Instance
+---@param direction Vector3Instance
+---@return RayInstance
+function Ray.new(position, direction) end
+
+---@param self RayInstance
+---@param obj ObjectInstance
+---@return boolean
+function RayInstance:equals(obj) end
+
+---@param self RayInstance
+---@param other RayInstance
+---@return boolean
+function RayInstance:equals(other) end
+
+---@param self RayInstance
+---@return integer
+function RayInstance:getHashCode() end
+
+---@param self RayInstance
+---@param box BoundingBoxInstance
+---@return number?
+function RayInstance:intersects(box) end
+
+---@param self RayInstance
+---@param sphere BoundingSphereInstance
+---@return number?
+function RayInstance:intersects(sphere) end
+
+---@param self RayInstance
+---@param plane PlaneInstance
+---@return number?
+function RayInstance:intersects(plane) end
+
+---@param self RayInstance
+---@param frustum BoundingFrustumInstance
+---@return number?
+function RayInstance:intersects(frustum) end
+
+---@param self RayInstance
+---@return string
+function RayInstance:toString() end
+
+---@param self RayInstance
+---@return TypeInstance
+function RayInstance:getType() end
+
+
+---@class (exact) IEnumerable_Vector3Instance
+local IEnumerable_Vector3Instance = {}
+
+---@class (exact) IEnumerable_Vector3
+---@param self IEnumerable_Vector3Instance
+---@return IEnumerator_Vector3Instance
+function IEnumerable_Vector3Instance:getEnumerator() end
+
+
+---@class (exact) IEnumerator_Vector3Instance
+---@field current Vector3Instance
+local IEnumerator_Vector3Instance = {}
+
+---@class (exact) IEnumerator_Vector3
 

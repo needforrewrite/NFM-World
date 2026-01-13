@@ -44,6 +44,7 @@ public partial class LuaBindings
         Register_ReferencedType(L);
         Register_List_ReferencedType(L);
         Register_Int64Array(L);
+        Register_IEnumerator(L);
         Register_IEnumerable_Int32(L);
         Register_ReadOnlyCollection_Int32(L);
         Register_IComparer_Int32(L);
