@@ -308,6 +308,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         while (queue.Count > 0)
         {
             var currentType = queue.Dequeue();
+            
+            // Check base type
+            if (currentType.BaseType != null)
+            {
+                ProcessType(currentType.BaseType, discovered, queue, additional);
+            }
+            
+            // Check interfaces
+            foreach (var iface in currentType.GetInterfaces())
+            {
+                ProcessType(iface, discovered, queue, additional);
+            }
 
             // Check properties
             foreach (var prop in currentType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
@@ -437,6 +449,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         // Skip ref structs - they cannot be marshalled to Lua
         if (IsRefStruct(type))
+            return;
+        
+        // Skip types containing static abstract members without implementation (C# 11 interfaces)
+        if (type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
+                .OfType<MethodInfo>()
+                .Any(m => m.IsAbstract && m.IsStatic))
+        {
+            return;
+        }
+        
+        // Skip internal types not from the current assembly
+        if (!type.IsPublic && type.Assembly != assembly)
             return;
 
         if ((!type.IsGenericType || type.IsGenericType && !type.IsGenericTypeDefinition) && !IsBlacklistedType(type))
@@ -1130,13 +1154,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 }
                 #endregion
 
-                public void DefineGlobalVariable<T>(lua_State L, string name, T value)
+                public static void DefineGlobalVariable<T>(lua_State L, string name, T value)
                 {
                     PushValue(L, value);
                     lua_setglobal(L, name);
                 }
 
-                public void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
+                public static void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
                     {
@@ -1147,7 +1171,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     lua_setglobal(L, name);
                 }
 
-                public void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
+                public static void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
                     {
@@ -1158,7 +1182,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     lua_setglobal(L, name);
                 }
 
-                public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
+                public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
                     {
@@ -1170,7 +1194,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     lua_setglobal(L, name);
                 }
 
-                public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
+                public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
                     {
@@ -1182,7 +1206,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     lua_setglobal(L, name);
                 }
 
-                public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
+                public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
                     {
@@ -1195,7 +1219,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     lua_setglobal(L, name);
                 }
 
-                public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
+                public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
                     {
@@ -1208,7 +1232,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     lua_setglobal(L, name);
                 }
 
-                public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
+                public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
                     {
@@ -1222,7 +1246,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     lua_setglobal(L, name);
                 }
 
-                public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
+                public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
                 {
                     lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
                     {
@@ -1448,23 +1472,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             foreach (var indexer in indexers)
             {
                 var indexParams = indexer.GetIndexParameters();
-                if (indexParams.Length == 1 && indexParams[0].ParameterType == typeof(int))
+                if (indexParams.Length == 1)
                 {
                     var tsType = GetTypeScriptTypeName(indexer.PropertyType);
-                    AppendLine($"[index: number]: {tsType};");
+                    AppendLine($"[index: {GetTypeScriptTypeName(indexParams[0].ParameterType)}]: {tsType};");
                 }
                 else
                 {
-                    var parameters = indexParams
-                        .Select(p => $"{ToCamelCase(p.Name ?? "arg")}: {GetTypeScriptTypeName(p.ParameterType)}")
-                        .ToList();
-                    var paramStr = string.Join(", ", parameters);
+                    var parameters = string.Join(", ", indexParams
+                        .Select(p => $"{GetTypeScriptTypeName(p.ParameterType)}"));
+                    
                     var tsType = GetTypeScriptTypeName(indexer.PropertyType);
-                    AppendLine($"get({paramStr}): {tsType};");
-                    if (indexer.CanWrite)
-                    {
-                        AppendLine($"set(value: {tsType}, {paramStr}): void;");
-                    }
+                    AppendLine($"[index: [{parameters}]]: {tsType};");
                 }
             }
         }
@@ -1531,14 +1550,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         var isArray = type.IsArray;
 
         // Generate class instance annotation
+        var baseTypes = type.GetInterfaces()
+            .Where(i => i != type.BaseType && i != typeof(IDisposable))
+            .Select(t => $"{GetSafeTypeName(t)}Instance");
+
         if (type.BaseType != null && type.BaseType != typeof(object) && type.BaseType != typeof(ValueType))
         {
             var baseTypeName = GetSafeTypeName(type.BaseType);
-            AppendLine($"---@class (exact) {luaName}Instance : {baseTypeName}Instance");
+            baseTypes = baseTypes.Prepend($"{baseTypeName}Instance");
+        }
+
+        if (baseTypes.Any())
+        {
+            AppendLine($"---@class {luaName}Instance : {string.Join(", ", baseTypes)}");
         }
         else
         {
-            AppendLine($"---@class (exact) {luaName}Instance");
+            AppendLine($"---@class {luaName}Instance");
         }
 
         // Generate field annotations for properties and fields
@@ -1554,7 +1582,22 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         {
             var propLuaName = GetLuaPropertyName(prop);
             var propType = GetLuaStubTypeName(prop.PropertyType);
-            AppendLine($"---@field {propLuaName} {propType}");
+            if (prop.CanRead && prop.GetIndexParameters() is { Length: > 0 } indexParameters)
+            {
+                if (indexParameters.Length == 1)
+                {
+                    AppendLine($"---@field [{GetLuaStubTypeName(indexParameters[0].ParameterType)}] {propType}");
+                }
+                else
+                {
+                    var indexTypes = string.Join(", ", indexParameters.Select(p => GetLuaStubTypeName(p.ParameterType)));
+                    AppendLine($"---@field [[{indexTypes}]] {propType}");
+                }
+            }
+            else
+            {
+                AppendLine($"---@field {propLuaName} {propType}");
+            }
         }
 
         foreach (var field in fields.Where(f => !f.IsStatic))
@@ -1571,7 +1614,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine($"---@field [integer] {elementTypeName}");
         }
 
-        AppendLine($"local {luaName}Instance = {{}}");
+        AppendLine($"{luaName}Instance = {{}}");
+        AppendLine($"{luaName} = {{}}");
         AppendLine();
 
         // Generate class annotation
@@ -1590,7 +1634,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         {
             var propLuaName = GetLuaPropertyName(prop);
             var propType = GetLuaStubTypeName(prop.PropertyType);
-            AppendLine($"---@field {propLuaName} {propType}");
+
+            if (prop.CanRead && prop.GetIndexParameters() is { Length: > 0 } indexParameters)
+            {
+                if (indexParameters.Length == 1)
+                {
+                    AppendLine($"---@field [{GetLuaStubTypeName(indexParameters[0].ParameterType)}] {propType}");
+                }
+                else
+                {
+                    var indexTypes = string.Join(", ", indexParameters.Select(p => GetLuaStubTypeName(p.ParameterType)));
+                    AppendLine($"---@field [[{indexTypes}]] {propType}");
+                }
+            }
+            else
+            {
+                AppendLine($"---@field {propLuaName} {propType}");
+            }
         }
 
         // Generate constructor stub
@@ -1605,7 +1665,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 if (isStruct)
                 {
                     AppendLine($"---Creates a new {luaName}");
-                    AppendLine($"---@return {luaName}");
+                    AppendLine($"---@return {luaName}Instance");
                     AppendLine($"function {luaName}.new() end");
                     AppendLine();
                 }
@@ -1674,7 +1734,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             foreach (var param in parameters)
             {
-                var paramType = GetLuaTypeName(param.ParameterType);
+                var paramType = GetLuaStubTypeName(param.ParameterType);
                 var paramName = param.Name ?? $"param{param.Position}";
                 var optional = IsNullableParameter(param) ? "?" : "";
                 AppendLine($"---@param {paramName}{optional} {paramType}");
@@ -1682,7 +1742,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             if (method.ReturnType != typeof(void))
             {
-                var returnType = GetLuaTypeName(method.ReturnType);
+                var returnType = GetLuaStubTypeName(method.ReturnType);
                 AppendLine($"---@return {returnType}");
             }
 

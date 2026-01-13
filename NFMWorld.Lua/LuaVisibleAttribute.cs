@@ -16,19 +16,14 @@ public sealed class LuaVisibleAttribute : Attribute
 /// <summary>
 /// Marks a method, property, or field to be hidden from Lua even if the containing type is [LuaVisible].
 /// </summary>
-[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Constructor)]
+[AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Constructor | AttributeTargets.Event)]
 public sealed class LuaHiddenAttribute : Attribute;
 
 /// <summary>
 /// Marks a method or property with a custom Lua name.
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class LuaNameAttribute : Attribute
+public sealed class LuaNameAttribute(string name) : Attribute
 {
-    public string Name { get; }
-
-    public LuaNameAttribute(string name)
-    {
-        Name = name;
-    }
+    public string Name { get; } = name;
 }

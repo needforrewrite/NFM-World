@@ -259,6 +259,10 @@ public partial class LuaBindings
         lua_pushcfunction(L, (fix64_static_atan));
         lua_setfield(L, -2, "atan");
 
+        // Static method: create
+        lua_pushcfunction(L, (fix64_static_create));
+        lua_setfield(L, -2, "create");
+
         // Static method: sqrt
         lua_pushcfunction(L, (fix64_static_sqrt));
         lua_setfield(L, -2, "sqrt");
@@ -378,6 +382,9 @@ public partial class LuaBindings
                 return 1;
             case "sign":
                 lua_pushcfunction(L, (fix64_method_sign));
+                return 1;
+            case "toFloat":
+                lua_pushcfunction(L, (fix64_method_toFloat));
                 return 1;
             case "getHashCode":
                 lua_pushcfunction(L, (fix64_method_getHashCode));
@@ -1880,6 +1887,30 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int fix64_static_create(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<double>(L, 1)!;
+            try
+            {
+                var result = nfm_world_library.SoftFloat.fix64.LuaFromFloat(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for create");
+        return 0;
+    }
+
     private static int fix64_static_sqrt(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2511,6 +2542,32 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for sign");
+        return 0;
+    }
+
+    private static int fix64_method_toFloat(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = self.LuaToFloat();
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toFloat");
         return 0;
     }
 

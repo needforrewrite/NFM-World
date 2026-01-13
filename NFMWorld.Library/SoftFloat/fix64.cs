@@ -25,9 +25,11 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using FixedMathSharp;
+using nfm_world_library.Lua;
 
 namespace nfm_world_library.SoftFloat;
 
+[LuaVisible]
 [DebuggerDisplay("{ToString()}")]
 [method: MethodImpl(MethodImplOptions.AggressiveInlining)] 
 public readonly partial struct fix64(Fixed64 value) : IEquatable<fix64>, IComparable<fix64>, IComparable, IFormattable
@@ -114,5 +116,17 @@ public readonly partial struct fix64(Fixed64 value) : IEquatable<fix64>, ICompar
     public static fix64 Atan(fix64 value)
     {
         return new(FixedMath.Atan(value.Value));
+    }
+    
+    [LuaName("create")]
+    public static fix64 LuaFromFloat(double value)
+    {
+        return (fix64)value;
+    }
+    
+    [LuaName("toFloat")]
+    public double LuaToFloat()
+    {
+        return (double)value;
     }
 }

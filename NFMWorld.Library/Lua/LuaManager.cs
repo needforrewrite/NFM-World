@@ -1,13 +1,17 @@
-﻿namespace nfm_world_library.Lua;
+﻿// ReSharper disable InconsistentNaming
+
+using System.Runtime.InteropServices;
+using nfm_world_library.backend;
+using nfm_world_library.backend.gamemodes;
+
+namespace nfm_world_library.Lua;
 
 public static class LuaManager
 {
-    public static lua_State L;
-    
-    public static void InitializeLua()
+    public static void InitializeLua(out lua_State L)
     {
         L = luaL_newstate();
-        
+
         // Load standard libraries
         // https://stackoverflow.com/a/4552146
         lua_pushcfunction(L, luaopen_table);
@@ -23,5 +27,22 @@ public static class LuaManager
         lua_call(L, 1, 0);
 
         LuaBindings.Initialize(L);
+    }
+    
+    public static lua_State LoadGamemodeLua(LuaGamemode gm, string gamemodeLuaPath)
+    {
+        InitializeLua(out var L);
+        
+        LuaBindings.CleanupEventDelegates();
+        
+        LuaBindings.DefineGlobalVariable(L, "GM", gm);
+
+        if (luaL_dofile(L, gamemodeLuaPath) != LUA_OK)
+        {
+            string error = lua_tostring(L, -1) ?? "Unknown error";
+            throw new Exception($"Error loading gamemode Lua file: {error}");
+        }
+
+        return L;
     }
 }

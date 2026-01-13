@@ -311,6 +311,28 @@ public partial class LuaBindings
         if (luaType == LUA_TTABLE && typeof(T).IsArray)
         {
             #region Handle Lua tables being converted to arrays
+            if (typeof(T) == typeof(System.Byte[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new System.Byte[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<System.Byte>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
             if (typeof(T) == typeof(int[]))
             {
                 // Get the length of the table
@@ -553,6 +575,116 @@ public partial class LuaBindings
             
                 return (T)(object)array;
             }
+            if (typeof(T) == typeof(nfm_world_library.util.Color3[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new nfm_world_library.util.Color3[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<nfm_world_library.util.Color3>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(nfm_world_library.mad.rad.Rad3dWheelDef[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new nfm_world_library.mad.rad.Rad3dWheelDef[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<nfm_world_library.mad.rad.Rad3dWheelDef>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(nfm_world_library.mad.rad.Rad3dBoxDef[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new nfm_world_library.mad.rad.Rad3dBoxDef[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<nfm_world_library.mad.rad.Rad3dBoxDef>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(nfm_world_library.mad.rad.Rad3dPoly[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new nfm_world_library.mad.rad.Rad3dPoly[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<nfm_world_library.mad.rad.Rad3dPoly>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(nfm_world_library.backend.BackendGameObject[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new nfm_world_library.backend.BackendGameObject[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<nfm_world_library.backend.BackendGameObject>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
             if (typeof(T) == typeof(Stride.Core.Mathematics.Quaternion[]))
             {
                 // Get the length of the table
@@ -590,28 +722,6 @@ public partial class LuaBindings
             
                     // Convert the element
                     array[i] = ToObject<Microsoft.Xna.Framework.Vector3>(L, -1)!;
-            
-                    // Pop the element from stack
-                    lua_pop(L, 1);
-                }
-            
-                return (T)(object)array;
-            }
-            if (typeof(T) == typeof(nfm_world_library.mad.rad.Rad3dBoxDef[]))
-            {
-                // Get the length of the table
-                var length = (int)lua_objlen(L, idx);
-            
-                // Create the array
-                var array = new nfm_world_library.mad.rad.Rad3dBoxDef[length];
-            
-                for (int i = 0; i < length; i++)
-                {
-                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                    lua_rawgeti(L, idx, i + 1);
-            
-                    // Convert the element
-                    array[i] = ToObject<nfm_world_library.mad.rad.Rad3dBoxDef>(L, -1)!;
             
                     // Pop the element from stack
                     lua_pop(L, 1);
@@ -707,13 +817,13 @@ public partial class LuaBindings
             
                 return (T)(object)array;
             }
-            if (typeof(T) == typeof(nfm_world_library.util.Color3[]))
+            if (typeof(T) == typeof(string[]))
             {
                 // Get the length of the table
                 var length = (int)lua_objlen(L, idx);
             
                 // Create the array
-                var array = new nfm_world_library.util.Color3[length];
+                var array = new string[length];
             
                 for (int i = 0; i < length; i++)
                 {
@@ -721,51 +831,7 @@ public partial class LuaBindings
                     lua_rawgeti(L, idx, i + 1);
             
                     // Convert the element
-                    array[i] = ToObject<nfm_world_library.util.Color3>(L, -1)!;
-            
-                    // Pop the element from stack
-                    lua_pop(L, 1);
-                }
-            
-                return (T)(object)array;
-            }
-            if (typeof(T) == typeof(nfm_world_library.mad.rad.Rad3dWheelDef[]))
-            {
-                // Get the length of the table
-                var length = (int)lua_objlen(L, idx);
-            
-                // Create the array
-                var array = new nfm_world_library.mad.rad.Rad3dWheelDef[length];
-            
-                for (int i = 0; i < length; i++)
-                {
-                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                    lua_rawgeti(L, idx, i + 1);
-            
-                    // Convert the element
-                    array[i] = ToObject<nfm_world_library.mad.rad.Rad3dWheelDef>(L, -1)!;
-            
-                    // Pop the element from stack
-                    lua_pop(L, 1);
-                }
-            
-                return (T)(object)array;
-            }
-            if (typeof(T) == typeof(nfm_world_library.mad.rad.Rad3dPoly[]))
-            {
-                // Get the length of the table
-                var length = (int)lua_objlen(L, idx);
-            
-                // Create the array
-                var array = new nfm_world_library.mad.rad.Rad3dPoly[length];
-            
-                for (int i = 0; i < length; i++)
-                {
-                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                    lua_rawgeti(L, idx, i + 1);
-            
-                    // Convert the element
-                    array[i] = ToObject<nfm_world_library.mad.rad.Rad3dPoly>(L, -1)!;
+                    array[i] = ToObject<string>(L, -1)!;
             
                     // Pop the element from stack
                     lua_pop(L, 1);
@@ -978,6 +1044,28 @@ public partial class LuaBindings
             }));
             return @delegate;
         }
+        if (typeof(TDelegate) == typeof(System.Action))
+        {
+            var invoker = new EventInvoker0 { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(System.Action)(() => invoker.Invoke());
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        if (typeof(TDelegate) == typeof(System.EventHandler<System.Byte[]>))
+        {
+            var invoker = new EventInvoker2<object, System.Byte[]> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(System.EventHandler<System.Byte[]>)((arg0, arg1) => invoker.Invoke(arg0!, arg1!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
         if (typeof(TDelegate) == typeof(nfm_world_library.backend.DamageFunc))
         {
             var invoker = new EventInvoker3<nfm_world_library.mad.CarStats, int, nfm_world_library.SoftFloat.fix64> { L = L, FuncRef = funcRef };
@@ -1155,13 +1243,13 @@ public partial class LuaBindings
     }
     #endregion
 
-    public void DefineGlobalVariable<T>(lua_State L, string name, T value)
+    public static void DefineGlobalVariable<T>(lua_State L, string name, T value)
     {
         PushValue(L, value);
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
+    public static void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -1172,7 +1260,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
+    public static void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -1183,7 +1271,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
+    public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -1195,7 +1283,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
+    public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -1207,7 +1295,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
+    public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -1220,7 +1308,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
+    public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -1233,7 +1321,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
+    public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -1247,7 +1335,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
+    public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {

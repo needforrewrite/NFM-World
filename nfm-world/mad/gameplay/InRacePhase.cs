@@ -107,7 +107,7 @@ public class InRacePhase(GraphicsDevice graphicsDevice) : BaseRacePhase(graphics
     {
         return gamemode switch
         {
-            GameModes.Sandbox => new SandboxClientGamemode(parameters, this),
+            GameModes.Sandbox => new LuaClientGamemode("./data/gamemodes/sb_lua.lua", parameters, this),
             GameModes.TimeTrial => new TimeTrialClientGamemode(parameters, this),
             GameModes.Football => new FootballClientGamemode(parameters, this),
             GameModes.Racing => new RaceClientGamemode(parameters, this),

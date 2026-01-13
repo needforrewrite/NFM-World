@@ -35,8 +35,4 @@
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
         <ProjectReference Include="..\Facepunch.Steamworks\Facepunch.Steamworks\Facepunch.Steamworks.Posix.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="data\" />
-    </ItemGroup>
 </Project>
