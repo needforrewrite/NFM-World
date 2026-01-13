@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Int32Array2D");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(Int32Array2D__gc));
+        lua_pushcfunction(L, (Int32Array2D__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(Int32Array2D__index));
+        lua_pushcfunction(L, (Int32Array2D__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(Int32Array2D__newindex));
+        lua_pushcfunction(L, (Int32Array2D__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(Int32Array2D__tostring));
+        lua_pushcfunction(L, (Int32Array2D__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(Int32Array2D_new));
+        lua_pushcfunction(L, (Int32Array2D_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ArrayOfInt322D");

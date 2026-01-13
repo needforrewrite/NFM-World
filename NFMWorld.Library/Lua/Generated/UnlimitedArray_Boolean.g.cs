@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_UnlimitedArray_Boolean");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean__gc));
+        lua_pushcfunction(L, (UnlimitedArray_Boolean__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean__index));
+        lua_pushcfunction(L, (UnlimitedArray_Boolean__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean__newindex));
+        lua_pushcfunction(L, (UnlimitedArray_Boolean__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean__tostring));
+        lua_pushcfunction(L, (UnlimitedArray_Boolean__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_new));
+        lua_pushcfunction(L, (UnlimitedArray_Boolean_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "UnlimitedArray_Boolean");
@@ -86,52 +86,52 @@ public partial class LuaBindings
                 PushValue(L, obj.IsReadOnly);
                 return 1;
             case "getEnumerator":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_getEnumerator));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_getEnumerator));
                 return 1;
             case "ensureCapacity":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_ensureCapacity));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_ensureCapacity));
                 return 1;
             case "add":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_add));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_add));
                 return 1;
             case "clear":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_clear));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_clear));
                 return 1;
             case "contains":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_contains));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_contains));
                 return 1;
             case "copyTo":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_copyTo));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_copyTo));
                 return 1;
             case "remove":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_remove));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_remove));
                 return 1;
             case "indexOf":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_indexOf));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_indexOf));
                 return 1;
             case "insert":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_insert));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_insert));
                 return 1;
             case "removeAt":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_removeAt));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_removeAt));
                 return 1;
             case "toArray":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_toArray));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_toArray));
                 return 1;
             case "sort":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_sort));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_sort));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_getType));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_toString));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_equals));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(UnlimitedArray_Boolean_method_getHashCode));
+                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

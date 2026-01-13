@@ -19,35 +19,35 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Vector3Struct");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(Vector3Struct__gc));
+        lua_pushcfunction(L, (Vector3Struct__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(Vector3Struct__index));
+        lua_pushcfunction(L, (Vector3Struct__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(Vector3Struct__newindex));
+        lua_pushcfunction(L, (Vector3Struct__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(Vector3Struct_op_op_Addition));
+        lua_pushcfunction(L, (Vector3Struct_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(Vector3Struct_op_op_Subtraction));
+        lua_pushcfunction(L, (Vector3Struct_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(Vector3Struct_op_op_Multiply));
+        lua_pushcfunction(L, (Vector3Struct_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __unm
-        lua_pushcfunction(L, KeepAlive(Vector3Struct_op_op_UnaryNegation));
+        lua_pushcfunction(L, (Vector3Struct_op_op_UnaryNegation));
         lua_setfield(L, -2, "__unm");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(Vector3Struct__tostring));
+        lua_pushcfunction(L, (Vector3Struct__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -56,24 +56,24 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(Vector3Struct_new));
+        lua_pushcfunction(L, (Vector3Struct_new));
         lua_setfield(L, -2, "new");
 
         // Static method: cross
-        lua_pushcfunction(L, KeepAlive(Vector3Struct_static_cross));
+        lua_pushcfunction(L, (Vector3Struct_static_cross));
         lua_setfield(L, -2, "cross");
 
         // Static method: dot
-        lua_pushcfunction(L, KeepAlive(Vector3Struct_static_dot));
+        lua_pushcfunction(L, (Vector3Struct_static_dot));
         lua_setfield(L, -2, "dot");
 
         // Static method: fromVec2
-        lua_pushcfunction(L, KeepAlive(Vector3Struct_static_fromVec2));
+        lua_pushcfunction(L, (Vector3Struct_static_fromVec2));
         lua_setfield(L, -2, "fromVec2");
 
         // Create metatable for type table (static properties)
         lua_newtable(L);
-        lua_pushcfunction(L, KeepAlive(Vector3Struct_type__index));
+        lua_pushcfunction(L, (Vector3Struct_type__index));
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
@@ -116,22 +116,22 @@ public partial class LuaBindings
                 PushValue(L, obj.Z);
                 return 1;
             case "normalized":
-                lua_pushcfunction(L, KeepAlive(Vector3Struct_method_normalized));
+                lua_pushcfunction(L, (Vector3Struct_method_normalized));
                 return 1;
             case "toVec2":
-                lua_pushcfunction(L, KeepAlive(Vector3Struct_method_toVec2));
+                lua_pushcfunction(L, (Vector3Struct_method_toVec2));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(Vector3Struct_method_toString));
+                lua_pushcfunction(L, (Vector3Struct_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(Vector3Struct_method_equals));
+                lua_pushcfunction(L, (Vector3Struct_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(Vector3Struct_method_getHashCode));
+                lua_pushcfunction(L, (Vector3Struct_method_getHashCode));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(Vector3Struct_method_getType));
+                lua_pushcfunction(L, (Vector3Struct_method_getType));
                 return 1;
             default:
                 lua_pushnil(L);

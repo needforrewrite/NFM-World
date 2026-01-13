@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithIndexers");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithIndexers__gc));
+        lua_pushcfunction(L, (TypeWithIndexers__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithIndexers__index));
+        lua_pushcfunction(L, (TypeWithIndexers__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithIndexers__newindex));
+        lua_pushcfunction(L, (TypeWithIndexers__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithIndexers__tostring));
+        lua_pushcfunction(L, (TypeWithIndexers__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,11 +40,11 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(TypeWithIndexers_new));
+        lua_pushcfunction(L, (TypeWithIndexers_new));
         lua_setfield(L, -2, "new");
 
         // Static method: create
-        lua_pushcfunction(L, KeepAlive(TypeWithIndexers_static_create));
+        lua_pushcfunction(L, (TypeWithIndexers_static_create));
         lua_setfield(L, -2, "create");
 
         lua_setglobal(L, "TypeWithIndexers");
@@ -113,43 +113,43 @@ public partial class LuaBindings
         switch (key)
         {
             case "setNumberAt":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_setNumberAt));
+                lua_pushcfunction(L, (TypeWithIndexers_method_setNumberAt));
                 return 1;
             case "getNumberAt":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_getNumberAt));
+                lua_pushcfunction(L, (TypeWithIndexers_method_getNumberAt));
                 return 1;
             case "setValue":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_setValue));
+                lua_pushcfunction(L, (TypeWithIndexers_method_setValue));
                 return 1;
             case "getValue":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_getValue));
+                lua_pushcfunction(L, (TypeWithIndexers_method_getValue));
                 return 1;
             case "setGridValue":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_setGridValue));
+                lua_pushcfunction(L, (TypeWithIndexers_method_setGridValue));
                 return 1;
             case "getGridValue":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_getGridValue));
+                lua_pushcfunction(L, (TypeWithIndexers_method_getGridValue));
                 return 1;
             case "getNumbersLength":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_getNumbersLength));
+                lua_pushcfunction(L, (TypeWithIndexers_method_getNumbersLength));
                 return 1;
             case "getDataCount":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_getDataCount));
+                lua_pushcfunction(L, (TypeWithIndexers_method_getDataCount));
                 return 1;
             case "getGridCount":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_getGridCount));
+                lua_pushcfunction(L, (TypeWithIndexers_method_getGridCount));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_getType));
+                lua_pushcfunction(L, (TypeWithIndexers_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_toString));
+                lua_pushcfunction(L, (TypeWithIndexers_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_equals));
+                lua_pushcfunction(L, (TypeWithIndexers_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(TypeWithIndexers_method_getHashCode));
+                lua_pushcfunction(L, (TypeWithIndexers_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

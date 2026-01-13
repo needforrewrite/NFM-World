@@ -19,43 +19,43 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithOverloads");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads__gc));
+        lua_pushcfunction(L, (TypeWithOverloads__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads__index));
+        lua_pushcfunction(L, (TypeWithOverloads__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads__newindex));
+        lua_pushcfunction(L, (TypeWithOverloads__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __unm
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads_op_op_UnaryNegation));
+        lua_pushcfunction(L, (TypeWithOverloads_op_op_UnaryNegation));
         lua_setfield(L, -2, "__unm");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads_op_op_Addition));
+        lua_pushcfunction(L, (TypeWithOverloads_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads_op_op_Addition));
+        lua_pushcfunction(L, (TypeWithOverloads_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads_op_op_Addition));
+        lua_pushcfunction(L, (TypeWithOverloads_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads_op_op_Subtraction));
+        lua_pushcfunction(L, (TypeWithOverloads_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads_op_op_Subtraction));
+        lua_pushcfunction(L, (TypeWithOverloads_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads__tostring));
+        lua_pushcfunction(L, (TypeWithOverloads__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -64,11 +64,11 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads_new));
+        lua_pushcfunction(L, (TypeWithOverloads_new));
         lua_setfield(L, -2, "new");
 
         // Static method: staticProcess
-        lua_pushcfunction(L, KeepAlive(TypeWithOverloads_static_staticProcess));
+        lua_pushcfunction(L, (TypeWithOverloads_static_staticProcess));
         lua_setfield(L, -2, "staticProcess");
 
         lua_setglobal(L, "TypeWithOverloads");
@@ -105,25 +105,25 @@ public partial class LuaBindings
                 PushValue(L, obj.Text);
                 return 1;
             case "processNumber":
-                lua_pushcfunction(L, KeepAlive(TypeWithOverloads_method_processNumber));
+                lua_pushcfunction(L, (TypeWithOverloads_method_processNumber));
                 return 1;
             case "processData":
-                lua_pushcfunction(L, KeepAlive(TypeWithOverloads_method_processData));
+                lua_pushcfunction(L, (TypeWithOverloads_method_processData));
                 return 1;
             case "combine":
-                lua_pushcfunction(L, KeepAlive(TypeWithOverloads_method_combine));
+                lua_pushcfunction(L, (TypeWithOverloads_method_combine));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(TypeWithOverloads_method_getType));
+                lua_pushcfunction(L, (TypeWithOverloads_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(TypeWithOverloads_method_toString));
+                lua_pushcfunction(L, (TypeWithOverloads_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(TypeWithOverloads_method_equals));
+                lua_pushcfunction(L, (TypeWithOverloads_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(TypeWithOverloads_method_getHashCode));
+                lua_pushcfunction(L, (TypeWithOverloads_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

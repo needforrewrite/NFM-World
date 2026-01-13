@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_SampleClass");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(SampleClass__gc));
+        lua_pushcfunction(L, (SampleClass__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(SampleClass__index));
+        lua_pushcfunction(L, (SampleClass__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(SampleClass__newindex));
+        lua_pushcfunction(L, (SampleClass__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(SampleClass__tostring));
+        lua_pushcfunction(L, (SampleClass__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,34 +40,34 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(SampleClass_new));
+        lua_pushcfunction(L, (SampleClass_new));
         lua_setfield(L, -2, "new");
 
         // Static method: add
-        lua_pushcfunction(L, KeepAlive(SampleClass_static_add));
+        lua_pushcfunction(L, (SampleClass_static_add));
         lua_setfield(L, -2, "add");
 
         // Static method: concat
-        lua_pushcfunction(L, KeepAlive(SampleClass_static_concat));
+        lua_pushcfunction(L, (SampleClass_static_concat));
         lua_setfield(L, -2, "concat");
 
         // Static method: incrementCounter
-        lua_pushcfunction(L, KeepAlive(SampleClass_static_incrementCounter));
+        lua_pushcfunction(L, (SampleClass_static_incrementCounter));
         lua_setfield(L, -2, "incrementCounter");
 
         // Static method: addNullable
-        lua_pushcfunction(L, KeepAlive(SampleClass_static_addNullable));
+        lua_pushcfunction(L, (SampleClass_static_addNullable));
         lua_setfield(L, -2, "addNullable");
 
         // Static method: getNullableValue
-        lua_pushcfunction(L, KeepAlive(SampleClass_static_getNullableValue));
+        lua_pushcfunction(L, (SampleClass_static_getNullableValue));
         lua_setfield(L, -2, "getNullableValue");
 
         // Create metatable for type table (static properties)
         lua_newtable(L);
-        lua_pushcfunction(L, KeepAlive(SampleClass_type__index));
+        lua_pushcfunction(L, (SampleClass_type__index));
         lua_setfield(L, -2, "__index");
-        lua_pushcfunction(L, KeepAlive(SampleClass_type__newindex));
+        lua_pushcfunction(L, (SampleClass_type__newindex));
         lua_setfield(L, -2, "__newindex");
         lua_setmetatable(L, -2);
 
@@ -144,43 +144,43 @@ public partial class LuaBindings
                     lua_pushnil(L);
                 return 1;
             case "getDoubleId":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_getDoubleId));
+                lua_pushcfunction(L, (SampleClass_method_getDoubleId));
                 return 1;
             case "getGreeting":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_getGreeting));
+                lua_pushcfunction(L, (SampleClass_method_getGreeting));
                 return 1;
             case "setValue":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_setValue));
+                lua_pushcfunction(L, (SampleClass_method_setValue));
                 return 1;
             case "calculate":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_calculate));
+                lua_pushcfunction(L, (SampleClass_method_calculate));
                 return 1;
             case "clone":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_clone));
+                lua_pushcfunction(L, (SampleClass_method_clone));
                 return 1;
             case "setNullableValue":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_setNullableValue));
+                lua_pushcfunction(L, (SampleClass_method_setNullableValue));
                 return 1;
             case "multiplyByNullable":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_multiplyByNullable));
+                lua_pushcfunction(L, (SampleClass_method_multiplyByNullable));
                 return 1;
             case "formatWithOptional":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_formatWithOptional));
+                lua_pushcfunction(L, (SampleClass_method_formatWithOptional));
                 return 1;
             case "customName":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_customName));
+                lua_pushcfunction(L, (SampleClass_method_customName));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_toString));
+                lua_pushcfunction(L, (SampleClass_method_toString));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_getType));
+                lua_pushcfunction(L, (SampleClass_method_getType));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_equals));
+                lua_pushcfunction(L, (SampleClass_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(SampleClass_method_getHashCode));
+                lua_pushcfunction(L, (SampleClass_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

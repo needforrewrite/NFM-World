@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Object");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(Object__gc));
+        lua_pushcfunction(L, (Object__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(Object__index));
+        lua_pushcfunction(L, (Object__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(Object__newindex));
+        lua_pushcfunction(L, (Object__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(Object__tostring));
+        lua_pushcfunction(L, (Object__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,15 +40,15 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(Object_new));
+        lua_pushcfunction(L, (Object_new));
         lua_setfield(L, -2, "new");
 
         // Static method: equals
-        lua_pushcfunction(L, KeepAlive(Object_static_equals));
+        lua_pushcfunction(L, (Object_static_equals));
         lua_setfield(L, -2, "equals");
 
         // Static method: referenceEquals
-        lua_pushcfunction(L, KeepAlive(Object_static_referenceEquals));
+        lua_pushcfunction(L, (Object_static_referenceEquals));
         lua_setfield(L, -2, "referenceEquals");
 
         lua_setglobal(L, "Object");
@@ -79,16 +79,16 @@ public partial class LuaBindings
         switch (key)
         {
             case "getType":
-                lua_pushcfunction(L, KeepAlive(Object_method_getType));
+                lua_pushcfunction(L, (Object_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(Object_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(Object_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(Object_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

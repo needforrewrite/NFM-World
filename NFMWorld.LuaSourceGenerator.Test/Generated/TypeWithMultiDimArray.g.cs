@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithMultiDimArray");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray__gc));
+        lua_pushcfunction(L, (TypeWithMultiDimArray__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray__index));
+        lua_pushcfunction(L, (TypeWithMultiDimArray__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray__newindex));
+        lua_pushcfunction(L, (TypeWithMultiDimArray__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray__tostring));
+        lua_pushcfunction(L, (TypeWithMultiDimArray__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,15 +40,15 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_new));
+        lua_pushcfunction(L, (TypeWithMultiDimArray_new));
         lua_setfield(L, -2, "new");
 
         // Static method: createMatrix
-        lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_static_createMatrix));
+        lua_pushcfunction(L, (TypeWithMultiDimArray_static_createMatrix));
         lua_setfield(L, -2, "createMatrix");
 
         // Static method: createIdentityMatrix
-        lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_static_createIdentityMatrix));
+        lua_pushcfunction(L, (TypeWithMultiDimArray_static_createIdentityMatrix));
         lua_setfield(L, -2, "createIdentityMatrix");
 
         lua_setglobal(L, "TypeWithMultiDimArray");
@@ -85,34 +85,34 @@ public partial class LuaBindings
                 PushValue(L, obj.Tensor);
                 return 1;
             case "initializeMatrix":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_initializeMatrix));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_initializeMatrix));
                 return 1;
             case "getRows":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_getRows));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getRows));
                 return 1;
             case "getCols":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_getCols));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getCols));
                 return 1;
             case "getValueAt":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_getValueAt));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getValueAt));
                 return 1;
             case "setValueAt":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_setValueAt));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_setValueAt));
                 return 1;
             case "sumAll":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_sumAll));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_sumAll));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_getType));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_toString));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_equals));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(TypeWithMultiDimArray_method_getHashCode));
+                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

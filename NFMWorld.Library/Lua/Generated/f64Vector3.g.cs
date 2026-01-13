@@ -19,55 +19,55 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_f64Vector3");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(f64Vector3__gc));
+        lua_pushcfunction(L, (f64Vector3__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(f64Vector3__index));
+        lua_pushcfunction(L, (f64Vector3__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(f64Vector3__newindex));
+        lua_pushcfunction(L, (f64Vector3__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __eq
-        lua_pushcfunction(L, KeepAlive(f64Vector3_op_op_Equality));
+        lua_pushcfunction(L, (f64Vector3_op_op_Equality));
         lua_setfield(L, -2, "__eq");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(f64Vector3_op_op_Addition));
+        lua_pushcfunction(L, (f64Vector3_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __unm
-        lua_pushcfunction(L, KeepAlive(f64Vector3_op_op_UnaryNegation));
+        lua_pushcfunction(L, (f64Vector3_op_op_UnaryNegation));
         lua_setfield(L, -2, "__unm");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(f64Vector3_op_op_Subtraction));
+        lua_pushcfunction(L, (f64Vector3_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(f64Vector3_op_op_Multiply));
+        lua_pushcfunction(L, (f64Vector3_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(f64Vector3_op_op_Multiply));
+        lua_pushcfunction(L, (f64Vector3_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(f64Vector3_op_op_Multiply));
+        lua_pushcfunction(L, (f64Vector3_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __div
-        lua_pushcfunction(L, KeepAlive(f64Vector3_op_op_Division));
+        lua_pushcfunction(L, (f64Vector3_op_op_Division));
         lua_setfield(L, -2, "__div");
 
         // Operator: __div
-        lua_pushcfunction(L, KeepAlive(f64Vector3_op_op_Division));
+        lua_pushcfunction(L, (f64Vector3_op_op_Division));
         lua_setfield(L, -2, "__div");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(f64Vector3__tostring));
+        lua_pushcfunction(L, (f64Vector3__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -76,96 +76,96 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(f64Vector3_new));
+        lua_pushcfunction(L, (f64Vector3_new));
         lua_setfield(L, -2, "new");
 
         // Static method: add
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_add));
+        lua_pushcfunction(L, (f64Vector3_static_add));
         lua_setfield(L, -2, "add");
 
         // Static method: barycentric
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_barycentric));
+        lua_pushcfunction(L, (f64Vector3_static_barycentric));
         lua_setfield(L, -2, "barycentric");
 
         // Static method: catmullRom
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_catmullRom));
+        lua_pushcfunction(L, (f64Vector3_static_catmullRom));
         lua_setfield(L, -2, "catmullRom");
 
         // Static method: clamp
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_clamp));
+        lua_pushcfunction(L, (f64Vector3_static_clamp));
         lua_setfield(L, -2, "clamp");
 
         // Static method: cross
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_cross));
+        lua_pushcfunction(L, (f64Vector3_static_cross));
         lua_setfield(L, -2, "cross");
 
         // Static method: distance
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_distance));
+        lua_pushcfunction(L, (f64Vector3_static_distance));
         lua_setfield(L, -2, "distance");
 
         // Static method: distanceSquared
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_distanceSquared));
+        lua_pushcfunction(L, (f64Vector3_static_distanceSquared));
         lua_setfield(L, -2, "distanceSquared");
 
         // Static method: divide
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_divide));
+        lua_pushcfunction(L, (f64Vector3_static_divide));
         lua_setfield(L, -2, "divide");
 
         // Static method: dot
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_dot));
+        lua_pushcfunction(L, (f64Vector3_static_dot));
         lua_setfield(L, -2, "dot");
 
         // Static method: hermite
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_hermite));
+        lua_pushcfunction(L, (f64Vector3_static_hermite));
         lua_setfield(L, -2, "hermite");
 
         // Static method: lerp
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_lerp));
+        lua_pushcfunction(L, (f64Vector3_static_lerp));
         lua_setfield(L, -2, "lerp");
 
         // Static method: max
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_max));
+        lua_pushcfunction(L, (f64Vector3_static_max));
         lua_setfield(L, -2, "max");
 
         // Static method: min
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_min));
+        lua_pushcfunction(L, (f64Vector3_static_min));
         lua_setfield(L, -2, "min");
 
         // Static method: multiply
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_multiply));
+        lua_pushcfunction(L, (f64Vector3_static_multiply));
         lua_setfield(L, -2, "multiply");
 
         // Static method: negate
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_negate));
+        lua_pushcfunction(L, (f64Vector3_static_negate));
         lua_setfield(L, -2, "negate");
 
         // Static method: normalize
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_normalize));
+        lua_pushcfunction(L, (f64Vector3_static_normalize));
         lua_setfield(L, -2, "normalize");
 
         // Static method: reflect
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_reflect));
+        lua_pushcfunction(L, (f64Vector3_static_reflect));
         lua_setfield(L, -2, "reflect");
 
         // Static method: smoothStep
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_smoothStep));
+        lua_pushcfunction(L, (f64Vector3_static_smoothStep));
         lua_setfield(L, -2, "smoothStep");
 
         // Static method: subtract
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_subtract));
+        lua_pushcfunction(L, (f64Vector3_static_subtract));
         lua_setfield(L, -2, "subtract");
 
         // Static method: transform
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_transform));
+        lua_pushcfunction(L, (f64Vector3_static_transform));
         lua_setfield(L, -2, "transform");
 
         // Static method: transformNormal
-        lua_pushcfunction(L, KeepAlive(f64Vector3_static_transformNormal));
+        lua_pushcfunction(L, (f64Vector3_static_transformNormal));
         lua_setfield(L, -2, "transformNormal");
 
         // Create metatable for type table (static properties)
         lua_newtable(L);
-        lua_pushcfunction(L, KeepAlive(f64Vector3_type__index));
+        lua_pushcfunction(L, (f64Vector3_type__index));
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
@@ -235,25 +235,25 @@ public partial class LuaBindings
                 }
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(f64Vector3_method_equals));
+                lua_pushcfunction(L, (f64Vector3_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(f64Vector3_method_getHashCode));
+                lua_pushcfunction(L, (f64Vector3_method_getHashCode));
                 return 1;
             case "length":
-                lua_pushcfunction(L, KeepAlive(f64Vector3_method_length));
+                lua_pushcfunction(L, (f64Vector3_method_length));
                 return 1;
             case "lengthSquared":
-                lua_pushcfunction(L, KeepAlive(f64Vector3_method_lengthSquared));
+                lua_pushcfunction(L, (f64Vector3_method_lengthSquared));
                 return 1;
             case "normalize":
-                lua_pushcfunction(L, KeepAlive(f64Vector3_method_normalize));
+                lua_pushcfunction(L, (f64Vector3_method_normalize));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(f64Vector3_method_toString));
+                lua_pushcfunction(L, (f64Vector3_method_toString));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(f64Vector3_method_getType));
+                lua_pushcfunction(L, (f64Vector3_method_getType));
                 return 1;
             default:
                 lua_pushnil(L);

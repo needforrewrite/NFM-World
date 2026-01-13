@@ -1188,6 +1188,112 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     _eventDelegateRefs.Clear();
                 }
                 #endregion
+
+                public void DefineGlobalVariable<T>(lua_State L, string name, T value)
+                {
+                    PushValue(L, value);
+                    lua_setglobal(L, name);
+                }
+
+                public void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
+                {
+                    lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+                    {
+                        var arg = ToObject<T>(luaState, 1)!;
+                        action(arg);
+                        return 0;
+                    }));
+                    lua_setglobal(L, name);
+                }
+                
+                public void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
+                {
+                    lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+                    {
+                        var result = func();
+                        PushValue(luaState, result);
+                        return 1;
+                    }));
+                    lua_setglobal(L, name);
+                }
+                
+                public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
+                {
+                    lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+                    {
+                        var arg1 = ToObject<T1>(luaState, 1)!;
+                        var arg2 = ToObject<T2>(luaState, 2)!;
+                        action(arg1, arg2);
+                        return 0;
+                    }));
+                    lua_setglobal(L, name);
+                }
+                
+                public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
+                {
+                    lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+                    {
+                        var arg1 = ToObject<T1>(luaState, 1)!;
+                        var result = func(arg1);
+                        PushValue(luaState, result);
+                        return 1;
+                    }));
+                    lua_setglobal(L, name);
+                }
+                
+                public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
+                {
+                    lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+                    {
+                        var arg1 = ToObject<T1>(luaState, 1)!;
+                        var arg2 = ToObject<T2>(luaState, 2)!;
+                        var arg3 = ToObject<T3>(luaState, 3)!;
+                        action(arg1, arg2, arg3);
+                        return 0;
+                    }));
+                    lua_setglobal(L, name);
+                }
+                
+                public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
+                {
+                    lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+                    {
+                        var arg1 = ToObject<T1>(luaState, 1)!;
+                        var arg2 = ToObject<T2>(luaState, 2)!;
+                        var result = func(arg1, arg2);
+                        PushValue(luaState, result);
+                        return 1;
+                    }));
+                    lua_setglobal(L, name);
+                }
+                
+                public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
+                {
+                    lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+                    {
+                        var arg1 = ToObject<T1>(luaState, 1)!;
+                        var arg2 = ToObject<T2>(luaState, 2)!;
+                        var arg3 = ToObject<T3>(luaState, 3)!;
+                        var arg4 = ToObject<T4>(luaState, 4)!;
+                        action(arg1, arg2, arg3, arg4);
+                        return 0;
+                    }));
+                    lua_setglobal(L, name);
+                }
+                
+                public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
+                {
+                    lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+                    {
+                        var arg1 = ToObject<T1>(luaState, 1)!;
+                        var arg2 = ToObject<T2>(luaState, 2)!;
+                        var arg3 = ToObject<T3>(luaState, 3)!;
+                        var result = func(arg1, arg2, arg3);
+                        PushValue(luaState, result);
+                        return 1;
+                    }));
+                    lua_setglobal(L, name);
+                }
             }
             """
         );
@@ -1646,19 +1752,19 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // __gc
             AppendLine("// __gc metamethod");
-            AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}__gc));");
+            AppendLine($"lua_pushcfunction(L, ({safeName}__gc));");
             AppendLine("lua_setfield(L, -2, \"__gc\");");
             AppendLine();
 
             // __index
             AppendLine("// __index metamethod");
-            AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}__index));");
+            AppendLine($"lua_pushcfunction(L, ({safeName}__index));");
             AppendLine("lua_setfield(L, -2, \"__index\");");
             AppendLine();
 
             // __newindex
             AppendLine("// __newindex metamethod");
-            AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}__newindex));");
+            AppendLine($"lua_pushcfunction(L, ({safeName}__newindex));");
             AppendLine("lua_setfield(L, -2, \"__newindex\");");
             AppendLine();
 
@@ -1667,7 +1773,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // __tostring
             AppendLine("// __tostring metamethod");
-            AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}__tostring));");
+            AppendLine($"lua_pushcfunction(L, ({safeName}__tostring));");
             AppendLine("lua_setfield(L, -2, \"__tostring\");");
             AppendLine();
 
@@ -1681,7 +1787,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             // Constructor
             AppendLine("// Constructor: new()");
-            AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_new));");
+            AppendLine($"lua_pushcfunction(L, ({safeName}_new));");
             AppendLine("lua_setfield(L, -2, \"new\");");
             AppendLine();
 
@@ -1695,7 +1801,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             {
                 var methodName = methodGroup.Key;
                 AppendLine($"// Static method: {methodName}");
-                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_static_{GetSafeMethodName(methodName)}));");
+                AppendLine($"lua_pushcfunction(L, ({safeName}_static_{GetSafeMethodName(methodName)}));");
                 AppendLine($"lua_setfield(L, -2, \"{methodName}\");");
                 AppendLine();
             }
@@ -1709,9 +1815,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             {
                 var eventName = evt.Name;
                 AppendLine($"// Static event: {eventName}");
-                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_AddListener_{eventName}));");
+                AppendLine($"lua_pushcfunction(L, ({safeName}_AddListener_{eventName}));");
                 AppendLine($"lua_setfield(L, -2, \"AddListener_{eventName}\");");
-                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_RemoveListener_{eventName}));");
+                AppendLine($"lua_pushcfunction(L, ({safeName}_RemoveListener_{eventName}));");
                 AppendLine($"lua_setfield(L, -2, \"RemoveListener_{eventName}\");");
                 AppendLine();
             }
@@ -1725,13 +1831,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             {
                 AppendLine("// Create metatable for type table (static properties)");
                 AppendLine("lua_newtable(L);");
-                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_type__index));");
+                AppendLine($"lua_pushcfunction(L, ({safeName}_type__index));");
                 AppendLine("lua_setfield(L, -2, \"__index\");");
 
                 var writableStaticProps = staticProps.Where(p => p.CanWrite).ToList();
                 if (writableStaticProps.Count > 0)
                 {
-                    AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_type__newindex));");
+                    AppendLine($"lua_pushcfunction(L, ({safeName}_type__newindex));");
                     AppendLine("lua_setfield(L, -2, \"__newindex\");");
                 }
 
@@ -1784,7 +1890,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             if (luaMetamethod != null)
             {
                 AppendLine($"// Operator: {luaMetamethod}");
-                AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_op_{GetSafeMethodName(op.Name)}));");
+                AppendLine($"lua_pushcfunction(L, ({safeName}_op_{GetSafeMethodName(op.Name)}));");
                 AppendLine($"lua_setfield(L, -2, \"{luaMetamethod}\");");
                 AppendLine();
             }
@@ -2065,7 +2171,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{methodName}\":");
                     using (Indent())
                     {
-                        AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_method_{GetSafeMethodName(methodName)}));");
+                        AppendLine($"lua_pushcfunction(L, ({safeName}_method_{GetSafeMethodName(methodName)}));");
                         AppendLine("return 1;");
                     }
                 }
@@ -2081,13 +2187,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"AddListener_{eventName}\":");
                     using (Indent())
                     {
-                        AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_AddListener_{eventName}));");
+                        AppendLine($"lua_pushcfunction(L, ({safeName}_AddListener_{eventName}));");
                         AppendLine("return 1;");
                     }
                     AppendLine($"case \"RemoveListener_{eventName}\":");
                     using (Indent())
                     {
-                        AppendLine($"lua_pushcfunction(L, KeepAlive({safeName}_RemoveListener_{eventName}));");
+                        AppendLine($"lua_pushcfunction(L, ({safeName}_RemoveListener_{eventName}));");
                         AppendLine("return 1;");
                     }
                 }

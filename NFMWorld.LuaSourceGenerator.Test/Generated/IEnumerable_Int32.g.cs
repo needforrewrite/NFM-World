@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IEnumerable_Int32");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32__gc));
+        lua_pushcfunction(L, (IEnumerable_Int32__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32__index));
+        lua_pushcfunction(L, (IEnumerable_Int32__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32__newindex));
+        lua_pushcfunction(L, (IEnumerable_Int32__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32__tostring));
+        lua_pushcfunction(L, (IEnumerable_Int32__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(IEnumerable_Int32_new));
+        lua_pushcfunction(L, (IEnumerable_Int32_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IEnumerable_Int32");
@@ -71,7 +71,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "getEnumerator":
-                lua_pushcfunction(L, KeepAlive(IEnumerable_Int32_method_getEnumerator));
+                lua_pushcfunction(L, (IEnumerable_Int32_method_getEnumerator));
                 return 1;
             default:
                 lua_pushnil(L);

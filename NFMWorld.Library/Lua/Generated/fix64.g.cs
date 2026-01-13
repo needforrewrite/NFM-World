@@ -19,207 +19,207 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_fix64");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(fix64__gc));
+        lua_pushcfunction(L, (fix64__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(fix64__index));
+        lua_pushcfunction(L, (fix64__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(fix64__newindex));
+        lua_pushcfunction(L, (fix64__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Addition));
+        lua_pushcfunction(L, (fix64_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Subtraction));
+        lua_pushcfunction(L, (fix64_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Multiply));
+        lua_pushcfunction(L, (fix64_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __div
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Division));
+        lua_pushcfunction(L, (fix64_op_op_Division));
         lua_setfield(L, -2, "__div");
 
         // Operator: __mod
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Modulus));
+        lua_pushcfunction(L, (fix64_op_op_Modulus));
         lua_setfield(L, -2, "__mod");
 
         // Operator: __unm
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_UnaryNegation));
+        lua_pushcfunction(L, (fix64_op_op_UnaryNegation));
         lua_setfield(L, -2, "__unm");
 
         // Operator: __eq
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Equality));
+        lua_pushcfunction(L, (fix64_op_op_Equality));
         lua_setfield(L, -2, "__eq");
 
         // Operator: __lt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThan));
+        lua_pushcfunction(L, (fix64_op_op_LessThan));
         lua_setfield(L, -2, "__lt");
 
         // Operator: __le
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_LessThanOrEqual));
         lua_setfield(L, -2, "__le");
 
         // Operator: __gt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThan));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThan));
         lua_setfield(L, -2, "__gt");
 
         // Operator: __ge
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThanOrEqual));
         lua_setfield(L, -2, "__ge");
 
         // Operator: __lt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThan));
+        lua_pushcfunction(L, (fix64_op_op_LessThan));
         lua_setfield(L, -2, "__lt");
 
         // Operator: __gt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThan));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThan));
         lua_setfield(L, -2, "__gt");
 
         // Operator: __le
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_LessThanOrEqual));
         lua_setfield(L, -2, "__le");
 
         // Operator: __ge
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThanOrEqual));
         lua_setfield(L, -2, "__ge");
 
         // Operator: __lt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThan));
+        lua_pushcfunction(L, (fix64_op_op_LessThan));
         lua_setfield(L, -2, "__lt");
 
         // Operator: __gt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThan));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThan));
         lua_setfield(L, -2, "__gt");
 
         // Operator: __ge
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThanOrEqual));
         lua_setfield(L, -2, "__ge");
 
         // Operator: __le
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_LessThanOrEqual));
         lua_setfield(L, -2, "__le");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Addition));
+        lua_pushcfunction(L, (fix64_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Addition));
+        lua_pushcfunction(L, (fix64_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Subtraction));
+        lua_pushcfunction(L, (fix64_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Subtraction));
+        lua_pushcfunction(L, (fix64_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Multiply));
+        lua_pushcfunction(L, (fix64_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Multiply));
+        lua_pushcfunction(L, (fix64_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __div
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Division));
+        lua_pushcfunction(L, (fix64_op_op_Division));
         lua_setfield(L, -2, "__div");
 
         // Operator: __div
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Division));
+        lua_pushcfunction(L, (fix64_op_op_Division));
         lua_setfield(L, -2, "__div");
 
         // Operator: __mod
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Modulus));
+        lua_pushcfunction(L, (fix64_op_op_Modulus));
         lua_setfield(L, -2, "__mod");
 
         // Operator: __mod
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Modulus));
+        lua_pushcfunction(L, (fix64_op_op_Modulus));
         lua_setfield(L, -2, "__mod");
 
         // Operator: __lt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThan));
+        lua_pushcfunction(L, (fix64_op_op_LessThan));
         lua_setfield(L, -2, "__lt");
 
         // Operator: __gt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThan));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThan));
         lua_setfield(L, -2, "__gt");
 
         // Operator: __le
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_LessThanOrEqual));
         lua_setfield(L, -2, "__le");
 
         // Operator: __ge
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThanOrEqual));
         lua_setfield(L, -2, "__ge");
 
         // Operator: __lt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThan));
+        lua_pushcfunction(L, (fix64_op_op_LessThan));
         lua_setfield(L, -2, "__lt");
 
         // Operator: __gt
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThan));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThan));
         lua_setfield(L, -2, "__gt");
 
         // Operator: __ge
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_GreaterThanOrEqual));
         lua_setfield(L, -2, "__ge");
 
         // Operator: __le
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, (fix64_op_op_LessThanOrEqual));
         lua_setfield(L, -2, "__le");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Addition));
+        lua_pushcfunction(L, (fix64_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Addition));
+        lua_pushcfunction(L, (fix64_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Subtraction));
+        lua_pushcfunction(L, (fix64_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Subtraction));
+        lua_pushcfunction(L, (fix64_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Multiply));
+        lua_pushcfunction(L, (fix64_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Multiply));
+        lua_pushcfunction(L, (fix64_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __div
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Division));
+        lua_pushcfunction(L, (fix64_op_op_Division));
         lua_setfield(L, -2, "__div");
 
         // Operator: __div
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Division));
+        lua_pushcfunction(L, (fix64_op_op_Division));
         lua_setfield(L, -2, "__div");
 
         // Operator: __mod
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Modulus));
+        lua_pushcfunction(L, (fix64_op_op_Modulus));
         lua_setfield(L, -2, "__mod");
 
         // Operator: __mod
-        lua_pushcfunction(L, KeepAlive(fix64_op_op_Modulus));
+        lua_pushcfunction(L, (fix64_op_op_Modulus));
         lua_setfield(L, -2, "__mod");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(fix64__tostring));
+        lua_pushcfunction(L, (fix64__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -228,100 +228,100 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(fix64_new));
+        lua_pushcfunction(L, (fix64_new));
         lua_setfield(L, -2, "new");
 
         // Static method: abs
-        lua_pushcfunction(L, KeepAlive(fix64_static_abs));
+        lua_pushcfunction(L, (fix64_static_abs));
         lua_setfield(L, -2, "abs");
 
         // Static method: min
-        lua_pushcfunction(L, KeepAlive(fix64_static_min));
+        lua_pushcfunction(L, (fix64_static_min));
         lua_setfield(L, -2, "min");
 
         // Static method: max
-        lua_pushcfunction(L, KeepAlive(fix64_static_max));
+        lua_pushcfunction(L, (fix64_static_max));
         lua_setfield(L, -2, "max");
 
         // Static method: fromRaw
-        lua_pushcfunction(L, KeepAlive(fix64_static_fromRaw));
+        lua_pushcfunction(L, (fix64_static_fromRaw));
         lua_setfield(L, -2, "fromRaw");
 
         // Static method: floorToInt
-        lua_pushcfunction(L, KeepAlive(fix64_static_floorToInt));
+        lua_pushcfunction(L, (fix64_static_floorToInt));
         lua_setfield(L, -2, "floorToInt");
 
         // Static method: iEEERemainder
-        lua_pushcfunction(L, KeepAlive(fix64_static_iEEERemainder));
+        lua_pushcfunction(L, (fix64_static_iEEERemainder));
         lua_setfield(L, -2, "iEEERemainder");
 
         // Static method: atan
-        lua_pushcfunction(L, KeepAlive(fix64_static_atan));
+        lua_pushcfunction(L, (fix64_static_atan));
         lua_setfield(L, -2, "atan");
 
         // Static method: sqrt
-        lua_pushcfunction(L, KeepAlive(fix64_static_sqrt));
+        lua_pushcfunction(L, (fix64_static_sqrt));
         lua_setfield(L, -2, "sqrt");
 
         // Static method: acos
-        lua_pushcfunction(L, KeepAlive(fix64_static_acos));
+        lua_pushcfunction(L, (fix64_static_acos));
         lua_setfield(L, -2, "acos");
 
         // Static method: atan2
-        lua_pushcfunction(L, KeepAlive(fix64_static_atan2));
+        lua_pushcfunction(L, (fix64_static_atan2));
         lua_setfield(L, -2, "atan2");
 
         // Static method: round
-        lua_pushcfunction(L, KeepAlive(fix64_static_round));
+        lua_pushcfunction(L, (fix64_static_round));
         lua_setfield(L, -2, "round");
 
         // Static method: sin
-        lua_pushcfunction(L, KeepAlive(fix64_static_sin));
+        lua_pushcfunction(L, (fix64_static_sin));
         lua_setfield(L, -2, "sin");
 
         // Static method: cos
-        lua_pushcfunction(L, KeepAlive(fix64_static_cos));
+        lua_pushcfunction(L, (fix64_static_cos));
         lua_setfield(L, -2, "cos");
 
         // Static method: floor
-        lua_pushcfunction(L, KeepAlive(fix64_static_floor));
+        lua_pushcfunction(L, (fix64_static_floor));
         lua_setfield(L, -2, "floor");
 
         // Static method: ceiling
-        lua_pushcfunction(L, KeepAlive(fix64_static_ceiling));
+        lua_pushcfunction(L, (fix64_static_ceiling));
         lua_setfield(L, -2, "ceiling");
 
         // Static method: hypot
-        lua_pushcfunction(L, KeepAlive(fix64_static_hypot));
+        lua_pushcfunction(L, (fix64_static_hypot));
         lua_setfield(L, -2, "hypot");
 
         // Static method: clamp
-        lua_pushcfunction(L, KeepAlive(fix64_static_clamp));
+        lua_pushcfunction(L, (fix64_static_clamp));
         lua_setfield(L, -2, "clamp");
 
         // Static method: withinEpsilon
-        lua_pushcfunction(L, KeepAlive(fix64_static_withinEpsilon));
+        lua_pushcfunction(L, (fix64_static_withinEpsilon));
         lua_setfield(L, -2, "withinEpsilon");
 
         // Static method: lerp
-        lua_pushcfunction(L, KeepAlive(fix64_static_lerp));
+        lua_pushcfunction(L, (fix64_static_lerp));
         lua_setfield(L, -2, "lerp");
 
         // Static method: barycentric
-        lua_pushcfunction(L, KeepAlive(fix64_static_barycentric));
+        lua_pushcfunction(L, (fix64_static_barycentric));
         lua_setfield(L, -2, "barycentric");
 
         // Static method: catmullRom
-        lua_pushcfunction(L, KeepAlive(fix64_static_catmullRom));
+        lua_pushcfunction(L, (fix64_static_catmullRom));
         lua_setfield(L, -2, "catmullRom");
 
         // Static method: parse
-        lua_pushcfunction(L, KeepAlive(fix64_static_parse));
+        lua_pushcfunction(L, (fix64_static_parse));
         lua_setfield(L, -2, "parse");
 
         // Create metatable for type table (static properties)
         lua_newtable(L);
-        lua_pushcfunction(L, KeepAlive(fix64_type__index));
+        lua_pushcfunction(L, (fix64_type__index));
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
@@ -368,22 +368,22 @@ public partial class LuaBindings
                 }
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(fix64_method_toString));
+                lua_pushcfunction(L, (fix64_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(fix64_method_equals));
+                lua_pushcfunction(L, (fix64_method_equals));
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, KeepAlive(fix64_method_compareTo));
+                lua_pushcfunction(L, (fix64_method_compareTo));
                 return 1;
             case "sign":
-                lua_pushcfunction(L, KeepAlive(fix64_method_sign));
+                lua_pushcfunction(L, (fix64_method_sign));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(fix64_method_getHashCode));
+                lua_pushcfunction(L, (fix64_method_getHashCode));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(fix64_method_getType));
+                lua_pushcfunction(L, (fix64_method_getType));
                 return 1;
             default:
                 lua_pushnil(L);

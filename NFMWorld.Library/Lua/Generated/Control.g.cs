@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Control");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(Control__gc));
+        lua_pushcfunction(L, (Control__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(Control__index));
+        lua_pushcfunction(L, (Control__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(Control__newindex));
+        lua_pushcfunction(L, (Control__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(Control__tostring));
+        lua_pushcfunction(L, (Control__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(Control_new));
+        lua_pushcfunction(L, (Control_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "Control");
@@ -119,22 +119,22 @@ public partial class LuaBindings
                 PushValue(L, obj.Zyinv);
                 return 1;
             case "encode":
-                lua_pushcfunction(L, KeepAlive(Control_method_encode));
+                lua_pushcfunction(L, (Control_method_encode));
                 return 1;
             case "decode":
-                lua_pushcfunction(L, KeepAlive(Control_method_decode));
+                lua_pushcfunction(L, (Control_method_decode));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(Control_method_getType));
+                lua_pushcfunction(L, (Control_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(Control_method_toString));
+                lua_pushcfunction(L, (Control_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(Control_method_equals));
+                lua_pushcfunction(L, (Control_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(Control_method_getHashCode));
+                lua_pushcfunction(L, (Control_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

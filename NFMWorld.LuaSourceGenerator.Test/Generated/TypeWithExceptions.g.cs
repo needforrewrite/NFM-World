@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithExceptions");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithExceptions__gc));
+        lua_pushcfunction(L, (TypeWithExceptions__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithExceptions__index));
+        lua_pushcfunction(L, (TypeWithExceptions__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithExceptions__newindex));
+        lua_pushcfunction(L, (TypeWithExceptions__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithExceptions__tostring));
+        lua_pushcfunction(L, (TypeWithExceptions__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,11 +40,11 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(TypeWithExceptions_new));
+        lua_pushcfunction(L, (TypeWithExceptions_new));
         lua_setfield(L, -2, "new");
 
         // Static method: staticThrows
-        lua_pushcfunction(L, KeepAlive(TypeWithExceptions_static_staticThrows));
+        lua_pushcfunction(L, (TypeWithExceptions_static_staticThrows));
         lua_setfield(L, -2, "staticThrows");
 
         lua_setglobal(L, "TypeWithExceptions");
@@ -81,22 +81,22 @@ public partial class LuaBindings
                 PushValue(L, obj.WritableProperty);
                 return 1;
             case "throwsException":
-                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_throwsException));
+                lua_pushcfunction(L, (TypeWithExceptions_method_throwsException));
                 return 1;
             case "throwsExceptionWithParam":
-                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_throwsExceptionWithParam));
+                lua_pushcfunction(L, (TypeWithExceptions_method_throwsExceptionWithParam));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_getType));
+                lua_pushcfunction(L, (TypeWithExceptions_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_toString));
+                lua_pushcfunction(L, (TypeWithExceptions_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_equals));
+                lua_pushcfunction(L, (TypeWithExceptions_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(TypeWithExceptions_method_getHashCode));
+                lua_pushcfunction(L, (TypeWithExceptions_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

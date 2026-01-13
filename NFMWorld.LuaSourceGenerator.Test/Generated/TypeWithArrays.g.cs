@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithArrays");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithArrays__gc));
+        lua_pushcfunction(L, (TypeWithArrays__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithArrays__index));
+        lua_pushcfunction(L, (TypeWithArrays__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithArrays__newindex));
+        lua_pushcfunction(L, (TypeWithArrays__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithArrays__tostring));
+        lua_pushcfunction(L, (TypeWithArrays__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,19 +40,19 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(TypeWithArrays_new));
+        lua_pushcfunction(L, (TypeWithArrays_new));
         lua_setfield(L, -2, "new");
 
         // Static method: createArray
-        lua_pushcfunction(L, KeepAlive(TypeWithArrays_static_createArray));
+        lua_pushcfunction(L, (TypeWithArrays_static_createArray));
         lua_setfield(L, -2, "createArray");
 
         // Static method: createStringArray
-        lua_pushcfunction(L, KeepAlive(TypeWithArrays_static_createStringArray));
+        lua_pushcfunction(L, (TypeWithArrays_static_createStringArray));
         lua_setfield(L, -2, "createStringArray");
 
         // Static method: createSequence
-        lua_pushcfunction(L, KeepAlive(TypeWithArrays_static_createSequence));
+        lua_pushcfunction(L, (TypeWithArrays_static_createSequence));
         lua_setfield(L, -2, "createSequence");
 
         lua_setglobal(L, "TypeWithArrays");
@@ -92,40 +92,40 @@ public partial class LuaBindings
                 PushValue(L, obj.Values);
                 return 1;
             case "getNumbers":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_getNumbers));
+                lua_pushcfunction(L, (TypeWithArrays_method_getNumbers));
                 return 1;
             case "getNames":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_getNames));
+                lua_pushcfunction(L, (TypeWithArrays_method_getNames));
                 return 1;
             case "setNumbers":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_setNumbers));
+                lua_pushcfunction(L, (TypeWithArrays_method_setNumbers));
                 return 1;
             case "setNames":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_setNames));
+                lua_pushcfunction(L, (TypeWithArrays_method_setNames));
                 return 1;
             case "sumNumbers":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_sumNumbers));
+                lua_pushcfunction(L, (TypeWithArrays_method_sumNumbers));
                 return 1;
             case "concatenateNames":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_concatenateNames));
+                lua_pushcfunction(L, (TypeWithArrays_method_concatenateNames));
                 return 1;
             case "getLength":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_getLength));
+                lua_pushcfunction(L, (TypeWithArrays_method_getLength));
                 return 1;
             case "getAt":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_getAt));
+                lua_pushcfunction(L, (TypeWithArrays_method_getAt));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_getType));
+                lua_pushcfunction(L, (TypeWithArrays_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_toString));
+                lua_pushcfunction(L, (TypeWithArrays_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_equals));
+                lua_pushcfunction(L, (TypeWithArrays_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(TypeWithArrays_method_getHashCode));
+                lua_pushcfunction(L, (TypeWithArrays_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

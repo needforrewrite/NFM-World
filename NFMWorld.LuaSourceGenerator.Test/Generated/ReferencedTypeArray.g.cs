@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ReferencedTypeArray");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(ReferencedTypeArray__gc));
+        lua_pushcfunction(L, (ReferencedTypeArray__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(ReferencedTypeArray__index));
+        lua_pushcfunction(L, (ReferencedTypeArray__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(ReferencedTypeArray__newindex));
+        lua_pushcfunction(L, (ReferencedTypeArray__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(ReferencedTypeArray__tostring));
+        lua_pushcfunction(L, (ReferencedTypeArray__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(ReferencedTypeArray_new));
+        lua_pushcfunction(L, (ReferencedTypeArray_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ArrayOfReferencedType");

@@ -19,23 +19,23 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_CarStats");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(CarStats__gc));
+        lua_pushcfunction(L, (CarStats__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(CarStats__index));
+        lua_pushcfunction(L, (CarStats__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(CarStats__newindex));
+        lua_pushcfunction(L, (CarStats__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __eq
-        lua_pushcfunction(L, KeepAlive(CarStats_op_op_Equality));
+        lua_pushcfunction(L, (CarStats_op_op_Equality));
         lua_setfield(L, -2, "__eq");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(CarStats__tostring));
+        lua_pushcfunction(L, (CarStats__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -44,11 +44,11 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(CarStats_new));
+        lua_pushcfunction(L, (CarStats_new));
         lua_setfield(L, -2, "new");
 
         // Static method: validateStats
-        lua_pushcfunction(L, KeepAlive(CarStats_static_validateStats));
+        lua_pushcfunction(L, (CarStats_static_validateStats));
         lua_setfield(L, -2, "validateStats");
 
         lua_setglobal(L, "CarStats");
@@ -283,19 +283,19 @@ public partial class LuaBindings
                 PushValue(L, obj.Enginsignature);
                 return 1;
             case "validate":
-                lua_pushcfunction(L, KeepAlive(CarStats_method_validate));
+                lua_pushcfunction(L, (CarStats_method_validate));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(CarStats_method_toString));
+                lua_pushcfunction(L, (CarStats_method_toString));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(CarStats_method_getHashCode));
+                lua_pushcfunction(L, (CarStats_method_getHashCode));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(CarStats_method_equals));
+                lua_pushcfunction(L, (CarStats_method_equals));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(CarStats_method_getType));
+                lua_pushcfunction(L, (CarStats_method_getType));
                 return 1;
             default:
                 lua_pushnil(L);

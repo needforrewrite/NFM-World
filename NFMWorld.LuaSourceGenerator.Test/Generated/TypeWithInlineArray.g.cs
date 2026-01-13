@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithInlineArray");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithInlineArray__gc));
+        lua_pushcfunction(L, (TypeWithInlineArray__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithInlineArray__index));
+        lua_pushcfunction(L, (TypeWithInlineArray__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithInlineArray__newindex));
+        lua_pushcfunction(L, (TypeWithInlineArray__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithInlineArray__tostring));
+        lua_pushcfunction(L, (TypeWithInlineArray__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(TypeWithInlineArray_new));
+        lua_pushcfunction(L, (TypeWithInlineArray_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "TypeWithInlineArray");
@@ -84,25 +84,25 @@ public partial class LuaBindings
                 }
                 return 1;
             case "getBufferValue":
-                lua_pushcfunction(L, KeepAlive(TypeWithInlineArray_method_getBufferValue));
+                lua_pushcfunction(L, (TypeWithInlineArray_method_getBufferValue));
                 return 1;
             case "setBufferValue":
-                lua_pushcfunction(L, KeepAlive(TypeWithInlineArray_method_setBufferValue));
+                lua_pushcfunction(L, (TypeWithInlineArray_method_setBufferValue));
                 return 1;
             case "sumBuffer":
-                lua_pushcfunction(L, KeepAlive(TypeWithInlineArray_method_sumBuffer));
+                lua_pushcfunction(L, (TypeWithInlineArray_method_sumBuffer));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(TypeWithInlineArray_method_getType));
+                lua_pushcfunction(L, (TypeWithInlineArray_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(TypeWithInlineArray_method_toString));
+                lua_pushcfunction(L, (TypeWithInlineArray_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(TypeWithInlineArray_method_equals));
+                lua_pushcfunction(L, (TypeWithInlineArray_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(TypeWithInlineArray_method_getHashCode));
+                lua_pushcfunction(L, (TypeWithInlineArray_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

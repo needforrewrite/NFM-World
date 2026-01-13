@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__gc));
+        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__index));
+        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__newindex));
+        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__tostring));
+        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_new));
+        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean");
@@ -85,19 +85,19 @@ public partial class LuaBindings
                 PushValue(L, obj.Item5);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_equals));
+                lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_equals));
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_compareTo));
+                lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_compareTo));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_getHashCode));
+                lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_getHashCode));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_toString));
+                lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_toString));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_getType));
+                lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_getType));
                 return 1;
             default:
                 lua_pushnil(L);

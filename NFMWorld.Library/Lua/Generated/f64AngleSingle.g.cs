@@ -19,59 +19,59 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_f64AngleSingle");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle__gc));
+        lua_pushcfunction(L, (f64AngleSingle__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle__index));
+        lua_pushcfunction(L, (f64AngleSingle__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle__newindex));
+        lua_pushcfunction(L, (f64AngleSingle__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __eq
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_Equality));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_Equality));
         lua_setfield(L, -2, "__eq");
 
         // Operator: __lt
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_LessThan));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_LessThan));
         lua_setfield(L, -2, "__lt");
 
         // Operator: __gt
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_GreaterThan));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_GreaterThan));
         lua_setfield(L, -2, "__gt");
 
         // Operator: __le
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_LessThanOrEqual));
         lua_setfield(L, -2, "__le");
 
         // Operator: __ge
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_GreaterThanOrEqual));
         lua_setfield(L, -2, "__ge");
 
         // Operator: __unm
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_UnaryNegation));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_UnaryNegation));
         lua_setfield(L, -2, "__unm");
 
         // Operator: __add
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_Addition));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_Subtraction));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_Multiply));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
         // Operator: __div
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_op_op_Division));
+        lua_pushcfunction(L, (f64AngleSingle_op_op_Division));
         lua_setfield(L, -2, "__div");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle__tostring));
+        lua_pushcfunction(L, (f64AngleSingle__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -80,52 +80,52 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_new));
+        lua_pushcfunction(L, (f64AngleSingle_new));
         lua_setfield(L, -2, "new");
 
         // Static method: fromRadians
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_fromRadians));
+        lua_pushcfunction(L, (f64AngleSingle_static_fromRadians));
         lua_setfield(L, -2, "fromRadians");
 
         // Static method: fromDegrees
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_fromDegrees));
+        lua_pushcfunction(L, (f64AngleSingle_static_fromDegrees));
         lua_setfield(L, -2, "fromDegrees");
 
         // Static method: wrap
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_wrap));
+        lua_pushcfunction(L, (f64AngleSingle_static_wrap));
         lua_setfield(L, -2, "wrap");
 
         // Static method: wrapPositive
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_wrapPositive));
+        lua_pushcfunction(L, (f64AngleSingle_static_wrapPositive));
         lua_setfield(L, -2, "wrapPositive");
 
         // Static method: min
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_min));
+        lua_pushcfunction(L, (f64AngleSingle_static_min));
         lua_setfield(L, -2, "min");
 
         // Static method: max
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_max));
+        lua_pushcfunction(L, (f64AngleSingle_static_max));
         lua_setfield(L, -2, "max");
 
         // Static method: add
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_add));
+        lua_pushcfunction(L, (f64AngleSingle_static_add));
         lua_setfield(L, -2, "add");
 
         // Static method: subtract
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_subtract));
+        lua_pushcfunction(L, (f64AngleSingle_static_subtract));
         lua_setfield(L, -2, "subtract");
 
         // Static method: multiply
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_multiply));
+        lua_pushcfunction(L, (f64AngleSingle_static_multiply));
         lua_setfield(L, -2, "multiply");
 
         // Static method: divide
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_static_divide));
+        lua_pushcfunction(L, (f64AngleSingle_static_divide));
         lua_setfield(L, -2, "divide");
 
         // Create metatable for type table (static properties)
         lua_newtable(L);
-        lua_pushcfunction(L, KeepAlive(f64AngleSingle_type__index));
+        lua_pushcfunction(L, (f64AngleSingle_type__index));
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
@@ -255,25 +255,25 @@ public partial class LuaBindings
                 }
                 return 1;
             case "wrap":
-                lua_pushcfunction(L, KeepAlive(f64AngleSingle_method_wrap));
+                lua_pushcfunction(L, (f64AngleSingle_method_wrap));
                 return 1;
             case "wrapPositive":
-                lua_pushcfunction(L, KeepAlive(f64AngleSingle_method_wrapPositive));
+                lua_pushcfunction(L, (f64AngleSingle_method_wrapPositive));
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, KeepAlive(f64AngleSingle_method_compareTo));
+                lua_pushcfunction(L, (f64AngleSingle_method_compareTo));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(f64AngleSingle_method_equals));
+                lua_pushcfunction(L, (f64AngleSingle_method_equals));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(f64AngleSingle_method_toString));
+                lua_pushcfunction(L, (f64AngleSingle_method_toString));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(f64AngleSingle_method_getHashCode));
+                lua_pushcfunction(L, (f64AngleSingle_method_getHashCode));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(f64AngleSingle_method_getType));
+                lua_pushcfunction(L, (f64AngleSingle_method_getType));
                 return 1;
             default:
                 lua_pushnil(L);

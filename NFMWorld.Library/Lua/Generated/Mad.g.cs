@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Mad");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(Mad__gc));
+        lua_pushcfunction(L, (Mad__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(Mad__index));
+        lua_pushcfunction(L, (Mad__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(Mad__newindex));
+        lua_pushcfunction(L, (Mad__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(Mad__tostring));
+        lua_pushcfunction(L, (Mad__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(Mad_new));
+        lua_pushcfunction(L, (Mad_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "Mad");
@@ -515,70 +515,70 @@ public partial class LuaBindings
                 PushValue(L, obj._xtpower);
                 return 1;
             case "setStat":
-                lua_pushcfunction(L, KeepAlive(Mad_method_setStat));
+                lua_pushcfunction(L, (Mad_method_setStat));
                 return 1;
             case "pointInBox":
-                lua_pushcfunction(L, KeepAlive(Mad_method_pointInBox));
+                lua_pushcfunction(L, (Mad_method_pointInBox));
                 return 1;
             case "colide":
-                lua_pushcfunction(L, KeepAlive(Mad_method_colide));
+                lua_pushcfunction(L, (Mad_method_colide));
                 return 1;
             case "bounceRebound":
-                lua_pushcfunction(L, KeepAlive(Mad_method_bounceRebound));
+                lua_pushcfunction(L, (Mad_method_bounceRebound));
                 return 1;
             case "drive":
-                lua_pushcfunction(L, KeepAlive(Mad_method_drive));
+                lua_pushcfunction(L, (Mad_method_drive));
                 return 1;
             case "reseto":
-                lua_pushcfunction(L, KeepAlive(Mad_method_reseto));
+                lua_pushcfunction(L, (Mad_method_reseto));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(Mad_method_getType));
+                lua_pushcfunction(L, (Mad_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(Mad_method_toString));
+                lua_pushcfunction(L, (Mad_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(Mad_method_equals));
+                lua_pushcfunction(L, (Mad_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(Mad_method_getHashCode));
+                lua_pushcfunction(L, (Mad_method_getHashCode));
                 return 1;
             case "AddListener_SfxPlayCrash":
-                lua_pushcfunction(L, KeepAlive(Mad_AddListener_SfxPlayCrash));
+                lua_pushcfunction(L, (Mad_AddListener_SfxPlayCrash));
                 return 1;
             case "RemoveListener_SfxPlayCrash":
-                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_SfxPlayCrash));
+                lua_pushcfunction(L, (Mad_RemoveListener_SfxPlayCrash));
                 return 1;
             case "AddListener_SfxPlaySkid":
-                lua_pushcfunction(L, KeepAlive(Mad_AddListener_SfxPlaySkid));
+                lua_pushcfunction(L, (Mad_AddListener_SfxPlaySkid));
                 return 1;
             case "RemoveListener_SfxPlaySkid":
-                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_SfxPlaySkid));
+                lua_pushcfunction(L, (Mad_RemoveListener_SfxPlaySkid));
                 return 1;
             case "AddListener_SfxPlayScrape":
-                lua_pushcfunction(L, KeepAlive(Mad_AddListener_SfxPlayScrape));
+                lua_pushcfunction(L, (Mad_AddListener_SfxPlayScrape));
                 return 1;
             case "RemoveListener_SfxPlayScrape":
-                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_SfxPlayScrape));
+                lua_pushcfunction(L, (Mad_RemoveListener_SfxPlayScrape));
                 return 1;
             case "AddListener_SfxPlayGscrape":
-                lua_pushcfunction(L, KeepAlive(Mad_AddListener_SfxPlayGscrape));
+                lua_pushcfunction(L, (Mad_AddListener_SfxPlayGscrape));
                 return 1;
             case "RemoveListener_SfxPlayGscrape":
-                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_SfxPlayGscrape));
+                lua_pushcfunction(L, (Mad_RemoveListener_SfxPlayGscrape));
                 return 1;
             case "AddListener_PowerUp":
-                lua_pushcfunction(L, KeepAlive(Mad_AddListener_PowerUp));
+                lua_pushcfunction(L, (Mad_AddListener_PowerUp));
                 return 1;
             case "RemoveListener_PowerUp":
-                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_PowerUp));
+                lua_pushcfunction(L, (Mad_RemoveListener_PowerUp));
                 return 1;
             case "AddListener_Distruct":
-                lua_pushcfunction(L, KeepAlive(Mad_AddListener_Distruct));
+                lua_pushcfunction(L, (Mad_AddListener_Distruct));
                 return 1;
             case "RemoveListener_Distruct":
-                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_Distruct));
+                lua_pushcfunction(L, (Mad_RemoveListener_Distruct));
                 return 1;
             default:
                 lua_pushnil(L);

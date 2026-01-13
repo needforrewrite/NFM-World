@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IInGameCar");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(IInGameCar__gc));
+        lua_pushcfunction(L, (IInGameCar__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(IInGameCar__index));
+        lua_pushcfunction(L, (IInGameCar__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(IInGameCar__newindex));
+        lua_pushcfunction(L, (IInGameCar__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(IInGameCar__tostring));
+        lua_pushcfunction(L, (IInGameCar__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(IInGameCar_new));
+        lua_pushcfunction(L, (IInGameCar_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IInGameCar");
@@ -98,58 +98,58 @@ public partial class LuaBindings
                 PushValue(L, obj.Bot);
                 return 1;
             case "addDust":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_method_addDust));
+                lua_pushcfunction(L, (IInGameCar_method_addDust));
                 return 1;
             case "spark":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_method_spark));
+                lua_pushcfunction(L, (IInGameCar_method_spark));
                 return 1;
             case "damageX":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_method_damageX));
+                lua_pushcfunction(L, (IInGameCar_method_damageX));
                 return 1;
             case "damageY":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_method_damageY));
+                lua_pushcfunction(L, (IInGameCar_method_damageY));
                 return 1;
             case "damageZ":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_method_damageZ));
+                lua_pushcfunction(L, (IInGameCar_method_damageZ));
                 return 1;
             case "drive":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_method_drive));
+                lua_pushcfunction(L, (IInGameCar_method_drive));
                 return 1;
             case "collide":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_method_collide));
+                lua_pushcfunction(L, (IInGameCar_method_collide));
                 return 1;
             case "resetPosition":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_method_resetPosition));
+                lua_pushcfunction(L, (IInGameCar_method_resetPosition));
                 return 1;
             case "AddListener_DamagedX":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_DamagedX));
+                lua_pushcfunction(L, (IInGameCar_AddListener_DamagedX));
                 return 1;
             case "RemoveListener_DamagedX":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_DamagedX));
+                lua_pushcfunction(L, (IInGameCar_RemoveListener_DamagedX));
                 return 1;
             case "AddListener_DamagedY":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_DamagedY));
+                lua_pushcfunction(L, (IInGameCar_AddListener_DamagedY));
                 return 1;
             case "RemoveListener_DamagedY":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_DamagedY));
+                lua_pushcfunction(L, (IInGameCar_RemoveListener_DamagedY));
                 return 1;
             case "AddListener_DamagedZ":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_DamagedZ));
+                lua_pushcfunction(L, (IInGameCar_AddListener_DamagedZ));
                 return 1;
             case "RemoveListener_DamagedZ":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_DamagedZ));
+                lua_pushcfunction(L, (IInGameCar_RemoveListener_DamagedZ));
                 return 1;
             case "AddListener_Sparked":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_Sparked));
+                lua_pushcfunction(L, (IInGameCar_AddListener_Sparked));
                 return 1;
             case "RemoveListener_Sparked":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_Sparked));
+                lua_pushcfunction(L, (IInGameCar_RemoveListener_Sparked));
                 return 1;
             case "AddListener_Dusted":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_Dusted));
+                lua_pushcfunction(L, (IInGameCar_AddListener_Dusted));
                 return 1;
             case "RemoveListener_Dusted":
-                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_Dusted));
+                lua_pushcfunction(L, (IInGameCar_RemoveListener_Dusted));
                 return 1;
             default:
                 lua_pushnil(L);

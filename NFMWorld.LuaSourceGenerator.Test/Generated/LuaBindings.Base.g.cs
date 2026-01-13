@@ -767,4 +767,110 @@ public partial class LuaBindings
         _eventDelegateRefs.Clear();
     }
     #endregion
+
+    public void DefineGlobalVariable<T>(lua_State L, string name, T value)
+    {
+        PushValue(L, value);
+        lua_setglobal(L, name);
+    }
+
+    public void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
+    {
+        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        {
+            var arg = ToObject<T>(luaState, 1)!;
+            action(arg);
+            return 0;
+        }));
+        lua_setglobal(L, name);
+    }
+
+    public void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
+    {
+        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        {
+            var result = func();
+            PushValue(luaState, result);
+            return 1;
+        }));
+        lua_setglobal(L, name);
+    }
+
+    public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
+    {
+        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        {
+            var arg1 = ToObject<T1>(luaState, 1)!;
+            var arg2 = ToObject<T2>(luaState, 2)!;
+            action(arg1, arg2);
+            return 0;
+        }));
+        lua_setglobal(L, name);
+    }
+
+    public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
+    {
+        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        {
+            var arg1 = ToObject<T1>(luaState, 1)!;
+            var result = func(arg1);
+            PushValue(luaState, result);
+            return 1;
+        }));
+        lua_setglobal(L, name);
+    }
+
+    public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
+    {
+        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        {
+            var arg1 = ToObject<T1>(luaState, 1)!;
+            var arg2 = ToObject<T2>(luaState, 2)!;
+            var arg3 = ToObject<T3>(luaState, 3)!;
+            action(arg1, arg2, arg3);
+            return 0;
+        }));
+        lua_setglobal(L, name);
+    }
+
+    public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
+    {
+        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        {
+            var arg1 = ToObject<T1>(luaState, 1)!;
+            var arg2 = ToObject<T2>(luaState, 2)!;
+            var result = func(arg1, arg2);
+            PushValue(luaState, result);
+            return 1;
+        }));
+        lua_setglobal(L, name);
+    }
+
+    public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
+    {
+        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        {
+            var arg1 = ToObject<T1>(luaState, 1)!;
+            var arg2 = ToObject<T2>(luaState, 2)!;
+            var arg3 = ToObject<T3>(luaState, 3)!;
+            var arg4 = ToObject<T4>(luaState, 4)!;
+            action(arg1, arg2, arg3, arg4);
+            return 0;
+        }));
+        lua_setglobal(L, name);
+    }
+
+    public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
+    {
+        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        {
+            var arg1 = ToObject<T1>(luaState, 1)!;
+            var arg2 = ToObject<T2>(luaState, 2)!;
+            var arg3 = ToObject<T3>(luaState, 3)!;
+            var result = func(arg1, arg2, arg3);
+            PushValue(luaState, result);
+            return 1;
+        }));
+        lua_setglobal(L, name);
+    }
 }

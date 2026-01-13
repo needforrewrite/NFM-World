@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithEvents");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithEvents__gc));
+        lua_pushcfunction(L, (TypeWithEvents__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithEvents__index));
+        lua_pushcfunction(L, (TypeWithEvents__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithEvents__newindex));
+        lua_pushcfunction(L, (TypeWithEvents__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(TypeWithEvents__tostring));
+        lua_pushcfunction(L, (TypeWithEvents__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,17 +40,17 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(TypeWithEvents_new));
+        lua_pushcfunction(L, (TypeWithEvents_new));
         lua_setfield(L, -2, "new");
 
         // Static method: raiseStaticEvent
-        lua_pushcfunction(L, KeepAlive(TypeWithEvents_static_raiseStaticEvent));
+        lua_pushcfunction(L, (TypeWithEvents_static_raiseStaticEvent));
         lua_setfield(L, -2, "raiseStaticEvent");
 
         // Static event: StaticEvent
-        lua_pushcfunction(L, KeepAlive(TypeWithEvents_AddListener_StaticEvent));
+        lua_pushcfunction(L, (TypeWithEvents_AddListener_StaticEvent));
         lua_setfield(L, -2, "AddListener_StaticEvent");
-        lua_pushcfunction(L, KeepAlive(TypeWithEvents_RemoveListener_StaticEvent));
+        lua_pushcfunction(L, (TypeWithEvents_RemoveListener_StaticEvent));
         lua_setfield(L, -2, "RemoveListener_StaticEvent");
 
         lua_setglobal(L, "TypeWithEvents");
@@ -81,52 +81,52 @@ public partial class LuaBindings
         switch (key)
         {
             case "raiseSimpleEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_method_raiseSimpleEvent));
+                lua_pushcfunction(L, (TypeWithEvents_method_raiseSimpleEvent));
                 return 1;
             case "raiseStandardEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_method_raiseStandardEvent));
+                lua_pushcfunction(L, (TypeWithEvents_method_raiseStandardEvent));
                 return 1;
             case "raiseCustomEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_method_raiseCustomEvent));
+                lua_pushcfunction(L, (TypeWithEvents_method_raiseCustomEvent));
                 return 1;
             case "raiseMultiParamEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_method_raiseMultiParamEvent));
+                lua_pushcfunction(L, (TypeWithEvents_method_raiseMultiParamEvent));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_method_getType));
+                lua_pushcfunction(L, (TypeWithEvents_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_method_toString));
+                lua_pushcfunction(L, (TypeWithEvents_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_method_equals));
+                lua_pushcfunction(L, (TypeWithEvents_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_method_getHashCode));
+                lua_pushcfunction(L, (TypeWithEvents_method_getHashCode));
                 return 1;
             case "AddListener_SimpleEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_AddListener_SimpleEvent));
+                lua_pushcfunction(L, (TypeWithEvents_AddListener_SimpleEvent));
                 return 1;
             case "RemoveListener_SimpleEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_RemoveListener_SimpleEvent));
+                lua_pushcfunction(L, (TypeWithEvents_RemoveListener_SimpleEvent));
                 return 1;
             case "AddListener_StandardEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_AddListener_StandardEvent));
+                lua_pushcfunction(L, (TypeWithEvents_AddListener_StandardEvent));
                 return 1;
             case "RemoveListener_StandardEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_RemoveListener_StandardEvent));
+                lua_pushcfunction(L, (TypeWithEvents_RemoveListener_StandardEvent));
                 return 1;
             case "AddListener_CustomEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_AddListener_CustomEvent));
+                lua_pushcfunction(L, (TypeWithEvents_AddListener_CustomEvent));
                 return 1;
             case "RemoveListener_CustomEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_RemoveListener_CustomEvent));
+                lua_pushcfunction(L, (TypeWithEvents_RemoveListener_CustomEvent));
                 return 1;
             case "AddListener_MultiParamEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_AddListener_MultiParamEvent));
+                lua_pushcfunction(L, (TypeWithEvents_AddListener_MultiParamEvent));
                 return 1;
             case "RemoveListener_MultiParamEvent":
-                lua_pushcfunction(L, KeepAlive(TypeWithEvents_RemoveListener_MultiParamEvent));
+                lua_pushcfunction(L, (TypeWithEvents_RemoveListener_MultiParamEvent));
                 return 1;
             default:
                 lua_pushnil(L);

@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IList_ReferencedType");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(IList_ReferencedType__gc));
+        lua_pushcfunction(L, (IList_ReferencedType__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(IList_ReferencedType__index));
+        lua_pushcfunction(L, (IList_ReferencedType__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(IList_ReferencedType__newindex));
+        lua_pushcfunction(L, (IList_ReferencedType__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(IList_ReferencedType__tostring));
+        lua_pushcfunction(L, (IList_ReferencedType__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(IList_ReferencedType_new));
+        lua_pushcfunction(L, (IList_ReferencedType_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IList_ReferencedType");
@@ -80,13 +80,13 @@ public partial class LuaBindings
         switch (key)
         {
             case "indexOf":
-                lua_pushcfunction(L, KeepAlive(IList_ReferencedType_method_indexOf));
+                lua_pushcfunction(L, (IList_ReferencedType_method_indexOf));
                 return 1;
             case "insert":
-                lua_pushcfunction(L, KeepAlive(IList_ReferencedType_method_insert));
+                lua_pushcfunction(L, (IList_ReferencedType_method_insert));
                 return 1;
             case "removeAt":
-                lua_pushcfunction(L, KeepAlive(IList_ReferencedType_method_removeAt));
+                lua_pushcfunction(L, (IList_ReferencedType_method_removeAt));
                 return 1;
             default:
                 lua_pushnil(L);

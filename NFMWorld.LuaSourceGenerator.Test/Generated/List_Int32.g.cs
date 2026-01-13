@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_List_Int32");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(List_Int32__gc));
+        lua_pushcfunction(L, (List_Int32__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(List_Int32__index));
+        lua_pushcfunction(L, (List_Int32__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(List_Int32__newindex));
+        lua_pushcfunction(L, (List_Int32__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(List_Int32__tostring));
+        lua_pushcfunction(L, (List_Int32__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(List_Int32_new));
+        lua_pushcfunction(L, (List_Int32_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "List_Int32");
@@ -86,109 +86,109 @@ public partial class LuaBindings
                 PushValue(L, obj.Count);
                 return 1;
             case "add":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_add));
+                lua_pushcfunction(L, (List_Int32_method_add));
                 return 1;
             case "addRange":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_addRange));
+                lua_pushcfunction(L, (List_Int32_method_addRange));
                 return 1;
             case "asReadOnly":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_asReadOnly));
+                lua_pushcfunction(L, (List_Int32_method_asReadOnly));
                 return 1;
             case "binarySearch":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_binarySearch));
+                lua_pushcfunction(L, (List_Int32_method_binarySearch));
                 return 1;
             case "clear":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_clear));
+                lua_pushcfunction(L, (List_Int32_method_clear));
                 return 1;
             case "contains":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_contains));
+                lua_pushcfunction(L, (List_Int32_method_contains));
                 return 1;
             case "copyTo":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_copyTo));
+                lua_pushcfunction(L, (List_Int32_method_copyTo));
                 return 1;
             case "ensureCapacity":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_ensureCapacity));
+                lua_pushcfunction(L, (List_Int32_method_ensureCapacity));
                 return 1;
             case "exists":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_exists));
+                lua_pushcfunction(L, (List_Int32_method_exists));
                 return 1;
             case "find":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_find));
+                lua_pushcfunction(L, (List_Int32_method_find));
                 return 1;
             case "findAll":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_findAll));
+                lua_pushcfunction(L, (List_Int32_method_findAll));
                 return 1;
             case "findIndex":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_findIndex));
+                lua_pushcfunction(L, (List_Int32_method_findIndex));
                 return 1;
             case "findLast":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_findLast));
+                lua_pushcfunction(L, (List_Int32_method_findLast));
                 return 1;
             case "findLastIndex":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_findLastIndex));
+                lua_pushcfunction(L, (List_Int32_method_findLastIndex));
                 return 1;
             case "forEach":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_forEach));
+                lua_pushcfunction(L, (List_Int32_method_forEach));
                 return 1;
             case "getEnumerator":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_getEnumerator));
+                lua_pushcfunction(L, (List_Int32_method_getEnumerator));
                 return 1;
             case "getRange":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_getRange));
+                lua_pushcfunction(L, (List_Int32_method_getRange));
                 return 1;
             case "slice":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_slice));
+                lua_pushcfunction(L, (List_Int32_method_slice));
                 return 1;
             case "indexOf":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_indexOf));
+                lua_pushcfunction(L, (List_Int32_method_indexOf));
                 return 1;
             case "insert":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_insert));
+                lua_pushcfunction(L, (List_Int32_method_insert));
                 return 1;
             case "insertRange":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_insertRange));
+                lua_pushcfunction(L, (List_Int32_method_insertRange));
                 return 1;
             case "lastIndexOf":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_lastIndexOf));
+                lua_pushcfunction(L, (List_Int32_method_lastIndexOf));
                 return 1;
             case "remove":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_remove));
+                lua_pushcfunction(L, (List_Int32_method_remove));
                 return 1;
             case "removeAll":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_removeAll));
+                lua_pushcfunction(L, (List_Int32_method_removeAll));
                 return 1;
             case "removeAt":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_removeAt));
+                lua_pushcfunction(L, (List_Int32_method_removeAt));
                 return 1;
             case "removeRange":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_removeRange));
+                lua_pushcfunction(L, (List_Int32_method_removeRange));
                 return 1;
             case "reverse":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_reverse));
+                lua_pushcfunction(L, (List_Int32_method_reverse));
                 return 1;
             case "sort":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_sort));
+                lua_pushcfunction(L, (List_Int32_method_sort));
                 return 1;
             case "toArray":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_toArray));
+                lua_pushcfunction(L, (List_Int32_method_toArray));
                 return 1;
             case "trimExcess":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_trimExcess));
+                lua_pushcfunction(L, (List_Int32_method_trimExcess));
                 return 1;
             case "trueForAll":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_trueForAll));
+                lua_pushcfunction(L, (List_Int32_method_trueForAll));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_getType));
+                lua_pushcfunction(L, (List_Int32_method_getType));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_toString));
+                lua_pushcfunction(L, (List_Int32_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_equals));
+                lua_pushcfunction(L, (List_Int32_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(List_Int32_method_getHashCode));
+                lua_pushcfunction(L, (List_Int32_method_getHashCode));
                 return 1;
             default:
                 lua_pushnil(L);

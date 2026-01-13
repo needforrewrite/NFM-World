@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IStage");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(IStage__gc));
+        lua_pushcfunction(L, (IStage__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(IStage__index));
+        lua_pushcfunction(L, (IStage__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(IStage__newindex));
+        lua_pushcfunction(L, (IStage__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(IStage__tostring));
+        lua_pushcfunction(L, (IStage__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(IStage_new));
+        lua_pushcfunction(L, (IStage_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IStage");
@@ -86,7 +86,7 @@ public partial class LuaBindings
                 PushValue(L, obj.nlaps);
                 return 1;
             case "createObject":
-                lua_pushcfunction(L, KeepAlive(IStage_method_createObject));
+                lua_pushcfunction(L, (IStage_method_createObject));
                 return 1;
             default:
                 lua_pushnil(L);

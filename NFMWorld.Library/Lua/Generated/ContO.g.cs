@@ -19,19 +19,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ContO");
 
         // __gc metamethod
-        lua_pushcfunction(L, KeepAlive(ContO__gc));
+        lua_pushcfunction(L, (ContO__gc));
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, KeepAlive(ContO__index));
+        lua_pushcfunction(L, (ContO__index));
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, KeepAlive(ContO__newindex));
+        lua_pushcfunction(L, (ContO__newindex));
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, KeepAlive(ContO__tostring));
+        lua_pushcfunction(L, (ContO__tostring));
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,7 +40,7 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, KeepAlive(ContO_new));
+        lua_pushcfunction(L, (ContO_new));
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ContO");
@@ -209,31 +209,31 @@ public partial class LuaBindings
                 }
                 return 1;
             case "damageX":
-                lua_pushcfunction(L, KeepAlive(ContO_method_damageX));
+                lua_pushcfunction(L, (ContO_method_damageX));
                 return 1;
             case "damageY":
-                lua_pushcfunction(L, KeepAlive(ContO_method_damageY));
+                lua_pushcfunction(L, (ContO_method_damageY));
                 return 1;
             case "damageZ":
-                lua_pushcfunction(L, KeepAlive(ContO_method_damageZ));
+                lua_pushcfunction(L, (ContO_method_damageZ));
                 return 1;
             case "dust":
-                lua_pushcfunction(L, KeepAlive(ContO_method_dust));
+                lua_pushcfunction(L, (ContO_method_dust));
                 return 1;
             case "spark":
-                lua_pushcfunction(L, KeepAlive(ContO_method_spark));
+                lua_pushcfunction(L, (ContO_method_spark));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, KeepAlive(ContO_method_equals));
+                lua_pushcfunction(L, (ContO_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, KeepAlive(ContO_method_getHashCode));
+                lua_pushcfunction(L, (ContO_method_getHashCode));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, KeepAlive(ContO_method_toString));
+                lua_pushcfunction(L, (ContO_method_toString));
                 return 1;
             case "getType":
-                lua_pushcfunction(L, KeepAlive(ContO_method_getType));
+                lua_pushcfunction(L, (ContO_method_getType));
                 return 1;
             default:
                 lua_pushnil(L);
