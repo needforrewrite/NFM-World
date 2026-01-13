@@ -238,6 +238,66 @@ function MadInstance:equals(obj) end
 ---@return integer
 function MadInstance:getHashCode() end
 
+---@param self MadInstance
+---@param callback fun(
+---    sender: ObjectInstance,
+---    e: ValueTuple_Single_Int32Instance
+---)
+function MadInstance:AddListener_SfxPlayCrash(callback) end
+
+---@param self MadInstance
+function MadInstance:RemoveListener_SfxPlayCrash() end
+
+---@param self MadInstance
+---@param callback fun(
+---    sender: ObjectInstance,
+---    e: ValueTuple_Int32_SingleInstance
+---)
+function MadInstance:AddListener_SfxPlaySkid(callback) end
+
+---@param self MadInstance
+function MadInstance:RemoveListener_SfxPlaySkid() end
+
+---@param self MadInstance
+---@param callback fun(
+---    sender: ObjectInstance,
+---    e: ValueTuple_Int32_Int32_Int32Instance
+---)
+function MadInstance:AddListener_SfxPlayScrape(callback) end
+
+---@param self MadInstance
+function MadInstance:RemoveListener_SfxPlayScrape() end
+
+---@param self MadInstance
+---@param callback fun(
+---    sender: ObjectInstance,
+---    e: ValueTuple_Int32_Int32_Int32Instance
+---)
+function MadInstance:AddListener_SfxPlayGscrape(callback) end
+
+---@param self MadInstance
+function MadInstance:RemoveListener_SfxPlayGscrape() end
+
+---@param self MadInstance
+---@param callback fun(
+---    sender: ObjectInstance,
+---    e: number
+---)
+function MadInstance:AddListener_PowerUp(callback) end
+
+---@param self MadInstance
+function MadInstance:RemoveListener_PowerUp() end
+
+---@param self MadInstance
+---@param callback fun(
+---    sender: ObjectInstance,
+---    e: EventArgsInstance
+---)
+function MadInstance:AddListener_Distruct(callback) end
+
+---@param self MadInstance
+function MadInstance:RemoveListener_Distruct() end
+
 
 ---@class (exact) f64Vector3Instance
 ---@field x fix64Instance
@@ -627,6 +687,42 @@ function fix64Instance:getHashCode() end
 ---@param self fix64Instance
 ---@return TypeInstance
 function fix64Instance:getType() end
+
+
+---@class (exact) ObjectInstance
+local ObjectInstance = {}
+
+---@class (exact) Object
+---Creates a new Object
+---@return ObjectInstance
+function Object.new() end
+
+---@param objA? any
+---@param objB? any
+---@return boolean
+function Object.equals(objA, objB) end
+
+---@param objA? any
+---@param objB? any
+---@return boolean
+function Object.referenceEquals(objA, objB) end
+
+---@param self ObjectInstance
+---@return TypeInstance
+function ObjectInstance:getType() end
+
+---@param self ObjectInstance
+---@return string
+function ObjectInstance:toString() end
+
+---@param self ObjectInstance
+---@param obj? ObjectInstance
+---@return boolean
+function ObjectInstance:equals(obj) end
+
+---@param self ObjectInstance
+---@return integer
+function ObjectInstance:getHashCode() end
 
 
 ---@class (exact) UnlimitedArray_BooleanInstance
@@ -1083,6 +1179,166 @@ local IStageInstance = {}
 ---@param xz integer
 ---@return ITransformInstance
 function IStageInstance:createObject(objectName, x, y, z, xz) end
+
+
+---@class (exact) ValueTuple_Single_Int32Instance
+---@field item1 number
+---@field item2 integer
+local ValueTuple_Single_Int32Instance = {}
+
+---@class (exact) ValueTuple_Single_Int32
+---Creates a new ValueTuple_Single_Int32
+---@return ValueTuple_Single_Int32
+function ValueTuple_Single_Int32.new() end
+
+---Creates a new ValueTuple_Single_Int32
+---@param item1 number
+---@param item2 integer
+---@return ValueTuple_Single_Int32Instance
+function ValueTuple_Single_Int32.new(item1, item2) end
+
+---@param self ValueTuple_Single_Int32Instance
+---@param obj? ObjectInstance
+---@return boolean
+function ValueTuple_Single_Int32Instance:equals(obj) end
+
+---@param self ValueTuple_Single_Int32Instance
+---@param other ValueTuple_Single_Int32Instance
+---@return boolean
+function ValueTuple_Single_Int32Instance:equals(other) end
+
+---@param self ValueTuple_Single_Int32Instance
+---@param other ValueTuple_Single_Int32Instance
+---@return integer
+function ValueTuple_Single_Int32Instance:compareTo(other) end
+
+---@param self ValueTuple_Single_Int32Instance
+---@return integer
+function ValueTuple_Single_Int32Instance:getHashCode() end
+
+---@param self ValueTuple_Single_Int32Instance
+---@return string
+function ValueTuple_Single_Int32Instance:toString() end
+
+---@param self ValueTuple_Single_Int32Instance
+---@return TypeInstance
+function ValueTuple_Single_Int32Instance:getType() end
+
+
+---@class (exact) ValueTuple_Int32_SingleInstance
+---@field item1 integer
+---@field item2 number
+local ValueTuple_Int32_SingleInstance = {}
+
+---@class (exact) ValueTuple_Int32_Single
+---Creates a new ValueTuple_Int32_Single
+---@return ValueTuple_Int32_Single
+function ValueTuple_Int32_Single.new() end
+
+---Creates a new ValueTuple_Int32_Single
+---@param item1 integer
+---@param item2 number
+---@return ValueTuple_Int32_SingleInstance
+function ValueTuple_Int32_Single.new(item1, item2) end
+
+---@param self ValueTuple_Int32_SingleInstance
+---@param obj? ObjectInstance
+---@return boolean
+function ValueTuple_Int32_SingleInstance:equals(obj) end
+
+---@param self ValueTuple_Int32_SingleInstance
+---@param other ValueTuple_Int32_SingleInstance
+---@return boolean
+function ValueTuple_Int32_SingleInstance:equals(other) end
+
+---@param self ValueTuple_Int32_SingleInstance
+---@param other ValueTuple_Int32_SingleInstance
+---@return integer
+function ValueTuple_Int32_SingleInstance:compareTo(other) end
+
+---@param self ValueTuple_Int32_SingleInstance
+---@return integer
+function ValueTuple_Int32_SingleInstance:getHashCode() end
+
+---@param self ValueTuple_Int32_SingleInstance
+---@return string
+function ValueTuple_Int32_SingleInstance:toString() end
+
+---@param self ValueTuple_Int32_SingleInstance
+---@return TypeInstance
+function ValueTuple_Int32_SingleInstance:getType() end
+
+
+---@class (exact) ValueTuple_Int32_Int32_Int32Instance
+---@field item1 integer
+---@field item2 integer
+---@field item3 integer
+local ValueTuple_Int32_Int32_Int32Instance = {}
+
+---@class (exact) ValueTuple_Int32_Int32_Int32
+---Creates a new ValueTuple_Int32_Int32_Int32
+---@return ValueTuple_Int32_Int32_Int32
+function ValueTuple_Int32_Int32_Int32.new() end
+
+---Creates a new ValueTuple_Int32_Int32_Int32
+---@param item1 integer
+---@param item2 integer
+---@param item3 integer
+---@return ValueTuple_Int32_Int32_Int32Instance
+function ValueTuple_Int32_Int32_Int32.new(item1, item2, item3) end
+
+---@param self ValueTuple_Int32_Int32_Int32Instance
+---@param obj? ObjectInstance
+---@return boolean
+function ValueTuple_Int32_Int32_Int32Instance:equals(obj) end
+
+---@param self ValueTuple_Int32_Int32_Int32Instance
+---@param other ValueTuple_Int32_Int32_Int32Instance
+---@return boolean
+function ValueTuple_Int32_Int32_Int32Instance:equals(other) end
+
+---@param self ValueTuple_Int32_Int32_Int32Instance
+---@param other ValueTuple_Int32_Int32_Int32Instance
+---@return integer
+function ValueTuple_Int32_Int32_Int32Instance:compareTo(other) end
+
+---@param self ValueTuple_Int32_Int32_Int32Instance
+---@return integer
+function ValueTuple_Int32_Int32_Int32Instance:getHashCode() end
+
+---@param self ValueTuple_Int32_Int32_Int32Instance
+---@return string
+function ValueTuple_Int32_Int32_Int32Instance:toString() end
+
+---@param self ValueTuple_Int32_Int32_Int32Instance
+---@return TypeInstance
+function ValueTuple_Int32_Int32_Int32Instance:getType() end
+
+
+---@class (exact) EventArgsInstance
+local EventArgsInstance = {}
+
+---@class (exact) EventArgs
+---Creates a new EventArgs
+---@return EventArgsInstance
+function EventArgs.new() end
+
+---@param self EventArgsInstance
+---@return TypeInstance
+function EventArgsInstance:getType() end
+
+---@param self EventArgsInstance
+---@return string
+function EventArgsInstance:toString() end
+
+---@param self EventArgsInstance
+---@param obj? ObjectInstance
+---@return boolean
+function EventArgsInstance:equals(obj) end
+
+---@param self EventArgsInstance
+---@return integer
+function EventArgsInstance:getHashCode() end
 
 
 ---@class (exact) ArrayOff64Vector3Instance : ArrayInstance
@@ -1933,6 +2189,76 @@ function IInGameCarInstance:collide(otherCar) end
 
 ---@param self IInGameCarInstance
 function IInGameCarInstance:resetPosition() end
+
+---@param self IInGameCarInstance
+---@param callback fun(
+---    stat: CarStatsInstance,
+---    wheelnum: integer,
+---    amount: fix64Instance
+---)
+function IInGameCarInstance:AddListener_DamagedX(callback) end
+
+---@param self IInGameCarInstance
+function IInGameCarInstance:RemoveListener_DamagedX() end
+
+---@param self IInGameCarInstance
+---@param callback fun(
+---    stat: CarStatsInstance,
+---    wheelnum: integer,
+---    amount: fix64Instance,
+---    mtouch: boolean,
+---    nbsq: integer,
+---    squash: integer
+---)
+function IInGameCarInstance:AddListener_DamagedY(callback) end
+
+---@param self IInGameCarInstance
+function IInGameCarInstance:RemoveListener_DamagedY() end
+
+---@param self IInGameCarInstance
+---@param callback fun(
+---    stat: CarStatsInstance,
+---    wheelnum: integer,
+---    amount: fix64Instance
+---)
+function IInGameCarInstance:AddListener_DamagedZ(callback) end
+
+---@param self IInGameCarInstance
+function IInGameCarInstance:RemoveListener_DamagedZ() end
+
+---@param self IInGameCarInstance
+---@param callback fun(
+---    wheelx: number,
+---    wheely: number,
+---    wheelz: number,
+---    scx: number,
+---    scy: number,
+---    scz: number,
+---    type: integer,
+---    wheelGround: integer
+---)
+function IInGameCarInstance:AddListener_Sparked(callback) end
+
+---@param self IInGameCarInstance
+function IInGameCarInstance:RemoveListener_Sparked() end
+
+---@param self IInGameCarInstance
+---@param callback fun(
+---    wheelidx: integer,
+---    wheelx: number,
+---    wheely: number,
+---    wheelz: number,
+---    scx: integer,
+---    scz: integer,
+---    simag: number,
+---    tilt: integer,
+---    onRoof: boolean,
+---    wheelGround: integer
+---)
+function IInGameCarInstance:AddListener_Dusted(callback) end
+
+---@param self IInGameCarInstance
+function IInGameCarInstance:RemoveListener_Dusted() end
 
 
 ---@class (exact) Nibble_ByteInstance

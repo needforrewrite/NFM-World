@@ -19,12 +19,17 @@ public partial class LuaBindings
         Register_Mad(L);
         Register_f64Vector3(L);
         Register_fix64(L);
+        Register_Object(L);
         Register_UnlimitedArray_Boolean(L);
         Register_Int32Array2D(L);
         Register_InlineArray4_fix64(L);
         Register_ContO(L);
         Register_Control(L);
         Register_IStage(L);
+        Register_ValueTuple_Single_Int32(L);
+        Register_ValueTuple_Int32_Single(L);
+        Register_ValueTuple_Int32_Int32_Int32(L);
+        Register_EventArgs(L);
         Register_f64Vector3Array(L);
         Register_UnlimitedArray_Boolean_Enumerator(L);
         Register_BooleanArray(L);

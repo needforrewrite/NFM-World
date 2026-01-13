@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using LuaNET.LuaJIT;
 using Maxine.Extensions;
@@ -41,16 +42,24 @@ public partial class LuaBindings
         _objectCount = 0;
         _nextObjectId = 1;
         _objects.Clear();
+        // Having this here crashes the runtime because it could be unrefing variables from a lua_State that is already closed.
+        // CleanupEventDelegates();
+        _eventDelegateRefs.Clear();
         TypeInfo<nfm_world_library.mad.CarStats>.Name = null;
         TypeInfo<nfm_world_library.mad.Mad>.Name = null;
         TypeInfo<nfm_world_library.SoftFloat.f64Vector3>.Name = null;
         TypeInfo<nfm_world_library.SoftFloat.fix64>.Name = null;
+        TypeInfo<object>.Name = null;
         TypeInfo<nfm_world_library.util.UnlimitedArray<bool>>.Name = null;
         TypeInfo<int[,]>.Name = null;
         TypeInfo<System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>>.Name = null;
         TypeInfo<nfm_world_library.mad.ContO>.Name = null;
         TypeInfo<nfm_world_library.mad.Control>.Name = null;
         TypeInfo<nfm_world_library.mad.IStage>.Name = null;
+        TypeInfo<System.ValueTuple<float, int>>.Name = null;
+        TypeInfo<System.ValueTuple<int, float>>.Name = null;
+        TypeInfo<System.ValueTuple<int, int, int>>.Name = null;
+        TypeInfo<System.EventArgs>.Name = null;
         TypeInfo<nfm_world_library.SoftFloat.f64Vector3[]>.Name = null;
         TypeInfo<nfm_world_library.util.UnlimitedArray<bool>.Enumerator>.Name = null;
         TypeInfo<bool[]>.Name = null;
@@ -577,4 +586,252 @@ public partial class LuaBindings
 
     #endregion
 
+    #region Event Support
+
+    private static ConditionalWeakTable<BaseEventInvoker, DelegateRef> _eventDelegateRefs = new();
+
+    private record DelegateRef(int FuncRef, Action Unsubscribe);
+
+    /// <summary>
+    /// Create a .NET delegate from a Lua function for event subscription.
+    /// The delegate will call back into Lua when the event is raised.
+    /// </summary>
+    private static TDelegate CreateEventDelegate<TDelegate>(lua_State L, int funcIdx, Action<TDelegate> unregister) where TDelegate : Delegate
+    {
+        // Get the Lua function reference
+        lua_pushvalue(L, funcIdx);
+        var funcRef = luaL_ref(L, LUA_REGISTRYINDEX);
+
+        // Create a delegate that calls back into Lua
+        if (typeof(TDelegate) == typeof(System.EventHandler<System.ValueTuple<float, int>>))
+        {
+            var invoker = new EventInvoker2<object, System.ValueTuple<float, int>> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(System.EventHandler<System.ValueTuple<float, int>>)((arg0, arg1) => invoker.Invoke(arg0!, arg1!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        if (typeof(TDelegate) == typeof(System.EventHandler<System.ValueTuple<int, float>>))
+        {
+            var invoker = new EventInvoker2<object, System.ValueTuple<int, float>> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(System.EventHandler<System.ValueTuple<int, float>>)((arg0, arg1) => invoker.Invoke(arg0!, arg1!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        if (typeof(TDelegate) == typeof(System.EventHandler<System.ValueTuple<int, int, int>>))
+        {
+            var invoker = new EventInvoker2<object, System.ValueTuple<int, int, int>> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(System.EventHandler<System.ValueTuple<int, int, int>>)((arg0, arg1) => invoker.Invoke(arg0!, arg1!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        if (typeof(TDelegate) == typeof(System.EventHandler<float>))
+        {
+            var invoker = new EventInvoker2<object, float> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(System.EventHandler<float>)((arg0, arg1) => invoker.Invoke(arg0!, arg1!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        if (typeof(TDelegate) == typeof(System.EventHandler))
+        {
+            var invoker = new EventInvoker2<object, System.EventArgs> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(System.EventHandler)((arg0, arg1) => invoker.Invoke(arg0!, arg1!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        if (typeof(TDelegate) == typeof(nfm_world_library.backend.DamageFunc))
+        {
+            var invoker = new EventInvoker3<nfm_world_library.mad.CarStats, int, nfm_world_library.SoftFloat.fix64> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(nfm_world_library.backend.DamageFunc)((arg0, arg1, arg2) => invoker.Invoke(arg0!, arg1!, arg2!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        if (typeof(TDelegate) == typeof(nfm_world_library.backend.RoofDamageFunc))
+        {
+            var invoker = new EventInvoker6<nfm_world_library.mad.CarStats, int, nfm_world_library.SoftFloat.fix64, bool, int, int> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(nfm_world_library.backend.RoofDamageFunc)((arg0, arg1, arg2, arg3, arg4, arg5) => invoker.Invoke(arg0!, arg1!, arg2!, arg3!, arg4!, arg5!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        if (typeof(TDelegate) == typeof(nfm_world_library.backend.SparkFunc))
+        {
+            var invoker = new EventInvoker8<float, float, float, float, float, float, int, int> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(nfm_world_library.backend.SparkFunc)((arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7) => invoker.Invoke(arg0!, arg1!, arg2!, arg3!, arg4!, arg5!, arg6!, arg7!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        if (typeof(TDelegate) == typeof(nfm_world_library.backend.DustFunc))
+        {
+            var invoker = new EventInvoker10<int, float, float, float, int, int, float, int, bool, int> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(nfm_world_library.backend.DustFunc)((arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) => invoker.Invoke(arg0!, arg1!, arg2!, arg3!, arg4!, arg5!, arg6!, arg7!, arg8!, arg9!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
+        throw new NotSupportedException($"Event delegate type {typeof(TDelegate)} is not supported");
+    }
+
+    private abstract class BaseEventInvoker
+    {
+        public lua_State L;
+        public int FuncRef;
+    }
+
+    private sealed class EventInvoker0 : BaseEventInvoker
+    {
+        public void Invoke()
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+            lua_pcall(L, 0, 0, 0);
+        }
+
+        ~EventInvoker0()
+        {
+            // Clean up Lua function reference when the invoker is garbage collected
+            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+        }
+    }
+    private sealed class EventInvoker2<T0, T1> : BaseEventInvoker
+    {
+        public void Invoke(T0 arg0, T1 arg1)
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+            PushValue(L, arg0);
+            PushValue(L, arg1);
+            lua_pcall(L, 2, 0, 0);
+        }
+    
+        ~EventInvoker2()
+        {
+            // Clean up Lua function reference when the invoker is garbage collected
+            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+        }
+    }
+    private sealed class EventInvoker3<T0, T1, T2> : BaseEventInvoker
+    {
+        public void Invoke(T0 arg0, T1 arg1, T2 arg2)
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+            PushValue(L, arg0);
+            PushValue(L, arg1);
+            PushValue(L, arg2);
+            lua_pcall(L, 3, 0, 0);
+        }
+    
+        ~EventInvoker3()
+        {
+            // Clean up Lua function reference when the invoker is garbage collected
+            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+        }
+    }
+    private sealed class EventInvoker6<T0, T1, T2, T3, T4, T5> : BaseEventInvoker
+    {
+        public void Invoke(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+            PushValue(L, arg0);
+            PushValue(L, arg1);
+            PushValue(L, arg2);
+            PushValue(L, arg3);
+            PushValue(L, arg4);
+            PushValue(L, arg5);
+            lua_pcall(L, 6, 0, 0);
+        }
+    
+        ~EventInvoker6()
+        {
+            // Clean up Lua function reference when the invoker is garbage collected
+            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+        }
+    }
+    private sealed class EventInvoker8<T0, T1, T2, T3, T4, T5, T6, T7> : BaseEventInvoker
+    {
+        public void Invoke(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7)
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+            PushValue(L, arg0);
+            PushValue(L, arg1);
+            PushValue(L, arg2);
+            PushValue(L, arg3);
+            PushValue(L, arg4);
+            PushValue(L, arg5);
+            PushValue(L, arg6);
+            PushValue(L, arg7);
+            lua_pcall(L, 8, 0, 0);
+        }
+    
+        ~EventInvoker8()
+        {
+            // Clean up Lua function reference when the invoker is garbage collected
+            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+        }
+    }
+    private sealed class EventInvoker10<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> : BaseEventInvoker
+    {
+        public void Invoke(T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9)
+        {
+            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+            PushValue(L, arg0);
+            PushValue(L, arg1);
+            PushValue(L, arg2);
+            PushValue(L, arg3);
+            PushValue(L, arg4);
+            PushValue(L, arg5);
+            PushValue(L, arg6);
+            PushValue(L, arg7);
+            PushValue(L, arg8);
+            PushValue(L, arg9);
+            lua_pcall(L, 10, 0, 0);
+        }
+    
+        ~EventInvoker10()
+        {
+            // Clean up Lua function reference when the invoker is garbage collected
+            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+        }
+    }
+
+    public static void CleanupEventDelegates()
+    {
+        foreach (var entry in _eventDelegateRefs)
+        {
+            entry.Value.Unsubscribe();
+        }
+        _eventDelegateRefs.Clear();
+    }
+    #endregion
 }

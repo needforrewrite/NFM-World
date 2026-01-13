@@ -121,6 +121,36 @@ public partial class LuaBindings
             case "resetPosition":
                 lua_pushcfunction(L, KeepAlive(IInGameCar_method_resetPosition));
                 return 1;
+            case "AddListener_DamagedX":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_DamagedX));
+                return 1;
+            case "RemoveListener_DamagedX":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_DamagedX));
+                return 1;
+            case "AddListener_DamagedY":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_DamagedY));
+                return 1;
+            case "RemoveListener_DamagedY":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_DamagedY));
+                return 1;
+            case "AddListener_DamagedZ":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_DamagedZ));
+                return 1;
+            case "RemoveListener_DamagedZ":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_DamagedZ));
+                return 1;
+            case "AddListener_Sparked":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_Sparked));
+                return 1;
+            case "RemoveListener_Sparked":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_Sparked));
+                return 1;
+            case "AddListener_Dusted":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_AddListener_Dusted));
+                return 1;
+            case "RemoveListener_Dusted":
+                lua_pushcfunction(L, KeepAlive(IInGameCar_RemoveListener_Dusted));
+                return 1;
             default:
                 lua_pushnil(L);
                 return 1;
@@ -483,6 +513,116 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for resetPosition");
+        return 0;
+    }
+
+    private static int IInGameCar_AddListener_DamagedX(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<nfm_world_library.backend.DamageFunc>(L, 2, listener => obj.DamagedX -= listener);
+
+        obj.DamagedX += listener;
+        return 0;
+    }
+
+    private static int IInGameCar_RemoveListener_DamagedX(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
+        return 0;
+    }
+
+    private static int IInGameCar_AddListener_DamagedY(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<nfm_world_library.backend.RoofDamageFunc>(L, 2, listener => obj.DamagedY -= listener);
+
+        obj.DamagedY += listener;
+        return 0;
+    }
+
+    private static int IInGameCar_RemoveListener_DamagedY(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
+        return 0;
+    }
+
+    private static int IInGameCar_AddListener_DamagedZ(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<nfm_world_library.backend.DamageFunc>(L, 2, listener => obj.DamagedZ -= listener);
+
+        obj.DamagedZ += listener;
+        return 0;
+    }
+
+    private static int IInGameCar_RemoveListener_DamagedZ(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
+        return 0;
+    }
+
+    private static int IInGameCar_AddListener_Sparked(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<nfm_world_library.backend.SparkFunc>(L, 2, listener => obj.Sparked -= listener);
+
+        obj.Sparked += listener;
+        return 0;
+    }
+
+    private static int IInGameCar_RemoveListener_Sparked(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
+        return 0;
+    }
+
+    private static int IInGameCar_AddListener_Dusted(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<nfm_world_library.backend.DustFunc>(L, 2, listener => obj.Dusted -= listener);
+
+        obj.Dusted += listener;
+        return 0;
+    }
+
+    private static int IInGameCar_RemoveListener_Dusted(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
         return 0;
     }
 

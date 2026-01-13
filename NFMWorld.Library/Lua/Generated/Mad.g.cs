@@ -544,6 +544,42 @@ public partial class LuaBindings
             case "getHashCode":
                 lua_pushcfunction(L, KeepAlive(Mad_method_getHashCode));
                 return 1;
+            case "AddListener_SfxPlayCrash":
+                lua_pushcfunction(L, KeepAlive(Mad_AddListener_SfxPlayCrash));
+                return 1;
+            case "RemoveListener_SfxPlayCrash":
+                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_SfxPlayCrash));
+                return 1;
+            case "AddListener_SfxPlaySkid":
+                lua_pushcfunction(L, KeepAlive(Mad_AddListener_SfxPlaySkid));
+                return 1;
+            case "RemoveListener_SfxPlaySkid":
+                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_SfxPlaySkid));
+                return 1;
+            case "AddListener_SfxPlayScrape":
+                lua_pushcfunction(L, KeepAlive(Mad_AddListener_SfxPlayScrape));
+                return 1;
+            case "RemoveListener_SfxPlayScrape":
+                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_SfxPlayScrape));
+                return 1;
+            case "AddListener_SfxPlayGscrape":
+                lua_pushcfunction(L, KeepAlive(Mad_AddListener_SfxPlayGscrape));
+                return 1;
+            case "RemoveListener_SfxPlayGscrape":
+                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_SfxPlayGscrape));
+                return 1;
+            case "AddListener_PowerUp":
+                lua_pushcfunction(L, KeepAlive(Mad_AddListener_PowerUp));
+                return 1;
+            case "RemoveListener_PowerUp":
+                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_PowerUp));
+                return 1;
+            case "AddListener_Distruct":
+                lua_pushcfunction(L, KeepAlive(Mad_AddListener_Distruct));
+                return 1;
+            case "RemoveListener_Distruct":
+                lua_pushcfunction(L, KeepAlive(Mad_RemoveListener_Distruct));
+                return 1;
             default:
                 lua_pushnil(L);
                 return 1;
@@ -1608,6 +1644,138 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Mad_AddListener_SfxPlayCrash(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<System.EventHandler<System.ValueTuple<float, int>>>(L, 2, listener => obj.SfxPlayCrash -= listener);
+
+        obj.SfxPlayCrash += listener;
+        return 0;
+    }
+
+    private static int Mad_RemoveListener_SfxPlayCrash(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
+        return 0;
+    }
+
+    private static int Mad_AddListener_SfxPlaySkid(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<System.EventHandler<System.ValueTuple<int, float>>>(L, 2, listener => obj.SfxPlaySkid -= listener);
+
+        obj.SfxPlaySkid += listener;
+        return 0;
+    }
+
+    private static int Mad_RemoveListener_SfxPlaySkid(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
+        return 0;
+    }
+
+    private static int Mad_AddListener_SfxPlayScrape(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<System.EventHandler<System.ValueTuple<int, int, int>>>(L, 2, listener => obj.SfxPlayScrape -= listener);
+
+        obj.SfxPlayScrape += listener;
+        return 0;
+    }
+
+    private static int Mad_RemoveListener_SfxPlayScrape(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
+        return 0;
+    }
+
+    private static int Mad_AddListener_SfxPlayGscrape(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<System.EventHandler<System.ValueTuple<int, int, int>>>(L, 2, listener => obj.SfxPlayGscrape -= listener);
+
+        obj.SfxPlayGscrape += listener;
+        return 0;
+    }
+
+    private static int Mad_RemoveListener_SfxPlayGscrape(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
+        return 0;
+    }
+
+    private static int Mad_AddListener_PowerUp(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<System.EventHandler<float>>(L, 2, listener => obj.PowerUp -= listener);
+
+        obj.PowerUp += listener;
+        return 0;
+    }
+
+    private static int Mad_RemoveListener_PowerUp(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
+        return 0;
+    }
+
+    private static int Mad_AddListener_Distruct(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+
+        var listener = CreateEventDelegate<System.EventHandler>(L, 2, listener => obj.Distruct -= listener);
+
+        obj.Distruct += listener;
+        return 0;
+    }
+
+    private static int Mad_RemoveListener_Distruct(lua_State L)
+    {
+        var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
+        if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
+        // Note: Removing specific Lua function listeners is not currently supported
+        // Event listeners will be automatically cleaned up when the Lua state is closed
+        // or when the object is garbage collected
         return 0;
     }
 
