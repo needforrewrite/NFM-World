@@ -452,7 +452,7 @@ public partial class LuaBindings
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
         if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
 
-        var listener = CreateEventDelegate<System.Action>(L, 2);
+        var listener = CreateEventDelegate<System.Action>(L, 2, listener => obj.SimpleEvent -= listener);
 
         obj.SimpleEvent += listener;
         return 0;
@@ -474,7 +474,7 @@ public partial class LuaBindings
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
         if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
 
-        var listener = CreateEventDelegate<System.EventHandler>(L, 2);
+        var listener = CreateEventDelegate<System.EventHandler>(L, 2, listener => obj.StandardEvent -= listener);
 
         obj.StandardEvent += listener;
         return 0;
@@ -496,7 +496,7 @@ public partial class LuaBindings
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
         if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
 
-        var listener = CreateEventDelegate<System.EventHandler<NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs>>(L, 2);
+        var listener = CreateEventDelegate<System.EventHandler<NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs>>(L, 2, listener => obj.CustomEvent -= listener);
 
         obj.CustomEvent += listener;
         return 0;
@@ -516,7 +516,7 @@ public partial class LuaBindings
     {
         if (lua_type(L, 1) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
 
-        var listener = CreateEventDelegate<System.Action<string>>(L, 1);
+        var listener = CreateEventDelegate<System.Action<string>>(L, 1, listener => NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.StaticEvent -= listener);
 
         NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.StaticEvent += listener;
         return 0;
@@ -536,7 +536,7 @@ public partial class LuaBindings
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
         if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
 
-        var listener = CreateEventDelegate<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.MultiParamDelegate>(L, 2);
+        var listener = CreateEventDelegate<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.MultiParamDelegate>(L, 2, listener => obj.MultiParamEvent -= listener);
 
         obj.MultiParamEvent += listener;
         return 0;

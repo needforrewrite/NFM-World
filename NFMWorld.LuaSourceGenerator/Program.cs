@@ -518,6 +518,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             using System;
             using System.Collections.Generic;
             using System.Reflection;
+            using System.Runtime.CompilerServices;
             using System.Runtime.InteropServices;
             using LuaNET.LuaJIT;
             using Maxine.Extensions;
@@ -552,6 +553,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     _objectCount = 0;
                     _nextObjectId = 1;
                     _objects.Clear();
+                    // Having this here crashes the runtime because it could be unrefing variables from a lua_State that is already closed.
+                    // CleanupEventDelegates();
+                    _eventDelegateRefs.Clear();
             """);
 
         _indent += 2;
@@ -1046,12 +1050,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     #endregion
 
                     #region Event Support
-
+                
+                    private static ConditionalWeakTable<BaseEventInvoker, DelegateRef> _eventDelegateRefs = new();
+                    
+                    private record DelegateRef(int FuncRef, Action Unsubscribe);
+                    
                     /// <summary>
                     /// Create a .NET delegate from a Lua function for event subscription.
                     /// The delegate will call back into Lua when the event is raised.
                     /// </summary>
-                    private static TDelegate CreateEventDelegate<TDelegate>(lua_State L, int funcIdx) where TDelegate : Delegate
+                    private static TDelegate CreateEventDelegate<TDelegate>(lua_State L, int funcIdx, Action<TDelegate> unregister) where TDelegate : Delegate
                     {
                         // Get the Lua function reference
                         lua_pushvalue(L, funcIdx);
@@ -1084,7 +1092,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 if (typeof(TDelegate) == typeof({{fullTypeName}}))
                 {
                     var invoker = new EventInvoker{{argumentCount}}{{t}} { L = L, FuncRef = funcRef };
-                    return (TDelegate)(Delegate)({{fullTypeName}})(({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"arg{i}"))}}) => invoker.Invoke({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"arg{i}"))}}));
+                    var @delegate = (TDelegate)(Delegate)({{fullTypeName}})(({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"arg{i}"))}}) => invoker.Invoke({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"arg{i}!"))}}));
+                    _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+                    {
+                        unregister(@delegate);
+                        luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+                    }));
+                    return @delegate;
                 }
                 """);
 
@@ -1096,16 +1110,25 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             $$"""
                         throw new NotSupportedException($"Event delegate type {typeof(TDelegate)} is not supported");
                     }
-
-                    private class EventInvoker0
+                
+                    private abstract class BaseEventInvoker
                     {
                         public lua_State L;
                         public int FuncRef;
-
+                    }
+                    
+                    private sealed class EventInvoker0 : BaseEventInvoker
+                    {
                         public void Invoke()
                         {
                             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
                             lua_pcall(L, 0, 0, 0);
+                        }
+
+                        ~EventInvoker0()
+                        {
+                            // Clean up Lua function reference when the invoker is garbage collected
+                            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
                         }
                     }
                 """);
@@ -1120,11 +1143,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         {
             AppendLine(
                 $$"""
-                  private class EventInvoker{{argumentCount}}<{{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"T{i}"))}}>
+                  private sealed class EventInvoker{{argumentCount}}<{{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"T{i}"))}}> : BaseEventInvoker
                   {
-                      public lua_State L;
-                      public int FuncRef;
-
                       public void Invoke({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"T{i} arg{i}"))}})
                       {
                           lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
@@ -1158,6 +1178,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         AppendLine(
             $$"""
+
+                public static void CleanupEventDelegates()
+                {
+                    foreach (var entry in _eventDelegateRefs)
+                    {
+                        entry.Value.Unsubscribe();
+                    }
+                    _eventDelegateRefs.Clear();
+                }
                 #endregion
             }
             """
@@ -3359,16 +3388,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine();
 
             // Convert Lua function to delegate
-            AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, " + (isStatic ? "1" : "2") + ");");
-            AppendLine();
 
             // Subscribe to event
             if (isStatic)
             {
+                AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, 1, listener => {fullTypeName}.{eventName} -= listener);");
+                AppendLine();
                 AppendLine($"{fullTypeName}.{eventName} += listener;");
             }
             else
             {
+                AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, 2, listener => obj.{eventName} -= listener);");
+                AppendLine();
                 AppendLine($"obj.{eventName} += listener;");
                 if (isStruct)
                 {
