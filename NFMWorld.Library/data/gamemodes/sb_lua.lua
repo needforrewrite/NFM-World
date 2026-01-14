@@ -3,10 +3,11 @@ local newTick = 0
 GM:AddListener_OnEnter(function()
     newTick = 0
 
-    for i = 1, #GM.players do
+    print(GM.players.count)
+    for i = 1, GM.players.count do
         local player = GM.players[i]
         GM.carsInRace[i] = GM:createBackendCar(player.carName, i, fix64.create(0), fix64.create(0))
-        print("Created car for player " .. player.name .. " with car name " .. player.carName)
+        print("Created car for player " .. player.playerName .. " with car name " .. player.carName)
     end
 
     GM:reset()
@@ -16,8 +17,8 @@ GM:AddListener_OnExit(function()
 end)
 
 GM:AddListener_OnGameTick(function()
-    FrameTrace.AddMessage("Hello from Lua")
-    FrameTrace.AddMessage("contox: " .. GM.carsInRace[1].position.x .. ", contoz: " .. GM.carsInRace[1].position.z .. ", contoy: " .. GM.carsInRace[1].position.y)
+    FrameTrace.addMessage("Hello from Lua")
+    FrameTrace.addMessage("contox: " .. tostring(GM.carsInRace[1].position.x) .. ", contoz: " .. tostring(GM.carsInRace[1].position.z) .. ", contoy: " .. tostring(GM.carsInRace[1].position.y))
 
     -- TODO enums
     -- if GM.raceState == RaceState.InProgress then
@@ -25,8 +26,8 @@ GM:AddListener_OnGameTick(function()
     -- We round this up to 3 ticks per 63TPS tick.
     newTick = newTick + 1
     if newTick == 3 then
-        for i = 1, #GM.carsInRace do
-            for j = 1, #GM.carsInRace do
+        for i = 1, GM.carsInRace.count do
+            for j = 1, GM.carsInRace.count do
                 if i ~= j then
                     GM.carsInRace[i]:collide(GM.carsInRace[j])
                 end
@@ -36,7 +37,7 @@ GM:AddListener_OnGameTick(function()
         newTick = 0;
     end
 
-    for i = 1, #GM.carsInRace do
+    for i = 1, GM.carsInRace.count do
         GM.carsInRace[i]:drive(GM.currentStage)
     end
 end)
