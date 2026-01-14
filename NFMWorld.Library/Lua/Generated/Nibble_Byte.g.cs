@@ -129,7 +129,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "value":
-                PushValue(L, obj.Value);
+                PushValue(L, ((Maxine.Extensions.Nibble<System.Byte>)obj).Value);
                 return 1;
             case "equals":
                 lua_pushcfunction(L, (Nibble_Byte_method_equals));
@@ -350,109 +350,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(Maxine.Extensions.Nibble<System.Byte>)
+            var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Maxine.Extensions.Nibble<System.Byte>)self).Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Equals(System.Byte)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<System.Byte>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            // Try overload 2: Equals(object)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next2;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 2;
-                }
-            }
-            next2:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<System.Byte>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 2:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -468,75 +377,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: CompareTo(Maxine.Extensions.Nibble<System.Byte>)
+            var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Maxine.Extensions.Nibble<System.Byte>)self).CompareTo(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: CompareTo(System.Byte)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<System.Byte>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
-                        try
-                        {
-                            var result = self.CompareTo(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<System.Byte>(L, 2)!;
-                        try
-                        {
-                            var result = self.CompareTo(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for compareTo");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -554,7 +406,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((Maxine.Extensions.Nibble<System.Byte>)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -580,33 +432,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            string? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<string>(L, 2)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 3) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 3)!;
-            try
-            {
-                var result = self.ToString(arg0, arg1);
+                var result = ((Maxine.Extensions.Nibble<System.Byte>)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -632,7 +458,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((Maxine.Extensions.Nibble<System.Byte>)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

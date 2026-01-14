@@ -71,31 +71,114 @@ public partial class LuaBindings
         switch (key)
         {
             case "mad":
-                PushValue(L, obj.Mad);
+                PushValue(L, ((nfm_world_library.mad.IInGameCar)obj).Mad);
                 return 1;
             case "control":
-                PushValue(L, obj.Control);
+                PushValue(L, ((nfm_world_library.mad.IInGameCar)obj).Control);
                 return 1;
             case "currentCheckpoint":
-                PushValue(L, obj.currentCheckpoint);
+                PushValue(L, ((nfm_world_library.mad.IInGameCar)obj).currentCheckpoint);
                 return 1;
             case "currentLap":
-                PushValue(L, obj.currentLap);
+                PushValue(L, ((nfm_world_library.mad.IInGameCar)obj).currentLap);
                 return 1;
             case "totalCheckpoint":
-                PushValue(L, obj.totalCheckpoint);
+                PushValue(L, ((nfm_world_library.mad.IInGameCar)obj).totalCheckpoint);
                 return 1;
             case "lastCheckpointNode":
-                PushValue(L, obj.lastCheckpointNode);
+                PushValue(L, ((nfm_world_library.mad.IInGameCar)obj).lastCheckpointNode);
                 return 1;
             case "placement":
-                PushValue(L, obj.placement);
+                PushValue(L, ((nfm_world_library.mad.IInGameCar)obj).placement);
                 return 1;
             case "wasted":
-                PushValue(L, obj.Wasted);
+                PushValue(L, ((nfm_world_library.mad.IInGameCar)obj).Wasted);
                 return 1;
             case "bot":
-                PushValue(L, obj.Bot);
+                PushValue(L, ((nfm_world_library.mad.IInGameCar)obj).Bot);
+                return 1;
+            case "rad":
+                PushValue(L, ((nfm_world_library.mad.ICar)obj).Rad);
+                return 1;
+            case "stats":
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
+                        }
+                    }
+                }
+                return 1;
+            case "groundAt":
+                PushValue(L, ((nfm_world_library.mad.ICar)obj).GroundAt);
+                return 1;
+            case "maxRadius":
+                PushValue(L, ((nfm_world_library.mad.ICar)obj).MaxRadius);
+                return 1;
+            case "wheelAngle":
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).WheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).WheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
+                        }
+                    }
+                }
+                return 1;
+            case "turningWheelAngle":
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).TurningWheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).TurningWheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
+                        }
+                    }
+                }
+                return 1;
+            case "wheels":
+                PushValue(L, ((nfm_world_library.mad.ICar)obj).Wheels);
+                return 1;
+            case "childTransforms":
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).ChildTransforms);
+                return 1;
+            case "position":
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
+                        }
+                    }
+                }
+                return 1;
+            case "rotation":
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
+                        }
+                    }
+                }
+                return 1;
+            case "parent":
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).Parent);
                 return 1;
             case "addDust":
                 lua_pushcfunction(L, (IInGameCar_method_addDust));
@@ -277,7 +360,7 @@ public partial class LuaBindings
             var arg9 = ToObject<int>(L, 11)!;
             try
             {
-                self.AddDust(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                ((nfm_world_library.mad.IInGameCar)self).AddDust(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                 return 0;
             }
             catch (System.Exception ex)
@@ -314,7 +397,7 @@ public partial class LuaBindings
             var arg7 = ToObject<int>(L, 9)!;
             try
             {
-                self.Spark(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                ((nfm_world_library.mad.IInGameCar)self).Spark(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                 return 0;
             }
             catch (System.Exception ex)
@@ -346,7 +429,7 @@ public partial class LuaBindings
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
             try
             {
-                self.DamageX(arg0, arg1, arg2);
+                ((nfm_world_library.mad.IInGameCar)self).DamageX(arg0, arg1, arg2);
                 return 0;
             }
             catch (System.Exception ex)
@@ -381,7 +464,7 @@ public partial class LuaBindings
             var arg5 = ToObject<int>(L, 7)!;
             try
             {
-                self.DamageY(arg0, arg1, arg2, arg3, arg4, arg5);
+                ((nfm_world_library.mad.IInGameCar)self).DamageY(arg0, arg1, arg2, arg3, arg4, arg5);
                 return 0;
             }
             catch (System.Exception ex)
@@ -413,7 +496,7 @@ public partial class LuaBindings
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
             try
             {
-                self.DamageZ(arg0, arg1, arg2);
+                ((nfm_world_library.mad.IInGameCar)self).DamageZ(arg0, arg1, arg2);
                 return 0;
             }
             catch (System.Exception ex)
@@ -443,7 +526,7 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.IStage>(L, 2)!;
             try
             {
-                self.Drive(arg0);
+                ((nfm_world_library.mad.IInGameCar)self).Drive(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -473,7 +556,7 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.IInGameCar>(L, 2)!;
             try
             {
-                self.Collide(arg0);
+                ((nfm_world_library.mad.IInGameCar)self).Collide(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -502,7 +585,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.ResetPosition();
+                ((nfm_world_library.mad.IInGameCar)self).ResetPosition();
                 return 0;
             }
             catch (System.Exception ex)

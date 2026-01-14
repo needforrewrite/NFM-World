@@ -136,7 +136,7 @@ public partial class LuaBindings
                 arg1 = ToObject<object>(L, 3)!;
             try
             {
-                var result = self.Equals(arg0, arg1);
+                var result = ((System.Collections.IEqualityComparer)self).Equals(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -167,7 +167,7 @@ public partial class LuaBindings
             var arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.GetHashCode(arg0);
+                var result = ((System.Collections.IEqualityComparer)self).GetHashCode(arg0);
                 PushValue(L, result);
                 return 1;
             }

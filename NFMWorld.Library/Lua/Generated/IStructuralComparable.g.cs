@@ -129,7 +129,7 @@ public partial class LuaBindings
             var arg1 = ToObject<System.Collections.IComparer>(L, 3)!;
             try
             {
-                var result = self.CompareTo(arg0, arg1);
+                var result = ((System.Collections.IStructuralComparable)self).CompareTo(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }

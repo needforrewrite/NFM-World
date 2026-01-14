@@ -77,7 +77,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Current, "MT_PiecePlacement", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Current' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>.Enumerator)obj).Current, "MT_PiecePlacement", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Current' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -170,7 +170,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.MoveNext();
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>.Enumerator)self).MoveNext();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -196,7 +196,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Reset();
+                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>.Enumerator)self).Reset();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -221,7 +221,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Dispose();
+                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>.Enumerator)self).Dispose();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -251,7 +251,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>.Enumerator)self).Equals(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -277,7 +277,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>.Enumerator)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -303,7 +303,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>.Enumerator)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -329,7 +329,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>.Enumerator)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

@@ -71,7 +71,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "colors":
-                PushValue(L, obj.Colors);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).Colors);
                 return 1;
             case "stats":
                 {
@@ -81,37 +81,37 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.mad.rad.Rad3d)obj).Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "wheels":
-                PushValue(L, obj.Wheels);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).Wheels);
                 return 1;
             case "rims":
-                if (obj.Rims.HasValue)
-                    PushValue(L, obj.Rims.Value);
+                if (((nfm_world_library.mad.rad.Rad3d)obj).Rims.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).Rims.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "boxes":
-                PushValue(L, obj.Boxes);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).Boxes);
                 return 1;
             case "polys":
-                PushValue(L, obj.Polys);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).Polys);
                 return 1;
             case "castsShadow":
-                PushValue(L, obj.CastsShadow);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).CastsShadow);
                 return 1;
             case "atp":
-                PushValue(L, obj.Atp);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).Atp);
                 return 1;
             case "fileName":
-                PushValue(L, obj.FileName);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).FileName);
                 return 1;
             case "maxRadius":
-                PushValue(L, obj.MaxRadius);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).MaxRadius);
                 return 1;
             case "equals":
                 lua_pushcfunction(L, (Rad3d_method_equals));
@@ -223,7 +223,7 @@ public partial class LuaBindings
                 arg0 = ToObject<nfm_world_library.mad.rad.Rad3d>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.mad.rad.Rad3d)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -253,7 +253,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.mad.rad.Rad3d)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }
@@ -283,7 +283,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.mad.rad.Rad3d)self).GetType();
                 PushValue(L, result);
                 return 1;
             }

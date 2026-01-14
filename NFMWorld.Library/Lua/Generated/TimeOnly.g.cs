@@ -116,25 +116,25 @@ public partial class LuaBindings
         switch (key)
         {
             case "hour":
-                PushValue(L, obj.Hour);
+                PushValue(L, ((System.TimeOnly)obj).Hour);
                 return 1;
             case "minute":
-                PushValue(L, obj.Minute);
+                PushValue(L, ((System.TimeOnly)obj).Minute);
                 return 1;
             case "second":
-                PushValue(L, obj.Second);
+                PushValue(L, ((System.TimeOnly)obj).Second);
                 return 1;
             case "millisecond":
-                PushValue(L, obj.Millisecond);
+                PushValue(L, ((System.TimeOnly)obj).Millisecond);
                 return 1;
             case "microsecond":
-                PushValue(L, obj.Microsecond);
+                PushValue(L, ((System.TimeOnly)obj).Microsecond);
                 return 1;
             case "nanosecond":
-                PushValue(L, obj.Nanosecond);
+                PushValue(L, ((System.TimeOnly)obj).Nanosecond);
                 return 1;
             case "ticks":
-                PushValue(L, obj.Ticks);
+                PushValue(L, ((System.TimeOnly)obj).Ticks);
                 return 1;
             case "add":
                 lua_pushcfunction(L, (TimeOnly_method_add));
@@ -674,7 +674,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.TimeSpan>(L, 2)!;
             try
             {
-                var result = self.Add(arg0);
+                var result = ((System.TimeOnly)self).Add(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -701,7 +701,7 @@ public partial class LuaBindings
             var arg0 = ToObject<double>(L, 2)!;
             try
             {
-                var result = self.AddHours(arg0);
+                var result = ((System.TimeOnly)self).AddHours(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -728,7 +728,7 @@ public partial class LuaBindings
             var arg0 = ToObject<double>(L, 2)!;
             try
             {
-                var result = self.AddMinutes(arg0);
+                var result = ((System.TimeOnly)self).AddMinutes(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -756,7 +756,7 @@ public partial class LuaBindings
             var arg1 = ToObject<System.TimeOnly>(L, 3)!;
             try
             {
-                var result = self.IsBetween(arg0, arg1);
+                var result = ((System.TimeOnly)self).IsBetween(arg0, arg1);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -782,7 +782,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToTimeSpan();
+                var result = ((System.TimeOnly)self).ToTimeSpan();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -806,79 +806,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: CompareTo(System.TimeOnly)
+            var arg0 = ToObject<System.TimeOnly>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<System.TimeOnly>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((System.TimeOnly)self).CompareTo(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: CompareTo(object)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<System.TimeOnly>(L, 2)!;
-                        try
-                        {
-                            var result = self.CompareTo(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.CompareTo(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for compareTo");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -894,79 +833,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(System.TimeOnly)
+            var arg0 = ToObject<System.TimeOnly>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<System.TimeOnly>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((System.TimeOnly)self).Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Equals(object)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<System.TimeOnly>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -984,7 +862,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((System.TimeOnly)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1010,7 +888,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToLongTimeString();
+                var result = ((System.TimeOnly)self).ToLongTimeString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1036,7 +914,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToShortTimeString();
+                var result = ((System.TimeOnly)self).ToShortTimeString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1062,115 +940,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 1)
-        {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: ToString(string)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<string>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
-            }
-            next0:
-
-            // Try overload 1: ToString(System.IFormatProvider)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<System.IFormatProvider>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        string? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<string>(L, 2)!;
-                        try
-                        {
-                            var result = self.ToString(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        System.IFormatProvider? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<System.IFormatProvider>(L, 2)!;
-                        try
-                        {
-                            var result = self.ToString(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for toString");
-                    return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            string? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<string>(L, 2)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 3) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 3)!;
-            try
-            {
-                var result = self.ToString(arg0, arg1);
+                var result = ((System.TimeOnly)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1196,7 +966,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((System.TimeOnly)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

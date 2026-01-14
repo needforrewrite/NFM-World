@@ -80,10 +80,19 @@ public partial class LuaBindings
         switch (key)
         {
             case "isReadOnly":
-                PushValue(L, obj.IsReadOnly);
+                PushValue(L, ((System.Collections.IList)obj).IsReadOnly);
                 return 1;
             case "isFixedSize":
-                PushValue(L, obj.IsFixedSize);
+                PushValue(L, ((System.Collections.IList)obj).IsFixedSize);
+                return 1;
+            case "count":
+                PushValue(L, ((System.Collections.ICollection)obj).Count);
+                return 1;
+            case "syncRoot":
+                PushValue(L, ((System.Collections.ICollection)obj).SyncRoot);
+                return 1;
+            case "isSynchronized":
+                PushValue(L, ((System.Collections.ICollection)obj).IsSynchronized);
                 return 1;
             case "add":
                 lua_pushcfunction(L, (IList_method_add));
@@ -105,6 +114,12 @@ public partial class LuaBindings
                 return 1;
             case "removeAt":
                 lua_pushcfunction(L, (IList_method_removeAt));
+                return 1;
+            case "copyTo":
+                lua_pushcfunction(L, (IList_method_copyTo));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, (IList_method_getEnumerator));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -170,7 +185,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Add(arg0);
+                var result = ((System.Collections.IList)self).Add(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -205,7 +220,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Contains(arg0);
+                var result = ((System.Collections.IList)self).Contains(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -235,7 +250,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Clear();
+                ((System.Collections.IList)self).Clear();
                 return 0;
             }
             catch (System.Exception ex)
@@ -269,7 +284,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.IndexOf(arg0);
+                var result = ((System.Collections.IList)self).IndexOf(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -305,7 +320,7 @@ public partial class LuaBindings
                 arg1 = ToObject<object>(L, 3)!;
             try
             {
-                self.Insert(arg0, arg1);
+                ((System.Collections.IList)self).Insert(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -339,7 +354,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                self.Remove(arg0);
+                ((System.Collections.IList)self).Remove(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -369,7 +384,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                self.RemoveAt(arg0);
+                ((System.Collections.IList)self).RemoveAt(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -380,6 +395,67 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for removeAt");
+        return 0;
+    }
+
+    private static int IList_method_copyTo(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.IList>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Array>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                ((System.Collections.ICollection)self).CopyTo(arg0, arg1);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int IList_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.IList>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IList as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = ((System.Collections.IEnumerable)self).GetEnumerator();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
         return 0;
     }
 

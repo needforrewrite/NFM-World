@@ -123,7 +123,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetEnumerator();
+                var result = ((System.Collections.Generic.IEnumerable<nfm_world_library.backend.StageObject>)self).GetEnumerator();
                 PushValue(L, result);
                 return 1;
             }

@@ -356,7 +356,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "raw":
-                PushValue(L, obj.Raw);
+                PushValue(L, ((nfm_world_library.SoftFloat.fix64)obj).Raw);
                 return 1;
             case "value":
                 {
@@ -366,7 +366,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Value, "MT_Fixed64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Value' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.SoftFloat.fix64)obj).Value, "MT_Fixed64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Value' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -2297,22 +2297,6 @@ public partial class LuaBindings
 
         var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
 
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
         if (argCount == 2)
         {
             string? arg0;
@@ -2327,7 +2311,7 @@ public partial class LuaBindings
                 arg1 = ToObject<System.IFormatProvider>(L, 3)!;
             try
             {
-                var result = self.ToString(arg0, arg1);
+                var result = ((nfm_world_library.SoftFloat.fix64)self).ToString(arg0, arg1);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2351,79 +2335,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(nfm_world_library.SoftFloat.fix64)
+            var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((nfm_world_library.SoftFloat.fix64)self).Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Equals(object)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -2439,79 +2362,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: CompareTo(nfm_world_library.SoftFloat.fix64)
+            var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<nfm_world_library.SoftFloat.fix64>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((nfm_world_library.SoftFloat.fix64)self).CompareTo(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: CompareTo(object)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
-                        try
-                        {
-                            var result = self.CompareTo(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.CompareTo(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for compareTo");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -2529,7 +2391,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Sign();
+                var result = ((nfm_world_library.SoftFloat.fix64)self).Sign();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2555,7 +2417,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.LuaToFloat();
+                var result = ((nfm_world_library.SoftFloat.fix64)self).LuaToFloat();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2581,7 +2443,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.SoftFloat.fix64)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2607,7 +2469,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.SoftFloat.fix64)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

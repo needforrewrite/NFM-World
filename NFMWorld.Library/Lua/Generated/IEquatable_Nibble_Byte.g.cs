@@ -124,7 +124,7 @@ public partial class LuaBindings
             var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.IEquatable<Maxine.Extensions.Nibble<System.Byte>>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }

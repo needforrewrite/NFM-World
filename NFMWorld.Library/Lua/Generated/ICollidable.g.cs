@@ -71,10 +71,42 @@ public partial class LuaBindings
         switch (key)
         {
             case "boxes":
-                PushValue(L, obj.Boxes);
+                PushValue(L, ((nfm_world_library.mad.ICollidable)obj).Boxes);
                 return 1;
             case "maxRadius":
-                PushValue(L, obj.MaxRadius);
+                PushValue(L, ((nfm_world_library.mad.ICollidable)obj).MaxRadius);
+                return 1;
+            case "childTransforms":
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).ChildTransforms);
+                return 1;
+            case "position":
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
+                        }
+                    }
+                }
+                return 1;
+            case "rotation":
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
+                        }
+                    }
+                }
+                return 1;
+            case "parent":
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).Parent);
                 return 1;
             default:
                 lua_pushnil(L);

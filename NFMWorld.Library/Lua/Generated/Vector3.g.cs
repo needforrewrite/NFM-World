@@ -259,16 +259,16 @@ public partial class LuaBindings
         switch (key)
         {
             case "isNormalized":
-                PushValue(L, obj.IsNormalized);
+                PushValue(L, ((Stride.Core.Mathematics.Vector3)obj).IsNormalized);
                 return 1;
             case "x":
-                PushValue(L, obj.X);
+                PushValue(L, ((Stride.Core.Mathematics.Vector3)obj).X);
                 return 1;
             case "y":
-                PushValue(L, obj.Y);
+                PushValue(L, ((Stride.Core.Mathematics.Vector3)obj).Y);
                 return 1;
             case "z":
-                PushValue(L, obj.Z);
+                PushValue(L, ((Stride.Core.Mathematics.Vector3)obj).Z);
                 return 1;
             case "length":
                 lua_pushcfunction(L, (Vector3_method_length));
@@ -1856,7 +1856,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Length();
+                var result = ((Stride.Core.Mathematics.Vector3)self).Length();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1882,7 +1882,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.LengthSquared();
+                var result = ((Stride.Core.Mathematics.Vector3)self).LengthSquared();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1908,7 +1908,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Normalize();
+                ((Stride.Core.Mathematics.Vector3)self).Normalize();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -1934,7 +1934,7 @@ public partial class LuaBindings
             var arg0 = ToObject<float>(L, 2)!;
             try
             {
-                self.Pow(arg0);
+                ((Stride.Core.Mathematics.Vector3)self).Pow(arg0);
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -1959,7 +1959,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToArray();
+                var result = ((Stride.Core.Mathematics.Vector3)self).ToArray();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1985,33 +1985,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            string? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<string>(L, 2)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 3) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 3)!;
-            try
-            {
-                var result = self.ToString(arg0, arg1);
+                var result = ((Stride.Core.Mathematics.Vector3)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2037,7 +2011,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((Stride.Core.Mathematics.Vector3)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2064,7 +2038,7 @@ public partial class LuaBindings
             var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
             try
             {
-                var result = self.EqualsStrict(arg0);
+                var result = ((Stride.Core.Mathematics.Vector3)self).EqualsStrict(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2088,79 +2062,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(Stride.Core.Mathematics.Vector3)
+            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Stride.Core.Mathematics.Vector3)self).Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Equals(object)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -2178,7 +2091,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((Stride.Core.Mathematics.Vector3)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

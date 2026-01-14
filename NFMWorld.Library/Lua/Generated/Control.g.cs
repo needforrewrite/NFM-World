@@ -71,52 +71,52 @@ public partial class LuaBindings
         switch (key)
         {
             case "arrace":
-                PushValue(L, obj.Arrace);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Arrace);
                 return 1;
             case "chatup":
-                PushValue(L, obj.Chatup);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Chatup);
                 return 1;
             case "down":
-                PushValue(L, obj.Down);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Down);
                 return 1;
             case "enter":
-                PushValue(L, obj.Enter);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Enter);
                 return 1;
             case "exit":
-                PushValue(L, obj.Exit);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Exit);
                 return 1;
             case "handb":
-                PushValue(L, obj.Handb);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Handb);
                 return 1;
             case "multion":
-                PushValue(L, obj.Multion);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Multion);
                 return 1;
             case "mutem":
-                PushValue(L, obj.Mutem);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Mutem);
                 return 1;
             case "mutes":
-                PushValue(L, obj.Mutes);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Mutes);
                 return 1;
             case "radar":
-                PushValue(L, obj.Radar);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Radar);
                 return 1;
             case "right":
-                PushValue(L, obj.Right);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Right);
                 return 1;
             case "up":
-                PushValue(L, obj.Up);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Up);
                 return 1;
             case "left":
-                PushValue(L, obj.Left);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Left);
                 return 1;
             case "lookback":
-                PushValue(L, obj.Lookback);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Lookback);
                 return 1;
             case "wall":
-                PushValue(L, obj.Wall);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Wall);
                 return 1;
             case "zyinv":
-                PushValue(L, obj.Zyinv);
+                PushValue(L, ((nfm_world_library.mad.Control)obj).Zyinv);
                 return 1;
             case "encode":
                 lua_pushcfunction(L, (Control_method_encode));
@@ -377,7 +377,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Encode();
+                var result = ((nfm_world_library.mad.Control)self).Encode();
                 PushValue(L, result);
                 return 1;
             }
@@ -405,71 +405,16 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Decode(Maxine.Extensions.Nibble<System.Byte>)
+            var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                ((nfm_world_library.mad.Control)self).Decode(arg0);
+                return 0;
             }
-            next0:
-
-            // Try overload 1: Decode(System.ValueTuple<bool, bool, bool, bool, bool>)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
-                        try
-                        {
-                            self.Decode(arg0);
-                            return 0;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2)!;
-                        try
-                        {
-                            self.Decode(arg0);
-                            return 0;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for decode");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -492,7 +437,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.mad.Control)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -522,7 +467,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.mad.Control)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -557,7 +502,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.mad.Control)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -587,7 +532,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.mad.Control)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

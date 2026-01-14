@@ -124,7 +124,7 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.IEquatable<nfm_world_library.SoftFloat.f64AngleSingle>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }

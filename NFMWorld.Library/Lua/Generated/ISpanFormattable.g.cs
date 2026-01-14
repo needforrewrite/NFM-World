@@ -70,6 +70,9 @@ public partial class LuaBindings
 
         switch (key)
         {
+            case "toString":
+                lua_pushcfunction(L, (ISpanFormattable_method_toString));
+                return 1;
             default:
                 lua_pushnil(L);
                 return 1;
@@ -102,6 +105,46 @@ public partial class LuaBindings
         var argCount = lua_gettop(L);
 
         luaL_error(L, "Invalid arguments for ISpanFormattable constructor");
+        return 0;
+    }
+
+    private static int ISpanFormattable_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.ISpanFormattable>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ISpanFormattable as first argument");
+            return 0;
+        }
+
+        if (argCount == 2)
+        {
+            string? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<string>(L, 2)!;
+            System.IFormatProvider? arg1;
+            if (lua_isnil(L, 3) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<System.IFormatProvider>(L, 3)!;
+            try
+            {
+                var result = ((System.IFormattable)self).ToString(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
         return 0;
     }
 

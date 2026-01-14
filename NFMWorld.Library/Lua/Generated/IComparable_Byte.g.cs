@@ -124,7 +124,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Byte>(L, 2)!;
             try
             {
-                var result = self.CompareTo(arg0);
+                var result = ((System.IComparable<System.Byte>)self).CompareTo(arg0);
                 PushValue(L, result);
                 return 1;
             }

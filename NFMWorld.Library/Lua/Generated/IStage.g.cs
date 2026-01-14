@@ -71,19 +71,19 @@ public partial class LuaBindings
         switch (key)
         {
             case "pieces":
-                PushValue(L, obj.pieces);
+                PushValue(L, ((nfm_world_library.mad.IStage)obj).pieces);
                 return 1;
             case "nodes":
-                PushValue(L, obj.nodes);
+                PushValue(L, ((nfm_world_library.mad.IStage)obj).nodes);
                 return 1;
             case "checkpoints":
-                PushValue(L, obj.checkpoints);
+                PushValue(L, ((nfm_world_library.mad.IStage)obj).checkpoints);
                 return 1;
             case "fixHoops":
-                PushValue(L, obj.fixHoops);
+                PushValue(L, ((nfm_world_library.mad.IStage)obj).fixHoops);
                 return 1;
             case "nlaps":
-                PushValue(L, obj.nlaps);
+                PushValue(L, ((nfm_world_library.mad.IStage)obj).nlaps);
                 return 1;
             case "createObject":
                 lua_pushcfunction(L, (IStage_method_createObject));
@@ -143,7 +143,7 @@ public partial class LuaBindings
             var arg4 = ToObject<int>(L, 6)!;
             try
             {
-                var result = self.CreateObject(arg0, arg1, arg2, arg3, arg4);
+                var result = ((nfm_world_library.mad.IStage)self).CreateObject(arg0, arg1, arg2, arg3, arg4);
                 PushValue(L, result);
                 return 1;
             }

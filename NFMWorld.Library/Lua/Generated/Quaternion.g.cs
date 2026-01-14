@@ -211,13 +211,13 @@ public partial class LuaBindings
         switch (key)
         {
             case "isIdentity":
-                PushValue(L, obj.IsIdentity);
+                PushValue(L, ((Stride.Core.Mathematics.Quaternion)obj).IsIdentity);
                 return 1;
             case "isNormalized":
-                PushValue(L, obj.IsNormalized);
+                PushValue(L, ((Stride.Core.Mathematics.Quaternion)obj).IsNormalized);
                 return 1;
             case "angle":
-                PushValue(L, obj.Angle);
+                PushValue(L, ((Stride.Core.Mathematics.Quaternion)obj).Angle);
                 return 1;
             case "axis":
                 {
@@ -227,7 +227,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Axis, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Axis' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Quaternion)obj).Axis, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Axis' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -240,22 +240,22 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.YawPitchRoll, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'YawPitchRoll' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Quaternion)obj).YawPitchRoll, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'YawPitchRoll' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "x":
-                PushValue(L, obj.X);
+                PushValue(L, ((Stride.Core.Mathematics.Quaternion)obj).X);
                 return 1;
             case "y":
-                PushValue(L, obj.Y);
+                PushValue(L, ((Stride.Core.Mathematics.Quaternion)obj).Y);
                 return 1;
             case "z":
-                PushValue(L, obj.Z);
+                PushValue(L, ((Stride.Core.Mathematics.Quaternion)obj).Z);
                 return 1;
             case "w":
-                PushValue(L, obj.W);
+                PushValue(L, ((Stride.Core.Mathematics.Quaternion)obj).W);
                 return 1;
             case "conjugate":
                 lua_pushcfunction(L, (Quaternion_method_conjugate));
@@ -1391,7 +1391,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Conjugate();
+                ((Stride.Core.Mathematics.Quaternion)self).Conjugate();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -1416,7 +1416,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Invert();
+                ((Stride.Core.Mathematics.Quaternion)self).Invert();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -1441,7 +1441,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Length();
+                var result = ((Stride.Core.Mathematics.Quaternion)self).Length();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1467,7 +1467,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.LengthSquared();
+                var result = ((Stride.Core.Mathematics.Quaternion)self).LengthSquared();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1493,7 +1493,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Normalize();
+                ((Stride.Core.Mathematics.Quaternion)self).Normalize();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -1518,7 +1518,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToArray();
+                var result = ((Stride.Core.Mathematics.Quaternion)self).ToArray();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1544,33 +1544,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            string? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<string>(L, 2)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 3) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 3)!;
-            try
-            {
-                var result = self.ToString(arg0, arg1);
+                var result = ((Stride.Core.Mathematics.Quaternion)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1596,7 +1570,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((Stride.Core.Mathematics.Quaternion)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1623,7 +1597,7 @@ public partial class LuaBindings
             var arg0 = ToObject<Stride.Core.Mathematics.Quaternion>(L, 2)!;
             try
             {
-                var result = self.EqualsStrict(arg0);
+                var result = ((Stride.Core.Mathematics.Quaternion)self).EqualsStrict(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1647,79 +1621,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(Stride.Core.Mathematics.Quaternion)
+            var arg0 = ToObject<Stride.Core.Mathematics.Quaternion>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Quaternion>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Stride.Core.Mathematics.Quaternion)self).Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Equals(object)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Quaternion>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -1737,7 +1650,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((Stride.Core.Mathematics.Quaternion)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

@@ -79,6 +79,12 @@ public partial class LuaBindings
 
         switch (key)
         {
+            case "count":
+                PushValue(L, ((System.Collections.Generic.IReadOnlyCollection<nfm_world_library.util.Color3>)obj).Count);
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, (IReadOnlyList_Color3_method_getEnumerator));
+                return 1;
             default:
                 lua_pushnil(L);
                 return 1;
@@ -111,6 +117,36 @@ public partial class LuaBindings
         var argCount = lua_gettop(L);
 
         luaL_error(L, "Invalid arguments for IReadOnlyList`1 constructor");
+        return 0;
+    }
+
+    private static int IReadOnlyList_Color3_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IReadOnlyList<nfm_world_library.util.Color3>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IReadOnlyList`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = ((System.Collections.Generic.IEnumerable<nfm_world_library.util.Color3>)self).GetEnumerator();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
         return 0;
     }
 

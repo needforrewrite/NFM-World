@@ -77,31 +77,31 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.mad.rad.Rad3dPoly)obj).Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "colNum":
-                if (obj.ColNum.HasValue)
-                    PushValue(L, obj.ColNum.Value);
+                if (((nfm_world_library.mad.rad.Rad3dPoly)obj).ColNum.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.rad.Rad3dPoly)obj).ColNum.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "polyType":
-                PushValue(L, obj.PolyType);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dPoly)obj).PolyType);
                 return 1;
             case "lineType":
-                if (obj.LineType.HasValue)
-                    PushValue(L, obj.LineType.Value);
+                if (((nfm_world_library.mad.rad.Rad3dPoly)obj).LineType.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.rad.Rad3dPoly)obj).LineType.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "decalOffset":
-                PushValue(L, obj.DecalOffset);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dPoly)obj).DecalOffset);
                 return 1;
             case "points":
-                PushValue(L, obj.Points);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dPoly)obj).Points);
                 return 1;
             case "equals":
                 lua_pushcfunction(L, (Rad3dPoly_method_equals));
@@ -193,7 +193,7 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.rad.Rad3dPoly>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.mad.rad.Rad3dPoly)self).Equals(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -219,7 +219,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.mad.rad.Rad3dPoly)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -245,7 +245,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.mad.rad.Rad3dPoly)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

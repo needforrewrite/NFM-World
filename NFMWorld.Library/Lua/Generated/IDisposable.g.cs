@@ -123,7 +123,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Dispose();
+                ((System.IDisposable)self).Dispose();
                 return 0;
             }
             catch (System.Exception ex)

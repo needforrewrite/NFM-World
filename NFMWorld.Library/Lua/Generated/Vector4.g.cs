@@ -184,16 +184,16 @@ public partial class LuaBindings
         switch (key)
         {
             case "x":
-                PushValue(L, obj.X);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector4)obj).X);
                 return 1;
             case "y":
-                PushValue(L, obj.Y);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector4)obj).Y);
                 return 1;
             case "z":
-                PushValue(L, obj.Z);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector4)obj).Z);
                 return 1;
             case "w":
-                PushValue(L, obj.W);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector4)obj).W);
                 return 1;
             case "equals":
                 lua_pushcfunction(L, (Vector4_method_equals));
@@ -1351,75 +1351,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(object)
+            var arg0 = ToObject<object>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Microsoft.Xna.Framework.Vector4)self).Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Equals(Microsoft.Xna.Framework.Vector4)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector4>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector4>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -1437,7 +1380,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((Microsoft.Xna.Framework.Vector4)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1463,7 +1406,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Length();
+                var result = ((Microsoft.Xna.Framework.Vector4)self).Length();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1489,7 +1432,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.LengthSquared();
+                var result = ((Microsoft.Xna.Framework.Vector4)self).LengthSquared();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1515,7 +1458,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Normalize();
+                ((Microsoft.Xna.Framework.Vector4)self).Normalize();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -1540,7 +1483,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((Microsoft.Xna.Framework.Vector4)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1566,7 +1509,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((Microsoft.Xna.Framework.Vector4)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

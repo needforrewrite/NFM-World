@@ -71,7 +71,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "rad":
-                PushValue(L, obj.Rad);
+                PushValue(L, ((nfm_world_library.mad.ICar)obj).Rad);
                 return 1;
             case "stats":
                 {
@@ -81,16 +81,16 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "groundAt":
-                PushValue(L, obj.GroundAt);
+                PushValue(L, ((nfm_world_library.mad.ICar)obj).GroundAt);
                 return 1;
             case "maxRadius":
-                PushValue(L, obj.MaxRadius);
+                PushValue(L, ((nfm_world_library.mad.ICar)obj).MaxRadius);
                 return 1;
             case "wheelAngle":
                 {
@@ -100,7 +100,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.WheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).WheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
+                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).WheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).WheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
                         }
                     }
                 }
@@ -113,13 +113,45 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.TurningWheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).TurningWheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
+                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).TurningWheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).TurningWheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
                         }
                     }
                 }
                 return 1;
             case "wheels":
-                PushValue(L, obj.Wheels);
+                PushValue(L, ((nfm_world_library.mad.ICar)obj).Wheels);
+                return 1;
+            case "childTransforms":
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).ChildTransforms);
+                return 1;
+            case "position":
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
+                        }
+                    }
+                }
+                return 1;
+            case "rotation":
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != 0)
+                    {
+                        unsafe
+                        {
+                            var parentId = *(int*)ptr;
+                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
+                        }
+                    }
+                }
+                return 1;
+            case "parent":
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).Parent);
                 return 1;
             default:
                 lua_pushnil(L);

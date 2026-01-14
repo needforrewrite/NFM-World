@@ -124,7 +124,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.IEquatable<System.ValueTuple<bool, bool, bool, bool, bool>>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }

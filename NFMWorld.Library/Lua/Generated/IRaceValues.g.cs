@@ -71,13 +71,13 @@ public partial class LuaBindings
         switch (key)
         {
             case "carsInRace":
-                PushValue(L, obj.CarsInRace);
+                PushValue(L, ((nfm_world_library.backend.IRaceValues)obj).CarsInRace);
                 return 1;
             case "currentStage":
-                PushValue(L, obj.CurrentStage);
+                PushValue(L, ((nfm_world_library.backend.IRaceValues)obj).CurrentStage);
                 return 1;
             case "raceState":
-                PushValue(L, obj.raceState);
+                PushValue(L, ((nfm_world_library.backend.IRaceValues)obj).raceState);
                 return 1;
             default:
                 lua_pushnil(L);

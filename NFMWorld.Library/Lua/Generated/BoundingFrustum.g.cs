@@ -82,7 +82,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Matrix, "MT_Matrix", parentId, static (obj, value) => ((Microsoft.Xna.Framework.BoundingFrustum)obj).Matrix = (Microsoft.Xna.Framework.Matrix)value);
+                            PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingFrustum)obj).Matrix, "MT_Matrix", parentId, static (obj, value) => ((Microsoft.Xna.Framework.BoundingFrustum)obj).Matrix = (Microsoft.Xna.Framework.Matrix)value);
                         }
                     }
                 }
@@ -95,7 +95,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Near, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Near' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingFrustum)obj).Near, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Near' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
@@ -108,7 +108,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Far, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Far' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingFrustum)obj).Far, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Far' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
@@ -121,7 +121,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Left, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Left' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingFrustum)obj).Left, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Left' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
@@ -134,7 +134,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Right, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Right' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingFrustum)obj).Right, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Right' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
@@ -147,7 +147,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Top, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Top' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingFrustum)obj).Top, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Top' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
@@ -160,7 +160,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Bottom, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Bottom' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingFrustum)obj).Bottom, "MT_Plane", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Bottom' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
@@ -269,131 +269,17 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Contains(Microsoft.Xna.Framework.BoundingFrustum)
+            var arg0 = ToObject<Microsoft.Xna.Framework.BoundingFrustum>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingFrustum>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Microsoft.Xna.Framework.BoundingFrustum)self).Contains(arg0);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Contains(Microsoft.Xna.Framework.BoundingBox)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingBox>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            // Try overload 2: Contains(Microsoft.Xna.Framework.BoundingSphere)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingSphere>(L, 2);
-                if (score0 < 0) goto next2;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 2;
-                }
-            }
-            next2:
-
-            // Try overload 3: Contains(Microsoft.Xna.Framework.Vector3)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 2);
-                if (score0 < 0) goto next3;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 3;
-                }
-            }
-            next3:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingFrustum>(L, 2)!;
-                        try
-                        {
-                            var result = self.Contains(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingBox>(L, 2)!;
-                        try
-                        {
-                            var result = self.Contains(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 2:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingSphere>(L, 2)!;
-                        try
-                        {
-                            var result = self.Contains(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 3:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
-                        try
-                        {
-                            var result = self.Contains(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for contains");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -416,24 +302,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetCorners();
+                var result = ((Microsoft.Xna.Framework.BoundingFrustum)self).GetCorners();
                 PushValue(L, result);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3[]>(L, 2)!;
-            try
-            {
-                self.GetCorners(arg0);
-                return 0;
             }
             catch (System.Exception ex)
             {
@@ -459,163 +330,17 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Intersects(Microsoft.Xna.Framework.BoundingFrustum)
+            var arg0 = ToObject<Microsoft.Xna.Framework.BoundingFrustum>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingFrustum>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Microsoft.Xna.Framework.BoundingFrustum)self).Intersects(arg0);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Intersects(Microsoft.Xna.Framework.BoundingBox)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingBox>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            // Try overload 2: Intersects(Microsoft.Xna.Framework.BoundingSphere)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingSphere>(L, 2);
-                if (score0 < 0) goto next2;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 2;
-                }
-            }
-            next2:
-
-            // Try overload 3: Intersects(Microsoft.Xna.Framework.Plane)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Plane>(L, 2);
-                if (score0 < 0) goto next3;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 3;
-                }
-            }
-            next3:
-
-            // Try overload 4: Intersects(Microsoft.Xna.Framework.Ray)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Ray>(L, 2);
-                if (score0 < 0) goto next4;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 4;
-                }
-            }
-            next4:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingFrustum>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingBox>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 2:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingSphere>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 3:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Plane>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 4:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Ray>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            if (result.HasValue)
-                                PushValue(L, result.Value);
-                            else
-                                lua_pushnil(L);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for intersects");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -636,73 +361,17 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(Microsoft.Xna.Framework.BoundingFrustum)
+            var arg0 = ToObject<Microsoft.Xna.Framework.BoundingFrustum>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingFrustum>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Microsoft.Xna.Framework.BoundingFrustum)self).Equals(arg0);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Equals(object)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingFrustum>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -725,7 +394,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((Microsoft.Xna.Framework.BoundingFrustum)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -755,7 +424,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((Microsoft.Xna.Framework.BoundingFrustum)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }
@@ -785,7 +454,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((Microsoft.Xna.Framework.BoundingFrustum)self).GetType();
                 PushValue(L, result);
                 return 1;
             }

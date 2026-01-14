@@ -71,16 +71,19 @@ public partial class LuaBindings
         switch (key)
         {
             case "count":
-                PushValue(L, obj.Count);
+                PushValue(L, ((System.Collections.ICollection)obj).Count);
                 return 1;
             case "syncRoot":
-                PushValue(L, obj.SyncRoot);
+                PushValue(L, ((System.Collections.ICollection)obj).SyncRoot);
                 return 1;
             case "isSynchronized":
-                PushValue(L, obj.IsSynchronized);
+                PushValue(L, ((System.Collections.ICollection)obj).IsSynchronized);
                 return 1;
             case "copyTo":
                 lua_pushcfunction(L, (ICollection_method_copyTo));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, (ICollection_method_getEnumerator));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -134,7 +137,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.CopyTo(arg0, arg1);
+                ((System.Collections.ICollection)self).CopyTo(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -145,6 +148,36 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int ICollection_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.ICollection>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ICollection as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = ((System.Collections.IEnumerable)self).GetEnumerator();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
         return 0;
     }
 

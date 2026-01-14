@@ -128,7 +128,7 @@ public partial class LuaBindings
                 arg0 = ToObject<Microsoft.Xna.Framework.BoundingFrustum>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.IEquatable<Microsoft.Xna.Framework.BoundingFrustum>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }

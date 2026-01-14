@@ -85,25 +85,28 @@ public partial class LuaBindings
         switch (key)
         {
             case "length":
-                PushValue(L, obj.Length);
+                PushValue(L, ((nfm_world_library.backend.StageObject[])obj).Length);
                 return 1;
             case "longLength":
-                PushValue(L, obj.LongLength);
+                PushValue(L, ((nfm_world_library.backend.StageObject[])obj).LongLength);
                 return 1;
             case "rank":
-                PushValue(L, obj.Rank);
+                PushValue(L, ((nfm_world_library.backend.StageObject[])obj).Rank);
                 return 1;
             case "syncRoot":
-                PushValue(L, obj.SyncRoot);
+                PushValue(L, ((nfm_world_library.backend.StageObject[])obj).SyncRoot);
                 return 1;
             case "isReadOnly":
-                PushValue(L, obj.IsReadOnly);
+                PushValue(L, ((nfm_world_library.backend.StageObject[])obj).IsReadOnly);
                 return 1;
             case "isFixedSize":
-                PushValue(L, obj.IsFixedSize);
+                PushValue(L, ((nfm_world_library.backend.StageObject[])obj).IsFixedSize);
                 return 1;
             case "isSynchronized":
-                PushValue(L, obj.IsSynchronized);
+                PushValue(L, ((nfm_world_library.backend.StageObject[])obj).IsSynchronized);
+                return 1;
+            case "count":
+                PushValue(L, ((System.Collections.ICollection)obj).Count);
                 return 1;
             default:
                 lua_pushnil(L);

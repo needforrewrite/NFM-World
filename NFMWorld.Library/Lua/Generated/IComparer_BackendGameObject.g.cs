@@ -133,7 +133,7 @@ public partial class LuaBindings
                 arg1 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 3)!;
             try
             {
-                var result = self.Compare(arg0, arg1);
+                var result = ((System.Collections.Generic.IComparer<nfm_world_library.backend.BackendGameObject>)self).Compare(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }

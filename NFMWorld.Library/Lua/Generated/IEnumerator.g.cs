@@ -71,7 +71,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "current":
-                PushValue(L, obj.Current);
+                PushValue(L, ((System.Collections.IEnumerator)obj).Current);
                 return 1;
             case "moveNext":
                 lua_pushcfunction(L, (IEnumerator_method_moveNext));
@@ -129,7 +129,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.MoveNext();
+                var result = ((System.Collections.IEnumerator)self).MoveNext();
                 PushValue(L, result);
                 return 1;
             }
@@ -159,7 +159,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Reset();
+                ((System.Collections.IEnumerator)self).Reset();
                 return 0;
             }
             catch (System.Exception ex)

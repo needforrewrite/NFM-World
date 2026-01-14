@@ -77,16 +77,16 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.mad.rad.Rad3dRimsDef)obj).Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "size":
-                PushValue(L, obj.Size);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dRimsDef)obj).Size);
                 return 1;
             case "depth":
-                PushValue(L, obj.Depth);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dRimsDef)obj).Depth);
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Rad3dRimsDef_method_getType));
@@ -160,7 +160,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.mad.rad.Rad3dRimsDef)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

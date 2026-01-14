@@ -71,10 +71,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "count":
-                PushValue(L, obj.Count);
+                PushValue(L, ((System.Collections.Generic.ICollection<nfm_world_library.mad.rad.Rad3dBoxDef>)obj).Count);
                 return 1;
             case "isReadOnly":
-                PushValue(L, obj.IsReadOnly);
+                PushValue(L, ((System.Collections.Generic.ICollection<nfm_world_library.mad.rad.Rad3dBoxDef>)obj).IsReadOnly);
                 return 1;
             case "add":
                 lua_pushcfunction(L, (ICollection_Rad3dBoxDef_method_add));
@@ -90,6 +90,9 @@ public partial class LuaBindings
                 return 1;
             case "remove":
                 lua_pushcfunction(L, (ICollection_Rad3dBoxDef_method_remove));
+                return 1;
+            case "getEnumerator":
+                lua_pushcfunction(L, (ICollection_Rad3dBoxDef_method_getEnumerator));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -142,7 +145,7 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.rad.Rad3dBoxDef>(L, 2)!;
             try
             {
-                self.Add(arg0);
+                ((System.Collections.Generic.ICollection<nfm_world_library.mad.rad.Rad3dBoxDef>)self).Add(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -171,7 +174,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Clear();
+                ((System.Collections.Generic.ICollection<nfm_world_library.mad.rad.Rad3dBoxDef>)self).Clear();
                 return 0;
             }
             catch (System.Exception ex)
@@ -201,7 +204,7 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.rad.Rad3dBoxDef>(L, 2)!;
             try
             {
-                var result = self.Contains(arg0);
+                var result = ((System.Collections.Generic.ICollection<nfm_world_library.mad.rad.Rad3dBoxDef>)self).Contains(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -233,7 +236,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.CopyTo(arg0, arg1);
+                ((System.Collections.Generic.ICollection<nfm_world_library.mad.rad.Rad3dBoxDef>)self).CopyTo(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -263,7 +266,7 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.rad.Rad3dBoxDef>(L, 2)!;
             try
             {
-                var result = self.Remove(arg0);
+                var result = ((System.Collections.Generic.ICollection<nfm_world_library.mad.rad.Rad3dBoxDef>)self).Remove(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -275,6 +278,36 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for remove");
+        return 0;
+    }
+
+    private static int ICollection_Rad3dBoxDef_method_getEnumerator(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.ICollection<nfm_world_library.mad.rad.Rad3dBoxDef>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected ICollection`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = ((System.Collections.Generic.IEnumerable<nfm_world_library.mad.rad.Rad3dBoxDef>)self).GetEnumerator();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getEnumerator");
         return 0;
     }
 

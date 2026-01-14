@@ -14,6 +14,10 @@ public static class LuaManager
 
         // Load standard libraries
         // https://stackoverflow.com/a/4552146
+        lua_pushcfunction(L, luaopen_base);
+        lua_pushliteral(L, "");
+        lua_call(L, 1, 0);
+
         lua_pushcfunction(L, luaopen_table);
         lua_pushliteral(L, LUA_TABLIBNAME);
         lua_call(L, 1, 0);
@@ -27,6 +31,12 @@ public static class LuaManager
         lua_call(L, 1, 0);
 
         LuaBindings.Initialize(L);
+        
+        // Expose print function
+        LuaBindings.DefineGlobalFunction(L, "print", (string str) =>
+        {
+            Console.WriteLine("[Lua] " + str);
+        });
     }
     
     public static lua_State LoadGamemodeLua(LuaGamemode gm, string gamemodeLuaPath)

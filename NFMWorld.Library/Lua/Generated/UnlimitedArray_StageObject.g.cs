@@ -80,10 +80,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "count":
-                PushValue(L, obj.Count);
+                PushValue(L, ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)obj).Count);
                 return 1;
             case "isReadOnly":
-                PushValue(L, obj.IsReadOnly);
+                PushValue(L, ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)obj).IsReadOnly);
                 return 1;
             case "getEnumerator":
                 lua_pushcfunction(L, (UnlimitedArray_StageObject_method_getEnumerator));
@@ -223,7 +223,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetEnumerator();
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).GetEnumerator();
                 PushValue(L, result);
                 return 1;
             }
@@ -254,7 +254,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.EnsureCapacity(arg0);
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).EnsureCapacity(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -289,7 +289,7 @@ public partial class LuaBindings
                 arg0 = ToObject<nfm_world_library.backend.StageObject>(L, 2)!;
             try
             {
-                self.Add(arg0);
+                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).Add(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -318,7 +318,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Clear();
+                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).Clear();
                 return 0;
             }
             catch (System.Exception ex)
@@ -352,7 +352,7 @@ public partial class LuaBindings
                 arg0 = ToObject<nfm_world_library.backend.StageObject>(L, 2)!;
             try
             {
-                var result = self.Contains(arg0);
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).Contains(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -384,7 +384,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.CopyTo(arg0, arg1);
+                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).CopyTo(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -418,7 +418,7 @@ public partial class LuaBindings
                 arg0 = ToObject<nfm_world_library.backend.StageObject>(L, 2)!;
             try
             {
-                var result = self.Remove(arg0);
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).Remove(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -453,7 +453,7 @@ public partial class LuaBindings
                 arg0 = ToObject<nfm_world_library.backend.StageObject>(L, 2)!;
             try
             {
-                var result = self.IndexOf(arg0);
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).IndexOf(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -489,7 +489,7 @@ public partial class LuaBindings
                 arg1 = ToObject<nfm_world_library.backend.StageObject>(L, 3)!;
             try
             {
-                self.Insert(arg0, arg1);
+                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).Insert(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -519,7 +519,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                self.RemoveAt(arg0);
+                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).RemoveAt(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -548,7 +548,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToArray();
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).ToArray();
                 PushValue(L, result);
                 return 1;
             }
@@ -579,7 +579,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Comparison<nfm_world_library.backend.StageObject>>(L, 2)!;
             try
             {
-                self.Sort(arg0);
+                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).Sort(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -608,7 +608,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -638,7 +638,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -673,7 +673,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -703,7 +703,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

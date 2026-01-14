@@ -259,7 +259,7 @@ public partial class LuaBindings
                 lua_pushinteger(L, l);
                 break;
             case ulong ul:
-                lua_pushinteger(L, (long)ul);
+                lua_pushnumber(L, (double)ul);
                 break;
             case float f:
                 lua_pushnumber(L, f);
@@ -271,33 +271,39 @@ public partial class LuaBindings
                 lua_pushstring(L, s);
                 break;
             default:
-                // For all other types, push as userdata if we have a registered metatable
+                // Push <T>'s metatable if available and not 'object'. This method is almost always called with a known
+                // T, except when DefineGlobalVariable is used with a different type.
+                if (typeof(T) != typeof(object) && GetMetatableNameForType(typeof(T)) is { } tMetatable)
+                {
+                    PushObject(L, value, tMetatable);
+                    return;
+                }
+
+                // For all other types, push based on runtime type
                 if (GetMetatableNameForType(value.GetType()) is {} metatable)
                 {
                     PushObject(L, value, metatable);
+                    return;
                 }
-                else
+
+                // Slow path: attempt to push a base type (in between value.GetType() and <T>)'s metatable
+                if (value.GetType() != typeof(T))
                 {
-                    // Slow path: attempt to push a base type's metatable
-                    if (value.GetType() != typeof(T))
+                    Type? baseType;
+                    while ((baseType = value.GetType().BaseType) != null)
                     {
-                        Type? baseType;
-                        while ((baseType = value.GetType().BaseType) != null)
+                        if (GetMetatableNameForType(baseType) is { } baseMetatable)
                         {
-                            if (GetMetatableNameForType(baseType) is { } baseMetatable)
-                            {
-                                PushObject(L, value, baseMetatable);
-                                return;
-                            }
-
-                            if (baseType == typeof(T))
-                                break;
+                            PushObject(L, value, baseMetatable);
+                            return;
                         }
-                    }
 
-                    throw new InvalidOperationException($"Type {value.GetType()} is not supported");
+                        if (baseType == typeof(T))
+                            break;
+                    }
                 }
-                break;
+
+                throw new InvalidOperationException($"Type {value.GetType()} is not supported");
         }
     }
 
@@ -318,7 +324,7 @@ public partial class LuaBindings
         if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
         if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
         if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tonumber(L, idx);
         if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
         if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
 

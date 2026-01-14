@@ -71,10 +71,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "rad":
-                PushValue(L, obj.Rad);
+                PushValue(L, ((nfm_world_library.backend.StageObject)obj).Rad);
                 return 1;
             case "childTransforms":
-                PushValue(L, obj.ChildTransforms);
+                PushValue(L, ((nfm_world_library.backend.StageObject)obj).ChildTransforms);
                 return 1;
             case "position":
                 {
@@ -84,7 +84,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.backend.StageObject)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
+                            PushStructWithParent(L, ((nfm_world_library.backend.StageObject)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.backend.StageObject)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
                         }
                     }
                 }
@@ -97,28 +97,28 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.StageObject)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
+                            PushStructWithParent(L, ((nfm_world_library.backend.StageObject)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.StageObject)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
                         }
                     }
                 }
                 return 1;
             case "parent":
-                PushValue(L, obj.Parent);
+                PushValue(L, ((nfm_world_library.backend.StageObject)obj).Parent);
                 return 1;
             case "kind":
-                PushValue(L, obj.Kind);
+                PushValue(L, ((nfm_world_library.backend.StageObject)obj).Kind);
                 return 1;
             case "isSpecial":
-                PushValue(L, obj.IsSpecial);
+                PushValue(L, ((nfm_world_library.backend.StageObject)obj).IsSpecial);
                 return 1;
             case "boxes":
-                PushValue(L, obj.Boxes);
+                PushValue(L, ((nfm_world_library.backend.StageObject)obj).Boxes);
                 return 1;
             case "maxRadius":
-                PushValue(L, obj.MaxRadius);
+                PushValue(L, ((nfm_world_library.backend.StageObject)obj).MaxRadius);
                 return 1;
             case "fileName":
-                PushValue(L, obj.FileName);
+                PushValue(L, ((nfm_world_library.backend.StageObject)obj).FileName);
                 return 1;
             case "gameTick":
                 lua_pushcfunction(L, (StageObject_method_gameTick));
@@ -274,7 +274,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.GameTick();
+                ((nfm_world_library.backend.StageObject)self).GameTick();
                 return 0;
             }
             catch (System.Exception ex)
@@ -303,7 +303,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.backend.StageObject)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -333,7 +333,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.backend.StageObject)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -368,7 +368,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.backend.StageObject)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -398,7 +398,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.backend.StageObject)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

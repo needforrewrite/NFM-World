@@ -99,13 +99,13 @@ public partial class LuaBindings
         switch (key)
         {
             case "r":
-                PushValue(L, obj.R);
+                PushValue(L, ((nfm_world_library.util.Color3)obj).R);
                 return 1;
             case "g":
-                PushValue(L, obj.G);
+                PushValue(L, ((nfm_world_library.util.Color3)obj).G);
                 return 1;
             case "b":
-                PushValue(L, obj.B);
+                PushValue(L, ((nfm_world_library.util.Color3)obj).B);
                 return 1;
             case "darker":
                 lua_pushcfunction(L, (Color3_method_darker));
@@ -292,7 +292,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Darker();
+                var result = ((nfm_world_library.util.Color3)self).Darker();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -318,7 +318,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Brighter();
+                var result = ((nfm_world_library.util.Color3)self).Brighter();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -344,7 +344,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.util.Color3)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

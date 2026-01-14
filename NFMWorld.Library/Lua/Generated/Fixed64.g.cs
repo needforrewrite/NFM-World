@@ -190,7 +190,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "m_rawValue":
-                PushValue(L, obj.m_rawValue);
+                PushValue(L, ((FixedMathSharp.Fixed64)obj).m_rawValue);
                 return 1;
             case "offset":
                 lua_pushcfunction(L, (Fixed64_method_offset));
@@ -1034,7 +1034,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                self.Offset(arg0);
+                ((FixedMathSharp.Fixed64)self).Offset(arg0);
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -1059,7 +1059,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.RawToString();
+                var result = ((FixedMathSharp.Fixed64)self).RawToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1085,24 +1085,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<string>(L, 2)!;
-            try
-            {
-                var result = self.ToString(arg0);
+                var result = ((FixedMathSharp.Fixed64)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1126,89 +1109,14 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(object)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
-            }
-            next0:
-
-            // Try overload 1: Equals(FixedMathSharp.Fixed64)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<FixedMathSharp.Fixed64>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
-            var arg1 = ToObject<FixedMathSharp.Fixed64>(L, 3)!;
+            object? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0, arg1);
+                var result = ((FixedMathSharp.Fixed64)self).Equals(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1234,24 +1142,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
-            try
-            {
-                var result = self.GetHashCode(arg0);
+                var result = ((FixedMathSharp.Fixed64)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1278,7 +1169,7 @@ public partial class LuaBindings
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
             try
             {
-                var result = self.CompareTo(arg0);
+                var result = ((FixedMathSharp.Fixed64)self).CompareTo(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1304,7 +1195,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((FixedMathSharp.Fixed64)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

@@ -134,13 +134,13 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Normal, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Normal' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Plane)obj).Normal, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Normal' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "d":
-                PushValue(L, obj.D);
+                PushValue(L, ((Stride.Core.Mathematics.Plane)obj).D);
                 return 1;
             case "negate":
                 lua_pushcfunction(L, (Plane_method_negate));
@@ -844,7 +844,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Negate();
+                ((Stride.Core.Mathematics.Plane)self).Negate();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -869,7 +869,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Normalize();
+                ((Stride.Core.Mathematics.Plane)self).Normalize();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -894,7 +894,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToArray();
+                var result = ((Stride.Core.Mathematics.Plane)self).ToArray();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -918,176 +918,10 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Intersects(Stride.Core.Mathematics.Vector3)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
-            }
-            next0:
-
-            // Try overload 1: Intersects(Stride.Core.Mathematics.Ray)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Ray>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            // Try overload 2: Intersects(Stride.Core.Mathematics.Plane)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Plane>(L, 2);
-                if (score0 < 0) goto next2;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 2;
-                }
-            }
-            next2:
-
-            // Try overload 3: Intersects(Stride.Core.Mathematics.BoundingBox)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.BoundingBox>(L, 2);
-                if (score0 < 0) goto next3;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 3;
-                }
-            }
-            next3:
-
-            // Try overload 4: Intersects(Stride.Core.Mathematics.BoundingSphere)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.BoundingSphere>(L, 2);
-                if (score0 < 0) goto next4;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 4;
-                }
-            }
-            next4:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Ray>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 2:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Plane>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 3:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.BoundingBox>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 4:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.BoundingSphere>(L, 2)!;
-                        try
-                        {
-                            var result = self.Intersects(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for intersects");
-                    return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
             var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
-            var arg2 = ToObject<Stride.Core.Mathematics.Vector3>(L, 4)!;
             try
             {
-                var result = self.Intersects(arg0, arg1, arg2);
+                var result = ((Stride.Core.Mathematics.Plane)self).Intersects(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1113,33 +947,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            string? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<string>(L, 2)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 3) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 3)!;
-            try
-            {
-                var result = self.ToString(arg0, arg1);
+                var result = ((Stride.Core.Mathematics.Plane)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1165,7 +973,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((Stride.Core.Mathematics.Plane)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -1189,79 +997,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(Stride.Core.Mathematics.Plane)
+            var arg0 = ToObject<Stride.Core.Mathematics.Plane>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Plane>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Stride.Core.Mathematics.Plane)self).Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Equals(object)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Plane>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -1279,7 +1026,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((Stride.Core.Mathematics.Plane)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

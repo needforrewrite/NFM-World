@@ -171,7 +171,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetTypeCode();
+                var result = ((System.IConvertible)self).GetTypeCode();
                 PushValue(L, result);
                 return 1;
             }
@@ -206,7 +206,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToBoolean(arg0);
+                var result = ((System.IConvertible)self).ToBoolean(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -241,7 +241,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToChar(arg0);
+                var result = ((System.IConvertible)self).ToChar(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -276,7 +276,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToSByte(arg0);
+                var result = ((System.IConvertible)self).ToSByte(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -311,7 +311,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToByte(arg0);
+                var result = ((System.IConvertible)self).ToByte(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -346,7 +346,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToInt16(arg0);
+                var result = ((System.IConvertible)self).ToInt16(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -381,7 +381,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToUInt16(arg0);
+                var result = ((System.IConvertible)self).ToUInt16(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -416,7 +416,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToInt32(arg0);
+                var result = ((System.IConvertible)self).ToInt32(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -451,7 +451,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToUInt32(arg0);
+                var result = ((System.IConvertible)self).ToUInt32(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -486,7 +486,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToInt64(arg0);
+                var result = ((System.IConvertible)self).ToInt64(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -521,7 +521,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToUInt64(arg0);
+                var result = ((System.IConvertible)self).ToUInt64(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -556,7 +556,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToSingle(arg0);
+                var result = ((System.IConvertible)self).ToSingle(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -591,7 +591,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToDouble(arg0);
+                var result = ((System.IConvertible)self).ToDouble(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -626,7 +626,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToDecimal(arg0);
+                var result = ((System.IConvertible)self).ToDecimal(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -661,7 +661,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToDateTime(arg0);
+                var result = ((System.IConvertible)self).ToDateTime(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -696,7 +696,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.IFormatProvider>(L, 2)!;
             try
             {
-                var result = self.ToString(arg0);
+                var result = ((System.IConvertible)self).ToString(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -732,7 +732,7 @@ public partial class LuaBindings
                 arg1 = ToObject<System.IFormatProvider>(L, 3)!;
             try
             {
-                var result = self.ToType(arg0, arg1);
+                var result = ((System.IConvertible)self).ToType(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }

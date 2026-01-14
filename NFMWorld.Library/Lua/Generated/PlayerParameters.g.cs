@@ -71,10 +71,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "playerName":
-                PushValue(L, obj.PlayerName);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.PlayerParameters)obj).PlayerName);
                 return 1;
             case "carName":
-                PushValue(L, obj.CarName);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.PlayerParameters)obj).CarName);
                 return 1;
             case "color":
                 {
@@ -84,13 +84,13 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.backend.gamemodes.PlayerParameters)obj).Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "isBot":
-                PushValue(L, obj.IsBot);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.PlayerParameters)obj).IsBot);
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (PlayerParameters_method_getType));
@@ -169,7 +169,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.backend.gamemodes.PlayerParameters)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -199,7 +199,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.backend.gamemodes.PlayerParameters)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -234,7 +234,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.backend.gamemodes.PlayerParameters)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -264,7 +264,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.backend.gamemodes.PlayerParameters)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

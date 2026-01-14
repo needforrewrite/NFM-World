@@ -124,7 +124,7 @@ public partial class LuaBindings
             var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.IEquatable<Microsoft.Xna.Framework.Vector2>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }

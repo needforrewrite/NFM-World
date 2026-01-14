@@ -2416,25 +2416,25 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             using (Indent())
             {
                 // Properties
-                var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
-                    .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
-                                !HasRefReturn(p) &&
-                                p.CanRead &&
-                                p.GetIndexParameters().Length == 0) // Skip indexers
+                var props = GetPropertiesInTypeAndInterfaces(type)
+                    .Where(p => !HasAttribute(p.Property, nameof(LuaHiddenAttribute)) &&
+                                !HasRefReturn(p.Property) &&
+                                p.Property.CanRead &&
+                                p.Property.GetIndexParameters().Length == 0) // Skip indexers
                     .ToList();
 
                 foreach (var prop in props)
                 {
-                    var luaName = GetLuaPropertyName(prop);
+                    var luaName = GetLuaPropertyName(prop.Property);
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        GeneratePushValueWithParentTracking($"{prop.Name}", prop.PropertyType, type, prop.Name, isStruct, prop.SetMethod == null || IsInitOnly(prop));
+                        GeneratePushValueWithParentTracking($"(({GetFullTypeName(prop.Type)})obj)",prop.Property.Name, prop.Property.PropertyType, type, prop.Property.Name, isStruct, prop.Property.SetMethod == null || IsInitOnly(prop.Property));
                     }
                 }
 
                 // Fields
-                var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+                var fields = GetFieldsInTypeAndInterfaces(type)
                     .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)))
                     .ToList();
 
@@ -2444,22 +2444,22 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        GeneratePushValueWithParentTracking($"{field.Name}", field.FieldType, type, field.Name, isStruct, field.IsInitOnly);
+                        GeneratePushValueWithParentTracking($"(({GetFullTypeName(type)})obj)", field.Name, field.FieldType, type, field.Name, isStruct, field.IsInitOnly);
                     }
                 }
 
                 // Instance methods
                 // For array types, exclude methods declared on the array type itself (Get/Set/Address)
                 // as well as methods from Array and object base classes
-                var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
-                    .Where(m => !m.IsSpecialName &&
-                                !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
-                                !m.IsGenericMethod &&
-                                !HasByRefParameters(m) &&
-                                !IsCompilerMethod(m) &&
-                                !HasRefReturn(m) &&
-                                (!type.IsArray || (m.DeclaringType != type && m.DeclaringType != typeof(Array) && m.DeclaringType != typeof(object)))) // Skip array-specific and inherited methods
-                    .GroupBy(m => GetLuaMethodName(m))
+                var methods = GetMethodsInTypeAndInterfaces(type)
+                    .Where(m => !m.Method.IsSpecialName &&
+                                !HasAttribute(m.Method, nameof(LuaHiddenAttribute)) &&
+                                !m.Method.IsGenericMethod &&
+                                !HasByRefParameters(m.Method) &&
+                                !IsCompilerMethod(m.Method) &&
+                                !HasRefReturn(m.Method) &&
+                                (!type.IsArray || (m.Method.DeclaringType != type && m.Method.DeclaringType != typeof(Array) && m.Method.DeclaringType != typeof(object)))) // Skip array-specific and inherited methods
+                    .GroupBy(m => GetLuaMethodName(m.Method))
                     .ToList();
 
                 foreach (var methodGroup in methods)
@@ -2506,6 +2506,113 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
         AppendLine("}");
         AppendLine();
+    }
+
+    private IEnumerable<(Type Type, MethodInfo Method)> GetMethodsInTypeAndInterfaces(Type type)
+    {
+        var dict = new Dictionary<string, MethodInfo>();
+        
+        var startingMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+            .Where(m => !m.IsSpecialName);
+
+        foreach (var method in startingMethods)
+        {
+            if (dict.TryAdd(method.Name, method))
+            {
+                yield return (type, method);
+            }
+        }
+
+        if (type.IsArray)
+        {
+            yield break;
+        }
+        
+        var interfaces = type.GetInterfaces();
+        foreach (var iface in interfaces)
+        {
+            if (!type.IsInterface)
+            {
+                var map = type.GetInterfaceMap(iface);
+                var interfaceMethods = map.TargetMethods;
+                foreach (var method in interfaceMethods)
+                {
+                    if (!method.Name.Contains('.') && dict.TryAdd(method.Name, method))
+                    {
+                        yield return (iface, method);
+                    }
+                }
+            }
+            else
+            {
+                var interfaceMethods = iface.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(m => !m.IsSpecialName);
+                foreach (var method in interfaceMethods)
+                {
+                    if (dict.TryAdd(method.Name, method))
+                    {
+                        yield return (iface, method);
+                    }
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<FieldInfo> GetFieldsInTypeAndInterfaces(Type type)
+    {
+        var dict = new Dictionary<string, FieldInfo>();
+        
+        var startingFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+        
+        foreach (var field in startingFields)
+        {
+            if (dict.TryAdd(field.Name, field))
+            {
+                yield return field;
+            }
+        }
+        
+        var interfaces = type.GetInterfaces();
+        foreach (var iface in interfaces)
+        {
+            var interfaceFields = iface.GetFields(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var field in interfaceFields)
+            {
+                if (dict.TryAdd(field.Name, field))
+                {
+                    yield return field;
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<(Type Type, PropertyInfo Property)> GetPropertiesInTypeAndInterfaces(Type type)
+    {
+        var dict = new Dictionary<string, PropertyInfo>();
+        
+        var startingProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
+        
+        foreach (var prop in startingProperties)
+        {
+            if (dict.TryAdd(prop.Name, prop))
+            {
+                yield return (type, prop);
+            }
+        }
+        
+        var interfaces = type.GetInterfaces();
+        foreach (var iface in interfaces)
+        {
+            var interfaceProperties = iface.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            // TODO : Handle explicit interface implementations?
+            foreach (var prop in interfaceProperties)
+            {
+                if (dict.TryAdd(prop.Name, prop))
+                {
+                    yield return (iface, prop);
+                }
+            }
+        }
     }
 
     private void GenerateNewIndexMethod(Type type, string safeName, bool isStruct, string fullTypeName)
@@ -3433,20 +3540,20 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             return;
         }
 
-        var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
-            .Where(m => !m.IsSpecialName &&
-                        !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
-                        !m.IsGenericMethod &&
-                        !HasByRefParameters(m) &&
-                        !IsCompilerMethod(m) &&
-                        !HasRefReturn(m)) // Skip generic methods and byref parameters
-            .GroupBy(m => GetLuaMethodName(m))
+        var methods = GetMethodsInTypeAndInterfaces(type)
+            .Where(m => !m.Method.IsSpecialName &&
+                        !HasAttribute(m.Method, nameof(LuaHiddenAttribute)) &&
+                        !m.Method.IsGenericMethod &&
+                        !HasByRefParameters(m.Method) &&
+                        !IsCompilerMethod(m.Method) &&
+                        !HasRefReturn(m.Method)) // Skip generic methods and byref parameters
+            .GroupBy(m => GetLuaMethodName(m.Method))
             .ToList();
 
         foreach (var methodGroup in methods)
         {
             var methodName = methodGroup.Key;
-            var overloads = methodGroup.OrderBy(m => m.GetParameters().Length).ToList();
+            var overloads = methodGroup.OrderBy(m => m.Method.GetParameters().Length).ToList();
 
             AppendLine($"private static int {safeName}_method_{GetSafeMethodName(methodName)}(lua_State L)");
             AppendLine("{");
@@ -3474,7 +3581,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine();
 
                 // Group overloads by argument count
-                var overloadsByArgCount = overloads.GroupBy(m => m.GetParameters().Length).ToList();
+                var overloadsByArgCount = overloads.GroupBy(m => m.Method.GetParameters().Length).ToList();
 
                 foreach (var argCountGroup in overloadsByArgCount)
                 {
@@ -3488,7 +3595,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         if (methodsWithSameArgCount.Count == 1)
                         {
                             // Single overload - no resolution needed
-                            var method = methodsWithSameArgCount[0];
+                            var method = methodsWithSameArgCount[0].Method;
+                            var callingType = methodsWithSameArgCount[0].Type;
                             var parameters = method.GetParameters();
 
                             for (int i = 0; i < parameters.Length; i++)
@@ -3504,7 +3612,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine($"self.{method.Name}({argList});");
+                                    AppendLine($"(({GetFullTypeName(callingType)})self).{method.Name}({argList});");
                                     if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
                                     AppendLine("return 0;");
                                 }
@@ -3524,7 +3632,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine($"var result = self.{method.Name}({argList});");
+                                    AppendLine($"var result = (({GetFullTypeName(callingType)})self).{method.Name}({argList});");
                                     if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
                                     GeneratePushValue("result", method.ReturnType);
                                     AppendLine("return 1;");
@@ -3550,7 +3658,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                             for (int methodIdx = 0; methodIdx < methodsWithSameArgCount.Count; methodIdx++)
                             {
-                                var method = methodsWithSameArgCount[methodIdx];
+                                var method = methodsWithSameArgCount[methodIdx].Method;
                                 var parameters = method.GetParameters();
 
                                 AppendLine($"// Try overload {methodIdx}: {method.Name}({string.Join(", ", parameters.Select(p => GetFullTypeName(p.ParameterType)))})");
@@ -3588,7 +3696,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             {
                                 for (int methodIdx = 0; methodIdx < methodsWithSameArgCount.Count; methodIdx++)
                                 {
-                                    var method = methodsWithSameArgCount[methodIdx];
+                                    var method = methodsWithSameArgCount[methodIdx].Method;
+                                    var callingType = methodsWithSameArgCount[methodIdx].Type;
                                     var parameters = method.GetParameters();
 
                                     AppendLine($"case {methodIdx}:");
@@ -3610,7 +3719,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine($"self.{method.Name}({argList});");
+                                                    AppendLine($"(({GetFullTypeName(callingType)}))self).{method.Name}({argList});");
                                                     if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
                                                     AppendLine("return 0;");
                                                 }
@@ -3893,7 +4002,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
     }
 
-    private void GeneratePushValueWithParentTracking(string memberExpression, Type type, Type parentType, string memberName, bool isStruct, bool isReadOnly)
+    private void GeneratePushValueWithParentTracking(string containingTypeExpression, string memberExpression, Type type, Type parentType, string memberName, bool isStruct, bool isReadOnly)
     {
         // Only use parent tracking for value types (structs)
         if (type.IsValueType && !type.IsPrimitive && !type.IsEnum && !IsNullable(type))
@@ -3918,15 +4027,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         AppendLine("var parentId = *(int*)ptr;");
                         if (parentType.IsValueType)
                         {
-                            AppendLine($"PushStructWithParent(L, obj.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {{ System.Diagnostics.Debug.WriteLine($\"Attempted to assign value of struct {{obj}} ({{obj.GetType()}}) member '{memberExpression}' to {{value}} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set.\"); }});");
+                            AppendLine($"PushStructWithParent(L, {containingTypeExpression}.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {{ System.Diagnostics.Debug.WriteLine($\"Attempted to assign value of struct {{obj}} ({{obj.GetType()}}) member '{memberExpression}' to {{value}} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set.\"); }});");
                         }
                         else if (isReadOnly)
                         {
-                            AppendLine($"PushStructWithParent(L, obj.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {{ System.Diagnostics.Debug.WriteLine($\"Attempted to assign value of struct {{obj}} ({{obj.GetType()}}) member '{memberExpression}' to {{value}} but the field is read-only. Nothing will be set.\"); }});");
+                            AppendLine($"PushStructWithParent(L, {containingTypeExpression}.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {{ System.Diagnostics.Debug.WriteLine($\"Attempted to assign value of struct {{obj}} ({{obj.GetType()}}) member '{memberExpression}' to {{value}} but the field is read-only. Nothing will be set.\"); }});");
                         }
                         else
                         {
-                            AppendLine($"PushStructWithParent(L, obj.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => (({parentTypeName})obj).{memberExpression} = ({typeName})value);");
+                            AppendLine($"PushStructWithParent(L, {containingTypeExpression}.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {containingTypeExpression}.{memberExpression} = ({typeName})value);");
                         }
                     }
                     AppendLine("}");
@@ -3938,7 +4047,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
         else
         {
-            GeneratePushValue($"obj.{memberExpression}", type);
+            GeneratePushValue($"{containingTypeExpression}.{memberExpression}", type);
             AppendLine("return 1;");
         }
     }

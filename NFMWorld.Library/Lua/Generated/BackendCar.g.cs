@@ -71,10 +71,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "groundAt":
-                PushValue(L, obj.GroundAt);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).GroundAt);
                 return 1;
             case "maxRadius":
-                PushValue(L, obj.MaxRadius);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).MaxRadius);
                 return 1;
             case "wheelAngle":
                 {
@@ -84,7 +84,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.WheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.BackendCar)obj).WheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
+                            PushStructWithParent(L, ((nfm_world_library.backend.BackendCar)obj).WheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.BackendCar)obj).WheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
                         }
                     }
                 }
@@ -97,37 +97,37 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.TurningWheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.BackendCar)obj).TurningWheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
+                            PushStructWithParent(L, ((nfm_world_library.backend.BackendCar)obj).TurningWheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.BackendCar)obj).TurningWheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
                         }
                     }
                 }
                 return 1;
             case "wheels":
-                PushValue(L, obj.Wheels);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).Wheels);
                 return 1;
             case "mad":
-                PushValue(L, obj.Mad);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).Mad);
                 return 1;
             case "control":
-                PushValue(L, obj.Control);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).Control);
                 return 1;
             case "currentCheckpoint":
-                PushValue(L, obj.currentCheckpoint);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).currentCheckpoint);
                 return 1;
             case "currentLap":
-                PushValue(L, obj.currentLap);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).currentLap);
                 return 1;
             case "totalCheckpoint":
-                PushValue(L, obj.totalCheckpoint);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).totalCheckpoint);
                 return 1;
             case "lastCheckpointNode":
-                PushValue(L, obj.lastCheckpointNode);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).lastCheckpointNode);
                 return 1;
             case "placement":
-                PushValue(L, obj.placement);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).placement);
                 return 1;
             case "rad":
-                PushValue(L, obj.Rad);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).Rad);
                 return 1;
             case "stats":
                 {
@@ -137,22 +137,22 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.backend.BackendCar)obj).Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "wasted":
-                PushValue(L, obj.Wasted);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).Wasted);
                 return 1;
             case "bot":
-                PushValue(L, obj.Bot);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).Bot);
                 return 1;
             case "children":
-                PushValue(L, obj.Children);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).Children);
                 return 1;
             case "parent":
-                PushValue(L, obj.Parent);
+                PushValue(L, ((nfm_world_library.backend.BackendCar)obj).Parent);
                 return 1;
             case "position":
                 {
@@ -162,7 +162,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.backend.BackendCar)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
+                            PushStructWithParent(L, ((nfm_world_library.backend.BackendCar)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.backend.BackendCar)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
                         }
                     }
                 }
@@ -175,7 +175,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.BackendCar)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
+                            PushStructWithParent(L, ((nfm_world_library.backend.BackendCar)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.BackendCar)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
                         }
                     }
                 }
@@ -188,10 +188,13 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.MatrixWorld, "MT_Matrix", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MatrixWorld' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.backend.BackendCar)obj).MatrixWorld, "MT_Matrix", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MatrixWorld' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
+                return 1;
+            case "childTransforms":
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).ChildTransforms);
                 return 1;
             case "drive":
                 lua_pushcfunction(L, (BackendCar_method_drive));
@@ -469,7 +472,7 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.IStage>(L, 2)!;
             try
             {
-                self.Drive(arg0);
+                ((nfm_world_library.backend.BackendCar)self).Drive(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -499,7 +502,7 @@ public partial class LuaBindings
             var arg0 = ToObject<nfm_world_library.mad.IInGameCar>(L, 2)!;
             try
             {
-                self.Collide(arg0);
+                ((nfm_world_library.backend.BackendCar)self).Collide(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -528,7 +531,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.ResetPosition();
+                ((nfm_world_library.backend.BackendCar)self).ResetPosition();
                 return 0;
             }
             catch (System.Exception ex)
@@ -567,7 +570,7 @@ public partial class LuaBindings
             var arg9 = ToObject<int>(L, 11)!;
             try
             {
-                self.AddDust(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                ((nfm_world_library.backend.BackendCar)self).AddDust(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
                 return 0;
             }
             catch (System.Exception ex)
@@ -604,7 +607,7 @@ public partial class LuaBindings
             var arg7 = ToObject<int>(L, 9)!;
             try
             {
-                self.Spark(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                ((nfm_world_library.backend.BackendCar)self).Spark(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                 return 0;
             }
             catch (System.Exception ex)
@@ -636,7 +639,7 @@ public partial class LuaBindings
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
             try
             {
-                self.DamageX(arg0, arg1, arg2);
+                ((nfm_world_library.backend.BackendCar)self).DamageX(arg0, arg1, arg2);
                 return 0;
             }
             catch (System.Exception ex)
@@ -671,7 +674,7 @@ public partial class LuaBindings
             var arg5 = ToObject<int>(L, 7)!;
             try
             {
-                self.DamageY(arg0, arg1, arg2, arg3, arg4, arg5);
+                ((nfm_world_library.backend.BackendCar)self).DamageY(arg0, arg1, arg2, arg3, arg4, arg5);
                 return 0;
             }
             catch (System.Exception ex)
@@ -703,7 +706,7 @@ public partial class LuaBindings
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
             try
             {
-                self.DamageZ(arg0, arg1, arg2);
+                ((nfm_world_library.backend.BackendCar)self).DamageZ(arg0, arg1, arg2);
                 return 0;
             }
             catch (System.Exception ex)
@@ -732,7 +735,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.backend.BackendCar)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -762,7 +765,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.backend.BackendCar)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -797,7 +800,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.backend.BackendCar)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -827,7 +830,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.backend.BackendCar)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

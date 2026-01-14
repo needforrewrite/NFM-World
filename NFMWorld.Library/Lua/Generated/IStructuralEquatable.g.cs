@@ -132,7 +132,7 @@ public partial class LuaBindings
             var arg1 = ToObject<System.Collections.IEqualityComparer>(L, 3)!;
             try
             {
-                var result = self.Equals(arg0, arg1);
+                var result = ((System.Collections.IStructuralEquatable)self).Equals(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -163,7 +163,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Collections.IEqualityComparer>(L, 2)!;
             try
             {
-                var result = self.GetHashCode(arg0);
+                var result = ((System.Collections.IStructuralEquatable)self).GetHashCode(arg0);
                 PushValue(L, result);
                 return 1;
             }

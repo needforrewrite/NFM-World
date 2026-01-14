@@ -71,148 +71,148 @@ public partial class LuaBindings
         switch (key)
         {
             case "path":
-                PushValue(L, obj.Path);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Path);
                 return 1;
             case "nlaps":
-                PushValue(L, obj.nlaps);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).nlaps);
                 return 1;
             case "musicPath":
-                PushValue(L, obj.musicPath);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).musicPath);
                 return 1;
             case "remasteredMusicPath":
-                PushValue(L, obj.remasteredMusicPath);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).remasteredMusicPath);
                 return 1;
             case "musicFreqMul":
-                PushValue(L, obj.musicFreqMul);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).musicFreqMul);
                 return 1;
             case "musicTempoMul":
-                PushValue(L, obj.musicTempoMul);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).musicTempoMul);
                 return 1;
             case "name":
-                PushValue(L, obj.Name);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Name);
                 return 1;
             case "indexOffset":
-                PushValue(L, obj.indexOffset);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).indexOffset);
                 return 1;
             case "sx":
-                PushValue(L, obj.Sx);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Sx);
                 return 1;
             case "sz":
-                PushValue(L, obj.Sz);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Sz);
                 return 1;
             case "ncx":
-                PushValue(L, obj.Ncx);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Ncx);
                 return 1;
             case "ncz":
-                PushValue(L, obj.Ncz);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Ncz);
                 return 1;
             case "snap":
-                if (obj.Snap.HasValue)
-                    PushValue(L, obj.Snap.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).Snap.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Snap.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "sky":
-                if (obj.Sky.HasValue)
-                    PushValue(L, obj.Sky.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).Sky.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Sky.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "groundColor":
-                if (obj.GroundColor.HasValue)
-                    PushValue(L, obj.GroundColor.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).GroundColor.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).GroundColor.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "groundPolysColor":
-                if (obj.GroundPolysColor.HasValue)
-                    PushValue(L, obj.GroundPolysColor.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).GroundPolysColor.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).GroundPolysColor.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "drawPolys":
-                PushValue(L, obj.DrawPolys);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).DrawPolys);
                 return 1;
             case "fog":
-                if (obj.Fog.HasValue)
-                    PushValue(L, obj.Fog.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).Fog.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Fog.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "texture":
-                if (obj.Texture.HasValue)
-                    PushValue(L, obj.Texture.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).Texture.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Texture.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "clouds":
-                if (obj.Clouds.HasValue)
-                    PushValue(L, obj.Clouds.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).Clouds.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).Clouds.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "drawClouds":
-                PushValue(L, obj.DrawClouds);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).DrawClouds);
                 return 1;
             case "cloudCoverage":
-                if (obj.CloudCoverage.HasValue)
-                    PushValue(L, obj.CloudCoverage.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).CloudCoverage.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).CloudCoverage.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "fogDensity":
-                if (obj.FogDensity.HasValue)
-                    PushValue(L, obj.FogDensity.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).FogDensity.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).FogDensity.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "fadeFrom":
-                if (obj.FadeFrom.HasValue)
-                    PushValue(L, obj.FadeFrom.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).FadeFrom.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).FadeFrom.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "lightsOn":
-                PushValue(L, obj.LightsOn);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).LightsOn);
                 return 1;
             case "drawMountains":
-                PushValue(L, obj.DrawMountains);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).DrawMountains);
                 return 1;
             case "mountainSeed":
-                if (obj.MountainSeed.HasValue)
-                    PushValue(L, obj.MountainSeed.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).MountainSeed.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).MountainSeed.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "mountainCoverage":
-                if (obj.MountainCoverage.HasValue)
-                    PushValue(L, obj.MountainCoverage.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).MountainCoverage.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).MountainCoverage.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "lightDirection":
-                if (obj.LightDirection.HasValue)
-                    PushValue(L, obj.LightDirection.Value);
+                if (((nfm_world_library.mad.StageLoader)obj).LightDirection.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.StageLoader)obj).LightDirection.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "pieces":
-                PushValue(L, obj.pieces);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).pieces);
                 return 1;
             case "walls":
-                PushValue(L, obj.walls);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).walls);
                 return 1;
             case "maxr":
-                PushValue(L, obj.maxr);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).maxr);
                 return 1;
             case "maxl":
-                PushValue(L, obj.maxl);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).maxl);
                 return 1;
             case "maxt":
-                PushValue(L, obj.maxt);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).maxt);
                 return 1;
             case "maxb":
-                PushValue(L, obj.maxb);
+                PushValue(L, ((nfm_world_library.mad.StageLoader)obj).maxb);
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (StageLoader_method_getType));
@@ -720,7 +720,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.mad.StageLoader)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -750,7 +750,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.mad.StageLoader)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -785,7 +785,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.mad.StageLoader)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -815,7 +815,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.mad.StageLoader)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

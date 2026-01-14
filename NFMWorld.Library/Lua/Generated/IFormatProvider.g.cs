@@ -128,7 +128,7 @@ public partial class LuaBindings
                 arg0 = ToObject<System.Type>(L, 2)!;
             try
             {
-                var result = self.GetFormat(arg0);
+                var result = ((System.IFormatProvider)self).GetFormat(arg0);
                 PushValue(L, result);
                 return 1;
             }

@@ -319,7 +319,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Row1, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Row1' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Row1, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Row1' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -332,7 +332,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Row2, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Row2' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Row2, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Row2' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -345,7 +345,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Row3, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Row3' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Row3, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Row3' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -358,7 +358,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Row4, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Row4' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Row4, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Row4' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -371,7 +371,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Column1, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Column1' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Column1, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Column1' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -384,7 +384,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Column2, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Column2' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Column2, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Column2' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -397,7 +397,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Column3, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Column3' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Column3, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Column3' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -410,7 +410,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Column4, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Column4' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Column4, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Column4' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -423,7 +423,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.TranslationVector, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'TranslationVector' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).TranslationVector, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'TranslationVector' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -436,7 +436,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.ScaleVector, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'ScaleVector' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).ScaleVector, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'ScaleVector' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -449,7 +449,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Up, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Up' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Up, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Up' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -462,7 +462,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Down, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Down' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Down, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Down' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -475,7 +475,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Right, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Right' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Right, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Right' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -488,7 +488,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Left, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Left' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Left, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Left' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -501,7 +501,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Forward, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Forward' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Forward, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Forward' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -514,61 +514,61 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Backward, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Backward' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((Stride.Core.Mathematics.Matrix)obj).Backward, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Backward' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "isIdentity":
-                PushValue(L, obj.IsIdentity);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).IsIdentity);
                 return 1;
             case "m11":
-                PushValue(L, obj.M11);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M11);
                 return 1;
             case "m21":
-                PushValue(L, obj.M21);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M21);
                 return 1;
             case "m31":
-                PushValue(L, obj.M31);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M31);
                 return 1;
             case "m41":
-                PushValue(L, obj.M41);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M41);
                 return 1;
             case "m12":
-                PushValue(L, obj.M12);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M12);
                 return 1;
             case "m22":
-                PushValue(L, obj.M22);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M22);
                 return 1;
             case "m32":
-                PushValue(L, obj.M32);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M32);
                 return 1;
             case "m42":
-                PushValue(L, obj.M42);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M42);
                 return 1;
             case "m13":
-                PushValue(L, obj.M13);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M13);
                 return 1;
             case "m23":
-                PushValue(L, obj.M23);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M23);
                 return 1;
             case "m33":
-                PushValue(L, obj.M33);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M33);
                 return 1;
             case "m43":
-                PushValue(L, obj.M43);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M43);
                 return 1;
             case "m14":
-                PushValue(L, obj.M14);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M14);
                 return 1;
             case "m24":
-                PushValue(L, obj.M24);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M24);
                 return 1;
             case "m34":
-                PushValue(L, obj.M34);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M34);
                 return 1;
             case "m44":
-                PushValue(L, obj.M44);
+                PushValue(L, ((Stride.Core.Mathematics.Matrix)obj).M44);
                 return 1;
             case "determinant":
                 lua_pushcfunction(L, (Matrix_method_determinant));
@@ -2704,7 +2704,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Determinant();
+                var result = ((Stride.Core.Mathematics.Matrix)self).Determinant();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2730,7 +2730,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Invert();
+                ((Stride.Core.Mathematics.Matrix)self).Invert();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -2755,7 +2755,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Transpose();
+                ((Stride.Core.Mathematics.Matrix)self).Transpose();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -2780,7 +2780,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Orthogonalize();
+                ((Stride.Core.Mathematics.Matrix)self).Orthogonalize();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -2805,7 +2805,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Orthonormalize();
+                ((Stride.Core.Mathematics.Matrix)self).Orthonormalize();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -2832,7 +2832,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.ExchangeRows(arg0, arg1);
+                ((Stride.Core.Mathematics.Matrix)self).ExchangeRows(arg0, arg1);
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -2859,7 +2859,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.ExchangeColumns(arg0, arg1);
+                ((Stride.Core.Mathematics.Matrix)self).ExchangeColumns(arg0, arg1);
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -2884,7 +2884,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToArray();
+                var result = ((Stride.Core.Mathematics.Matrix)self).ToArray();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2910,33 +2910,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            string? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<string>(L, 2)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 3) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 3)!;
-            try
-            {
-                var result = self.ToString(arg0, arg1);
+                var result = ((Stride.Core.Mathematics.Matrix)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2962,7 +2936,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((Stride.Core.Mathematics.Matrix)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -2986,79 +2960,18 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Equals(Stride.Core.Mathematics.Matrix)
+            var arg0 = ToObject<Stride.Core.Mathematics.Matrix>(L, 2)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Matrix>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var result = ((Stride.Core.Mathematics.Matrix)self).Equals(arg0);
+                UpdateStruct(L, 1, self);
+                PushValue(L, result);
+                return 1;
             }
-            next0:
-
-            // Try overload 1: Equals(object)
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<object>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Matrix>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        object? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<object>(L, 2)!;
-                        try
-                        {
-                            var result = self.Equals(arg0);
-                            UpdateStruct(L, 1, self);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for equals");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
@@ -3076,7 +2989,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((Stride.Core.Mathematics.Matrix)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

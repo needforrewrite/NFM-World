@@ -124,7 +124,7 @@ public partial class LuaBindings
             var arg0 = ToObject<Stride.Core.Mathematics.Ray>(L, 2)!;
             try
             {
-                var result = self.Intersects(arg0);
+                var result = ((Stride.Core.Mathematics.IIntersectableWithRay)self).Intersects(arg0);
                 PushValue(L, result);
                 return 1;
             }

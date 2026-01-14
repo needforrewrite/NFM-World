@@ -193,7 +193,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.NextU64();
+                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).NextU64();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -219,42 +219,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Next();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = self.Next(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                var result = self.Next(arg0, arg1);
+                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).Next();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -280,7 +245,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.NextDouble();
+                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).NextDouble();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -306,7 +271,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.NextFixed6401();
+                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).NextFixed6401();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -333,25 +298,7 @@ public partial class LuaBindings
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
             try
             {
-                var result = self.NextFixed64(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
-            var arg1 = ToObject<FixedMathSharp.Fixed64>(L, 3)!;
-            try
-            {
-                var result = self.NextFixed64(arg0, arg1);
+                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).NextFixed64(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -382,7 +329,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).Equals(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -408,7 +355,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -434,7 +381,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -460,7 +407,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

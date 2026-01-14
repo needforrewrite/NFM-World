@@ -70,10 +70,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "xy":
-                PushValue(L, obj.Xy);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dBoxDef)obj).Xy);
                 return 1;
             case "zy":
-                PushValue(L, obj.Zy);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dBoxDef)obj).Zy);
                 return 1;
             case "radius":
                 {
@@ -83,7 +83,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Radius, "MT_f64Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Radius' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.mad.rad.Rad3dBoxDef)obj).Radius, "MT_f64Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Radius' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -96,19 +96,19 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Translation, "MT_f64Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Translation' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.mad.rad.Rad3dBoxDef)obj).Translation, "MT_f64Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Translation' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "skid":
-                PushValue(L, obj.Skid);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dBoxDef)obj).Skid);
                 return 1;
             case "damage":
-                PushValue(L, obj.Damage);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dBoxDef)obj).Damage);
                 return 1;
             case "notWall":
-                PushValue(L, obj.NotWall);
+                PushValue(L, ((nfm_world_library.mad.rad.Rad3dBoxDef)obj).NotWall);
                 return 1;
             case "color":
                 {
@@ -118,7 +118,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.mad.rad.Rad3dBoxDef)obj).Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -200,7 +200,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.mad.rad.Rad3dBoxDef)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

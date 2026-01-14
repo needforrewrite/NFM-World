@@ -71,22 +71,22 @@ public partial class LuaBindings
         switch (key)
         {
             case "playerCarIndex":
-                PushValue(L, obj.playerCarIndex);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.IGamemode)obj).playerCarIndex);
                 return 1;
             case "players":
-                PushValue(L, obj.players);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.IGamemode)obj).players);
                 return 1;
             case "player":
-                PushValue(L, obj.player);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.IGamemode)obj).player);
                 return 1;
             case "carsInRace":
-                PushValue(L, obj.carsInRace);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.IGamemode)obj).carsInRace);
                 return 1;
             case "currentStage":
-                PushValue(L, obj.currentStage);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.IGamemode)obj).currentStage);
                 return 1;
             case "numPlayers":
-                PushValue(L, obj.NumPlayers);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.IGamemode)obj).NumPlayers);
                 return 1;
             case "enter":
                 lua_pushcfunction(L, (IGamemode_method_enter));
@@ -156,7 +156,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Enter();
+                ((nfm_world_library.backend.gamemodes.IGamemode)self).Enter();
                 return 0;
             }
             catch (System.Exception ex)
@@ -185,7 +185,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Exit();
+                ((nfm_world_library.backend.gamemodes.IGamemode)self).Exit();
                 return 0;
             }
             catch (System.Exception ex)
@@ -214,7 +214,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.GameTick();
+                ((nfm_world_library.backend.gamemodes.IGamemode)self).GameTick();
                 return 0;
             }
             catch (System.Exception ex)
@@ -243,7 +243,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Reset();
+                ((nfm_world_library.backend.gamemodes.IGamemode)self).Reset();
                 return 0;
             }
             catch (System.Exception ex)

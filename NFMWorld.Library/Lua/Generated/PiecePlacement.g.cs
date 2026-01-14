@@ -70,10 +70,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "type":
-                PushValue(L, obj.Type);
+                PushValue(L, ((nfm_world_library.mad.PiecePlacement)obj).Type);
                 return 1;
             case "object":
-                PushValue(L, obj.Object);
+                PushValue(L, ((nfm_world_library.mad.PiecePlacement)obj).Object);
                 return 1;
             case "position":
                 {
@@ -83,7 +83,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Position, "MT_f64Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Position' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.mad.PiecePlacement)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Position' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
@@ -96,19 +96,19 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Rotation, "MT_f64Euler", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Rotation' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.mad.PiecePlacement)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Rotation' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "nodeKind":
-                if (obj.NodeKind.HasValue)
-                    PushValue(L, obj.NodeKind.Value);
+                if (((nfm_world_library.mad.PiecePlacement)obj).NodeKind.HasValue)
+                    PushValue(L, ((nfm_world_library.mad.PiecePlacement)obj).NodeKind.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "isSpecial":
-                PushValue(L, obj.IsSpecial);
+                PushValue(L, ((nfm_world_library.mad.PiecePlacement)obj).IsSpecial);
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (PiecePlacement_method_getType));
@@ -189,7 +189,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.mad.PiecePlacement)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

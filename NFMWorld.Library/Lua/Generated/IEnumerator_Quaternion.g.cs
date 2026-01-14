@@ -78,10 +78,19 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Current, "MT_Quaternion", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Current' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Quaternion>)obj).Current, "MT_Quaternion", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Current' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
+                return 1;
+            case "dispose":
+                lua_pushcfunction(L, (IEnumerator_Quaternion_method_dispose));
+                return 1;
+            case "moveNext":
+                lua_pushcfunction(L, (IEnumerator_Quaternion_method_moveNext));
+                return 1;
+            case "reset":
+                lua_pushcfunction(L, (IEnumerator_Quaternion_method_reset));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -115,6 +124,94 @@ public partial class LuaBindings
         var argCount = lua_gettop(L);
 
         luaL_error(L, "Invalid arguments for IEnumerator`1 constructor");
+        return 0;
+    }
+
+    private static int IEnumerator_Quaternion_method_dispose(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Quaternion>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IEnumerator`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                ((System.IDisposable)self).Dispose();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for dispose");
+        return 0;
+    }
+
+    private static int IEnumerator_Quaternion_method_moveNext(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Quaternion>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IEnumerator`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = ((System.Collections.IEnumerator)self).MoveNext();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for moveNext");
+        return 0;
+    }
+
+    private static int IEnumerator_Quaternion_method_reset(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Quaternion>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IEnumerator`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                ((System.Collections.IEnumerator)self).Reset();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for reset");
         return 0;
     }
 

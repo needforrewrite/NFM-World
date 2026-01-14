@@ -70,7 +70,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "current":
-                PushValue(L, obj.Current);
+                PushValue(L, ((nfm_world_library.util.UnlimitedArray<bool>.Enumerator)obj).Current);
                 return 1;
             case "moveNext":
                 lua_pushcfunction(L, (UnlimitedArray_Boolean_Enumerator_method_moveNext));
@@ -160,7 +160,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.MoveNext();
+                var result = ((nfm_world_library.util.UnlimitedArray<bool>.Enumerator)self).MoveNext();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -186,7 +186,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Reset();
+                ((nfm_world_library.util.UnlimitedArray<bool>.Enumerator)self).Reset();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -211,7 +211,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Dispose();
+                ((nfm_world_library.util.UnlimitedArray<bool>.Enumerator)self).Dispose();
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -241,7 +241,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.util.UnlimitedArray<bool>.Enumerator)self).Equals(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -267,7 +267,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.util.UnlimitedArray<bool>.Enumerator)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -293,7 +293,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.util.UnlimitedArray<bool>.Enumerator)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -319,7 +319,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.util.UnlimitedArray<bool>.Enumerator)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

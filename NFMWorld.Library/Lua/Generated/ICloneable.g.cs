@@ -123,7 +123,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Clone();
+                var result = ((System.ICloneable)self).Clone();
                 PushValue(L, result);
                 return 1;
             }

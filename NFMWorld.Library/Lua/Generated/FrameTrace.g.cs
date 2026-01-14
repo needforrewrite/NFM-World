@@ -174,7 +174,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.FrameTrace)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -204,7 +204,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.FrameTrace)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -239,7 +239,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.FrameTrace)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -269,7 +269,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.FrameTrace)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

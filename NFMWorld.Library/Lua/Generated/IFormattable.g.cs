@@ -133,7 +133,7 @@ public partial class LuaBindings
                 arg1 = ToObject<System.IFormatProvider>(L, 3)!;
             try
             {
-                var result = self.ToString(arg0, arg1);
+                var result = ((System.IFormattable)self).ToString(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }

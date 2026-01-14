@@ -137,7 +137,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.RunAi(arg0, arg1);
+                ((nfm_world_library.backend.ai.BaseAi)self).RunAi(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -166,7 +166,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.backend.ai.BaseAi)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -196,7 +196,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.backend.ai.BaseAi)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -231,7 +231,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.backend.ai.BaseAi)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -261,7 +261,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.backend.ai.BaseAi)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

@@ -71,10 +71,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "playerCarIndex":
-                PushValue(L, obj.PlayerCarIndex);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemodeParameters)obj).PlayerCarIndex);
                 return 1;
             case "players":
-                PushValue(L, obj.Players);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemodeParameters)obj).Players);
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (BaseGamemodeParameters_method_getType));
@@ -153,7 +153,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.backend.gamemodes.BaseGamemodeParameters)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -183,7 +183,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.backend.gamemodes.BaseGamemodeParameters)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -218,7 +218,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.backend.gamemodes.BaseGamemodeParameters)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -248,7 +248,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.backend.gamemodes.BaseGamemodeParameters)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

@@ -85,25 +85,28 @@ public partial class LuaBindings
         switch (key)
         {
             case "length":
-                PushValue(L, obj.Length);
+                PushValue(L, ((bool[])obj).Length);
                 return 1;
             case "longLength":
-                PushValue(L, obj.LongLength);
+                PushValue(L, ((bool[])obj).LongLength);
                 return 1;
             case "rank":
-                PushValue(L, obj.Rank);
+                PushValue(L, ((bool[])obj).Rank);
                 return 1;
             case "syncRoot":
-                PushValue(L, obj.SyncRoot);
+                PushValue(L, ((bool[])obj).SyncRoot);
                 return 1;
             case "isReadOnly":
-                PushValue(L, obj.IsReadOnly);
+                PushValue(L, ((bool[])obj).IsReadOnly);
                 return 1;
             case "isFixedSize":
-                PushValue(L, obj.IsFixedSize);
+                PushValue(L, ((bool[])obj).IsFixedSize);
                 return 1;
             case "isSynchronized":
-                PushValue(L, obj.IsSynchronized);
+                PushValue(L, ((bool[])obj).IsSynchronized);
+                return 1;
+            case "count":
+                PushValue(L, ((System.Collections.ICollection)obj).Count);
                 return 1;
             default:
                 lua_pushnil(L);

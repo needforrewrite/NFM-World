@@ -71,10 +71,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "children":
-                PushValue(L, obj.Children);
+                PushValue(L, ((nfm_world_library.backend.BackendGameObject)obj).Children);
                 return 1;
             case "parent":
-                PushValue(L, obj.Parent);
+                PushValue(L, ((nfm_world_library.backend.BackendGameObject)obj).Parent);
                 return 1;
             case "position":
                 {
@@ -84,7 +84,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.backend.BackendGameObject)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
+                            PushStructWithParent(L, ((nfm_world_library.backend.BackendGameObject)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.backend.BackendGameObject)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
                         }
                     }
                 }
@@ -97,7 +97,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.BackendGameObject)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
+                            PushStructWithParent(L, ((nfm_world_library.backend.BackendGameObject)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.BackendGameObject)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
                         }
                     }
                 }
@@ -110,10 +110,13 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.MatrixWorld, "MT_Matrix", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MatrixWorld' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((nfm_world_library.backend.BackendGameObject)obj).MatrixWorld, "MT_Matrix", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MatrixWorld' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
+                return 1;
+            case "childTransforms":
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).ChildTransforms);
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (BackendGameObject_method_getType));
@@ -225,7 +228,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.backend.BackendGameObject)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -255,7 +258,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.backend.BackendGameObject)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -290,7 +293,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.backend.BackendGameObject)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -320,7 +323,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.backend.BackendGameObject)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

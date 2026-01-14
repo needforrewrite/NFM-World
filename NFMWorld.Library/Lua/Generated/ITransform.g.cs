@@ -71,7 +71,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "childTransforms":
-                PushValue(L, obj.ChildTransforms);
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).ChildTransforms);
                 return 1;
             case "position":
                 {
@@ -81,7 +81,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
+                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
                         }
                     }
                 }
@@ -94,13 +94,13 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
+                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
                         }
                     }
                 }
                 return 1;
             case "parent":
-                PushValue(L, obj.Parent);
+                PushValue(L, ((nfm_world_library.mad.ITransform)obj).Parent);
                 return 1;
             default:
                 lua_pushnil(L);

@@ -71,28 +71,28 @@ public partial class LuaBindings
         switch (key)
         {
             case "playerCarIndex":
-                PushValue(L, obj.playerCarIndex);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.LuaGamemode)obj).playerCarIndex);
                 return 1;
             case "players":
-                PushValue(L, obj.players);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.LuaGamemode)obj).players);
                 return 1;
             case "player":
-                PushValue(L, obj.player);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.LuaGamemode)obj).player);
                 return 1;
             case "carsInRace":
-                PushValue(L, obj.carsInRace);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.LuaGamemode)obj).carsInRace);
                 return 1;
             case "currentStage":
-                PushValue(L, obj.currentStage);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.LuaGamemode)obj).currentStage);
                 return 1;
             case "numPlayers":
-                PushValue(L, obj.NumPlayers);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.LuaGamemode)obj).NumPlayers);
                 return 1;
             case "raceState":
-                PushValue(L, obj.RaceState);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.LuaGamemode)obj).RaceState);
                 return 1;
             case "isClient":
-                PushValue(L, obj.IsClient);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.LuaGamemode)obj).IsClient);
                 return 1;
             case "finishRace":
                 lua_pushcfunction(L, (LuaGamemode_method_finishRace));
@@ -190,7 +190,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Byte[]>(L, 2)!;
             try
             {
-                self.FinishRace(arg0);
+                ((nfm_world_library.backend.gamemodes.LuaGamemode)self).FinishRace(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -223,7 +223,7 @@ public partial class LuaBindings
             var arg3 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 5)!;
             try
             {
-                var result = self.CreateBackendCar(arg0, arg1, arg2, arg3);
+                var result = ((nfm_world_library.backend.gamemodes.LuaGamemode)self).CreateBackendCar(arg0, arg1, arg2, arg3);
                 PushValue(L, result);
                 return 1;
             }
@@ -253,7 +253,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Reset();
+                ((nfm_world_library.backend.gamemodes.LuaGamemode)self).Reset();
                 return 0;
             }
             catch (System.Exception ex)
@@ -282,7 +282,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.backend.gamemodes.LuaGamemode)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -312,7 +312,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.backend.gamemodes.LuaGamemode)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -347,7 +347,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.backend.gamemodes.LuaGamemode)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -377,7 +377,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.backend.gamemodes.LuaGamemode)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

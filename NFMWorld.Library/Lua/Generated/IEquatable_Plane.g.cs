@@ -124,7 +124,7 @@ public partial class LuaBindings
             var arg0 = ToObject<Stride.Core.Mathematics.Plane>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.IEquatable<Stride.Core.Mathematics.Plane>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }

@@ -71,25 +71,25 @@ public partial class LuaBindings
         switch (key)
         {
             case "playerCarIndex":
-                PushValue(L, obj.playerCarIndex);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemode)obj).playerCarIndex);
                 return 1;
             case "players":
-                PushValue(L, obj.players);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemode)obj).players);
                 return 1;
             case "player":
-                PushValue(L, obj.player);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemode)obj).player);
                 return 1;
             case "carsInRace":
-                PushValue(L, obj.carsInRace);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemode)obj).carsInRace);
                 return 1;
             case "currentStage":
-                PushValue(L, obj.currentStage);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemode)obj).currentStage);
                 return 1;
             case "numPlayers":
-                PushValue(L, obj.NumPlayers);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemode)obj).NumPlayers);
                 return 1;
             case "raceState":
-                PushValue(L, obj.RaceState);
+                PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemode)obj).RaceState);
                 return 1;
             case "enter":
                 lua_pushcfunction(L, (BaseGamemode_method_enter));
@@ -171,7 +171,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Enter();
+                ((nfm_world_library.backend.gamemodes.BaseGamemode)self).Enter();
                 return 0;
             }
             catch (System.Exception ex)
@@ -200,7 +200,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Exit();
+                ((nfm_world_library.backend.gamemodes.BaseGamemode)self).Exit();
                 return 0;
             }
             catch (System.Exception ex)
@@ -229,7 +229,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.GameTick();
+                ((nfm_world_library.backend.gamemodes.BaseGamemode)self).GameTick();
                 return 0;
             }
             catch (System.Exception ex)
@@ -258,7 +258,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Reset();
+                ((nfm_world_library.backend.gamemodes.BaseGamemode)self).Reset();
                 return 0;
             }
             catch (System.Exception ex)
@@ -287,7 +287,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.backend.gamemodes.BaseGamemode)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -317,7 +317,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.backend.gamemodes.BaseGamemode)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -352,7 +352,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.backend.gamemodes.BaseGamemode)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -382,7 +382,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.backend.gamemodes.BaseGamemode)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

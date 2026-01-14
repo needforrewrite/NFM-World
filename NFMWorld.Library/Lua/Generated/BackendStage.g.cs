@@ -71,43 +71,43 @@ public partial class LuaBindings
         switch (key)
         {
             case "pieces":
-                PushValue(L, obj.pieces);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).pieces);
                 return 1;
             case "nodes":
-                PushValue(L, obj.nodes);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).nodes);
                 return 1;
             case "checkpoints":
-                PushValue(L, obj.checkpoints);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).checkpoints);
                 return 1;
             case "fixHoops":
-                PushValue(L, obj.fixHoops);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).fixHoops);
                 return 1;
             case "nlaps":
-                PushValue(L, obj.nlaps);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).nlaps);
                 return 1;
             case "stagePartCount":
-                PushValue(L, obj.stagePartCount);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).stagePartCount);
                 return 1;
             case "name":
-                PushValue(L, obj.Name);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).Name);
                 return 1;
             case "path":
-                PushValue(L, obj.Path);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).Path);
                 return 1;
             case "sx":
-                PushValue(L, obj.Sx);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).Sx);
                 return 1;
             case "sz":
-                PushValue(L, obj.Sz);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).Sz);
                 return 1;
             case "ncx":
-                PushValue(L, obj.Ncx);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).Ncx);
                 return 1;
             case "ncz":
-                PushValue(L, obj.Ncz);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).Ncz);
                 return 1;
             case "stageLoader":
-                PushValue(L, obj.stageLoader);
+                PushValue(L, ((nfm_world_library.backend.BackendStage)obj).stageLoader);
                 return 1;
             case "createObject":
                 lua_pushcfunction(L, (BackendStage_method_createObject));
@@ -278,7 +278,7 @@ public partial class LuaBindings
             var arg4 = ToObject<int>(L, 6)!;
             try
             {
-                var result = self.CreateObject(arg0, arg1, arg2, arg3, arg4);
+                var result = ((nfm_world_library.backend.BackendStage)self).CreateObject(arg0, arg1, arg2, arg3, arg4);
                 PushValue(L, result);
                 return 1;
             }
@@ -308,7 +308,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((nfm_world_library.backend.BackendStage)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -338,7 +338,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((nfm_world_library.backend.BackendStage)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -373,7 +373,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((nfm_world_library.backend.BackendStage)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -403,7 +403,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((nfm_world_library.backend.BackendStage)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

@@ -82,7 +82,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.MinSupportedDateTime, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MinSupportedDateTime' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((System.Globalization.Calendar)obj).MinSupportedDateTime, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MinSupportedDateTime' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
@@ -95,22 +95,22 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.MaxSupportedDateTime, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MaxSupportedDateTime' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((System.Globalization.Calendar)obj).MaxSupportedDateTime, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MaxSupportedDateTime' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
                 return 1;
             case "algorithmType":
-                PushValue(L, obj.AlgorithmType);
+                PushValue(L, ((System.Globalization.Calendar)obj).AlgorithmType);
                 return 1;
             case "isReadOnly":
-                PushValue(L, obj.IsReadOnly);
+                PushValue(L, ((System.Globalization.Calendar)obj).IsReadOnly);
                 return 1;
             case "eras":
-                PushValue(L, obj.Eras);
+                PushValue(L, ((System.Globalization.Calendar)obj).Eras);
                 return 1;
             case "twoDigitYearMax":
-                PushValue(L, obj.TwoDigitYearMax);
+                PushValue(L, ((System.Globalization.Calendar)obj).TwoDigitYearMax);
                 return 1;
             case "clone":
                 lua_pushcfunction(L, (Calendar_method_clone));
@@ -296,7 +296,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Clone();
+                var result = ((System.Globalization.Calendar)self).Clone();
                 PushValue(L, result);
                 return 1;
             }
@@ -328,7 +328,7 @@ public partial class LuaBindings
             var arg1 = ToObject<double>(L, 3)!;
             try
             {
-                var result = self.AddMilliseconds(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).AddMilliseconds(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -360,7 +360,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.AddDays(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).AddDays(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -392,7 +392,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.AddHours(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).AddHours(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -424,7 +424,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.AddMinutes(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).AddMinutes(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -456,7 +456,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.AddMonths(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).AddMonths(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -488,7 +488,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.AddSeconds(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).AddSeconds(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -520,7 +520,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.AddWeeks(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).AddWeeks(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -552,7 +552,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.AddYears(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).AddYears(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -583,7 +583,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetDayOfMonth(arg0);
+                var result = ((System.Globalization.Calendar)self).GetDayOfMonth(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -614,7 +614,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetDayOfWeek(arg0);
+                var result = ((System.Globalization.Calendar)self).GetDayOfWeek(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -645,7 +645,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetDayOfYear(arg0);
+                var result = ((System.Globalization.Calendar)self).GetDayOfYear(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -677,25 +677,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.GetDaysInMonth(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<int>(L, 4)!;
-            try
-            {
-                var result = self.GetDaysInMonth(arg0, arg1, arg2);
+                var result = ((System.Globalization.Calendar)self).GetDaysInMonth(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -726,24 +708,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.GetDaysInYear(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                var result = self.GetDaysInYear(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).GetDaysInYear(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -774,7 +739,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetEra(arg0);
+                var result = ((System.Globalization.Calendar)self).GetEra(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -805,7 +770,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetHour(arg0);
+                var result = ((System.Globalization.Calendar)self).GetHour(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -836,7 +801,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetMilliseconds(arg0);
+                var result = ((System.Globalization.Calendar)self).GetMilliseconds(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -867,7 +832,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetMinute(arg0);
+                var result = ((System.Globalization.Calendar)self).GetMinute(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -898,7 +863,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetMonth(arg0);
+                var result = ((System.Globalization.Calendar)self).GetMonth(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -929,24 +894,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.GetMonthsInYear(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                var result = self.GetMonthsInYear(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).GetMonthsInYear(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -977,7 +925,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetSecond(arg0);
+                var result = ((System.Globalization.Calendar)self).GetSecond(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1010,7 +958,7 @@ public partial class LuaBindings
             var arg2 = ToObject<System.DayOfWeek>(L, 4)!;
             try
             {
-                var result = self.GetWeekOfYear(arg0, arg1, arg2);
+                var result = ((System.Globalization.Calendar)self).GetWeekOfYear(arg0, arg1, arg2);
                 PushValue(L, result);
                 return 1;
             }
@@ -1041,7 +989,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.DateTime>(L, 2)!;
             try
             {
-                var result = self.GetYear(arg0);
+                var result = ((System.Globalization.Calendar)self).GetYear(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1074,26 +1022,7 @@ public partial class LuaBindings
             var arg2 = ToObject<int>(L, 4)!;
             try
             {
-                var result = self.IsLeapDay(arg0, arg1, arg2);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 4)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<int>(L, 4)!;
-            var arg3 = ToObject<int>(L, 5)!;
-            try
-            {
-                var result = self.IsLeapDay(arg0, arg1, arg2, arg3);
+                var result = ((System.Globalization.Calendar)self).IsLeapDay(arg0, arg1, arg2);
                 PushValue(L, result);
                 return 1;
             }
@@ -1125,25 +1054,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.IsLeapMonth(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<int>(L, 4)!;
-            try
-            {
-                var result = self.IsLeapMonth(arg0, arg1, arg2);
+                var result = ((System.Globalization.Calendar)self).IsLeapMonth(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1174,24 +1085,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.GetLeapMonth(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                var result = self.GetLeapMonth(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).GetLeapMonth(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1222,24 +1116,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.IsLeapYear(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                var result = self.IsLeapYear(arg0, arg1);
+                var result = ((System.Globalization.Calendar)self).IsLeapYear(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1276,30 +1153,7 @@ public partial class LuaBindings
             var arg6 = ToObject<int>(L, 8)!;
             try
             {
-                var result = self.ToDateTime(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 8)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<int>(L, 4)!;
-            var arg3 = ToObject<int>(L, 5)!;
-            var arg4 = ToObject<int>(L, 6)!;
-            var arg5 = ToObject<int>(L, 7)!;
-            var arg6 = ToObject<int>(L, 8)!;
-            var arg7 = ToObject<int>(L, 9)!;
-            try
-            {
-                var result = self.ToDateTime(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                var result = ((System.Globalization.Calendar)self).ToDateTime(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
                 PushValue(L, result);
                 return 1;
             }
@@ -1330,7 +1184,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.ToFourDigitYear(arg0);
+                var result = ((System.Globalization.Calendar)self).ToFourDigitYear(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1360,7 +1214,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((System.Globalization.Calendar)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -1390,7 +1244,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((System.Globalization.Calendar)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -1425,7 +1279,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.Globalization.Calendar)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1455,7 +1309,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((System.Globalization.Calendar)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }
