@@ -17,7 +17,7 @@
         <PackageReference Include="MessagePack" Version="3.1.4" />
         <PackageReference Include="MessagePack.Experimental" Version="3.1.4" />
         <PackageReference Include="Stride.Core.Mathematics" Version="4.3.0.2507" />
-        <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="data\**\*" CopyToOutputDirectory="Always" />
     </ItemGroup>
 
     <ItemGroup>
