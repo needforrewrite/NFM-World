@@ -71,10 +71,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "value":
-                PushValue(L, obj.Value);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType)obj).Value);
                 return 1;
             case "name":
-                PushValue(L, obj.Name);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType)obj).Name);
                 return 1;
             case "getDescription":
                 lua_pushcfunction(L, (ReferencedType_method_getDescription));
@@ -195,7 +195,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetDescription();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType)self).GetDescription();
                 PushValue(L, result);
                 return 1;
             }
@@ -225,7 +225,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -255,7 +255,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -290,7 +290,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -320,7 +320,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

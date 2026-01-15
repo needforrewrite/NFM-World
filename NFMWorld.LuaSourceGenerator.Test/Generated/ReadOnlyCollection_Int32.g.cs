@@ -86,7 +86,19 @@ public partial class LuaBindings
         switch (key)
         {
             case "count":
-                PushValue(L, obj.Count);
+                PushValue(L, ((System.Collections.ObjectModel.ReadOnlyCollection<int>)obj).Count);
+                return 1;
+            case "isReadOnly":
+                PushValue(L, ((System.Collections.Generic.ICollection<int>)obj).IsReadOnly);
+                return 1;
+            case "isFixedSize":
+                PushValue(L, ((System.Collections.IList)obj).IsFixedSize);
+                return 1;
+            case "syncRoot":
+                PushValue(L, ((System.Collections.ICollection)obj).SyncRoot);
+                return 1;
+            case "isSynchronized":
+                PushValue(L, ((System.Collections.ICollection)obj).IsSynchronized);
                 return 1;
             case "contains":
                 lua_pushcfunction(L, (ReadOnlyCollection_Int32_method_contains));
@@ -179,7 +191,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.Contains(arg0);
+                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<int>)self).Contains(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -211,7 +223,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.CopyTo(arg0, arg1);
+                ((System.Collections.ObjectModel.ReadOnlyCollection<int>)self).CopyTo(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -240,7 +252,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetEnumerator();
+                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<int>)self).GetEnumerator();
                 PushValue(L, result);
                 return 1;
             }
@@ -271,7 +283,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.IndexOf(arg0);
+                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<int>)self).IndexOf(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -301,7 +313,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<int>)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -331,7 +343,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<int>)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -366,7 +378,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<int>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -396,7 +408,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<int>)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

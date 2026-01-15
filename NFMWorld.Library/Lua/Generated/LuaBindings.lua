@@ -444,60 +444,60 @@ function MadInstance:getHashCode() end
 ---    sender: ObjectInstance,
 ---    e: ValueTuple_Single_Int32Instance
 ---)
-function MadInstance:AddListener_SfxPlayCrash(callback) end
+function MadInstance:add_SfxPlayCrash(callback) end
 
 ---@param self MadInstance
-function MadInstance:RemoveListener_SfxPlayCrash() end
+function MadInstance:remove_SfxPlayCrash() end
 
 ---@param self MadInstance
 ---@param callback fun(
 ---    sender: ObjectInstance,
 ---    e: ValueTuple_Int32_SingleInstance
 ---)
-function MadInstance:AddListener_SfxPlaySkid(callback) end
+function MadInstance:add_SfxPlaySkid(callback) end
 
 ---@param self MadInstance
-function MadInstance:RemoveListener_SfxPlaySkid() end
-
----@param self MadInstance
----@param callback fun(
----    sender: ObjectInstance,
----    e: ValueTuple_Int32_Int32_Int32Instance
----)
-function MadInstance:AddListener_SfxPlayScrape(callback) end
-
----@param self MadInstance
-function MadInstance:RemoveListener_SfxPlayScrape() end
+function MadInstance:remove_SfxPlaySkid() end
 
 ---@param self MadInstance
 ---@param callback fun(
 ---    sender: ObjectInstance,
 ---    e: ValueTuple_Int32_Int32_Int32Instance
 ---)
-function MadInstance:AddListener_SfxPlayGscrape(callback) end
+function MadInstance:add_SfxPlayScrape(callback) end
 
 ---@param self MadInstance
-function MadInstance:RemoveListener_SfxPlayGscrape() end
+function MadInstance:remove_SfxPlayScrape() end
+
+---@param self MadInstance
+---@param callback fun(
+---    sender: ObjectInstance,
+---    e: ValueTuple_Int32_Int32_Int32Instance
+---)
+function MadInstance:add_SfxPlayGscrape(callback) end
+
+---@param self MadInstance
+function MadInstance:remove_SfxPlayGscrape() end
 
 ---@param self MadInstance
 ---@param callback fun(
 ---    sender: ObjectInstance,
 ---    e: number
 ---)
-function MadInstance:AddListener_PowerUp(callback) end
+function MadInstance:add_PowerUp(callback) end
 
 ---@param self MadInstance
-function MadInstance:RemoveListener_PowerUp() end
+function MadInstance:remove_PowerUp() end
 
 ---@param self MadInstance
 ---@param callback fun(
 ---    sender: ObjectInstance,
 ---    e: EventArgsInstance
 ---)
-function MadInstance:AddListener_Distruct(callback) end
+function MadInstance:add_Distruct(callback) end
 
 ---@param self MadInstance
-function MadInstance:RemoveListener_Distruct() end
+function MadInstance:remove_Distruct() end
 
 
 ---@class IRaceValuesInstance
@@ -586,34 +586,34 @@ function LuaGamemodeInstance:getHashCode() end
 ---@param self LuaGamemodeInstance
 ---@param callback fun(
 ---)
-function LuaGamemodeInstance:AddListener_OnEnter(callback) end
+function LuaGamemodeInstance:add_OnEnter(callback) end
 
 ---@param self LuaGamemodeInstance
-function LuaGamemodeInstance:RemoveListener_OnEnter() end
-
----@param self LuaGamemodeInstance
----@param callback fun(
----)
-function LuaGamemodeInstance:AddListener_OnExit(callback) end
-
----@param self LuaGamemodeInstance
-function LuaGamemodeInstance:RemoveListener_OnExit() end
+function LuaGamemodeInstance:remove_OnEnter() end
 
 ---@param self LuaGamemodeInstance
 ---@param callback fun(
 ---)
-function LuaGamemodeInstance:AddListener_OnGameTick(callback) end
+function LuaGamemodeInstance:add_OnExit(callback) end
 
 ---@param self LuaGamemodeInstance
-function LuaGamemodeInstance:RemoveListener_OnGameTick() end
+function LuaGamemodeInstance:remove_OnExit() end
 
 ---@param self LuaGamemodeInstance
 ---@param callback fun(
 ---)
-function LuaGamemodeInstance:AddListener_OnReset(callback) end
+function LuaGamemodeInstance:add_OnGameTick(callback) end
 
 ---@param self LuaGamemodeInstance
-function LuaGamemodeInstance:RemoveListener_OnReset() end
+function LuaGamemodeInstance:remove_OnGameTick() end
+
+---@param self LuaGamemodeInstance
+---@param callback fun(
+---)
+function LuaGamemodeInstance:add_OnReset(callback) end
+
+---@param self LuaGamemodeInstance
+function LuaGamemodeInstance:remove_OnReset() end
 
 
 ---@class ObjectInstance
@@ -2085,10 +2085,10 @@ function BaseGamemodeInstance:getHashCode() end
 ---    sender: ObjectInstance,
 ---    e: integer[]
 ---)
-function BaseGamemodeInstance:AddListener_RaceFinished(callback) end
+function BaseGamemodeInstance:add_RaceFinished(callback) end
 
 ---@param self BaseGamemodeInstance
-function BaseGamemodeInstance:RemoveListener_RaceFinished() end
+function BaseGamemodeInstance:remove_RaceFinished() end
 
 
 ---@class IGamemodeInstance
@@ -2119,10 +2119,10 @@ function IGamemodeInstance:reset() end
 ---    sender: ObjectInstance,
 ---    e: integer[]
 ---)
-function IGamemodeInstance:AddListener_RaceFinished(callback) end
+function IGamemodeInstance:add_RaceFinished(callback) end
 
 ---@param self IGamemodeInstance
-function IGamemodeInstance:RemoveListener_RaceFinished() end
+function IGamemodeInstance:remove_RaceFinished() end
 
 
 ---@class PlayerParametersInstance
@@ -2456,10 +2456,10 @@ function BackendCarInstance:getHashCode() end
 ---    wheelnum: integer,
 ---    amount: fix64Instance
 ---)
-function BackendCarInstance:AddListener_DamagedX(callback) end
+function BackendCarInstance:add_DamagedX(callback) end
 
 ---@param self BackendCarInstance
-function BackendCarInstance:RemoveListener_DamagedX() end
+function BackendCarInstance:remove_DamagedX() end
 
 ---@param self BackendCarInstance
 ---@param callback fun(
@@ -2470,10 +2470,10 @@ function BackendCarInstance:RemoveListener_DamagedX() end
 ---    nbsq: integer,
 ---    squash: integer
 ---)
-function BackendCarInstance:AddListener_DamagedY(callback) end
+function BackendCarInstance:add_DamagedY(callback) end
 
 ---@param self BackendCarInstance
-function BackendCarInstance:RemoveListener_DamagedY() end
+function BackendCarInstance:remove_DamagedY() end
 
 ---@param self BackendCarInstance
 ---@param callback fun(
@@ -2481,10 +2481,10 @@ function BackendCarInstance:RemoveListener_DamagedY() end
 ---    wheelnum: integer,
 ---    amount: fix64Instance
 ---)
-function BackendCarInstance:AddListener_DamagedZ(callback) end
+function BackendCarInstance:add_DamagedZ(callback) end
 
 ---@param self BackendCarInstance
-function BackendCarInstance:RemoveListener_DamagedZ() end
+function BackendCarInstance:remove_DamagedZ() end
 
 ---@param self BackendCarInstance
 ---@param callback fun(
@@ -2497,10 +2497,10 @@ function BackendCarInstance:RemoveListener_DamagedZ() end
 ---    type: integer,
 ---    wheelGround: integer
 ---)
-function BackendCarInstance:AddListener_Sparked(callback) end
+function BackendCarInstance:add_Sparked(callback) end
 
 ---@param self BackendCarInstance
-function BackendCarInstance:RemoveListener_Sparked() end
+function BackendCarInstance:remove_Sparked() end
 
 ---@param self BackendCarInstance
 ---@param callback fun(
@@ -2515,10 +2515,10 @@ function BackendCarInstance:RemoveListener_Sparked() end
 ---    onRoof: boolean,
 ---    wheelGround: integer
 ---)
-function BackendCarInstance:AddListener_Dusted(callback) end
+function BackendCarInstance:add_Dusted(callback) end
 
 ---@param self BackendCarInstance
-function BackendCarInstance:RemoveListener_Dusted() end
+function BackendCarInstance:remove_Dusted() end
 
 
 ---@class IEquatable_Fixed64Instance
@@ -4444,10 +4444,10 @@ function IInGameCarInstance:resetPosition() end
 ---    wheelnum: integer,
 ---    amount: fix64Instance
 ---)
-function IInGameCarInstance:AddListener_DamagedX(callback) end
+function IInGameCarInstance:add_DamagedX(callback) end
 
 ---@param self IInGameCarInstance
-function IInGameCarInstance:RemoveListener_DamagedX() end
+function IInGameCarInstance:remove_DamagedX() end
 
 ---@param self IInGameCarInstance
 ---@param callback fun(
@@ -4458,10 +4458,10 @@ function IInGameCarInstance:RemoveListener_DamagedX() end
 ---    nbsq: integer,
 ---    squash: integer
 ---)
-function IInGameCarInstance:AddListener_DamagedY(callback) end
+function IInGameCarInstance:add_DamagedY(callback) end
 
 ---@param self IInGameCarInstance
-function IInGameCarInstance:RemoveListener_DamagedY() end
+function IInGameCarInstance:remove_DamagedY() end
 
 ---@param self IInGameCarInstance
 ---@param callback fun(
@@ -4469,10 +4469,10 @@ function IInGameCarInstance:RemoveListener_DamagedY() end
 ---    wheelnum: integer,
 ---    amount: fix64Instance
 ---)
-function IInGameCarInstance:AddListener_DamagedZ(callback) end
+function IInGameCarInstance:add_DamagedZ(callback) end
 
 ---@param self IInGameCarInstance
-function IInGameCarInstance:RemoveListener_DamagedZ() end
+function IInGameCarInstance:remove_DamagedZ() end
 
 ---@param self IInGameCarInstance
 ---@param callback fun(
@@ -4485,10 +4485,10 @@ function IInGameCarInstance:RemoveListener_DamagedZ() end
 ---    type: integer,
 ---    wheelGround: integer
 ---)
-function IInGameCarInstance:AddListener_Sparked(callback) end
+function IInGameCarInstance:add_Sparked(callback) end
 
 ---@param self IInGameCarInstance
-function IInGameCarInstance:RemoveListener_Sparked() end
+function IInGameCarInstance:remove_Sparked() end
 
 ---@param self IInGameCarInstance
 ---@param callback fun(
@@ -4503,10 +4503,10 @@ function IInGameCarInstance:RemoveListener_Sparked() end
 ---    onRoof: boolean,
 ---    wheelGround: integer
 ---)
-function IInGameCarInstance:AddListener_Dusted(callback) end
+function IInGameCarInstance:add_Dusted(callback) end
 
 ---@param self IInGameCarInstance
-function IInGameCarInstance:RemoveListener_Dusted() end
+function IInGameCarInstance:remove_Dusted() end
 
 
 ---@class Nibble_ByteInstance : ISpanFormattableInstance, IFormattableInstance, IUtf8SpanFormattableInstance, IEquatable_Nibble_ByteInstance, IEquatable_ByteInstance, IComparable_Nibble_ByteInstance, IComparable_ByteInstance, IComparableInstance, IConvertibleInstance, IMinMaxValue_Nibble_ByteInstance, ISpanParsable_Nibble_ByteInstance, IParsable_Nibble_ByteInstance, IAdditionOperators_Nibble_Byte_Nibble_Byte_Nibble_ByteInstance, IAdditiveIdentity_Nibble_Byte_Nibble_ByteInstance, IBitwiseOperators_Nibble_Byte_Nibble_Byte_Nibble_ByteInstance, IComparisonOperators_Nibble_Byte_Nibble_Byte_BooleanInstance, IEqualityOperators_Nibble_Byte_Nibble_Byte_BooleanInstance, IDecrementOperators_Nibble_ByteInstance, IDivisionOperators_Nibble_Byte_Nibble_Byte_Nibble_ByteInstance, IIncrementOperators_Nibble_ByteInstance, IMultiplicativeIdentity_Nibble_Byte_Nibble_ByteInstance, IMultiplyOperators_Nibble_Byte_Nibble_Byte_Nibble_ByteInstance, ISubtractionOperators_Nibble_Byte_Nibble_Byte_Nibble_ByteInstance, IShiftOperators_Nibble_Byte_Int32_Nibble_ByteInstance, IModulusOperators_Nibble_Byte_Nibble_Byte_Nibble_ByteInstance, IUnaryPlusOperators_Nibble_Byte_Nibble_ByteInstance

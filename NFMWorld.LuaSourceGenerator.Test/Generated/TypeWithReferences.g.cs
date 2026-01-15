@@ -71,13 +71,13 @@ public partial class LuaBindings
         switch (key)
         {
             case "referenced":
-                PushValue(L, obj.Referenced);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)obj).Referenced);
                 return 1;
             case "numbers":
-                PushValue(L, obj.Numbers);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)obj).Numbers);
                 return 1;
             case "items":
-                PushValue(L, obj.Items);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)obj).Items);
                 return 1;
             case "createReferenced":
                 lua_pushcfunction(L, (TypeWithReferences_method_createReferenced));
@@ -219,7 +219,7 @@ public partial class LuaBindings
             var arg1 = ToObject<string>(L, 3)!;
             try
             {
-                var result = self.CreateReferenced(arg0, arg1);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)self).CreateReferenced(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -250,7 +250,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.CreateNumberList(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)self).CreateNumberList(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -280,7 +280,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetItems();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)self).GetItems();
                 PushValue(L, result);
                 return 1;
             }
@@ -311,7 +311,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Collections.Generic.List<int>>(L, 2)!;
             try
             {
-                var result = self.SumNumbers(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)self).SumNumbers(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -341,7 +341,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -371,7 +371,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -406,7 +406,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -436,7 +436,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

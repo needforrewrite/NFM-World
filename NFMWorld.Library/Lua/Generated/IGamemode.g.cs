@@ -100,11 +100,11 @@ public partial class LuaBindings
             case "reset":
                 lua_pushcfunction(L, (IGamemode_method_reset));
                 return 1;
-            case "AddListener_RaceFinished":
-                lua_pushcfunction(L, (IGamemode_AddListener_RaceFinished));
+            case "add_RaceFinished":
+                lua_pushcfunction(L, (IGamemode_add_RaceFinished));
                 return 1;
-            case "RemoveListener_RaceFinished":
-                lua_pushcfunction(L, (IGamemode_RemoveListener_RaceFinished));
+            case "remove_RaceFinished":
+                lua_pushcfunction(L, (IGamemode_remove_RaceFinished));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -257,7 +257,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int IGamemode_AddListener_RaceFinished(lua_State L)
+    private static int IGamemode_add_RaceFinished(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.IGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -269,7 +269,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int IGamemode_RemoveListener_RaceFinished(lua_State L)
+    private static int IGamemode_remove_RaceFinished(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.IGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }

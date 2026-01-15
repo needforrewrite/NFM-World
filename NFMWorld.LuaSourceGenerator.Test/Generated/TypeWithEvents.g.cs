@@ -48,10 +48,10 @@ public partial class LuaBindings
         lua_setfield(L, -2, "raiseStaticEvent");
 
         // Static event: StaticEvent
-        lua_pushcfunction(L, (TypeWithEvents_AddListener_StaticEvent));
-        lua_setfield(L, -2, "AddListener_StaticEvent");
-        lua_pushcfunction(L, (TypeWithEvents_RemoveListener_StaticEvent));
-        lua_setfield(L, -2, "RemoveListener_StaticEvent");
+        lua_pushcfunction(L, (TypeWithEvents_add_StaticEvent));
+        lua_setfield(L, -2, "add_StaticEvent");
+        lua_pushcfunction(L, (TypeWithEvents_remove_StaticEvent));
+        lua_setfield(L, -2, "remove_StaticEvent");
 
         lua_setglobal(L, "TypeWithEvents");
     }
@@ -104,29 +104,29 @@ public partial class LuaBindings
             case "getHashCode":
                 lua_pushcfunction(L, (TypeWithEvents_method_getHashCode));
                 return 1;
-            case "AddListener_SimpleEvent":
-                lua_pushcfunction(L, (TypeWithEvents_AddListener_SimpleEvent));
+            case "add_SimpleEvent":
+                lua_pushcfunction(L, (TypeWithEvents_add_SimpleEvent));
                 return 1;
-            case "RemoveListener_SimpleEvent":
-                lua_pushcfunction(L, (TypeWithEvents_RemoveListener_SimpleEvent));
+            case "remove_SimpleEvent":
+                lua_pushcfunction(L, (TypeWithEvents_remove_SimpleEvent));
                 return 1;
-            case "AddListener_StandardEvent":
-                lua_pushcfunction(L, (TypeWithEvents_AddListener_StandardEvent));
+            case "add_StandardEvent":
+                lua_pushcfunction(L, (TypeWithEvents_add_StandardEvent));
                 return 1;
-            case "RemoveListener_StandardEvent":
-                lua_pushcfunction(L, (TypeWithEvents_RemoveListener_StandardEvent));
+            case "remove_StandardEvent":
+                lua_pushcfunction(L, (TypeWithEvents_remove_StandardEvent));
                 return 1;
-            case "AddListener_CustomEvent":
-                lua_pushcfunction(L, (TypeWithEvents_AddListener_CustomEvent));
+            case "add_CustomEvent":
+                lua_pushcfunction(L, (TypeWithEvents_add_CustomEvent));
                 return 1;
-            case "RemoveListener_CustomEvent":
-                lua_pushcfunction(L, (TypeWithEvents_RemoveListener_CustomEvent));
+            case "remove_CustomEvent":
+                lua_pushcfunction(L, (TypeWithEvents_remove_CustomEvent));
                 return 1;
-            case "AddListener_MultiParamEvent":
-                lua_pushcfunction(L, (TypeWithEvents_AddListener_MultiParamEvent));
+            case "add_MultiParamEvent":
+                lua_pushcfunction(L, (TypeWithEvents_add_MultiParamEvent));
                 return 1;
-            case "RemoveListener_MultiParamEvent":
-                lua_pushcfunction(L, (TypeWithEvents_RemoveListener_MultiParamEvent));
+            case "remove_MultiParamEvent":
+                lua_pushcfunction(L, (TypeWithEvents_remove_MultiParamEvent));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -216,7 +216,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.RaiseSimpleEvent();
+                ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents)self).RaiseSimpleEvent();
                 return 0;
             }
             catch (System.Exception ex)
@@ -245,7 +245,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.RaiseStandardEvent();
+                ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents)self).RaiseStandardEvent();
                 return 0;
             }
             catch (System.Exception ex)
@@ -276,7 +276,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.RaiseCustomEvent(arg0, arg1);
+                ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents)self).RaiseCustomEvent(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -307,7 +307,7 @@ public partial class LuaBindings
             var arg1 = ToObject<string>(L, 3)!;
             try
             {
-                self.RaiseMultiParamEvent(arg0, arg1);
+                ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents)self).RaiseMultiParamEvent(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -336,7 +336,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -366,7 +366,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -401,7 +401,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -431,7 +431,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }
@@ -446,7 +446,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_AddListener_SimpleEvent(lua_State L)
+    private static int TypeWithEvents_add_SimpleEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -458,7 +458,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_RemoveListener_SimpleEvent(lua_State L)
+    private static int TypeWithEvents_remove_SimpleEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -468,7 +468,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_AddListener_StandardEvent(lua_State L)
+    private static int TypeWithEvents_add_StandardEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -480,7 +480,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_RemoveListener_StandardEvent(lua_State L)
+    private static int TypeWithEvents_remove_StandardEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -490,7 +490,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_AddListener_CustomEvent(lua_State L)
+    private static int TypeWithEvents_add_CustomEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -502,7 +502,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_RemoveListener_CustomEvent(lua_State L)
+    private static int TypeWithEvents_remove_CustomEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -512,7 +512,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_AddListener_StaticEvent(lua_State L)
+    private static int TypeWithEvents_add_StaticEvent(lua_State L)
     {
         if (lua_type(L, 1) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
 
@@ -522,7 +522,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_RemoveListener_StaticEvent(lua_State L)
+    private static int TypeWithEvents_remove_StaticEvent(lua_State L)
     {
         // Note: Removing specific Lua function listeners is not currently supported
         // Event listeners will be automatically cleaned up when the Lua state is closed
@@ -530,7 +530,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_AddListener_MultiParamEvent(lua_State L)
+    private static int TypeWithEvents_add_MultiParamEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -542,7 +542,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_RemoveListener_MultiParamEvent(lua_State L)
+    private static int TypeWithEvents_remove_MultiParamEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }

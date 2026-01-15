@@ -1500,8 +1500,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             foreach (var evt in events)
             {
                 var eventName = evt.Name;
-                AppendLine($"AddListener_{eventName}(callback: (...args: any[]) => void): void;");
-                AppendLine($"RemoveListener_{eventName}(): void;");
+                AppendLine($"add_{eventName}(callback: (...args: any[]) => void): void;");
+                AppendLine($"remove_{eventName}(): void;");
             }
 
             // Indexers
@@ -1833,7 +1833,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             var invokeMethod = delegateType.GetMethod("Invoke")!;
             var parameters = invokeMethod.GetParameters();
 
-            // Generate AddListener stub
+            // Generate add stub
             AppendLine($"---@param self {GetLuaStubTypeName(typeInfo.Type)}");
             AppendLine($"---@param callback fun(");
             for (int i = 0; i < parameters.Length; i++)
@@ -1845,12 +1845,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine($"---    {paramName}: {paramType}{separator}");
             }
             AppendLine($"---)");
-            AppendLine($"function {luaName}Instance:AddListener_{eventName}(callback) end");
+            AppendLine($"function {luaName}Instance:add_{eventName}(callback) end");
             AppendLine();
 
-            // Generate RemoveListener stub
+            // Generate remove stub
             AppendLine($"---@param self {GetLuaStubTypeName(typeInfo.Type)}");
-            AppendLine($"function {luaName}Instance:RemoveListener_{eventName}() end");
+            AppendLine($"function {luaName}Instance:remove_{eventName}() end");
             AppendLine();
         }
 
@@ -1866,7 +1866,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             var invokeMethod = delegateType.GetMethod("Invoke")!;
             var parameters = invokeMethod.GetParameters();
 
-            // Generate AddListener stub
+            // Generate add stub
             AppendLine($"---@param callback fun(");
             for (int i = 0; i < parameters.Length; i++)
             {
@@ -1877,11 +1877,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine($"---    {paramName}: {paramType}{separator}");
             }
             AppendLine($"---)");
-            AppendLine($"function {luaName}.AddListener_{eventName}(callback) end");
+            AppendLine($"function {luaName}.add_{eventName}(callback) end");
             AppendLine();
 
-            // Generate RemoveListener stub
-            AppendLine($"function {luaName}.RemoveListener_{eventName}() end");
+            // Generate remove stub
+            AppendLine($"function {luaName}.remove_{eventName}() end");
             AppendLine();
         }
     }
@@ -2111,10 +2111,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             {
                 var eventName = evt.Name;
                 AppendLine($"// Static event: {eventName}");
-                AppendLine($"lua_pushcfunction(L, ({safeName}_AddListener_{eventName}));");
-                AppendLine($"lua_setfield(L, -2, \"AddListener_{eventName}\");");
-                AppendLine($"lua_pushcfunction(L, ({safeName}_RemoveListener_{eventName}));");
-                AppendLine($"lua_setfield(L, -2, \"RemoveListener_{eventName}\");");
+                AppendLine($"lua_pushcfunction(L, ({safeName}_add_{eventName}));");
+                AppendLine($"lua_setfield(L, -2, \"add_{eventName}\");");
+                AppendLine($"lua_pushcfunction(L, ({safeName}_remove_{eventName}));");
+                AppendLine($"lua_setfield(L, -2, \"remove_{eventName}\");");
                 AppendLine();
             }
 
@@ -2481,16 +2481,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 foreach (var evt in instanceEvents)
                 {
                     var eventName = evt.Name;
-                    AppendLine($"case \"AddListener_{eventName}\":");
+                    AppendLine($"case \"add_{eventName}\":");
                     using (Indent())
                     {
-                        AppendLine($"lua_pushcfunction(L, ({safeName}_AddListener_{eventName}));");
+                        AppendLine($"lua_pushcfunction(L, ({safeName}_add_{eventName}));");
                         AppendLine("return 1;");
                     }
-                    AppendLine($"case \"RemoveListener_{eventName}\":");
+                    AppendLine($"case \"remove_{eventName}\":");
                     using (Indent())
                     {
-                        AppendLine($"lua_pushcfunction(L, ({safeName}_RemoveListener_{eventName}));");
+                        AppendLine($"lua_pushcfunction(L, ({safeName}_remove_{eventName}));");
                         AppendLine("return 1;");
                     }
                 }
@@ -3870,17 +3870,17 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             var delegateType = evt.EventHandlerType!;
             var isStatic = evt.AddMethod!.IsStatic;
 
-            // Generate AddListener method
+            // Generate add method
             GenerateEventAddMethod(safeName, fullTypeName, eventName, delegateType, isStatic, isStruct);
 
-            // Generate RemoveListener method
+            // Generate remove method
             GenerateEventRemoveMethod(safeName, fullTypeName, eventName, delegateType, isStatic, isStruct);
         }
     }
 
     private void GenerateEventAddMethod(string safeName, string fullTypeName, string eventName, Type delegateType, bool isStatic, bool isStruct)
     {
-        AppendLine($"private static int {safeName}_AddListener_{eventName}(lua_State L)");
+        AppendLine($"private static int {safeName}_add_{eventName}(lua_State L)");
         AppendLine("{");
         using (Indent())
         {
@@ -3928,7 +3928,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
     private void GenerateEventRemoveMethod(string safeName, string fullTypeName, string eventName, Type delegateType, bool isStatic, bool isStruct)
     {
-        AppendLine($"private static int {safeName}_RemoveListener_{eventName}(lua_State L)");
+        AppendLine($"private static int {safeName}_remove_{eventName}(lua_State L)");
         AppendLine("{");
         using (Indent())
         {

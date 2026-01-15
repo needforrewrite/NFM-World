@@ -133,7 +133,7 @@ public partial class LuaBindings
                 arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, 3)!;
             try
             {
-                var result = self.Compare(arg0, arg1);
+                var result = ((System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>)self).Compare(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }

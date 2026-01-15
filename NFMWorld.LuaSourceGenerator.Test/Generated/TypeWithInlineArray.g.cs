@@ -78,7 +78,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, obj.buffer, "MT_InlineBuffer", parentId, static (obj, value) => ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)obj).buffer = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)value);
+                            PushStructWithParent(L, ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)obj).buffer, "MT_InlineBuffer", parentId, static (obj, value) => ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)obj).buffer = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)value);
                         }
                     }
                 }
@@ -181,7 +181,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.GetBufferValue(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)self).GetBufferValue(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -213,7 +213,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.SetBufferValue(arg0, arg1);
+                ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)self).SetBufferValue(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -242,7 +242,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.SumBuffer();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)self).SumBuffer();
                 PushValue(L, result);
                 return 1;
             }
@@ -272,7 +272,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -302,7 +302,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -337,7 +337,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -367,7 +367,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

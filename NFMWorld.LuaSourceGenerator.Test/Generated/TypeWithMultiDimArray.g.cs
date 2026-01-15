@@ -79,10 +79,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "matrix":
-                PushValue(L, obj.Matrix);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)obj).Matrix);
                 return 1;
             case "tensor":
-                PushValue(L, obj.Tensor);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)obj).Tensor);
                 return 1;
             case "initializeMatrix":
                 lua_pushcfunction(L, (TypeWithMultiDimArray_method_initializeMatrix));
@@ -285,7 +285,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.InitializeMatrix(arg0, arg1);
+                ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).InitializeMatrix(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -314,7 +314,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetRows();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).GetRows();
                 PushValue(L, result);
                 return 1;
             }
@@ -344,7 +344,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetCols();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).GetCols();
                 PushValue(L, result);
                 return 1;
             }
@@ -376,7 +376,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.GetValueAt(arg0, arg1);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).GetValueAt(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -409,7 +409,7 @@ public partial class LuaBindings
             var arg2 = ToObject<int>(L, 4)!;
             try
             {
-                self.SetValueAt(arg0, arg1, arg2);
+                ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).SetValueAt(arg0, arg1, arg2);
                 return 0;
             }
             catch (System.Exception ex)
@@ -438,7 +438,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.SumAll();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).SumAll();
                 PushValue(L, result);
                 return 1;
             }
@@ -468,7 +468,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -498,7 +498,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -533,7 +533,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -563,7 +563,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

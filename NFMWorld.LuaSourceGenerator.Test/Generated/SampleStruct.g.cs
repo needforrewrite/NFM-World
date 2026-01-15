@@ -112,16 +112,16 @@ public partial class LuaBindings
         switch (key)
         {
             case "length":
-                PushValue(L, obj.Length);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)obj).Length);
                 return 1;
             case "lengthSquared":
-                PushValue(L, obj.LengthSquared);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)obj).LengthSquared);
                 return 1;
             case "x":
-                PushValue(L, obj.X);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)obj).X);
                 return 1;
             case "y":
-                PushValue(L, obj.Y);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)obj).Y);
                 return 1;
             case "normalized":
                 lua_pushcfunction(L, (SampleStruct_method_normalized));
@@ -362,7 +362,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Normalized();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self).Normalized();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -389,7 +389,7 @@ public partial class LuaBindings
             var arg0 = ToObject<float>(L, 2)!;
             try
             {
-                var result = self.Scale(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self).Scale(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -417,7 +417,7 @@ public partial class LuaBindings
             var arg1 = ToObject<float>(L, 3)!;
             try
             {
-                self.Set(arg0, arg1);
+                ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self).Set(arg0, arg1);
                 UpdateStruct(L, 1, self);
                 return 0;
             }
@@ -447,7 +447,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self).Equals(arg0);
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -473,7 +473,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self).GetHashCode();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -499,7 +499,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self).ToString();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;
@@ -525,7 +525,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self).GetType();
                 UpdateStruct(L, 1, self);
                 PushValue(L, result);
                 return 1;

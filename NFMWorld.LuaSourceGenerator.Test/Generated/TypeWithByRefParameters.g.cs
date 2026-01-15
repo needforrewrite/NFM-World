@@ -71,7 +71,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "value":
-                PushValue(L, obj.Value);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters)obj).Value);
                 return 1;
             case "getValue":
                 lua_pushcfunction(L, (TypeWithByRefParameters_method_getValue));
@@ -183,7 +183,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetValue();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters)self).GetValue();
                 PushValue(L, result);
                 return 1;
             }
@@ -214,7 +214,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                self.MethodWithInParam(arg0);
+                ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters)self).MethodWithInParam(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -243,7 +243,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -273,7 +273,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -308,7 +308,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -338,7 +338,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

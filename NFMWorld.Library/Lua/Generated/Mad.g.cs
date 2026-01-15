@@ -544,41 +544,41 @@ public partial class LuaBindings
             case "getHashCode":
                 lua_pushcfunction(L, (Mad_method_getHashCode));
                 return 1;
-            case "AddListener_SfxPlayCrash":
-                lua_pushcfunction(L, (Mad_AddListener_SfxPlayCrash));
+            case "add_SfxPlayCrash":
+                lua_pushcfunction(L, (Mad_add_SfxPlayCrash));
                 return 1;
-            case "RemoveListener_SfxPlayCrash":
-                lua_pushcfunction(L, (Mad_RemoveListener_SfxPlayCrash));
+            case "remove_SfxPlayCrash":
+                lua_pushcfunction(L, (Mad_remove_SfxPlayCrash));
                 return 1;
-            case "AddListener_SfxPlaySkid":
-                lua_pushcfunction(L, (Mad_AddListener_SfxPlaySkid));
+            case "add_SfxPlaySkid":
+                lua_pushcfunction(L, (Mad_add_SfxPlaySkid));
                 return 1;
-            case "RemoveListener_SfxPlaySkid":
-                lua_pushcfunction(L, (Mad_RemoveListener_SfxPlaySkid));
+            case "remove_SfxPlaySkid":
+                lua_pushcfunction(L, (Mad_remove_SfxPlaySkid));
                 return 1;
-            case "AddListener_SfxPlayScrape":
-                lua_pushcfunction(L, (Mad_AddListener_SfxPlayScrape));
+            case "add_SfxPlayScrape":
+                lua_pushcfunction(L, (Mad_add_SfxPlayScrape));
                 return 1;
-            case "RemoveListener_SfxPlayScrape":
-                lua_pushcfunction(L, (Mad_RemoveListener_SfxPlayScrape));
+            case "remove_SfxPlayScrape":
+                lua_pushcfunction(L, (Mad_remove_SfxPlayScrape));
                 return 1;
-            case "AddListener_SfxPlayGscrape":
-                lua_pushcfunction(L, (Mad_AddListener_SfxPlayGscrape));
+            case "add_SfxPlayGscrape":
+                lua_pushcfunction(L, (Mad_add_SfxPlayGscrape));
                 return 1;
-            case "RemoveListener_SfxPlayGscrape":
-                lua_pushcfunction(L, (Mad_RemoveListener_SfxPlayGscrape));
+            case "remove_SfxPlayGscrape":
+                lua_pushcfunction(L, (Mad_remove_SfxPlayGscrape));
                 return 1;
-            case "AddListener_PowerUp":
-                lua_pushcfunction(L, (Mad_AddListener_PowerUp));
+            case "add_PowerUp":
+                lua_pushcfunction(L, (Mad_add_PowerUp));
                 return 1;
-            case "RemoveListener_PowerUp":
-                lua_pushcfunction(L, (Mad_RemoveListener_PowerUp));
+            case "remove_PowerUp":
+                lua_pushcfunction(L, (Mad_remove_PowerUp));
                 return 1;
-            case "AddListener_Distruct":
-                lua_pushcfunction(L, (Mad_AddListener_Distruct));
+            case "add_Distruct":
+                lua_pushcfunction(L, (Mad_add_Distruct));
                 return 1;
-            case "RemoveListener_Distruct":
-                lua_pushcfunction(L, (Mad_RemoveListener_Distruct));
+            case "remove_Distruct":
+                lua_pushcfunction(L, (Mad_remove_Distruct));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -1647,7 +1647,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_AddListener_SfxPlayCrash(lua_State L)
+    private static int Mad_add_SfxPlayCrash(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1659,7 +1659,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_RemoveListener_SfxPlayCrash(lua_State L)
+    private static int Mad_remove_SfxPlayCrash(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1669,7 +1669,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_AddListener_SfxPlaySkid(lua_State L)
+    private static int Mad_add_SfxPlaySkid(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1681,7 +1681,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_RemoveListener_SfxPlaySkid(lua_State L)
+    private static int Mad_remove_SfxPlaySkid(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1691,7 +1691,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_AddListener_SfxPlayScrape(lua_State L)
+    private static int Mad_add_SfxPlayScrape(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1703,7 +1703,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_RemoveListener_SfxPlayScrape(lua_State L)
+    private static int Mad_remove_SfxPlayScrape(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1713,7 +1713,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_AddListener_SfxPlayGscrape(lua_State L)
+    private static int Mad_add_SfxPlayGscrape(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1725,7 +1725,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_RemoveListener_SfxPlayGscrape(lua_State L)
+    private static int Mad_remove_SfxPlayGscrape(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1735,7 +1735,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_AddListener_PowerUp(lua_State L)
+    private static int Mad_add_PowerUp(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1747,7 +1747,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_RemoveListener_PowerUp(lua_State L)
+    private static int Mad_remove_PowerUp(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1757,7 +1757,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_AddListener_Distruct(lua_State L)
+    private static int Mad_add_Distruct(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -1769,7 +1769,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Mad_RemoveListener_Distruct(lua_State L)
+    private static int Mad_remove_Distruct(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }

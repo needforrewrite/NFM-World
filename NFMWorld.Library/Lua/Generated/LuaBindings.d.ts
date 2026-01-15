@@ -173,18 +173,18 @@ declare class Mad {
     toString(): string;
     equals(obj: Object): boolean;
     getHashCode(): number;
-    AddListener_SfxPlayCrash(callback: (...args: any[]) => void): void;
-    RemoveListener_SfxPlayCrash(): void;
-    AddListener_SfxPlaySkid(callback: (...args: any[]) => void): void;
-    RemoveListener_SfxPlaySkid(): void;
-    AddListener_SfxPlayScrape(callback: (...args: any[]) => void): void;
-    RemoveListener_SfxPlayScrape(): void;
-    AddListener_SfxPlayGscrape(callback: (...args: any[]) => void): void;
-    RemoveListener_SfxPlayGscrape(): void;
-    AddListener_PowerUp(callback: (...args: any[]) => void): void;
-    RemoveListener_PowerUp(): void;
-    AddListener_Distruct(callback: (...args: any[]) => void): void;
-    RemoveListener_Distruct(): void;
+    add_SfxPlayCrash(callback: (...args: any[]) => void): void;
+    remove_SfxPlayCrash(): void;
+    add_SfxPlaySkid(callback: (...args: any[]) => void): void;
+    remove_SfxPlaySkid(): void;
+    add_SfxPlayScrape(callback: (...args: any[]) => void): void;
+    remove_SfxPlayScrape(): void;
+    add_SfxPlayGscrape(callback: (...args: any[]) => void): void;
+    remove_SfxPlayGscrape(): void;
+    add_PowerUp(callback: (...args: any[]) => void): void;
+    remove_PowerUp(): void;
+    add_Distruct(callback: (...args: any[]) => void): void;
+    remove_Distruct(): void;
 }
 
 declare class IRaceValues {
@@ -220,14 +220,14 @@ declare class LuaGamemode {
     toString(): string;
     equals(obj: Object): boolean;
     getHashCode(): number;
-    AddListener_OnEnter(callback: (...args: any[]) => void): void;
-    RemoveListener_OnEnter(): void;
-    AddListener_OnExit(callback: (...args: any[]) => void): void;
-    RemoveListener_OnExit(): void;
-    AddListener_OnGameTick(callback: (...args: any[]) => void): void;
-    RemoveListener_OnGameTick(): void;
-    AddListener_OnReset(callback: (...args: any[]) => void): void;
-    RemoveListener_OnReset(): void;
+    add_OnEnter(callback: (...args: any[]) => void): void;
+    remove_OnEnter(): void;
+    add_OnExit(callback: (...args: any[]) => void): void;
+    remove_OnExit(): void;
+    add_OnGameTick(callback: (...args: any[]) => void): void;
+    remove_OnGameTick(): void;
+    add_OnReset(callback: (...args: any[]) => void): void;
+    remove_OnReset(): void;
 }
 
 declare class Object {
@@ -634,8 +634,8 @@ declare class BaseGamemode {
     toString(): string;
     equals(obj: Object): boolean;
     getHashCode(): number;
-    AddListener_RaceFinished(callback: (...args: any[]) => void): void;
-    RemoveListener_RaceFinished(): void;
+    add_RaceFinished(callback: (...args: any[]) => void): void;
+    remove_RaceFinished(): void;
 }
 
 declare class IGamemode {
@@ -649,8 +649,8 @@ declare class IGamemode {
     exit(): void;
     gameTick(): void;
     reset(): void;
-    AddListener_RaceFinished(callback: (...args: any[]) => void): void;
-    RemoveListener_RaceFinished(): void;
+    add_RaceFinished(callback: (...args: any[]) => void): void;
+    remove_RaceFinished(): void;
 }
 
 declare class PlayerParameters {
@@ -711,16 +711,16 @@ declare class BackendCar {
     toString(): string;
     equals(obj: Object): boolean;
     getHashCode(): number;
-    AddListener_DamagedX(callback: (...args: any[]) => void): void;
-    RemoveListener_DamagedX(): void;
-    AddListener_DamagedY(callback: (...args: any[]) => void): void;
-    RemoveListener_DamagedY(): void;
-    AddListener_DamagedZ(callback: (...args: any[]) => void): void;
-    RemoveListener_DamagedZ(): void;
-    AddListener_Sparked(callback: (...args: any[]) => void): void;
-    RemoveListener_Sparked(): void;
-    AddListener_Dusted(callback: (...args: any[]) => void): void;
-    RemoveListener_Dusted(): void;
+    add_DamagedX(callback: (...args: any[]) => void): void;
+    remove_DamagedX(): void;
+    add_DamagedY(callback: (...args: any[]) => void): void;
+    remove_DamagedY(): void;
+    add_DamagedZ(callback: (...args: any[]) => void): void;
+    remove_DamagedZ(): void;
+    add_Sparked(callback: (...args: any[]) => void): void;
+    remove_Sparked(): void;
+    add_Dusted(callback: (...args: any[]) => void): void;
+    remove_Dusted(): void;
 }
 
 declare class IEquatable_Fixed64 {
@@ -1086,16 +1086,16 @@ declare class IInGameCar {
     drive(stage: IStage | null): void;
     collide(otherCar: IInGameCar | null): void;
     resetPosition(): void;
-    AddListener_DamagedX(callback: (...args: any[]) => void): void;
-    RemoveListener_DamagedX(): void;
-    AddListener_DamagedY(callback: (...args: any[]) => void): void;
-    RemoveListener_DamagedY(): void;
-    AddListener_DamagedZ(callback: (...args: any[]) => void): void;
-    RemoveListener_DamagedZ(): void;
-    AddListener_Sparked(callback: (...args: any[]) => void): void;
-    RemoveListener_Sparked(): void;
-    AddListener_Dusted(callback: (...args: any[]) => void): void;
-    RemoveListener_Dusted(): void;
+    add_DamagedX(callback: (...args: any[]) => void): void;
+    remove_DamagedX(): void;
+    add_DamagedY(callback: (...args: any[]) => void): void;
+    remove_DamagedY(): void;
+    add_DamagedZ(callback: (...args: any[]) => void): void;
+    remove_DamagedZ(): void;
+    add_Sparked(callback: (...args: any[]) => void): void;
+    remove_Sparked(): void;
+    add_Dusted(callback: (...args: any[]) => void): void;
+    remove_Dusted(): void;
 }
 
 declare class Nibble_Byte {

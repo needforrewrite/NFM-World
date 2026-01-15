@@ -15,16 +15,16 @@ declare class TypeWithEvents {
     toString(): string;
     equals(obj: Object): boolean;
     getHashCode(): number;
-    AddListener_SimpleEvent(callback: (...args: any[]) => void): void;
-    RemoveListener_SimpleEvent(): void;
-    AddListener_StandardEvent(callback: (...args: any[]) => void): void;
-    RemoveListener_StandardEvent(): void;
-    AddListener_CustomEvent(callback: (...args: any[]) => void): void;
-    RemoveListener_CustomEvent(): void;
-    AddListener_StaticEvent(callback: (...args: any[]) => void): void;
-    RemoveListener_StaticEvent(): void;
-    AddListener_MultiParamEvent(callback: (...args: any[]) => void): void;
-    RemoveListener_MultiParamEvent(): void;
+    add_SimpleEvent(callback: (...args: any[]) => void): void;
+    remove_SimpleEvent(): void;
+    add_StandardEvent(callback: (...args: any[]) => void): void;
+    remove_StandardEvent(): void;
+    add_CustomEvent(callback: (...args: any[]) => void): void;
+    remove_CustomEvent(): void;
+    add_StaticEvent(callback: (...args: any[]) => void): void;
+    remove_StaticEvent(): void;
+    add_MultiParamEvent(callback: (...args: any[]) => void): void;
+    remove_MultiParamEvent(): void;
 }
 
 declare class CustomEventArgs {
@@ -105,10 +105,8 @@ declare class TypeWithIndexers {
     equals(obj: Object): boolean;
     getHashCode(): number;
     [index: number]: number;
-    get(key: string): number;
-    set(value: number, key: string): void;
-    get(row: number, col: number): string;
-    set(value: string, row: number, col: number): void;
+    [index: string]: number;
+    [index: [number, number]]: string;
 }
 
 declare class TypeWithMultiDimArray {
@@ -329,6 +327,13 @@ declare class EventArgs {
     getHashCode(): number;
 }
 
+declare class ValueType {
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
 declare class ArrayOfInt32 {
     /** @customName new */
     static inst(length: number): ArrayOfInt32;
@@ -428,18 +433,6 @@ declare class List_Int32 {
     [index: number]: number;
 }
 
-declare class List_Int32_Enumerator {
-    /** @customName new */
-    static inst(): List_Int32_Enumerator;
-    readonly current: number;
-    dispose(): void;
-    moveNext(): boolean;
-    equals(obj: Object): boolean;
-    getHashCode(): number;
-    toString(): string;
-    getType(): Type | null;
-}
-
 declare class List_String {
     /** @customName new */
     static inst(): List_String;
@@ -502,18 +495,6 @@ declare class List_String {
     equals(obj: Object): boolean;
     getHashCode(): number;
     [index: number]: string;
-}
-
-declare class List_String_Enumerator {
-    /** @customName new */
-    static inst(): List_String_Enumerator;
-    readonly current: string;
-    dispose(): void;
-    moveNext(): boolean;
-    equals(obj: Object): boolean;
-    getHashCode(): number;
-    toString(): string;
-    getType(): Type | null;
 }
 
 declare class ReferencedType {
@@ -594,6 +575,72 @@ declare class List_ReferencedType {
     [index: number]: ReferencedType | null;
 }
 
+declare class ICloneable {
+    clone(): Object;
+}
+
+declare class IList {
+    readonly isReadOnly: boolean;
+    readonly isFixedSize: boolean;
+    add(value: Object): number;
+    contains(value: Object): boolean;
+    clear(): void;
+    indexOf(value: Object): number;
+    insert(index: number, value: Object): void;
+    remove(value: Object): void;
+    removeAt(index: number): void;
+    [index: number]: Object;
+}
+
+declare class ICollection {
+    readonly count: number;
+    readonly syncRoot: Object;
+    readonly isSynchronized: boolean;
+    copyTo(array: Array | null, index: number): void;
+}
+
+declare class IEnumerable {
+    getEnumerator(): IEnumerator | null;
+}
+
+declare class IStructuralComparable {
+    compareTo(other: Object, comparer: IComparer | null): number;
+}
+
+declare class IStructuralEquatable {
+    equals(other: Object, comparer: IEqualityComparer | null): boolean;
+    getHashCode(comparer: IEqualityComparer | null): number;
+}
+
+declare class IList_Int32 {
+    indexOf(item: number): number;
+    insert(index: number, item: number): void;
+    removeAt(index: number): void;
+    [index: number]: number;
+}
+
+declare class ICollection_Int32 {
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    add(item: number): void;
+    clear(): void;
+    contains(item: number): boolean;
+    copyTo(array: Int32Array, arrayIndex: number): void;
+    remove(item: number): boolean;
+}
+
+declare class IEnumerable_Int32 {
+    getEnumerator(): IEnumerator_Int32;
+}
+
+declare class IReadOnlyList_Int32 {
+    [index: number]: number;
+}
+
+declare class IReadOnlyCollection_Int32 {
+    readonly count: number;
+}
+
 declare class ArrayOfInt64 {
     /** @customName new */
     static inst(length: number): ArrayOfInt64;
@@ -607,8 +654,62 @@ declare class IEnumerator {
     reset(): void;
 }
 
-declare class IEnumerable_Int32 {
-    getEnumerator(): IEnumerator_Int32;
+declare class IList_String {
+    indexOf(item: string): number;
+    insert(index: number, item: string): void;
+    removeAt(index: number): void;
+    [index: number]: string;
+}
+
+declare class ICollection_String {
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    add(item: string): void;
+    clear(): void;
+    contains(item: string): boolean;
+    copyTo(array: StringArray, arrayIndex: number): void;
+    remove(item: string): boolean;
+}
+
+declare class IEnumerable_String {
+    getEnumerator(): IEnumerator_String;
+}
+
+declare class IReadOnlyList_String {
+    [index: number]: string;
+}
+
+declare class IReadOnlyCollection_String {
+    readonly count: number;
+}
+
+declare class IList_Single {
+    indexOf(item: number): number;
+    insert(index: number, item: number): void;
+    removeAt(index: number): void;
+    [index: number]: number;
+}
+
+declare class ICollection_Single {
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    add(item: number): void;
+    clear(): void;
+    contains(item: number): boolean;
+    copyTo(array: SingleArray, arrayIndex: number): void;
+    remove(item: number): boolean;
+}
+
+declare class IEnumerable_Single {
+    getEnumerator(): IEnumerator_Single;
+}
+
+declare class IReadOnlyList_Single {
+    [index: number]: number;
+}
+
+declare class IReadOnlyCollection_Single {
+    readonly count: number;
 }
 
 declare class ReadOnlyCollection_Int32 {
@@ -630,10 +731,6 @@ declare class IComparer_Int32 {
     compare(x: number, y: number): number;
 }
 
-declare class IEnumerable_String {
-    getEnumerator(): IEnumerator_String;
-}
-
 declare class ReadOnlyCollection_String {
     /** @customName new */
     static inst(list: IList_String): ReadOnlyCollection_String;
@@ -653,8 +750,33 @@ declare class IComparer_String {
     compare(x: string, y: string): number;
 }
 
+declare class IList_ReferencedType {
+    indexOf(item: ReferencedType | null): number;
+    insert(index: number, item: ReferencedType | null): void;
+    removeAt(index: number): void;
+    [index: number]: ReferencedType | null;
+}
+
+declare class ICollection_ReferencedType {
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    add(item: ReferencedType | null): void;
+    clear(): void;
+    contains(item: ReferencedType | null): boolean;
+    copyTo(array: ReferencedTypeArray, arrayIndex: number): void;
+    remove(item: ReferencedType | null): boolean;
+}
+
 declare class IEnumerable_ReferencedType {
     getEnumerator(): IEnumerator_ReferencedType;
+}
+
+declare class IReadOnlyList_ReferencedType {
+    [index: number]: ReferencedType | null;
+}
+
+declare class IReadOnlyCollection_ReferencedType {
+    readonly count: number;
 }
 
 declare class ReadOnlyCollection_ReferencedType {
@@ -683,48 +805,65 @@ declare class ArrayOfReferencedType {
     readonly length: number;
 }
 
-declare class List_ReferencedType_Enumerator {
-    /** @customName new */
-    static inst(): List_ReferencedType_Enumerator;
-    readonly current: ReferencedType | null;
-    dispose(): void;
-    moveNext(): boolean;
-    equals(obj: Object): boolean;
-    getHashCode(): number;
-    toString(): string;
-    getType(): Type | null;
+declare class IComparer {
+    compare(x: Object, y: Object): number;
+}
+
+declare class IEqualityComparer {
+    equals(x: Object, y: Object): boolean;
+    getHashCode(obj: Object): number;
 }
 
 declare class IEnumerator_Int32 {
     readonly current: number;
 }
 
-declare class IList_Int32 {
+declare class IList_Int64 {
     indexOf(item: number): number;
     insert(index: number, item: number): void;
     removeAt(index: number): void;
     [index: number]: number;
 }
 
+declare class ICollection_Int64 {
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    add(item: number): void;
+    clear(): void;
+    contains(item: number): boolean;
+    copyTo(array: Int64Array, arrayIndex: number): void;
+    remove(item: number): boolean;
+}
+
+declare class IEnumerable_Int64 {
+    getEnumerator(): IEnumerator_Int64;
+}
+
+declare class IReadOnlyList_Int64 {
+    [index: number]: number;
+}
+
+declare class IReadOnlyCollection_Int64 {
+    readonly count: number;
+}
+
 declare class IEnumerator_String {
     readonly current: string;
 }
 
-declare class IList_String {
-    indexOf(item: string): number;
-    insert(index: number, item: string): void;
-    removeAt(index: number): void;
-    [index: number]: string;
+declare class IEnumerator_Single {
+    readonly current: number;
 }
 
 declare class IEnumerator_ReferencedType {
     readonly current: ReferencedType | null;
 }
 
-declare class IList_ReferencedType {
-    indexOf(item: ReferencedType | null): number;
-    insert(index: number, item: ReferencedType | null): void;
-    removeAt(index: number): void;
-    [index: number]: ReferencedType | null;
+declare class IDisposable {
+    dispose(): void;
+}
+
+declare class IEnumerator_Int64 {
+    readonly current: number;
 }
 

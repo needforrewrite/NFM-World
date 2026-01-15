@@ -278,7 +278,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.SetNumberAt(arg0, arg1);
+                ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).SetNumberAt(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -308,7 +308,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.GetNumberAt(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).GetNumberAt(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -340,7 +340,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.SetValue(arg0, arg1);
+                ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).SetValue(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -370,7 +370,7 @@ public partial class LuaBindings
             var arg0 = ToObject<string>(L, 2)!;
             try
             {
-                var result = self.GetValue(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).GetValue(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -403,7 +403,7 @@ public partial class LuaBindings
             var arg2 = ToObject<string>(L, 4)!;
             try
             {
-                self.SetGridValue(arg0, arg1, arg2);
+                ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).SetGridValue(arg0, arg1, arg2);
                 return 0;
             }
             catch (System.Exception ex)
@@ -434,7 +434,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.GetGridValue(arg0, arg1);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).GetGridValue(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -464,7 +464,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetNumbersLength();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).GetNumbersLength();
                 PushValue(L, result);
                 return 1;
             }
@@ -494,7 +494,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetDataCount();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).GetDataCount();
                 PushValue(L, result);
                 return 1;
             }
@@ -524,7 +524,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetGridCount();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).GetGridCount();
                 PushValue(L, result);
                 return 1;
             }
@@ -554,7 +554,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -584,7 +584,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -619,7 +619,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -649,7 +649,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

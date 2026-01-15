@@ -125,7 +125,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.Compare(arg0, arg1);
+                var result = ((System.Collections.Generic.IComparer<int>)self).Compare(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }

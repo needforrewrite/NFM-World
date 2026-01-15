@@ -115,29 +115,29 @@ public partial class LuaBindings
             case "getHashCode":
                 lua_pushcfunction(L, (LuaGamemode_method_getHashCode));
                 return 1;
-            case "AddListener_OnEnter":
-                lua_pushcfunction(L, (LuaGamemode_AddListener_OnEnter));
+            case "add_OnEnter":
+                lua_pushcfunction(L, (LuaGamemode_add_OnEnter));
                 return 1;
-            case "RemoveListener_OnEnter":
-                lua_pushcfunction(L, (LuaGamemode_RemoveListener_OnEnter));
+            case "remove_OnEnter":
+                lua_pushcfunction(L, (LuaGamemode_remove_OnEnter));
                 return 1;
-            case "AddListener_OnExit":
-                lua_pushcfunction(L, (LuaGamemode_AddListener_OnExit));
+            case "add_OnExit":
+                lua_pushcfunction(L, (LuaGamemode_add_OnExit));
                 return 1;
-            case "RemoveListener_OnExit":
-                lua_pushcfunction(L, (LuaGamemode_RemoveListener_OnExit));
+            case "remove_OnExit":
+                lua_pushcfunction(L, (LuaGamemode_remove_OnExit));
                 return 1;
-            case "AddListener_OnGameTick":
-                lua_pushcfunction(L, (LuaGamemode_AddListener_OnGameTick));
+            case "add_OnGameTick":
+                lua_pushcfunction(L, (LuaGamemode_add_OnGameTick));
                 return 1;
-            case "RemoveListener_OnGameTick":
-                lua_pushcfunction(L, (LuaGamemode_RemoveListener_OnGameTick));
+            case "remove_OnGameTick":
+                lua_pushcfunction(L, (LuaGamemode_remove_OnGameTick));
                 return 1;
-            case "AddListener_OnReset":
-                lua_pushcfunction(L, (LuaGamemode_AddListener_OnReset));
+            case "add_OnReset":
+                lua_pushcfunction(L, (LuaGamemode_add_OnReset));
                 return 1;
-            case "RemoveListener_OnReset":
-                lua_pushcfunction(L, (LuaGamemode_RemoveListener_OnReset));
+            case "remove_OnReset":
+                lua_pushcfunction(L, (LuaGamemode_remove_OnReset));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -392,7 +392,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int LuaGamemode_AddListener_OnEnter(lua_State L)
+    private static int LuaGamemode_add_OnEnter(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.LuaGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -404,7 +404,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int LuaGamemode_RemoveListener_OnEnter(lua_State L)
+    private static int LuaGamemode_remove_OnEnter(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.LuaGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -414,7 +414,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int LuaGamemode_AddListener_OnExit(lua_State L)
+    private static int LuaGamemode_add_OnExit(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.LuaGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -426,7 +426,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int LuaGamemode_RemoveListener_OnExit(lua_State L)
+    private static int LuaGamemode_remove_OnExit(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.LuaGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -436,7 +436,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int LuaGamemode_AddListener_OnGameTick(lua_State L)
+    private static int LuaGamemode_add_OnGameTick(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.LuaGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -448,7 +448,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int LuaGamemode_RemoveListener_OnGameTick(lua_State L)
+    private static int LuaGamemode_remove_OnGameTick(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.LuaGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -458,7 +458,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int LuaGamemode_AddListener_OnReset(lua_State L)
+    private static int LuaGamemode_add_OnReset(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.LuaGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -470,7 +470,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int LuaGamemode_RemoveListener_OnReset(lua_State L)
+    private static int LuaGamemode_remove_OnReset(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.LuaGamemode>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }

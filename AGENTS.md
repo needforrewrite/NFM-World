@@ -518,7 +518,7 @@ Applied to:
 
 **Solution:** Implemented complete event subscription system with statically-generated delegate types:
 - Added event discovery in `DiscoverReferencedTypes` to find all event handler types and their parameter types
-- Generated `AddListener_EventName(callback)` and `RemoveListener_EventName()` methods for each event
+- Generated `add_EventName(callback)` and `remove_EventName()` methods for each event
 - Created `EventInvoker0`, `EventInvoker1<T0>`, and `EventInvoker2<T0, T1>` helper classes for delegate invocation
 - Stored Lua function references in Lua registry using `luaL_ref` to prevent garbage collection
 - Used `Delegate.CreateDelegate` to create type-safe event handlers that call back into Lua
@@ -529,7 +529,7 @@ Applied to:
 - Events are bound at the delegate type level, not using reflection at runtime
 - Each unique delegate signature gets a dedicated `EventInvokerN` class
 - Lua callbacks are invoked via `lua_rawgeti` from registry + `lua_pcall`
-- `RemoveListener` is currently a no-op (documented in comments)
+- `remove_EventName` is currently a no-op (documented in comments)
 - EventInvoker classes have finalizers that clean up Lua registry references with `luaL_unref`
 - System types (`object`, `EventArgs`) are now discovered and have full bindings generated
 
@@ -554,12 +554,12 @@ Applied to:
 **Lua Usage Example:**
 ```lua
 local obj = TypeWithEvents.new()
-obj:AddListener_SimpleEvent(function()
+obj:add_SimpleEvent(function()
     print("Event fired!")
 end)
 obj:raiseSimpleEvent()  -- Prints: "Event fired!"
 
-obj:AddListener_StandardEvent(function(sender, eventArgs)
+obj:add_StandardEvent(function(sender, eventArgs)
     print("Sender type: " .. tostring(sender))
 end)
 ```

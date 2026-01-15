@@ -232,35 +232,35 @@ public partial class LuaBindings
             case "getHashCode":
                 lua_pushcfunction(L, (BackendCar_method_getHashCode));
                 return 1;
-            case "AddListener_DamagedX":
-                lua_pushcfunction(L, (BackendCar_AddListener_DamagedX));
+            case "add_DamagedX":
+                lua_pushcfunction(L, (BackendCar_add_DamagedX));
                 return 1;
-            case "RemoveListener_DamagedX":
-                lua_pushcfunction(L, (BackendCar_RemoveListener_DamagedX));
+            case "remove_DamagedX":
+                lua_pushcfunction(L, (BackendCar_remove_DamagedX));
                 return 1;
-            case "AddListener_DamagedY":
-                lua_pushcfunction(L, (BackendCar_AddListener_DamagedY));
+            case "add_DamagedY":
+                lua_pushcfunction(L, (BackendCar_add_DamagedY));
                 return 1;
-            case "RemoveListener_DamagedY":
-                lua_pushcfunction(L, (BackendCar_RemoveListener_DamagedY));
+            case "remove_DamagedY":
+                lua_pushcfunction(L, (BackendCar_remove_DamagedY));
                 return 1;
-            case "AddListener_DamagedZ":
-                lua_pushcfunction(L, (BackendCar_AddListener_DamagedZ));
+            case "add_DamagedZ":
+                lua_pushcfunction(L, (BackendCar_add_DamagedZ));
                 return 1;
-            case "RemoveListener_DamagedZ":
-                lua_pushcfunction(L, (BackendCar_RemoveListener_DamagedZ));
+            case "remove_DamagedZ":
+                lua_pushcfunction(L, (BackendCar_remove_DamagedZ));
                 return 1;
-            case "AddListener_Sparked":
-                lua_pushcfunction(L, (BackendCar_AddListener_Sparked));
+            case "add_Sparked":
+                lua_pushcfunction(L, (BackendCar_add_Sparked));
                 return 1;
-            case "RemoveListener_Sparked":
-                lua_pushcfunction(L, (BackendCar_RemoveListener_Sparked));
+            case "remove_Sparked":
+                lua_pushcfunction(L, (BackendCar_remove_Sparked));
                 return 1;
-            case "AddListener_Dusted":
-                lua_pushcfunction(L, (BackendCar_AddListener_Dusted));
+            case "add_Dusted":
+                lua_pushcfunction(L, (BackendCar_add_Dusted));
                 return 1;
-            case "RemoveListener_Dusted":
-                lua_pushcfunction(L, (BackendCar_RemoveListener_Dusted));
+            case "remove_Dusted":
+                lua_pushcfunction(L, (BackendCar_remove_Dusted));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -845,7 +845,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_AddListener_DamagedX(lua_State L)
+    private static int BackendCar_add_DamagedX(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -857,7 +857,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_RemoveListener_DamagedX(lua_State L)
+    private static int BackendCar_remove_DamagedX(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -867,7 +867,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_AddListener_DamagedY(lua_State L)
+    private static int BackendCar_add_DamagedY(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -879,7 +879,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_RemoveListener_DamagedY(lua_State L)
+    private static int BackendCar_remove_DamagedY(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -889,7 +889,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_AddListener_DamagedZ(lua_State L)
+    private static int BackendCar_add_DamagedZ(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -901,7 +901,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_RemoveListener_DamagedZ(lua_State L)
+    private static int BackendCar_remove_DamagedZ(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -911,7 +911,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_AddListener_Sparked(lua_State L)
+    private static int BackendCar_add_Sparked(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -923,7 +923,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_RemoveListener_Sparked(lua_State L)
+    private static int BackendCar_remove_Sparked(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -933,7 +933,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_AddListener_Dusted(lua_State L)
+    private static int BackendCar_add_Dusted(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }
@@ -945,7 +945,7 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int BackendCar_RemoveListener_Dusted(lua_State L)
+    private static int BackendCar_remove_Dusted(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
         if (obj == null) { lua_pushstring(L, "Invalid object"); lua_error(L); return 0; }

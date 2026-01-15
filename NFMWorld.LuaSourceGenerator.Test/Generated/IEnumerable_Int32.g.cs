@@ -123,7 +123,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetEnumerator();
+                var result = ((System.Collections.Generic.IEnumerable<int>)self).GetEnumerator();
                 PushValue(L, result);
                 return 1;
             }

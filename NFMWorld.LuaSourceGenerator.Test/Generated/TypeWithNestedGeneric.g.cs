@@ -71,7 +71,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "numbers":
-                PushValue(L, obj.Numbers);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric)obj).Numbers);
                 return 1;
             case "getEnumerator":
                 lua_pushcfunction(L, (TypeWithNestedGeneric_method_getEnumerator));
@@ -159,7 +159,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetEnumerator();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric)self).GetEnumerator();
                 PushValue(L, result);
                 return 1;
             }
@@ -189,7 +189,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetStringList();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric)self).GetStringList();
                 PushValue(L, result);
                 return 1;
             }
@@ -219,7 +219,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetStringEnumerator();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric)self).GetStringEnumerator();
                 PushValue(L, result);
                 return 1;
             }
@@ -249,7 +249,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -279,7 +279,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -314,7 +314,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -344,7 +344,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

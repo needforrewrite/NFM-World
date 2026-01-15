@@ -147,7 +147,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((System.EventArgs)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -177,7 +177,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((System.EventArgs)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -212,7 +212,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.EventArgs)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -242,7 +242,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((System.EventArgs)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

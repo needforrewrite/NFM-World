@@ -71,10 +71,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "message":
-                PushValue(L, obj.Message);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs)obj).Message);
                 return 1;
             case "value":
-                PushValue(L, obj.Value);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs)obj).Value);
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (CustomEventArgs_method_getType));
@@ -175,7 +175,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -205,7 +205,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -240,7 +240,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -270,7 +270,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

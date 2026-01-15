@@ -80,10 +80,22 @@ public partial class LuaBindings
         switch (key)
         {
             case "capacity":
-                PushValue(L, obj.Capacity);
+                PushValue(L, ((System.Collections.Generic.List<int>)obj).Capacity);
                 return 1;
             case "count":
-                PushValue(L, obj.Count);
+                PushValue(L, ((System.Collections.Generic.List<int>)obj).Count);
+                return 1;
+            case "isReadOnly":
+                PushValue(L, ((System.Collections.Generic.ICollection<int>)obj).IsReadOnly);
+                return 1;
+            case "isFixedSize":
+                PushValue(L, ((System.Collections.IList)obj).IsFixedSize);
+                return 1;
+            case "syncRoot":
+                PushValue(L, ((System.Collections.ICollection)obj).SyncRoot);
+                return 1;
+            case "isSynchronized":
+                PushValue(L, ((System.Collections.ICollection)obj).IsSynchronized);
                 return 1;
             case "add":
                 lua_pushcfunction(L, (List_Int32_method_add));
@@ -348,7 +360,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                self.Add(arg0);
+                ((System.Collections.Generic.List<int>)self).Add(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -378,7 +390,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Collections.Generic.IEnumerable<int>>(L, 2)!;
             try
             {
-                self.AddRange(arg0);
+                ((System.Collections.Generic.List<int>)self).AddRange(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -407,7 +419,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.AsReadOnly();
+                var result = ((System.Collections.Generic.List<int>)self).AsReadOnly();
                 PushValue(L, result);
                 return 1;
             }
@@ -433,43 +445,6 @@ public partial class LuaBindings
             return 0;
         }
 
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = self.BinarySearch(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            System.Collections.Generic.IComparer<int>? arg1;
-            if (lua_isnil(L, 3) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.Collections.Generic.IComparer<int>>(L, 3)!;
-            try
-            {
-                var result = self.BinarySearch(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
         if (argCount == 4)
         {
             var arg0 = ToObject<int>(L, 2)!;
@@ -482,7 +457,7 @@ public partial class LuaBindings
                 arg3 = ToObject<System.Collections.Generic.IComparer<int>>(L, 5)!;
             try
             {
-                var result = self.BinarySearch(arg0, arg1, arg2, arg3);
+                var result = ((System.Collections.Generic.List<int>)self).BinarySearch(arg0, arg1, arg2, arg3);
                 PushValue(L, result);
                 return 1;
             }
@@ -512,7 +487,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Clear();
+                ((System.Collections.Generic.List<int>)self).Clear();
                 return 0;
             }
             catch (System.Exception ex)
@@ -542,7 +517,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.Contains(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).Contains(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -573,41 +548,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int[]>(L, 2)!;
             try
             {
-                self.CopyTo(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int[]>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                self.CopyTo(arg0, arg1);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 4)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int[]>(L, 3)!;
-            var arg2 = ToObject<int>(L, 4)!;
-            var arg3 = ToObject<int>(L, 5)!;
-            try
-            {
-                self.CopyTo(arg0, arg1, arg2, arg3);
+                ((System.Collections.Generic.List<int>)self).CopyTo(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -637,7 +578,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.EnsureCapacity(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).EnsureCapacity(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -668,7 +609,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
             try
             {
-                var result = self.Exists(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).Exists(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -699,7 +640,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
             try
             {
-                var result = self.Find(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).Find(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -730,7 +671,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
             try
             {
-                var result = self.FindAll(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).FindAll(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -761,42 +702,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
             try
             {
-                var result = self.FindIndex(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<System.Predicate<int>>(L, 3)!;
-            try
-            {
-                var result = self.FindIndex(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<System.Predicate<int>>(L, 4)!;
-            try
-            {
-                var result = self.FindIndex(arg0, arg1, arg2);
+                var result = ((System.Collections.Generic.List<int>)self).FindIndex(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -827,7 +733,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
             try
             {
-                var result = self.FindLast(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).FindLast(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -858,42 +764,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
             try
             {
-                var result = self.FindLastIndex(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<System.Predicate<int>>(L, 3)!;
-            try
-            {
-                var result = self.FindLastIndex(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<System.Predicate<int>>(L, 4)!;
-            try
-            {
-                var result = self.FindLastIndex(arg0, arg1, arg2);
+                var result = ((System.Collections.Generic.List<int>)self).FindLastIndex(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -924,7 +795,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Action<int>>(L, 2)!;
             try
             {
-                self.ForEach(arg0);
+                ((System.Collections.Generic.List<int>)self).ForEach(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -953,7 +824,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetEnumerator();
+                var result = ((System.Collections.Generic.List<int>)self).GetEnumerator();
                 PushValue(L, result);
                 return 1;
             }
@@ -985,7 +856,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.GetRange(arg0, arg1);
+                var result = ((System.Collections.Generic.List<int>)self).GetRange(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1017,7 +888,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = self.Slice(arg0, arg1);
+                var result = ((System.Collections.Generic.List<int>)self).Slice(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1048,42 +919,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.IndexOf(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                var result = self.IndexOf(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<int>(L, 4)!;
-            try
-            {
-                var result = self.IndexOf(arg0, arg1, arg2);
+                var result = ((System.Collections.Generic.List<int>)self).IndexOf(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1115,7 +951,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.Insert(arg0, arg1);
+                ((System.Collections.Generic.List<int>)self).Insert(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -1146,7 +982,7 @@ public partial class LuaBindings
             var arg1 = ToObject<System.Collections.Generic.IEnumerable<int>>(L, 3)!;
             try
             {
-                self.InsertRange(arg0, arg1);
+                ((System.Collections.Generic.List<int>)self).InsertRange(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -1176,42 +1012,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.LastIndexOf(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                var result = self.LastIndexOf(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<int>(L, 4)!;
-            try
-            {
-                var result = self.LastIndexOf(arg0, arg1, arg2);
+                var result = ((System.Collections.Generic.List<int>)self).LastIndexOf(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1242,7 +1043,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.Remove(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).Remove(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1273,7 +1074,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
             try
             {
-                var result = self.RemoveAll(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).RemoveAll(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1304,7 +1105,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                self.RemoveAt(arg0);
+                ((System.Collections.Generic.List<int>)self).RemoveAt(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -1335,7 +1136,7 @@ public partial class LuaBindings
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                self.RemoveRange(arg0, arg1);
+                ((System.Collections.Generic.List<int>)self).RemoveRange(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -1364,23 +1165,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Reverse();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                self.Reverse(arg0, arg1);
+                ((System.Collections.Generic.List<int>)self).Reverse();
                 return 0;
             }
             catch (System.Exception ex)
@@ -1409,102 +1194,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.Sort();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 1)
-        {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Sort(System.Collections.Generic.IComparer<int>)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<System.Collections.Generic.IComparer<int>>(L, 2);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
-            }
-            next0:
-
-            // Try overload 1: Sort(System.Comparison<int>)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<System.Comparison<int>>(L, 2);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        System.Collections.Generic.IComparer<int>? arg0;
-                        if (lua_isnil(L, 2) != 0)
-                            arg0 = null;
-                        else
-                            arg0 = ToObject<System.Collections.Generic.IComparer<int>>(L, 2)!;
-                        try
-                        {
-                            self.Sort(arg0);
-                            return 0;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<System.Comparison<int>>(L, 2)!;
-                        try
-                        {
-                            self.Sort(arg0);
-                            return 0;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for sort");
-                    return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            System.Collections.Generic.IComparer<int>? arg2;
-            if (lua_isnil(L, 4) != 0)
-                arg2 = null;
-            else
-                arg2 = ToObject<System.Collections.Generic.IComparer<int>>(L, 4)!;
-            try
-            {
-                self.Sort(arg0, arg1, arg2);
+                ((System.Collections.Generic.List<int>)self).Sort();
                 return 0;
             }
             catch (System.Exception ex)
@@ -1533,7 +1223,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToArray();
+                var result = ((System.Collections.Generic.List<int>)self).ToArray();
                 PushValue(L, result);
                 return 1;
             }
@@ -1563,7 +1253,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.TrimExcess();
+                ((System.Collections.Generic.List<int>)self).TrimExcess();
                 return 0;
             }
             catch (System.Exception ex)
@@ -1593,7 +1283,7 @@ public partial class LuaBindings
             var arg0 = ToObject<System.Predicate<int>>(L, 2)!;
             try
             {
-                var result = self.TrueForAll(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).TrueForAll(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1623,7 +1313,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((System.Collections.Generic.List<int>)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -1653,7 +1343,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((System.Collections.Generic.List<int>)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -1688,7 +1378,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((System.Collections.Generic.List<int>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1718,7 +1408,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((System.Collections.Generic.List<int>)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

@@ -75,10 +75,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "value":
-                PushValue(L, obj.Value);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions)obj).Value);
                 return 1;
             case "writableProperty":
-                PushValue(L, obj.WritableProperty);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions)obj).WritableProperty);
                 return 1;
             case "throwsException":
                 lua_pushcfunction(L, (TypeWithExceptions_method_throwsException));
@@ -210,7 +210,7 @@ public partial class LuaBindings
         {
             try
             {
-                self.ThrowsException();
+                ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions)self).ThrowsException();
                 return 0;
             }
             catch (System.Exception ex)
@@ -240,7 +240,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.ThrowsExceptionWithParam(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions)self).ThrowsExceptionWithParam(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -270,7 +270,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -300,7 +300,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -335,7 +335,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -365,7 +365,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

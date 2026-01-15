@@ -4,5 +4,6 @@
     "${workspaceFolder}/NFMWorld.Library/Lua/Generated",
   ],
   "runtime.version": "LuaJIT",
-  "hint.enable": true
+  "hint.enable": true,
+  "type.checkTableShape": true
 }

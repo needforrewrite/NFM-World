@@ -1,6 +1,6 @@
 local newTick = 0
 
-GM:AddListener_OnEnter(function()
+GM:add_OnEnter(function()
     newTick = 0
 
     print(GM.players.count)
@@ -13,10 +13,10 @@ GM:AddListener_OnEnter(function()
     GM:reset()
 end)
 
-GM:AddListener_OnExit(function()
+GM:add_OnExit(function()
 end)
 
-GM:AddListener_OnGameTick(function()
+GM:add_OnGameTick(function()
     FrameTrace.addMessage("Hello from Lua")
     FrameTrace.addMessage("contox: " .. tostring(GM.carsInRace[1].position.x) .. ", contoz: " .. tostring(GM.carsInRace[1].position.z) .. ", contoy: " .. tostring(GM.carsInRace[1].position.y))
 
@@ -42,6 +42,6 @@ GM:AddListener_OnGameTick(function()
     end
 end)
 
-GM:AddListener_OnReset(function()
+GM:add_OnReset(function()
 
 end)

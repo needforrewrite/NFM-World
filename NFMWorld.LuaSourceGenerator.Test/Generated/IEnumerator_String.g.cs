@@ -71,7 +71,16 @@ public partial class LuaBindings
         switch (key)
         {
             case "current":
-                PushValue(L, obj.Current);
+                PushValue(L, ((System.Collections.Generic.IEnumerator<string>)obj).Current);
+                return 1;
+            case "dispose":
+                lua_pushcfunction(L, (IEnumerator_String_method_dispose));
+                return 1;
+            case "moveNext":
+                lua_pushcfunction(L, (IEnumerator_String_method_moveNext));
+                return 1;
+            case "reset":
+                lua_pushcfunction(L, (IEnumerator_String_method_reset));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -105,6 +114,94 @@ public partial class LuaBindings
         var argCount = lua_gettop(L);
 
         luaL_error(L, "Invalid arguments for IEnumerator`1 constructor");
+        return 0;
+    }
+
+    private static int IEnumerator_String_method_dispose(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<string>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IEnumerator`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                ((System.IDisposable)self).Dispose();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for dispose");
+        return 0;
+    }
+
+    private static int IEnumerator_String_method_moveNext(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<string>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IEnumerator`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = ((System.Collections.IEnumerator)self).MoveNext();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for moveNext");
+        return 0;
+    }
+
+    private static int IEnumerator_String_method_reset(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<string>>(L, 1);
+        if (self == null)
+        {
+            luaL_error(L, "Expected IEnumerator`1 as first argument");
+            return 0;
+        }
+
+        if (argCount == 0)
+        {
+            try
+            {
+                ((System.Collections.IEnumerator)self).Reset();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for reset");
         return 0;
     }
 

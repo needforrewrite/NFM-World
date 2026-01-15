@@ -99,47 +99,47 @@ public partial class LuaBindings
         switch (key)
         {
             case "id":
-                PushValue(L, obj.Id);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).Id);
                 return 1;
             case "name":
-                PushValue(L, obj.Name);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).Name);
                 return 1;
             case "isActive":
-                PushValue(L, obj.IsActive);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).IsActive);
                 return 1;
             case "value":
-                PushValue(L, obj.Value);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).Value);
                 return 1;
             case "preciseValue":
-                PushValue(L, obj.PreciseValue);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).PreciseValue);
                 return 1;
             case "nullableInt":
-                if (obj.NullableInt.HasValue)
-                    PushValue(L, obj.NullableInt.Value);
+                if (((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).NullableInt.HasValue)
+                    PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).NullableInt.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "nullableFloat":
-                if (obj.NullableFloat.HasValue)
-                    PushValue(L, obj.NullableFloat.Value);
+                if (((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).NullableFloat.HasValue)
+                    PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).NullableFloat.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "nullableBool":
-                if (obj.NullableBool.HasValue)
-                    PushValue(L, obj.NullableBool.Value);
+                if (((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).NullableBool.HasValue)
+                    PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).NullableBool.Value);
                 else
                     lua_pushnil(L);
                 return 1;
             case "publicField":
-                PushValue(L, obj.PublicField);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).PublicField);
                 return 1;
             case "publicStringField":
-                PushValue(L, obj.PublicStringField);
+                PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).PublicStringField);
                 return 1;
             case "nullableLongField":
-                if (obj.NullableLongField.HasValue)
-                    PushValue(L, obj.NullableLongField.Value);
+                if (((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).NullableLongField.HasValue)
+                    PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)obj).NullableLongField.Value);
                 else
                     lua_pushnil(L);
                 return 1;
@@ -620,7 +620,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetDoubleId();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).GetDoubleId();
                 PushValue(L, result);
                 return 1;
             }
@@ -651,7 +651,7 @@ public partial class LuaBindings
             var arg0 = ToObject<string>(L, 2)!;
             try
             {
-                var result = self.GetGreeting(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).GetGreeting(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -682,7 +682,7 @@ public partial class LuaBindings
             var arg0 = ToObject<float>(L, 2)!;
             try
             {
-                self.SetValue(arg0);
+                ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).SetValue(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -714,7 +714,7 @@ public partial class LuaBindings
             var arg2 = ToObject<bool>(L, 4)!;
             try
             {
-                var result = self.Calculate(arg0, arg1, arg2);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).Calculate(arg0, arg1, arg2);
                 PushValue(L, result);
                 return 1;
             }
@@ -744,7 +744,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.Clone();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).Clone();
                 PushValue(L, result);
                 return 1;
             }
@@ -779,7 +779,7 @@ public partial class LuaBindings
                 arg0 = ToObject<float>(L, 2)!;
             try
             {
-                self.SetNullableValue(arg0);
+                ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).SetNullableValue(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -813,7 +813,7 @@ public partial class LuaBindings
                 arg0 = ToObject<int>(L, 2)!;
             try
             {
-                var result = self.MultiplyByNullable(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).MultiplyByNullable(arg0);
                 if (result.HasValue)
                     PushValue(L, result.Value);
                 else
@@ -856,7 +856,7 @@ public partial class LuaBindings
                 arg1 = ToObject<string>(L, 3)!;
             try
             {
-                var result = self.FormatWithOptional(arg0, arg1);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).FormatWithOptional(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -886,7 +886,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.MethodWithCustomName();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).MethodWithCustomName();
                 PushValue(L, result);
                 return 1;
             }
@@ -916,7 +916,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).ToString();
                 PushValue(L, result);
                 return 1;
             }
@@ -946,7 +946,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).GetType();
                 PushValue(L, result);
                 return 1;
             }
@@ -981,7 +981,7 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1011,7 +1011,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
+                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).GetHashCode();
                 PushValue(L, result);
                 return 1;
             }

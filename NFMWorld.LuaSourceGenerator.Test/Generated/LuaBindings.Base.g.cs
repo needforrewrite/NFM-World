@@ -259,7 +259,7 @@ public partial class LuaBindings
                 lua_pushinteger(L, l);
                 break;
             case ulong ul:
-                lua_pushinteger(L, (long)ul);
+                lua_pushnumber(L, (double)ul);
                 break;
             case float f:
                 lua_pushnumber(L, f);
@@ -271,16 +271,39 @@ public partial class LuaBindings
                 lua_pushstring(L, s);
                 break;
             default:
-                // For all other types, push as userdata if we have a registered metatable
+                // Push <T>'s metatable if available and not 'object'. This method is almost always called with a known
+                // T, except when DefineGlobalVariable is used with a different type.
+                if (typeof(T) != typeof(object) && GetMetatableNameForType(typeof(T)) is { } tMetatable)
+                {
+                    PushObject(L, value, tMetatable);
+                    return;
+                }
+
+                // For all other types, push based on runtime type
                 if (GetMetatableNameForType(value.GetType()) is {} metatable)
                 {
                     PushObject(L, value, metatable);
+                    return;
                 }
-                else
+
+                // Slow path: attempt to push a base type (in between value.GetType() and <T>)'s metatable
+                if (value.GetType() != typeof(T))
                 {
-                    throw new InvalidOperationException($"Type {typeof(T)} is not supported");
+                    Type? baseType;
+                    while ((baseType = value.GetType().BaseType) != null)
+                    {
+                        if (GetMetatableNameForType(baseType) is { } baseMetatable)
+                        {
+                            PushObject(L, value, baseMetatable);
+                            return;
+                        }
+
+                        if (baseType == typeof(T))
+                            break;
+                    }
                 }
-                break;
+
+                throw new InvalidOperationException($"Type {value.GetType()} is not supported");
         }
     }
 
@@ -301,7 +324,7 @@ public partial class LuaBindings
         if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
         if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
         if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tointeger(L, idx);
+        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tonumber(L, idx);
         if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
         if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
 
@@ -640,7 +663,12 @@ public partial class LuaBindings
         public void Invoke()
         {
             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
-            lua_pcall(L, 0, 0, 0);
+            if (lua_pcall(L, 0, 0, 0) != LUA_OK)
+            {
+                var errorMsg = lua_tostring(L, -1);
+                lua_pop(L, 1); // Remove error message from stack
+                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+            }
         }
 
         ~EventInvoker0()
@@ -655,7 +683,12 @@ public partial class LuaBindings
         {
             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
             PushValue(L, arg0);
-            lua_pcall(L, 1, 0, 0);
+            if (lua_pcall(L, 1, 0, 0) != LUA_OK)
+            {
+                var errorMsg = lua_tostring(L, -1);
+                lua_pop(L, 1); // Remove error message from stack
+                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+            }
         }
     
         ~EventInvoker1()
@@ -671,7 +704,12 @@ public partial class LuaBindings
             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
             PushValue(L, arg0);
             PushValue(L, arg1);
-            lua_pcall(L, 2, 0, 0);
+            if (lua_pcall(L, 2, 0, 0) != LUA_OK)
+            {
+                var errorMsg = lua_tostring(L, -1);
+                lua_pop(L, 1); // Remove error message from stack
+                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+            }
         }
     
         ~EventInvoker2()
@@ -691,13 +729,13 @@ public partial class LuaBindings
     }
     #endregion
 
-    public void DefineGlobalVariable<T>(lua_State L, string name, T value)
+    public static void DefineGlobalVariable<T>(lua_State L, string name, T value)
     {
         PushValue(L, value);
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
+    public static void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -708,7 +746,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
+    public static void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -719,7 +757,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
+    public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -731,7 +769,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
+    public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -743,7 +781,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
+    public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -756,7 +794,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
+    public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -769,7 +807,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
+    public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -783,7 +821,7 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
-    public void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
+    public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
     {
         lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
         {
@@ -795,5 +833,12 @@ public partial class LuaBindings
             return 1;
         }));
         lua_setglobal(L, name);
+    }
+}
+
+public class LuaException : Exception
+{
+    public LuaException(string message) : base(message)
+    {
     }
 }
