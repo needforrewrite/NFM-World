@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using CommunityToolkit.HighPerformance;
 using FixedMathSharp.Utility;
+using nfm_world_library.Lua;
 using nfm_world_library.SoftFloat;
 using nfm_world_library.util;
 using Steamworks;
@@ -11,6 +12,7 @@ using Stride.Core.Mathematics;
 
 namespace nfm_world_library;
 
+[LuaVisible]
 public static class Extensions
 {
     extension<T>(List<T> list)
@@ -177,6 +179,7 @@ public static class Extensions
     }
 }
 
+[LuaVisible]
 public static class Extensions2
 {
     extension(Stride.Core.Mathematics.Matrix matrix)

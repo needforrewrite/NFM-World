@@ -17,6 +17,7 @@ public partial class LuaBindings
     {
         Register_TypeWithEvents(L);
         Register_CustomEventArgs(L);
+        Register_TypeWithExtensionMembers(L);
         Register_InlineBuffer(L);
         Register_TypeWithInlineArray(L);
         Register_TypeWithArrays(L);

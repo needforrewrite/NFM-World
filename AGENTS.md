@@ -579,6 +579,81 @@ end)
 - Updated `LuaBindings.Base.g.cs` with EventInvoker classes and CreateEventDelegate method
 - Updated `LuaBindings.lua` with event listener stub annotations
 
+### 9. C# Extension Method and Property Support (January 13, 2026)
+**Issue:** No support for calling C# extension methods or accessing C# 14 extension properties on .NET types from Lua scripts.
+
+**Solution:** Implemented comprehensive extension member discovery and binding generation:
+- Added `IsExtensionMethod()` helper that detects `ExtensionAttribute` on method first parameter or method itself
+- Added `GetExtendedType()` helper to extract the type being extended from the first parameter
+- Created `DiscoverExtensionMembers()` that scans both input assembly and type's own assembly for extension methods/properties
+- Stores discovered extensions in `_extensionMethodsByType` and `_extensionPropertiesByType` dictionaries
+- Modified `GenerateInstanceMethods()` to include extension methods in instance method list
+- Extension methods call static declaring type with instance as first parameter: `DeclaringType.MethodName(self, args...)`
+- Updated `GenerateIndexMethod()` to include extension property getters
+- Updated `GenerateNewIndexMethod()` to include extension property setters
+- Updated `GenerateLuaTypeStub()` to include extension methods/properties in Lua stubs with correct LuaCATS annotations
+- Updated `GenerateTypeScriptTypeDeclaration()` to include extension methods/properties in TypeScript declarations
+
+**Implementation Details:**
+- Extension method detection checks for `ExtensionAttribute` on the first parameter (the `this` parameter)
+- Discovery scans all static classes (sealed + abstract) in both the input assembly and the extended type's assembly
+- Parameter reading for extension methods starts at index 1, skipping the `this` parameter
+- Extension methods are invoked as static methods: `TypeWithExtensionMembersExtensions.Double(self)`
+- Extension properties are accessed via generated static getter/setter methods
+- Both same-assembly and cross-assembly extensions are supported
+
+**Assembly Scanning Behavior:**
+- Scans input assembly (where `[LuaVisible]` types are defined)
+- Scans each type's declaring assembly (e.g., System.Private.CoreLib for built-in types)
+- Only discovers extensions in these two assemblies per type (not all loaded assemblies)
+- This prevents binding thousands of framework extension methods unnecessarily
+
+**Test Coverage:** Created test fixtures with 9 extension methods:
+- `TypeWithExtensionMembers` with 5 same-assembly extensions (Double, Add, Multiply, FormatValue, PrintValue)
+- `CrossAssemblyExtensions` with 4 cross-assembly extensions (Triple, Subtract, IsPositive, IncrementValue)
+- All extensions appear as instance methods in Lua
+
+**C# 14 Extension Properties:**
+- C# 14 extension properties compile down to extension methods with special naming
+- Property getters: `get_PropertyName(this T instance)`
+- Property setters: `set_PropertyName(this T instance, TValue value)`
+- Generator automatically detects these and generates property bindings
+- In Lua, they appear as normal properties: `obj.extensionProp = value` or `local val = obj.extensionProp`
+
+**Lua Usage Example:**
+```lua
+-- Extension methods appear as instance methods
+local obj = TypeWithExtensionMembers.new(10)
+local doubled = obj:double()  -- Calls TypeWithExtensionMembersExtensions.Double(obj)
+local sum = obj:add(5)        -- Calls extension method with parameter
+
+-- Cross-assembly extensions work identically
+local tripled = obj:triple()  -- Calls CrossAssemblyExtensions.Triple(obj)
+local diff = obj:subtract(3)
+
+-- Extension properties (C# 14) appear as normal properties
+obj.extensionValue = 42      -- Calls set_ExtensionValue(obj, 42)
+local val = obj.extensionValue  -- Calls get_ExtensionValue(obj)
+```
+
+**Output Formats:**
+All three output formats now include extension members:
+1. **C# Bindings (.g.cs)** - Extension methods callable as instance methods, properties in __index/__newindex
+2. **Lua Stubs (.lua)** - Extension methods with `@param` annotations (skipping `this`), properties as fields
+3. **TypeScript Declarations (.d.ts)** - Extension methods and properties appear as instance members
+
+**Result:** Lua scripts can now call C# extension methods and access extension properties naturally:
+- Extensions appear as instance members in IntelliSense
+- No special syntax required - just call `obj:extensionMethod()`
+- Works across assemblies (same assembly and type's assembly)
+- Full support for C# 14 extension properties
+- Proper LuaCATS and TypeScript type hints
+
+**Generated Files:**
+- Updated `TypeWithExtensionMembers.g.cs` with 5 extension method bindings
+- Updated `LuaBindings.lua` with extension method stubs
+- Updated `LuaBindings.d.ts` with extension method/property declarations
+
 ---
 
 ## Test Status
@@ -677,10 +752,10 @@ The binding system is fully type-safe:
 ### Known Limitations
 1. Cannot bind `ref struct` types (by design - not marshallable)
 2. Cannot bind methods with `ref`/`out`/`in` parameters (filtered out)
-3. No support for events (not yet implemented)
-4. No support for async methods (Lua is synchronous)
-5. Generic methods not supported (only generic types)
-6. Lua table → array conversion only supports 1D arrays (multidimensional array constructors use dimension parameters)
+3. No support for async methods (Lua is synchronous)
+4. Generic methods not supported (only generic types)
+5. Lua table → array conversion only supports 1D arrays (multidimensional array constructors use dimension parameters)
+6. Extension method discovery limited to input assembly and type's declaring assembly (does not scan all loaded assemblies)
 
 ---
 

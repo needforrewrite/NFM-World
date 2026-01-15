@@ -2754,7 +2754,7 @@ public class LuaRuntimeTests
             local callCount = 0
             local obj = TypeWithEvents.new()
 
-            obj:AddListener_SimpleEvent(function()
+            obj:add_SimpleEvent(function()
                 callCount = callCount + 1
             end)
 
@@ -2777,7 +2777,7 @@ public class LuaRuntimeTests
             local receivedArgs = nil
             local obj = TypeWithEvents.new()
 
-            obj:AddListener_StandardEvent(function(sender, args)
+            obj:add_StandardEvent(function(sender, args)
                 receivedSender = sender
                 receivedArgs = args
             end)
@@ -2802,7 +2802,7 @@ public class LuaRuntimeTests
             local receivedValue = 0
             local obj = TypeWithEvents.new()
 
-            obj:AddListener_CustomEvent(function(sender, args)
+            obj:add_CustomEvent(function(sender, args)
                 receivedMessage = args.message
                 receivedValue = args.value
             end)
@@ -2825,7 +2825,7 @@ public class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             local receivedMessage = nil
 
-            TypeWithEvents.AddListener_StaticEvent(function(message)
+            TypeWithEvents.add_StaticEvent(function(message)
                 receivedMessage = message
             end)
 
@@ -2847,7 +2847,7 @@ public class LuaRuntimeTests
             local receivedMessage = nil
             local obj = TypeWithEvents.new()
 
-            obj:AddListener_MultiParamEvent(function(value, message)
+            obj:add_MultiParamEvent(function(value, message)
                 receivedValue = value
                 receivedMessage = message
             end)
@@ -2873,9 +2873,9 @@ public class LuaRuntimeTests
             local count3 = 0
             local obj = TypeWithEvents.new()
 
-            obj:AddListener_SimpleEvent(function() count1 = count1 + 1 end)
-            obj:AddListener_SimpleEvent(function() count2 = count2 + 1 end)
-            obj:AddListener_SimpleEvent(function() count3 = count3 + 1 end)
+            obj:add_SimpleEvent(function() count1 = count1 + 1 end)
+            obj:add_SimpleEvent(function() count2 = count2 + 1 end)
+            obj:add_SimpleEvent(function() count3 = count3 + 1 end)
 
             obj:raiseSimpleEvent()
 
@@ -2898,10 +2898,10 @@ public class LuaRuntimeTests
             local callCount = 0
             local obj = TypeWithEvents.new()
 
-            obj:AddListener_SimpleEvent(function() callCount = callCount + 1 end)
+            obj:add_SimpleEvent(function() callCount = callCount + 1 end)
             obj:raiseSimpleEvent()
 
-            obj:RemoveListener_SimpleEvent()
+            obj:remove_SimpleEvent()
             obj:raiseSimpleEvent()
 
             return callCount
@@ -2923,8 +2923,8 @@ public class LuaRuntimeTests
             local obj1 = TypeWithEvents.new()
             local obj2 = TypeWithEvents.new()
 
-            obj1:AddListener_SimpleEvent(function() count1 = count1 + 1 end)
-            obj2:AddListener_SimpleEvent(function() count2 = count2 + 1 end)
+            obj1:add_SimpleEvent(function() count1 = count1 + 1 end)
+            obj2:add_SimpleEvent(function() count2 = count2 + 1 end)
 
             obj1:raiseSimpleEvent()
             obj1:raiseSimpleEvent()
@@ -2945,12 +2945,66 @@ public class LuaRuntimeTests
     {
         var result = luaL_dostring(_L, @"
             local obj = TypeWithEvents.new()
-            obj:AddListener_SimpleEvent('not a function')
+            obj:add_SimpleEvent('not a function')
         ");
 
         Assert.AreNotEqual(LUA_OK, result);
         var errorMessage = lua_tostring(_L, -1) ?? "";
         Assert.IsTrue(errorMessage.Contains("Expected function"), $"Expected error about function parameter: {errorMessage}");
+    }
+
+    #endregion
+
+    #region Extension Method Tests
+
+    [TestMethod]
+    public void ExtensionMethod_GenericMethodsNotBound()
+    {
+        // Verify that generic extension methods (Convert<T> and Transform<T>) are NOT bound
+        // They should not exist on the TypeWithExtensionMembers Lua object
+        
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithExtensionMembers.new(42)
+            
+            -- Verify non-generic extension methods ARE available
+            local doubled = obj:double()
+            local added = obj:add(10)
+            
+            -- Try to call generic extension methods - they should NOT exist
+            local hasConvert = obj.convert ~= nil
+            local hasTransform = obj.transform ~= nil
+            
+            return doubled, added, hasConvert, hasTransform
+        ");
+
+        AssertLuaOk(result);
+        
+        var doubled = lua_tointeger(_L, -4);
+        var added = lua_tointeger(_L, -3);
+        var hasConvert = lua_toboolean(_L, -2);
+        var hasTransform = lua_toboolean(_L, -1);
+        
+        Assert.AreEqual(84, doubled, "Non-generic extension method 'double' should work");
+        Assert.AreEqual(52, added, "Non-generic extension method 'add' should work");
+        Assert.IsFalse(Convert.ToBoolean(hasConvert), "Generic extension method 'convert' should NOT be bound");
+        Assert.IsFalse(Convert.ToBoolean(hasTransform), "Generic extension method 'transform' should NOT be bound");
+    }
+
+    [TestMethod]
+    public void ExtensionMethod_GenericMethodsNotCallable()
+    {
+        // Verify that attempting to call a generic extension method results in an error
+        var result = luaL_dostring(_L, @"
+            local obj = TypeWithExtensionMembers.new(42)
+            return obj:convert(function(x) return tostring(x) end)
+        ");
+
+        Assert.AreNotEqual(LUA_OK, result, "Calling non-existent generic extension method should fail");
+        var errorMessage = lua_tostring(_L, -1) ?? "";
+        Assert.IsTrue(
+            errorMessage.Contains("convert") || errorMessage.Contains("attempt to call"),
+            $"Error message should mention 'convert' or 'attempt to call': {errorMessage}"
+        );
     }
 
     #endregion

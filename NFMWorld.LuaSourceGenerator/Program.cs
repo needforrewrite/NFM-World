@@ -142,6 +142,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 {
     private readonly StringBuilder _sb = new();
     private int _indent;
+    private readonly Dictionary<Type, List<MethodInfo>> _extensionMethodsByType = new();
+    private readonly Dictionary<Type, List<PropertyInfo>> _extensionPropertiesByType = new();
 
     private void AppendLine(string line = "")
     {
@@ -250,6 +252,41 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     }
 
     /// <summary>
+    /// Check if a method is an extension method (static method with first parameter marked with ExtensionAttribute).
+    /// </summary>
+    private static bool IsExtensionMethod(MethodInfo method)
+    {
+        if (!method.IsStatic || method.GetParameters().Length == 0)
+            return false;
+
+        var firstParam = method.GetParameters()[0];
+        var hasExtensionAttr = firstParam.GetCustomAttributesData()
+            .Any(a => a.AttributeType.Name == "ExtensionAttribute" ||
+                     a.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute");
+
+        // Also check if the method has the ExtensionAttribute directly (some compilers add it to the method too)
+        if (!hasExtensionAttr)
+        {
+            hasExtensionAttr = method.GetCustomAttributesData()
+                .Any(a => a.AttributeType.Name == "ExtensionAttribute" ||
+                         a.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute");
+        }
+
+        return hasExtensionAttr;
+    }
+
+    /// <summary>
+    /// Get the type that an extension method extends (the type of the first parameter).
+    /// </summary>
+    private static Type? GetExtendedType(MethodInfo method)
+    {
+        if (!IsExtensionMethod(method))
+            return null;
+
+        return method.GetParameters()[0].ParameterType;
+    }
+
+    /// <summary>
     /// Generate bindings for all sample types in the test project.
     /// </summary>
     public List<TypeInfo> Generate()
@@ -297,7 +334,141 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             types.Add(new TypeInfo(type));
         }
 
+        // Discover extension methods and properties
+        DiscoverExtensionMembers(types.Select(t => t.Type).ToList());
+
         return types;
+    }
+
+    /// <summary>
+    /// Discover extension methods and properties defined in the input assembly or same assembly as the extended type.
+    /// </summary>
+    private void DiscoverExtensionMembers(List<Type> types)
+    {
+        var assembliesToScan = new HashSet<Assembly> { assembly };
+        foreach (var type in types)
+        {
+            assembliesToScan.Add(type.Assembly);
+        }
+
+        foreach (var asm in assembliesToScan)
+        {
+            Console.WriteLine($"Scanning assembly for extensions: {asm.FullName}");
+            var staticClasses = asm.GetTypes().Where(t => t.IsSealed && t.IsAbstract).ToList();
+            Console.WriteLine($"Found {staticClasses.Count} static classes");
+
+            foreach (var type in staticClasses)
+            {
+                // Skip if not public
+                if (!type.IsPublic && !type.IsNestedPublic)
+                    continue;
+
+                var extensionMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .Where(IsExtensionMethod)
+                    .ToList();
+
+                if (extensionMethods.Any())
+                {
+                    Console.WriteLine($"  Found {extensionMethods.Count} extension methods in {type.Name}");
+                    foreach (var em in extensionMethods)
+                    {
+                        Console.WriteLine($"    - {em.Name}");
+                    }
+                }
+
+                foreach (var method in extensionMethods)
+                {
+                    if (!IsExtensionMethod(method))
+                        continue;
+
+                    Console.WriteLine($"      Checking extension method: {method.Name}");
+
+                    // Skip generic extension methods
+                    if (method.IsGenericMethodDefinition || method.ContainsGenericParameters)
+                    {
+                        Console.WriteLine($"        -> Skipped (generic)");
+                        continue;
+                    }
+
+                    // Skip if has byref parameters or return
+                    if (HasByRefParameters(method) || HasRefReturn(method))
+                    {
+                        Console.WriteLine($"        -> Skipped (byref params/return)");
+                        continue;
+                    }
+
+                    // Skip if hidden
+                    if (HasAttribute(method, nameof(LuaHiddenAttribute)))
+                    {
+                        Console.WriteLine($"        -> Skipped (hidden)");
+                        continue;
+                    }
+
+                    var extendedType = GetExtendedType(method);
+                    if (extendedType == null)
+                    {
+                        Console.WriteLine($"        -> Skipped (couldn't get extended type)");
+                        continue;
+                    }
+
+                    Console.WriteLine($"        Extends: {extendedType.FullName}");
+
+                    // Only include if extending a type in our list
+                    if (!types.Contains(extendedType))
+                    {
+                        Console.WriteLine($"        -> Skipped (extended type not in list)");
+                        Console.WriteLine($"        Types in list: {string.Join(", ", types.Select(t => t.FullName))}");
+                        continue;
+                    }
+
+                    Console.WriteLine($"        -> ADDED!");
+
+                    if (!_extensionMethodsByType.ContainsKey(extendedType))
+                        _extensionMethodsByType[extendedType] = new List<MethodInfo>();
+
+                    _extensionMethodsByType[extendedType].Add(method);
+                }
+
+                // Check for extension properties (C# 14 feature)
+                foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Static))
+                {
+                    // Extension properties have special getter/setter methods that are extension methods
+                    var getter = prop.GetGetMethod();
+                    var setter = prop.GetSetMethod();
+
+                    if (getter != null && IsExtensionMethod(getter))
+                    {
+                        // Skip generic extension properties
+                        if (getter.IsGenericMethodDefinition || getter.ContainsGenericParameters)
+                            continue;
+
+                        // Skip if has byref return
+                        if (HasRefReturn(prop))
+                            continue;
+
+                        // Skip if hidden
+                        if (HasAttribute(prop, nameof(LuaHiddenAttribute)))
+                            continue;
+
+                        var extendedType = GetExtendedType(getter);
+                        if (extendedType == null)
+                            continue;
+
+                        // Only include if extending a type in our list
+                        if (!types.Contains(extendedType))
+                            continue;
+
+                        if (!_extensionPropertiesByType.ContainsKey(extendedType))
+                            _extensionPropertiesByType[extendedType] = new List<PropertyInfo>();
+
+                        _extensionPropertiesByType[extendedType].Add(prop);
+                    }
+                }
+            }
+        }
+
+        Console.WriteLine($"Discovered {_extensionMethodsByType.Sum(kvp => kvp.Value.Count)} extension methods for {_extensionMethodsByType.Count} types");
+        Console.WriteLine($"Discovered {_extensionPropertiesByType.Sum(kvp => kvp.Value.Count)} extension properties for {_extensionPropertiesByType.Count} types");
     }
 
     private List<Type> DiscoverReferencedTypes(List<Type> rootTypes, HashSet<Type> discovered)
@@ -308,13 +479,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         while (queue.Count > 0)
         {
             var currentType = queue.Dequeue();
-            
+
             // Check base type
             if (currentType.BaseType != null)
             {
                 ProcessType(currentType.BaseType, discovered, queue, additional);
             }
-            
+
             // Check interfaces
             foreach (var iface in currentType.GetInterfaces())
             {
@@ -450,7 +621,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         // Skip ref structs - they cannot be marshalled to Lua
         if (IsRefStruct(type))
             return;
-        
+
         // Skip types containing static abstract members without implementation (C# 11 interfaces)
         if (type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
                 .OfType<MethodInfo>()
@@ -458,7 +629,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         {
             return;
         }
-        
+
         // Skip internal types not from the current assembly
         if (!type.IsPublic && type.Assembly != assembly)
             return;
@@ -593,7 +764,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         if (obj.Obj is T typedObj) return typedObj;
                         throw new InvalidCastException($"Stored object of type {obj.Type} cannot be cast to the requested type {typeof(T)}");
                     }
-                
+
                     return default;
                 }
 
@@ -703,7 +874,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         var id = *(int*)ptr;
                         ref var existingValue = ref _objects.GetOrAddValueRef(id);
                         existingValue = existingValue with { Obj = value };
-            
+
                         // If this struct has a parent, write it back to the parent's field
                         if (existingValue.StructParents is {} parentInfo)
                         {
@@ -805,14 +976,14 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 PushObject(L, value, tMetatable);
                                 return;
                             }
-                            
+
                             // For all other types, push based on runtime type
                             if (GetMetatableNameForType(value.GetType()) is {} metatable)
                             {
                                 PushObject(L, value, metatable);
                                 return;
                             }
-                            
+
                             // Slow path: attempt to push a base type (in between value.GetType() and <T>)'s metatable
                             if (value.GetType() != typeof(T))
                             {
@@ -824,12 +995,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                         PushObject(L, value, baseMetatable);
                                         return;
                                     }
-                            
+
                                     if (baseType == typeof(T))
                                         break;
                                 }
                             }
-                            
+
                             throw new InvalidOperationException($"Type {value.GetType()} is not supported");
                     }
                 }
@@ -1293,7 +1464,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     lua_setglobal(L, name);
                 }
             }
-            
+
             public class LuaException : Exception
             {
                 public LuaException(string message) : base(message)
@@ -1476,15 +1647,39 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine($"{readonlyMod}{luaFieldName}: {tsType};");
             }
 
-            // Instance methods
+            // Add extension properties as instance properties
+            if (_extensionPropertiesByType.TryGetValue(type, out var extensionProps))
+            {
+                foreach (var extProp in extensionProps)
+                {
+                    var luaPropertyName = GetLuaPropertyName(extProp);
+                    var tsType = GetTypeScriptTypeName(extProp.PropertyType);
+                    var readonlyMod = !extProp.CanWrite ? "readonly " : "";
+                    AppendLine($"{readonlyMod}{luaPropertyName}: {tsType};");
+                }
+            }
+
+            // Instance methods (including extension methods)
             var methods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
                 .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
                 .ToList();
 
+            // Add extension methods
+            if (_extensionMethodsByType.TryGetValue(type, out var extensionMethods))
+            {
+                methods.AddRange(extensionMethods);
+            }
+
             foreach (var method in methods)
             {
                 var luaMethodName = GetLuaMethodName(method);
-                var parameters = method.GetParameters()
+                var isExtension = IsExtensionMethod(method);
+                var methodParams = method.GetParameters();
+
+                // For extension methods, skip the first parameter (this)
+                var paramsToDocument = isExtension ? methodParams.Skip(1) : methodParams;
+
+                var parameters = paramsToDocument
                     .Select(p => $"{ToCamelCase(p.Name ?? "arg")}: {GetTypeScriptTypeName(p.ParameterType)}")
                     .ToList();
                 var paramStr = string.Join(", ", parameters);
@@ -1521,7 +1716,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 {
                     var parameters = string.Join(", ", indexParams
                         .Select(p => $"{GetTypeScriptTypeName(p.ParameterType)}"));
-                    
+
                     var tsType = GetTypeScriptTypeName(indexer.PropertyType);
                     AppendLine($"[index: [{parameters}]]: {tsType};");
                 }
@@ -1645,6 +1840,17 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             var fieldLuaName = GetLuaFieldName(field);
             var fieldType = GetLuaStubTypeName(field.FieldType);
             AppendLine($"---@field {fieldLuaName} {fieldType}");
+        }
+
+        // Add extension properties as instance properties
+        if (_extensionPropertiesByType.TryGetValue(type, out var extensionProps))
+        {
+            foreach (var extProp in extensionProps.Where(ep => ep.CanRead))
+            {
+                var propLuaName = GetLuaPropertyName(extProp);
+                var propType = GetLuaStubTypeName(extProp.PropertyType);
+                AppendLine($"---@field {propLuaName} {propType}");
+            }
         }
 
         if (isArray)
@@ -1791,18 +1997,28 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine();
         }
 
-        // Generate instance method stubs
+        // Generate instance method stubs (including extension methods)
         var instanceMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
             .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
             .ToList();
 
+        // Add extension methods
+        if (_extensionMethodsByType.TryGetValue(type, out var extensionMethods))
+        {
+            instanceMethods.AddRange(extensionMethods);
+        }
+
         foreach (var method in instanceMethods)
         {
             var luaMethodName = GetLuaMethodName(method);
+            var isExtension = IsExtensionMethod(method);
             var parameters = method.GetParameters();
 
+            // For extension methods, skip the first parameter (this)
+            var paramsToDocument = isExtension ? parameters.Skip(1).ToArray() : parameters;
+
             AppendLine($"---@param self {GetLuaStubTypeName(typeInfo.Type)}");
-            foreach (var param in parameters)
+            foreach (var param in paramsToDocument)
             {
                 var paramType = GetLuaStubTypeName(param.ParameterType);
                 var paramName = param.Name ?? $"param{param.Position}";
@@ -1816,7 +2032,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine($"---@return {returnType}");
             }
 
-            var paramNames = string.Join(", ", parameters.Select(p => p.Name ?? $"param{p.Position}"));
+            var paramNames = string.Join(", ", paramsToDocument.Select(p => p.Name ?? $"param{p.Position}"));
             AppendLine($"function {luaName}Instance:{luaMethodName}({paramNames}) end");
             AppendLine();
         }
@@ -2415,7 +2631,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine("{");
             using (Indent())
             {
-                // Properties
+                // Properties (including extension properties)
                 var props = GetPropertiesInTypeAndInterfaces(type)
                     .Where(p => !HasAttribute(p.Property, nameof(LuaHiddenAttribute)) &&
                                 !HasRefReturn(p.Property) &&
@@ -2423,13 +2639,45 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 p.Property.GetIndexParameters().Length == 0) // Skip indexers
                     .ToList();
 
+                // Add extension properties
+                if (_extensionPropertiesByType.TryGetValue(type, out var extensionProps))
+                {
+                    foreach (var extProp in extensionProps)
+                    {
+                        if (extProp.CanRead)
+                        {
+                            props.Add((type, extProp));
+                        }
+                    }
+                }
+
                 foreach (var prop in props)
                 {
                     var luaName = GetLuaPropertyName(prop.Property);
+                    var isExtension = prop.Property.GetGetMethod() != null && IsExtensionMethod(prop.Property.GetGetMethod()!);
+
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        GeneratePushValueWithParentTracking($"(({GetFullTypeName(prop.Type)})obj)",prop.Property.Name, prop.Property.PropertyType, type, prop.Property.Name, isStruct, prop.Property.SetMethod == null || IsInitOnly(prop.Property));
+                        if (isExtension)
+                        {
+                            // Extension property - call the getter as a static method
+                            var getter = prop.Property.GetGetMethod()!;
+                            var declaringType = getter.DeclaringType!;
+                            var declaringTypeName = GetFullTypeName(declaringType);
+                            AppendLine($"{{");
+                            using (Indent())
+                            {
+                                AppendLine($"var value = {declaringTypeName}.{getter.Name}((({GetFullTypeName(type)})obj));");
+                                GeneratePushValue("value", prop.Property.PropertyType);
+                                AppendLine("return 1;");
+                            }
+                            AppendLine($"}}");
+                        }
+                        else
+                        {
+                            GeneratePushValueWithParentTracking($"(({GetFullTypeName(prop.Type)})obj)", prop.Property.Name, prop.Property.PropertyType, type, prop.Property.Name, isStruct, prop.Property.SetMethod == null || IsInitOnly(prop.Property));
+                        }
                     }
                 }
 
@@ -2473,6 +2721,25 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }
                 }
 
+                // Extension methods (appear as instance methods in Lua)
+                if (_extensionMethodsByType.TryGetValue(type, out var extensionMethods))
+                {
+                    var extensionMethodGroups = extensionMethods
+                        .GroupBy(m => GetLuaMethodName(m))
+                        .ToList();
+
+                    foreach (var methodGroup in extensionMethodGroups)
+                    {
+                        var methodName = methodGroup.Key;
+                        AppendLine($"case \"{methodName}\":");
+                        using (Indent())
+                        {
+                            AppendLine($"lua_pushcfunction(L, ({safeName}_method_{GetSafeMethodName(methodName)}));");
+                            AppendLine("return 1;");
+                        }
+                    }
+                }
+
                 // Instance events
                 var instanceEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
                     .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
@@ -2511,7 +2778,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private IEnumerable<(Type Type, MethodInfo Method)> GetMethodsInTypeAndInterfaces(Type type)
     {
         var dict = new Dictionary<string, MethodInfo>();
-        
+
         var startingMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
             .Where(m => !m.IsSpecialName);
 
@@ -2527,7 +2794,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         {
             yield break;
         }
-        
+
         var interfaces = type.GetInterfaces();
         foreach (var iface in interfaces)
         {
@@ -2561,9 +2828,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private static IEnumerable<FieldInfo> GetFieldsInTypeAndInterfaces(Type type)
     {
         var dict = new Dictionary<string, FieldInfo>();
-        
+
         var startingFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
-        
+
         foreach (var field in startingFields)
         {
             if (dict.TryAdd(field.Name, field))
@@ -2571,7 +2838,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 yield return field;
             }
         }
-        
+
         var interfaces = type.GetInterfaces();
         foreach (var iface in interfaces)
         {
@@ -2589,9 +2856,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private static IEnumerable<(Type Type, PropertyInfo Property)> GetPropertiesInTypeAndInterfaces(Type type)
     {
         var dict = new Dictionary<string, PropertyInfo>();
-        
+
         var startingProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
-        
+
         foreach (var prop in startingProperties)
         {
             if (dict.TryAdd(prop.Name, prop))
@@ -2599,7 +2866,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 yield return (type, prop);
             }
         }
-        
+
         var interfaces = type.GetInterfaces();
         foreach (var iface in interfaces)
         {
@@ -2822,15 +3089,45 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 p.GetIndexParameters().Length == 0) // Skip indexers
                     .ToList();
 
+                // Add extension properties
+                if (_extensionPropertiesByType.TryGetValue(type, out var extensionProps))
+                {
+                    foreach (var extProp in extensionProps.Where(ep => ep.CanWrite))
+                    {
+                        props.Add(extProp);
+                    }
+                }
+
                 foreach (var prop in props)
                 {
                     var luaName = GetLuaPropertyName(prop);
+                    var setter = prop.GetSetMethod();
+                    var isExtension = setter != null && IsExtensionMethod(setter);
+
                     AppendLine($"case \"{luaName}\":");
                     using (Indent())
                     {
-                        GenerateToObjectCode($"obj.{prop.Name}", prop.PropertyType, "3");
-                        if (isStruct) AppendLine("UpdateStruct(L, 1, obj);");
-                        AppendLine("break;");
+                        if (isExtension)
+                        {
+                            // Extension property setter - call as static method
+                            var declaringType = setter!.DeclaringType!;
+                            var declaringTypeName = GetFullTypeName(declaringType);
+                            var valueTypeName = GetFullTypeName(prop.PropertyType);
+                            AppendLine($"{{");
+                            using (Indent())
+                            {
+                                AppendLine($"var value = ToObject<{valueTypeName}>(L, 3);");
+                                AppendLine($"{declaringTypeName}.{setter.Name}((({GetFullTypeName(type)})obj), value!);");
+                                AppendLine("break;");
+                            }
+                            AppendLine($"}}");
+                        }
+                        else
+                        {
+                            GenerateToObjectCode($"obj.{prop.Name}", prop.PropertyType, "3");
+                            if (isStruct) AppendLine("UpdateStruct(L, 1, obj);");
+                            AppendLine("break;");
+                        }
                     }
                 }
 
@@ -3547,10 +3844,22 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         !HasByRefParameters(m.Method) &&
                         !IsCompilerMethod(m.Method) &&
                         !HasRefReturn(m.Method)) // Skip generic methods and byref parameters
+            .ToList();
+
+        // Add extension methods
+        if (_extensionMethodsByType.TryGetValue(type, out var extensionMethods))
+        {
+            foreach (var extMethod in extensionMethods)
+            {
+                methods.Add((type, extMethod));
+            }
+        }
+
+        var methodGroups = methods
             .GroupBy(m => GetLuaMethodName(m.Method))
             .ToList();
 
-        foreach (var methodGroup in methods)
+        foreach (var methodGroup in methodGroups)
         {
             var methodName = methodGroup.Key;
             var overloads = methodGroup.OrderBy(m => m.Method.GetParameters().Length).ToList();
@@ -3580,8 +3889,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 }
                 AppendLine();
 
-                // Group overloads by argument count
-                var overloadsByArgCount = overloads.GroupBy(m => m.Method.GetParameters().Length).ToList();
+                // Group overloads by argument count (excluding 'this' for extension methods)
+                var overloadsByArgCount = overloads.GroupBy(m => 
+                {
+                    var paramCount = m.Method.GetParameters().Length;
+                    // For extension methods, exclude the 'this' parameter from Lua argCount
+                    return IsExtensionMethod(m.Method) ? paramCount - 1 : paramCount;
+                }).ToList();
 
                 foreach (var argCountGroup in overloadsByArgCount)
                 {
@@ -3597,14 +3911,19 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             // Single overload - no resolution needed
                             var method = methodsWithSameArgCount[0].Method;
                             var callingType = methodsWithSameArgCount[0].Type;
+                            var isExtension = IsExtensionMethod(method);
                             var parameters = method.GetParameters();
 
-                            for (int i = 0; i < parameters.Length; i++)
+                            // For extension methods, skip the first parameter (this)
+                            var paramStartIndex = isExtension ? 1 : 0;
+                            for (int i = paramStartIndex; i < parameters.Length; i++)
                             {
-                                GenerateParameterRead(parameters[i], i, 2);
+                                GenerateParameterRead(parameters[i], i - paramStartIndex, 2);
                             }
 
-                            var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
+                            var argList = isExtension
+                                ? string.Join(", ", parameters.Skip(1).Select((_, i) => $"arg{i}"))
+                                : string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
 
                             if (method.ReturnType == typeof(void))
                             {
@@ -3612,8 +3931,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine($"(({GetFullTypeName(callingType)})self).{method.Name}({argList});");
-                                    if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
+                                    if (isExtension)
+                                    {
+                                        var declaringTypeName = GetFullTypeName(method.DeclaringType!);
+                                        if (string.IsNullOrEmpty(argList))
+                                        {
+                                            AppendLine($"{declaringTypeName}.{method.Name}(self);");
+                                        }
+                                        else
+                                        {
+                                            AppendLine($"{declaringTypeName}.{method.Name}(self, {argList});");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        AppendLine($"(({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                    }
+                                    if (isStruct && !isExtension) AppendLine("UpdateStruct(L, 1, self);");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -3632,8 +3966,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine($"var result = (({GetFullTypeName(callingType)})self).{method.Name}({argList});");
-                                    if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
+                                    if (isExtension)
+                                    {
+                                        var declaringTypeName = GetFullTypeName(method.DeclaringType!);
+                                        if (string.IsNullOrEmpty(argList))
+                                        {
+                                            AppendLine($"var result = {declaringTypeName}.{method.Name}(self);");
+                                        }
+                                        else
+                                        {
+                                            AppendLine($"var result = {declaringTypeName}.{method.Name}(self, {argList});");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        AppendLine($"var result = (({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                    }
+                                    if (isStruct && !isExtension) AppendLine("UpdateStruct(L, 1, self);");
                                     GeneratePushValue("result", method.ReturnType);
                                     AppendLine("return 1;");
                                 }
@@ -3659,18 +4008,20 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             for (int methodIdx = 0; methodIdx < methodsWithSameArgCount.Count; methodIdx++)
                             {
                                 var method = methodsWithSameArgCount[methodIdx].Method;
+                                var isExtension = IsExtensionMethod(method);
                                 var parameters = method.GetParameters();
+                                var paramStartIndex = isExtension ? 1 : 0;
 
-                                AppendLine($"// Try overload {methodIdx}: {method.Name}({string.Join(", ", parameters.Select(p => GetFullTypeName(p.ParameterType)))})");
+                                AppendLine($"// Try overload {methodIdx}: {method.Name}({string.Join(", ", parameters.Skip(paramStartIndex).Select(p => GetFullTypeName(p.ParameterType)))})");
                                 AppendLine("{");
                                 using (Indent())
                                 {
                                     AppendLine($"int score = 0;");
 
-                                    for (int i = 0; i < parameters.Length; i++)
+                                    for (int i = paramStartIndex; i < parameters.Length; i++)
                                     {
                                         var paramTypeName = GetFullTypeName(parameters[i].ParameterType);
-                                        AppendLine($"int score{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 2});");
+                                        AppendLine($"int score{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i - paramStartIndex + 2});");
                                         AppendLine($"if (score{i} < 0) goto next{methodIdx};");
                                         AppendLine($"else score += score{i};");
                                     }
@@ -3698,7 +4049,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 {
                                     var method = methodsWithSameArgCount[methodIdx].Method;
                                     var callingType = methodsWithSameArgCount[methodIdx].Type;
+                                    var isExtension = IsExtensionMethod(method);
                                     var parameters = method.GetParameters();
+                                    var paramStartIndex = isExtension ? 1 : 0;
 
                                     AppendLine($"case {methodIdx}:");
                                     using (Indent())
@@ -3706,12 +4059,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                         AppendLine("{");
                                         using (Indent())
                                         {
-                                            for (int i = 0; i < parameters.Length; i++)
+                                            for (int i = paramStartIndex; i < parameters.Length; i++)
                                             {
-                                                GenerateParameterRead(parameters[i], i, 2);
+                                                GenerateParameterRead(parameters[i], i - paramStartIndex, 2);
                                             }
 
-                                            var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
+                                            var argList = string.Join(", ", parameters.Skip(paramStartIndex).Select((_, i) => $"arg{i}"));
 
                                             if (method.ReturnType == typeof(void))
                                             {
@@ -3719,8 +4072,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine($"(({GetFullTypeName(callingType)}))self).{method.Name}({argList});");
-                                                    if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
+                                                    if (isExtension)
+                                                    {
+                                                        var declaringTypeName = GetFullTypeName(method.DeclaringType!);
+                                                        if (string.IsNullOrEmpty(argList))
+                                                        {
+                                                            AppendLine($"{declaringTypeName}.{method.Name}(self);");
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendLine($"{declaringTypeName}.{method.Name}(self, {argList});");
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        AppendLine($"(({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                                    }
+                                                    if (isStruct && !isExtension) AppendLine("UpdateStruct(L, 1, self);");
                                                     AppendLine("return 0;");
                                                 }
                                                 AppendLine("}");
@@ -3739,8 +4107,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine($"var result = self.{method.Name}({argList});");
-                                                    if (isStruct) AppendLine("UpdateStruct(L, 1, self);");
+                                                    if (isExtension)
+                                                    {
+                                                        var declaringTypeName = GetFullTypeName(method.DeclaringType!);
+                                                        if (string.IsNullOrEmpty(argList))
+                                                        {
+                                                            AppendLine($"var result = {declaringTypeName}.{method.Name}(self);");
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendLine($"var result = {declaringTypeName}.{method.Name}(self, {argList});");
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        AppendLine($"var result = (({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                                    }
+                                                    if (isStruct && !isExtension) AppendLine("UpdateStruct(L, 1, self);");
                                                     GeneratePushValue("result", method.ReturnType);
                                                     AppendLine("return 1;");
                                                 }
@@ -3956,6 +4339,37 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     }
 
     #region Helpers
+
+    /// <summary>
+    /// Generate the method invocation code, handling both instance methods and extension methods.
+    /// </summary>
+    private void GenerateMethodInvocation(MethodInfo method, Type callingType, string selfExpression, string argList, bool isStruct)
+    {
+        var isExtension = IsExtensionMethod(method);
+
+        if (isExtension)
+        {
+            // Extension method: call as static method with self as first parameter
+            var declaringType = method.DeclaringType;
+            if (declaringType != null)
+            {
+                var fullDeclaringTypeName = GetFullTypeName(declaringType);
+                if (string.IsNullOrEmpty(argList))
+                {
+                    AppendLine($"{fullDeclaringTypeName}.{method.Name}({selfExpression})");
+                }
+                else
+                {
+                    AppendLine($"{fullDeclaringTypeName}.{method.Name}({selfExpression}, {argList})");
+                }
+            }
+        }
+        else
+        {
+            // Regular instance method
+            AppendLine($"(({GetFullTypeName(callingType)}){selfExpression}).{method.Name}({argList})");
+        }
+    }
 
     private static bool IsInitOnly(PropertyInfo property)
     {

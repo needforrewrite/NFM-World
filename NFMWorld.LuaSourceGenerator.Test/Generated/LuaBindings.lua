@@ -123,6 +123,58 @@ function CustomEventArgsInstance:equals(obj) end
 function CustomEventArgsInstance:getHashCode() end
 
 
+---@class TypeWithExtensionMembersInstance
+---@field value integer
+TypeWithExtensionMembersInstance = {}
+TypeWithExtensionMembers = {}
+
+---@class (exact) TypeWithExtensionMembers
+---Creates a new TypeWithExtensionMembers
+---@param value integer
+---@return TypeWithExtensionMembersInstance
+function TypeWithExtensionMembers.new(value) end
+
+---@param self TypeWithExtensionMembersInstance
+---@return TypeInstance
+function TypeWithExtensionMembersInstance:getType() end
+
+---@param self TypeWithExtensionMembersInstance
+---@return string
+function TypeWithExtensionMembersInstance:toString() end
+
+---@param self TypeWithExtensionMembersInstance
+---@param obj? ObjectInstance
+---@return boolean
+function TypeWithExtensionMembersInstance:equals(obj) end
+
+---@param self TypeWithExtensionMembersInstance
+---@return integer
+function TypeWithExtensionMembersInstance:getHashCode() end
+
+---@param self TypeWithExtensionMembersInstance
+---@return integer
+function TypeWithExtensionMembersInstance:double() end
+
+---@param self TypeWithExtensionMembersInstance
+---@param amount integer
+---@return integer
+function TypeWithExtensionMembersInstance:add(amount) end
+
+---@param self TypeWithExtensionMembersInstance
+---@param multiplier integer
+---@param addend integer
+---@return integer
+function TypeWithExtensionMembersInstance:multiply(multiplier, addend) end
+
+---@param self TypeWithExtensionMembersInstance
+---@param prefix string
+---@return string
+function TypeWithExtensionMembersInstance:formatValue(prefix) end
+
+---@param self TypeWithExtensionMembersInstance
+function TypeWithExtensionMembersInstance:printValue() end
+
+
 ---@class InlineBufferInstance
 InlineBufferInstance = {}
 InlineBuffer = {}

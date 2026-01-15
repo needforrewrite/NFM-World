@@ -38,6 +38,21 @@ declare class CustomEventArgs {
     getHashCode(): number;
 }
 
+declare class TypeWithExtensionMembers {
+    /** @customName new */
+    static inst(value: number): TypeWithExtensionMembers;
+    value: number;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    double(): number;
+    add(amount: number): number;
+    multiply(multiplier: number, addend: number): number;
+    formatValue(prefix: string): string;
+    printValue(): void;
+}
+
 declare class InlineBuffer {
     /** @customName new */
     static inst(): InlineBuffer;
