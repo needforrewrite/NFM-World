@@ -3956,9 +3956,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     }
                                     else
                                     {
-                                        AppendLine($"(({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                        if (isStruct)
+                                        {
+                                            // For structs, unbox to local variable, mutate it, then update storage
+                                            AppendLine($"var structValue = ({GetFullTypeName(callingType)})self;");
+                                            AppendLine($"structValue.{method.Name}({argList});");
+                                            AppendLine("UpdateStruct(L, 1, structValue);");
+                                        }
+                                        else
+                                        {
+                                            AppendLine($"(({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                        }
                                     }
-                                    if (isStruct && !isExtension) AppendLine("UpdateStruct(L, 1, self);");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -3991,9 +4000,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     }
                                     else
                                     {
-                                        AppendLine($"var result = (({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                        if (isStruct)
+                                        {
+                                            // For structs, unbox to local variable, call method, then update storage
+                                            AppendLine($"var structValue = ({GetFullTypeName(callingType)})self;");
+                                            AppendLine($"var result = structValue.{method.Name}({argList});");
+                                            AppendLine("UpdateStruct(L, 1, structValue);");
+                                        }
+                                        else
+                                        {
+                                            AppendLine($"var result = (({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                        }
                                     }
-                                    if (isStruct && !isExtension) AppendLine("UpdateStruct(L, 1, self);");
                                     GeneratePushValue("result", method.ReturnType);
                                     AppendLine("return 1;");
                                 }
@@ -4097,9 +4115,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                     }
                                                     else
                                                     {
-                                                        AppendLine($"(({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                                        if (isStruct)
+                                                        {
+                                                            // For structs, unbox to local variable, mutate it, then update storage
+                                                            AppendLine($"var structValue = ({GetFullTypeName(callingType)})self;");
+                                                            AppendLine($"structValue.{method.Name}({argList});");
+                                                            AppendLine("UpdateStruct(L, 1, structValue);");
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendLine($"(({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                                        }
                                                     }
-                                                    if (isStruct && !isExtension) AppendLine("UpdateStruct(L, 1, self);");
                                                     AppendLine("return 0;");
                                                 }
                                                 AppendLine("}");
@@ -4132,9 +4159,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                     }
                                                     else
                                                     {
-                                                        AppendLine($"var result = (({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                                        if (isStruct)
+                                                        {
+                                                            // For structs, unbox to local variable, call method, then update storage
+                                                            AppendLine($"var structValue = ({GetFullTypeName(callingType)})self;");
+                                                            AppendLine($"var result = structValue.{method.Name}({argList});");
+                                                            AppendLine("UpdateStruct(L, 1, structValue);");
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendLine($"var result = (({GetFullTypeName(callingType)})self).{method.Name}({argList});");
+                                                        }
                                                     }
-                                                    if (isStruct && !isExtension) AppendLine("UpdateStruct(L, 1, self);");
                                                     GeneratePushValue("result", method.ReturnType);
                                                     AppendLine("return 1;");
                                                 }
