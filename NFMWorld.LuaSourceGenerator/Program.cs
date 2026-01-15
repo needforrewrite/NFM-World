@@ -2777,14 +2777,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
     private IEnumerable<(Type Type, MethodInfo Method)> GetMethodsInTypeAndInterfaces(Type type)
     {
-        var dict = new Dictionary<string, MethodInfo>();
+        // Use a HashSet to track unique method signatures (method name + parameters)
+        var seen = new HashSet<string>();
 
         var startingMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
             .Where(m => !m.IsSpecialName);
 
         foreach (var method in startingMethods)
         {
-            if (dict.TryAdd(method.Name, method))
+            var signature = GetMethodSignature(method);
+            if (seen.Add(signature))
             {
                 yield return (type, method);
             }
@@ -2804,7 +2806,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 var interfaceMethods = map.TargetMethods;
                 foreach (var method in interfaceMethods)
                 {
-                    if (!method.Name.Contains('.') && dict.TryAdd(method.Name, method))
+                    var signature = GetMethodSignature(method);
+                    if (!method.Name.Contains('.') && seen.Add(signature))
                     {
                         yield return (iface, method);
                     }
@@ -2816,13 +2819,21 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     .Where(m => !m.IsSpecialName);
                 foreach (var method in interfaceMethods)
                 {
-                    if (dict.TryAdd(method.Name, method))
+                    var signature = GetMethodSignature(method);
+                    if (seen.Add(signature))
                     {
                         yield return (iface, method);
                     }
                 }
             }
         }
+    }
+
+    private static string GetMethodSignature(MethodInfo method)
+    {
+        var parameters = method.GetParameters();
+        var paramTypes = string.Join(",", parameters.Select(p => p.ParameterType.FullName ?? p.ParameterType.Name));
+        return $"{method.Name}({paramTypes})";
     }
 
     private static IEnumerable<FieldInfo> GetFieldsInTypeAndInterfaces(Type type)

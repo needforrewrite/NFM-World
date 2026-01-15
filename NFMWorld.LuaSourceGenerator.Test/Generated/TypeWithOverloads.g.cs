@@ -566,17 +566,131 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: ProcessNumber(int)
             {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessNumber(arg0);
-                PushValue(L, result);
-                return 1;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: ProcessNumber(double)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<double>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            // Try overload 2: ProcessNumber(long)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<long>(L, 2);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 2;
+                }
+            }
+            next2:
+
+            // Try overload 3: ProcessNumber(float)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float>(L, 2);
+                if (score0 < 0) goto next3;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 3;
+                }
+            }
+            next3:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<int>(L, 2)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessNumber(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<double>(L, 2)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessNumber(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 2:
+                    {
+                        var arg0 = ToObject<long>(L, 2)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessNumber(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 3:
+                    {
+                        var arg0 = ToObject<float>(L, 2)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessNumber(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for processNumber");
+                    return 0;
             }
         }
 
@@ -597,17 +711,131 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<string>(L, 2)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: ProcessData(string)
             {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessData(arg0);
-                PushValue(L, result);
-                return 1;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: ProcessData(int[])
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int[]>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            // Try overload 2: ProcessData(float[])
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float[]>(L, 2);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 2;
+                }
+            }
+            next2:
+
+            // Try overload 3: ProcessData(bool)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<bool>(L, 2);
+                if (score0 < 0) goto next3;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 3;
+                }
+            }
+            next3:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<string>(L, 2)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessData(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<int[]>(L, 2)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessData(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 2:
+                    {
+                        var arg0 = ToObject<float[]>(L, 2)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessData(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 3:
+                    {
+                        var arg0 = ToObject<bool>(L, 2)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).ProcessData(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for processData");
+                    return 0;
             }
         }
 
@@ -628,18 +856,180 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Combine(int, int)
             {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).Combine(arg0, arg1);
-                PushValue(L, result);
-                return 1;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<int>(L, 3);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: Combine(float, float)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<float>(L, 3);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            // Try overload 2: Combine(string, string)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 2);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<string>(L, 3);
+                if (score1 < 0) goto next2;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 2;
+                }
+            }
+            next2:
+
+            // Try overload 3: Combine(int, string)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 2);
+                if (score0 < 0) goto next3;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<string>(L, 3);
+                if (score1 < 0) goto next3;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 3;
+                }
+            }
+            next3:
+
+            // Try overload 4: Combine(string, int)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 2);
+                if (score0 < 0) goto next4;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<int>(L, 3);
+                if (score1 < 0) goto next4;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 4;
+                }
+            }
+            next4:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<int>(L, 2)!;
+                        var arg1 = ToObject<int>(L, 3)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<float>(L, 2)!;
+                        var arg1 = ToObject<float>(L, 3)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 2:
+                    {
+                        var arg0 = ToObject<string>(L, 2)!;
+                        var arg1 = ToObject<string>(L, 3)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 3:
+                    {
+                        var arg0 = ToObject<int>(L, 2)!;
+                        var arg1 = ToObject<string>(L, 3)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 4:
+                    {
+                        var arg0 = ToObject<string>(L, 2)!;
+                        var arg1 = ToObject<int>(L, 3)!;
+                        try
+                        {
+                            var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)self).Combine(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for combine");
+                    return 0;
             }
         }
 
