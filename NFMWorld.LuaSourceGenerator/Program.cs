@@ -941,7 +941,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// <summary>
                 /// Push a value to Lua stack based on its runtime type.
                 /// </summary>
-                private static void PushValue<T>(lua_State L, T value)
+                public static void PushValue<T>(lua_State L, T value)
                 {
                     switch (value)
                     {
@@ -1024,7 +1024,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// <summary>
                 /// Convert Lua value at stack index to a C# object of the target type.
                 /// </summary>
-                private static T? ToObject<T>(lua_State L, int idx)
+                public static T? ToObject<T>(lua_State L, int idx)
                 {
                     var luaType = lua_type(L, idx);
 

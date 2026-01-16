@@ -2962,28 +2962,28 @@ public class LuaRuntimeTests
     {
         // Verify that generic extension methods (Convert<T> and Transform<T>) are NOT bound
         // They should not exist on the TypeWithExtensionMembers Lua object
-        
+
         var result = luaL_dostring(_L, @"
             local obj = TypeWithExtensionMembers.new(42)
-            
+
             -- Verify non-generic extension methods ARE available
             local doubled = obj:double()
             local added = obj:add(10)
-            
+
             -- Try to call generic extension methods - they should NOT exist
             local hasConvert = obj.convert ~= nil
             local hasTransform = obj.transform ~= nil
-            
+
             return doubled, added, hasConvert, hasTransform
         ");
 
         AssertLuaOk(result);
-        
+
         var doubled = lua_tointeger(_L, -4);
         var added = lua_tointeger(_L, -3);
         var hasConvert = lua_toboolean(_L, -2);
         var hasTransform = lua_toboolean(_L, -1);
-        
+
         Assert.AreEqual(84, doubled, "Non-generic extension method 'double' should work");
         Assert.AreEqual(52, added, "Non-generic extension method 'add' should work");
         Assert.IsFalse(Convert.ToBoolean(hasConvert), "Generic extension method 'convert' should NOT be bound");
