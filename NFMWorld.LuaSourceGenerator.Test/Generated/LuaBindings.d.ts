@@ -448,6 +448,18 @@ declare class List_Int32 {
     [index: number]: number;
 }
 
+declare class List_Int32_Enumerator {
+    /** @customName new */
+    static inst(): List_Int32_Enumerator;
+    readonly current: number;
+    dispose(): void;
+    moveNext(): boolean;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
 declare class List_String {
     /** @customName new */
     static inst(): List_String;
@@ -510,6 +522,18 @@ declare class List_String {
     equals(obj: Object): boolean;
     getHashCode(): number;
     [index: number]: string;
+}
+
+declare class List_String_Enumerator {
+    /** @customName new */
+    static inst(): List_String_Enumerator;
+    readonly current: string;
+    dispose(): void;
+    moveNext(): boolean;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
 }
 
 declare class ReferencedType {
@@ -746,6 +770,14 @@ declare class IComparer_Int32 {
     compare(x: number, y: number): number;
 }
 
+declare class IEnumerator_Int32 {
+    readonly current: number;
+}
+
+declare class IDisposable {
+    dispose(): void;
+}
+
 declare class ReadOnlyCollection_String {
     /** @customName new */
     static inst(list: IList_String): ReadOnlyCollection_String;
@@ -763,6 +795,10 @@ declare class ReadOnlyCollection_String {
 
 declare class IComparer_String {
     compare(x: string, y: string): number;
+}
+
+declare class IEnumerator_String {
+    readonly current: string;
 }
 
 declare class IList_ReferencedType {
@@ -820,6 +856,18 @@ declare class ArrayOfReferencedType {
     readonly length: number;
 }
 
+declare class List_ReferencedType_Enumerator {
+    /** @customName new */
+    static inst(): List_ReferencedType_Enumerator;
+    readonly current: ReferencedType | null;
+    dispose(): void;
+    moveNext(): boolean;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
 declare class IComparer {
     compare(x: Object, y: Object): number;
 }
@@ -827,10 +875,6 @@ declare class IComparer {
 declare class IEqualityComparer {
     equals(x: Object, y: Object): boolean;
     getHashCode(obj: Object): number;
-}
-
-declare class IEnumerator_Int32 {
-    readonly current: number;
 }
 
 declare class IList_Int64 {
@@ -862,20 +906,12 @@ declare class IReadOnlyCollection_Int64 {
     readonly count: number;
 }
 
-declare class IEnumerator_String {
-    readonly current: string;
-}
-
 declare class IEnumerator_Single {
     readonly current: number;
 }
 
 declare class IEnumerator_ReferencedType {
     readonly current: ReferencedType | null;
-}
-
-declare class IDisposable {
-    dispose(): void;
 }
 
 declare class IEnumerator_Int64 {

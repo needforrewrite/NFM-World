@@ -40,7 +40,9 @@ public partial class LuaBindings
         Register_Int32Array2D(L);
         Register_SingleArray3D(L);
         Register_List_Int32(L);
+        Register_List_Int32_Enumerator(L);
         Register_List_String(L);
+        Register_List_String_Enumerator(L);
         Register_ReferencedType(L);
         Register_List_ReferencedType(L);
         Register_ICloneable(L);
@@ -68,8 +70,11 @@ public partial class LuaBindings
         Register_IReadOnlyCollection_Single(L);
         Register_ReadOnlyCollection_Int32(L);
         Register_IComparer_Int32(L);
+        Register_IEnumerator_Int32(L);
+        Register_IDisposable(L);
         Register_ReadOnlyCollection_String(L);
         Register_IComparer_String(L);
+        Register_IEnumerator_String(L);
         Register_IList_ReferencedType(L);
         Register_ICollection_ReferencedType(L);
         Register_IEnumerable_ReferencedType(L);
@@ -78,18 +83,16 @@ public partial class LuaBindings
         Register_ReadOnlyCollection_ReferencedType(L);
         Register_IComparer_ReferencedType(L);
         Register_ReferencedTypeArray(L);
+        Register_List_ReferencedType_Enumerator(L);
         Register_IComparer(L);
         Register_IEqualityComparer(L);
-        Register_IEnumerator_Int32(L);
         Register_IList_Int64(L);
         Register_ICollection_Int64(L);
         Register_IEnumerable_Int64(L);
         Register_IReadOnlyList_Int64(L);
         Register_IReadOnlyCollection_Int64(L);
-        Register_IEnumerator_String(L);
         Register_IEnumerator_Single(L);
         Register_IEnumerator_ReferencedType(L);
-        Register_IDisposable(L);
         Register_IEnumerator_Int64(L);
     }
 

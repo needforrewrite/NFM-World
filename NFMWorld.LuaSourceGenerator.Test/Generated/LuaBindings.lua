@@ -2325,6 +2325,41 @@ function List_Int32Instance:equals(obj) end
 function List_Int32Instance:getHashCode() end
 
 
+---@class List_Int32_EnumeratorInstance : IEnumerator_Int32Instance, IEnumeratorInstance
+---@field current integer
+List_Int32_EnumeratorInstance = {}
+List_Int32_Enumerator = {}
+
+---@class (exact) List_Int32_Enumerator
+---Creates a new List_Int32_Enumerator
+---@return List_Int32_EnumeratorInstance
+function List_Int32_Enumerator.new() end
+
+---@param self List_Int32_EnumeratorInstance
+function List_Int32_EnumeratorInstance:dispose() end
+
+---@param self List_Int32_EnumeratorInstance
+---@return boolean
+function List_Int32_EnumeratorInstance:moveNext() end
+
+---@param self List_Int32_EnumeratorInstance
+---@param obj? ObjectInstance
+---@return boolean
+function List_Int32_EnumeratorInstance:equals(obj) end
+
+---@param self List_Int32_EnumeratorInstance
+---@return integer
+function List_Int32_EnumeratorInstance:getHashCode() end
+
+---@param self List_Int32_EnumeratorInstance
+---@return string
+function List_Int32_EnumeratorInstance:toString() end
+
+---@param self List_Int32_EnumeratorInstance
+---@return TypeInstance
+function List_Int32_EnumeratorInstance:getType() end
+
+
 ---@class List_StringInstance : IList_StringInstance, ICollection_StringInstance, IEnumerable_StringInstance, IEnumerableInstance, IListInstance, ICollectionInstance, IReadOnlyList_StringInstance, IReadOnlyCollection_StringInstance
 ---@field capacity integer
 ---@field count integer
@@ -2606,6 +2641,41 @@ function List_StringInstance:equals(obj) end
 ---@param self List_StringInstance
 ---@return integer
 function List_StringInstance:getHashCode() end
+
+
+---@class List_String_EnumeratorInstance : IEnumerator_StringInstance, IEnumeratorInstance
+---@field current string
+List_String_EnumeratorInstance = {}
+List_String_Enumerator = {}
+
+---@class (exact) List_String_Enumerator
+---Creates a new List_String_Enumerator
+---@return List_String_EnumeratorInstance
+function List_String_Enumerator.new() end
+
+---@param self List_String_EnumeratorInstance
+function List_String_EnumeratorInstance:dispose() end
+
+---@param self List_String_EnumeratorInstance
+---@return boolean
+function List_String_EnumeratorInstance:moveNext() end
+
+---@param self List_String_EnumeratorInstance
+---@param obj? ObjectInstance
+---@return boolean
+function List_String_EnumeratorInstance:equals(obj) end
+
+---@param self List_String_EnumeratorInstance
+---@return integer
+function List_String_EnumeratorInstance:getHashCode() end
+
+---@param self List_String_EnumeratorInstance
+---@return string
+function List_String_EnumeratorInstance:toString() end
+
+---@param self List_String_EnumeratorInstance
+---@return TypeInstance
+function List_String_EnumeratorInstance:getType() end
 
 
 ---@class ReferencedTypeInstance
@@ -3513,6 +3583,22 @@ IComparer_Int32 = {}
 function IComparer_Int32Instance:compare(x, y) end
 
 
+---@class IEnumerator_Int32Instance : IEnumeratorInstance
+---@field current integer
+IEnumerator_Int32Instance = {}
+IEnumerator_Int32 = {}
+
+---@class (exact) IEnumerator_Int32
+
+---@class IDisposableInstance
+IDisposableInstance = {}
+IDisposable = {}
+
+---@class (exact) IDisposable
+---@param self IDisposableInstance
+function IDisposableInstance:dispose() end
+
+
 ---@class ReadOnlyCollection_StringInstance : IList_StringInstance, ICollection_StringInstance, IEnumerable_StringInstance, IEnumerableInstance, IListInstance, ICollectionInstance, IReadOnlyList_StringInstance, IReadOnlyCollection_StringInstance
 ---@field count integer
 ---@field [integer] string
@@ -3574,6 +3660,13 @@ IComparer_String = {}
 ---@return integer
 function IComparer_StringInstance:compare(x, y) end
 
+
+---@class IEnumerator_StringInstance : IEnumeratorInstance
+---@field current string
+IEnumerator_StringInstance = {}
+IEnumerator_String = {}
+
+---@class (exact) IEnumerator_String
 
 ---@class IList_ReferencedTypeInstance : ICollection_ReferencedTypeInstance, IEnumerable_ReferencedTypeInstance, IEnumerableInstance
 ---@field [integer] ReferencedTypeInstance
@@ -3891,6 +3984,41 @@ function ArrayOfReferencedTypeInstance:equals(obj) end
 function ArrayOfReferencedTypeInstance:getHashCode() end
 
 
+---@class List_ReferencedType_EnumeratorInstance : IEnumerator_ReferencedTypeInstance, IEnumeratorInstance
+---@field current ReferencedTypeInstance
+List_ReferencedType_EnumeratorInstance = {}
+List_ReferencedType_Enumerator = {}
+
+---@class (exact) List_ReferencedType_Enumerator
+---Creates a new List_ReferencedType_Enumerator
+---@return List_ReferencedType_EnumeratorInstance
+function List_ReferencedType_Enumerator.new() end
+
+---@param self List_ReferencedType_EnumeratorInstance
+function List_ReferencedType_EnumeratorInstance:dispose() end
+
+---@param self List_ReferencedType_EnumeratorInstance
+---@return boolean
+function List_ReferencedType_EnumeratorInstance:moveNext() end
+
+---@param self List_ReferencedType_EnumeratorInstance
+---@param obj? ObjectInstance
+---@return boolean
+function List_ReferencedType_EnumeratorInstance:equals(obj) end
+
+---@param self List_ReferencedType_EnumeratorInstance
+---@return integer
+function List_ReferencedType_EnumeratorInstance:getHashCode() end
+
+---@param self List_ReferencedType_EnumeratorInstance
+---@return string
+function List_ReferencedType_EnumeratorInstance:toString() end
+
+---@param self List_ReferencedType_EnumeratorInstance
+---@return TypeInstance
+function List_ReferencedType_EnumeratorInstance:getType() end
+
+
 ---@class IComparerInstance
 IComparerInstance = {}
 IComparer = {}
@@ -3919,13 +4047,6 @@ function IEqualityComparerInstance:equals(x, y) end
 ---@return integer
 function IEqualityComparerInstance:getHashCode(obj) end
 
-
----@class IEnumerator_Int32Instance : IEnumeratorInstance
----@field current integer
-IEnumerator_Int32Instance = {}
-IEnumerator_Int32 = {}
-
----@class (exact) IEnumerator_Int32
 
 ---@class IList_Int64Instance : ICollection_Int64Instance, IEnumerable_Int64Instance, IEnumerableInstance
 ---@field [integer] integer
@@ -4002,13 +4123,6 @@ IReadOnlyCollection_Int64 = {}
 
 ---@class (exact) IReadOnlyCollection_Int64
 
----@class IEnumerator_StringInstance : IEnumeratorInstance
----@field current string
-IEnumerator_StringInstance = {}
-IEnumerator_String = {}
-
----@class (exact) IEnumerator_String
-
 ---@class IEnumerator_SingleInstance : IEnumeratorInstance
 ---@field current number
 IEnumerator_SingleInstance = {}
@@ -4022,15 +4136,6 @@ IEnumerator_ReferencedTypeInstance = {}
 IEnumerator_ReferencedType = {}
 
 ---@class (exact) IEnumerator_ReferencedType
-
----@class IDisposableInstance
-IDisposableInstance = {}
-IDisposable = {}
-
----@class (exact) IDisposable
----@param self IDisposableInstance
-function IDisposableInstance:dispose() end
-
 
 ---@class IEnumerator_Int64Instance : IEnumeratorInstance
 ---@field current integer

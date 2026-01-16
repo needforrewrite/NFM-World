@@ -70,7 +70,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "current":
-                PushValue(L, obj.Current);
+                PushValue(L, ((System.Collections.Generic.List<int>.Enumerator)obj).Current);
                 return 1;
             case "dispose":
                 lua_pushcfunction(L, (List_Int32_Enumerator_method_dispose));
@@ -141,8 +141,9 @@ public partial class LuaBindings
         {
             try
             {
-                self.Dispose();
-                UpdateStruct(L, 1, self);
+                var structValue = (System.Collections.Generic.List<int>.Enumerator)self;
+                structValue.Dispose();
+                UpdateStruct(L, 1, structValue);
                 return 0;
             }
             catch (System.Exception ex)
@@ -166,8 +167,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.MoveNext();
-                UpdateStruct(L, 1, self);
+                var structValue = (System.Collections.Generic.List<int>.Enumerator)self;
+                var result = structValue.MoveNext();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -197,8 +199,9 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = self.Equals(arg0);
-                UpdateStruct(L, 1, self);
+                var structValue = (System.Collections.Generic.List<int>.Enumerator)self;
+                var result = structValue.Equals(arg0);
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -223,8 +226,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetHashCode();
-                UpdateStruct(L, 1, self);
+                var structValue = (System.Collections.Generic.List<int>.Enumerator)self;
+                var result = structValue.GetHashCode();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -249,8 +253,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.ToString();
-                UpdateStruct(L, 1, self);
+                var structValue = (System.Collections.Generic.List<int>.Enumerator)self;
+                var result = structValue.ToString();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -275,8 +280,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = self.GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (System.Collections.Generic.List<int>.Enumerator)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }

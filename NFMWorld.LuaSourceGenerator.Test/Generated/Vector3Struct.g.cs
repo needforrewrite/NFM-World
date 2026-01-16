@@ -348,8 +348,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self).Normalized();
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self;
+                var result = structValue.Normalized();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -374,8 +375,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self).ToVec2();
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self;
+                var result = structValue.ToVec2();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -400,8 +402,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self).ToString();
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self;
+                var result = structValue.ToString();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -431,8 +434,9 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self;
+                var result = structValue.Equals(arg0);
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -457,8 +461,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self).GetHashCode();
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self;
+                var result = structValue.GetHashCode();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -483,8 +488,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }

@@ -168,8 +168,9 @@ public partial class LuaBindings
                 arg0 = ToObject<object>(L, 2)!;
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)self;
+                var result = structValue.Equals(arg0);
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -194,8 +195,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)self).GetHashCode();
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)self;
+                var result = structValue.GetHashCode();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -220,8 +222,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)self).ToString();
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)self;
+                var result = structValue.ToString();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -246,8 +249,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }

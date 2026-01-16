@@ -509,13 +509,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // Check methods
             foreach (var method in currentType.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
-                if (method.IsSpecialName || HasAttribute(method, nameof(LuaHiddenAttribute))) continue;
+                if (HasAttribute(method, nameof(LuaHiddenAttribute))) continue;
 
+                // For type discovery, we need to process return types even from special name methods
+                // (like GetEnumerator) because they may return types we need to bind
                 // Return type
                 if (method.ReturnType != typeof(void))
                 {
                     ProcessType(method.ReturnType, discovered, queue, additional);
                 }
+
+                // Skip special name methods for parameter discovery (properties, events, etc.)
+                if (method.IsSpecialName) continue;
 
                 // Parameters
                 foreach (var param in method.GetParameters())
@@ -555,7 +560,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         // Skip byref types (ref/out parameters)
         if (type.IsByRef)
+        {
             return;
+        }
 
         // Skip pointer types
         if (type.IsPointer)
@@ -601,7 +608,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         // Skip primitives and already discovered
         if (IsPrimitiveOrKnownType(type) || discovered.Contains(type))
+        {
             return;
+        }
 
         // Skip nested types from system assemblies UNLESS they are from a constructed generic type
         // (like List<int>.Enumerator which is valid and needed)
@@ -615,12 +624,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                            !type.ContainsGenericParameters;
 
             if (!isFromConstructedGeneric)
+            {
                 return;
+            }
         }
 
         // Skip ref structs - they cannot be marshalled to Lua
         if (IsRefStruct(type))
+        {
             return;
+        }
 
         // Skip types containing static abstract members without implementation (C# 11 interfaces)
         if (type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
@@ -631,8 +644,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
 
         // Skip internal types not from the current assembly
-        if (!type.IsPublic && type.Assembly != assembly)
+        // Note: Nested types use IsNestedPublic instead of IsPublic
+        if (!type.IsPublic && !type.IsNestedPublic && type.Assembly != assembly)
+        {
             return;
+        }
 
         if ((!type.IsGenericType || type.IsGenericType && !type.IsGenericTypeDefinition) && !IsBlacklistedType(type))
         {
@@ -3901,7 +3917,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine();
 
                 // Group overloads by argument count (excluding 'this' for extension methods)
-                var overloadsByArgCount = overloads.GroupBy(m => 
+                var overloadsByArgCount = overloads.GroupBy(m =>
                 {
                     var paramCount = m.Method.GetParameters().Length;
                     // For extension methods, exclude the 'this' parameter from Lua argCount
