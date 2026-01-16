@@ -12,7 +12,6 @@ using Stride.Core.Mathematics;
 
 namespace nfm_world_library;
 
-[LuaVisible]
 public static class Extensions
 {
     extension<T>(List<T> list)
@@ -179,7 +178,6 @@ public static class Extensions
     }
 }
 
-[LuaVisible]
 public static class Extensions2
 {
     extension(Stride.Core.Mathematics.Matrix matrix)
