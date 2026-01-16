@@ -482,7 +482,54 @@ Applied to:
 
 **Total Array Tests:** 45 (all passing)
 
-### 7. Exception Handling Implementation (January 12, 2026)
+### 7. Nested Public Type Discovery Fix (January 16, 2026)
+**Issue:** `List<int>.Enumerator` and other nested public types from BCL were not being discovered for Lua binding generation, causing runtime errors when trying to iterate over collections.
+
+**Root Cause Analysis:**
+- `GetEnumerator()` method was initially filtered out due to `IsSpecialName` check (fixed by processing return type before filtering)
+- Enumerator types successfully reached `ProcessType()` but were blocked by internal type filter
+- **Key Discovery:** Nested types use `IsNestedPublic` property instead of `IsPublic` to indicate public visibility
+- `List<T>.Enumerator` has `IsPublic=false` but `IsNestedPublic=true` (it's a public nested struct)
+- Internal type filter was checking only `!type.IsPublic`, incorrectly blocking legitimate public nested types
+
+**Solution:** Modified internal type check in `ProcessType()` method (line ~741):
+```csharp
+// Before:
+if (!type.IsPublic && type.Assembly != assembly)
+{
+    return; // Blocked List<T>.Enumerator!
+}
+
+// After:
+// Note: Nested types use IsNestedPublic instead of IsPublic
+if (!type.IsPublic && !type.IsNestedPublic && type.Assembly != assembly)
+{
+    return; // Now allows public nested types
+}
+```
+
+**Test Coverage:** Fixed 3 failing tests in `TypeWithNestedGeneric`:
+- `GetEnumerator_Iterates` - Iterating over `List<int>`
+- `StringEnumerator_Iterates` - Iterating over `List<string>`
+- `EnumeratorCurrent_BeforeMoveNext` - Accessing `Current` before iteration
+
+**Generated Files:** Now properly generates:
+- `List_Int32_Enumerator.g.cs`
+- `List_String_Enumerator.g.cs`
+- `List_ReferencedType_Enumerator.g.cs`
+- Corresponding `Register_List_*_Enumerator(L)` calls in `LuaBindings.Initialize.g.cs`
+
+**Result:** All 253 tests pass. Lua scripts can now iterate over .NET collections:
+```lua
+local list = TypeWithNestedGeneric.new()
+for value in list:getEnumerator() do
+    print(value)
+end
+```
+
+**Key Lesson:** When working with nested types from system assemblies, always check both `IsPublic` AND `IsNestedPublic` properties. The `IsPublic` property returns `false` for all nested types regardless of their actual accessibility level.
+
+### 8. Exception Handling Implementation (January 12, 2026)
 **Issue:** .NET exceptions thrown from C# methods/constructors/properties were not propagated as Lua errors, causing crashes or silent failures when Lua code called into C# code that threw exceptions.
 
 **Solution:** Implemented comprehensive exception handling throughout the source generator:
@@ -658,7 +705,7 @@ All three output formats now include extension members:
 
 ## Test Status
 
-**Total Tests:** 248
+**Total Tests:** 253
 - **Status:** ✅ All passing
 
 ---
