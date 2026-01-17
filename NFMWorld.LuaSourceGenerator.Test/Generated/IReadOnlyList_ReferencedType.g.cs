@@ -26,10 +26,6 @@ public partial class LuaBindings
         lua_pushcfunction(L, (IReadOnlyList_ReferencedType__index));
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (IReadOnlyList_ReferencedType__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // __tostring metamethod
         lua_pushcfunction(L, (IReadOnlyList_ReferencedType__tostring));
         lua_setfield(L, -2, "__tostring");
@@ -89,20 +85,6 @@ public partial class LuaBindings
                 lua_pushnil(L);
                 return 1;
         }
-    }
-
-    private static int IReadOnlyList_ReferencedType__newindex(lua_State L)
-    {
-        var obj = GetObjectFromStack<System.Collections.Generic.IReadOnlyList<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
-        if (obj == null) return 0;
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
     }
 
     private static int IReadOnlyList_ReferencedType__tostring(lua_State L)

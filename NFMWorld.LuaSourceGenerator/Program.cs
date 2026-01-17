@@ -200,6 +200,99 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         return type.IsClass && type.IsAbstract && type.IsSealed;
     }
 
+    private bool ShouldGenerateIndexMethod(Type type)
+    {
+        // Arrays and types with indexers always need __index for element access
+        if (type.IsArray)
+            return true;
+
+        var hasIndexers = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+            .Any(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
+                      !HasRefReturn(p) &&
+                      p.CanRead &&
+                      p.GetIndexParameters().Length > 0);
+
+        if (hasIndexers)
+            return true;
+
+        // Check for inline arrays
+        if (HasInlineArrayAttribute(type))
+            return true;
+
+        // Check if there are any readable properties (excluding indexers)
+        var hasReadableProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+            .Any(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
+                      !HasRefReturn(p) &&
+                      p.CanRead &&
+                      p.GetIndexParameters().Length == 0);
+
+        // Check for extension properties
+        var hasExtensionProperties = _extensionPropertiesByType.ContainsKey(type) &&
+                                     _extensionPropertiesByType[type].Any(ep => ep.CanRead);
+
+        // Check if there are any public fields
+        var hasFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
+            .Any(f => !HasAttribute(f, nameof(LuaHiddenAttribute)));
+
+        // Check if there are any instance methods (same filter as GenerateInstanceMethods)
+        var hasInstanceMethods = GetMethodsInTypeAndInterfaces(type)
+            .Any(m => !m.Method.IsSpecialName &&
+                      !HasAttribute(m.Method, nameof(LuaHiddenAttribute)) &&
+                      !m.Method.IsGenericMethod &&
+                      !HasByRefParameters(m.Method) &&
+                      !IsCompilerMethod(m.Method) &&
+                      !HasRefReturn(m.Method) &&
+                      !m.Method.IsStatic &&
+                      (!type.IsArray || (m.Method.DeclaringType != type && m.Method.DeclaringType != typeof(Array) && m.Method.DeclaringType != typeof(object))));
+
+        // Check for extension methods
+        var hasExtensionMethods = _extensionMethodsByType.ContainsKey(type) && _extensionMethodsByType[type].Count > 0;
+
+        // Check for instance events
+        var hasInstanceEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Instance)
+            .Any(e => !HasAttribute(e, nameof(LuaHiddenAttribute)));
+
+        return hasReadableProperties || hasExtensionProperties || hasFields || hasInstanceMethods || hasExtensionMethods || hasInstanceEvents;
+    }
+
+    private bool ShouldGenerateNewIndexMethod(Type type)
+    {
+        // Arrays and types with writable indexers always need __newindex for element assignment
+        if (type.IsArray)
+            return true;
+
+        var hasWritableIndexers = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+            .Any(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
+                      !HasRefReturn(p) &&
+                      p.CanWrite &&
+                      p.GetIndexParameters().Length > 0);
+
+        if (hasWritableIndexers)
+            return true;
+
+        // Check for inline arrays
+        if (HasInlineArrayAttribute(type))
+            return true;
+
+        // Check if there are any writable properties (excluding indexers and init-only)
+        var hasWritableProperties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
+            .Any(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) &&
+                      !HasRefReturn(p) &&
+                      p.CanWrite &&
+                      !IsInitOnly(p) &&
+                      p.GetIndexParameters().Length == 0);
+
+        // Check for writable extension properties
+        var hasWritableExtensionProperties = _extensionPropertiesByType.ContainsKey(type) &&
+                                             _extensionPropertiesByType[type].Any(ep => ep.CanWrite);
+
+        // Check if there are any writable fields (non-readonly)
+        var hasWritableFields = type.GetFields(BindingFlags.Public | BindingFlags.Instance)
+            .Any(f => !HasAttribute(f, nameof(LuaHiddenAttribute)) && !f.IsInitOnly);
+
+        return hasWritableProperties || hasWritableExtensionProperties || hasWritableFields;
+    }
+
     /// <summary>
     /// Check if a type has the InlineArrayAttribute (indexable types without reflection-visible indexers).
     /// </summary>
@@ -2276,6 +2369,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         var isStaticClass = IsStaticClass(type);
         var fullTypeName = GetFullTypeName(type);
 
+        // Check if __index and __newindex need to be generated
+        var shouldGenerateIndex = !isStaticClass && ShouldGenerateIndexMethod(type);
+        var shouldGenerateNewIndex = !isStaticClass && ShouldGenerateNewIndexMethod(type);
+
         AppendLine($"// =========== Bindings for {type.Name} ({luaName}) ===========");
         AppendLine($"private static void Register_{safeName}(lua_State L)");
         AppendLine("{");
@@ -2295,17 +2392,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine("lua_setfield(L, -2, \"__gc\");");
                 AppendLine();
 
-                // __index
-                AppendLine("// __index metamethod");
-                AppendLine($"lua_pushcfunction(L, ({safeName}__index));");
-                AppendLine("lua_setfield(L, -2, \"__index\");");
-                AppendLine();
+                // __index (only if needed)
+                if (shouldGenerateIndex)
+                {
+                    AppendLine("// __index metamethod");
+                    AppendLine($"lua_pushcfunction(L, ({safeName}__index));");
+                    AppendLine("lua_setfield(L, -2, \"__index\");");
+                    AppendLine();
+                }
 
-                // __newindex
-                AppendLine("// __newindex metamethod");
-                AppendLine($"lua_pushcfunction(L, ({safeName}__newindex));");
-                AppendLine("lua_setfield(L, -2, \"__newindex\");");
-                AppendLine();
+                // __newindex (only if needed)
+                if (shouldGenerateNewIndex)
+                {
+                    AppendLine("// __newindex metamethod");
+                    AppendLine($"lua_pushcfunction(L, ({safeName}__newindex));");
+                    AppendLine("lua_setfield(L, -2, \"__newindex\");");
+                    AppendLine();
+                }
 
                 // Operator metamethods
                 GenerateOperatorMetamethods(type, safeName);
@@ -2402,8 +2505,19 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         if (!isStaticClass)
         {
             GenerateGcMethod(safeName, fullTypeName);
-            GenerateIndexMethod(type, safeName, isStruct, fullTypeName);
-            GenerateNewIndexMethod(type, safeName, isStruct, fullTypeName);
+            
+            // Only generate __index if it would have content
+            if (shouldGenerateIndex)
+            {
+                GenerateIndexMethod(type, safeName, isStruct, fullTypeName);
+            }
+            
+            // Only generate __newindex if it would have content
+            if (shouldGenerateNewIndex)
+            {
+                GenerateNewIndexMethod(type, safeName, isStruct, fullTypeName);
+            }
+            
             GenerateTostringMethod(safeName, isStruct, fullTypeName);
             GenerateOperatorMethods(type, safeName, fullTypeName);
             GenerateConstructorMethod(type, safeName, isStruct, fullTypeName);

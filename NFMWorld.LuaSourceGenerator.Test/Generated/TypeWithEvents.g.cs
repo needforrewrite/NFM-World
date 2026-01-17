@@ -26,10 +26,6 @@ public partial class LuaBindings
         lua_pushcfunction(L, (TypeWithEvents__index));
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (TypeWithEvents__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // __tostring metamethod
         lua_pushcfunction(L, (TypeWithEvents__tostring));
         lua_setfield(L, -2, "__tostring");
@@ -132,20 +128,6 @@ public partial class LuaBindings
                 lua_pushnil(L);
                 return 1;
         }
-    }
-
-    private static int TypeWithEvents__newindex(lua_State L)
-    {
-        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
-        if (obj == null) return 0;
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
     }
 
     private static int TypeWithEvents__tostring(lua_State L)

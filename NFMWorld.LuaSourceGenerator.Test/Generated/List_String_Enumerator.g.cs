@@ -26,10 +26,6 @@ public partial class LuaBindings
         lua_pushcfunction(L, (List_String_Enumerator__index));
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (List_String_Enumerator__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // __tostring metamethod
         lua_pushcfunction(L, (List_String_Enumerator__tostring));
         lua_setfield(L, -2, "__tostring");
@@ -94,19 +90,6 @@ public partial class LuaBindings
                 lua_pushnil(L);
                 return 1;
         }
-    }
-
-    private static int List_String_Enumerator__newindex(lua_State L)
-    {
-        var obj = GetStructFromStack<System.Collections.Generic.List<string>.Enumerator>(L, 1);
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
     }
 
     private static int List_String_Enumerator__tostring(lua_State L)
