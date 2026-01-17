@@ -11,7 +11,8 @@
       <PackageReference Include="luajit.native" Version="2.1.1739213504" />
     </ItemGroup>
 
-    <ItemGroup>
+    <!-- If USE_LUA51 is defined, copy lua515.dll -->
+    <ItemGroup Condition="'$(DefineConstants)' == 'USE_LUA51'">
       <None Update="lua515.dll">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
