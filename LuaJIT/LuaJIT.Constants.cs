@@ -1,12 +1,15 @@
 ﻿namespace LuaJIT;
 
+// ReSharper disable InconsistentNaming
+// ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+
 public static unsafe partial class Methods
 {
-    public const string LUAJIT_VERSION = "LuaJIT 2.1.0-beta3";
+    public static ReadOnlySpan<byte> LUAJIT_VERSION => "LuaJIT 2.1.0-beta3"u8;
     public const int LUAJIT_VERSION_NUM = 20100;
-    public const string LUAJIT_VERSION_SYM = "luaJIT_version_2_1_0_beta3";
-    public const string LUAJIT_COPYRIGHT = "Copyright (C) 2005-2022 Mike Pall";
-    public const string LUAJIT_URL = "https://luajit.org/";
+    public static ReadOnlySpan<byte> LUAJIT_VERSION_SYM => "luaJIT_version_2_1_0_beta3"u8;
+    public static ReadOnlySpan<byte> LUAJIT_COPYRIGHT => "Copyright (C) 2005-2022 Mike Pall"u8;
+    public static ReadOnlySpan<byte> LUAJIT_URL => "https://luajit.org/"u8;
 	
     public const int LUAJIT_MODE_MASK = 0x00FF;
 	
@@ -19,22 +22,22 @@ public static unsafe partial class Methods
     public const int LUA_NOREF = -2;
     public const int LUA_REFNIL = -1;
     
-	public const string LUA_LDIR = "!\\lua\\";
-	public const string LUA_CDIR = "!\\";
+	public static ReadOnlySpan<byte> LUA_LDIR => "!\\lua\\"u8;
+	public static ReadOnlySpan<byte> LUA_CDIR => "!\\"u8;
 	
-	public const string LUA_PATH_DEFAULT = ".\\?.lua;" + LUA_LDIR + "?.lua;" + LUA_LDIR + "?\\init.lua;";
-	public const string LUA_CPATH_DEFAULT = ".\\?.dll;" + LUA_CDIR + "?.dll;" + LUA_CDIR + "loadall.dll";
+	public static ReadOnlySpan<byte> LUA_PATH_DEFAULT => ".\\?.lua;!\\lua\\?.lua;!\\lua\\?\\init.lua;"u8;
+	public static ReadOnlySpan<byte> LUA_CPATH_DEFAULT => ".\\?.dll;!\\?.dll;!\\loadall.dll"u8;
 	
-	public const string LUA_PATH = "LUA_PATH";
-	public const string LUA_CPATH = "LUA_CPATH";
-	public const string LUA_INIT = "LUA_INIT";
+	public static ReadOnlySpan<byte> LUA_PATH => "LUA_PATH"u8;
+	public static ReadOnlySpan<byte> LUA_CPATH => "LUA_CPATH"u8;
+	public static ReadOnlySpan<byte> LUA_INIT => "LUA_INIT"u8;
 	
-	public const string LUA_DIRSEP = "\\";
-	public const string LUA_PATHSEP = ";";
-	public const string LUA_PATH_MARK = "?";
-	public const string LUA_EXECDIR = "!";
-	public const string LUA_IGMARK = "-";
-	public const string LUA_PATH_CONFIG = LUA_DIRSEP + "\n" + LUA_PATHSEP + "\n" + LUA_PATH_MARK + "\n" + LUA_EXECDIR + "\n" + LUA_IGMARK + "\n";
+	public static ReadOnlySpan<byte> LUA_DIRSEP => "\\"u8;
+	public static ReadOnlySpan<byte> LUA_PATHSEP => ";"u8;
+	public static ReadOnlySpan<byte> LUA_PATH_MARK => "?"u8;
+	public static ReadOnlySpan<byte> LUA_EXECDIR => "!"u8;
+	public static ReadOnlySpan<byte> LUA_IGMARK => "-"u8;
+	public static ReadOnlySpan<byte> LUA_PATH_CONFIG => "\\\n;\n?\n!\n-\n"u8;
 	
 	public static string LUA_QL(string x)
 	{
@@ -53,13 +56,13 @@ public static unsafe partial class Methods
 	
 	public const int LUAL_BUFFERSIZE = 512 > 16384 ? 8182 : 512;
 	
-	public const string LUA_VERSION = "Lua 5.1";
-	public const string LUA_RELEASE = "Lua 5.1.4";
+	public static ReadOnlySpan<byte> LUA_VERSION => "Lua 5.1"u8;
+	public static ReadOnlySpan<byte> LUA_RELEASE => "Lua 5.1.4"u8;
 	public const int LUA_VERSION_NUM = 501;
-	public const string LUA_COPYRIGHT = "Copyright (C) 1994-2008 Lua.org, PUC-Rio";
-	public const string LUA_AUTHORS = "R. Ierusalimschy, L. H. de Figueiredo, W. Celes";
+	public static ReadOnlySpan<byte> LUA_COPYRIGHT => "Copyright (C) 1994-2008 Lua.org, PUC-Rio"u8;
+	public static ReadOnlySpan<byte> LUA_AUTHORS => "R. Ierusalimschy, L. H. de Figueiredo, W. Celes"u8;
 	
-	public const string LUA_SIGNATURE = "\x1bLua";
+	public static ReadOnlySpan<byte> LUA_SIGNATURE => "\x1bLua"u8;
 	
 	public const int LUA_MULTRET = -1;
 	
