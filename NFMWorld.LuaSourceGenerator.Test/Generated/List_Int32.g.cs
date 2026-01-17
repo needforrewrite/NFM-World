@@ -98,7 +98,7 @@ public partial class LuaBindings
                 PushValue(L, ((System.Collections.ICollection)obj).IsSynchronized);
                 return 1;
             case "add":
-                lua_pushcfunction(L, (List_Int32_method_add));
+                lua_pushcfunction(L, (ICollection_Int32_method_add));
                 return 1;
             case "addRange":
                 lua_pushcfunction(L, (List_Int32_method_addRange));
@@ -110,10 +110,10 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (List_Int32_method_binarySearch));
                 return 1;
             case "clear":
-                lua_pushcfunction(L, (List_Int32_method_clear));
+                lua_pushcfunction(L, (ICollection_Int32_method_clear));
                 return 1;
             case "contains":
-                lua_pushcfunction(L, (List_Int32_method_contains));
+                lua_pushcfunction(L, (ICollection_Int32_method_contains));
                 return 1;
             case "copyTo":
                 lua_pushcfunction(L, (List_Int32_method_copyTo));
@@ -152,10 +152,10 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (List_Int32_method_slice));
                 return 1;
             case "indexOf":
-                lua_pushcfunction(L, (List_Int32_method_indexOf));
+                lua_pushcfunction(L, (IList_Int32_method_indexOf));
                 return 1;
             case "insert":
-                lua_pushcfunction(L, (List_Int32_method_insert));
+                lua_pushcfunction(L, (IList_Int32_method_insert));
                 return 1;
             case "insertRange":
                 lua_pushcfunction(L, (List_Int32_method_insertRange));
@@ -164,13 +164,13 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (List_Int32_method_lastIndexOf));
                 return 1;
             case "remove":
-                lua_pushcfunction(L, (List_Int32_method_remove));
+                lua_pushcfunction(L, (ICollection_Int32_method_remove));
                 return 1;
             case "removeAll":
                 lua_pushcfunction(L, (List_Int32_method_removeAll));
                 return 1;
             case "removeAt":
-                lua_pushcfunction(L, (List_Int32_method_removeAt));
+                lua_pushcfunction(L, (IList_Int32_method_removeAt));
                 return 1;
             case "removeRange":
                 lua_pushcfunction(L, (List_Int32_method_removeRange));
@@ -344,36 +344,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int List_Int32_method_add(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                ((System.Collections.Generic.List<int>)self).Add(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for add");
-        return 0;
-    }
-
     private static int List_Int32_method_addRange(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -509,66 +479,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int List_Int32_method_clear(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((System.Collections.Generic.List<int>)self).Clear();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for clear");
-        return 0;
-    }
-
-    private static int List_Int32_method_contains(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = ((System.Collections.Generic.List<int>)self).Contains(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for contains");
-        return 0;
-    }
-
     private static int List_Int32_method_copyTo(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -586,22 +496,6 @@ public partial class LuaBindings
             try
             {
                 ((System.Collections.Generic.List<int>)self).CopyTo(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int[]>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                ((System.Collections.Generic.List<int>)self).CopyTo(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -1055,22 +949,6 @@ public partial class LuaBindings
             return 0;
         }
 
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = ((System.Collections.Generic.List<int>)self).IndexOf(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
         if (argCount == 2)
         {
             var arg0 = ToObject<int>(L, 2)!;
@@ -1107,37 +985,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for indexOf");
-        return 0;
-    }
-
-    private static int List_Int32_method_insert(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                ((System.Collections.Generic.List<int>)self).Insert(arg0, arg1);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for insert");
         return 0;
     }
 
@@ -1238,37 +1085,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int List_Int32_method_remove(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = ((System.Collections.Generic.List<int>)self).Remove(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for remove");
-        return 0;
-    }
-
     private static int List_Int32_method_removeAll(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1297,36 +1113,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for removeAll");
-        return 0;
-    }
-
-    private static int List_Int32_method_removeAt(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<int>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                ((System.Collections.Generic.List<int>)self).RemoveAt(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for removeAt");
         return 0;
     }
 

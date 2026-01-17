@@ -73,19 +73,19 @@ public partial class LuaBindings
                 PushValue(L, ((System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator)obj).Current);
                 return 1;
             case "dispose":
-                lua_pushcfunction(L, (List_ReferencedType_Enumerator_method_dispose));
+                lua_pushcfunction(L, (IDisposable_method_dispose));
                 return 1;
             case "moveNext":
-                lua_pushcfunction(L, (List_ReferencedType_Enumerator_method_moveNext));
+                lua_pushcfunction(L, (IEnumerator_method_moveNext));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (List_ReferencedType_Enumerator_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (List_ReferencedType_Enumerator_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (List_ReferencedType_Enumerator_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (List_ReferencedType_Enumerator_method_getType));
@@ -128,145 +128,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for Enumerator constructor");
-        return 0;
-    }
-
-    private static int List_ReferencedType_Enumerator_method_dispose(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var structValue = (System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator)self;
-                structValue.Dispose();
-                UpdateStruct(L, 1, structValue);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for dispose");
-        return 0;
-    }
-
-    private static int List_ReferencedType_Enumerator_method_moveNext(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var structValue = (System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator)self;
-                var result = structValue.MoveNext();
-                UpdateStruct(L, 1, structValue);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for moveNext");
-        return 0;
-    }
-
-    private static int List_ReferencedType_Enumerator_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var structValue = (System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator)self;
-                var result = structValue.Equals(arg0);
-                UpdateStruct(L, 1, structValue);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int List_ReferencedType_Enumerator_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var structValue = (System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator)self;
-                var result = structValue.GetHashCode();
-                UpdateStruct(L, 1, structValue);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int List_ReferencedType_Enumerator_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var structValue = (System.Collections.Generic.List<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>.Enumerator)self;
-                var result = structValue.ToString();
-                UpdateStruct(L, 1, structValue);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
         return 0;
     }
 

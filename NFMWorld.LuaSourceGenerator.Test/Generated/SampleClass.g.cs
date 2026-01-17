@@ -171,7 +171,7 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (SampleClass_method_customName));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (SampleClass_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (SampleClass_method_getType));
@@ -898,36 +898,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for customName");
-        return 0;
-    }
-
-    private static int SampleClass_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected SampleClass as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass)self).ToString();
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
         return 0;
     }
 

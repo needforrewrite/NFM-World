@@ -27,6 +27,9 @@ public partial class LuaBindings
         Register_SampleStruct(L);
         Register_TypeWithByRefParameters(L);
         Register_TypeWithExceptions(L);
+        Register_TypeWithMethodDeduplication(L);
+        Register_AnotherCalculator(L);
+        Register_TypeWithNewMember(L);
         Register_TypeWithNestedGeneric(L);
         Register_TypeWithOverloads(L);
         Register_TypeWithReferences(L);
@@ -39,6 +42,8 @@ public partial class LuaBindings
         Register_SingleArray(L);
         Register_Int32Array2D(L);
         Register_SingleArray3D(L);
+        Register_CalculatorBase(L);
+        Register_ICalculator(L);
         Register_List_Int32(L);
         Register_List_Int32_Enumerator(L);
         Register_List_String(L);

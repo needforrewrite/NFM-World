@@ -10,7 +10,7 @@ namespace NFMWorld.LuaSourceGenerator.Test;
 /// that generated bindings for SampleTypes work correctly from the Lua side.
 /// </summary>
 [TestClass]
-public class LuaRuntimeTests
+public partial class LuaRuntimeTests
 {
     private lua_State _L;
 

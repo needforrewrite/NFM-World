@@ -238,6 +238,48 @@ declare class TypeWithExceptions {
     getHashCode(): number;
 }
 
+declare class TypeWithMethodDeduplication {
+    /** @customName new */
+    static inst(): TypeWithMethodDeduplication;
+    add(a: number, b: number): number;
+    multiply(x: number, y: number): number;
+    getDescription(): string;
+    subtract(a: number, b: number): number;
+    divide(a: number, b: number): number;
+    getName(): string;
+    toString(): string;
+    square(x: number): number;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+}
+
+declare class AnotherCalculator {
+    /** @customName new */
+    static inst(): AnotherCalculator;
+    add(a: number, b: number): number;
+    multiply(x: number, y: number): number;
+    getDescription(): string;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+}
+
+declare class TypeWithNewMember {
+    /** @customName new */
+    static inst(): TypeWithNewMember;
+    subtract(a: number, b: number): number;
+    divide(a: number, b: number): number;
+    subtract(a: number, b: number): number;
+    getName(): string;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+}
+
 declare class TypeWithNestedGeneric {
     /** @customName new */
     static inst(): TypeWithNestedGeneric;
@@ -382,6 +424,24 @@ declare class ArrayOfSingle3D {
     static inst(dim0: number, dim1: number, dim2: number): ArrayOfSingle3D;
     get(...indices: number[]): number;
     set(value: number, ...indices: number[]): void;
+}
+
+declare class CalculatorBase {
+    /** @customName new */
+    static inst(): CalculatorBase;
+    subtract(a: number, b: number): number;
+    divide(a: number, b: number): number;
+    getName(): string;
+    getType(): Type | null;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+}
+
+declare class ICalculator {
+    add(a: number, b: number): number;
+    multiply(x: number, y: number): number;
+    getDescription(): string;
 }
 
 declare class List_Int32 {

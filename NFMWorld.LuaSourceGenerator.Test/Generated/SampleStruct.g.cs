@@ -133,13 +133,13 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (SampleStruct_method_set));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (SampleStruct_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (SampleStruct_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (SampleStruct_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (SampleStruct_method_getType));
@@ -432,92 +432,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for set");
-        return 0;
-    }
-
-    private static int SampleStruct_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var structValue = (NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self;
-                var result = structValue.Equals(arg0);
-                UpdateStruct(L, 1, structValue);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int SampleStruct_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var structValue = (NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self;
-                var result = structValue.GetHashCode();
-                UpdateStruct(L, 1, structValue);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int SampleStruct_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var structValue = (NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct)self;
-                var result = structValue.ToString();
-                UpdateStruct(L, 1, structValue);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
         return 0;
     }
 

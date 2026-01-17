@@ -101,16 +101,16 @@ public partial class LuaBindings
                 PushValue(L, ((System.Collections.ICollection)obj).IsSynchronized);
                 return 1;
             case "contains":
-                lua_pushcfunction(L, (ReadOnlyCollection_String_method_contains));
+                lua_pushcfunction(L, (ICollection_String_method_contains));
                 return 1;
             case "copyTo":
-                lua_pushcfunction(L, (ReadOnlyCollection_String_method_copyTo));
+                lua_pushcfunction(L, (ICollection_String_method_copyTo));
                 return 1;
             case "getEnumerator":
-                lua_pushcfunction(L, (ReadOnlyCollection_String_method_getEnumerator));
+                lua_pushcfunction(L, (IEnumerable_String_method_getEnumerator));
                 return 1;
             case "indexOf":
-                lua_pushcfunction(L, (ReadOnlyCollection_String_method_indexOf));
+                lua_pushcfunction(L, (IList_String_method_indexOf));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (ReadOnlyCollection_String_method_getType));
@@ -172,137 +172,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for ReadOnlyCollection`1 constructor");
-        return 0;
-    }
-
-    private static int ReadOnlyCollection_String_method_contains(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<string>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            string? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<string>(L, 2)!;
-            try
-            {
-                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<string>)self).Contains(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for contains");
-        return 0;
-    }
-
-    private static int ReadOnlyCollection_String_method_copyTo(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<string>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<string[]>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                ((System.Collections.ObjectModel.ReadOnlyCollection<string>)self).CopyTo(arg0, arg1);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for copyTo");
-        return 0;
-    }
-
-    private static int ReadOnlyCollection_String_method_getEnumerator(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<string>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<string>)self).GetEnumerator();
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getEnumerator");
-        return 0;
-    }
-
-    private static int ReadOnlyCollection_String_method_indexOf(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<string>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected ReadOnlyCollection`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            string? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<string>(L, 2)!;
-            try
-            {
-                var result = ((System.Collections.ObjectModel.ReadOnlyCollection<string>)self).IndexOf(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for indexOf");
         return 0;
     }
 

@@ -767,6 +767,166 @@ function TypeWithExceptionsInstance:equals(obj) end
 function TypeWithExceptionsInstance:getHashCode() end
 
 
+---@class TypeWithMethodDeduplicationInstance : CalculatorBaseInstance, ICalculatorInstance
+TypeWithMethodDeduplicationInstance = {}
+TypeWithMethodDeduplication = {}
+
+---@class (exact) TypeWithMethodDeduplication : CalculatorBase
+---Creates a new TypeWithMethodDeduplication
+---@return TypeWithMethodDeduplicationInstance
+function TypeWithMethodDeduplication.new() end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@param a integer
+---@param b integer
+---@return integer
+function TypeWithMethodDeduplicationInstance:add(a, b) end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@param x integer
+---@param y integer
+---@return integer
+function TypeWithMethodDeduplicationInstance:multiply(x, y) end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@return string
+function TypeWithMethodDeduplicationInstance:getDescription() end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@param a integer
+---@param b integer
+---@return integer
+function TypeWithMethodDeduplicationInstance:subtract(a, b) end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@param a integer
+---@param b integer
+---@return integer
+function TypeWithMethodDeduplicationInstance:divide(a, b) end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@return string
+function TypeWithMethodDeduplicationInstance:getName() end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@return string
+function TypeWithMethodDeduplicationInstance:toString() end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@param x integer
+---@return integer
+function TypeWithMethodDeduplicationInstance:square(x) end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@return TypeInstance
+function TypeWithMethodDeduplicationInstance:getType() end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@return string
+function TypeWithMethodDeduplicationInstance:toString() end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@param obj? ObjectInstance
+---@return boolean
+function TypeWithMethodDeduplicationInstance:equals(obj) end
+
+---@param self TypeWithMethodDeduplicationInstance
+---@return integer
+function TypeWithMethodDeduplicationInstance:getHashCode() end
+
+
+---@class AnotherCalculatorInstance : ICalculatorInstance
+AnotherCalculatorInstance = {}
+AnotherCalculator = {}
+
+---@class (exact) AnotherCalculator
+---Creates a new AnotherCalculator
+---@return AnotherCalculatorInstance
+function AnotherCalculator.new() end
+
+---@param self AnotherCalculatorInstance
+---@param a integer
+---@param b integer
+---@return integer
+function AnotherCalculatorInstance:add(a, b) end
+
+---@param self AnotherCalculatorInstance
+---@param x integer
+---@param y integer
+---@return integer
+function AnotherCalculatorInstance:multiply(x, y) end
+
+---@param self AnotherCalculatorInstance
+---@return string
+function AnotherCalculatorInstance:getDescription() end
+
+---@param self AnotherCalculatorInstance
+---@return TypeInstance
+function AnotherCalculatorInstance:getType() end
+
+---@param self AnotherCalculatorInstance
+---@return string
+function AnotherCalculatorInstance:toString() end
+
+---@param self AnotherCalculatorInstance
+---@param obj? ObjectInstance
+---@return boolean
+function AnotherCalculatorInstance:equals(obj) end
+
+---@param self AnotherCalculatorInstance
+---@return integer
+function AnotherCalculatorInstance:getHashCode() end
+
+
+---@class TypeWithNewMemberInstance : CalculatorBaseInstance
+TypeWithNewMemberInstance = {}
+TypeWithNewMember = {}
+
+---@class (exact) TypeWithNewMember : CalculatorBase
+---Creates a new TypeWithNewMember
+---@return TypeWithNewMemberInstance
+function TypeWithNewMember.new() end
+
+---@param self TypeWithNewMemberInstance
+---@param a integer
+---@param b integer
+---@return integer
+function TypeWithNewMemberInstance:subtract(a, b) end
+
+---@param self TypeWithNewMemberInstance
+---@param a integer
+---@param b integer
+---@return integer
+function TypeWithNewMemberInstance:divide(a, b) end
+
+---@param self TypeWithNewMemberInstance
+---@param a integer
+---@param b integer
+---@return integer
+function TypeWithNewMemberInstance:subtract(a, b) end
+
+---@param self TypeWithNewMemberInstance
+---@return string
+function TypeWithNewMemberInstance:getName() end
+
+---@param self TypeWithNewMemberInstance
+---@return TypeInstance
+function TypeWithNewMemberInstance:getType() end
+
+---@param self TypeWithNewMemberInstance
+---@return string
+function TypeWithNewMemberInstance:toString() end
+
+---@param self TypeWithNewMemberInstance
+---@param obj? ObjectInstance
+---@return boolean
+function TypeWithNewMemberInstance:equals(obj) end
+
+---@param self TypeWithNewMemberInstance
+---@return integer
+function TypeWithNewMemberInstance:getHashCode() end
+
+
 ---@class TypeWithNestedGenericInstance
 ---@field numbers List_Int32Instance
 TypeWithNestedGenericInstance = {}
@@ -2040,6 +2200,71 @@ function ArrayOfSingle3DInstance:equals(obj) end
 ---@param self number[]
 ---@return integer
 function ArrayOfSingle3DInstance:getHashCode() end
+
+
+---@class CalculatorBaseInstance
+CalculatorBaseInstance = {}
+CalculatorBase = {}
+
+---@class (exact) CalculatorBase
+---Creates a new CalculatorBase
+---@return CalculatorBaseInstance
+function CalculatorBase.new() end
+
+---@param self CalculatorBaseInstance
+---@param a integer
+---@param b integer
+---@return integer
+function CalculatorBaseInstance:subtract(a, b) end
+
+---@param self CalculatorBaseInstance
+---@param a integer
+---@param b integer
+---@return integer
+function CalculatorBaseInstance:divide(a, b) end
+
+---@param self CalculatorBaseInstance
+---@return string
+function CalculatorBaseInstance:getName() end
+
+---@param self CalculatorBaseInstance
+---@return TypeInstance
+function CalculatorBaseInstance:getType() end
+
+---@param self CalculatorBaseInstance
+---@return string
+function CalculatorBaseInstance:toString() end
+
+---@param self CalculatorBaseInstance
+---@param obj? ObjectInstance
+---@return boolean
+function CalculatorBaseInstance:equals(obj) end
+
+---@param self CalculatorBaseInstance
+---@return integer
+function CalculatorBaseInstance:getHashCode() end
+
+
+---@class ICalculatorInstance
+ICalculatorInstance = {}
+ICalculator = {}
+
+---@class (exact) ICalculator
+---@param self ICalculatorInstance
+---@param a integer
+---@param b integer
+---@return integer
+function ICalculatorInstance:add(a, b) end
+
+---@param self ICalculatorInstance
+---@param x integer
+---@param y integer
+---@return integer
+function ICalculatorInstance:multiply(x, y) end
+
+---@param self ICalculatorInstance
+---@return string
+function ICalculatorInstance:getDescription() end
 
 
 ---@class List_Int32Instance : IList_Int32Instance, ICollection_Int32Instance, IEnumerable_Int32Instance, IEnumerableInstance, IListInstance, ICollectionInstance, IReadOnlyList_Int32Instance, IReadOnlyCollection_Int32Instance

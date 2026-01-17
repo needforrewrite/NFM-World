@@ -2715,7 +2715,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // Instance methods
                 // For array types, exclude methods declared on the array type itself (Get/Set/Address)
                 // as well as methods from Array and object base classes
-                var methods = GetMethodsInTypeAndInterfaces(type)
+                var allMethods = GetMethodsInTypeAndInterfaces(type)
                     .Where(m => !m.Method.IsSpecialName &&
                                 !HasAttribute(m.Method, nameof(LuaHiddenAttribute)) &&
                                 !m.Method.IsGenericMethod &&
@@ -2723,16 +2723,35 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 !IsCompilerMethod(m.Method) &&
                                 !HasRefReturn(m.Method) &&
                                 (!type.IsArray || (m.Method.DeclaringType != type && m.Method.DeclaringType != typeof(Array) && m.Method.DeclaringType != typeof(object)))) // Skip array-specific and inherited methods
+                    .ToList();
+
+                // Group methods by name and determine which implementation to use
+                var methodGroups = allMethods
                     .GroupBy(m => GetLuaMethodName(m.Method))
                     .ToList();
 
-                foreach (var methodGroup in methods)
+                foreach (var methodGroup in methodGroups)
                 {
                     var methodName = methodGroup.Key;
+                    var firstMethod = methodGroup.First().Method;
+
+                    // Check if this method is implemented in a base type or interface
+                    var sourceType = GetImplementationSourceType(type, firstMethod);
+
                     AppendLine($"case \"{methodName}\":");
                     using (Indent())
                     {
-                        AppendLine($"lua_pushcfunction(L, ({safeName}_method_{GetSafeMethodName(methodName)}));");
+                        if (sourceType != null)
+                        {
+                            // Use the base/interface implementation
+                            var sourceSafeName = GetSafeTypeName(sourceType);
+                            AppendLine($"lua_pushcfunction(L, ({sourceSafeName}_method_{GetSafeMethodName(methodName)}));");
+                        }
+                        else
+                        {
+                            // Use our own implementation
+                            AppendLine($"lua_pushcfunction(L, ({safeName}_method_{GetSafeMethodName(methodName)}));");
+                        }
                         AppendLine("return 1;");
                     }
                 }
@@ -3873,16 +3892,22 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         !HasRefReturn(m.Method)) // Skip generic methods and byref parameters
             .ToList();
 
-        // Add extension methods
+        // Filter out methods that are interface implementations or virtual overrides
+        // (we'll reuse the base/interface implementation instead)
+        var methodsToGenerate = methods
+            .Where(m => GetImplementationSourceType(type, m.Method) == null)
+            .ToList();
+
+        // Add extension methods (these are always generated)
         if (_extensionMethodsByType.TryGetValue(type, out var extensionMethods))
         {
             foreach (var extMethod in extensionMethods)
             {
-                methods.Add((type, extMethod));
+                methodsToGenerate.Add((type, extMethod));
             }
         }
 
-        var methodGroups = methods
+        var methodGroups = methodsToGenerate
             .GroupBy(m => GetLuaMethodName(m.Method))
             .ToList();
 
@@ -4402,6 +4427,82 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     }
 
     #region Helpers
+
+    /// <summary>
+    /// Check if a method is an interface implementation (not a new member).
+    /// </summary>
+    private static bool IsInterfaceImplementation(Type type, MethodInfo method, out Type? interfaceType, out MethodInfo? interfaceMethod)
+    {
+        interfaceType = null;
+        interfaceMethod = null;
+
+        // Interfaces don't implement other interfaces in the GetInterfaceMap sense
+        if (type.IsInterface)
+            return false;
+
+        if (method.IsStatic || !method.IsPublic)
+            return false;
+
+        foreach (var iface in type.GetInterfaces())
+        {
+            var map = type.GetInterfaceMap(iface);
+            for (int i = 0; i < map.TargetMethods.Length; i++)
+            {
+                if (map.TargetMethods[i] == method)
+                {
+                    interfaceType = iface;
+                    interfaceMethod = map.InterfaceMethods[i];
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Check if a method is a virtual override (not a new member).
+    /// </summary>
+    private static bool IsVirtualOverride(MethodInfo method, out MethodInfo? baseMethod)
+    {
+        baseMethod = null;
+
+        if (!method.IsVirtual)
+            return false;
+
+        var baseDef = method.GetBaseDefinition();
+        if (baseDef == method)
+            return false;
+
+        // Check if this is a 'new' member (has NewSlot attribute)
+        if (method.Attributes.HasFlag(MethodAttributes.NewSlot))
+            return false;
+
+        baseMethod = baseDef;
+        return true;
+    }
+
+    /// <summary>
+    /// Get the type that defines the implementation we should use for this method.
+    /// Returns the interface type if it's an interface implementation, base type if it's an override,
+    /// or null if we should generate the implementation.
+    /// </summary>
+    private static Type? GetImplementationSourceType(Type type, MethodInfo method)
+    {
+        // Check for interface implementation first
+        if (IsInterfaceImplementation(type, method, out var ifaceType, out _))
+        {
+            return ifaceType;
+        }
+
+        // Check for virtual override
+        if (IsVirtualOverride(method, out var baseMethod))
+        {
+            return baseMethod!.DeclaringType;
+        }
+
+        return null;
+    }
 
     /// <summary>
     /// Generate the method invocation code, handling both instance methods and extension methods.
