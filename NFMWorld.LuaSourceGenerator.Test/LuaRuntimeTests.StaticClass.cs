@@ -17,7 +17,7 @@ public partial class LuaRuntimeTests
             local obj = StaticClass.new
             return obj
         ");
-        
+
         // Should return nil (no constructor exists)
         AssertLuaOk(result);
         Assert.AreEqual(LUA_TNIL, lua_type(_L, -1));
@@ -29,7 +29,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             return StaticClass.getMagicNumber()
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tointeger(_L, -1);
         Assert.AreEqual(123, value);
@@ -41,7 +41,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             return StaticClass.add(10, 20)
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tointeger(_L, -1);
         Assert.AreEqual(30, value);
@@ -53,7 +53,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             return StaticClass.greet('World')
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tostring(_L, -1);
         Assert.AreEqual("Hello, World!", value);
@@ -65,7 +65,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             return StaticClass.calculate(10, 5, 'mul')
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tonumber(_L, -1);
         Assert.AreEqual(50.0, value, 0.001);
@@ -77,7 +77,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             return StaticClass.staticProperty
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tostring(_L, -1);
         Assert.AreEqual("Initial", value);
@@ -90,7 +90,7 @@ public partial class LuaRuntimeTests
             StaticClass.staticProperty = 'Modified'
             return StaticClass.staticProperty
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tostring(_L, -1);
         Assert.AreEqual("Modified", value);
@@ -102,7 +102,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             return StaticClass.readOnlyProperty
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tonumber(_L, -1);
         Assert.AreEqual(3.14159, value, 0.00001);
@@ -114,7 +114,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             return StaticClass.staticField
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tointeger(_L, -1);
         Assert.AreEqual(42, value);
@@ -127,7 +127,7 @@ public partial class LuaRuntimeTests
             StaticClass.staticField = 100
             return StaticClass.staticField
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tointeger(_L, -1);
         Assert.AreEqual(100, value);
@@ -144,7 +144,7 @@ public partial class LuaRuntimeTests
             StaticClass.raiseMessage('Test Message')
             return receivedMessage
         ");
-        
+
         AssertLuaOk(result);
         var value = lua_tostring(_L, -1);
         Assert.AreEqual("Test Message", value);
@@ -162,7 +162,7 @@ public partial class LuaRuntimeTests
             end)
             return success
         ");
-        
+
         AssertLuaOk(result);
         var success = lua_toboolean(_L, -1);
         Assert.IsFalse(success != 0, "Should not be able to use StaticClass as a metatable");
@@ -174,7 +174,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             return type(StaticClass)
         ");
-        
+
         AssertLuaOk(result);
         var typeStr = lua_tostring(_L, -1);
         Assert.AreEqual("table", typeStr);
