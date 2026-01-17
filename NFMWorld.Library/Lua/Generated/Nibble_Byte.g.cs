@@ -173,14 +173,22 @@ public unsafe partial class LuaBindings
         switch (key)
         {
             case "value":
-                try
                 {
-                    obj.Value = ToObject<System.Byte>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.Value = ToObject<System.Byte>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
@@ -309,6 +317,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<System.Byte>(L, 1)!;
             try
             {
@@ -318,7 +327,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -336,6 +350,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (Maxine.Extensions.Nibble<System.Byte>)self;
@@ -346,7 +361,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -363,6 +382,7 @@ public unsafe partial class LuaBindings
         if (argCount == 2)
         {
             // Multiple overloads with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -418,10 +438,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<string>(L, 1)!;
@@ -438,13 +458,19 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible overload found for parse");
-                    return 0;
+                    errorMsg = "No compatible overload found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 

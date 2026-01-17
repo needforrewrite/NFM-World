@@ -107,6 +107,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             Microsoft.Xna.Framework.BoundingFrustum? arg0;
             if (lua_isnil(L, 2) != 0)
                 arg0 = null;
@@ -120,7 +121,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }

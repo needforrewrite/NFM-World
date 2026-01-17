@@ -136,6 +136,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 4)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<int>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
@@ -148,7 +149,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -166,6 +172,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (nfm_world_library.mad.rad.Rad3dWheelDef)self;
@@ -176,7 +183,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }

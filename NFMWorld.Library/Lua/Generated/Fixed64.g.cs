@@ -318,14 +318,22 @@ public unsafe partial class LuaBindings
         switch (key)
         {
             case "m_rawValue":
-                try
                 {
-                    obj.m_rawValue = ToObject<long>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.m_rawValue = ToObject<long>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
@@ -859,6 +867,7 @@ public unsafe partial class LuaBindings
         if (argCount == 1)
         {
             // Multiple constructors with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -903,10 +912,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<double>(L, 1)!;
@@ -918,13 +927,19 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible constructor found for Fixed64");
-                    return 0;
+                    errorMsg = "No compatible constructor found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 
@@ -941,6 +956,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
@@ -951,7 +967,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -969,6 +989,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (FixedMathSharp.Fixed64)self;
@@ -979,7 +1000,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -997,6 +1022,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<string>(L, 2)!;
             try
             {
@@ -1008,7 +1034,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1026,6 +1056,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (FixedMathSharp.Fixed64)self;
@@ -1036,7 +1067,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1054,6 +1089,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.Sign(self);
@@ -1062,7 +1098,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1080,6 +1120,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.IsInteger(self);
@@ -1088,7 +1129,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1106,6 +1151,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.Squared(self);
@@ -1114,7 +1160,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1132,6 +1182,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<System.MidpointRounding>(L, 2)!;
             try
             {
@@ -1141,7 +1192,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1159,6 +1214,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<System.MidpointRounding>(L, 3)!;
             try
@@ -1169,7 +1225,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1187,6 +1247,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.ClampOne(self);
@@ -1195,7 +1256,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1213,6 +1278,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.Clamp01(self);
@@ -1221,7 +1287,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1239,6 +1309,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.Abs(self);
@@ -1247,7 +1318,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1265,6 +1340,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
             try
             {
@@ -1274,7 +1350,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1292,6 +1372,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
             try
             {
@@ -1301,7 +1382,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1319,6 +1404,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
             try
             {
@@ -1328,7 +1414,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1346,6 +1436,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
             try
             {
@@ -1355,7 +1446,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1373,6 +1468,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
             try
             {
@@ -1382,7 +1478,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1400,6 +1500,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.Floor(self);
@@ -1408,7 +1509,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1426,6 +1531,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.Ceiling(self);
@@ -1434,7 +1540,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1452,6 +1562,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.RoundToInt(self);
@@ -1460,7 +1571,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1478,6 +1593,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.CeilToInt(self);
@@ -1486,7 +1602,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1504,6 +1624,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.FloorToInt(self);
@@ -1512,7 +1633,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1530,6 +1655,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.ToFormattedString(self);
@@ -1538,7 +1664,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1556,6 +1686,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
@@ -1565,7 +1696,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1583,6 +1718,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.ToFormattedFloat(self);
@@ -1591,7 +1727,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1609,6 +1749,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.ToPreciseFloat(self);
@@ -1617,7 +1758,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1635,6 +1780,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.ToRadians(self);
@@ -1643,7 +1789,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1661,6 +1811,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.ToDegree(self);
@@ -1669,7 +1820,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1687,6 +1842,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.MoreThanEpsilon(self);
@@ -1695,7 +1851,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1713,6 +1873,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var result = FixedMathSharp.Fixed64Extensions.LessThanEpsilon(self);
@@ -1721,7 +1882,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1739,6 +1904,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
             var arg1 = ToObject<FixedMathSharp.Fixed64>(L, 3)!;
             try
@@ -1749,7 +1915,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1765,6 +1935,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<double>(L, 1)!;
             var arg1 = ToObject<double>(L, 2)!;
             try
@@ -1775,7 +1946,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1791,6 +1967,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 1)!;
             try
             {
@@ -1800,7 +1977,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1816,6 +1998,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 1)!;
             try
             {
@@ -1825,7 +2008,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1841,6 +2029,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<string>(L, 1)!;
             try
             {
@@ -1850,7 +2039,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1866,6 +2060,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<long>(L, 1)!;
             try
             {
@@ -1875,7 +2070,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1891,6 +2091,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<long>(L, 1)!;
             try
             {
@@ -1900,7 +2101,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1916,6 +2122,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<long>(L, 1)!;
             try
             {
@@ -1925,7 +2132,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1941,6 +2153,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<long>(L, 1)!;
             try
             {
@@ -1950,7 +2163,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }

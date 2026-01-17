@@ -115,25 +115,41 @@ public unsafe partial class LuaBindings
         switch (key)
         {
             case "position":
-                try
                 {
-                    obj.Position = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.Position = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 break;
             case "rotation":
-                try
                 {
-                    obj.Rotation = ToObject<nfm_world_library.SoftFloat.f64Euler>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.Rotation = ToObject<nfm_world_library.SoftFloat.f64Euler>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 break;
         }

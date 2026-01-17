@@ -320,122 +320,202 @@ public unsafe partial class LuaBindings
         switch (key)
         {
             case "translation":
-                try
                 {
-                    obj.Translation = ToObject<System.Numerics.Vector2>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.Translation = ToObject<System.Numerics.Vector2>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "x":
-                try
                 {
-                    obj.X = ToObject<System.Numerics.Vector2>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.X = ToObject<System.Numerics.Vector2>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "y":
-                try
                 {
-                    obj.Y = ToObject<System.Numerics.Vector2>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.Y = ToObject<System.Numerics.Vector2>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "z":
-                try
                 {
-                    obj.Z = ToObject<System.Numerics.Vector2>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.Z = ToObject<System.Numerics.Vector2>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "m11":
-                try
                 {
-                    obj.M11 = ToObject<float>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.M11 = ToObject<float>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "m12":
-                try
                 {
-                    obj.M12 = ToObject<float>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.M12 = ToObject<float>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "m21":
-                try
                 {
-                    obj.M21 = ToObject<float>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.M21 = ToObject<float>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "m22":
-                try
                 {
-                    obj.M22 = ToObject<float>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.M22 = ToObject<float>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "m31":
-                try
                 {
-                    obj.M31 = ToObject<float>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.M31 = ToObject<float>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "m32":
-                try
                 {
-                    obj.M32 = ToObject<float>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.M32 = ToObject<float>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
@@ -568,6 +648,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 6)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<float>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
             var arg2 = ToObject<float>(L, 3)!;
@@ -582,7 +663,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -600,6 +686,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (System.Numerics.Matrix3x2)self;
@@ -610,7 +697,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -628,6 +719,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
             try
@@ -640,7 +732,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -658,6 +754,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
@@ -669,7 +766,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -687,6 +788,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 3)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
             var arg2 = ToObject<float>(L, 4)!;
@@ -700,7 +802,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -718,6 +824,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<int>(L, 2)!;
             var arg1 = ToObject<System.Numerics.Vector2>(L, 3)!;
             try
@@ -730,7 +837,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -748,6 +859,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (System.Numerics.Matrix3x2)self;
@@ -758,7 +870,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -774,6 +890,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<System.Numerics.Matrix3x2>(L, 1)!;
             var arg1 = ToObject<System.Numerics.Matrix3x2>(L, 2)!;
             try
@@ -784,7 +901,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -801,6 +923,7 @@ public unsafe partial class LuaBindings
         if (argCount == 1)
         {
             // Multiple overloads with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -845,10 +968,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
@@ -860,18 +983,25 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible overload found for create");
-                    return 0;
+                    errorMsg = "No compatible overload found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 
         if (argCount == 3)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
             var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             var arg2 = ToObject<System.Numerics.Vector2>(L, 3)!;
@@ -883,13 +1013,19 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
 
         if (argCount == 6)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<float>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
             var arg2 = ToObject<float>(L, 3)!;
@@ -904,7 +1040,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -920,6 +1061,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<float>(L, 1)!;
             try
             {
@@ -929,13 +1071,19 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<float>(L, 1)!;
             var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
@@ -946,7 +1094,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -963,6 +1116,7 @@ public unsafe partial class LuaBindings
         if (argCount == 1)
         {
             // Multiple overloads with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -1007,10 +1161,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<float>(L, 1)!;
@@ -1022,19 +1176,26 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible overload found for createScale");
-                    return 0;
+                    errorMsg = "No compatible overload found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 
         if (argCount == 2)
         {
             // Multiple overloads with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -1103,10 +1264,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
@@ -1119,10 +1280,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 2:
                     {
                         var arg0 = ToObject<float>(L, 1)!;
@@ -1135,18 +1296,25 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible overload found for createScale");
-                    return 0;
+                    errorMsg = "No compatible overload found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 
         if (argCount == 3)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<float>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
             var arg2 = ToObject<System.Numerics.Vector2>(L, 3)!;
@@ -1158,7 +1326,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1174,6 +1347,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<float>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
             try
@@ -1184,13 +1358,19 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
 
         if (argCount == 3)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<float>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
             var arg2 = ToObject<System.Numerics.Vector2>(L, 3)!;
@@ -1202,7 +1382,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1218,6 +1403,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
             try
             {
@@ -1227,13 +1413,19 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<float>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
             try
@@ -1244,7 +1436,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1260,6 +1457,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 3)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<System.Numerics.Matrix3x2>(L, 1)!;
             var arg1 = ToObject<System.Numerics.Matrix3x2>(L, 2)!;
             var arg2 = ToObject<float>(L, 3)!;
@@ -1271,7 +1469,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1288,6 +1491,7 @@ public unsafe partial class LuaBindings
         if (argCount == 2)
         {
             // Multiple overloads with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -1339,10 +1543,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<System.Numerics.Matrix3x2>(L, 1)!;
@@ -1355,13 +1559,19 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible overload found for multiply");
-                    return 0;
+                    errorMsg = "No compatible overload found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 
@@ -1376,6 +1586,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<System.Numerics.Matrix3x2>(L, 1)!;
             try
             {
@@ -1385,7 +1596,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1401,6 +1617,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<System.Numerics.Matrix3x2>(L, 1)!;
             var arg1 = ToObject<System.Numerics.Matrix3x2>(L, 2)!;
             try
@@ -1411,7 +1628,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }

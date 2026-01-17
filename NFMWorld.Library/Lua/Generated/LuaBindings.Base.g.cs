@@ -314,8 +314,16 @@ public unsafe partial class LuaBindings
         if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
         if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
         if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
-        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tonumber(L, idx);
+        if (typeof(T) == typeof(long))
+        {
+            if (sizeof(nint) == 4)
+            {
+                // Lua integer is 32-bit, convert via number to avoid overflow
+                return (T)(object)(long)lua_tonumber(L, idx);
+            }
+            return (T)(object)(long)lua_tointeger(L, idx);
+        }
+        if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)(long)lua_tonumber(L, idx);
         if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
         if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
 
@@ -1277,7 +1285,7 @@ public unsafe partial class LuaBindings
     }
 
     // Keep delegates alive to prevent garbage collection
-    private static readonly List<Delegate> _keptDelegates = new();
+    private static readonly DictionarySlim<nint, Delegate> _keptDelegates = new();
 
     public static void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
     {
@@ -1287,8 +1295,8 @@ public unsafe partial class LuaBindings
             action(arg);
             return 0;
         };
-        _keptDelegates.Add(wrapper);
         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
         lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
@@ -1301,8 +1309,8 @@ public unsafe partial class LuaBindings
             PushValue(luaState, result);
             return 1;
         };
-        _keptDelegates.Add(wrapper);
         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
         lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
@@ -1316,8 +1324,8 @@ public unsafe partial class LuaBindings
             action(arg1, arg2);
             return 0;
         };
-        _keptDelegates.Add(wrapper);
         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
         lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
@@ -1331,8 +1339,8 @@ public unsafe partial class LuaBindings
             PushValue(luaState, result);
             return 1;
         };
-        _keptDelegates.Add(wrapper);
         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
         lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
@@ -1347,8 +1355,8 @@ public unsafe partial class LuaBindings
             action(arg1, arg2, arg3);
             return 0;
         };
-        _keptDelegates.Add(wrapper);
         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
         lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
@@ -1363,8 +1371,8 @@ public unsafe partial class LuaBindings
             PushValue(luaState, result);
             return 1;
         };
-        _keptDelegates.Add(wrapper);
         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
         lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
@@ -1380,8 +1388,8 @@ public unsafe partial class LuaBindings
             action(arg1, arg2, arg3, arg4);
             return 0;
         };
-        _keptDelegates.Add(wrapper);
         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
         lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
@@ -1397,8 +1405,8 @@ public unsafe partial class LuaBindings
             PushValue(luaState, result);
             return 1;
         };
-        _keptDelegates.Add(wrapper);
         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
         lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }

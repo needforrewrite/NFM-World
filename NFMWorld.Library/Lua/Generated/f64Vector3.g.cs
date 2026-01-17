@@ -273,38 +273,62 @@ public unsafe partial class LuaBindings
         switch (key)
         {
             case "x":
-                try
                 {
-                    obj.X = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.X = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "y":
-                try
                 {
-                    obj.Y = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.Y = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
             case "z":
-                try
                 {
-                    obj.Z = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
-                }
-                catch (System.Exception ex)
-                {
-                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                    return 0;
+                    string? errorMsg = null;
+                    try
+                    {
+                        obj.Z = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    }
+
+                    if (errorMsg != null)
+                    {
+                        luaL_error(L, errorMsg);
+                        return 0;
+                    }
                 }
                 UpdateStruct(L, 1, obj);
                 break;
@@ -527,6 +551,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 1)!;
             try
             {
@@ -536,13 +561,19 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
             try
@@ -553,13 +584,19 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
 
         if (argCount == 3)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
@@ -571,7 +608,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -589,6 +631,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (nfm_world_library.SoftFloat.f64Vector3)self;
@@ -599,7 +642,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -617,6 +664,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (nfm_world_library.SoftFloat.f64Vector3)self;
@@ -627,7 +675,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -645,6 +697,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (nfm_world_library.SoftFloat.f64Vector3)self;
@@ -654,7 +707,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -672,6 +729,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 0)
         {
+            string? errorMsg = null;
             try
             {
                 var structValue = (nfm_world_library.SoftFloat.f64Vector3)self;
@@ -682,7 +740,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -700,6 +762,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
             try
             {
@@ -709,7 +772,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -727,6 +794,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
             try
             {
@@ -736,7 +804,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -754,6 +826,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
             try
@@ -764,7 +837,11 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -780,6 +857,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             try
@@ -790,7 +868,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -806,6 +889,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 5)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
@@ -819,7 +903,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -835,6 +924,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 5)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
@@ -848,7 +938,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -864,6 +959,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 3)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
@@ -875,7 +971,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -891,6 +992,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             try
@@ -901,7 +1003,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -917,6 +1024,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             try
@@ -927,7 +1035,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -943,6 +1056,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             try
@@ -953,7 +1067,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -970,6 +1089,7 @@ public unsafe partial class LuaBindings
         if (argCount == 2)
         {
             // Multiple overloads with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -1021,10 +1141,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
@@ -1037,13 +1157,19 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible overload found for divide");
-                    return 0;
+                    errorMsg = "No compatible overload found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 
@@ -1058,6 +1184,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             try
@@ -1068,7 +1195,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1085,6 +1217,7 @@ public unsafe partial class LuaBindings
         if (argCount == 5)
         {
             // Multiple overloads with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -1157,10 +1290,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 1)!;
@@ -1176,13 +1309,19 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible overload found for hermite");
-                    return 0;
+                    errorMsg = "No compatible overload found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 
@@ -1197,6 +1336,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 3)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
@@ -1208,7 +1348,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1224,6 +1369,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             try
@@ -1234,7 +1380,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1250,6 +1401,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             try
@@ -1260,7 +1412,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1277,6 +1434,7 @@ public unsafe partial class LuaBindings
         if (argCount == 2)
         {
             // Multiple overloads with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -1328,10 +1486,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
@@ -1344,13 +1502,19 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible overload found for multiply");
-                    return 0;
+                    errorMsg = "No compatible overload found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 
@@ -1365,6 +1529,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             try
             {
@@ -1374,7 +1539,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1390,6 +1560,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 1)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             try
             {
@@ -1399,7 +1570,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1415,6 +1591,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             try
@@ -1425,7 +1602,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1441,6 +1623,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 3)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 3)!;
@@ -1452,7 +1635,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1468,6 +1656,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
             try
@@ -1478,7 +1667,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
@@ -1495,6 +1689,7 @@ public unsafe partial class LuaBindings
         if (argCount == 2)
         {
             // Multiple overloads with same argument count - find best match
+            string? errorMsg = null;
             int bestScore = -1;
             int bestIndex = -1;
 
@@ -1546,10 +1741,10 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 case 1:
                     {
                         var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
@@ -1562,13 +1757,19 @@ public unsafe partial class LuaBindings
                         }
                         catch (System.Exception ex)
                         {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
+                            errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
                         }
                     }
+                    break;
                 default:
-                    luaL_error(L, "No compatible overload found for transform");
-                    return 0;
+                    errorMsg = "No compatible overload found";
+                    break;
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
+                return 0;
             }
         }
 
@@ -1583,6 +1784,7 @@ public unsafe partial class LuaBindings
 
         if (argCount == 2)
         {
+            string? errorMsg = null;
             var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
             var arg1 = ToObject<Microsoft.Xna.Framework.Matrix>(L, 2)!;
             try
@@ -1593,7 +1795,12 @@ public unsafe partial class LuaBindings
             }
             catch (System.Exception ex)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            }
+
+            if (errorMsg != null)
+            {
+                luaL_error(L, errorMsg);
                 return 0;
             }
         }
