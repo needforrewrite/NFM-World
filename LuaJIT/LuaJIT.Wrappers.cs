@@ -1,6 +1,9 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
+// ReSharper disable InconsistentNaming
+// ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+
 namespace LuaJIT;
 
 public static unsafe partial class Methods
