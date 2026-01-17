@@ -238,29 +238,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithIndexers_static_create(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers.Create();
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for create");
-        return 0;
-    }
-
     private static int TypeWithIndexers_method_setNumberAt(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -661,6 +638,29 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int TypeWithIndexers_static_create(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers.Create();
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for create");
         return 0;
     }
 

@@ -15,6 +15,7 @@ public partial class LuaBindings
     /// </summary>
     public static void Initialize(lua_State L)
     {
+        Register_StaticClass(L);
         Register_TypeWithEvents(L);
         Register_CustomEventArgs(L);
         Register_TypeWithExtensionMembers(L);

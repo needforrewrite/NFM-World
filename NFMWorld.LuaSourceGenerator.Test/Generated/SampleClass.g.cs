@@ -63,7 +63,7 @@ public partial class LuaBindings
         lua_pushcfunction(L, (SampleClass_static_getNullableValue));
         lua_setfield(L, -2, "getNullableValue");
 
-        // Create metatable for type table (static properties)
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (SampleClass_type__index));
         lua_setfield(L, -2, "__index");
@@ -472,139 +472,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int SampleClass_static_add(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 1)!;
-            var arg1 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.Add(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for add");
-        return 0;
-    }
-
-    private static int SampleClass_static_concat(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<string>(L, 1)!;
-            var arg1 = ToObject<string>(L, 2)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.Concat(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for concat");
-        return 0;
-    }
-
-    private static int SampleClass_static_incrementCounter(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.IncrementCounter();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for incrementCounter");
-        return 0;
-    }
-
-    private static int SampleClass_static_addNullable(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            int? arg0;
-            if (lua_isnil(L, 1) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<int>(L, 1)!;
-            int? arg1;
-            if (lua_isnil(L, 2) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.AddNullable(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addNullable");
-        return 0;
-    }
-
-    private static int SampleClass_static_getNullableValue(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<bool>(L, 1)!;
-            var arg1 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.GetNullableValue(arg0, arg1);
-                if (result.HasValue)
-                    PushValue(L, result.Value);
-                else
-                    lua_pushnil(L);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getNullableValue");
-        return 0;
-    }
-
     private static int SampleClass_method_getDoubleId(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -993,6 +860,139 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int SampleClass_static_add(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            var arg1 = ToObject<int>(L, 2)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.Add(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for add");
+        return 0;
+    }
+
+    private static int SampleClass_static_concat(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<string>(L, 1)!;
+            var arg1 = ToObject<string>(L, 2)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.Concat(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for concat");
+        return 0;
+    }
+
+    private static int SampleClass_static_incrementCounter(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.IncrementCounter();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for incrementCounter");
+        return 0;
+    }
+
+    private static int SampleClass_static_addNullable(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            int? arg0;
+            if (lua_isnil(L, 1) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<int>(L, 1)!;
+            int? arg1;
+            if (lua_isnil(L, 2) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<int>(L, 2)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.AddNullable(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addNullable");
+        return 0;
+    }
+
+    private static int SampleClass_static_getNullableValue(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<bool>(L, 1)!;
+            var arg1 = ToObject<int>(L, 2)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass.GetNullableValue(arg0, arg1);
+                if (result.HasValue)
+                    PushValue(L, result.Value);
+                else
+                    lua_pushnil(L);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getNullableValue");
         return 0;
     }
 

@@ -193,6 +193,14 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     }
 
     /// <summary>
+    /// Check if a type is a static class (sealed + abstract + class).
+    /// </summary>
+    private static bool IsStaticClass(Type type)
+    {
+        return type.IsClass && type.IsAbstract && type.IsSealed;
+    }
+
+    /// <summary>
     /// Check if a type has the InlineArrayAttribute (indexable types without reflection-visible indexers).
     /// </summary>
     private static bool HasInlineArrayAttribute(Type type)
@@ -2265,6 +2273,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         var safeName = GetSafeTypeName(type);
         var metatableName = $"MT_{safeName}";
         var isStruct = type.IsValueType;
+        var isStaticClass = IsStaticClass(type);
         var fullTypeName = GetFullTypeName(type);
 
         AppendLine($"// =========== Bindings for {type.Name} ({luaName}) ===========");
@@ -2272,52 +2281,58 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         AppendLine("{");
         using (Indent())
         {
-            AppendLine($"RegisterMetatable<{fullTypeName}>(\"{metatableName}\");");
-            AppendLine();
-            AppendLine("// Create metatable for instances");
-            AppendLine($"luaL_newmetatable(L, \"{metatableName}\");");
-            AppendLine();
+            if (!isStaticClass)
+            {
+                AppendLine($"RegisterMetatable<{fullTypeName}>(\"{metatableName}\");");
+                AppendLine();
+                AppendLine("// Create metatable for instances");
+                AppendLine($"luaL_newmetatable(L, \"{metatableName}\");");
+                AppendLine();
 
-            // __gc
-            AppendLine("// __gc metamethod");
-            AppendLine($"lua_pushcfunction(L, ({safeName}__gc));");
-            AppendLine("lua_setfield(L, -2, \"__gc\");");
-            AppendLine();
+                // __gc
+                AppendLine("// __gc metamethod");
+                AppendLine($"lua_pushcfunction(L, ({safeName}__gc));");
+                AppendLine("lua_setfield(L, -2, \"__gc\");");
+                AppendLine();
 
-            // __index
-            AppendLine("// __index metamethod");
-            AppendLine($"lua_pushcfunction(L, ({safeName}__index));");
-            AppendLine("lua_setfield(L, -2, \"__index\");");
-            AppendLine();
+                // __index
+                AppendLine("// __index metamethod");
+                AppendLine($"lua_pushcfunction(L, ({safeName}__index));");
+                AppendLine("lua_setfield(L, -2, \"__index\");");
+                AppendLine();
 
-            // __newindex
-            AppendLine("// __newindex metamethod");
-            AppendLine($"lua_pushcfunction(L, ({safeName}__newindex));");
-            AppendLine("lua_setfield(L, -2, \"__newindex\");");
-            AppendLine();
+                // __newindex
+                AppendLine("// __newindex metamethod");
+                AppendLine($"lua_pushcfunction(L, ({safeName}__newindex));");
+                AppendLine("lua_setfield(L, -2, \"__newindex\");");
+                AppendLine();
 
-            // Operator metamethods
-            GenerateOperatorMetamethods(type, safeName);
+                // Operator metamethods
+                GenerateOperatorMetamethods(type, safeName);
 
-            // __tostring
-            AppendLine("// __tostring metamethod");
-            AppendLine($"lua_pushcfunction(L, ({safeName}__tostring));");
-            AppendLine("lua_setfield(L, -2, \"__tostring\");");
-            AppendLine();
+                // __tostring
+                AppendLine("// __tostring metamethod");
+                AppendLine($"lua_pushcfunction(L, ({safeName}__tostring));");
+                AppendLine("lua_setfield(L, -2, \"__tostring\");");
+                AppendLine();
 
-            AppendLine("lua_pop(L, 1);");
-            AppendLine();
+                AppendLine("lua_pop(L, 1);");
+                AppendLine();
+            }
 
             // Type table
             AppendLine($"// Create type table for {luaName}");
             AppendLine("lua_newtable(L);");
             AppendLine();
 
-            // Constructor
-            AppendLine("// Constructor: new()");
-            AppendLine($"lua_pushcfunction(L, ({safeName}_new));");
-            AppendLine("lua_setfield(L, -2, \"new\");");
-            AppendLine();
+            // Constructor (skip for static classes)
+            if (!isStaticClass)
+            {
+                AppendLine("// Constructor: new()");
+                AppendLine($"lua_pushcfunction(L, ({safeName}_new));");
+                AppendLine("lua_setfield(L, -2, \"new\");");
+                AppendLine();
+            }
 
             // Static methods
             var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -2350,20 +2365,25 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine();
             }
 
-            // Static properties metatable
+            // Static properties and fields metatable
             var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
                 .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
                 .ToList();
 
-            if (staticProps.Count > 0)
+            var staticFields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)) && !f.IsLiteral)
+                .ToList();
+
+            if (staticProps.Count > 0 || staticFields.Count > 0)
             {
-                AppendLine("// Create metatable for type table (static properties)");
+                AppendLine("// Create metatable for type table (static properties and fields)");
                 AppendLine("lua_newtable(L);");
                 AppendLine($"lua_pushcfunction(L, ({safeName}_type__index));");
                 AppendLine("lua_setfield(L, -2, \"__index\");");
 
                 var writableStaticProps = staticProps.Where(p => p.CanWrite).ToList();
-                if (writableStaticProps.Count > 0)
+                var writableStaticFields = staticFields.Where(f => !f.IsInitOnly).ToList();
+                if (writableStaticProps.Count > 0 || writableStaticFields.Count > 0)
                 {
                     AppendLine($"lua_pushcfunction(L, ({safeName}_type__newindex));");
                     AppendLine("lua_setfield(L, -2, \"__newindex\");");
@@ -2378,21 +2398,28 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         AppendLine("}");
         AppendLine();
 
-        // Generate all method implementations
-        GenerateGcMethod(safeName, fullTypeName);
-        GenerateIndexMethod(type, safeName, isStruct, fullTypeName);
-        GenerateNewIndexMethod(type, safeName, isStruct, fullTypeName);
-        GenerateTostringMethod(safeName, isStruct, fullTypeName);
-        GenerateOperatorMethods(type, safeName, fullTypeName);
-        GenerateConstructorMethod(type, safeName, isStruct, fullTypeName);
+        // Generate all method implementations (skip instance-related methods for static classes)
+        if (!isStaticClass)
+        {
+            GenerateGcMethod(safeName, fullTypeName);
+            GenerateIndexMethod(type, safeName, isStruct, fullTypeName);
+            GenerateNewIndexMethod(type, safeName, isStruct, fullTypeName);
+            GenerateTostringMethod(safeName, isStruct, fullTypeName);
+            GenerateOperatorMethods(type, safeName, fullTypeName);
+            GenerateConstructorMethod(type, safeName, isStruct, fullTypeName);
+            GenerateInstanceMethods(type, safeName, isStruct, fullTypeName);
+        }
         GenerateStaticMethods(type, safeName, fullTypeName);
-        GenerateInstanceMethods(type, safeName, isStruct, fullTypeName);
 
         var staticPropsForAccessors = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
             .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
             .ToList();
 
-        if (staticPropsForAccessors.Count > 0)
+        var staticFieldsForAccessors = type.GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)) && !f.IsLiteral)
+            .ToList();
+
+        if (staticPropsForAccessors.Count > 0 || staticFieldsForAccessors.Count > 0)
         {
             GenerateStaticPropertyAccessors(type, safeName, fullTypeName);
         }
@@ -4258,7 +4285,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
             .ToList();
 
-        // __index for static properties
+        var staticFields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)) && !f.IsLiteral)
+            .ToList();
+
+        // __index for static properties and fields
         AppendLine($"private static int {safeName}_type__index(lua_State L)");
         AppendLine("{");
         using (Indent())
@@ -4270,6 +4301,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine("{");
             using (Indent())
             {
+                // Properties
                 foreach (var prop in staticProps.Where(p => p.CanRead))
                 {
                     var luaName = GetLuaPropertyName(prop);
@@ -4277,6 +4309,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     using (Indent())
                     {
                         GeneratePushValue($"{fullTypeName}.{prop.Name}", prop.PropertyType);
+                        AppendLine("return 1;");
+                    }
+                }
+
+                // Fields
+                foreach (var field in staticFields)
+                {
+                    var luaName = ToCamelCase(field.Name);
+                    AppendLine($"case \"{luaName}\":");
+                    using (Indent())
+                    {
+                        GeneratePushValue($"{fullTypeName}.{field.Name}", field.FieldType);
                         AppendLine("return 1;");
                     }
                 }
@@ -4293,9 +4337,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         AppendLine("}");
         AppendLine();
 
-        // __newindex for static properties (if any writable, excluding init-only)
+        // __newindex for static properties and fields (if any writable)
         var writableProps = staticProps.Where(p => p.CanWrite && !IsInitOnly(p)).ToList();
-        if (writableProps.Count > 0)
+        var writableFields = staticFields.Where(f => !f.IsInitOnly).ToList();
+
+        if (writableProps.Count > 0 || writableFields.Count > 0)
         {
             AppendLine($"private static int {safeName}_type__newindex(lua_State L)");
             AppendLine("{");
@@ -4308,6 +4354,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine("{");
                 using (Indent())
                 {
+                    // Properties
                     foreach (var prop in writableProps)
                     {
                         var luaName = GetLuaPropertyName(prop);
@@ -4315,6 +4362,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         using (Indent())
                         {
                             GenerateToObjectCode($"{fullTypeName}.{prop.Name}", prop.PropertyType, "3");
+                            AppendLine("return 0;");
+                        }
+                    }
+
+                    // Fields
+                    foreach (var field in writableFields)
+                    {
+                        var luaName = ToCamelCase(field.Name);
+                        AppendLine($"case \"{luaName}\":");
+                        using (Indent())
+                        {
+                            GenerateToObjectCode($"{fullTypeName}.{field.Name}", field.FieldType, "3");
                             AppendLine("return 0;");
                         }
                     }
@@ -4368,7 +4427,19 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 }
             }
 
-            AppendLine("if (lua_type(L, " + (isStatic ? "1" : "2") + ") != LUA_TFUNCTION) { lua_pushstring(L, \"Expected function as listener\"); lua_error(L); return 0; }");
+            if (isStatic)
+            {
+                // For static events, handle both dot and colon syntax
+                // Colon syntax: table:add_Event(func) - function is at index 2
+                // Dot syntax: table.add_Event(func) - function is at index 1
+                AppendLine("var funcIdx = lua_type(L, 1) == LUA_TFUNCTION ? 1 : 2;");
+                AppendLine("if (lua_type(L, funcIdx) != LUA_TFUNCTION) { lua_pushstring(L, \"Expected function as listener\"); lua_error(L); return 0; }");
+            }
+            else
+            {
+                AppendLine("if (lua_type(L, 2) != LUA_TFUNCTION) { lua_pushstring(L, \"Expected function as listener\"); lua_error(L); return 0; }");
+            }
+
             AppendLine();
 
             // Convert Lua function to delegate
@@ -4376,7 +4447,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // Subscribe to event
             if (isStatic)
             {
-                AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, 1, listener => {fullTypeName}.{eventName} -= listener);");
+                AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, funcIdx, listener => {fullTypeName}.{eventName} -= listener);");
                 AppendLine();
                 AppendLine($"{fullTypeName}.{eventName} += listener;");
             }

@@ -178,29 +178,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithEvents_static_raiseStaticEvent(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<string>(L, 1)!;
-            try
-            {
-                NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.RaiseStaticEvent(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for raiseStaticEvent");
-        return 0;
-    }
-
     private static int TypeWithEvents_method_raiseSimpleEvent(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -446,6 +423,29 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int TypeWithEvents_static_raiseStaticEvent(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<string>(L, 1)!;
+            try
+            {
+                NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.RaiseStaticEvent(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for raiseStaticEvent");
+        return 0;
+    }
+
     private static int TypeWithEvents_add_SimpleEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -514,9 +514,10 @@ public partial class LuaBindings
 
     private static int TypeWithEvents_add_StaticEvent(lua_State L)
     {
-        if (lua_type(L, 1) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
+        var funcIdx = lua_type(L, 1) == LUA_TFUNCTION ? 1 : 2;
+        if (lua_type(L, funcIdx) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
 
-        var listener = CreateEventDelegate<System.Action<string>>(L, 1, listener => NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.StaticEvent -= listener);
+        var listener = CreateEventDelegate<System.Action<string>>(L, funcIdx, listener => NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.StaticEvent -= listener);
 
         NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents.StaticEvent += listener;
         return 0;

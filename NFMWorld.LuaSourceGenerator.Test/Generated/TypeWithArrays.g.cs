@@ -243,78 +243,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithArrays_static_createArray(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 1)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.TypeWithArrays.CreateArray(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for createArray");
-        return 0;
-    }
-
-    private static int TypeWithArrays_static_createStringArray(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 1)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.TypeWithArrays.CreateStringArray(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for createStringArray");
-        return 0;
-    }
-
-    private static int TypeWithArrays_static_createSequence(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 1)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.TypeWithArrays.CreateSequence(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for createSequence");
-        return 0;
-    }
-
     private static int TypeWithArrays_method_getNumbers(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -678,6 +606,78 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int TypeWithArrays_static_createArray(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.TypeWithArrays.CreateArray(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for createArray");
+        return 0;
+    }
+
+    private static int TypeWithArrays_static_createStringArray(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.TypeWithArrays.CreateStringArray(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for createStringArray");
+        return 0;
+    }
+
+    private static int TypeWithArrays_static_createSequence(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.TypeWithArrays.CreateSequence(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for createSequence");
         return 0;
     }
 

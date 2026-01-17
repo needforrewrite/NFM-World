@@ -79,7 +79,7 @@ public partial class LuaBindings
         lua_pushcfunction(L, (SampleStruct_static_dot));
         lua_setfield(L, -2, "dot");
 
-        // Create metatable for type table (static properties)
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (SampleStruct_type__index));
         lua_setfield(L, -2, "__index");
@@ -278,80 +278,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int SampleStruct_static_distance(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1)!;
-            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 2)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.Distance(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for distance");
-        return 0;
-    }
-
-    private static int SampleStruct_static_fromAngle(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<float>(L, 1)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.FromAngle(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for fromAngle");
-        return 0;
-    }
-
-    private static int SampleStruct_static_dot(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1)!;
-            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 2)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.Dot(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for dot");
-        return 0;
-    }
-
     private static int SampleStruct_method_normalized(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -459,6 +385,80 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int SampleStruct_static_distance(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 2)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.Distance(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for distance");
+        return 0;
+    }
+
+    private static int SampleStruct_static_fromAngle(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<float>(L, 1)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.FromAngle(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for fromAngle");
+        return 0;
+    }
+
+    private static int SampleStruct_static_dot(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 2)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct.Dot(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for dot");
         return 0;
     }
 

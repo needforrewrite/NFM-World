@@ -896,9 +896,157 @@ case "square":
 
 ---
 
+### 11. Static Class Support (January 2026)
+**Issue:** Generator was producing unnecessary instance-related code for static classes, which cannot be instantiated and only contain static members.
+
+**Root Cause Analysis:**
+- Generator treated static classes (sealed + abstract) like regular classes
+- Generated unnecessary metatable, operators, constructors, and instance methods for static classes
+- Static classes in C# use `type.IsClass && type.IsAbstract && type.IsSealed`
+- Only static members (methods, properties, fields, events) should be accessible
+
+**Solution:** Implemented conditional code generation based on static class detection:
+
+**Implementation Details:**
+
+1. **IsStaticClass(Type)** - Helper method (line ~195):
+   ```csharp
+   private static bool IsStaticClass(Type type)
+   {
+       return type.IsClass && type.IsAbstract && type.IsSealed;
+   }
+   ```
+
+2. **Modified GenerateTypeBindings** (lines ~2269-2407):
+   - Detect static classes: `var isStaticClass = IsStaticClass(type);`
+   - Conditionally skip metatable generation for static classes
+   - Conditionally skip constructor generation for static classes
+   - Conditionally skip instance method generation for static classes
+   - Always generate type table with static members
+
+3. **Static Field Support** - Modified `GenerateStaticPropertyAccessors` (line ~4282):
+   - Added static field discovery alongside static properties
+   - Generate `type__index` metamethod handling both properties and fields
+   - Generate `type__newindex` metamethod for writable properties and fields
+   - Uses `ToCamelCase()` for field names in Lua
+
+4. **Static Event Support** - Modified `GenerateEventAddMethod` (line ~4411):
+   - Handle both dot (`.add_Event`) and colon (`:add_Event`) syntax for static events
+   - Automatically detect function parameter index:
+     ```csharp
+     var funcIdx = lua_type(L, 1) == LUA_TFUNCTION ? 1 : 2;
+     ```
+   - Dot syntax: function at index 1
+   - Colon syntax: table at index 1, function at index 2
+
+**Generated Code Comparison:**
+
+**Before (unnecessary for static class):**
+```csharp
+// Metatable registration
+RegisterMetatable<StaticClass>("StaticClass");
+lua_newtable(L);
+lua_pushcfunction(L, (StaticClass__gc));
+lua_setfield(L, -2, "__gc");
+// ... more metamethods ...
+
+// Constructor
+lua_pushcfunction(L, (StaticClass_new));
+lua_setfield(L, -2, "new");
+
+// Instance methods
+GenerateGcMethod(...);
+GenerateIndexMethod(...);
+// ... etc ...
+```
+
+**After (only type table + static members):**
+```csharp
+// Type table (only)
+lua_newtable(L);
+
+// Static methods
+lua_pushcfunction(L, (StaticClass_static_getMagicNumber));
+lua_setfield(L, -2, "getMagicNumber");
+
+// Static properties/fields metatable
+lua_newtable(L);
+lua_pushcfunction(L, (StaticClass_type__index));
+lua_setfield(L, -2, "__index");
+lua_pushcfunction(L, (StaticClass_type__newindex));
+lua_setfield(L, -2, "__newindex");
+lua_setmetatable(L, -2);
+
+lua_setglobal(L, "StaticClass");
+
+// No metatable, no constructor, no instance methods generated!
+```
+
+**Test Coverage:** Created comprehensive test fixture with 13 tests:
+
+**StaticClass.cs** - Test fixture:
+- Static field: `StaticField = 42`
+- Static properties: `StaticProperty` (get/set), `ReadOnlyProperty` (get-only)
+- Static methods: `GetMagicNumber()`, `Add(int, int)`, `Greet(string)`, `Calculate(double, double, string)`
+- Static event: `OnMessage` (Action<string>), `RaiseMessage(string)`
+
+**LuaRuntimeTests.StaticClass.cs** - 13 runtime tests:
+1. `StaticClass_CannotBeInstantiated` - Verifies `.new` is `nil`
+2. `StaticClass_CallStaticMethod_NoParameters` - `getMagicNumber()` returns 123
+3. `StaticClass_CallStaticMethod_WithParameters` - `add(10, 20)` returns 30
+4. `StaticClass_CallStaticMethod_ReturningString` - `greet('World')` returns "Hello, World!"
+5. `StaticClass_CallStaticMethod_MultipleParameters` - `calculate(10, 5, 'mul')` returns 50
+6. `StaticClass_AccessStaticProperty_Read` - `staticProperty` returns "Initial"
+7. `StaticClass_AccessStaticProperty_Write` - Can set and read `staticProperty`
+8. `StaticClass_AccessReadOnlyProperty` - `readOnlyProperty` returns 3.14159
+9. `StaticClass_AccessStaticField_Read` - `staticField` returns 42
+10. `StaticClass_AccessStaticField_Write` - Can set and read `staticField`
+11. `StaticClass_StaticEvent_CanSubscribe` - Event subscription works (handles both colon and dot syntax)
+12. `StaticClass_NoMetatableGenerated` - Cannot use StaticClass as metatable
+13. `StaticClass_TypeIsTable` - `typeof(StaticClass)` is "table"
+
+**Lua Usage Example:**
+```lua
+-- Cannot instantiate
+local obj = StaticClass.new  -- nil
+
+-- Call static methods
+local magic = StaticClass.getMagicNumber()  -- 123
+local sum = StaticClass.add(10, 20)         -- 30
+
+-- Access static properties
+local prop = StaticClass.staticProperty     -- "Initial"
+StaticClass.staticProperty = "New Value"
+
+-- Access static fields
+local field = StaticClass.staticField       -- 42
+StaticClass.staticField = 100
+
+-- Subscribe to static events (both syntaxes work)
+StaticClass.add_OnMessage(function(msg) print(msg) end)  -- Dot syntax
+StaticClass:add_OnMessage(function(msg) print(msg) end)  -- Colon syntax
+StaticClass.raiseMessage("Hello!")
+```
+
+**Result:** Static classes now generate minimal, correct bindings:
+- No unnecessary metatable/constructor/instance code
+- Static fields accessible alongside properties
+- Static events support both Lua calling conventions
+- Code size reduced for static classes
+- All 277 tests passing
+
+**Key Lessons:**
+1. C# static classes are `IsClass && IsAbstract && IsSealed`
+2. Wrap metatable/constructor/instance code in `if (!isStaticClass)` checks
+3. Static fields need separate discovery from properties
+4. Static events must handle both dot and colon syntax from Lua
+5. Use `ToCamelCase()` for field names to match property naming convention
+
+---
+
 ## Test Status
 
-**Total Tests:** 264
+**Total Tests:** 277
 - **Status:** ✅ All passing
 
 ---

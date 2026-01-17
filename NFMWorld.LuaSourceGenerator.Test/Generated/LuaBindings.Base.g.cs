@@ -594,6 +594,17 @@ public partial class LuaBindings
         var funcRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
         // Create a delegate that calls back into Lua
+        if (typeof(TDelegate) == typeof(System.Action<string>))
+        {
+            var invoker = new EventInvoker1<string> { L = L, FuncRef = funcRef };
+            var @delegate = (TDelegate)(Delegate)(System.Action<string>)((arg0) => invoker.Invoke(arg0!));
+            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+            {
+                unregister(@delegate);
+                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
+            }));
+            return @delegate;
+        }
         if (typeof(TDelegate) == typeof(System.Action))
         {
             var invoker = new EventInvoker0 { L = L, FuncRef = funcRef };
@@ -620,17 +631,6 @@ public partial class LuaBindings
         {
             var invoker = new EventInvoker2<object, NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs> { L = L, FuncRef = funcRef };
             var @delegate = (TDelegate)(Delegate)(System.EventHandler<NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs>)((arg0, arg1) => invoker.Invoke(arg0!, arg1!));
-            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
-            {
-                unregister(@delegate);
-                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
-            }));
-            return @delegate;
-        }
-        if (typeof(TDelegate) == typeof(System.Action<string>))
-        {
-            var invoker = new EventInvoker1<string> { L = L, FuncRef = funcRef };
-            var @delegate = (TDelegate)(Delegate)(System.Action<string>)((arg0) => invoker.Invoke(arg0!));
             _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
             {
                 unregister(@delegate);

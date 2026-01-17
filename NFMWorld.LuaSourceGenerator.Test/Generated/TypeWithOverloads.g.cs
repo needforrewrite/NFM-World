@@ -444,115 +444,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithOverloads_static_staticProcess(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: StaticProcess(int)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<int>(L, 1);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
-            }
-            next0:
-
-            // Try overload 1: StaticProcess(double)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<double>(L, 1);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            // Try overload 2: StaticProcess(string)
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<string>(L, 1);
-                if (score0 < 0) goto next2;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 2;
-                }
-            }
-            next2:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<int>(L, 1)!;
-                        try
-                        {
-                            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<double>(L, 1)!;
-                        try
-                        {
-                            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 2:
-                    {
-                        var arg0 = ToObject<string>(L, 1)!;
-                        try
-                        {
-                            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
-                            PushValue(L, result);
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for staticProcess");
-                    return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for staticProcess");
-        return 0;
-    }
-
     private static int TypeWithOverloads_method_processNumber(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1159,6 +1050,115 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int TypeWithOverloads_static_staticProcess(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: StaticProcess(int)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
+            }
+            next0:
+
+            // Try overload 1: StaticProcess(double)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<double>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            // Try overload 2: StaticProcess(string)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 1);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 2;
+                }
+            }
+            next2:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<int>(L, 1)!;
+                        try
+                        {
+                            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<double>(L, 1)!;
+                        try
+                        {
+                            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 2:
+                    {
+                        var arg0 = ToObject<string>(L, 1)!;
+                        try
+                        {
+                            var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads.StaticProcess(arg0);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for staticProcess");
+                    return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for staticProcess");
         return 0;
     }
 

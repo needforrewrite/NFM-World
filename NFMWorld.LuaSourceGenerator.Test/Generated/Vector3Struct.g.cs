@@ -71,7 +71,7 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector3Struct_static_fromVec2));
         lua_setfield(L, -2, "fromVec2");
 
-        // Create metatable for type table (static properties)
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (Vector3Struct_type__index));
         lua_setfield(L, -2, "__index");
@@ -263,81 +263,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector3Struct_static_cross(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
-            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 2)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.Cross(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for cross");
-        return 0;
-    }
-
-    private static int Vector3Struct_static_dot(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
-            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 2)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.Dot(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for dot");
-        return 0;
-    }
-
-    private static int Vector3Struct_static_fromVec2(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1)!;
-            var arg1 = ToObject<float>(L, 2)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.FromVec2(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for fromVec2");
-        return 0;
-    }
-
     private static int Vector3Struct_method_normalized(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -416,6 +341,81 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Vector3Struct_static_cross(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 2)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.Cross(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for cross");
+        return 0;
+    }
+
+    private static int Vector3Struct_static_dot(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
+            var arg1 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 2)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.Dot(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for dot");
+        return 0;
+    }
+
+    private static int Vector3Struct_static_fromVec2(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct.FromVec2(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for fromVec2");
         return 0;
     }
 

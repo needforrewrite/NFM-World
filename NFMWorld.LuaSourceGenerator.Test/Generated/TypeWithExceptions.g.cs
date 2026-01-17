@@ -171,30 +171,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TypeWithExceptions_static_staticThrows(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 1)!;
-            try
-            {
-                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions.StaticThrows(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for staticThrows");
-        return 0;
-    }
-
     private static int TypeWithExceptions_method_throwsException(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -377,6 +353,30 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int TypeWithExceptions_static_staticThrows(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 1)!;
+            try
+            {
+                var result = NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions.StaticThrows(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for staticThrows");
         return 0;
     }
 

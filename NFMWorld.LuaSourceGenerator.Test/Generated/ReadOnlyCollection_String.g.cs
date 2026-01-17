@@ -43,7 +43,7 @@ public partial class LuaBindings
         lua_pushcfunction(L, (ReadOnlyCollection_String_new));
         lua_setfield(L, -2, "new");
 
-        // Create metatable for type table (static properties)
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (ReadOnlyCollection_String_type__index));
         lua_setfield(L, -2, "__index");
