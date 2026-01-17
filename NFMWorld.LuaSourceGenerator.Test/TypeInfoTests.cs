@@ -14,12 +14,8 @@ public class TypeInfoTests
     {
         // Arrange
         var type = typeof(SampleStruct);
-        var attr = type.GetCustomAttributes(typeof(LuaVisibleAttribute), false)
-            .Cast<LuaVisibleAttribute>()
-            .First();
-
         // Act
-        var typeInfo = new TypeInfo(type, attr);
+        var typeInfo = new TypeInfo(type);
 
         // Assert
         Assert.AreEqual("Vec2", typeInfo.LuaName);
@@ -30,12 +26,8 @@ public class TypeInfoTests
     {
         // Arrange
         var type = typeof(SampleClass);
-        var attr = type.GetCustomAttributes(typeof(LuaVisibleAttribute), false)
-            .Cast<LuaVisibleAttribute>()
-            .First();
-
         // Act
-        var typeInfo = new TypeInfo(type, attr);
+        var typeInfo = new TypeInfo(type);
 
         // Assert
         Assert.AreEqual("SampleClass", typeInfo.LuaName);
@@ -46,10 +38,8 @@ public class TypeInfoTests
     {
         // Arrange
         var type = typeof(SampleClass);
-        var attr = new LuaVisibleAttribute();
-
         // Act
-        var typeInfo = new TypeInfo(type, attr);
+        var typeInfo = new TypeInfo(type);
 
         // Assert
         Assert.AreEqual(type, typeInfo.Type);

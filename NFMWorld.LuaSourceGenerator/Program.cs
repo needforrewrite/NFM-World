@@ -163,17 +163,31 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
     }
 
-    private IDisposable Indent()
+    private IndentDisposable Indent()
     {
         _indent++;
         return new IndentDisposable(this);
     }
 
-    private class IndentDisposable : IDisposable
+    private readonly struct IndentDisposable(LuaBindingGenerator gen) : IDisposable
     {
-        private readonly LuaBindingGenerator _gen;
-        public IndentDisposable(LuaBindingGenerator gen) => _gen = gen;
-        public void Dispose() => _gen._indent--;
+        public void Dispose() => gen._indent--;
+    }
+
+    private BlockDisposable Block()
+    {
+        AppendLine("{");
+        _indent++;
+        return new BlockDisposable(this);
+    }
+    
+    private readonly struct BlockDisposable(LuaBindingGenerator gen) : IDisposable
+    {
+        public void Dispose()
+        {
+            gen._indent--;
+            gen.AppendLine("}");
+        }
     }
 
     /// <summary>
@@ -389,13 +403,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     }
 
     /// <summary>
-    /// Generate bindings for all sample types in the test project.
+    /// Discover all types marked with [LuaVisible] in the assembly.
     /// </summary>
-    public List<TypeInfo> Generate()
+    public Dictionary<TypeInfo, DiscoveredKind> Discover()
     {
         // Find all types with [LuaVisible] in the test assembly
-        var types = new List<TypeInfo>();
-        var discoveredTypes = new HashSet<Type>();
+        var discoveredTypes = new Dictionary<Type, DiscoveredKind>();
 
         Console.WriteLine($"Scanning assembly: {assembly.FullName}");
         Console.WriteLine($"Type count: {assembly.GetTypes().Length}");
@@ -408,44 +421,25 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             if (luaVisibleAttr != null)
             {
-                // Skip ref structs - they cannot be marshalled to Lua
-                if (IsRefStruct(type))
-                    continue;
-
-                // Extract the Name property if it exists
-                string? customName = null;
-                var nameProperty = luaVisibleAttr.NamedArguments
-                    .FirstOrDefault(a => a.MemberName == "Name");
-                if (nameProperty.TypedValue.Value is string name)
-                {
-                    customName = name;
-                }
-
-                var attr = new LuaVisibleAttribute { Name = customName };
-                types.Add(new TypeInfo(type, attr));
-                discoveredTypes.Add(type);
+                discoveredTypes.Add(type, DiscoveredKind.LuaVisible);
             }
         }
 
-        Console.WriteLine($"Total [LuaVisible] types found: {types.Count}");
+        Console.WriteLine($"Total [LuaVisible] types found: {discoveredTypes.Count}");
 
         // Discover referenced types
-        var additionalTypes = DiscoverReferencedTypes(types.Select(t => t.Type).ToList(), discoveredTypes);
-        foreach (var type in additionalTypes)
-        {
-            types.Add(new TypeInfo(type));
-        }
+        DiscoverReferencedTypes(discoveredTypes.Keys, discoveredTypes);
 
         // Discover extension methods and properties
-        DiscoverExtensionMembers(types.Select(t => t.Type).ToList());
+        DiscoverExtensionMembers(discoveredTypes.Keys);
 
-        return types;
+        return discoveredTypes.ToDictionary(e => new TypeInfo(e.Key), e => e.Value);
     }
 
     /// <summary>
     /// Discover extension methods and properties defined in the input assembly or same assembly as the extended type.
     /// </summary>
-    private void DiscoverExtensionMembers(List<Type> types)
+    private void DiscoverExtensionMembers(ICollection<Type> types)
     {
         var assembliesToScan = new HashSet<Assembly> { assembly };
         foreach (var type in types)
@@ -573,10 +567,25 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         Console.WriteLine($"Discovered {_extensionPropertiesByType.Sum(kvp => kvp.Value.Count)} extension properties for {_extensionPropertiesByType.Count} types");
     }
 
-    private List<Type> DiscoverReferencedTypes(List<Type> rootTypes, HashSet<Type> discovered)
+    [Flags]
+    public enum DiscoveredKind
+    {
+        BaseType = 1,
+        Interface = 2,
+        Property = 4,
+        Field = 8,
+        MethodReturnType = 16,
+        MethodParameter = 32,
+        ConstructorParameter = 64,
+        EventHandlerType = 128,
+        ArrayElementType = 256,
+        EventParameterType = 512,
+        LuaVisible = 1024
+    }
+
+    private void DiscoverReferencedTypes(IEnumerable<Type> rootTypes, Dictionary<Type, DiscoveredKind> discovered)
     {
         var queue = new Queue<Type>(rootTypes);
-        var additional = new List<Type>();
 
         while (queue.Count > 0)
         {
@@ -585,27 +594,27 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // Check base type
             if (currentType.BaseType != null)
             {
-                ProcessType(currentType.BaseType, discovered, queue, additional);
+                ProcessType(currentType.BaseType, discovered, queue, DiscoveredKind.BaseType);
             }
 
             // Check interfaces
             foreach (var iface in currentType.GetInterfaces())
             {
-                ProcessType(iface, discovered, queue, additional);
+                ProcessType(iface, discovered, queue, DiscoveredKind.Interface);
             }
 
             // Check properties
             foreach (var prop in currentType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
                 if (HasAttribute(prop, nameof(LuaHiddenAttribute))) continue;
-                ProcessType(prop.PropertyType, discovered, queue, additional);
+                ProcessType(prop.PropertyType, discovered, queue, DiscoveredKind.Property);
             }
 
             // Check fields
             foreach (var field in currentType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
                 if (HasAttribute(field, nameof(LuaHiddenAttribute))) continue;
-                ProcessType(field.FieldType, discovered, queue, additional);
+                ProcessType(field.FieldType, discovered, queue, DiscoveredKind.Field);
             }
 
             // Check methods
@@ -618,7 +627,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // Return type
                 if (method.ReturnType != typeof(void))
                 {
-                    ProcessType(method.ReturnType, discovered, queue, additional);
+                    ProcessType(method.ReturnType, discovered, queue, DiscoveredKind.MethodReturnType);
                 }
 
                 // Skip special name methods for parameter discovery (properties, events, etc.)
@@ -627,7 +636,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // Parameters
                 foreach (var param in method.GetParameters())
                 {
-                    ProcessType(param.ParameterType, discovered, queue, additional);
+                    ProcessType(param.ParameterType, discovered, queue, DiscoveredKind.MethodParameter);
                 }
             }
 
@@ -638,7 +647,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                 foreach (var param in ctor.GetParameters())
                 {
-                    ProcessType(param.ParameterType, discovered, queue, additional);
+                    ProcessType(param.ParameterType, discovered, queue, DiscoveredKind.ConstructorParameter);
                 }
             }
 
@@ -646,19 +655,17 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             foreach (var evt in currentType.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
             {
                 if (HasAttribute(evt, nameof(LuaHiddenAttribute))) continue;
-                ProcessType(evt.EventHandlerType!, discovered, queue, additional);
+                ProcessType(evt.EventHandlerType!, discovered, queue, DiscoveredKind.EventHandlerType);
 
                 foreach (var param in evt.EventHandlerType!.GetMethod("Invoke")!.GetParameters())
                 {
-                    ProcessType(param.ParameterType, discovered, queue, additional);
+                    ProcessType(param.ParameterType, discovered, queue, DiscoveredKind.EventParameterType);
                 }
             }
         }
-
-        return additional;
     }
 
-    private void ProcessType(Type type, HashSet<Type> discovered, Queue<Type> queue, List<Type> additional)
+    private void ProcessType(Type type, Dictionary<Type, DiscoveredKind> discovered, Queue<Type> queue, DiscoveredKind kind)
     {
         // Skip byref types (ref/out parameters)
         if (type.IsByRef)
@@ -689,16 +696,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         // Handle array types - add the array type itself AND process element type
         if (type.IsArray)
         {
-            if (!discovered.Contains(type))
+            if (!discovered.ContainsKey(type))
             {
-                discovered.Add(type);
+                if (!discovered.TryAdd(type, kind))
+                {
+                    discovered[type] |= kind;
+                }
                 queue.Enqueue(type);
-                additional.Add(type);
             }
 
             // Also process element type
             var elementType = type.GetElementType()!;
-            ProcessType(elementType, discovered, queue, additional);
+            ProcessType(elementType, discovered, queue, DiscoveredKind.ArrayElementType);
             return;
         }
 
@@ -709,7 +718,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         }
 
         // Skip primitives and already discovered
-        if (IsPrimitiveOrKnownType(type) || discovered.Contains(type))
+        if (IsPrimitiveOrKnownType(type) || discovered.ContainsKey(type))
         {
             return;
         }
@@ -754,9 +763,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         if ((!type.IsGenericType || type.IsGenericType && !type.IsGenericTypeDefinition) && !IsBlacklistedType(type))
         {
-            discovered.Add(type);
+            if (!discovered.TryAdd(type, kind))
+            {
+                discovered[type] |= kind;
+            }
             queue.Enqueue(type);
-            additional.Add(type);
         }
     }
 
@@ -787,24 +798,24 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         Directory.CreateDirectory(outputDirectory);
 
-        var types = Generate();
+        var types = Discover();
 
         // Generate Initialize file
         GenerateInitializeFile(outputDirectory, types);
 
         // Generate one file per type
-        foreach (var typeInfo in types)
+        foreach (var (typeInfo, kind) in types)
         {
-            GenerateTypeFile(outputDirectory, typeInfo);
+            GenerateTypeFile(outputDirectory, typeInfo, kind);
         }
 
-        GenerateLuaBindingsBaseFile(outputDirectory, types);
+        GenerateLuaBindingsBaseFile(outputDirectory, types.Keys);
 
         // Generate Lua stubs file with LuaCATS annotations
-        GenerateLuaStubsFile(outputDirectory, types);
+        GenerateLuaStubsFile(outputDirectory, types.Keys);
 
         // Generate TypeScript declarations file for TypeScriptToLua
-        GenerateTypeScriptDeclarationsFile(outputDirectory, types);
+        GenerateTypeScriptDeclarationsFile(outputDirectory, types.Keys);
     }
 
     private void GenerateLuaBindingsBaseFile(string outputDirectory, IEnumerable<TypeInfo> types)
@@ -1605,7 +1616,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         File.WriteAllText(filePath, _sb.ToString());
     }
 
-    private void GenerateLuaStubsFile(string outputDirectory, List<TypeInfo> types)
+    private void GenerateLuaStubsFile(string outputDirectory, ICollection<TypeInfo> types)
     {
         _sb.Clear();
         _indent = 0;
@@ -1626,7 +1637,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         File.WriteAllText(filePath, _sb.ToString());
     }
 
-    private void GenerateTypeScriptDeclarationsFile(string outputDirectory, List<TypeInfo> types)
+    private void GenerateTypeScriptDeclarationsFile(string outputDirectory, ICollection<TypeInfo> types)
     {
         _sb.Clear();
         _indent = 0;
@@ -1689,7 +1700,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"set(value: {tsElementType}, ...indices: number[]): void;");
                 }
             }
-            AppendLine("}");
             return;
         }
 
@@ -1849,7 +1859,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 }
             }
         }
-        AppendLine("}");
     }
 
     private static bool IsCompilerMethod(MethodInfo methodInfo)
@@ -2292,7 +2301,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         return GetSafeTypeName(type);
     }
 
-    private void GenerateInitializeFile(string outputDirectory, List<TypeInfo> types)
+    private void GenerateInitializeFile(string outputDirectory, Dictionary<TypeInfo, DiscoveredKind> types)
     {
         _sb.Clear();
         _indent = 0;
@@ -2308,20 +2317,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         AppendLine($"namespace {@namespace};");
         AppendLine();
         AppendLine("public partial class LuaBindings");
-        AppendLine("{");
-
-        using (Indent())
+        using (Block())
         {
             GenerateInitializeMethod(types);
         }
-
-        AppendLine("}");
 
         var filePath = Path.Combine(outputDirectory, "LuaBindings.Initialize.g.cs");
         File.WriteAllText(filePath, _sb.ToString());
     }
 
-    private void GenerateTypeFile(string outputDirectory, TypeInfo typeInfo)
+    private void GenerateTypeFile(string outputDirectory, TypeInfo typeInfo, DiscoveredKind kind)
     {
         _sb.Clear();
         _indent = 0;
@@ -2339,39 +2344,43 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         AppendLine($"namespace {@namespace};");
         AppendLine();
         AppendLine("public unsafe partial class LuaBindings");
-        AppendLine("{");
-
-        using (Indent())
+        using (Block())
         {
-            GenerateTypeBindings(typeInfo);
+            GenerateTypeBindings(typeInfo, kind);
         }
-
-        AppendLine("}");
 
         var safeTypeName = GetSafeTypeName(typeInfo.Type);
         var filePath = Path.Combine(outputDirectory, $"{safeTypeName}.g.cs");
         File.WriteAllText(filePath, _sb.ToString());
     }
 
-    private void GenerateInitializeMethod(List<TypeInfo> types)
+    private void GenerateInitializeMethod(Dictionary<TypeInfo, DiscoveredKind> types)
     {
         AppendLine("/// <summary>");
         AppendLine("/// Initialize all Lua bindings for types marked with [LuaVisible]");
         AppendLine("/// </summary>");
         AppendLine("public static void Initialize(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
-            foreach (var typeInfo in types)
+            foreach (var (typeInfo, kind) in types)
             {
-                AppendLine($"Register_{GetSafeTypeName(typeInfo.Type)}(L);");
+                if (HasInitializeMethod(kind))
+                {
+                    AppendLine($"Register_{GetSafeTypeName(typeInfo.Type)}(L);");
+                }
             }
         }
-        AppendLine("}");
         AppendLine();
     }
 
-    private void GenerateTypeBindings(TypeInfo typeInfo)
+    public static bool HasInitializeMethod(DiscoveredKind kind)
+    {
+        return (kind & (DiscoveredKind.Property | DiscoveredKind.Field | DiscoveredKind.MethodParameter |
+                       DiscoveredKind.MethodReturnType | DiscoveredKind.ConstructorParameter |
+                       DiscoveredKind.EventParameterType | DiscoveredKind.LuaVisible)) != 0;
+    }
+
+    private void GenerateTypeBindings(TypeInfo typeInfo, DiscoveredKind kind)
     {
         var type = typeInfo.Type;
         var luaName = typeInfo.LuaName;
@@ -2386,178 +2395,191 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         var shouldGenerateNewIndex = !isStaticClass && ShouldGenerateNewIndexMethod(type);
 
         AppendLine($"// =========== Bindings for {type.Name} ({luaName}) ===========");
-        AppendLine($"private static void Register_{safeName}(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+
+        if (HasInitializeMethod(kind))
         {
-            if (!isStaticClass)
+            AppendLine($"private static void Register_{safeName}(lua_State L)");
+            using (Block())
             {
-                AppendLine($"RegisterMetatable<{fullTypeName}>(\"{metatableName}\");");
-                AppendLine();
-                AppendLine("// Create metatable for instances");
-                AppendLine($"luaL_newmetatable(L, \"{metatableName}\");");
-                AppendLine();
-
-                // __gc
-                AppendLine("// __gc metamethod");
-                AppendLine($"lua_pushcfunction(L, &{safeName}__gc);");
-                AppendLine("lua_setfield(L, -2, \"__gc\");");
-                AppendLine();
-
-                // __index (only if needed)
-                if (shouldGenerateIndex)
+                if (!isStaticClass)
                 {
-                    AppendLine("// __index metamethod");
-                    AppendLine($"lua_pushcfunction(L, &{safeName}__index);");
-                    AppendLine("lua_setfield(L, -2, \"__index\");");
+                    AppendLine($"RegisterMetatable<{fullTypeName}>(\"{metatableName}\");");
+                    AppendLine();
+                    AppendLine("// Create metatable for instances");
+                    AppendLine($"luaL_newmetatable(L, \"{metatableName}\");");
+                    AppendLine();
+
+                    // __gc
+                    AppendLine("// __gc metamethod");
+                    AppendLine($"lua_pushcfunction(L, &{safeName}__gc);");
+                    AppendLine("lua_setfield(L, -2, \"__gc\");");
+                    AppendLine();
+
+                    // __index (only if needed)
+                    if (shouldGenerateIndex)
+                    {
+                        AppendLine("// __index metamethod");
+                        AppendLine($"lua_pushcfunction(L, &{safeName}__index);");
+                        AppendLine("lua_setfield(L, -2, \"__index\");");
+                        AppendLine();
+                    }
+
+                    // __newindex (only if needed)
+                    if (shouldGenerateNewIndex)
+                    {
+                        AppendLine("// __newindex metamethod");
+                        AppendLine($"lua_pushcfunction(L, &{safeName}__newindex);");
+                        AppendLine("lua_setfield(L, -2, \"__newindex\");");
+                        AppendLine();
+                    }
+
+                    // Operator metamethods
+                    GenerateOperatorMetamethods(type, safeName);
+
+                    // __tostring
+                    AppendLine("// __tostring metamethod");
+                    AppendLine($"lua_pushcfunction(L, &{safeName}__tostring);");
+                    AppendLine("lua_setfield(L, -2, \"__tostring\");");
+                    AppendLine();
+
+                    AppendLine("lua_pop(L, 1);");
                     AppendLine();
                 }
 
-                // __newindex (only if needed)
-                if (shouldGenerateNewIndex)
-                {
-                    AppendLine("// __newindex metamethod");
-                    AppendLine($"lua_pushcfunction(L, &{safeName}__newindex);");
-                    AppendLine("lua_setfield(L, -2, \"__newindex\");");
-                    AppendLine();
-                }
-
-                // Operator metamethods
-                GenerateOperatorMetamethods(type, safeName);
-
-                // __tostring
-                AppendLine("// __tostring metamethod");
-                AppendLine($"lua_pushcfunction(L, &{safeName}__tostring);");
-                AppendLine("lua_setfield(L, -2, \"__tostring\");");
-                AppendLine();
-
-                AppendLine("lua_pop(L, 1);");
-                AppendLine();
-            }
-
-            // Type table
-            AppendLine($"// Create type table for {luaName}");
-            AppendLine("lua_newtable(L);");
-            AppendLine();
-
-            // Constructor (skip for static classes)
-            if (!isStaticClass)
-            {
-                AppendLine("// Constructor: new()");
-                AppendLine($"lua_pushcfunction(L, &{safeName}_new);");
-                AppendLine("lua_setfield(L, -2, \"new\");");
-                AppendLine();
-            }
-
-            // Static methods
-            var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
-                .GroupBy(GetLuaMethodName)
-                .ToList();
-
-            foreach (var methodGroup in staticMethods)
-            {
-                var methodName = methodGroup.Key;
-                AppendLine($"// Static method: {methodName}");
-                AppendLine($"lua_pushcfunction(L, &{safeName}_static_{GetSafeMethodName(methodName)});");
-                AppendLine($"lua_setfield(L, -2, \"{methodName}\");");
-                AppendLine();
-            }
-
-            // Static events
-            var staticEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Static)
-                .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
-                .ToList();
-
-            foreach (var evt in staticEvents)
-            {
-                var eventName = evt.Name;
-                AppendLine($"// Static event: {eventName}");
-                AppendLine($"lua_pushcfunction(L, &{safeName}_add_{eventName});");
-                AppendLine($"lua_setfield(L, -2, \"add_{eventName}\");");
-                AppendLine($"lua_pushcfunction(L, &{safeName}_remove_{eventName});");
-                AppendLine($"lua_setfield(L, -2, \"remove_{eventName}\");");
-                AppendLine();
-            }
-
-            // Static properties and fields metatable
-            var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-                .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
-                .ToList();
-
-            var staticFields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
-                .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)) && !f.IsLiteral)
-                .ToList();
-
-            if (staticProps.Count > 0 || staticFields.Count > 0)
-            {
-                AppendLine("// Create metatable for type table (static properties and fields)");
+                // Type table
+                AppendLine($"// Create type table for {luaName}");
                 AppendLine("lua_newtable(L);");
-                AppendLine($"lua_pushcfunction(L, &{safeName}_type__index);");
-                AppendLine("lua_setfield(L, -2, \"__index\");");
+                AppendLine();
 
-                var writableStaticProps = staticProps.Where(p => p.CanWrite).ToList();
-                var writableStaticFields = staticFields.Where(f => !f.IsInitOnly).ToList();
-                if (writableStaticProps.Count > 0 || writableStaticFields.Count > 0)
+                // Constructor (skip for static classes)
+                if (!isStaticClass)
                 {
-                    AppendLine($"lua_pushcfunction(L, &{safeName}_type__newindex);");
-                    AppendLine("lua_setfield(L, -2, \"__newindex\");");
+                    AppendLine("// Constructor: new()");
+                    AppendLine($"lua_pushcfunction(L, &{safeName}_new);");
+                    AppendLine("lua_setfield(L, -2, \"new\");");
+                    AppendLine();
                 }
 
-                AppendLine("lua_setmetatable(L, -2);");
-                AppendLine();
+                // Static methods
+                var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                    .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
+                                !m.IsGenericMethod && !HasByRefParameters(m) && !HasRefReturn(m) &&
+                                !IsCompilerMethod(m))
+                    .GroupBy(GetLuaMethodName)
+                    .ToList();
+
+                foreach (var methodGroup in staticMethods)
+                {
+                    var methodName = methodGroup.Key;
+                    AppendLine($"// Static method: {methodName}");
+                    AppendLine($"lua_pushcfunction(L, &{safeName}_static_{GetSafeMethodName(methodName)});");
+                    AppendLine($"lua_setfield(L, -2, \"{methodName}\");");
+                    AppendLine();
+                }
+
+                // Static events
+                var staticEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Static)
+                    .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
+                    .ToList();
+
+                foreach (var evt in staticEvents)
+                {
+                    var eventName = evt.Name;
+                    AppendLine($"// Static event: {eventName}");
+                    AppendLine($"lua_pushcfunction(L, &{safeName}_add_{eventName});");
+                    AppendLine($"lua_setfield(L, -2, \"add_{eventName}\");");
+                    AppendLine($"lua_pushcfunction(L, &{safeName}_remove_{eventName});");
+                    AppendLine($"lua_setfield(L, -2, \"remove_{eventName}\");");
+                    AppendLine();
+                }
+
+                // Static properties and fields metatable
+                var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+                    .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
+                    .ToList();
+
+                var staticFields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
+                    .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)) && !f.IsLiteral)
+                    .ToList();
+
+                if (staticProps.Count > 0 || staticFields.Count > 0)
+                {
+                    AppendLine("// Create metatable for type table (static properties and fields)");
+                    AppendLine("lua_newtable(L);");
+                    AppendLine($"lua_pushcfunction(L, &{safeName}_type__index);");
+                    AppendLine("lua_setfield(L, -2, \"__index\");");
+
+                    var writableStaticProps = staticProps.Where(p => p.CanWrite).ToList();
+                    var writableStaticFields = staticFields.Where(f => !f.IsInitOnly).ToList();
+                    if (writableStaticProps.Count > 0 || writableStaticFields.Count > 0)
+                    {
+                        AppendLine($"lua_pushcfunction(L, &{safeName}_type__newindex);");
+                        AppendLine("lua_setfield(L, -2, \"__newindex\");");
+                    }
+
+                    AppendLine("lua_setmetatable(L, -2);");
+                    AppendLine();
+                }
+
+                AppendLine($"lua_setglobal(L, \"{luaName}\");");
             }
 
-            AppendLine($"lua_setglobal(L, \"{luaName}\");");
+            AppendLine();
         }
-        AppendLine("}");
-        AppendLine();
 
         // Generate all method implementations (skip instance-related methods for static classes)
         if (!isStaticClass)
         {
-            GenerateGcMethod(safeName, fullTypeName);
-
-            // Only generate __index if it would have content
-            if (shouldGenerateIndex)
+            if (HasInitializeMethod(kind))
             {
-                GenerateIndexMethod(type, safeName, isStruct, fullTypeName);
+                GenerateGcMethod(safeName, fullTypeName);
+
+                // Only generate __index if it would have content
+                if (shouldGenerateIndex)
+                {
+                    GenerateIndexMethod(type, safeName, isStruct, fullTypeName);
+                }
+
+                // Only generate __newindex if it would have content
+                if (shouldGenerateNewIndex)
+                {
+                    GenerateNewIndexMethod(type, safeName, isStruct, fullTypeName);
+                }
+
+                GenerateTostringMethod(safeName, isStruct, fullTypeName);
+                GenerateOperatorMethods(type, safeName, fullTypeName);
+                GenerateConstructorMethod(type, safeName, isStruct, fullTypeName);
             }
 
-            // Only generate __newindex if it would have content
-            if (shouldGenerateNewIndex)
-            {
-                GenerateNewIndexMethod(type, safeName, isStruct, fullTypeName);
-            }
-
-            GenerateTostringMethod(safeName, isStruct, fullTypeName);
-            GenerateOperatorMethods(type, safeName, fullTypeName);
-            GenerateConstructorMethod(type, safeName, isStruct, fullTypeName);
             GenerateInstanceMethods(type, safeName, isStruct, fullTypeName);
         }
-        GenerateStaticMethods(type, safeName, fullTypeName);
 
-        var staticPropsForAccessors = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
-            .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
-            .ToList();
-
-        var staticFieldsForAccessors = type.GetFields(BindingFlags.Public | BindingFlags.Static)
-            .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)) && !f.IsLiteral)
-            .ToList();
-
-        if (staticPropsForAccessors.Count > 0 || staticFieldsForAccessors.Count > 0)
+        if (HasInitializeMethod(kind))
         {
-            GenerateStaticPropertyAccessors(type, safeName, fullTypeName);
-        }
+            GenerateStaticMethods(type, safeName, fullTypeName);
 
-        // Generate event subscription methods
-        var events = type.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
-            .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
-            .ToList();
+            var staticPropsForAccessors = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+                .Where(p => !HasAttribute(p, nameof(LuaHiddenAttribute)) && !HasRefReturn(p))
+                .ToList();
 
-        if (events.Count > 0)
-        {
-            GenerateEventMethods(type, safeName, isStruct, fullTypeName, events);
+            var staticFieldsForAccessors = type.GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Where(f => !HasAttribute(f, nameof(LuaHiddenAttribute)) && !f.IsLiteral)
+                .ToList();
+
+            if (staticPropsForAccessors.Count > 0 || staticFieldsForAccessors.Count > 0)
+            {
+                GenerateStaticPropertyAccessors(type, safeName, fullTypeName);
+            }
+
+            // Generate event subscription methods
+            var events = type.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
+                .ToList();
+
+            if (events.Count > 0)
+            {
+                GenerateEventMethods(type, safeName, isStruct, fullTypeName, events);
+            }
         }
     }
 
@@ -2582,21 +2604,17 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
         AppendLine($"private static int {safeName}__gc(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
             AppendLine("var ptr = lua_touserdata(L, 1);");
             AppendLine("if (ptr != null)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 AppendLine("var id = *(int*)ptr;");
                 AppendLine($"RemoveObject<{fullTypeName}>(id);");
             }
-            AppendLine("}");
             AppendLine("return 0;");
         }
-        AppendLine("}");
         AppendLine();
     }
 
@@ -2604,8 +2622,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
         AppendLine($"private static int {safeName}__index(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
             if (isStruct)
             {
@@ -2635,8 +2652,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             {
                 AppendLine("// Check if key is a number (array/indexer access)");
                 AppendLine("if (lua_type(L, 2) == LUA_TNUMBER)");
-                AppendLine("{");
-                using (Indent())
+                using (Block())
                 {
                     if (isArray)
                     {
@@ -2645,15 +2661,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         {
                             AppendLine("var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed");
                             AppendLine($"if (index >= 0 && index < (obj as System.Array)!.Length)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 var elementType = type.GetElementType()!;
                                 AppendLine($"var element = (obj as {fullTypeName})![index];");
                                 GeneratePushValue("element", elementType);
                                 AppendLine("return 1;");
                             }
-                            AppendLine("}");
                             AppendLine("lua_pushnil(L);");
                             AppendLine("return 1;");
                         }
@@ -2694,12 +2708,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         if (inlineArrayLength.HasValue)
                         {
                             AppendLine($"if (index < 0 || index >= {inlineArrayLength.Value})");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine("return luaL_error(L, \"Index out of range\");");
                             }
-                            AppendLine("}");
                         }
                         var elementTypeName = GetFullTypeName(inlineArrayElementType);
                         AppendLine($"var span = System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref System.Runtime.CompilerServices.Unsafe.As<{fullTypeName}, {elementTypeName}>(ref obj), {inlineArrayLength ?? 1});");
@@ -2708,7 +2720,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         AppendLine("return 1;");
                     }
                 }
-                AppendLine("}");
                 AppendLine();
 
                 // Handle table-based indexing for multi-dimensional arrays and multi-parameter indexers
@@ -2716,8 +2727,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 {
                     AppendLine("// Check if key is a table (multi-dimensional array/indexer access)");
                     AppendLine("if (lua_type(L, 2) == LUA_TTABLE)");
-                    AppendLine("{");
-                    using (Indent())
+                    using (Block())
                     {
                         if (isArray && type.GetArrayRank() > 1)
                         {
@@ -2725,14 +2735,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             AppendLine($"// Multi-dimensional array with rank {rank}");
                             AppendLine($"var indices = new int[{rank}];");
                             AppendLine($"for (int i = 0; i < {rank}; i++)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine("lua_rawgeti(L, 2, i + 1);");
                                 AppendLine("indices[i] = (int)lua_tointeger(L, -1) - 1; // Convert from 1-indexed to 0-indexed");
                                 AppendLine("lua_pop(L, 1);");
                             }
-                            AppendLine("}");
                             var elementType = type.GetElementType()!;
                             AppendLine($"var element = (obj as {fullTypeName})!.GetValue(indices);");
                             GeneratePushValue("element", elementType);
@@ -2744,15 +2752,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             AppendLine("// Extract indices from table");
                             AppendLine("var tableLen = 0;");
                             AppendLine("while (true)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine("lua_rawgeti(L, 2, tableLen + 1);");
                                 AppendLine("if (lua_type(L, -1) == LUA_TNIL) { lua_pop(L, 1); break; }");
                                 AppendLine("lua_pop(L, 1);");
                                 AppendLine("tableLen++;");
                             }
-                            AppendLine("}");
                             AppendLine();
 
                             // Generate overload matching for multi-param indexers
@@ -2760,8 +2766,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             {
                                 var indexParams = indexer.GetIndexParameters();
                                 AppendLine($"if (tableLen == {indexParams.Length})");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     for (int i = 0; i < indexParams.Length; i++)
                                     {
@@ -2775,14 +2780,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     GeneratePushValue("element", indexer.PropertyType);
                                     AppendLine("return 1;");
                                 }
-                                AppendLine("}");
                             }
 
                             AppendLine("lua_pushnil(L);");
                             AppendLine("return 1;");
                         }
                     }
-                    AppendLine("}");
                     AppendLine();
                 }
             }
@@ -2793,8 +2796,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine();
 
             AppendLine("switch (key)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 // Properties (including extension properties)
                 var props = GetPropertiesInTypeAndInterfaces(type)
@@ -2954,9 +2956,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine("return 1;");
                 }
             }
-            AppendLine("}");
         }
-        AppendLine("}");
         AppendLine();
     }
 
@@ -3082,8 +3082,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
         AppendLine($"private static int {safeName}__newindex(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
             if (isStruct)
             {
@@ -3113,8 +3112,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             {
                 AppendLine("// Check if key is a number (array/indexer assignment)");
                 AppendLine("if (lua_type(L, 2) == LUA_TNUMBER)");
-                AppendLine("{");
-                using (Indent())
+                using (Block())
                 {
                     if (isArray)
                     {
@@ -3123,15 +3121,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         {
                             AppendLine("var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed");
                             AppendLine($"if (index >= 0 && index < (obj as System.Array)!.Length)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 var elementType = type.GetElementType()!;
                                 var elementTypeName = GetFullTypeName(elementType);
                                 AppendLine($"var value = ToObject<{elementTypeName}>(L, 3)!;");
                                 AppendLine($"(obj as {fullTypeName})![index] = value;");
                             }
-                            AppendLine("}");
                             AppendLine("return 0;");
                         }
                         else
@@ -3170,12 +3166,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         if (inlineArrayLength.HasValue)
                         {
                             AppendLine($"if (index < 0 || index >= {inlineArrayLength.Value})");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine("return luaL_error(L, \"Index out of range\");");
                             }
-                            AppendLine("}");
                         }
                         var elementTypeName = GetFullTypeName(inlineArrayElementType);
                         AppendLine($"var span = System.Runtime.InteropServices.MemoryMarshal.CreateSpan(ref System.Runtime.CompilerServices.Unsafe.As<{fullTypeName}, {elementTypeName}>(ref obj), {inlineArrayLength ?? 1});");
@@ -3188,7 +3182,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         AppendLine("return 0;");
                     }
                 }
-                AppendLine("}");
                 AppendLine();
 
                 // Handle table-based indexing for multi-dimensional arrays and multi-parameter indexers
@@ -3196,8 +3189,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 {
                     AppendLine("// Check if key is a table (multi-dimensional array/indexer assignment)");
                     AppendLine("if (lua_type(L, 2) == LUA_TTABLE)");
-                    AppendLine("{");
-                    using (Indent())
+                    using (Block())
                     {
                         if (isArray && type.GetArrayRank() > 1)
                         {
@@ -3205,14 +3197,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             AppendLine($"// Multi-dimensional array with rank {rank}");
                             AppendLine($"var indices = new int[{rank}];");
                             AppendLine($"for (int i = 0; i < {rank}; i++)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine("lua_rawgeti(L, 2, i + 1);");
                                 AppendLine("indices[i] = (int)lua_tointeger(L, -1) - 1; // Convert from 1-indexed to 0-indexed");
                                 AppendLine("lua_pop(L, 1);");
                             }
-                            AppendLine("}");
                             var elementType = type.GetElementType()!;
                             var elementTypeName = GetFullTypeName(elementType);
                             AppendLine($"var value = ToObject<{elementTypeName}>(L, 3)!;");
@@ -3225,15 +3215,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             AppendLine("// Extract indices from table");
                             AppendLine("var tableLen = 0;");
                             AppendLine("while (true)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine("lua_rawgeti(L, 2, tableLen + 1);");
                                 AppendLine("if (lua_type(L, -1) == LUA_TNIL) { lua_pop(L, 1); break; }");
                                 AppendLine("lua_pop(L, 1);");
                                 AppendLine("tableLen++;");
                             }
-                            AppendLine("}");
                             AppendLine();
 
                             // Generate overload matching for multi-param indexers
@@ -3241,8 +3229,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             {
                                 var indexParams = indexer.GetIndexParameters();
                                 AppendLine($"if (tableLen == {indexParams.Length})");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     for (int i = 0; i < indexParams.Length; i++)
                                     {
@@ -3257,13 +3244,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     AppendLine($"obj[{indexArgList}] = value;");
                                     AppendLine("return 0;");
                                 }
-                                AppendLine("}");
                             }
 
                             AppendLine("return 0;");
                         }
                     }
-                    AppendLine("}");
                     AppendLine();
                 }
             }
@@ -3274,8 +3259,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             AppendLine();
 
             AppendLine("switch (key)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 // Writable properties (excluding init-only)
                 var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
@@ -3345,10 +3329,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }
                 }
             }
-            AppendLine("}");
             AppendLine("return 0;");
         }
-        AppendLine("}");
         AppendLine();
     }
 
@@ -3356,8 +3338,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
         AppendLine($"private static int {safeName}__tostring(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
             if (isStruct)
             {
@@ -3371,7 +3352,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             }
             AppendLine("return 1;");
         }
-        AppendLine("}");
         AppendLine();
     }
 
@@ -3395,8 +3375,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
             AppendLine($"private static int {safeName}_op_{GetSafeMethodName(operatorName)}(lua_State L)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 if (overloads.Count == 1)
                 {
@@ -3464,8 +3443,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         var parameters = op.Parameters;
 
                         AppendLine($"// Try overload {opIdx}: {op.Name}({string.Join(", ", parameters.Select(p => GetFullTypeName(p.ParameterType)))})");
-                        AppendLine("{");
-                        using (Indent())
+                        using (Block())
                         {
                             AppendLine("int score = 0;");
 
@@ -3478,23 +3456,19 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             }
 
                             AppendLine("if (score > bestScore)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine("bestScore = score;");
                                 AppendLine($"bestIndex = {opIdx};");
                             }
-                            AppendLine("}");
                         }
-                        AppendLine("}");
                         AppendLine($"next{opIdx}:");
                         AppendLine();
                     }
 
                     // Now invoke the best match
                     AppendLine("switch (bestIndex)");
-                    AppendLine("{");
-                    using (Indent())
+                    using (Block())
                     {
                         for (int opIdx = 0; opIdx < overloads.Count; opIdx++)
                         {
@@ -3504,8 +3478,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             AppendLine($"case {opIdx}:");
                             using (Indent())
                             {
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     if (parameters.Length == 2)
                                     {
@@ -3550,7 +3523,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                         AppendLine("return 1;");
                                     }
                                 }
-                                AppendLine("}");
                             }
                         }
 
@@ -3561,10 +3533,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             AppendLine("return 0;");
                         }
                     }
-                    AppendLine("}");
                 }
             }
-            AppendLine("}");
             AppendLine();
         }
     }
@@ -3580,15 +3550,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
             AppendLine($"private static int {safeName}_new(lua_State L)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 AppendLine("var argCount = lua_gettop(L);");
                 AppendLine();
 
                 AppendLine($"if (argCount != {rank})");
-                AppendLine("{");
-                using (Indent())
+                using (Block())
                 {
                     if (rank == 1)
                     {
@@ -3600,7 +3568,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }
                     AppendLine("return 0;");
                 }
-                AppendLine("}");
                 AppendLine();
 
                 // Read dimension arguments
@@ -3608,13 +3575,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 {
                     AppendLine($"var dim{i} = (int)lua_tointeger(L, {i + 1});");
                     AppendLine($"if (dim{i} < 0)");
-                    AppendLine("{");
-                    using (Indent())
+                    using (Block())
                     {
                         AppendLine($"luaL_error(L, \"Array dimension {i} must be non-negative\");");
                         AppendLine("return 0;");
                     }
-                    AppendLine("}");
                 }
                 AppendLine();
 
@@ -3632,7 +3597,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine($"PushObject(L, array, \"MT_{safeName}\");");
                 AppendLine("return 1;");
             }
-            AppendLine("}");
             AppendLine();
             return;
         }
@@ -3645,8 +3609,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
         AppendLine($"private static int {safeName}_new(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
             AppendLine("var argCount = lua_gettop(L);");
             AppendLine();
@@ -3655,14 +3618,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             if (isStruct)
             {
                 AppendLine("if (argCount == 0)");
-                AppendLine("{");
-                using (Indent())
+                using (Block())
                 {
                     AppendLine($"var obj = new {fullTypeName}();");
                     AppendLine($"PushObject(L, obj, \"MT_{safeName}\");");
                     AppendLine("return 1;");
                 }
-                AppendLine("}");
                 AppendLine();
             }
 
@@ -3678,8 +3639,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 var ctorsForCount = group.ToList();
 
                 AppendLine($"if (argCount == {paramCount})");
-                AppendLine("{");
-                using (Indent())
+                using (Block())
                 {
                     if (ctorsForCount.Count == 1)
                     {
@@ -3694,30 +3654,24 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                         var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
                         AppendLine("try");
-                        AppendLine("{");
-                        using (Indent())
+                        using (Block())
                         {
                             AppendLine($"var obj = new {fullTypeName}({argList});");
                             AppendLine($"PushObject(L, obj, \"MT_{safeName}\");");
                             AppendLine("return 1;");
                         }
-                        AppendLine("}");
                         AppendLine("catch (System.Exception ex)");
-                        AppendLine("{");
-                        using (Indent())
+                        using (Block())
                         {
                             AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                         }
-                        AppendLine("}");
                         AppendLine();
                         AppendLine("if (errorMsg != null)");
-                        AppendLine("{");
-                        using (Indent())
+                        using (Block())
                         {
                             AppendLine("luaL_error(L, errorMsg);");
                             AppendLine("return 0;");
                         }
-                        AppendLine("}");
                     }
                     else
                     {
@@ -3734,8 +3688,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             var parameters = ctor.GetParameters();
 
                             AppendLine($"// Try constructor {ctorIdx}: new {type.Name}({string.Join(", ", parameters.Select(p => GetFullTypeName(p.ParameterType)))})");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine($"int score = 0;");
 
@@ -3748,23 +3701,19 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 }
 
                                 AppendLine($"if (score > bestScore)");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine($"bestScore = score;");
                                     AppendLine($"bestIndex = {ctorIdx};");
                                 }
-                                AppendLine("}");
                             }
-                            AppendLine("}");
                             AppendLine($"next{ctorIdx}:");
                             AppendLine();
                         }
 
                         // Now invoke the best match
                         AppendLine("switch (bestIndex)");
-                        AppendLine("{");
-                        using (Indent())
+                        using (Block())
                         {
                             for (int ctorIdx = 0; ctorIdx < ctorsForCount.Count; ctorIdx++)
                             {
@@ -3774,8 +3723,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine($"case {ctorIdx}:");
                                 using (Indent())
                                 {
-                                    AppendLine("{");
-                                    using (Indent())
+                                    using (Block())
                                     {
                                         for (int i = 0; i < parameters.Length; i++)
                                         {
@@ -3784,23 +3732,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                                         var argList = string.Join(", ", parameters.Select((_, i) => $"arg{i}"));
                                         AppendLine("try");
-                                        AppendLine("{");
-                                        using (Indent())
+                                        using (Block())
                                         {
                                             AppendLine($"var obj = new {fullTypeName}({argList});");
                                             AppendLine($"PushObject(L, obj, \"MT_{safeName}\");");
                                             AppendLine("return 1;");
                                         }
-                                        AppendLine("}");
                                         AppendLine("catch (System.Exception ex)");
-                                        AppendLine("{");
-                                        using (Indent())
+                                        using (Block())
                                         {
                                             AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                         }
-                                        AppendLine("}");
                                     }
-                                    AppendLine("}");
                                     AppendLine("break;");
                                 }
                             }
@@ -3812,26 +3755,21 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("break;");
                             }
                         }
-                        AppendLine("}");
                         AppendLine();
                         AppendLine("if (errorMsg != null)");
-                        AppendLine("{");
-                        using (Indent())
+                        using (Block())
                         {
                             AppendLine("luaL_error(L, errorMsg);");
                             AppendLine("return 0;");
                         }
-                        AppendLine("}");
                     }
                 }
-                AppendLine("}");
                 AppendLine();
             }
 
             AppendLine($"luaL_error(L, \"Invalid arguments for {type.Name} constructor\");");
             AppendLine("return 0;");
         }
-        AppendLine("}");
         AppendLine();
     }
 
@@ -3857,8 +3795,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
             AppendLine($"private static int {safeName}_static_{GetSafeMethodName(methodName)}(lua_State L)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 AppendLine("var argCount = lua_gettop(L);");
                 AppendLine();
@@ -3872,8 +3809,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     var methods = argCountGroup.ToList();
 
                     AppendLine($"if (argCount == {argCount})");
-                    AppendLine("{");
-                    using (Indent())
+                    using (Block())
                     {
                         if (methods.Count == 1)
                         {
@@ -3892,57 +3828,45 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             if (method.ReturnType == typeof(void))
                             {
                                 AppendLine("try");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine($"{fullTypeName}.{method.Name}({argList});");
                                     AppendLine("return 0;");
                                 }
-                                AppendLine("}");
                                 AppendLine("catch (System.Exception ex)");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                 }
-                                AppendLine("}");
                                 AppendLine();
                                 AppendLine("if (errorMsg != null)");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine("luaL_error(L, errorMsg);");
                                     AppendLine("return 0;");
                                 }
-                                AppendLine("}");
                             }
                             else
                             {
                                 AppendLine("try");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine($"var result = {fullTypeName}.{method.Name}({argList});");
                                     GeneratePushValue("result", method.ReturnType);
                                     AppendLine("return 1;");
                                 }
-                                AppendLine("}");
                                 AppendLine("catch (System.Exception ex)");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                 }
-                                AppendLine("}");
                                 AppendLine();
                                 AppendLine("if (errorMsg != null)");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine("luaL_error(L, errorMsg);");
                                     AppendLine("return 0;");
                                 }
-                                AppendLine("}");
                             }
                         }
                         else
@@ -3960,8 +3884,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 var parameters = method.GetParameters();
 
                                 AppendLine($"// Try overload {methodIdx}: {method.Name}({string.Join(", ", parameters.Select(p => GetFullTypeName(p.ParameterType)))})");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine($"int score = 0;");
 
@@ -3974,23 +3897,19 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     }
 
                                     AppendLine($"if (score > bestScore)");
-                                    AppendLine("{");
-                                    using (Indent())
+                                    using (Block())
                                     {
                                         AppendLine($"bestScore = score;");
                                         AppendLine($"bestIndex = {methodIdx};");
                                     }
-                                    AppendLine("}");
                                 }
-                                AppendLine("}");
                                 AppendLine($"next{methodIdx}:");
                                 AppendLine();
                             }
 
                             // Now invoke the best match
                             AppendLine("switch (bestIndex)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 for (int methodIdx = 0; methodIdx < methods.Count; methodIdx++)
                                 {
@@ -4000,8 +3919,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     AppendLine($"case {methodIdx}:");
                                     using (Indent())
                                     {
-                                        AppendLine("{");
-                                        using (Indent())
+                                        using (Block())
                                         {
                                             for (int i = 0; i < parameters.Length; i++)
                                             {
@@ -4013,42 +3931,33 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                             if (method.ReturnType == typeof(void))
                                             {
                                                 AppendLine("try");
-                                                AppendLine("{");
-                                                using (Indent())
+                                                using (Block())
                                                 {
                                                     AppendLine($"{fullTypeName}.{method.Name}({argList});");
                                                     AppendLine("return 0;");
                                                 }
-                                                AppendLine("}");
                                                 AppendLine("catch (System.Exception ex)");
-                                                AppendLine("{");
-                                                using (Indent())
+                                                using (Block())
                                                 {
                                                     AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                                 }
-                                                AppendLine("}");
                                             }
                                             else
                                             {
                                                 AppendLine("try");
-                                                AppendLine("{");
-                                                using (Indent())
+                                                using (Block())
                                                 {
                                                     AppendLine($"var result = {fullTypeName}.{method.Name}({argList});");
                                                     GeneratePushValue("result", method.ReturnType);
                                                     AppendLine("return 1;");
                                                 }
-                                                AppendLine("}");
                                                 AppendLine("catch (System.Exception ex)");
-                                                AppendLine("{");
-                                                using (Indent())
+                                                using (Block())
                                                 {
                                                     AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                                 }
-                                                AppendLine("}");
                                             }
                                         }
-                                        AppendLine("}");
                                         AppendLine("break;");
                                     }
                                 }
@@ -4060,26 +3969,21 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     AppendLine("break;");
                                 }
                             }
-                            AppendLine("}");
                             AppendLine();
                             AppendLine("if (errorMsg != null)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine("luaL_error(L, errorMsg);");
                                 AppendLine("return 0;");
                             }
-                            AppendLine("}");
                         }
                     }
-                    AppendLine("}");
                     AppendLine();
                 }
 
                 AppendLine($"luaL_error(L, \"Invalid arguments for {methodName}\");");
                 AppendLine("return 0;");
             }
-            AppendLine("}");
             AppendLine();
         }
     }
@@ -4128,8 +4032,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
             AppendLine($"private static int {safeName}_method_{GetSafeMethodName(methodName)}(lua_State L)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 AppendLine("var argCount = lua_gettop(L) - 1; // First arg is self");
                 AppendLine();
@@ -4142,13 +4045,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 {
                     AppendLine($"var self = GetObjectFromStack<{fullTypeName}>(L, 1);");
                     AppendLine("if (self == null)");
-                    AppendLine("{");
-                    using (Indent())
+                    using (Block())
                     {
                         AppendLine($"luaL_error(L, \"Expected {type.Name} as first argument\");");
                         AppendLine("return 0;");
                     }
-                    AppendLine("}");
                 }
                 AppendLine();
 
@@ -4166,8 +4067,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     var methodsWithSameArgCount = argCountGroup.ToList();
 
                     AppendLine($"if (argCount == {argCount})");
-                    AppendLine("{");
-                    using (Indent())
+                    using (Block())
                     {
                         if (methodsWithSameArgCount.Count == 1)
                         {
@@ -4192,8 +4092,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             if (method.ReturnType == typeof(void))
                             {
                                 AppendLine("try");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     if (isExtension)
                                     {
@@ -4223,29 +4122,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     }
                                     AppendLine("return 0;");
                                 }
-                                AppendLine("}");
                                 AppendLine("catch (System.Exception ex)");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                 }
-                                AppendLine("}");
 
                                 AppendLine("if (errorMsg != null)");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine("luaL_error(L, errorMsg);");
                                     AppendLine("return 0;");
                                 }
-                                AppendLine("}");
                             }
                             else
                             {
                                 AppendLine("try");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     if (isExtension)
                                     {
@@ -4276,23 +4169,18 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     GeneratePushValue("result", method.ReturnType);
                                     AppendLine("return 1;");
                                 }
-                                AppendLine("}");
                                 AppendLine("catch (System.Exception ex)");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                 }
-                                AppendLine("}");
 
                                 AppendLine("if (errorMsg != null)");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine("luaL_error(L, errorMsg);");
                                     AppendLine("return 0;");
                                 }
-                                AppendLine("}");
                             }
                         }
                         else
@@ -4312,8 +4200,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 var paramStartIndex = isExtension ? 1 : 0;
 
                                 AppendLine($"// Try overload {methodIdx}: {method.Name}({string.Join(", ", parameters.Skip(paramStartIndex).Select(p => GetFullTypeName(p.ParameterType)))})");
-                                AppendLine("{");
-                                using (Indent())
+                                using (Block())
                                 {
                                     AppendLine($"int score = 0;");
 
@@ -4326,23 +4213,19 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     }
 
                                     AppendLine($"if (score > bestScore)");
-                                    AppendLine("{");
-                                    using (Indent())
+                                    using (Block())
                                     {
                                         AppendLine($"bestScore = score;");
                                         AppendLine($"bestIndex = {methodIdx};");
                                     }
-                                    AppendLine("}");
                                 }
-                                AppendLine("}");
                                 AppendLine($"next{methodIdx}:");
                                 AppendLine();
                             }
 
                             // Now invoke the best match
                             AppendLine("switch (bestIndex)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 for (int methodIdx = 0; methodIdx < methodsWithSameArgCount.Count; methodIdx++)
                                 {
@@ -4355,8 +4238,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     AppendLine($"case {methodIdx}:");
                                     using (Indent())
                                     {
-                                        AppendLine("{");
-                                        using (Indent())
+                                        using (Block())
                                         {
                                             for (int i = paramStartIndex; i < parameters.Length; i++)
                                             {
@@ -4368,8 +4250,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                             if (method.ReturnType == typeof(void))
                                             {
                                                 AppendLine("try");
-                                                AppendLine("{");
-                                                using (Indent())
+                                                using (Block())
                                                 {
                                                     if (isExtension)
                                                     {
@@ -4399,20 +4280,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                     }
                                                     AppendLine("return 0;");
                                                 }
-                                                AppendLine("}");
                                                 AppendLine("catch (System.Exception ex)");
-                                                AppendLine("{");
-                                                using (Indent())
+                                                using (Block())
                                                 {
                                                     AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                                 }
-                                                AppendLine("}");
                                             }
                                             else
                                             {
                                                 AppendLine("try");
-                                                AppendLine("{");
-                                                using (Indent())
+                                                using (Block())
                                                 {
                                                     if (isExtension)
                                                     {
@@ -4443,17 +4320,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                     GeneratePushValue("result", method.ReturnType);
                                                     AppendLine("return 1;");
                                                 }
-                                                AppendLine("}");
                                                 AppendLine("catch (System.Exception ex)");
-                                                AppendLine("{");
-                                                using (Indent())
+                                                using (Block())
                                                 {
                                                     AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                                 }
-                                                AppendLine("}");
                                             }
                                         }
-                                        AppendLine("}");
                                         AppendLine("break;");
                                     }
                                 }
@@ -4465,26 +4338,21 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                     AppendLine("break;");
                                 }
                             }
-                            AppendLine("}");
                             AppendLine();
                             AppendLine("if (errorMsg != null)");
-                            AppendLine("{");
-                            using (Indent())
+                            using (Block())
                             {
                                 AppendLine("luaL_error(L, errorMsg);");
                                 AppendLine("return 0;");
                             }
-                            AppendLine("}");
                         }
                     }
-                    AppendLine("}");
                     AppendLine();
                 }
 
                 AppendLine($"luaL_error(L, \"Invalid arguments for {methodName}\");");
                 AppendLine("return 0;");
             }
-            AppendLine("}");
             AppendLine();
         }
     }
@@ -4502,15 +4370,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         // __index for static properties and fields
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
         AppendLine($"private static int {safeName}_type__index(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
             AppendLine("var key = lua_tostring(L, 2);");
             AppendLine("if (key == null) { lua_pushnil(L); return 1; }");
             AppendLine();
             AppendLine("switch (key)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 // Properties
                 foreach (var prop in staticProps.Where(p => p.CanRead))
@@ -4543,9 +4409,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine("return 1;");
                 }
             }
-            AppendLine("}");
         }
-        AppendLine("}");
         AppendLine();
 
         // __newindex for static properties and fields (if any writable)
@@ -4556,15 +4420,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         {
             AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
             AppendLine($"private static int {safeName}_type__newindex(lua_State L)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 AppendLine("var key = lua_tostring(L, 2);");
                 AppendLine("if (key == null) return 0;");
                 AppendLine();
                 AppendLine("switch (key)");
-                AppendLine("{");
-                using (Indent())
+                using (Block())
                 {
                     // Properties
                     foreach (var prop in writableProps)
@@ -4597,9 +4459,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         AppendLine("return 0;");
                     }
                 }
-                AppendLine("}");
             }
-            AppendLine("}");
             AppendLine();
         }
     }
@@ -4624,8 +4484,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
         AppendLine($"private static int {safeName}_add_{eventName}(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
             if (!isStatic)
             {
@@ -4677,7 +4536,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             AppendLine("return 0;");
         }
-        AppendLine("}");
         AppendLine();
     }
 
@@ -4685,8 +4543,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
         AppendLine($"private static int {safeName}_remove_{eventName}(lua_State L)");
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
             if (!isStatic)
             {
@@ -4707,7 +4564,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             AppendLine("return 0;");
         }
-        AppendLine("}");
         AppendLine();
     }
 
@@ -4875,13 +4731,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             var parentTypeName = GetFullTypeName(parentType);
 
             // For structs, we need to get the ID from userdata on the stack
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 AppendLine("var ptr = lua_touserdata(L, 1);");
                 AppendLine("if (ptr != null)");
-                AppendLine("{");
-                using (Indent())
+                using (Block())
                 {
                     AppendLine("var parentId = *(int*)ptr;");
                     if (parentType.IsValueType)
@@ -4897,9 +4751,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         AppendLine($"PushStructWithParent(L, {containingTypeExpression}.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {containingTypeExpression}.{memberExpression} = ({typeName})value);");
                     }
                 }
-                AppendLine("}");
             }
-            AppendLine("}");
             AppendLine("return 1;");
         }
         else
@@ -4912,13 +4764,11 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private void GenerateToObjectCode(string targetExpression, Type type, string luaStackIndex)
     {
         var fullTypeName = GetFullTypeName(type);
-        AppendLine("{");
-        using (Indent())
+        using (Block())
         {
             AppendLine("string? errorMsg = null;");
             AppendLine("try");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 if (IsNullable(type))
                 {
@@ -4940,25 +4790,19 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"{targetExpression} = ToObject<{fullTypeName}>(L, {luaStackIndex})!;");
                 }
             }
-            AppendLine("}");
             AppendLine("catch (System.Exception ex)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
             }
-            AppendLine("}");
             AppendLine();
             AppendLine("if (errorMsg != null)");
-            AppendLine("{");
-            using (Indent())
+            using (Block())
             {
                 AppendLine("luaL_error(L, errorMsg);");
                 AppendLine("return 0;");
             }
-            AppendLine("}");
         }
-        AppendLine("}");
     }
 
     private void GenerateParameterRead(ParameterInfo param, int index, int stackOffset = 1)
@@ -5283,9 +5127,32 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     #endregion
 }
 
-public partial record TypeInfo(Type Type, LuaVisibleAttribute? Attribute = null)
+public partial record TypeInfo(Type Type)
 {
-    public string LuaName => Attribute?.Name ?? GetGenericTypeLuaName(Type);
+    public string LuaName { get; } = GetCustomName(Type) ?? GetGenericTypeLuaName(Type);
+
+    private static string? GetCustomName(Type type)
+    {
+        // Look for [LuaVisible] by name to avoid assembly load context issues
+        var luaVisibleAttr = type.GetCustomAttributesData()
+            .FirstOrDefault(a => a.AttributeType.Name == nameof(LuaVisibleAttribute));
+
+        if (luaVisibleAttr != null)
+        {
+            // Extract the Name property if it exists
+            string? customName = null;
+            var nameProperty = luaVisibleAttr.NamedArguments
+                .FirstOrDefault(a => a.MemberName == "Name");
+            if (nameProperty.TypedValue.Value is string name)
+            {
+                customName = name;
+            }
+
+            return customName;
+        }
+
+        return null;
+    }
 
     private static string GetGenericTypeLuaName(Type type)
     {
