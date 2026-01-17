@@ -271,5 +271,73 @@ public static unsafe partial class Methods
     {
         B->p += n;
     }
+    
+    #region Lua 5.2/5.3 Compatibility Helpers
+    // https://github.com/lunarmodules/lua-compat-5.3
+    
+    /// <summary>
+    /// Converts a possibly negative stack index into an absolute index. Implemented as abs_index(L, i) macro in
+    /// lauxlib.c.
+    /// </summary>
+    /// <param name="L"></param>
+    /// <param name="i"></param>
+    /// <returns></returns>
+    public static int lua_absindex(lua_State L, int i)
+    {
+        return i is > 0 or <= LUA_REGISTRYINDEX ? i : lua_gettop(L) + i + 1;
+    }
 
+    public static ulong lua_rawlen(lua_State L, int i)
+    {
+        return lua_objlen(L, i);
+    }
+    
+    public static void* lua_tolightuserdata(lua_State L, int n)
+    {
+        return lua_touserdata(L, n);
+    }
+    
+    public static void lua_pushunsigned(lua_State L, nuint n)
+    {
+        lua_pushinteger(L, (lua_Integer)n);
+    }
+    
+    public static nuint lua_tounsigned(lua_State L, int n, nuint* isnum)
+    {
+        return lua_tounsignedx(L, n, null);
+    }
+    
+    public static nuint lua_tounsignedx(lua_State L, int n, int* isnum)
+    {
+        return (nuint) lua_tointegerx(L, n, isnum);
+    }
+    
+    public static nuint luaL_checkunsigned(lua_State L, int n)
+    {
+        return (nuint) luaL_checkinteger(L, n);
+    }
+    
+    public static nuint luaL_optunsigned(lua_State L, int n, nuint d)
+    {
+        return (nuint) luaL_optinteger(L, n, (lua_Integer)d);
+    }
+    
+    public static void lua_getuservalue(lua_State L, int i)
+    {
+        lua_getfenv(L, i);
+        lua_type(L, -1);
+    }
+    
+    public static void lua_setuservalue(lua_State L, int i)
+    {
+        luaL_checktype(L, -1, LUA_TTABLE);
+        lua_setfenv(L, i);
+    }
+    
+    public static void lua_pushglobaltable(lua_State L)
+    {
+        lua_pushvalue(L, LUA_GLOBALSINDEX);
+    }
+    
+    #endregion
 }
