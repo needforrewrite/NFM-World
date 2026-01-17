@@ -1130,8 +1130,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     if (typeof(T) == typeof(sbyte)) return (T)(object)(sbyte)lua_tointeger(L, idx);
                     if (typeof(T) == typeof(short)) return (T)(object)(short)lua_tointeger(L, idx);
                     if (typeof(T) == typeof(ushort)) return (T)(object)(ushort)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(long)) return (T)(object)lua_tointeger(L, idx);
-                    if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)lua_tonumber(L, idx);
+                    if (typeof(T) == typeof(long)) return (T)(object)(long)lua_tointeger(L, idx);
+                    if (typeof(T) == typeof(ulong)) return (T)(object)(ulong)(long)lua_tonumber(L, idx);
                     if (typeof(T) == typeof(float)) return (T)(object)(float)lua_tonumber(L, idx);
                     if (typeof(T) == typeof(double)) return (T)(object)lua_tonumber(L, idx);
 
