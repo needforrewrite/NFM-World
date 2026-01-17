@@ -5,6 +5,7 @@ using nfm_world.multiplayer;
 using nfm_world.stage;
 using nfm_world.ui;
 using nfm_world.util;
+using nfm_world.mad.account;
 
 namespace nfm_world.gameplay;
 
@@ -45,6 +46,7 @@ public class MainMenuPhase : BasePhase
     private GraphicsDevice _graphicsDevice;
 
     private Rad3d? garageSelectedCar;
+    private AccountManagerFloatingMenu? accountManagerMenu;
 
     public MainMenuPhase(GraphicsDevice graphicsDevice)
     {
@@ -74,6 +76,9 @@ public class MainMenuPhase : BasePhase
         AddButton(startX, startY + spacing * 3, buttonWidth, buttonHeight, "SETTINGS", OnSettingsClicked);
         AddButton(startX, startY + spacing * 4, buttonWidth, buttonHeight, "CREDITS", OnClickUnavailable);
         AddButton(startX, startY + spacing * 5, buttonWidth, buttonHeight, "QUIT", OnQuitClicked);
+
+        //AddButton((int)(G.Viewport.X - startX - buttonWidth), startY, buttonWidth, buttonHeight, "LOGOUT", OnLogoutClicked);
+        AddButton((int)(G.Viewport.X - startX - buttonWidth), startY, buttonWidth, buttonHeight, "LOGIN", OnLoginClicked);
     }
 
     private void BuildWorkshopMenu()
@@ -177,7 +182,7 @@ public class MainMenuPhase : BasePhase
             Width = width,
             Height = height,
             Text = text,
-            OnClick = onClick ?? (() => { }) // Empty action for non-implemented buttons
+            OnClick = onClick ?? (() => { }), // Empty action for non-implemented buttons,
         });
     }
 
@@ -260,6 +265,26 @@ public class MainMenuPhase : BasePhase
         {
             DrawButton(button);
         }
+
+        int buttonHeight = 35;
+        int startX = 100;
+        int startY = 390;
+        int spacing = 40;
+
+        string loginText = GameSparker.AccountManager.ActiveAccount is not null ?
+            "Logged in as: " + GameSparker.AccountManager.ActiveAccount.Username :
+            "Logged Out";
+
+        var b = _buttons.Find(b => b.Text == "LOGIN");
+
+        G.DrawStringAligned(
+            loginText,
+            b.X + b.Width,
+            startY + buttonHeight + spacing,
+            driverinterface.TextHorizontalAlignment.Right,
+            driverinterface.TextVerticalAlignment.Bottom
+        );
+
 
         // Debug: Show mouse position
         G.SetFont(new Font(FontFamily.DroidSans, 0, 12));
@@ -402,6 +427,18 @@ public class MainMenuPhase : BasePhase
             BuildMainMenu();
         }
     }
+    private void OnLoginClicked()
+    {
+        accountManagerMenu ??= new AccountManagerFloatingMenu();
+    }
+
+    private void OnLogoutClicked()
+    {
+        if (GameSparker.AccountManager.LoggedIn)
+        {
+            GameSparker.AccountManager.LogOut();
+        }
+    }
 
     private void OnPlayClicked()
     {
@@ -533,5 +570,21 @@ public class MainMenuPhase : BasePhase
     public override void RenderImgui()
     {
         base.RenderImgui();
+
+        if (accountManagerMenu is not null)
+        {
+            var res = accountManagerMenu.Process();
+            if (res == AccountManagerFloatingMenu.AccountManagerFloatingMenuState.LoggedIn)
+            {
+                accountManagerMenu.Close();
+                accountManagerMenu = null;
+            }
+            else if (res == AccountManagerFloatingMenu.AccountManagerFloatingMenuState.Canceled)
+            {
+                accountManagerMenu.Close();
+                accountManagerMenu = null;
+            }
+            ;
+        }
     }
 }

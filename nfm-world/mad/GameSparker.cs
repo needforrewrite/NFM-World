@@ -11,6 +11,7 @@ using nfm_world.sfx;
 using nfm_world.ui;
 using nfm_world.util;
 using Path = System.IO.Path;
+using nfm_world.mad.account;
 
 namespace nfm_world;
 
@@ -19,6 +20,7 @@ public class GameSparker
     public static Program _game;
     public static GraphicsDevice _graphicsDevice;
     public static readonly string version = GetVersionString();
+    public static AccountManager AccountManager = new AccountManager();
 
     private static string GetVersionString()
     {
