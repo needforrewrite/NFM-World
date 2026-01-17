@@ -11,8 +11,7 @@ namespace LuaJIT
         [NativeTypeName("const char *")]
         public sbyte* name;
 
-        [NativeTypeName("lua_CFunction")]
-        public delegate* unmanaged[Cdecl]<lua_State, int> func;
+        public lua_CFunction func;
     }
 
     public unsafe partial struct luaL_Buffer
@@ -118,7 +117,7 @@ namespace LuaJIT
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: NativeTypeName("const char *")]
-        public static extern sbyte* luaJIT_profile_dumpstack(lua_State L, [NativeTypeName("const char *")] sbyte* fmt, int depth, [NativeTypeName("size_t *")] nuint* len);
+        public static extern sbyte* luaJIT_profile_dumpstack(lua_State L, [NativeTypeName("const char *")] sbyte* fmt, int depth, size_t* len);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void luaJIT_version_2_1_1739213504();
@@ -183,6 +182,10 @@ namespace LuaJIT
         [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_string_buffer(lua_State L);
 
+        /// <summary>
+        /// Opens all standard Lua libraries into the given state.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void luaL_openlibs(lua_State L);
 
@@ -212,32 +215,28 @@ namespace LuaJIT
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         [return: NativeTypeName("const char *")]
-        public static extern sbyte* luaL_checklstring(lua_State L, int numArg, [NativeTypeName("size_t *")] nuint* l);
+        public static extern sbyte* luaL_checklstring(lua_State L, int numArg, size_t* l);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         [return: NativeTypeName("const char *")]
-        public static extern sbyte* luaL_optlstring(lua_State L, int numArg, [NativeTypeName("const char *")] sbyte* def, [NativeTypeName("size_t *")] nuint* l);
+        public static extern sbyte* luaL_optlstring(lua_State L, int numArg, [NativeTypeName("const char *")] sbyte* def, size_t* l);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("lua_Number")]
-        public static extern double luaL_checknumber(lua_State L, int numArg);
+        public static extern lua_Number luaL_checknumber(lua_State L, int numArg);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("lua_Number")]
-        public static extern double luaL_optnumber(lua_State L, int nArg, [NativeTypeName("lua_Number")] double def);
+        public static extern lua_Number luaL_optnumber(lua_State L, int nArg, [NativeTypeName("lua_Number")] double def);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("lua_Integer")]
-        public static extern nint luaL_checkinteger(lua_State L, int numArg);
+        public static extern lua_Integer luaL_checkinteger(lua_State L, int numArg);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("lua_Integer")]
-        public static extern nint luaL_optinteger(lua_State L, int nArg, [NativeTypeName("lua_Integer")] nint def);
+        public static extern lua_Integer luaL_optinteger(lua_State L, int nArg, [NativeTypeName("lua_Integer")] nint def);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
@@ -251,10 +250,26 @@ namespace LuaJIT
         [SuppressGCTransition]
         public static extern void luaL_checkany(lua_State L, int narg);
 
+        /// <summary>
+        /// If the registry already has the key tname, returns 0. Otherwise, creates a new table to be used as a metatable
+        /// for userdata, adds it to the registry with key tname, and returns 1. In both cases pushes onto the stack
+        /// the final value associated with tname in the registry.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="tname">The metatable name (null-terminated string).</param>
+        /// <returns>1 if a new metatable was created, 0 if it already existed.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern int luaL_newmetatable(lua_State L, [NativeTypeName("const char *")] sbyte* tname);
 
+        /// <summary>
+        /// Checks whether the function argument narg is a userdata of the type tname (see luaL_newmetatable).
+        /// It returns the userdata address (see lua_touserdata).
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="ud">The argument index.</param>
+        /// <param name="tname">The expected metatable name.</param>
+        /// <returns>Pointer to the userdata.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void* luaL_checkudata(lua_State L, int ud, [NativeTypeName("const char *")] sbyte* tname);
@@ -263,16 +278,41 @@ namespace LuaJIT
         [SuppressGCTransition]
         public static extern void luaL_where(lua_State L, int lvl);
 
+        /// <summary>
+        /// Raises an error. The error message format is given by fmt plus any extra arguments,
+        /// following the same rules of lua_pushfstring. It also adds at the beginning of the
+        /// message the file name and the line number where the error occurred, if this information is available.
+        /// This function never returns, but it is an idiom to use it as return luaL_error(args).
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="fmt">The error message format string.</param>
+        /// <returns>Never returns (longjmps to error handler).</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int luaL_error(lua_State L, [NativeTypeName("const char *")] sbyte* fmt, __arglist);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int luaL_checkoption(lua_State L, int narg, [NativeTypeName("const char *")] sbyte* def, [NativeTypeName("const char *const[]")] sbyte** lst);
 
+        /// <summary>
+        /// Creates and returns a reference, in the table at index t, for the object at the top of the stack (and pops the object).
+        /// A reference is a unique integer key. As long as you do not manually add integer keys into table t,
+        /// luaL_ref ensures the uniqueness of the key it returns. You can retrieve an object referred by reference r
+        /// by calling lua_rawgeti(L, t, r). Function luaL_unref frees a reference and its associated object.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="t">The table index (usually LUA_REGISTRYINDEX).</param>
+        /// <returns>The reference integer key.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern int luaL_ref(lua_State L, int t);
 
+        /// <summary>
+        /// Releases reference ref from the table at index t (see luaL_ref). The entry is removed from the table,
+        /// so that the referred object can be collected. The reference ref is also freed to be used again.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="t">The table index (usually LUA_REGISTRYINDEX).</param>
+        /// <param name="ref">The reference to release.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void luaL_unref(lua_State L, int t, int @ref);
@@ -281,11 +321,31 @@ namespace LuaJIT
         public static extern int luaL_loadfile(lua_State L, [NativeTypeName("const char *")] sbyte* filename);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int luaL_loadbuffer(lua_State L, [NativeTypeName("const char *")] sbyte* buff, [NativeTypeName("size_t")] nuint sz, [NativeTypeName("const char *")] sbyte* name);
+        public static extern int luaL_loadbuffer(lua_State L, [NativeTypeName("const char *")] sbyte* buff, size_t sz, [NativeTypeName("const char *")] sbyte* name);
 
+        /// <summary>
+        /// Loads a string as a Lua chunk. This function uses lua_load to load the chunk in the zero-terminated string s.
+        /// This function returns the same results as lua_load. Also as lua_load, this function only loads the chunk;
+        /// it does not run it.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="s">Null-terminated string containing Lua code.</param>
+        /// <returns>0 if no errors, or an error code (LUA_ERRSYNTAX, LUA_ERRMEM).</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int luaL_loadstring(lua_State L, [NativeTypeName("const char *")] sbyte* s);
 
+        /// <summary>
+        /// Creates a new Lua state. It calls lua_newstate with an allocator based on the standard C realloc function
+        /// and then sets a panic function (see lua_atpanic) that prints an error message to the standard error output
+        /// in case of fatal errors. Returns the new state, or NULL if there is a memory allocation error.
+        /// </summary>
+        /// <returns>A new Lua state, or NULL on allocation failure.</returns>
+        /// <summary>
+        /// Creates a new Lua state. It calls lua_newstate with an allocator based on the standard C realloc function
+        /// and then sets a panic function (see lua_atpanic) that prints an error message to the standard error output
+        /// in case of fatal errors. Returns the new state, or NULL if there is a memory allocation error.
+        /// </summary>
+        /// <returns>A new Lua state, or NULL on allocation failure.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern lua_State luaL_newstate();
 
@@ -311,7 +371,7 @@ namespace LuaJIT
         public static extern int luaL_loadfilex(lua_State L, [NativeTypeName("const char *")] sbyte* filename, [NativeTypeName("const char *")] sbyte* mode);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int luaL_loadbufferx(lua_State L, [NativeTypeName("const char *")] sbyte* buff, [NativeTypeName("size_t")] nuint sz, [NativeTypeName("const char *")] sbyte* name, [NativeTypeName("const char *")] sbyte* mode);
+        public static extern int luaL_loadbufferx(lua_State L, [NativeTypeName("const char *")] sbyte* buff, size_t sz, [NativeTypeName("const char *")] sbyte* name, [NativeTypeName("const char *")] sbyte* mode);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void luaL_traceback(lua_State L, lua_State L1, [NativeTypeName("const char *")] sbyte* msg, int level);
@@ -343,7 +403,7 @@ namespace LuaJIT
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        public static extern void luaL_addlstring(luaL_Buffer* B, [NativeTypeName("const char *")] sbyte* s, [NativeTypeName("size_t")] nuint l);
+        public static extern void luaL_addlstring(luaL_Buffer* B, [NativeTypeName("const char *")] sbyte* s, size_t l);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
@@ -357,9 +417,25 @@ namespace LuaJIT
         [SuppressGCTransition]
         public static extern void luaL_pushresult(luaL_Buffer* B);
 
+        /// <summary>
+        /// Creates a new, independent state. Returns NULL if cannot create the state (due to lack of memory).
+        /// The argument f is the allocator function; Lua does all memory allocation for this state through this function.
+        /// The second argument, ud, is an opaque pointer that Lua simply passes to the allocator in every call.
+        /// </summary>
+        /// <param name="f">The allocator function.</param>
+        /// <param name="ud">Opaque pointer passed to the allocator.</param>
+        /// <returns>A new Lua state, or NULL on allocation failure.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern lua_State lua_newstate([NativeTypeName("lua_Alloc")] delegate* unmanaged[Cdecl]<void*, void*, nuint, nuint, void*> f, void* ud);
 
+        /// <summary>
+        /// Destroys all objects in the given Lua state (calling the corresponding garbage-collection metamethods, if any)
+        /// and frees all dynamic memory used by this state. On several platforms, you may not need to call this function,
+        /// because all resources are naturally released when the host program ends. On the other hand, long-running programs,
+        /// such as a daemon or a web server, might need to release states as soon as they are not needed,
+        /// to avoid growing too large.
+        /// </summary>
+        /// <param name="L">The Lua state to close.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void lua_close(lua_State L);
 
@@ -369,29 +445,64 @@ namespace LuaJIT
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("lua_CFunction")]
-        public static extern delegate* unmanaged[Cdecl]<lua_State, int> lua_atpanic(lua_State L, [NativeTypeName("lua_CFunction")] delegate* unmanaged[Cdecl]<lua_State, int> panicf);
+        public static extern lua_CFunction lua_atpanic(lua_State L, [NativeTypeName("lua_CFunction")] delegate* unmanaged[Cdecl]<lua_State, int> panicf);
 
+        /// <summary>
+        /// Returns the index of the top element in the stack. Because indices start at 1,
+        /// this result is equal to the number of elements in the stack (and so 0 means an empty stack).
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <returns>The number of elements in the stack.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern int lua_gettop(lua_State L);
 
+        /// <summary>
+        /// Accepts any acceptable index, or 0, and sets the stack top to this index.
+        /// If the new top is larger than the old one, then the new elements are filled with nil.
+        /// If index is 0, then all stack elements are removed.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The new top index, or 0 to clear the stack.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_settop(lua_State L, int idx);
 
+        /// <summary>
+        /// Pushes a copy of the element at the given valid index onto the stack.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The index of the element to copy.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_pushvalue(lua_State L, int idx);
 
+        /// <summary>
+        /// Removes the element at the given valid index, shifting down the elements above this index to fill the gap.
+        /// Cannot be called with a pseudo-index, because a pseudo-index is not an actual stack position.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The index of the element to remove.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_remove(lua_State L, int idx);
 
+        /// <summary>
+        /// Moves the top element into the given valid index, shifting up the elements above this index to open space.
+        /// Cannot be called with a pseudo-index, because a pseudo-index is not an actual stack position.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The index where to insert the top element.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_insert(lua_State L, int idx);
 
+        /// <summary>
+        /// Moves the top element into the given position (and pops it), without shifting any element
+        /// (therefore replacing the value at the given position).
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The index where to place the top element.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_replace(lua_State L, int idx);
@@ -420,6 +531,14 @@ namespace LuaJIT
         [SuppressGCTransition]
         public static extern int lua_isuserdata(lua_State L, int idx);
 
+        /// <summary>
+        /// Returns the type of the value in the given acceptable index, or LUA_TNONE for a non-valid index
+        /// (that is, an index to an "empty" stack position). The types returned by lua_type are coded by the following constants
+        /// defined in lua.h: LUA_TNIL, LUA_TNUMBER, LUA_TBOOLEAN, LUA_TSTRING, LUA_TTABLE, LUA_TFUNCTION, LUA_TUSERDATA, LUA_TTHREAD, and LUA_TLIGHTUSERDATA.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The stack index to check.</param>
+        /// <returns>The type constant, or LUA_TNONE for invalid index.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern int lua_type(lua_State L, int idx);
@@ -441,33 +560,75 @@ namespace LuaJIT
         [SuppressGCTransition]
         public static extern int lua_lessthan(lua_State L, int idx1, int idx2);
 
+        /// <summary>
+        /// Converts the Lua value at the given acceptable index to a C double (lua_Number).
+        /// The Lua value must be a number or a string convertible to a number; otherwise, lua_tonumber returns 0.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The stack index.</param>
+        /// <returns>The value as a double, or 0 if not a number.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("lua_Number")]
-        public static extern double lua_tonumber(lua_State L, int idx);
+        public static extern lua_Number lua_tonumber(lua_State L, int idx);
 
+        /// <summary>
+        /// Converts the Lua value at the given acceptable index to a signed integer (lua_Integer).
+        /// The Lua value must be a number or a string convertible to a number; otherwise, lua_tointeger returns 0.
+        /// If the number is not an integer, it is truncated in some non-specified way.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The stack index.</param>
+        /// <returns>The value as an integer, or 0 if not a number.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("lua_Integer")]
-        public static extern nint lua_tointeger(lua_State L, int idx);
+        public static extern lua_Integer lua_tointeger(lua_State L, int idx);
 
+        /// <summary>
+        /// Converts the Lua value at the given acceptable index to a C boolean value (0 or 1).
+        /// Like all tests in Lua, lua_toboolean returns 1 for any Lua value different from false and nil;
+        /// otherwise it returns 0. It also returns 0 when called with a non-valid index.
+        /// (If you want to accept only actual boolean values, use lua_isboolean to test the value's type.)
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The stack index.</param>
+        /// <returns>1 if the value is true (not false or nil), 0 otherwise.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern int lua_toboolean(lua_State L, int idx);
 
+        /// <summary>
+        /// Converts the Lua value at the given acceptable index to a C string. If len is not NULL,
+        /// it also sets *len with the string length. The Lua value must be a string or a number;
+        /// otherwise, the function returns NULL. If the value is a number, then lua_tolstring also changes
+        /// the actual value in the stack to a string. (This change confuses lua_next when lua_tolstring is applied
+        /// to keys during a table traversal.) lua_tolstring returns a fully aligned pointer to a string inside the Lua state.
+        /// This string always has a zero ('\0') after its last character (as in C), but can contain other zeros in its body.
+        /// Because Lua has garbage collection, there is no guarantee that the pointer returned by lua_tolstring will be valid
+        /// after the corresponding value is removed from the stack.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The stack index.</param>
+        /// <param name="len">Pointer to receive the string length (can be NULL).</param>
+        /// <returns>Pointer to the string, or NULL if not a string or number.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [return: NativeTypeName("const char *")]
-        public static extern sbyte* lua_tolstring(lua_State L, int idx, [NativeTypeName("size_t *")] nuint* len);
+        public static extern sbyte* lua_tolstring(lua_State L, int idx, size_t* len);
+
+        /// <summary>
+        /// Returns the "length" of the value at the given acceptable index: for strings, this is the string length;
+        /// for tables, this is the result of the length operator ('#'); for userdata, this is the size of the block
+        /// of memory allocated for the userdata; for other values, it is 0.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The stack index.</param>
+        /// <returns>The length of the value.</returns>
+        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
+        [SuppressGCTransition]
+        public static extern size_t lua_objlen(lua_State L, int idx);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("size_t")]
-        public static extern nuint lua_objlen(lua_State L, int idx);
-
-        [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
-        [return: NativeTypeName("lua_CFunction")]
-        public static extern delegate* unmanaged[Cdecl]<lua_State, int> lua_tocfunction(lua_State L, int idx);
+        public static extern lua_CFunction lua_tocfunction(lua_State L, int idx);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
@@ -482,22 +643,51 @@ namespace LuaJIT
         [return: NativeTypeName("const void *")]
         public static extern void* lua_topointer(lua_State L, int idx);
 
+        /// <summary>
+        /// Pushes a nil value onto the stack.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_pushnil(lua_State L);
 
+        /// <summary>
+        /// Pushes a number with value n onto the stack.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="n">The number to push.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_pushnumber(lua_State L, [NativeTypeName("lua_Number")] double n);
 
+        /// <summary>
+        /// Pushes an integer with value n onto the stack.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="n">The integer to push.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_pushinteger(lua_State L, [NativeTypeName("lua_Integer")] nint n);
 
+        /// <summary>
+        /// Pushes the string pointed to by s with size len onto the stack.
+        /// Lua makes (or reuses) an internal copy of the given string, so the memory at s can be freed or reused
+        /// immediately after the function returns. The string can contain embedded zeros.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="s">Pointer to the string data.</param>
+        /// <param name="l">Length of the string.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        public static extern void lua_pushlstring(lua_State L, [NativeTypeName("const char *")] sbyte* s, [NativeTypeName("size_t")] nuint l);
+        public static extern void lua_pushlstring(lua_State L, [NativeTypeName("const char *")] sbyte* s, size_t l);
 
+        /// <summary>
+        /// Pushes the zero-terminated string pointed to by s onto the stack.
+        /// Lua makes (or reuses) an internal copy of the given string, so the memory at s can be freed or reused
+        /// immediately after the function returns. The string cannot contain embedded zeros; it is assumed to end at the first zero.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="s">Pointer to the null-terminated string.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_pushstring(lua_State L, [NativeTypeName("const char *")] sbyte* s);
@@ -510,10 +700,26 @@ namespace LuaJIT
         [return: NativeTypeName("const char *")]
         public static extern sbyte* lua_pushfstring(lua_State L, [NativeTypeName("const char *")] sbyte* fmt, __arglist);
 
+        /// <summary>
+        /// Pushes a new C closure onto the stack. When a C function is created, it is possible to associate some values with it,
+        /// thus creating a C closure (see §3.4 of Lua manual); these values are then accessible to the function whenever it is called.
+        /// To associate values with a C function, first these values should be pushed onto the stack (when there are multiple values,
+        /// the first value is pushed first). Then lua_pushcclosure is called to create and push the C function onto the stack,
+        /// with the argument n telling how many values should be associated with the function. lua_pushcclosure also pops these values from the stack.
+        /// The maximum value for n is 255.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="fn">The C function pointer.</param>
+        /// <param name="n">The number of upvalues to associate with the function.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_pushcclosure(lua_State L, [NativeTypeName("lua_CFunction")] delegate* unmanaged[Cdecl]<lua_State, int> fn, int n);
 
+        /// <summary>
+        /// Pushes a boolean value with value b onto the stack.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="b">The boolean value (0 for false, non-zero for true).</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_pushboolean(lua_State L, int b);
@@ -526,26 +732,71 @@ namespace LuaJIT
         [SuppressGCTransition]
         public static extern int lua_pushthread(lua_State L);
 
+        /// <summary>
+        /// Pushes onto the stack the value t[k], where t is the value at the given valid index and k is the value at the top of the stack.
+        /// This function pops the key from the stack (putting the resulting value in its place). As in Lua, this function may trigger
+        /// a metamethod for the "index" event (see §2.8 of Lua manual).
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The table index.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void lua_gettable(lua_State L, int idx);
 
+        /// <summary>
+        /// Pushes onto the stack the value t[k], where t is the value at the given valid index. As in Lua, this function may trigger
+        /// a metamethod for the "index" event (see §2.8 of Lua manual).
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The table index.</param>
+        /// <param name="k">The field name (null-terminated string).</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void lua_getfield(lua_State L, int idx, [NativeTypeName("const char *")] sbyte* k);
 
+        /// <summary>
+        /// Similar to lua_gettable, but does a raw access (i.e., without metamethods).
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The table index.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_rawget(lua_State L, int idx);
 
+        /// <summary>
+        /// Pushes onto the stack the value t[n], where t is the value at the given valid index.
+        /// The access is raw; that is, it does not invoke metamethods.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The table index.</param>
+        /// <param name="n">The integer key.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void lua_rawgeti(lua_State L, int idx, int n);
 
+        /// <summary>
+        /// Creates a new empty table and pushes it onto the stack. The new table has space pre-allocated for narr array elements
+        /// and nrec non-array elements. This pre-allocation is useful when you know exactly how many elements the table will have.
+        /// Otherwise you can use the function lua_newtable.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="narr">Number of pre-allocated array elements.</param>
+        /// <param name="nrec">Number of pre-allocated non-array elements.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
         public static extern void lua_createtable(lua_State L, int narr, int nrec);
 
+        /// <summary>
+        /// This function allocates a new block of memory with the given size, pushes onto the stack a new full userdata
+        /// with the block address, and returns this address. Userdata represent C values in Lua. A full userdata represents
+        /// a block of memory. It is an object (like a table): you must create it, it can have its own metatable,
+        /// and you can detect when it is being collected. A full userdata is only equal to itself (under raw equality).
+        /// When Lua collects a full userdata with a gc metamethod, Lua calls the metamethod and marks the userdata as finalized.
+        /// When this userdata is collected again then Lua frees its corresponding memory.
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="sz">Size of the memory block to allocate.</param>
+        /// <returns>Pointer to the allocated memory block.</returns>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        public static extern void* lua_newuserdata(lua_State L, [NativeTypeName("size_t")] nuint sz);
+        public static extern void* lua_newuserdata(lua_State L, size_t sz);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
@@ -555,9 +806,24 @@ namespace LuaJIT
         [SuppressGCTransition]
         public static extern void lua_getfenv(lua_State L, int idx);
 
+        /// <summary>
+        /// Does the equivalent to t[k] = v, where t is the value at the given valid index, v is the value at the top of the stack,
+        /// and k is the value just below the top. This function pops both the key and the value from the stack.
+        /// As in Lua, this function may trigger a metamethod for the "newindex" event (see §2.8 of Lua manual).
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The table index.</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void lua_settable(lua_State L, int idx);
 
+        /// <summary>
+        /// Does the equivalent to t[k] = v, where t is the value at the given valid index and v is the value at the top of the stack.
+        /// This function pops the value from the stack. As in Lua, this function may trigger a metamethod for the "newindex" event
+        /// (see §2.8 of Lua manual).
+        /// </summary>
+        /// <param name="L">The Lua state.</param>
+        /// <param name="idx">The table index.</param>
+        /// <param name="k">The field name (null-terminated string).</param>
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern void lua_setfield(lua_State L, int idx, [NativeTypeName("const char *")] sbyte* k);
 
@@ -584,7 +850,7 @@ namespace LuaJIT
         public static extern int lua_pcall(lua_State L, int nargs, int nresults, int errfunc);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int lua_cpcall(lua_State L, [NativeTypeName("lua_CFunction")] delegate* unmanaged[Cdecl]<lua_State, int> func, void* ud);
+        public static extern int lua_cpcall(lua_State L, lua_CFunction func, void* ud);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         public static extern int lua_load(lua_State L, [NativeTypeName("lua_Reader")] delegate* unmanaged[Cdecl]<lua_State, void*, nuint*, sbyte*> reader, void* dt, [NativeTypeName("const char *")] sbyte* chunkname);
@@ -688,8 +954,7 @@ namespace LuaJIT
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl, EntryPoint = "lua_version")]
         [SuppressGCTransition]
-        [return: NativeTypeName("const lua_Number *")]
-        public static extern double* _lua_version(lua_State L);
+        public static extern lua_Number* _lua_version(lua_State L);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
@@ -697,13 +962,11 @@ namespace LuaJIT
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("lua_Number")]
-        public static extern double lua_tonumberx(lua_State L, int idx, int* isnum);
+        public static extern lua_Number lua_tonumberx(lua_State L, int idx, int* isnum);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [return: NativeTypeName("lua_Integer")]
-        public static extern nint lua_tointegerx(lua_State L, int idx, int* isnum);
+        public static extern lua_Integer lua_tointegerx(lua_State L, int idx, int* isnum);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]

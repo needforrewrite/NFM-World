@@ -5,10 +5,6 @@
 
 namespace LuaJIT;
 
-using size_t = nuint;
-using lua_Number = double;
-using lua_Integer = nint;
-
 public static unsafe partial class Methods
 {
     public static void lua_pop(lua_State L, int n)
@@ -22,13 +18,13 @@ public static unsafe partial class Methods
     }
 
     public static void lua_register(lua_State L, string n,
-        [NativeTypeName("lua_CFunction")] delegate* unmanaged[Cdecl]<lua_State, int> f)
+        [NativeTypeName("lua_CFunction")] lua_CFunction f)
     {
         lua_pushcfunction(L, f);
         lua_setglobal(L, n);
     }
 
-    public static ulong lua_strlen(lua_State L, int i)
+    public static size_t lua_strlen(lua_State L, int i)
     {
         return lua_objlen(L, i);
     }
@@ -118,7 +114,7 @@ public static unsafe partial class Methods
     {
         var result = luaL_loadstring(L, str);
         if (result != 0) return result;
-        return Methods.lua_pcall(L, 0, -1, 0);
+        return lua_pcall(L, 0, -1, 0);
     }
 
     /// <summary>
@@ -129,7 +125,7 @@ public static unsafe partial class Methods
     {
         var result = luaL_loadstring(L, str);
         if (result != 0) return result;
-        return Methods.lua_pcall(L, 0, -1, 0);
+        return lua_pcall(L, 0, -1, 0);
     }
 
     /// <summary>
@@ -140,7 +136,7 @@ public static unsafe partial class Methods
     {
         var result = luaL_loadfile(L, filename);
         if (result != 0) return result;
-        return Methods.lua_pcall(L, 0, -1, 0);
+        return lua_pcall(L, 0, -1, 0);
     }
 
     /// <summary>
@@ -151,7 +147,7 @@ public static unsafe partial class Methods
     {
         var result = luaL_loadfile(L, filename);
         if (result != 0) return result;
-        return Methods.lua_pcall(L, 0, -1, 0);
+        return lua_pcall(L, 0, -1, 0);
     }
 
     /// <summary>
@@ -173,7 +169,7 @@ public static unsafe partial class Methods
     /// <summary>
     /// Push a C function without upvalues.
     /// </summary>
-    public static void lua_pushcfunction(lua_State L, delegate* unmanaged[Cdecl]<lua_State, int> f)
+    public static void lua_pushcfunction(lua_State L, lua_CFunction f)
     {
         lua_pushcclosure(L, f, 0);
     }
@@ -190,7 +186,7 @@ public static unsafe partial class Methods
 	
     public static void luaL_argcheck(lua_State L, bool cond, int numarg, string extramsg)
     {
-        if (cond == false)
+        if (!cond)
             luaL_argerror(L, numarg, extramsg);
     }
 	
@@ -233,7 +229,7 @@ public static unsafe partial class Methods
         lua_getfield(L, LUA_REGISTRYINDEX, n);
     }
     
-    public delegate T luaL_Function<T>(lua_State L, int n);
+    public delegate T luaL_Function<out T>(lua_State L, int n);
 	
     public static T luaL_opt<T>(lua_State L, luaL_Function<T> f, int n, T d)
     {
@@ -302,24 +298,24 @@ public static unsafe partial class Methods
         lua_pushinteger(L, (lua_Integer)n);
     }
     
-    public static nuint lua_tounsigned(lua_State L, int n, nuint* isnum)
+    public static lua_Unsigned lua_tounsigned(lua_State L, int n)
     {
         return lua_tounsignedx(L, n, null);
     }
     
-    public static nuint lua_tounsignedx(lua_State L, int n, int* isnum)
+    public static lua_Unsigned lua_tounsignedx(lua_State L, int n, int* isnum)
     {
-        return (nuint) lua_tointegerx(L, n, isnum);
+        return (lua_Unsigned) lua_tointegerx(L, n, isnum);
     }
     
-    public static nuint luaL_checkunsigned(lua_State L, int n)
+    public static lua_Unsigned luaL_checkunsigned(lua_State L, int n)
     {
-        return (nuint) luaL_checkinteger(L, n);
+        return (lua_Unsigned) luaL_checkinteger(L, n);
     }
     
-    public static nuint luaL_optunsigned(lua_State L, int n, nuint d)
+    public static lua_Unsigned luaL_optunsigned(lua_State L, int n, lua_Unsigned d)
     {
-        return (nuint) luaL_optinteger(L, n, (lua_Integer)d);
+        return (lua_Unsigned) luaL_optinteger(L, n, (lua_Integer)d);
     }
     
     public static void lua_getuservalue(lua_State L, int i)
