@@ -1150,6 +1150,135 @@ obj3:parse('42')  -- ERROR: parse is not an instance method
 5. Test both that static methods work AND that they're not accessible as instance methods
 6. Static abstract methods with `out` parameters will be filtered out (consistent with generator policy)
 
+### 13. Exception Handling and CLR/LuaJIT Interop Safety (January 17, 2026)
+
+**Issue:** Stack overflow crashes when C# exceptions were thrown from methods called by Lua scripts. The application would crash with corrupted CLR exception handling state.
+
+**Root Cause Analysis:**
+- `luaL_error()` uses `setjmp`/`longjmp` for non-local control transfer (C error handling mechanism)
+- When `longjmp` is called from inside a C# `catch` block, it bypasses CLR's exception unwinding machinery
+- CLR expects exceptions to unwind normally through its stack frames
+- `longjmp` performs a direct stack jump, leaving CLR's internal exception handling state corrupted
+- Subsequent exceptions crash the process with stack overflow or access violations
+
+**Critical Pattern - UNSAFE (causes crashes):**
+```csharp
+try
+{
+    obj.ThrowsException();  // C# method throws InvalidOperationException
+}
+catch (Exception ex)
+{
+    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}");  // ⚠️ DANGEROUS!
+    return 0;
+}
+```
+
+**Why this crashes:**
+1. C# exception is thrown from `ThrowsException()`
+2. CLR begins unwinding the stack, enters catch block
+3. CLR is in the middle of exception handling (internal state partially modified)
+4. `luaL_error()` calls `longjmp()` to jump back to Lua's error handler
+5. CLR never completes its exception unwinding process
+6. CLR's internal exception handling structures are left in corrupted state
+7. Next exception encounters corrupted state → crash
+
+**Safe Pattern - Store error, exit catch, THEN call luaL_error:**
+```csharp
+string? errorMsg = null;
+try
+{
+    obj.ThrowsException();  // C# method throws InvalidOperationException
+    return 1;
+}
+catch (Exception ex)
+{
+    errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+    // Exit catch block cleanly - CLR completes exception unwinding
+}
+
+// Now outside catch block - CLR exception handling is complete
+if (errorMsg != null)
+{
+    luaL_error(L, errorMsg);  // ✅ SAFE - CLR state is clean
+    return 0;
+}
+```
+
+**Why this works:**
+1. C# exception is thrown
+2. CLR unwinds stack, enters catch block
+3. Exception info is captured in local variable
+4. Catch block exits normally (no longjmp)
+5. CLR completes its exception unwinding process cleanly
+6. All CLR internal state is restored to normal
+7. **Now** it's safe to call `luaL_error()` with longjmp
+8. Future exceptions work correctly
+
+**Solution Implementation:**
+
+Applied safe exception pattern to ALL exception handling code paths:
+
+1. **Constructor Generation** (line ~3700-3810):
+   - Single signature constructors: Store error, check after catch
+   - Overload resolution: Store error per case, check after case, break statement
+
+2. **Static Method Generation** (line ~3900-4060):
+   - Single void methods: Store error, check after catch
+   - Single non-void methods: Store error, check after catch
+   - Overload resolution: Store error per case, check after case, break statement
+
+3. **Instance Method Generation** (line ~4190-4460):
+   - Single void methods: Store error, check after catch
+   - Single non-void methods: Store error, check after catch
+   - Overload resolution: Store error per case, check after case, break statement
+
+4. **Property/Field Setters** (`GenerateToObjectCode`, line ~4888-4930):
+   - Wrapped in braces to scope `errorMsg` variable
+   - Store error in catch, check after catch
+
+**Critical Implementation Details:**
+
+- Always declare `string? errorMsg = null;` before try block
+- Set `errorMsg` in catch block (never call luaL_error directly)
+- After catch block exits, check `if (errorMsg != null)`
+- Only then call `luaL_error(L, errorMsg);`
+- In switch statements, use `break;` after error check to prevent fall-through
+- Variable scoping matters: wrap GenerateToObjectCode in braces to prevent duplicate errorMsg declarations
+
+**Common Pitfall - Missing error check after catch:**
+```csharp
+// BAD - errorMsg is set but never checked!
+try { /* ... */ }
+catch (Exception ex) { errorMsg = $"..."; }
+// Falls through to "Invalid arguments" error - swallows the actual exception!
+luaL_error(L, "Invalid arguments for method");
+```
+
+**Test Coverage:** Added 6 comprehensive tests in `TypeWithExceptions`:
+- `Exception_Constructor_PropagatesAsLuaError` - Constructor throwing ArgumentException
+- `Exception_StaticMethod_PropagatesAsLuaError` - Static method throwing ArgumentException
+- `Exception_InstanceMethod_PropagatesAsLuaError` - Instance method throwing InvalidOperationException
+- `Exception_InstanceMethodWithParameter_PropagatesAsLuaError` - Method with parameter throwing DivideByZeroException
+- `Exception_PropertySetter_PropagatesAsLuaError` - Property setter throwing ArgumentException
+- `Exception_SuccessfulCall_Works` - Verifies normal calls still work
+
+**Result:**
+- All 285 tests passing
+- No stack overflow crashes
+- C# exceptions properly propagated to Lua as error messages
+- Full exception type and stack trace preserved in Lua errors
+- CLR exception handling state remains uncorrupted
+
+**Key Lessons:**
+1. **NEVER call luaL_error from inside C# catch blocks** - this is the #1 rule
+2. `longjmp` and CLR exception handling are fundamentally incompatible when mixed
+3. Always store error info, exit catch cleanly, THEN call luaL_error
+4. Test exception propagation thoroughly - crashes may only occur on subsequent exceptions
+5. Include full exception type name and stack trace in error messages for debugging
+6. Remember to check errorMsg after catch - missing the check swallows exceptions
+7. Use break statements in switch cases after error checks to prevent fall-through
+
 ---
 
 ## Test Status
