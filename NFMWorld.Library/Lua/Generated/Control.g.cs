@@ -405,16 +405,71 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Decode(Maxine.Extensions.Nibble<System.Byte>)
             {
-                ((nfm_world_library.mad.Control)self).Decode(arg0);
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Maxine.Extensions.Nibble<System.Byte>>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: Decode(System.ValueTuple<bool, bool, bool, bool, bool>)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<Maxine.Extensions.Nibble<System.Byte>>(L, 2)!;
+                        try
+                        {
+                            ((nfm_world_library.mad.Control)self).Decode(arg0);
+                            return 0;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 2)!;
+                        try
+                        {
+                            ((nfm_world_library.mad.Control)self).Decode(arg0);
+                            return 0;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for decode");
+                    return 0;
             }
         }
 

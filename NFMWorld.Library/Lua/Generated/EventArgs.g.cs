@@ -43,6 +43,12 @@ public partial class LuaBindings
         lua_pushcfunction(L, (EventArgs_new));
         lua_setfield(L, -2, "new");
 
+        // Create metatable for type table (static properties and fields)
+        lua_newtable(L);
+        lua_pushcfunction(L, (EventArgs_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
         lua_setglobal(L, "EventArgs");
     }
 
@@ -255,6 +261,22 @@ public partial class LuaBindings
 
         luaL_error(L, "Invalid arguments for getHashCode");
         return 0;
+    }
+
+    private static int EventArgs_type__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "empty":
+                PushValue(L, System.EventArgs.Empty);
+                return 1;
+            default:
+                lua_rawget(L, 1);
+                return 1;
+        }
     }
 
 }

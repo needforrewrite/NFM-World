@@ -13,7 +13,7 @@ public partial class LuaBindings
     // =========== Bindings for Vector3[] (ArrayOfVector3) ===========
     private static void Register_Vector3Array(lua_State L)
     {
-        RegisterMetatable<Stride.Core.Mathematics.Vector3[]>("MT_Vector3Array");
+        RegisterMetatable<Microsoft.Xna.Framework.Vector3[]>("MT_Vector3Array");
 
         // Create metatable for instances
         luaL_newmetatable(L, "MT_Vector3Array");
@@ -54,7 +54,7 @@ public partial class LuaBindings
             unsafe
             {
                 var id = *(int*)ptr;
-                RemoveObject<Stride.Core.Mathematics.Vector3[]>(id);
+                RemoveObject<Microsoft.Xna.Framework.Vector3[]>(id);
             }
         }
         return 0;
@@ -62,7 +62,7 @@ public partial class LuaBindings
 
     private static int Vector3Array__index(lua_State L)
     {
-        var obj = GetObjectFromStack<Stride.Core.Mathematics.Vector3[]>(L, 1);
+        var obj = GetObjectFromStack<Microsoft.Xna.Framework.Vector3[]>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
 
         // Check if key is a number (array/indexer access)
@@ -71,7 +71,7 @@ public partial class LuaBindings
             var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
             if (index >= 0 && index < (obj as System.Array)!.Length)
             {
-                var element = (obj as Stride.Core.Mathematics.Vector3[])![index];
+                var element = (obj as Microsoft.Xna.Framework.Vector3[])![index];
                 PushValue(L, element);
                 return 1;
             }
@@ -85,25 +85,25 @@ public partial class LuaBindings
         switch (key)
         {
             case "length":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3[])obj).Length);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3[])obj).Length);
                 return 1;
             case "longLength":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3[])obj).LongLength);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3[])obj).LongLength);
                 return 1;
             case "rank":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3[])obj).Rank);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3[])obj).Rank);
                 return 1;
             case "syncRoot":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3[])obj).SyncRoot);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3[])obj).SyncRoot);
                 return 1;
             case "isReadOnly":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3[])obj).IsReadOnly);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3[])obj).IsReadOnly);
                 return 1;
             case "isFixedSize":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3[])obj).IsFixedSize);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3[])obj).IsFixedSize);
                 return 1;
             case "isSynchronized":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3[])obj).IsSynchronized);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3[])obj).IsSynchronized);
                 return 1;
             case "count":
                 PushValue(L, ((System.Collections.ICollection)obj).Count);
@@ -116,7 +116,7 @@ public partial class LuaBindings
 
     private static int Vector3Array__newindex(lua_State L)
     {
-        var obj = GetObjectFromStack<Stride.Core.Mathematics.Vector3[]>(L, 1);
+        var obj = GetObjectFromStack<Microsoft.Xna.Framework.Vector3[]>(L, 1);
         if (obj == null) return 0;
 
         // Check if key is a number (array/indexer assignment)
@@ -125,8 +125,8 @@ public partial class LuaBindings
             var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
             if (index >= 0 && index < (obj as System.Array)!.Length)
             {
-                var value = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
-                (obj as Stride.Core.Mathematics.Vector3[])![index] = value;
+                var value = ToObject<Microsoft.Xna.Framework.Vector3>(L, 3)!;
+                (obj as Microsoft.Xna.Framework.Vector3[])![index] = value;
             }
             return 0;
         }
@@ -142,7 +142,7 @@ public partial class LuaBindings
 
     private static int Vector3Array__tostring(lua_State L)
     {
-        var obj = GetObjectFromStack<Stride.Core.Mathematics.Vector3[]>(L, 1);
+        var obj = GetObjectFromStack<Microsoft.Xna.Framework.Vector3[]>(L, 1);
         lua_pushstring(L, obj?.ToString() ?? "nil");
         return 1;
     }
@@ -164,7 +164,7 @@ public partial class LuaBindings
             return 0;
         }
 
-        var array = new Stride.Core.Mathematics.Vector3[dim0];
+        var array = new Microsoft.Xna.Framework.Vector3[dim0];
         PushObject(L, array, "MT_Vector3Array");
         return 1;
     }

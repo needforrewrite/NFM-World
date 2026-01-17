@@ -92,16 +92,16 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemode)obj).RaceState);
                 return 1;
             case "enter":
-                lua_pushcfunction(L, (BaseGamemode_method_enter));
+                lua_pushcfunction(L, (IGamemode_method_enter));
                 return 1;
             case "exit":
-                lua_pushcfunction(L, (BaseGamemode_method_exit));
+                lua_pushcfunction(L, (IGamemode_method_exit));
                 return 1;
             case "gameTick":
-                lua_pushcfunction(L, (BaseGamemode_method_gameTick));
+                lua_pushcfunction(L, (IGamemode_method_gameTick));
                 return 1;
             case "reset":
-                lua_pushcfunction(L, (BaseGamemode_method_reset));
+                lua_pushcfunction(L, (IGamemode_method_reset));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (BaseGamemode_method_getType));
@@ -153,122 +153,6 @@ public partial class LuaBindings
         var argCount = lua_gettop(L);
 
         luaL_error(L, "Invalid arguments for BaseGamemode constructor");
-        return 0;
-    }
-
-    private static int BaseGamemode_method_enter(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.gamemodes.BaseGamemode>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BaseGamemode as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.backend.gamemodes.BaseGamemode)self).Enter();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for enter");
-        return 0;
-    }
-
-    private static int BaseGamemode_method_exit(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.gamemodes.BaseGamemode>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BaseGamemode as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.backend.gamemodes.BaseGamemode)self).Exit();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for exit");
-        return 0;
-    }
-
-    private static int BaseGamemode_method_gameTick(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.gamemodes.BaseGamemode>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BaseGamemode as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.backend.gamemodes.BaseGamemode)self).GameTick();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for gameTick");
-        return 0;
-    }
-
-    private static int BaseGamemode_method_reset(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.gamemodes.BaseGamemode>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BaseGamemode as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.backend.gamemodes.BaseGamemode)self).Reset();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for reset");
         return 0;
     }
 

@@ -160,8 +160,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((nfm_world_library.mad.rad.Rad3dRimsDef)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (nfm_world_library.mad.rad.Rad3dRimsDef)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }

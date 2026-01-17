@@ -110,7 +110,7 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.backend.BackendStage)obj).stageLoader);
                 return 1;
             case "createObject":
-                lua_pushcfunction(L, (BackendStage_method_createObject));
+                lua_pushcfunction(L, (IStage_method_createObject));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (BackendStage_method_getType));
@@ -255,41 +255,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for BackendStage constructor");
-        return 0;
-    }
-
-    private static int BackendStage_method_createObject(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.BackendStage>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BackendStage as first argument");
-            return 0;
-        }
-
-        if (argCount == 5)
-        {
-            var arg0 = ToObject<string>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<int>(L, 4)!;
-            var arg3 = ToObject<int>(L, 5)!;
-            var arg4 = ToObject<int>(L, 6)!;
-            try
-            {
-                var result = ((nfm_world_library.backend.BackendStage)self).CreateObject(arg0, arg1, arg2, arg3, arg4);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for createObject");
         return 0;
     }
 

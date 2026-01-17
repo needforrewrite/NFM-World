@@ -13,7 +13,7 @@ public partial class LuaBindings
     // =========== Bindings for Color3 (Color3) ===========
     private static void Register_Color3(lua_State L)
     {
-        RegisterMetatable<nfm_world_library.util.Color3>("MT_Color3");
+        RegisterMetatable<Stride.Core.Mathematics.Color3>("MT_Color3");
 
         // Create metatable for instances
         luaL_newmetatable(L, "MT_Color3");
@@ -34,17 +34,29 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Color3_op_op_Addition));
         lua_setfield(L, -2, "__add");
 
+        // Operator: __sub
+        lua_pushcfunction(L, (Color3_op_op_Subtraction));
+        lua_setfield(L, -2, "__sub");
+
+        // Operator: __unm
+        lua_pushcfunction(L, (Color3_op_op_UnaryNegation));
+        lua_setfield(L, -2, "__unm");
+
         // Operator: __mul
         lua_pushcfunction(L, (Color3_op_op_Multiply));
         lua_setfield(L, -2, "__mul");
 
-        // Operator: __div
-        lua_pushcfunction(L, (Color3_op_op_Division));
-        lua_setfield(L, -2, "__div");
+        // Operator: __mul
+        lua_pushcfunction(L, (Color3_op_op_Multiply));
+        lua_setfield(L, -2, "__mul");
 
-        // Operator: __sub
-        lua_pushcfunction(L, (Color3_op_op_Subtraction));
-        lua_setfield(L, -2, "__sub");
+        // Operator: __mul
+        lua_pushcfunction(L, (Color3_op_op_Multiply));
+        lua_setfield(L, -2, "__mul");
+
+        // Operator: __eq
+        lua_pushcfunction(L, (Color3_op_op_Equality));
+        lua_setfield(L, -2, "__eq");
 
         // __tostring metamethod
         lua_pushcfunction(L, (Color3__tostring));
@@ -59,9 +71,53 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Color3_new));
         lua_setfield(L, -2, "new");
 
-        // Static method: fromHSB
-        lua_pushcfunction(L, (Color3_static_fromHSB));
-        lua_setfield(L, -2, "fromHSB");
+        // Static method: add
+        lua_pushcfunction(L, (Color3_static_add));
+        lua_setfield(L, -2, "add");
+
+        // Static method: subtract
+        lua_pushcfunction(L, (Color3_static_subtract));
+        lua_setfield(L, -2, "subtract");
+
+        // Static method: modulate
+        lua_pushcfunction(L, (Color3_static_modulate));
+        lua_setfield(L, -2, "modulate");
+
+        // Static method: scale
+        lua_pushcfunction(L, (Color3_static_scale));
+        lua_setfield(L, -2, "scale");
+
+        // Static method: negate
+        lua_pushcfunction(L, (Color3_static_negate));
+        lua_setfield(L, -2, "negate");
+
+        // Static method: clamp
+        lua_pushcfunction(L, (Color3_static_clamp));
+        lua_setfield(L, -2, "clamp");
+
+        // Static method: lerp
+        lua_pushcfunction(L, (Color3_static_lerp));
+        lua_setfield(L, -2, "lerp");
+
+        // Static method: smoothStep
+        lua_pushcfunction(L, (Color3_static_smoothStep));
+        lua_setfield(L, -2, "smoothStep");
+
+        // Static method: max
+        lua_pushcfunction(L, (Color3_static_max));
+        lua_setfield(L, -2, "max");
+
+        // Static method: min
+        lua_pushcfunction(L, (Color3_static_min));
+        lua_setfield(L, -2, "min");
+
+        // Static method: adjustContrast
+        lua_pushcfunction(L, (Color3_static_adjustContrast));
+        lua_setfield(L, -2, "adjustContrast");
+
+        // Static method: adjustSaturation
+        lua_pushcfunction(L, (Color3_static_adjustSaturation));
+        lua_setfield(L, -2, "adjustSaturation");
 
         lua_setglobal(L, "Color3");
     }
@@ -74,7 +130,7 @@ public partial class LuaBindings
             unsafe
             {
                 var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.util.Color3>(id);
+                RemoveObject<Stride.Core.Mathematics.Color3>(id);
             }
         }
         return 0;
@@ -82,7 +138,7 @@ public partial class LuaBindings
 
     private static int Color3__index(lua_State L)
     {
-        var obj = GetStructFromStack<nfm_world_library.util.Color3>(L, 1);
+        var obj = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
 
         // Check if key is a number (array/indexer access)
         if (lua_type(L, 2) == LUA_TNUMBER)
@@ -99,19 +155,43 @@ public partial class LuaBindings
         switch (key)
         {
             case "r":
-                PushValue(L, ((nfm_world_library.util.Color3)obj).R);
+                PushValue(L, ((Stride.Core.Mathematics.Color3)obj).R);
                 return 1;
             case "g":
-                PushValue(L, ((nfm_world_library.util.Color3)obj).G);
+                PushValue(L, ((Stride.Core.Mathematics.Color3)obj).G);
                 return 1;
             case "b":
-                PushValue(L, ((nfm_world_library.util.Color3)obj).B);
+                PushValue(L, ((Stride.Core.Mathematics.Color3)obj).B);
                 return 1;
-            case "darker":
-                lua_pushcfunction(L, (Color3_method_darker));
+            case "toRgb":
+                lua_pushcfunction(L, (Color3_method_toRgb));
                 return 1;
-            case "brighter":
-                lua_pushcfunction(L, (Color3_method_brighter));
+            case "pow":
+                lua_pushcfunction(L, (Color3_method_pow));
+                return 1;
+            case "toVector3":
+                lua_pushcfunction(L, (Color3_method_toVector3));
+                return 1;
+            case "toArray":
+                lua_pushcfunction(L, (Color3_method_toArray));
+                return 1;
+            case "toSRgb":
+                lua_pushcfunction(L, (Color3_method_toSRgb));
+                return 1;
+            case "toLinear":
+                lua_pushcfunction(L, (Color3_method_toLinear));
+                return 1;
+            case "toColor4":
+                lua_pushcfunction(L, (Color3_method_toColor4));
+                return 1;
+            case "toString":
+                lua_pushcfunction(L, (Object_method_toString));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, (Object_method_getHashCode));
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, (IEquatable_Color3_method_equals));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Color3_method_getType));
@@ -124,13 +204,13 @@ public partial class LuaBindings
 
     private static int Color3__newindex(lua_State L)
     {
-        var obj = GetStructFromStack<nfm_world_library.util.Color3>(L, 1);
+        var obj = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
 
         // Check if key is a number (array/indexer assignment)
         if (lua_type(L, 2) == LUA_TNUMBER)
         {
             var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
-            var value = ToObject<System.Int16>(L, 3)!;
+            var value = ToObject<float>(L, 3)!;
             obj[index] = value;
             return 0;
         }
@@ -143,7 +223,7 @@ public partial class LuaBindings
             case "r":
                 try
                 {
-                    obj.R = ToObject<System.Int16>(L, 3)!;
+                    obj.R = ToObject<float>(L, 3)!;
                 }
                 catch (System.Exception ex)
                 {
@@ -155,7 +235,7 @@ public partial class LuaBindings
             case "g":
                 try
                 {
-                    obj.G = ToObject<System.Int16>(L, 3)!;
+                    obj.G = ToObject<float>(L, 3)!;
                 }
                 catch (System.Exception ex)
                 {
@@ -167,7 +247,7 @@ public partial class LuaBindings
             case "b":
                 try
                 {
-                    obj.B = ToObject<System.Int16>(L, 3)!;
+                    obj.B = ToObject<float>(L, 3)!;
                 }
                 catch (System.Exception ex)
                 {
@@ -182,44 +262,131 @@ public partial class LuaBindings
 
     private static int Color3__tostring(lua_State L)
     {
-        var obj = GetStructFromStack<nfm_world_library.util.Color3>(L, 1);
+        var obj = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
         lua_pushstring(L, obj.ToString() ?? "");
         return 1;
     }
 
     private static int Color3_op_op_Addition(lua_State L)
     {
-        var left = ToObject<nfm_world_library.util.Color3>(L, 1)!;
-        var right = ToObject<nfm_world_library.util.Color3>(L, 2)!;
+        var left = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+        var right = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
         var result = left + right;
-        PushValue(L, result);
-        return 1;
-    }
-
-    private static int Color3_op_op_Multiply(lua_State L)
-    {
-        var left = ToObject<nfm_world_library.util.Color3>(L, 1)!;
-        var right = ToObject<float>(L, 2)!;
-        var result = left * right;
-        PushValue(L, result);
-        return 1;
-    }
-
-    private static int Color3_op_op_Division(lua_State L)
-    {
-        var left = ToObject<nfm_world_library.util.Color3>(L, 1)!;
-        var right = ToObject<float>(L, 2)!;
-        var result = left / right;
         PushValue(L, result);
         return 1;
     }
 
     private static int Color3_op_op_Subtraction(lua_State L)
     {
-        var left = ToObject<nfm_world_library.util.Color3>(L, 1)!;
-        var right = ToObject<nfm_world_library.util.Color3>(L, 2)!;
+        var left = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+        var right = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
         var result = left - right;
         PushValue(L, result);
+        return 1;
+    }
+
+    private static int Color3_op_op_UnaryNegation(lua_State L)
+    {
+        var operand = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+        var result = -operand;
+        PushValue(L, result);
+        return 1;
+    }
+
+    private static int Color3_op_op_Multiply(lua_State L)
+    {
+        // Multiple operator overloads - find best match
+        int bestScore = -1;
+        int bestIndex = -1;
+
+        // Try overload 0: op_Multiply(float, Stride.Core.Mathematics.Color3)
+        {
+            int score = 0;
+            int score0 = ScoreParameterCompatibility<float>(L, 1);
+            if (score0 < 0) goto next0;
+            else score += score0;
+            int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Color3>(L, 2);
+            if (score1 < 0) goto next0;
+            else score += score1;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestIndex = 0;
+            }
+        }
+        next0:
+
+        // Try overload 1: op_Multiply(Stride.Core.Mathematics.Color3, float)
+        {
+            int score = 0;
+            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Color3>(L, 1);
+            if (score0 < 0) goto next1;
+            else score += score0;
+            int score1 = ScoreParameterCompatibility<float>(L, 2);
+            if (score1 < 0) goto next1;
+            else score += score1;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestIndex = 1;
+            }
+        }
+        next1:
+
+        // Try overload 2: op_Multiply(Stride.Core.Mathematics.Color3, Stride.Core.Mathematics.Color3)
+        {
+            int score = 0;
+            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Color3>(L, 1);
+            if (score0 < 0) goto next2;
+            else score += score0;
+            int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Color3>(L, 2);
+            if (score1 < 0) goto next2;
+            else score += score1;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestIndex = 2;
+            }
+        }
+        next2:
+
+        switch (bestIndex)
+        {
+            case 0:
+                {
+                    var left = ToObject<float>(L, 1)!;
+                    var right = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+                    var result = left * right;
+                    PushValue(L, result);
+                    return 1;
+                }
+            case 1:
+                {
+                    var left = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+                    var right = ToObject<float>(L, 2)!;
+                    var result = left * right;
+                    PushValue(L, result);
+                    return 1;
+                }
+            case 2:
+                {
+                    var left = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+                    var right = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+                    var result = left * right;
+                    PushValue(L, result);
+                    return 1;
+                }
+            default:
+                luaL_error(L, "No compatible operator overload found");
+                return 0;
+        }
+    }
+
+    private static int Color3_op_op_Equality(lua_State L)
+    {
+        var left = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+        var right = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+        lua_pushboolean(L, left == right ? 1 : 0);
         return 1;
     }
 
@@ -229,19 +396,178 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var obj = new nfm_world_library.util.Color3();
+            var obj = new Stride.Core.Mathematics.Color3();
             PushObject(L, obj, "MT_Color3");
             return 1;
         }
 
+        if (argCount == 1)
+        {
+            // Multiple constructors with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try constructor 0: new Color3(float)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
+            }
+            next0:
+
+            // Try constructor 1: new Color3(Stride.Core.Mathematics.Vector3)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            // Try constructor 2: new Color3(int)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<int>(L, 1);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 2;
+                }
+            }
+            next2:
+
+            // Try constructor 3: new Color3(System.UInt32)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.UInt32>(L, 1);
+                if (score0 < 0) goto next3;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 3;
+                }
+            }
+            next3:
+
+            // Try constructor 4: new Color3(float[])
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float[]>(L, 1);
+                if (score0 < 0) goto next4;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 4;
+                }
+            }
+            next4:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<float>(L, 1)!;
+                        try
+                        {
+                            var obj = new Stride.Core.Mathematics.Color3(arg0);
+                            PushObject(L, obj, "MT_Color3");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
+                        try
+                        {
+                            var obj = new Stride.Core.Mathematics.Color3(arg0);
+                            PushObject(L, obj, "MT_Color3");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 2:
+                    {
+                        var arg0 = ToObject<int>(L, 1)!;
+                        try
+                        {
+                            var obj = new Stride.Core.Mathematics.Color3(arg0);
+                            PushObject(L, obj, "MT_Color3");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 3:
+                    {
+                        var arg0 = ToObject<System.UInt32>(L, 1)!;
+                        try
+                        {
+                            var obj = new Stride.Core.Mathematics.Color3(arg0);
+                            PushObject(L, obj, "MT_Color3");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 4:
+                    {
+                        var arg0 = ToObject<float[]>(L, 1)!;
+                        try
+                        {
+                            var obj = new Stride.Core.Mathematics.Color3(arg0);
+                            PushObject(L, obj, "MT_Color3");
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible constructor found for Color3");
+                    return 0;
+            }
+        }
+
         if (argCount == 3)
         {
-            var arg0 = ToObject<System.Int16>(L, 1)!;
-            var arg1 = ToObject<System.Int16>(L, 2)!;
-            var arg2 = ToObject<System.Int16>(L, 3)!;
+            var arg0 = ToObject<float>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            var arg2 = ToObject<float>(L, 3)!;
             try
             {
-                var obj = new nfm_world_library.util.Color3(arg0, arg1, arg2);
+                var obj = new Stride.Core.Mathematics.Color3(arg0, arg1, arg2);
                 PushObject(L, obj, "MT_Color3");
                 return 1;
             }
@@ -256,44 +582,19 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Color3_static_fromHSB(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<float>(L, 1)!;
-            var arg1 = ToObject<float>(L, 2)!;
-            var arg2 = ToObject<float>(L, 3)!;
-            try
-            {
-                var result = nfm_world_library.util.Color3.FromHSB(arg0, arg1, arg2);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for fromHSB");
-        return 0;
-    }
-
-    private static int Color3_method_darker(lua_State L)
+    private static int Color3_method_toRgb(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetStructFromStack<nfm_world_library.util.Color3>(L, 1);
+        var self = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
 
         if (argCount == 0)
         {
             try
             {
-                var result = ((nfm_world_library.util.Color3)self).Darker();
-                UpdateStruct(L, 1, self);
+                var structValue = (Stride.Core.Mathematics.Color3)self;
+                var result = structValue.ToRgb();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -304,22 +605,50 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for darker");
+        luaL_error(L, "Invalid arguments for toRgb");
         return 0;
     }
 
-    private static int Color3_method_brighter(lua_State L)
+    private static int Color3_method_pow(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetStructFromStack<nfm_world_library.util.Color3>(L, 1);
+        var self = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<float>(L, 2)!;
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Color3)self;
+                structValue.Pow(arg0);
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for pow");
+        return 0;
+    }
+
+    private static int Color3_method_toVector3(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
 
         if (argCount == 0)
         {
             try
             {
-                var result = ((nfm_world_library.util.Color3)self).Brighter();
-                UpdateStruct(L, 1, self);
+                var structValue = (Stride.Core.Mathematics.Color3)self;
+                var result = structValue.ToVector3();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -330,7 +659,115 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for brighter");
+        luaL_error(L, "Invalid arguments for toVector3");
+        return 0;
+    }
+
+    private static int Color3_method_toArray(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Color3)self;
+                var result = structValue.ToArray();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toArray");
+        return 0;
+    }
+
+    private static int Color3_method_toSRgb(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Color3)self;
+                var result = structValue.ToSRgb();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toSRgb");
+        return 0;
+    }
+
+    private static int Color3_method_toLinear(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Color3)self;
+                var result = structValue.ToLinear();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toLinear");
+        return 0;
+    }
+
+    private static int Color3_method_toColor4(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Color3)self;
+                var result = structValue.ToColor4();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toColor4");
         return 0;
     }
 
@@ -338,14 +775,15 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetStructFromStack<nfm_world_library.util.Color3>(L, 1);
+        var self = GetStructFromStack<Stride.Core.Mathematics.Color3>(L, 1);
 
         if (argCount == 0)
         {
             try
             {
-                var result = ((nfm_world_library.util.Color3)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (Stride.Core.Mathematics.Color3)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -357,6 +795,308 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Color3_static_add(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.Add(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for add");
+        return 0;
+    }
+
+    private static int Color3_static_subtract(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.Subtract(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for subtract");
+        return 0;
+    }
+
+    private static int Color3_static_modulate(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.Modulate(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for modulate");
+        return 0;
+    }
+
+    private static int Color3_static_scale(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.Scale(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for scale");
+        return 0;
+    }
+
+    private static int Color3_static_negate(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.Negate(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for negate");
+        return 0;
+    }
+
+    private static int Color3_static_clamp(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+            var arg2 = ToObject<Stride.Core.Mathematics.Color3>(L, 3)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.Clamp(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for clamp");
+        return 0;
+    }
+
+    private static int Color3_static_lerp(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+            var arg2 = ToObject<float>(L, 3)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.Lerp(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lerp");
+        return 0;
+    }
+
+    private static int Color3_static_smoothStep(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+            var arg2 = ToObject<float>(L, 3)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.SmoothStep(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for smoothStep");
+        return 0;
+    }
+
+    private static int Color3_static_max(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.Max(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for max");
+        return 0;
+    }
+
+    private static int Color3_static_min(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<Stride.Core.Mathematics.Color3>(L, 2)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.Min(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for min");
+        return 0;
+    }
+
+    private static int Color3_static_adjustContrast(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.AdjustContrast(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for adjustContrast");
+        return 0;
+    }
+
+    private static int Color3_static_adjustSaturation(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Color3>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = Stride.Core.Mathematics.Color3.AdjustSaturation(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for adjustSaturation");
         return 0;
     }
 

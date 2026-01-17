@@ -224,13 +224,13 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (ContO_method_spark));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (ContO_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (ContO_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (ContO_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (ContO_method_getType));
@@ -413,8 +413,9 @@ public partial class LuaBindings
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
             try
             {
-                ((nfm_world_library.mad.ContO)self).DamageX(arg0, arg1, arg2);
-                UpdateStruct(L, 1, self);
+                var structValue = (nfm_world_library.mad.ContO)self;
+                structValue.DamageX(arg0, arg1, arg2);
+                UpdateStruct(L, 1, structValue);
                 return 0;
             }
             catch (System.Exception ex)
@@ -444,8 +445,9 @@ public partial class LuaBindings
             var arg5 = ToObject<int>(L, 7)!;
             try
             {
-                ((nfm_world_library.mad.ContO)self).DamageY(arg0, arg1, arg2, arg3, arg4, arg5);
-                UpdateStruct(L, 1, self);
+                var structValue = (nfm_world_library.mad.ContO)self;
+                structValue.DamageY(arg0, arg1, arg2, arg3, arg4, arg5);
+                UpdateStruct(L, 1, structValue);
                 return 0;
             }
             catch (System.Exception ex)
@@ -472,8 +474,9 @@ public partial class LuaBindings
             var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
             try
             {
-                ((nfm_world_library.mad.ContO)self).DamageZ(arg0, arg1, arg2);
-                UpdateStruct(L, 1, self);
+                var structValue = (nfm_world_library.mad.ContO)self;
+                structValue.DamageZ(arg0, arg1, arg2);
+                UpdateStruct(L, 1, structValue);
                 return 0;
             }
             catch (System.Exception ex)
@@ -507,8 +510,9 @@ public partial class LuaBindings
             var arg9 = ToObject<int>(L, 11)!;
             try
             {
-                ((nfm_world_library.mad.ContO)self).Dust(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-                UpdateStruct(L, 1, self);
+                var structValue = (nfm_world_library.mad.ContO)self;
+                structValue.Dust(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+                UpdateStruct(L, 1, structValue);
                 return 0;
             }
             catch (System.Exception ex)
@@ -540,8 +544,9 @@ public partial class LuaBindings
             var arg7 = ToObject<int>(L, 9)!;
             try
             {
-                ((nfm_world_library.mad.ContO)self).Spark(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-                UpdateStruct(L, 1, self);
+                var structValue = (nfm_world_library.mad.ContO)self;
+                structValue.Spark(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                UpdateStruct(L, 1, structValue);
                 return 0;
             }
             catch (System.Exception ex)
@@ -555,89 +560,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int ContO_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.mad.ContO>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.mad.ContO)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int ContO_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.mad.ContO>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.mad.ContO)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int ContO_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.mad.ContO>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.mad.ContO)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
     private static int ContO_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -648,8 +570,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((nfm_world_library.mad.ContO)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (nfm_world_library.mad.ContO)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }

@@ -101,7 +101,7 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (LuaGamemode_method_createBackendCar));
                 return 1;
             case "reset":
-                lua_pushcfunction(L, (LuaGamemode_method_reset));
+                lua_pushcfunction(L, (IGamemode_method_reset));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (LuaGamemode_method_getType));
@@ -235,35 +235,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for createBackendCar");
-        return 0;
-    }
-
-    private static int LuaGamemode_method_reset(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.gamemodes.LuaGamemode>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected LuaGamemode as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.backend.gamemodes.LuaGamemode)self).Reset();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for reset");
         return 0;
     }
 

@@ -140,72 +140,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Object_static_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            object? arg0;
-            if (lua_isnil(L, 1) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 1)!;
-            object? arg1;
-            if (lua_isnil(L, 2) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = object.Equals(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Object_static_referenceEquals(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            object? arg0;
-            if (lua_isnil(L, 1) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 1)!;
-            object? arg1;
-            if (lua_isnil(L, 2) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = object.ReferenceEquals(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for referenceEquals");
-        return 0;
-    }
-
     private static int Object_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -328,6 +262,72 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Object_static_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            object? arg0;
+            if (lua_isnil(L, 1) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<object>(L, 1)!;
+            object? arg1;
+            if (lua_isnil(L, 2) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<object>(L, 2)!;
+            try
+            {
+                var result = object.Equals(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Object_static_referenceEquals(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            object? arg0;
+            if (lua_isnil(L, 1) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<object>(L, 1)!;
+            object? arg1;
+            if (lua_isnil(L, 2) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<object>(L, 2)!;
+            try
+            {
+                var result = object.ReferenceEquals(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for referenceEquals");
         return 0;
     }
 

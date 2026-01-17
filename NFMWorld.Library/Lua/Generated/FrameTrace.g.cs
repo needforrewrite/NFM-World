@@ -47,6 +47,14 @@ public partial class LuaBindings
         lua_pushcfunction(L, (FrameTrace_static_addMessage));
         lua_setfield(L, -2, "addMessage");
 
+        // Create metatable for type table (static properties and fields)
+        lua_newtable(L);
+        lua_pushcfunction(L, (FrameTrace_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_pushcfunction(L, (FrameTrace_type__newindex));
+        lua_setfield(L, -2, "__newindex");
+        lua_setmetatable(L, -2);
+
         lua_setglobal(L, "FrameTrace");
     }
 
@@ -133,29 +141,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for FrameTrace constructor");
-        return 0;
-    }
-
-    private static int FrameTrace_static_addMessage(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<string>(L, 1)!;
-            try
-            {
-                nfm_world_library.FrameTrace.AddMessage(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addMessage");
         return 0;
     }
 
@@ -282,6 +267,69 @@ public partial class LuaBindings
 
         luaL_error(L, "Invalid arguments for getHashCode");
         return 0;
+    }
+
+    private static int FrameTrace_static_addMessage(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<string>(L, 1)!;
+            try
+            {
+                nfm_world_library.FrameTrace.AddMessage(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addMessage");
+        return 0;
+    }
+
+    private static int FrameTrace_type__index(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
+
+        switch (key)
+        {
+            case "isEnabled":
+                PushValue(L, nfm_world_library.FrameTrace.IsEnabled);
+                return 1;
+            default:
+                lua_rawget(L, 1);
+                return 1;
+        }
+    }
+
+    private static int FrameTrace_type__newindex(lua_State L)
+    {
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
+
+        switch (key)
+        {
+            case "isEnabled":
+                try
+                {
+                    nfm_world_library.FrameTrace.IsEnabled = ToObject<bool>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                    return 0;
+                }
+                return 0;
+            default:
+                lua_rawset(L, 1);
+                return 0;
+        }
     }
 
 }

@@ -227,7 +227,7 @@ public partial class LuaBindings
     /// <summary>
     /// Push a value to Lua stack based on its runtime type.
     /// </summary>
-    private static void PushValue<T>(lua_State L, T value)
+    public static void PushValue<T>(lua_State L, T value)
     {
         switch (value)
         {
@@ -310,7 +310,7 @@ public partial class LuaBindings
     /// <summary>
     /// Convert Lua value at stack index to a C# object of the target type.
     /// </summary>
-    private static T? ToObject<T>(lua_State L, int idx)
+    public static T? ToObject<T>(lua_State L, int idx)
     {
         var luaType = lua_type(L, idx);
 
@@ -532,6 +532,50 @@ public partial class LuaBindings
             
                 return (T)(object)array;
             }
+            if (typeof(T) == typeof(Stride.Core.Mathematics.Vector3[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Stride.Core.Mathematics.Vector3[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Stride.Core.Mathematics.Vector3>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
+            if (typeof(T) == typeof(Microsoft.Xna.Framework.Vector3[]))
+            {
+                // Get the length of the table
+                var length = (int)lua_objlen(L, idx);
+            
+                // Create the array
+                var array = new Microsoft.Xna.Framework.Vector3[length];
+            
+                for (int i = 0; i < length; i++)
+                {
+                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
+                    lua_rawgeti(L, idx, i + 1);
+            
+                    // Convert the element
+                    array[i] = ToObject<Microsoft.Xna.Framework.Vector3>(L, -1)!;
+            
+                    // Pop the element from stack
+                    lua_pop(L, 1);
+                }
+            
+                return (T)(object)array;
+            }
             if (typeof(T) == typeof(Microsoft.Xna.Framework.Vector2[]))
             {
                 // Get the length of the table
@@ -730,28 +774,6 @@ public partial class LuaBindings
             
                 return (T)(object)array;
             }
-            if (typeof(T) == typeof(Microsoft.Xna.Framework.Vector3[]))
-            {
-                // Get the length of the table
-                var length = (int)lua_objlen(L, idx);
-            
-                // Create the array
-                var array = new Microsoft.Xna.Framework.Vector3[length];
-            
-                for (int i = 0; i < length; i++)
-                {
-                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                    lua_rawgeti(L, idx, i + 1);
-            
-                    // Convert the element
-                    array[i] = ToObject<Microsoft.Xna.Framework.Vector3>(L, -1)!;
-            
-                    // Pop the element from stack
-                    lua_pop(L, 1);
-                }
-            
-                return (T)(object)array;
-            }
             if (typeof(T) == typeof(nfm_world_library.mad.PiecePlacement[]))
             {
                 // Get the length of the table
@@ -774,13 +796,13 @@ public partial class LuaBindings
             
                 return (T)(object)array;
             }
-            if (typeof(T) == typeof(Stride.Core.Mathematics.Vector3[]))
+            if (typeof(T) == typeof(Microsoft.Xna.Framework.Vector4[]))
             {
                 // Get the length of the table
                 var length = (int)lua_objlen(L, idx);
             
                 // Create the array
-                var array = new Stride.Core.Mathematics.Vector3[length];
+                var array = new Microsoft.Xna.Framework.Vector4[length];
             
                 for (int i = 0; i < length; i++)
                 {
@@ -788,7 +810,7 @@ public partial class LuaBindings
                     lua_rawgeti(L, idx, i + 1);
             
                     // Convert the element
-                    array[i] = ToObject<Stride.Core.Mathematics.Vector3>(L, -1)!;
+                    array[i] = ToObject<Microsoft.Xna.Framework.Vector4>(L, -1)!;
             
                     // Pop the element from stack
                     lua_pop(L, 1);
@@ -811,28 +833,6 @@ public partial class LuaBindings
             
                     // Convert the element
                     array[i] = ToObject<Stride.Core.Mathematics.Plane>(L, -1)!;
-            
-                    // Pop the element from stack
-                    lua_pop(L, 1);
-                }
-            
-                return (T)(object)array;
-            }
-            if (typeof(T) == typeof(Microsoft.Xna.Framework.Vector4[]))
-            {
-                // Get the length of the table
-                var length = (int)lua_objlen(L, idx);
-            
-                // Create the array
-                var array = new Microsoft.Xna.Framework.Vector4[length];
-            
-                for (int i = 0; i < length; i++)
-                {
-                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                    lua_rawgeti(L, idx, i + 1);
-            
-                    // Convert the element
-                    array[i] = ToObject<Microsoft.Xna.Framework.Vector4>(L, -1)!;
             
                     // Pop the element from stack
                     lua_pop(L, 1);

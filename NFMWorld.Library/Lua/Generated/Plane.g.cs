@@ -155,13 +155,13 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (Plane_method_intersects));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Plane_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Plane_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Plane_method_equals));
+                lua_pushcfunction(L, (IEquatable_Plane_method_equals));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Plane_method_getType));
@@ -509,6 +509,311 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Plane_method_negate(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Plane)self;
+                structValue.Negate();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for negate");
+        return 0;
+    }
+
+    private static int Plane_method_normalize(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Plane)self;
+                structValue.Normalize();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for normalize");
+        return 0;
+    }
+
+    private static int Plane_method_toArray(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Plane)self;
+                var result = structValue.ToArray();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toArray");
+        return 0;
+    }
+
+    private static int Plane_method_intersects(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
+
+        if (argCount == 1)
+        {
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Intersects(Stride.Core.Mathematics.Vector3)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
+            }
+            next0:
+
+            // Try overload 1: Intersects(Stride.Core.Mathematics.Ray)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Ray>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            // Try overload 2: Intersects(Stride.Core.Mathematics.Plane)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Plane>(L, 2);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 2;
+                }
+            }
+            next2:
+
+            // Try overload 3: Intersects(Stride.Core.Mathematics.BoundingBox)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.BoundingBox>(L, 2);
+                if (score0 < 0) goto next3;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 3;
+                }
+            }
+            next3:
+
+            // Try overload 4: Intersects(Stride.Core.Mathematics.BoundingSphere)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.BoundingSphere>(L, 2);
+                if (score0 < 0) goto next4;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 4;
+                }
+            }
+            next4:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+                        try
+                        {
+                            var structValue = (Stride.Core.Mathematics.Plane)self;
+                            var result = structValue.Intersects(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<Stride.Core.Mathematics.Ray>(L, 2)!;
+                        try
+                        {
+                            var structValue = (Stride.Core.Mathematics.Plane)self;
+                            var result = structValue.Intersects(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 2:
+                    {
+                        var arg0 = ToObject<Stride.Core.Mathematics.Plane>(L, 2)!;
+                        try
+                        {
+                            var structValue = (Stride.Core.Mathematics.Plane)self;
+                            var result = structValue.Intersects(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 3:
+                    {
+                        var arg0 = ToObject<Stride.Core.Mathematics.BoundingBox>(L, 2)!;
+                        try
+                        {
+                            var structValue = (Stride.Core.Mathematics.Plane)self;
+                            var result = structValue.Intersects(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 4:
+                    {
+                        var arg0 = ToObject<Stride.Core.Mathematics.BoundingSphere>(L, 2)!;
+                        try
+                        {
+                            var structValue = (Stride.Core.Mathematics.Plane)self;
+                            var result = structValue.Intersects(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for intersects");
+                    return 0;
+            }
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
+            var arg2 = ToObject<Stride.Core.Mathematics.Vector3>(L, 4)!;
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Plane)self;
+                var result = structValue.Intersects(arg0, arg1, arg2);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for intersects");
+        return 0;
+    }
+
+    private static int Plane_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Plane)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
     private static int Plane_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -831,214 +1136,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for transform");
-        return 0;
-    }
-
-    private static int Plane_method_negate(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Stride.Core.Mathematics.Plane)self).Negate();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for negate");
-        return 0;
-    }
-
-    private static int Plane_method_normalize(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Stride.Core.Mathematics.Plane)self).Normalize();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for normalize");
-        return 0;
-    }
-
-    private static int Plane_method_toArray(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Plane)self).ToArray();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toArray");
-        return 0;
-    }
-
-    private static int Plane_method_intersects(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Plane)self).Intersects(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for intersects");
-        return 0;
-    }
-
-    private static int Plane_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Plane)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int Plane_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Plane)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int Plane_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Plane>(L, 2)!;
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Plane)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Plane_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Plane)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 

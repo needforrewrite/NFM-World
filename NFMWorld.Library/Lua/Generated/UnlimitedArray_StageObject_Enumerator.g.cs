@@ -73,22 +73,22 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator)obj).Current);
                 return 1;
             case "moveNext":
-                lua_pushcfunction(L, (UnlimitedArray_StageObject_Enumerator_method_moveNext));
+                lua_pushcfunction(L, (IEnumerator_method_moveNext));
                 return 1;
             case "reset":
-                lua_pushcfunction(L, (UnlimitedArray_StageObject_Enumerator_method_reset));
+                lua_pushcfunction(L, (IEnumerator_method_reset));
                 return 1;
             case "dispose":
-                lua_pushcfunction(L, (UnlimitedArray_StageObject_Enumerator_method_dispose));
+                lua_pushcfunction(L, (IDisposable_method_dispose));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (UnlimitedArray_StageObject_Enumerator_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (UnlimitedArray_StageObject_Enumerator_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (UnlimitedArray_StageObject_Enumerator_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (UnlimitedArray_StageObject_Enumerator_method_getType));
@@ -150,165 +150,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int UnlimitedArray_StageObject_Enumerator_method_moveNext(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator)self).MoveNext();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for moveNext");
-        return 0;
-    }
-
-    private static int UnlimitedArray_StageObject_Enumerator_method_reset(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator)self).Reset();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for reset");
-        return 0;
-    }
-
-    private static int UnlimitedArray_StageObject_Enumerator_method_dispose(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator)self).Dispose();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for dispose");
-        return 0;
-    }
-
-    private static int UnlimitedArray_StageObject_Enumerator_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int UnlimitedArray_StageObject_Enumerator_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int UnlimitedArray_StageObject_Enumerator_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
     private static int UnlimitedArray_StageObject_Enumerator_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -319,8 +160,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (nfm_world_library.util.UnlimitedArray<nfm_world_library.backend.StageObject>.Enumerator)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }

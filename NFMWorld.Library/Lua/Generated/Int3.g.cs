@@ -123,6 +123,12 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Int3_static_round));
         lua_setfield(L, -2, "round");
 
+        // Create metatable for type table (static properties and fields)
+        lua_newtable(L);
+        lua_pushcfunction(L, (Int3_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
         lua_setglobal(L, "Int3");
     }
 
@@ -183,13 +189,13 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (Int3_method_toArray));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Int3_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Int3_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Int3_method_equals));
+                lua_pushcfunction(L, (IEquatable_Int3_method_equals));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Int3_method_getType));
@@ -491,6 +497,168 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for Int3 constructor");
+        return 0;
+    }
+
+    private static int Int3_method_length(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Int3)self;
+                var result = structValue.Length();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for length");
+        return 0;
+    }
+
+    private static int Int3_method_lengthUntruncated(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Int3)self;
+                var result = structValue.LengthUntruncated();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lengthUntruncated");
+        return 0;
+    }
+
+    private static int Int3_method_lengthSquared(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Int3)self;
+                var result = structValue.LengthSquared();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lengthSquared");
+        return 0;
+    }
+
+    private static int Int3_method_pow(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Int3)self;
+                structValue.Pow(arg0);
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for pow");
+        return 0;
+    }
+
+    private static int Int3_method_toArray(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Int3)self;
+                var result = structValue.ToArray();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toArray");
+        return 0;
+    }
+
+    private static int Int3_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Int3)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 
@@ -821,239 +989,35 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Int3_method_length(lua_State L)
+    private static int Int3_type__index(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
-        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
-
-        if (argCount == 0)
+        switch (key)
         {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Int3)self).Length();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "sizeInBytes":
+                PushValue(L, Stride.Core.Mathematics.Int3.SizeInBytes);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for length");
-        return 0;
-    }
-
-    private static int Int3_method_lengthUntruncated(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Int3)self).LengthUntruncated();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "zero":
+                PushValue(L, Stride.Core.Mathematics.Int3.Zero);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for lengthUntruncated");
-        return 0;
-    }
-
-    private static int Int3_method_lengthSquared(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Int3)self).LengthSquared();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "unitX":
+                PushValue(L, Stride.Core.Mathematics.Int3.UnitX);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for lengthSquared");
-        return 0;
-    }
-
-    private static int Int3_method_pow(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                ((Stride.Core.Mathematics.Int3)self).Pow(arg0);
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for pow");
-        return 0;
-    }
-
-    private static int Int3_method_toArray(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Int3)self).ToArray();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "unitY":
+                PushValue(L, Stride.Core.Mathematics.Int3.UnitY);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toArray");
-        return 0;
-    }
-
-    private static int Int3_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Int3)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "unitZ":
+                PushValue(L, Stride.Core.Mathematics.Int3.UnitZ);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int Int3_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Int3)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "one":
+                PushValue(L, Stride.Core.Mathematics.Int3.One);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int Int3_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Int3>(L, 2)!;
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Int3)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            default:
+                lua_rawget(L, 1);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
         }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Int3_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Int3)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
-        return 0;
     }
 
 }

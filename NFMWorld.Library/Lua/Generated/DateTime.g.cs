@@ -119,7 +119,7 @@ public partial class LuaBindings
         lua_pushcfunction(L, (DateTime_static_parseExact));
         lua_setfield(L, -2, "parseExact");
 
-        // Create metatable for type table (static properties)
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (DateTime_type__index));
         lua_setfield(L, -2, "__index");
@@ -247,10 +247,10 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (DateTime_method_addYears));
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (DateTime_method_compareTo));
+                lua_pushcfunction(L, (IComparable_method_compareTo));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (DateTime_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "isDaylightSavingTime":
                 lua_pushcfunction(L, (DateTime_method_isDaylightSavingTime));
@@ -259,7 +259,7 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (DateTime_method_toBinary));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (DateTime_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "subtract":
                 lua_pushcfunction(L, (DateTime_method_subtract));
@@ -289,7 +289,7 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (DateTime_method_toShortTimeString));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (DateTime_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "toUniversalTime":
                 lua_pushcfunction(L, (DateTime_method_toUniversalTime));
@@ -298,7 +298,7 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (DateTime_method_getDateTimeFormats));
                 return 1;
             case "getTypeCode":
-                lua_pushcfunction(L, (DateTime_method_getTypeCode));
+                lua_pushcfunction(L, (IConvertible_method_getTypeCode));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (DateTime_method_getType));
@@ -1265,6 +1265,858 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int DateTime_method_add(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.TimeSpan>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.Add(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for add");
+        return 0;
+    }
+
+    private static int DateTime_method_addDays(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<double>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.AddDays(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addDays");
+        return 0;
+    }
+
+    private static int DateTime_method_addHours(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<double>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.AddHours(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addHours");
+        return 0;
+    }
+
+    private static int DateTime_method_addMilliseconds(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<double>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.AddMilliseconds(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addMilliseconds");
+        return 0;
+    }
+
+    private static int DateTime_method_addMicroseconds(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<double>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.AddMicroseconds(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addMicroseconds");
+        return 0;
+    }
+
+    private static int DateTime_method_addMinutes(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<double>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.AddMinutes(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addMinutes");
+        return 0;
+    }
+
+    private static int DateTime_method_addMonths(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.AddMonths(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addMonths");
+        return 0;
+    }
+
+    private static int DateTime_method_addSeconds(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<double>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.AddSeconds(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addSeconds");
+        return 0;
+    }
+
+    private static int DateTime_method_addTicks(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<long>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.AddTicks(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addTicks");
+        return 0;
+    }
+
+    private static int DateTime_method_addYears(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.AddYears(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for addYears");
+        return 0;
+    }
+
+    private static int DateTime_method_isDaylightSavingTime(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.IsDaylightSavingTime();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isDaylightSavingTime");
+        return 0;
+    }
+
+    private static int DateTime_method_toBinary(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToBinary();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toBinary");
+        return 0;
+    }
+
+    private static int DateTime_method_subtract(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Subtract(System.DateTime)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.DateTime>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
+            }
+            next0:
+
+            // Try overload 1: Subtract(System.TimeSpan)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.TimeSpan>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<System.DateTime>(L, 2)!;
+                        try
+                        {
+                            var structValue = (System.DateTime)self;
+                            var result = structValue.Subtract(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<System.TimeSpan>(L, 2)!;
+                        try
+                        {
+                            var structValue = (System.DateTime)self;
+                            var result = structValue.Subtract(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for subtract");
+                    return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for subtract");
+        return 0;
+    }
+
+    private static int DateTime_method_toOADate(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToOADate();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toOADate");
+        return 0;
+    }
+
+    private static int DateTime_method_toFileTime(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToFileTime();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toFileTime");
+        return 0;
+    }
+
+    private static int DateTime_method_toFileTimeUtc(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToFileTimeUtc();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toFileTimeUtc");
+        return 0;
+    }
+
+    private static int DateTime_method_toLocalTime(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToLocalTime();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toLocalTime");
+        return 0;
+    }
+
+    private static int DateTime_method_toLongDateString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToLongDateString();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toLongDateString");
+        return 0;
+    }
+
+    private static int DateTime_method_toLongTimeString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToLongTimeString();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toLongTimeString");
+        return 0;
+    }
+
+    private static int DateTime_method_toShortDateString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToShortDateString();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toShortDateString");
+        return 0;
+    }
+
+    private static int DateTime_method_toShortTimeString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToShortTimeString();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toShortTimeString");
+        return 0;
+    }
+
+    private static int DateTime_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 1)
+        {
+            string? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<string>(L, 2)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToString(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int DateTime_method_toUniversalTime(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.ToUniversalTime();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toUniversalTime");
+        return 0;
+    }
+
+    private static int DateTime_method_getDateTimeFormats(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.GetDateTimeFormats();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 1)
+        {
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: GetDateTimeFormats(System.IFormatProvider)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.IFormatProvider>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
+            }
+            next0:
+
+            // Try overload 1: GetDateTimeFormats(System.Char)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Char>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        System.IFormatProvider? arg0;
+                        if (lua_isnil(L, 2) != 0)
+                            arg0 = null;
+                        else
+                            arg0 = ToObject<System.IFormatProvider>(L, 2)!;
+                        try
+                        {
+                            var structValue = (System.DateTime)self;
+                            var result = structValue.GetDateTimeFormats(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<System.Char>(L, 2)!;
+                        try
+                        {
+                            var structValue = (System.DateTime)self;
+                            var result = structValue.GetDateTimeFormats(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for getDateTimeFormats");
+                    return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Char>(L, 2)!;
+            System.IFormatProvider? arg1;
+            if (lua_isnil(L, 3) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<System.IFormatProvider>(L, 3)!;
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.GetDateTimeFormats(arg0, arg1);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getDateTimeFormats");
+        return 0;
+    }
+
+    private static int DateTime_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.DateTime>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.DateTime)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
     private static int DateTime_static_compare(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1507,22 +2359,89 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<string>(L, 1)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 2) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 2)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Parse(string, System.IFormatProvider)
             {
-                var result = System.DateTime.Parse(arg0, arg1);
-                PushValue(L, result);
-                return 1;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.IFormatProvider>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: Parse(string, System.IFormatProvider)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.IFormatProvider>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<string>(L, 1)!;
+                        System.IFormatProvider? arg1;
+                        if (lua_isnil(L, 2) != 0)
+                            arg1 = null;
+                        else
+                            arg1 = ToObject<System.IFormatProvider>(L, 2)!;
+                        try
+                        {
+                            var result = System.DateTime.Parse(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<string>(L, 1)!;
+                        System.IFormatProvider? arg1;
+                        if (lua_isnil(L, 2) != 0)
+                            arg1 = null;
+                        else
+                            arg1 = ToObject<System.IFormatProvider>(L, 2)!;
+                        try
+                        {
+                            var result = System.DateTime.Parse(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for parse");
+                    return 0;
             }
         }
 
@@ -1686,781 +2605,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int DateTime_method_add(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<System.TimeSpan>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).Add(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for add");
-        return 0;
-    }
-
-    private static int DateTime_method_addDays(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<double>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).AddDays(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addDays");
-        return 0;
-    }
-
-    private static int DateTime_method_addHours(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<double>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).AddHours(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addHours");
-        return 0;
-    }
-
-    private static int DateTime_method_addMilliseconds(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<double>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).AddMilliseconds(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addMilliseconds");
-        return 0;
-    }
-
-    private static int DateTime_method_addMicroseconds(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<double>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).AddMicroseconds(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addMicroseconds");
-        return 0;
-    }
-
-    private static int DateTime_method_addMinutes(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<double>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).AddMinutes(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addMinutes");
-        return 0;
-    }
-
-    private static int DateTime_method_addMonths(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).AddMonths(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addMonths");
-        return 0;
-    }
-
-    private static int DateTime_method_addSeconds(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<double>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).AddSeconds(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addSeconds");
-        return 0;
-    }
-
-    private static int DateTime_method_addTicks(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<long>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).AddTicks(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addTicks");
-        return 0;
-    }
-
-    private static int DateTime_method_addYears(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).AddYears(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addYears");
-        return 0;
-    }
-
-    private static int DateTime_method_compareTo(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).CompareTo(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for compareTo");
-        return 0;
-    }
-
-    private static int DateTime_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int DateTime_method_isDaylightSavingTime(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).IsDaylightSavingTime();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for isDaylightSavingTime");
-        return 0;
-    }
-
-    private static int DateTime_method_toBinary(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToBinary();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toBinary");
-        return 0;
-    }
-
-    private static int DateTime_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int DateTime_method_subtract(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<System.DateTime>(L, 2)!;
-            try
-            {
-                var result = ((System.DateTime)self).Subtract(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for subtract");
-        return 0;
-    }
-
-    private static int DateTime_method_toOADate(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToOADate();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toOADate");
-        return 0;
-    }
-
-    private static int DateTime_method_toFileTime(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToFileTime();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toFileTime");
-        return 0;
-    }
-
-    private static int DateTime_method_toFileTimeUtc(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToFileTimeUtc();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toFileTimeUtc");
-        return 0;
-    }
-
-    private static int DateTime_method_toLocalTime(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToLocalTime();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toLocalTime");
-        return 0;
-    }
-
-    private static int DateTime_method_toLongDateString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToLongDateString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toLongDateString");
-        return 0;
-    }
-
-    private static int DateTime_method_toLongTimeString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToLongTimeString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toLongTimeString");
-        return 0;
-    }
-
-    private static int DateTime_method_toShortDateString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToShortDateString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toShortDateString");
-        return 0;
-    }
-
-    private static int DateTime_method_toShortTimeString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToShortTimeString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toShortTimeString");
-        return 0;
-    }
-
-    private static int DateTime_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int DateTime_method_toUniversalTime(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).ToUniversalTime();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toUniversalTime");
-        return 0;
-    }
-
-    private static int DateTime_method_getDateTimeFormats(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).GetDateTimeFormats();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getDateTimeFormats");
-        return 0;
-    }
-
-    private static int DateTime_method_getTypeCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).GetTypeCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getTypeCode");
-        return 0;
-    }
-
-    private static int DateTime_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.DateTime>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.DateTime)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
-        return 0;
-    }
-
     private static int DateTime_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);
@@ -2476,6 +2620,15 @@ public partial class LuaBindings
                 return 1;
             case "utcNow":
                 PushValue(L, System.DateTime.UtcNow);
+                return 1;
+            case "minValue":
+                PushValue(L, System.DateTime.MinValue);
+                return 1;
+            case "maxValue":
+                PushValue(L, System.DateTime.MaxValue);
+                return 1;
+            case "unixEpoch":
+                PushValue(L, System.DateTime.UnixEpoch);
                 return 1;
             default:
                 lua_rawget(L, 1);

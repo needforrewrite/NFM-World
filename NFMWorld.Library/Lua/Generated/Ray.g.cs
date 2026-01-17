@@ -100,16 +100,16 @@ public partial class LuaBindings
                 }
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Ray_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Ray_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "intersects":
                 lua_pushcfunction(L, (Ray_method_intersects));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Ray_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Ray_method_getType));
@@ -204,59 +204,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Ray_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Ray>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Ray)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Ray_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Ray>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Ray)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
     private static int Ray_method_intersects(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -265,51 +212,155 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.BoundingBox>(L, 2)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Intersects(Microsoft.Xna.Framework.BoundingBox)
             {
-                var result = ((Microsoft.Xna.Framework.Ray)self).Intersects(arg0);
-                UpdateStruct(L, 1, self);
-                if (result.HasValue)
-                    PushValue(L, result.Value);
-                else
-                    lua_pushnil(L);
-                return 1;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingBox>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: Intersects(Microsoft.Xna.Framework.BoundingSphere)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingSphere>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            // Try overload 2: Intersects(Microsoft.Xna.Framework.Plane)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Plane>(L, 2);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 2;
+                }
+            }
+            next2:
+
+            // Try overload 3: Intersects(Microsoft.Xna.Framework.BoundingFrustum)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.BoundingFrustum>(L, 2);
+                if (score0 < 0) goto next3;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 3;
+                }
+            }
+            next3:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingBox>(L, 2)!;
+                        try
+                        {
+                            var structValue = (Microsoft.Xna.Framework.Ray)self;
+                            var result = structValue.Intersects(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            if (result.HasValue)
+                                PushValue(L, result.Value);
+                            else
+                                lua_pushnil(L);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingSphere>(L, 2)!;
+                        try
+                        {
+                            var structValue = (Microsoft.Xna.Framework.Ray)self;
+                            var result = structValue.Intersects(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            if (result.HasValue)
+                                PushValue(L, result.Value);
+                            else
+                                lua_pushnil(L);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 2:
+                    {
+                        var arg0 = ToObject<Microsoft.Xna.Framework.Plane>(L, 2)!;
+                        try
+                        {
+                            var structValue = (Microsoft.Xna.Framework.Ray)self;
+                            var result = structValue.Intersects(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            if (result.HasValue)
+                                PushValue(L, result.Value);
+                            else
+                                lua_pushnil(L);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 3:
+                    {
+                        var arg0 = ToObject<Microsoft.Xna.Framework.BoundingFrustum>(L, 2)!;
+                        try
+                        {
+                            var structValue = (Microsoft.Xna.Framework.Ray)self;
+                            var result = structValue.Intersects(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            if (result.HasValue)
+                                PushValue(L, result.Value);
+                            else
+                                lua_pushnil(L);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for intersects");
+                    return 0;
             }
         }
 
         luaL_error(L, "Invalid arguments for intersects");
-        return 0;
-    }
-
-    private static int Ray_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Ray>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Ray)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
         return 0;
     }
 
@@ -323,8 +374,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((Microsoft.Xna.Framework.Ray)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (Microsoft.Xna.Framework.Ray)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }

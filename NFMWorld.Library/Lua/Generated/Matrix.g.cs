@@ -247,6 +247,12 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Matrix_static_transformation2D));
         lua_setfield(L, -2, "transformation2D");
 
+        // Create metatable for type table (static properties and fields)
+        lua_newtable(L);
+        lua_pushcfunction(L, (Matrix_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
         lua_setglobal(L, "Matrix");
     }
 
@@ -595,13 +601,13 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (Matrix_method_toArray));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Matrix_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Matrix_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Matrix_method_equals));
+                lua_pushcfunction(L, (IEquatable_Matrix_method_equals));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Matrix_method_getType));
@@ -1355,6 +1361,247 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for Matrix constructor");
+        return 0;
+    }
+
+    private static int Matrix_method_determinant(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Matrix)self;
+                var result = structValue.Determinant();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for determinant");
+        return 0;
+    }
+
+    private static int Matrix_method_invert(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Matrix)self;
+                structValue.Invert();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for invert");
+        return 0;
+    }
+
+    private static int Matrix_method_transpose(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Matrix)self;
+                structValue.Transpose();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for transpose");
+        return 0;
+    }
+
+    private static int Matrix_method_orthogonalize(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Matrix)self;
+                structValue.Orthogonalize();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for orthogonalize");
+        return 0;
+    }
+
+    private static int Matrix_method_orthonormalize(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Matrix)self;
+                structValue.Orthonormalize();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for orthonormalize");
+        return 0;
+    }
+
+    private static int Matrix_method_exchangeRows(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Matrix)self;
+                structValue.ExchangeRows(arg0, arg1);
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for exchangeRows");
+        return 0;
+    }
+
+    private static int Matrix_method_exchangeColumns(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Matrix)self;
+                structValue.ExchangeColumns(arg0, arg1);
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for exchangeColumns");
+        return 0;
+    }
+
+    private static int Matrix_method_toArray(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Matrix)self;
+                var result = structValue.ToArray();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toArray");
+        return 0;
+    }
+
+    private static int Matrix_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Matrix)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 
@@ -2694,315 +2941,26 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Matrix_method_determinant(lua_State L)
+    private static int Matrix_type__index(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 0)
+        switch (key)
         {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Matrix)self).Determinant();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "sizeInBytes":
+                PushValue(L, Stride.Core.Mathematics.Matrix.SizeInBytes);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for determinant");
-        return 0;
-    }
-
-    private static int Matrix_method_invert(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Stride.Core.Mathematics.Matrix)self).Invert();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for invert");
-        return 0;
-    }
-
-    private static int Matrix_method_transpose(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Stride.Core.Mathematics.Matrix)self).Transpose();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for transpose");
-        return 0;
-    }
-
-    private static int Matrix_method_orthogonalize(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Stride.Core.Mathematics.Matrix)self).Orthogonalize();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for orthogonalize");
-        return 0;
-    }
-
-    private static int Matrix_method_orthonormalize(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Stride.Core.Mathematics.Matrix)self).Orthonormalize();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for orthonormalize");
-        return 0;
-    }
-
-    private static int Matrix_method_exchangeRows(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                ((Stride.Core.Mathematics.Matrix)self).ExchangeRows(arg0, arg1);
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for exchangeRows");
-        return 0;
-    }
-
-    private static int Matrix_method_exchangeColumns(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                ((Stride.Core.Mathematics.Matrix)self).ExchangeColumns(arg0, arg1);
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for exchangeColumns");
-        return 0;
-    }
-
-    private static int Matrix_method_toArray(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Matrix)self).ToArray();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "zero":
+                PushValue(L, Stride.Core.Mathematics.Matrix.Zero);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toArray");
-        return 0;
-    }
-
-    private static int Matrix_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Matrix)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "identity":
+                PushValue(L, Stride.Core.Mathematics.Matrix.Identity);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int Matrix_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Matrix)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            default:
+                lua_rawget(L, 1);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
         }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int Matrix_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Matrix>(L, 2)!;
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Matrix)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Matrix_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Matrix>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Matrix)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
-        return 0;
     }
 
 }

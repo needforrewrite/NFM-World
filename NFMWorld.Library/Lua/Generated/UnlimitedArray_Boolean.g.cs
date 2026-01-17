@@ -92,28 +92,28 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (UnlimitedArray_Boolean_method_ensureCapacity));
                 return 1;
             case "add":
-                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_add));
+                lua_pushcfunction(L, (ICollection_Boolean_method_add));
                 return 1;
             case "clear":
-                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_clear));
+                lua_pushcfunction(L, (ICollection_Boolean_method_clear));
                 return 1;
             case "contains":
-                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_contains));
+                lua_pushcfunction(L, (ICollection_Boolean_method_contains));
                 return 1;
             case "copyTo":
-                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_copyTo));
+                lua_pushcfunction(L, (ICollection_Boolean_method_copyTo));
                 return 1;
             case "remove":
-                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_remove));
+                lua_pushcfunction(L, (ICollection_Boolean_method_remove));
                 return 1;
             case "indexOf":
-                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_indexOf));
+                lua_pushcfunction(L, (IList_Boolean_method_indexOf));
                 return 1;
             case "insert":
-                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_insert));
+                lua_pushcfunction(L, (IList_Boolean_method_insert));
                 return 1;
             case "removeAt":
-                lua_pushcfunction(L, (UnlimitedArray_Boolean_method_removeAt));
+                lua_pushcfunction(L, (IList_Boolean_method_removeAt));
                 return 1;
             case "toArray":
                 lua_pushcfunction(L, (UnlimitedArray_Boolean_method_toArray));
@@ -266,250 +266,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for ensureCapacity");
-        return 0;
-    }
-
-    private static int UnlimitedArray_Boolean_method_add(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<bool>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected UnlimitedArray`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<bool>(L, 2)!;
-            try
-            {
-                ((nfm_world_library.util.UnlimitedArray<bool>)self).Add(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for add");
-        return 0;
-    }
-
-    private static int UnlimitedArray_Boolean_method_clear(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<bool>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected UnlimitedArray`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.util.UnlimitedArray<bool>)self).Clear();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for clear");
-        return 0;
-    }
-
-    private static int UnlimitedArray_Boolean_method_contains(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<bool>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected UnlimitedArray`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<bool>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.util.UnlimitedArray<bool>)self).Contains(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for contains");
-        return 0;
-    }
-
-    private static int UnlimitedArray_Boolean_method_copyTo(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<bool>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected UnlimitedArray`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<bool[]>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            try
-            {
-                ((nfm_world_library.util.UnlimitedArray<bool>)self).CopyTo(arg0, arg1);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for copyTo");
-        return 0;
-    }
-
-    private static int UnlimitedArray_Boolean_method_remove(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<bool>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected UnlimitedArray`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<bool>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.util.UnlimitedArray<bool>)self).Remove(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for remove");
-        return 0;
-    }
-
-    private static int UnlimitedArray_Boolean_method_indexOf(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<bool>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected UnlimitedArray`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<bool>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.util.UnlimitedArray<bool>)self).IndexOf(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for indexOf");
-        return 0;
-    }
-
-    private static int UnlimitedArray_Boolean_method_insert(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<bool>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected UnlimitedArray`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<bool>(L, 3)!;
-            try
-            {
-                ((nfm_world_library.util.UnlimitedArray<bool>)self).Insert(arg0, arg1);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for insert");
-        return 0;
-    }
-
-    private static int UnlimitedArray_Boolean_method_removeAt(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<bool>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected UnlimitedArray`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                ((nfm_world_library.util.UnlimitedArray<bool>)self).RemoveAt(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for removeAt");
         return 0;
     }
 

@@ -175,6 +175,12 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Quaternion_static_squadSetup));
         lua_setfield(L, -2, "squadSetup");
 
+        // Create metatable for type table (static properties and fields)
+        lua_newtable(L);
+        lua_pushcfunction(L, (Quaternion_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
         lua_setglobal(L, "Quaternion");
     }
 
@@ -276,19 +282,22 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (Quaternion_method_toArray));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Quaternion_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Quaternion_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "equalsStrict":
                 lua_pushcfunction(L, (Quaternion_method_equalsStrict));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Quaternion_method_equals));
+                lua_pushcfunction(L, (IEquatable_Quaternion_method_equals));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Quaternion_method_getType));
+                return 1;
+            case "toXna":
+                lua_pushcfunction(L, (Quaternion_method_toXna));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -688,6 +697,245 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for Quaternion constructor");
+        return 0;
+    }
+
+    private static int Quaternion_method_conjugate(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Quaternion)self;
+                structValue.Conjugate();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for conjugate");
+        return 0;
+    }
+
+    private static int Quaternion_method_invert(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Quaternion)self;
+                structValue.Invert();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for invert");
+        return 0;
+    }
+
+    private static int Quaternion_method_length(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Quaternion)self;
+                var result = structValue.Length();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for length");
+        return 0;
+    }
+
+    private static int Quaternion_method_lengthSquared(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Quaternion)self;
+                var result = structValue.LengthSquared();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lengthSquared");
+        return 0;
+    }
+
+    private static int Quaternion_method_normalize(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Quaternion)self;
+                structValue.Normalize();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for normalize");
+        return 0;
+    }
+
+    private static int Quaternion_method_toArray(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Quaternion)self;
+                var result = structValue.ToArray();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toArray");
+        return 0;
+    }
+
+    private static int Quaternion_method_equalsStrict(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<Stride.Core.Mathematics.Quaternion>(L, 2)!;
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Quaternion)self;
+                var result = structValue.EqualsStrict(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for equalsStrict");
+        return 0;
+    }
+
+    private static int Quaternion_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Stride.Core.Mathematics.Quaternion)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Quaternion_method_toXna(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = nfm_world_library.Extensions.ToXna(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toXna");
         return 0;
     }
 
@@ -1381,289 +1629,29 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Quaternion_method_conjugate(lua_State L)
+    private static int Quaternion_type__index(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 0)
+        switch (key)
         {
-            try
-            {
-                ((Stride.Core.Mathematics.Quaternion)self).Conjugate();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for conjugate");
-        return 0;
-    }
-
-    private static int Quaternion_method_invert(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Stride.Core.Mathematics.Quaternion)self).Invert();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for invert");
-        return 0;
-    }
-
-    private static int Quaternion_method_length(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Quaternion)self).Length();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "sizeInBytes":
+                PushValue(L, Stride.Core.Mathematics.Quaternion.SizeInBytes);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for length");
-        return 0;
-    }
-
-    private static int Quaternion_method_lengthSquared(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Quaternion)self).LengthSquared();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "zero":
+                PushValue(L, Stride.Core.Mathematics.Quaternion.Zero);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for lengthSquared");
-        return 0;
-    }
-
-    private static int Quaternion_method_normalize(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Stride.Core.Mathematics.Quaternion)self).Normalize();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for normalize");
-        return 0;
-    }
-
-    private static int Quaternion_method_toArray(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Quaternion)self).ToArray();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "one":
+                PushValue(L, Stride.Core.Mathematics.Quaternion.One);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toArray");
-        return 0;
-    }
-
-    private static int Quaternion_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Quaternion)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "identity":
+                PushValue(L, Stride.Core.Mathematics.Quaternion.Identity);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int Quaternion_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Quaternion)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            default:
+                lua_rawget(L, 1);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
         }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int Quaternion_method_equalsStrict(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Quaternion>(L, 2)!;
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Quaternion)self).EqualsStrict(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equalsStrict");
-        return 0;
-    }
-
-    private static int Quaternion_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Quaternion>(L, 2)!;
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Quaternion)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Quaternion_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Quaternion)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
-        return 0;
     }
 
 }

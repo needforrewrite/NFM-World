@@ -79,16 +79,16 @@ public partial class LuaBindings
                 PushValue(L, ((System.ValueTuple<float, int>)obj).Item2);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (ValueTuple_Single_Int32_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (ValueTuple_Single_Int32_method_compareTo));
+                lua_pushcfunction(L, (IComparable_ValueTuple_Single_Int32_method_compareTo));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (ValueTuple_Single_Int32_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (ValueTuple_Single_Int32_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (ValueTuple_Single_Int32_method_getType));
@@ -175,116 +175,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int ValueTuple_Single_Int32_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.ValueTuple<float, int>>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((System.ValueTuple<float, int>)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int ValueTuple_Single_Int32_method_compareTo(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.ValueTuple<float, int>>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<System.ValueTuple<float, int>>(L, 2)!;
-            try
-            {
-                var result = ((System.ValueTuple<float, int>)self).CompareTo(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for compareTo");
-        return 0;
-    }
-
-    private static int ValueTuple_Single_Int32_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.ValueTuple<float, int>>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.ValueTuple<float, int>)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int ValueTuple_Single_Int32_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.ValueTuple<float, int>>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.ValueTuple<float, int>)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
     private static int ValueTuple_Single_Int32_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -295,8 +185,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((System.ValueTuple<float, int>)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (System.ValueTuple<float, int>)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }

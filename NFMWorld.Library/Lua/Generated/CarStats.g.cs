@@ -47,6 +47,14 @@ public partial class LuaBindings
         lua_pushcfunction(L, (CarStats_static_validateStats));
         lua_setfield(L, -2, "validateStats");
 
+        // Create metatable for type table (static properties and fields)
+        lua_newtable(L);
+        lua_pushcfunction(L, (CarStats_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_pushcfunction(L, (CarStats_type__newindex));
+        lua_setfield(L, -2, "__newindex");
+        lua_setmetatable(L, -2);
+
         lua_setglobal(L, "CarStats");
     }
 
@@ -417,6 +425,61 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int CarStats_method_validate(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.mad.CarStats>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<string>(L, 2)!;
+            try
+            {
+                var structValue = (nfm_world_library.mad.CarStats)self;
+                var result = structValue.Validate(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for validate");
+        return 0;
+    }
+
+    private static int CarStats_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.mad.CarStats>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.mad.CarStats)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
     private static int CarStats_static_validateStats(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -442,57 +505,44 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int CarStats_method_validate(lua_State L)
+    private static int CarStats_type__index(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
-        var self = GetStructFromStack<nfm_world_library.mad.CarStats>(L, 1);
-
-        if (argCount == 1)
+        switch (key)
         {
-            var arg0 = ToObject<string>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.mad.CarStats)self).Validate(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "default":
+                PushValue(L, nfm_world_library.mad.CarStats.Default);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
+            default:
+                lua_rawget(L, 1);
+                return 1;
         }
-
-        luaL_error(L, "Invalid arguments for validate");
-        return 0;
     }
 
-    private static int CarStats_method_getType(lua_State L)
+    private static int CarStats_type__newindex(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
+        var key = lua_tostring(L, 2);
+        if (key == null) return 0;
 
-        var self = GetStructFromStack<nfm_world_library.mad.CarStats>(L, 1);
-
-        if (argCount == 0)
+        switch (key)
         {
-            try
-            {
-                var result = ((nfm_world_library.mad.CarStats)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+            case "default":
+                try
+                {
+                    nfm_world_library.mad.CarStats.Default = ToObject<nfm_world_library.mad.CarStats>(L, 3)!;
+                }
+                catch (System.Exception ex)
+                {
+                    luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                    return 0;
+                }
                 return 0;
-            }
+            default:
+                lua_rawset(L, 1);
+                return 0;
         }
-
-        luaL_error(L, "Invalid arguments for getType");
-        return 0;
     }
 
 }

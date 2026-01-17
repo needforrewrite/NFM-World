@@ -89,13 +89,13 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (DeterministicRandom_method_nextFixed64));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (DeterministicRandom_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (DeterministicRandom_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (DeterministicRandom_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (DeterministicRandom_method_getType));
@@ -157,32 +157,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int DeterministicRandom_static_fromWorldFeature(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<System.UInt64>(L, 1)!;
-            var arg1 = ToObject<System.UInt64>(L, 2)!;
-            var arg2 = ToObject<System.UInt64>(L, 3)!;
-            try
-            {
-                var result = FixedMathSharp.Utility.DeterministicRandom.FromWorldFeature(arg0, arg1, arg2);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for fromWorldFeature");
-        return 0;
-    }
-
     private static int DeterministicRandom_method_nextU64(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -193,8 +167,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).NextU64();
-                UpdateStruct(L, 1, self);
+                var structValue = (FixedMathSharp.Utility.DeterministicRandom)self;
+                var result = structValue.NextU64();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -219,8 +194,46 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).Next();
-                UpdateStruct(L, 1, self);
+                var structValue = (FixedMathSharp.Utility.DeterministicRandom)self;
+                var result = structValue.Next();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            try
+            {
+                var structValue = (FixedMathSharp.Utility.DeterministicRandom)self;
+                var result = structValue.Next(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                var structValue = (FixedMathSharp.Utility.DeterministicRandom)self;
+                var result = structValue.Next(arg0, arg1);
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -245,8 +258,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).NextDouble();
-                UpdateStruct(L, 1, self);
+                var structValue = (FixedMathSharp.Utility.DeterministicRandom)self;
+                var result = structValue.NextDouble();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -271,8 +285,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).NextFixed6401();
-                UpdateStruct(L, 1, self);
+                var structValue = (FixedMathSharp.Utility.DeterministicRandom)self;
+                var result = structValue.NextFixed6401();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -298,8 +313,28 @@ public partial class LuaBindings
             var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
             try
             {
-                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).NextFixed64(arg0);
-                UpdateStruct(L, 1, self);
+                var structValue = (FixedMathSharp.Utility.DeterministicRandom)self;
+                var result = structValue.NextFixed64(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
+            var arg1 = ToObject<FixedMathSharp.Fixed64>(L, 3)!;
+            try
+            {
+                var structValue = (FixedMathSharp.Utility.DeterministicRandom)self;
+                var result = structValue.NextFixed64(arg0, arg1);
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -314,89 +349,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int DeterministicRandom_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<FixedMathSharp.Utility.DeterministicRandom>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int DeterministicRandom_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<FixedMathSharp.Utility.DeterministicRandom>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int DeterministicRandom_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<FixedMathSharp.Utility.DeterministicRandom>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
     private static int DeterministicRandom_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -407,8 +359,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((FixedMathSharp.Utility.DeterministicRandom)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (FixedMathSharp.Utility.DeterministicRandom)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -420,6 +373,32 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int DeterministicRandom_static_fromWorldFeature(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<System.UInt64>(L, 1)!;
+            var arg1 = ToObject<System.UInt64>(L, 2)!;
+            var arg2 = ToObject<System.UInt64>(L, 3)!;
+            try
+            {
+                var result = FixedMathSharp.Utility.DeterministicRandom.FromWorldFeature(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for fromWorldFeature");
         return 0;
     }
 

@@ -71,13 +71,13 @@ public partial class LuaBindings
         switch (key)
         {
             case "equals":
-                lua_pushcfunction(L, (ValueType_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (ValueType_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (ValueType_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (ValueType_method_getType));
@@ -114,101 +114,6 @@ public partial class LuaBindings
         var argCount = lua_gettop(L);
 
         luaL_error(L, "Invalid arguments for ValueType constructor");
-        return 0;
-    }
-
-    private static int ValueType_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.ValueType>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected ValueType as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((System.ValueType)self).Equals(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int ValueType_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.ValueType>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected ValueType as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.ValueType)self).GetHashCode();
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int ValueType_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.ValueType>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected ValueType as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.ValueType)self).ToString();
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
         return 0;
     }
 

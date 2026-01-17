@@ -151,7 +151,7 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector4_static_transform));
         lua_setfield(L, -2, "transform");
 
-        // Create metatable for type table (static properties)
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (Vector4_type__index));
         lua_setfield(L, -2, "__index");
@@ -196,10 +196,10 @@ public partial class LuaBindings
                 PushValue(L, ((Microsoft.Xna.Framework.Vector4)obj).W);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Vector4_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Vector4_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "length":
                 lua_pushcfunction(L, (Vector4_method_length));
@@ -211,7 +211,7 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (Vector4_method_normalize));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Vector4_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Vector4_method_getType));
@@ -559,6 +559,113 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for Vector4 constructor");
+        return 0;
+    }
+
+    private static int Vector4_method_length(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Microsoft.Xna.Framework.Vector4)self;
+                var result = structValue.Length();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for length");
+        return 0;
+    }
+
+    private static int Vector4_method_lengthSquared(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Microsoft.Xna.Framework.Vector4)self;
+                var result = structValue.LengthSquared();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lengthSquared");
+        return 0;
+    }
+
+    private static int Vector4_method_normalize(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Microsoft.Xna.Framework.Vector4)self;
+                structValue.Normalize();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for normalize");
+        return 0;
+    }
+
+    private static int Vector4_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Microsoft.Xna.Framework.Vector4)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 
@@ -1340,188 +1447,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for transform");
-        return 0;
-    }
-
-    private static int Vector4_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector4)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Vector4_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector4)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int Vector4_method_length(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector4)self).Length();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for length");
-        return 0;
-    }
-
-    private static int Vector4_method_lengthSquared(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector4)self).LengthSquared();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for lengthSquared");
-        return 0;
-    }
-
-    private static int Vector4_method_normalize(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Microsoft.Xna.Framework.Vector4)self).Normalize();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for normalize");
-        return 0;
-    }
-
-    private static int Vector4_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector4)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int Vector4_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector4>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector4)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 

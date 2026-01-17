@@ -163,7 +163,7 @@ public partial class LuaBindings
         lua_pushcfunction(L, (f64Vector3_static_transformNormal));
         lua_setfield(L, -2, "transformNormal");
 
-        // Create metatable for type table (static properties)
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (f64Vector3_type__index));
         lua_setfield(L, -2, "__index");
@@ -235,10 +235,10 @@ public partial class LuaBindings
                 }
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (f64Vector3_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (f64Vector3_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "length":
                 lua_pushcfunction(L, (f64Vector3_method_length));
@@ -250,10 +250,19 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (f64Vector3_method_normalize));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (f64Vector3_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (f64Vector3_method_getType));
+                return 1;
+            case "rotateZy":
+                lua_pushcfunction(L, (f64Vector3_method_rotateZy));
+                return 1;
+            case "rotateXz":
+                lua_pushcfunction(L, (f64Vector3_method_rotateXz));
+                return 1;
+            case "coefficients":
+                lua_pushcfunction(L, (f64Vector3_method_coefficients));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -567,6 +576,192 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for f64Vector3 constructor");
+        return 0;
+    }
+
+    private static int f64Vector3_method_length(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.f64Vector3)self;
+                var result = structValue.Length();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for length");
+        return 0;
+    }
+
+    private static int f64Vector3_method_lengthSquared(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.f64Vector3)self;
+                var result = structValue.LengthSquared();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lengthSquared");
+        return 0;
+    }
+
+    private static int f64Vector3_method_normalize(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.f64Vector3)self;
+                structValue.Normalize();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for normalize");
+        return 0;
+    }
+
+    private static int f64Vector3_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.f64Vector3)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int f64Vector3_method_rotateZy(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
+            try
+            {
+                var result = nfm_world_library.mad.collision.CollisionExtensions.RotateZy(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for rotateZy");
+        return 0;
+    }
+
+    private static int f64Vector3_method_rotateXz(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
+            try
+            {
+                var result = nfm_world_library.mad.collision.CollisionExtensions.RotateXz(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for rotateXz");
+        return 0;
+    }
+
+    private static int f64Vector3_method_coefficients(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 2)!;
+            var arg1 = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 3)!;
+            try
+            {
+                var result = nfm_world_library.mad.collision.CollisionExtensions.Coefficients(self, arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for coefficients");
         return 0;
     }
 
@@ -1375,188 +1570,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for transformNormal");
-        return 0;
-    }
-
-    private static int f64Vector3_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64Vector3)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int f64Vector3_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64Vector3)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int f64Vector3_method_length(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64Vector3)self).Length();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for length");
-        return 0;
-    }
-
-    private static int f64Vector3_method_lengthSquared(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64Vector3)self).LengthSquared();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for lengthSquared");
-        return 0;
-    }
-
-    private static int f64Vector3_method_normalize(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.SoftFloat.f64Vector3)self).Normalize();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for normalize");
-        return 0;
-    }
-
-    private static int f64Vector3_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64Vector3)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int f64Vector3_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64Vector3)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 

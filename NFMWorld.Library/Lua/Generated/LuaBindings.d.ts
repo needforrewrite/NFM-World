@@ -291,6 +291,33 @@ declare class Fixed64 {
     getHashCode(obj: Fixed64): number;
     compareTo(other: Fixed64): number;
     getType(): Type | null;
+    sign(): number;
+    isInteger(): boolean;
+    squared(): Fixed64;
+    round(mode: number): Fixed64;
+    roundToPrecision(places: number, mode: number): Fixed64;
+    clampOne(): Fixed64;
+    clamp01(): Fixed64;
+    abs(): Fixed64;
+    absLessThan(y: Fixed64): boolean;
+    fastAdd(b: Fixed64): Fixed64;
+    fastSub(b: Fixed64): Fixed64;
+    fastMul(b: Fixed64): Fixed64;
+    fastMod(b: Fixed64): Fixed64;
+    floor(): Fixed64;
+    ceiling(): Fixed64;
+    roundToInt(): number;
+    ceilToInt(): number;
+    floorToInt(): number;
+    toFormattedString(): string;
+    toFormattedDouble(precision: number): number;
+    toFormattedFloat(): number;
+    toPreciseFloat(): number;
+    toRadians(): Fixed64;
+    toDegree(): Fixed64;
+    moreThanEpsilon(): boolean;
+    lessThanEpsilon(): boolean;
+    fuzzyComponentEqual(b: Fixed64, percentage: Fixed64): boolean;
 }
 
 declare class IFormatProvider {
@@ -387,6 +414,9 @@ declare class f64Vector3 {
     normalize(): void;
     toString(): string;
     getType(): Type | null;
+    rotateZy(zy: fix64): f64Vector3;
+    rotateXz(xz: fix64): f64Vector3;
+    coefficients(v1: f64Vector3, v2: f64Vector3): ValueTuple_fix64_fix64;
 }
 
 declare class UnlimitedArray_Boolean {
@@ -743,6 +773,145 @@ declare class IEquatable_Int3 {
 declare class ISpanFormattable {
 }
 
+declare class Vector3 {
+    /** @customName new */
+    static inst(): Vector3;
+    /** @customName new */
+    static inst(value: number): Vector3;
+    /** @customName new */
+    static inst(value: Vector2, z: number): Vector3;
+    /** @customName new */
+    static inst(x: number, y: number, z: number): Vector3;
+    static abs(value: Vector3): Vector3;
+    static add(left: Vector3, right: Vector3): Vector3;
+    static all(vector: Vector3, value: number): boolean;
+    static allWhereAllBitsSet(vector: Vector3): boolean;
+    static andNot(left: Vector3, right: Vector3): Vector3;
+    static any(vector: Vector3, value: number): boolean;
+    static anyWhereAllBitsSet(vector: Vector3): boolean;
+    static bitwiseAnd(left: Vector3, right: Vector3): Vector3;
+    static bitwiseOr(left: Vector3, right: Vector3): Vector3;
+    static clamp(value1: Vector3, min: Vector3, max: Vector3): Vector3;
+    static clampNative(value1: Vector3, min: Vector3, max: Vector3): Vector3;
+    static conditionalSelect(condition: Vector3, left: Vector3, right: Vector3): Vector3;
+    static copySign(value: Vector3, sign: Vector3): Vector3;
+    static cos(vector: Vector3): Vector3;
+    static count(vector: Vector3, value: number): number;
+    static countWhereAllBitsSet(vector: Vector3): number;
+    static create(value: number): Vector3;
+    static create(vector: Vector2, z: number): Vector3;
+    static create(x: number, y: number, z: number): Vector3;
+    static createScalar(x: number): Vector3;
+    static createScalarUnsafe(x: number): Vector3;
+    static cross(vector1: Vector3, vector2: Vector3): Vector3;
+    static degreesToRadians(degrees: Vector3): Vector3;
+    static distance(value1: Vector3, value2: Vector3): number;
+    static distanceSquared(value1: Vector3, value2: Vector3): number;
+    static divide(left: Vector3, right: Vector3): Vector3;
+    static divide(left: Vector3, divisor: number): Vector3;
+    static dot(vector1: Vector3, vector2: Vector3): number;
+    static exp(vector: Vector3): Vector3;
+    static equals(left: Vector3, right: Vector3): Vector3;
+    static equalsAll(left: Vector3, right: Vector3): boolean;
+    static equalsAny(left: Vector3, right: Vector3): boolean;
+    static fusedMultiplyAdd(left: Vector3, right: Vector3, addend: Vector3): Vector3;
+    static greaterThan(left: Vector3, right: Vector3): Vector3;
+    static greaterThanAll(left: Vector3, right: Vector3): boolean;
+    static greaterThanAny(left: Vector3, right: Vector3): boolean;
+    static greaterThanOrEqual(left: Vector3, right: Vector3): Vector3;
+    static greaterThanOrEqualAll(left: Vector3, right: Vector3): boolean;
+    static greaterThanOrEqualAny(left: Vector3, right: Vector3): boolean;
+    static hypot(x: Vector3, y: Vector3): Vector3;
+    static indexOf(vector: Vector3, value: number): number;
+    static indexOfWhereAllBitsSet(vector: Vector3): number;
+    static isEvenInteger(vector: Vector3): Vector3;
+    static isFinite(vector: Vector3): Vector3;
+    static isInfinity(vector: Vector3): Vector3;
+    static isInteger(vector: Vector3): Vector3;
+    static isNaN(vector: Vector3): Vector3;
+    static isNegative(vector: Vector3): Vector3;
+    static isNegativeInfinity(vector: Vector3): Vector3;
+    static isNormal(vector: Vector3): Vector3;
+    static isOddInteger(vector: Vector3): Vector3;
+    static isPositive(vector: Vector3): Vector3;
+    static isPositiveInfinity(vector: Vector3): Vector3;
+    static isSubnormal(vector: Vector3): Vector3;
+    static isZero(vector: Vector3): Vector3;
+    static lastIndexOf(vector: Vector3, value: number): number;
+    static lastIndexOfWhereAllBitsSet(vector: Vector3): number;
+    static lerp(value1: Vector3, value2: Vector3, amount: number): Vector3;
+    static lerp(value1: Vector3, value2: Vector3, amount: Vector3): Vector3;
+    static lessThan(left: Vector3, right: Vector3): Vector3;
+    static lessThanAll(left: Vector3, right: Vector3): boolean;
+    static lessThanAny(left: Vector3, right: Vector3): boolean;
+    static lessThanOrEqual(left: Vector3, right: Vector3): Vector3;
+    static lessThanOrEqualAll(left: Vector3, right: Vector3): boolean;
+    static lessThanOrEqualAny(left: Vector3, right: Vector3): boolean;
+    static loadUnsafe(source: Single& | null): Vector3;
+    static loadUnsafe(source: Single& | null, elementOffset: UIntPtr): Vector3;
+    static log(vector: Vector3): Vector3;
+    static log2(vector: Vector3): Vector3;
+    static max(value1: Vector3, value2: Vector3): Vector3;
+    static maxMagnitude(value1: Vector3, value2: Vector3): Vector3;
+    static maxMagnitudeNumber(value1: Vector3, value2: Vector3): Vector3;
+    static maxNative(value1: Vector3, value2: Vector3): Vector3;
+    static maxNumber(value1: Vector3, value2: Vector3): Vector3;
+    static min(value1: Vector3, value2: Vector3): Vector3;
+    static minMagnitude(value1: Vector3, value2: Vector3): Vector3;
+    static minMagnitudeNumber(value1: Vector3, value2: Vector3): Vector3;
+    static minNative(value1: Vector3, value2: Vector3): Vector3;
+    static minNumber(value1: Vector3, value2: Vector3): Vector3;
+    static multiply(left: Vector3, right: Vector3): Vector3;
+    static multiply(left: Vector3, right: number): Vector3;
+    static multiply(left: number, right: Vector3): Vector3;
+    static multiplyAddEstimate(left: Vector3, right: Vector3, addend: Vector3): Vector3;
+    static negate(value: Vector3): Vector3;
+    static none(vector: Vector3, value: number): boolean;
+    static noneWhereAllBitsSet(vector: Vector3): boolean;
+    static normalize(value: Vector3): Vector3;
+    static onesComplement(value: Vector3): Vector3;
+    static radiansToDegrees(radians: Vector3): Vector3;
+    static reflect(vector: Vector3, normal: Vector3): Vector3;
+    static round(vector: Vector3): Vector3;
+    static round(vector: Vector3, mode: number): Vector3;
+    static shuffle(vector: Vector3, xIndex: number, yIndex: number, zIndex: number): Vector3;
+    static sin(vector: Vector3): Vector3;
+    static sinCos(vector: Vector3): ValueTuple_Vector3_Vector3;
+    static squareRoot(value: Vector3): Vector3;
+    static subtract(left: Vector3, right: Vector3): Vector3;
+    static sum(value: Vector3): number;
+    static transform(position: Vector3, matrix: Matrix4x4): Vector3;
+    static transform(value: Vector3, rotation: Quaternion): Vector3;
+    static transformNormal(normal: Vector3, matrix: Matrix4x4): Vector3;
+    static truncate(vector: Vector3): Vector3;
+    static xor(left: Vector3, right: Vector3): Vector3;
+    x: number;
+    y: number;
+    z: number;
+    copyTo(array: SingleArray): void;
+    copyTo(array: SingleArray, index: number): void;
+    equals(obj: Object): boolean;
+    equals(other: Vector3): boolean;
+    getHashCode(): number;
+    length(): number;
+    lengthSquared(): number;
+    toString(): string;
+    toString(format: string): string;
+    toString(format: string, formatProvider: IFormatProvider | null): string;
+    getType(): Type | null;
+    toXna(): Vector3;
+    asVector2(): Vector2;
+    asVector4(): Vector4;
+    asVector4Unsafe(): Vector4;
+    extractMostSignificantBits(): number;
+    getElement(index: number): number;
+    toScalar(): number;
+    withElement(index: number, value: number): Vector3;
+    asVector128(): Vector128_Single;
+    asVector128Unsafe(): Vector128_Single;
+    [index: number]: number;
+}
+
 declare class ArrayOfInt32 {
     /** @customName new */
     static inst(length: number): ArrayOfInt32;
@@ -804,6 +973,140 @@ declare class Vector2 {
     equals(other: Vector2): boolean;
     equals(value: Object): boolean;
     getType(): Type | null;
+    yX(): Vector2;
+    [index: number]: number;
+}
+
+declare class Vector3 {
+    /** @customName new */
+    static inst(): Vector3;
+    /** @customName new */
+    static inst(value: number): Vector3;
+    /** @customName new */
+    static inst(x: number, y: number, z: number): Vector3;
+    /** @customName new */
+    static inst(value: Vector2, z: number): Vector3;
+    /** @customName new */
+    static inst(values: SingleArray): Vector3;
+    static moveTo(from: Vector3& | null, to: Vector3& | null, maxTravelDistance: number): Vector3;
+    static add(left: Vector3, right: Vector3): Vector3;
+    static subtract(left: Vector3& | null, right: Vector3& | null): Vector3;
+    static multiply(value: Vector3, scale: number): Vector3;
+    static modulate(left: Vector3, right: Vector3): Vector3;
+    static divide(value: Vector3, scale: number): Vector3;
+    static demodulate(left: Vector3, right: Vector3): Vector3;
+    static negate(value: Vector3): Vector3;
+    static barycentric(value1: Vector3, value2: Vector3, value3: Vector3, amount1: number, amount2: number): Vector3;
+    static clamp(value: Vector3, min: Vector3, max: Vector3): Vector3;
+    static cross(left: Vector3& | null, right: Vector3& | null): Vector3;
+    static distance(value1: Vector3, value2: Vector3): number;
+    static distanceSquared(value1: Vector3, value2: Vector3): number;
+    static dot(left: Vector3, right: Vector3): number;
+    static normalize(value: Vector3): Vector3;
+    static lerp(start: Vector3, end: Vector3, amount: number): Vector3;
+    static smoothStep(start: Vector3, end: Vector3, amount: number): Vector3;
+    static hermite(value1: Vector3, tangent1: Vector3, value2: Vector3, tangent2: Vector3, amount: number): Vector3;
+    static catmullRom(value1: Vector3, value2: Vector3, value3: Vector3, value4: Vector3, amount: number): Vector3;
+    static mod(left: Vector3, right: Vector3): Vector3;
+    static max(left: Vector3, right: Vector3): Vector3;
+    static min(left: Vector3, right: Vector3): Vector3;
+    static project(vector: Vector3, x: number, y: number, width: number, height: number, minZ: number, maxZ: number, worldViewProjection: Matrix): Vector3;
+    static unproject(vector: Vector3, x: number, y: number, width: number, height: number, minZ: number, maxZ: number, worldViewProjection: Matrix): Vector3;
+    static reflect(vector: Vector3, normal: Vector3): Vector3;
+    static orthogonalize(destination: Vector3Array, source: Vector3Array): void;
+    static orthonormalize(destination: Vector3Array, source: Vector3Array): void;
+    static transform(vector: Vector3, rotation: Quaternion): Vector3;
+    static transform(source: Vector3Array, rotation: Quaternion& | null, destination: Vector3Array): void;
+    static transform(vector: Vector3, transform: Matrix): Vector4;
+    static transform(source: Vector3Array, transform: Matrix& | null, destination: Vector4Array): void;
+    static transformCoordinate(coordinate: Vector3, transform: Matrix): Vector3;
+    static transformCoordinate(source: Vector3Array, transform: Matrix& | null, destination: Vector3Array): void;
+    static transformNormal(normal: Vector3, transform: Matrix): Vector3;
+    static transformNormal(source: Vector3Array, transform: Matrix& | null, destination: Vector3Array): void;
+    static rotationYawPitchRoll(quaternion: Quaternion): Vector3;
+    static rotateAround(source: Vector3& | null, target: Vector3& | null, axis: Vector3& | null, angle: number): Vector3;
+    static nearEqual(left: Vector3& | null, right: Vector3& | null, epsilon: Vector3& | null): boolean;
+    readonly isNormalized: boolean;
+    x: number;
+    y: number;
+    z: number;
+    length(): number;
+    lengthSquared(): number;
+    normalize(): void;
+    pow(exponent: number): void;
+    toArray(): SingleArray;
+    toString(): string;
+    toString(format: string, formatProvider: IFormatProvider | null): string;
+    getHashCode(): number;
+    equalsStrict(other: Vector3): boolean;
+    equals(other: Vector3): boolean;
+    equals(value: Object): boolean;
+    getType(): Type | null;
+    toXna(): Vector3;
+    xY(): Vector2;
+    xZ(): Vector2;
+    yZ(): Vector2;
+    [index: number]: number;
+}
+
+declare class Vector4 {
+    /** @customName new */
+    static inst(): Vector4;
+    /** @customName new */
+    static inst(value: number): Vector4;
+    /** @customName new */
+    static inst(x: number, y: number, z: number, w: number): Vector4;
+    /** @customName new */
+    static inst(value: Vector3, w: number): Vector4;
+    /** @customName new */
+    static inst(value: Vector2, z: number, w: number): Vector4;
+    /** @customName new */
+    static inst(values: SingleArray): Vector4;
+    static moveto(from: Vector4& | null, to: Vector4& | null, maxTravelDistance: number): Vector4;
+    static add(left: Vector4, right: Vector4): Vector4;
+    static subtract(left: Vector4& | null, right: Vector4& | null): Vector4;
+    static multiply(value: Vector4, scale: number): Vector4;
+    static modulate(left: Vector4, right: Vector4): Vector4;
+    static divide(value: Vector4, scale: number): Vector4;
+    static demodulate(left: Vector4, right: Vector4): Vector4;
+    static negate(value: Vector4): Vector4;
+    static barycentric(value1: Vector4, value2: Vector4, value3: Vector4, amount1: number, amount2: number): Vector4;
+    static clamp(value: Vector4, min: Vector4, max: Vector4): Vector4;
+    static distance(value1: Vector4, value2: Vector4): number;
+    static distanceSquared(value1: Vector4, value2: Vector4): number;
+    static dot(left: Vector4, right: Vector4): number;
+    static normalize(value: Vector4): Vector4;
+    static lerp(start: Vector4, end: Vector4, amount: number): Vector4;
+    static smoothStep(start: Vector4, end: Vector4, amount: number): Vector4;
+    static hermite(value1: Vector4, tangent1: Vector4, value2: Vector4, tangent2: Vector4, amount: number): Vector4;
+    static catmullRom(value1: Vector4, value2: Vector4, value3: Vector4, value4: Vector4, amount: number): Vector4;
+    static max(left: Vector4, right: Vector4): Vector4;
+    static min(left: Vector4, right: Vector4): Vector4;
+    static orthogonalize(destination: Vector4Array, source: Vector4Array): void;
+    static orthonormalize(destination: Vector4Array, source: Vector4Array): void;
+    static transform(vector: Vector4, rotation: Quaternion): Vector4;
+    static transform(source: Vector4Array, rotation: Quaternion& | null, destination: Vector4Array): void;
+    static transform(vector: Vector4, transform: Matrix): Vector4;
+    static transform(source: Vector4Array, transform: Matrix& | null, destination: Vector4Array): void;
+    readonly isNormalized: boolean;
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+    length(): number;
+    lengthSquared(): number;
+    normalize(): void;
+    pow(exponent: number): void;
+    toArray(): SingleArray;
+    toString(): string;
+    toString(format: string, formatProvider: IFormatProvider | null): string;
+    getHashCode(): number;
+    equalsStrict(other: Vector4): boolean;
+    equals(other: Vector4): boolean;
+    equals(value: Object): boolean;
+    getType(): Type | null;
+    xY(): Vector2;
+    xYZ(): Vector3;
     [index: number]: number;
 }
 
@@ -925,6 +1228,52 @@ declare class Quaternion {
     getType(): Type | null;
 }
 
+declare class Vector3 {
+    /** @customName new */
+    static inst(): Vector3;
+    /** @customName new */
+    static inst(x: number, y: number, z: number): Vector3;
+    /** @customName new */
+    static inst(value: number): Vector3;
+    /** @customName new */
+    static inst(value: Vector2, z: number): Vector3;
+    static add(value1: Vector3, value2: Vector3): Vector3;
+    static barycentric(value1: Vector3, value2: Vector3, value3: Vector3, amount1: number, amount2: number): Vector3;
+    static catmullRom(value1: Vector3, value2: Vector3, value3: Vector3, value4: Vector3, amount: number): Vector3;
+    static clamp(value1: Vector3, min: Vector3, max: Vector3): Vector3;
+    static cross(vector1: Vector3, vector2: Vector3): Vector3;
+    static distance(vector1: Vector3, vector2: Vector3): number;
+    static distanceSquared(value1: Vector3, value2: Vector3): number;
+    static divide(value1: Vector3, value2: Vector3): Vector3;
+    static divide(value1: Vector3, value2: number): Vector3;
+    static dot(vector1: Vector3, vector2: Vector3): number;
+    static hermite(value1: Vector3, tangent1: Vector3, value2: Vector3, tangent2: Vector3, amount: number): Vector3;
+    static lerp(value1: Vector3, value2: Vector3, amount: number): Vector3;
+    static max(value1: Vector3, value2: Vector3): Vector3;
+    static min(value1: Vector3, value2: Vector3): Vector3;
+    static multiply(value1: Vector3, value2: Vector3): Vector3;
+    static multiply(value1: Vector3, scaleFactor: number): Vector3;
+    static negate(value: Vector3): Vector3;
+    static normalize(value: Vector3): Vector3;
+    static reflect(vector: Vector3, normal: Vector3): Vector3;
+    static smoothStep(value1: Vector3, value2: Vector3, amount: number): Vector3;
+    static subtract(value1: Vector3, value2: Vector3): Vector3;
+    static transform(position: Vector3, matrix: Matrix): Vector3;
+    static transform(value: Vector3, rotation: Quaternion): Vector3;
+    static transformNormal(normal: Vector3, matrix: Matrix): Vector3;
+    x: number;
+    y: number;
+    z: number;
+    equals(obj: Object): boolean;
+    equals(other: Vector3): boolean;
+    getHashCode(): number;
+    length(): number;
+    lengthSquared(): number;
+    normalize(): void;
+    toString(): string;
+    getType(): Type | null;
+}
+
 declare class Vector2 {
     /** @customName new */
     static inst(): Vector2;
@@ -965,6 +1314,7 @@ declare class Vector2 {
     normalize(): void;
     toString(): string;
     getType(): Type | null;
+    toXna(): Vector2;
 }
 
 declare class IList_Boolean {
@@ -1343,6 +1693,7 @@ declare class Color3 {
     darker(): Color3;
     brighter(): Color3;
     getType(): Type | null;
+    snap(snap: Color3): Color3;
     [index: number]: number;
 }
 
@@ -1515,6 +1866,307 @@ declare class List_BackendGameObject {
     [index: number]: BackendGameObject | null;
 }
 
+declare class IEquatable_Vector3 {
+    equals(other: Vector3): boolean;
+}
+
+declare class Vector2 {
+    /** @customName new */
+    static inst(): Vector2;
+    /** @customName new */
+    static inst(value: number): Vector2;
+    /** @customName new */
+    static inst(x: number, y: number): Vector2;
+    static abs(value: Vector2): Vector2;
+    static add(left: Vector2, right: Vector2): Vector2;
+    static all(vector: Vector2, value: number): boolean;
+    static allWhereAllBitsSet(vector: Vector2): boolean;
+    static andNot(left: Vector2, right: Vector2): Vector2;
+    static any(vector: Vector2, value: number): boolean;
+    static anyWhereAllBitsSet(vector: Vector2): boolean;
+    static bitwiseAnd(left: Vector2, right: Vector2): Vector2;
+    static bitwiseOr(left: Vector2, right: Vector2): Vector2;
+    static clamp(value1: Vector2, min: Vector2, max: Vector2): Vector2;
+    static clampNative(value1: Vector2, min: Vector2, max: Vector2): Vector2;
+    static conditionalSelect(condition: Vector2, left: Vector2, right: Vector2): Vector2;
+    static copySign(value: Vector2, sign: Vector2): Vector2;
+    static cos(vector: Vector2): Vector2;
+    static count(vector: Vector2, value: number): number;
+    static countWhereAllBitsSet(vector: Vector2): number;
+    static create(value: number): Vector2;
+    static create(x: number, y: number): Vector2;
+    static createScalar(x: number): Vector2;
+    static createScalarUnsafe(x: number): Vector2;
+    static cross(value1: Vector2, value2: Vector2): number;
+    static degreesToRadians(degrees: Vector2): Vector2;
+    static distance(value1: Vector2, value2: Vector2): number;
+    static distanceSquared(value1: Vector2, value2: Vector2): number;
+    static divide(left: Vector2, right: Vector2): Vector2;
+    static divide(left: Vector2, divisor: number): Vector2;
+    static dot(value1: Vector2, value2: Vector2): number;
+    static exp(vector: Vector2): Vector2;
+    static equals(left: Vector2, right: Vector2): Vector2;
+    static equalsAll(left: Vector2, right: Vector2): boolean;
+    static equalsAny(left: Vector2, right: Vector2): boolean;
+    static fusedMultiplyAdd(left: Vector2, right: Vector2, addend: Vector2): Vector2;
+    static greaterThan(left: Vector2, right: Vector2): Vector2;
+    static greaterThanAll(left: Vector2, right: Vector2): boolean;
+    static greaterThanAny(left: Vector2, right: Vector2): boolean;
+    static greaterThanOrEqual(left: Vector2, right: Vector2): Vector2;
+    static greaterThanOrEqualAll(left: Vector2, right: Vector2): boolean;
+    static greaterThanOrEqualAny(left: Vector2, right: Vector2): boolean;
+    static hypot(x: Vector2, y: Vector2): Vector2;
+    static indexOf(vector: Vector2, value: number): number;
+    static indexOfWhereAllBitsSet(vector: Vector2): number;
+    static isEvenInteger(vector: Vector2): Vector2;
+    static isFinite(vector: Vector2): Vector2;
+    static isInfinity(vector: Vector2): Vector2;
+    static isInteger(vector: Vector2): Vector2;
+    static isNaN(vector: Vector2): Vector2;
+    static isNegative(vector: Vector2): Vector2;
+    static isNegativeInfinity(vector: Vector2): Vector2;
+    static isNormal(vector: Vector2): Vector2;
+    static isOddInteger(vector: Vector2): Vector2;
+    static isPositive(vector: Vector2): Vector2;
+    static isPositiveInfinity(vector: Vector2): Vector2;
+    static isSubnormal(vector: Vector2): Vector2;
+    static isZero(vector: Vector2): Vector2;
+    static lastIndexOf(vector: Vector2, value: number): number;
+    static lastIndexOfWhereAllBitsSet(vector: Vector2): number;
+    static lerp(value1: Vector2, value2: Vector2, amount: number): Vector2;
+    static lerp(value1: Vector2, value2: Vector2, amount: Vector2): Vector2;
+    static lessThan(left: Vector2, right: Vector2): Vector2;
+    static lessThanAll(left: Vector2, right: Vector2): boolean;
+    static lessThanAny(left: Vector2, right: Vector2): boolean;
+    static lessThanOrEqual(left: Vector2, right: Vector2): Vector2;
+    static lessThanOrEqualAll(left: Vector2, right: Vector2): boolean;
+    static lessThanOrEqualAny(left: Vector2, right: Vector2): boolean;
+    static loadUnsafe(source: Single& | null): Vector2;
+    static loadUnsafe(source: Single& | null, elementOffset: UIntPtr): Vector2;
+    static log(vector: Vector2): Vector2;
+    static log2(vector: Vector2): Vector2;
+    static max(value1: Vector2, value2: Vector2): Vector2;
+    static maxMagnitude(value1: Vector2, value2: Vector2): Vector2;
+    static maxMagnitudeNumber(value1: Vector2, value2: Vector2): Vector2;
+    static maxNative(value1: Vector2, value2: Vector2): Vector2;
+    static maxNumber(value1: Vector2, value2: Vector2): Vector2;
+    static min(value1: Vector2, value2: Vector2): Vector2;
+    static minMagnitude(value1: Vector2, value2: Vector2): Vector2;
+    static minMagnitudeNumber(value1: Vector2, value2: Vector2): Vector2;
+    static minNative(value1: Vector2, value2: Vector2): Vector2;
+    static minNumber(value1: Vector2, value2: Vector2): Vector2;
+    static multiply(left: Vector2, right: Vector2): Vector2;
+    static multiply(left: Vector2, right: number): Vector2;
+    static multiply(left: number, right: Vector2): Vector2;
+    static multiplyAddEstimate(left: Vector2, right: Vector2, addend: Vector2): Vector2;
+    static negate(value: Vector2): Vector2;
+    static none(vector: Vector2, value: number): boolean;
+    static noneWhereAllBitsSet(vector: Vector2): boolean;
+    static normalize(value: Vector2): Vector2;
+    static onesComplement(value: Vector2): Vector2;
+    static radiansToDegrees(radians: Vector2): Vector2;
+    static reflect(vector: Vector2, normal: Vector2): Vector2;
+    static round(vector: Vector2): Vector2;
+    static round(vector: Vector2, mode: number): Vector2;
+    static shuffle(vector: Vector2, xIndex: number, yIndex: number): Vector2;
+    static sin(vector: Vector2): Vector2;
+    static sinCos(vector: Vector2): ValueTuple_Vector2_Vector2;
+    static squareRoot(value: Vector2): Vector2;
+    static subtract(left: Vector2, right: Vector2): Vector2;
+    static sum(value: Vector2): number;
+    static transform(position: Vector2, matrix: Matrix3x2): Vector2;
+    static transform(position: Vector2, matrix: Matrix4x4): Vector2;
+    static transform(value: Vector2, rotation: Quaternion): Vector2;
+    static transformNormal(normal: Vector2, matrix: Matrix3x2): Vector2;
+    static transformNormal(normal: Vector2, matrix: Matrix4x4): Vector2;
+    static truncate(vector: Vector2): Vector2;
+    static xor(left: Vector2, right: Vector2): Vector2;
+    x: number;
+    y: number;
+    copyTo(array: SingleArray): void;
+    copyTo(array: SingleArray, index: number): void;
+    equals(obj: Object): boolean;
+    equals(other: Vector2): boolean;
+    getHashCode(): number;
+    length(): number;
+    lengthSquared(): number;
+    toString(): string;
+    toString(format: string): string;
+    toString(format: string, formatProvider: IFormatProvider | null): string;
+    getType(): Type | null;
+    asVector3(): Vector3;
+    asVector3Unsafe(): Vector3;
+    asVector4(): Vector4;
+    asVector4Unsafe(): Vector4;
+    extractMostSignificantBits(): number;
+    getElement(index: number): number;
+    toScalar(): number;
+    withElement(index: number, value: number): Vector2;
+    asVector128(): Vector128_Single;
+    asVector128Unsafe(): Vector128_Single;
+    [index: number]: number;
+}
+
+declare class ValueTuple_Vector3_Vector3 {
+    /** @customName new */
+    static inst(): ValueTuple_Vector3_Vector3;
+    /** @customName new */
+    static inst(item1: Vector3, item2: Vector3): ValueTuple_Vector3_Vector3;
+    item1: Vector3;
+    item2: Vector3;
+    equals(obj: Object): boolean;
+    equals(other: ValueTuple_Vector3_Vector3): boolean;
+    compareTo(other: ValueTuple_Vector3_Vector3): number;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
+declare class Matrix4x4 {
+    /** @customName new */
+    static inst(): Matrix4x4;
+    /** @customName new */
+    static inst(m11: number, m12: number, m13: number, m14: number, m21: number, m22: number, m23: number, m24: number, m31: number, m32: number, m33: number, m34: number, m41: number, m42: number, m43: number, m44: number): Matrix4x4;
+    /** @customName new */
+    static inst(value: Matrix3x2): Matrix4x4;
+    static add(value1: Matrix4x4, value2: Matrix4x4): Matrix4x4;
+    static create(value: number): Matrix4x4;
+    static create(value: Matrix3x2): Matrix4x4;
+    static create(value: Vector4): Matrix4x4;
+    static create(x: Vector4, y: Vector4, z: Vector4, w: Vector4): Matrix4x4;
+    static create(m11: number, m12: number, m13: number, m14: number, m21: number, m22: number, m23: number, m24: number, m31: number, m32: number, m33: number, m34: number, m41: number, m42: number, m43: number, m44: number): Matrix4x4;
+    static createBillboard(objectPosition: Vector3, cameraPosition: Vector3, cameraUpVector: Vector3, cameraForwardVector: Vector3): Matrix4x4;
+    static createBillboardLeftHanded(objectPosition: Vector3, cameraPosition: Vector3, cameraUpVector: Vector3, cameraForwardVector: Vector3): Matrix4x4;
+    static createConstrainedBillboard(objectPosition: Vector3, cameraPosition: Vector3, rotateAxis: Vector3, cameraForwardVector: Vector3, objectForwardVector: Vector3): Matrix4x4;
+    static createConstrainedBillboardLeftHanded(objectPosition: Vector3, cameraPosition: Vector3, rotateAxis: Vector3, cameraForwardVector: Vector3, objectForwardVector: Vector3): Matrix4x4;
+    static createFromAxisAngle(axis: Vector3, angle: number): Matrix4x4;
+    static createFromQuaternion(quaternion: Quaternion): Matrix4x4;
+    static createFromYawPitchRoll(yaw: number, pitch: number, roll: number): Matrix4x4;
+    static createLookAt(cameraPosition: Vector3, cameraTarget: Vector3, cameraUpVector: Vector3): Matrix4x4;
+    static createLookAtLeftHanded(cameraPosition: Vector3, cameraTarget: Vector3, cameraUpVector: Vector3): Matrix4x4;
+    static createLookTo(cameraPosition: Vector3, cameraDirection: Vector3, cameraUpVector: Vector3): Matrix4x4;
+    static createLookToLeftHanded(cameraPosition: Vector3, cameraDirection: Vector3, cameraUpVector: Vector3): Matrix4x4;
+    static createOrthographic(width: number, height: number, zNearPlane: number, zFarPlane: number): Matrix4x4;
+    static createOrthographicLeftHanded(width: number, height: number, zNearPlane: number, zFarPlane: number): Matrix4x4;
+    static createOrthographicOffCenter(left: number, right: number, bottom: number, top: number, zNearPlane: number, zFarPlane: number): Matrix4x4;
+    static createOrthographicOffCenterLeftHanded(left: number, right: number, bottom: number, top: number, zNearPlane: number, zFarPlane: number): Matrix4x4;
+    static createPerspective(width: number, height: number, nearPlaneDistance: number, farPlaneDistance: number): Matrix4x4;
+    static createPerspectiveLeftHanded(width: number, height: number, nearPlaneDistance: number, farPlaneDistance: number): Matrix4x4;
+    static createPerspectiveFieldOfView(fieldOfView: number, aspectRatio: number, nearPlaneDistance: number, farPlaneDistance: number): Matrix4x4;
+    static createPerspectiveFieldOfViewLeftHanded(fieldOfView: number, aspectRatio: number, nearPlaneDistance: number, farPlaneDistance: number): Matrix4x4;
+    static createPerspectiveOffCenter(left: number, right: number, bottom: number, top: number, nearPlaneDistance: number, farPlaneDistance: number): Matrix4x4;
+    static createPerspectiveOffCenterLeftHanded(left: number, right: number, bottom: number, top: number, nearPlaneDistance: number, farPlaneDistance: number): Matrix4x4;
+    static createReflection(value: Plane): Matrix4x4;
+    static createRotationX(radians: number): Matrix4x4;
+    static createRotationX(radians: number, centerPoint: Vector3): Matrix4x4;
+    static createRotationY(radians: number): Matrix4x4;
+    static createRotationY(radians: number, centerPoint: Vector3): Matrix4x4;
+    static createRotationZ(radians: number): Matrix4x4;
+    static createRotationZ(radians: number, centerPoint: Vector3): Matrix4x4;
+    static createScale(xScale: number, yScale: number, zScale: number): Matrix4x4;
+    static createScale(xScale: number, yScale: number, zScale: number, centerPoint: Vector3): Matrix4x4;
+    static createScale(scales: Vector3): Matrix4x4;
+    static createScale(scales: Vector3, centerPoint: Vector3): Matrix4x4;
+    static createScale(scale: number): Matrix4x4;
+    static createScale(scale: number, centerPoint: Vector3): Matrix4x4;
+    static createShadow(lightDirection: Vector3, plane: Plane): Matrix4x4;
+    static createTranslation(position: Vector3): Matrix4x4;
+    static createTranslation(xPosition: number, yPosition: number, zPosition: number): Matrix4x4;
+    static createViewport(x: number, y: number, width: number, height: number, minDepth: number, maxDepth: number): Matrix4x4;
+    static createViewportLeftHanded(x: number, y: number, width: number, height: number, minDepth: number, maxDepth: number): Matrix4x4;
+    static createWorld(position: Vector3, forward: Vector3, up: Vector3): Matrix4x4;
+    static lerp(matrix1: Matrix4x4, matrix2: Matrix4x4, amount: number): Matrix4x4;
+    static multiply(value1: Matrix4x4, value2: Matrix4x4): Matrix4x4;
+    static multiply(value1: Matrix4x4, value2: number): Matrix4x4;
+    static negate(value: Matrix4x4): Matrix4x4;
+    static subtract(value1: Matrix4x4, value2: Matrix4x4): Matrix4x4;
+    static transform(value: Matrix4x4, rotation: Quaternion): Matrix4x4;
+    static transpose(matrix: Matrix4x4): Matrix4x4;
+    readonly isIdentity: boolean;
+    translation: Vector3;
+    x: Vector4;
+    y: Vector4;
+    z: Vector4;
+    w: Vector4;
+    m11: number;
+    m12: number;
+    m13: number;
+    m14: number;
+    m21: number;
+    m22: number;
+    m23: number;
+    m24: number;
+    m31: number;
+    m32: number;
+    m33: number;
+    m34: number;
+    m41: number;
+    m42: number;
+    m43: number;
+    m44: number;
+    equals(obj: Object): boolean;
+    equals(other: Matrix4x4): boolean;
+    getDeterminant(): number;
+    getElement(row: number, column: number): number;
+    getRow(index: number): Vector4;
+    getHashCode(): number;
+    toString(): string;
+    withElement(row: number, column: number, value: number): Matrix4x4;
+    withRow(index: number, value: Vector4): Matrix4x4;
+    getType(): Type | null;
+    [index: number]: Vector4;
+    [index: [number, number]]: number;
+}
+
+declare class Quaternion {
+    /** @customName new */
+    static inst(): Quaternion;
+    /** @customName new */
+    static inst(x: number, y: number, z: number, w: number): Quaternion;
+    /** @customName new */
+    static inst(vectorPart: Vector3, scalarPart: number): Quaternion;
+    static add(value1: Quaternion, value2: Quaternion): Quaternion;
+    static concatenate(value1: Quaternion, value2: Quaternion): Quaternion;
+    static conjugate(value: Quaternion): Quaternion;
+    static create(x: number, y: number, z: number, w: number): Quaternion;
+    static create(vectorPart: Vector3, scalarPart: number): Quaternion;
+    static createFromAxisAngle(axis: Vector3, angle: number): Quaternion;
+    static createFromRotationMatrix(matrix: Matrix4x4): Quaternion;
+    static createFromYawPitchRoll(yaw: number, pitch: number, roll: number): Quaternion;
+    static divide(value1: Quaternion, value2: Quaternion): Quaternion;
+    static dot(quaternion1: Quaternion, quaternion2: Quaternion): number;
+    static inverse(value: Quaternion): Quaternion;
+    static lerp(quaternion1: Quaternion, quaternion2: Quaternion, amount: number): Quaternion;
+    static multiply(value1: Quaternion, value2: Quaternion): Quaternion;
+    static multiply(value1: Quaternion, value2: number): Quaternion;
+    static negate(value: Quaternion): Quaternion;
+    static normalize(value: Quaternion): Quaternion;
+    static slerp(quaternion1: Quaternion, quaternion2: Quaternion, amount: number): Quaternion;
+    static subtract(value1: Quaternion, value2: Quaternion): Quaternion;
+    readonly isIdentity: boolean;
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+    equals(obj: Object): boolean;
+    equals(other: Quaternion): boolean;
+    getHashCode(): number;
+    length(): number;
+    lengthSquared(): number;
+    toString(): string;
+    getType(): Type | null;
+    asVector4(): Vector4;
+    asVector128(): Vector128_Single;
+    [index: number]: number;
+}
+
+declare class ArrayOfSingle {
+    /** @customName new */
+    static inst(length: number): ArrayOfSingle;
+    [index: number]: number;
+    readonly length: number;
+}
+
 declare class IList_Int32 {
     indexOf(item: number): number;
     insert(index: number, item: number): void;
@@ -1546,13 +2198,6 @@ declare class IReadOnlyCollection_Int32 {
 
 declare class IEquatable_Vector2 {
     equals(other: Vector2): boolean;
-}
-
-declare class ArrayOfSingle {
-    /** @customName new */
-    static inst(length: number): ArrayOfSingle;
-    [index: number]: number;
-    readonly length: number;
 }
 
 declare class ArrayOfVector2 {
@@ -1625,65 +2270,7 @@ declare class Quaternion {
     equals(other: Quaternion): boolean;
     equals(value: Object): boolean;
     getType(): Type | null;
-    [index: number]: number;
-}
-
-declare class Vector4 {
-    /** @customName new */
-    static inst(): Vector4;
-    /** @customName new */
-    static inst(value: number): Vector4;
-    /** @customName new */
-    static inst(x: number, y: number, z: number, w: number): Vector4;
-    /** @customName new */
-    static inst(value: Vector3, w: number): Vector4;
-    /** @customName new */
-    static inst(value: Vector2, z: number, w: number): Vector4;
-    /** @customName new */
-    static inst(values: SingleArray): Vector4;
-    static moveto(from: Vector4& | null, to: Vector4& | null, maxTravelDistance: number): Vector4;
-    static add(left: Vector4, right: Vector4): Vector4;
-    static subtract(left: Vector4& | null, right: Vector4& | null): Vector4;
-    static multiply(value: Vector4, scale: number): Vector4;
-    static modulate(left: Vector4, right: Vector4): Vector4;
-    static divide(value: Vector4, scale: number): Vector4;
-    static demodulate(left: Vector4, right: Vector4): Vector4;
-    static negate(value: Vector4): Vector4;
-    static barycentric(value1: Vector4, value2: Vector4, value3: Vector4, amount1: number, amount2: number): Vector4;
-    static clamp(value: Vector4, min: Vector4, max: Vector4): Vector4;
-    static distance(value1: Vector4, value2: Vector4): number;
-    static distanceSquared(value1: Vector4, value2: Vector4): number;
-    static dot(left: Vector4, right: Vector4): number;
-    static normalize(value: Vector4): Vector4;
-    static lerp(start: Vector4, end: Vector4, amount: number): Vector4;
-    static smoothStep(start: Vector4, end: Vector4, amount: number): Vector4;
-    static hermite(value1: Vector4, tangent1: Vector4, value2: Vector4, tangent2: Vector4, amount: number): Vector4;
-    static catmullRom(value1: Vector4, value2: Vector4, value3: Vector4, value4: Vector4, amount: number): Vector4;
-    static max(left: Vector4, right: Vector4): Vector4;
-    static min(left: Vector4, right: Vector4): Vector4;
-    static orthogonalize(destination: Vector4Array, source: Vector4Array): void;
-    static orthonormalize(destination: Vector4Array, source: Vector4Array): void;
-    static transform(vector: Vector4, rotation: Quaternion): Vector4;
-    static transform(source: Vector4Array, rotation: Quaternion& | null, destination: Vector4Array): void;
-    static transform(vector: Vector4, transform: Matrix): Vector4;
-    static transform(source: Vector4Array, transform: Matrix& | null, destination: Vector4Array): void;
-    readonly isNormalized: boolean;
-    x: number;
-    y: number;
-    z: number;
-    w: number;
-    length(): number;
-    lengthSquared(): number;
-    normalize(): void;
-    pow(exponent: number): void;
-    toArray(): SingleArray;
-    toString(): string;
-    toString(format: string, formatProvider: IFormatProvider | null): string;
-    getHashCode(): number;
-    equalsStrict(other: Vector4): boolean;
-    equals(other: Vector4): boolean;
-    equals(value: Object): boolean;
-    getType(): Type | null;
+    toXna(): Quaternion;
     [index: number]: number;
 }
 
@@ -1803,54 +2390,167 @@ declare class ArrayOfVector4 {
     readonly length: number;
 }
 
-declare class IEquatable_Matrix {
-    equals(other: Matrix): boolean;
+declare class IEquatable_Vector3 {
+    equals(other: Vector3): boolean;
 }
 
-declare class Vector3 {
+declare class ArrayOfVector3 {
     /** @customName new */
-    static inst(): Vector3;
+    static inst(length: number): ArrayOfVector3;
+    [index: number]: Vector3;
+    readonly length: number;
+}
+
+declare class IEquatable_Vector4 {
+    equals(other: Vector4): boolean;
+}
+
+declare class Vector4 {
     /** @customName new */
-    static inst(x: number, y: number, z: number): Vector3;
+    static inst(): Vector4;
     /** @customName new */
-    static inst(value: number): Vector3;
+    static inst(value: number): Vector4;
     /** @customName new */
-    static inst(value: Vector2, z: number): Vector3;
-    static add(value1: Vector3, value2: Vector3): Vector3;
-    static barycentric(value1: Vector3, value2: Vector3, value3: Vector3, amount1: number, amount2: number): Vector3;
-    static catmullRom(value1: Vector3, value2: Vector3, value3: Vector3, value4: Vector3, amount: number): Vector3;
-    static clamp(value1: Vector3, min: Vector3, max: Vector3): Vector3;
-    static cross(vector1: Vector3, vector2: Vector3): Vector3;
-    static distance(vector1: Vector3, vector2: Vector3): number;
-    static distanceSquared(value1: Vector3, value2: Vector3): number;
-    static divide(value1: Vector3, value2: Vector3): Vector3;
-    static divide(value1: Vector3, value2: number): Vector3;
-    static dot(vector1: Vector3, vector2: Vector3): number;
-    static hermite(value1: Vector3, tangent1: Vector3, value2: Vector3, tangent2: Vector3, amount: number): Vector3;
-    static lerp(value1: Vector3, value2: Vector3, amount: number): Vector3;
-    static max(value1: Vector3, value2: Vector3): Vector3;
-    static min(value1: Vector3, value2: Vector3): Vector3;
-    static multiply(value1: Vector3, value2: Vector3): Vector3;
-    static multiply(value1: Vector3, scaleFactor: number): Vector3;
-    static negate(value: Vector3): Vector3;
-    static normalize(value: Vector3): Vector3;
-    static reflect(vector: Vector3, normal: Vector3): Vector3;
-    static smoothStep(value1: Vector3, value2: Vector3, amount: number): Vector3;
-    static subtract(value1: Vector3, value2: Vector3): Vector3;
-    static transform(position: Vector3, matrix: Matrix): Vector3;
-    static transform(value: Vector3, rotation: Quaternion): Vector3;
-    static transformNormal(normal: Vector3, matrix: Matrix): Vector3;
+    static inst(value: Vector2, z: number, w: number): Vector4;
+    /** @customName new */
+    static inst(value: Vector3, w: number): Vector4;
+    /** @customName new */
+    static inst(x: number, y: number, z: number, w: number): Vector4;
+    static abs(value: Vector4): Vector4;
+    static add(left: Vector4, right: Vector4): Vector4;
+    static all(vector: Vector4, value: number): boolean;
+    static allWhereAllBitsSet(vector: Vector4): boolean;
+    static andNot(left: Vector4, right: Vector4): Vector4;
+    static any(vector: Vector4, value: number): boolean;
+    static anyWhereAllBitsSet(vector: Vector4): boolean;
+    static bitwiseAnd(left: Vector4, right: Vector4): Vector4;
+    static bitwiseOr(left: Vector4, right: Vector4): Vector4;
+    static clamp(value1: Vector4, min: Vector4, max: Vector4): Vector4;
+    static clampNative(value1: Vector4, min: Vector4, max: Vector4): Vector4;
+    static conditionalSelect(condition: Vector4, left: Vector4, right: Vector4): Vector4;
+    static copySign(value: Vector4, sign: Vector4): Vector4;
+    static cos(vector: Vector4): Vector4;
+    static count(vector: Vector4, value: number): number;
+    static countWhereAllBitsSet(vector: Vector4): number;
+    static create(value: number): Vector4;
+    static create(vector: Vector2, z: number, w: number): Vector4;
+    static create(vector: Vector3, w: number): Vector4;
+    static create(x: number, y: number, z: number, w: number): Vector4;
+    static createScalar(x: number): Vector4;
+    static createScalarUnsafe(x: number): Vector4;
+    static cross(vector1: Vector4, vector2: Vector4): Vector4;
+    static degreesToRadians(degrees: Vector4): Vector4;
+    static distance(value1: Vector4, value2: Vector4): number;
+    static distanceSquared(value1: Vector4, value2: Vector4): number;
+    static divide(left: Vector4, right: Vector4): Vector4;
+    static divide(left: Vector4, divisor: number): Vector4;
+    static dot(vector1: Vector4, vector2: Vector4): number;
+    static exp(vector: Vector4): Vector4;
+    static equals(left: Vector4, right: Vector4): Vector4;
+    static equalsAll(left: Vector4, right: Vector4): boolean;
+    static equalsAny(left: Vector4, right: Vector4): boolean;
+    static fusedMultiplyAdd(left: Vector4, right: Vector4, addend: Vector4): Vector4;
+    static greaterThan(left: Vector4, right: Vector4): Vector4;
+    static greaterThanAll(left: Vector4, right: Vector4): boolean;
+    static greaterThanAny(left: Vector4, right: Vector4): boolean;
+    static greaterThanOrEqual(left: Vector4, right: Vector4): Vector4;
+    static greaterThanOrEqualAll(left: Vector4, right: Vector4): boolean;
+    static greaterThanOrEqualAny(left: Vector4, right: Vector4): boolean;
+    static hypot(x: Vector4, y: Vector4): Vector4;
+    static indexOf(vector: Vector4, value: number): number;
+    static indexOfWhereAllBitsSet(vector: Vector4): number;
+    static isEvenInteger(vector: Vector4): Vector4;
+    static isFinite(vector: Vector4): Vector4;
+    static isInfinity(vector: Vector4): Vector4;
+    static isInteger(vector: Vector4): Vector4;
+    static isNaN(vector: Vector4): Vector4;
+    static isNegative(vector: Vector4): Vector4;
+    static isNegativeInfinity(vector: Vector4): Vector4;
+    static isNormal(vector: Vector4): Vector4;
+    static isOddInteger(vector: Vector4): Vector4;
+    static isPositive(vector: Vector4): Vector4;
+    static isPositiveInfinity(vector: Vector4): Vector4;
+    static isSubnormal(vector: Vector4): Vector4;
+    static isZero(vector: Vector4): Vector4;
+    static lastIndexOf(vector: Vector4, value: number): number;
+    static lastIndexOfWhereAllBitsSet(vector: Vector4): number;
+    static lerp(value1: Vector4, value2: Vector4, amount: number): Vector4;
+    static lerp(value1: Vector4, value2: Vector4, amount: Vector4): Vector4;
+    static lessThan(left: Vector4, right: Vector4): Vector4;
+    static lessThanAll(left: Vector4, right: Vector4): boolean;
+    static lessThanAny(left: Vector4, right: Vector4): boolean;
+    static lessThanOrEqual(left: Vector4, right: Vector4): Vector4;
+    static lessThanOrEqualAll(left: Vector4, right: Vector4): boolean;
+    static lessThanOrEqualAny(left: Vector4, right: Vector4): boolean;
+    static loadUnsafe(source: Single& | null): Vector4;
+    static loadUnsafe(source: Single& | null, elementOffset: UIntPtr): Vector4;
+    static log(vector: Vector4): Vector4;
+    static log2(vector: Vector4): Vector4;
+    static max(value1: Vector4, value2: Vector4): Vector4;
+    static maxMagnitude(value1: Vector4, value2: Vector4): Vector4;
+    static maxMagnitudeNumber(value1: Vector4, value2: Vector4): Vector4;
+    static maxNative(value1: Vector4, value2: Vector4): Vector4;
+    static maxNumber(value1: Vector4, value2: Vector4): Vector4;
+    static min(value1: Vector4, value2: Vector4): Vector4;
+    static minMagnitude(value1: Vector4, value2: Vector4): Vector4;
+    static minMagnitudeNumber(value1: Vector4, value2: Vector4): Vector4;
+    static minNative(value1: Vector4, value2: Vector4): Vector4;
+    static minNumber(value1: Vector4, value2: Vector4): Vector4;
+    static multiply(left: Vector4, right: Vector4): Vector4;
+    static multiply(left: Vector4, right: number): Vector4;
+    static multiply(left: number, right: Vector4): Vector4;
+    static multiplyAddEstimate(left: Vector4, right: Vector4, addend: Vector4): Vector4;
+    static negate(value: Vector4): Vector4;
+    static none(vector: Vector4, value: number): boolean;
+    static noneWhereAllBitsSet(vector: Vector4): boolean;
+    static normalize(vector: Vector4): Vector4;
+    static onesComplement(value: Vector4): Vector4;
+    static radiansToDegrees(radians: Vector4): Vector4;
+    static round(vector: Vector4): Vector4;
+    static round(vector: Vector4, mode: number): Vector4;
+    static shuffle(vector: Vector4, xIndex: number, yIndex: number, zIndex: number, wIndex: number): Vector4;
+    static sin(vector: Vector4): Vector4;
+    static sinCos(vector: Vector4): ValueTuple_Vector4_Vector4;
+    static squareRoot(value: Vector4): Vector4;
+    static subtract(left: Vector4, right: Vector4): Vector4;
+    static sum(value: Vector4): number;
+    static transform(position: Vector2, matrix: Matrix4x4): Vector4;
+    static transform(value: Vector2, rotation: Quaternion): Vector4;
+    static transform(position: Vector3, matrix: Matrix4x4): Vector4;
+    static transform(value: Vector3, rotation: Quaternion): Vector4;
+    static transform(vector: Vector4, matrix: Matrix4x4): Vector4;
+    static transform(value: Vector4, rotation: Quaternion): Vector4;
+    static truncate(vector: Vector4): Vector4;
+    static xor(left: Vector4, right: Vector4): Vector4;
     x: number;
     y: number;
     z: number;
+    w: number;
+    copyTo(array: SingleArray): void;
+    copyTo(array: SingleArray, index: number): void;
+    equals(other: Vector4): boolean;
     equals(obj: Object): boolean;
-    equals(other: Vector3): boolean;
     getHashCode(): number;
     length(): number;
     lengthSquared(): number;
-    normalize(): void;
     toString(): string;
+    toString(format: string): string;
+    toString(format: string, formatProvider: IFormatProvider | null): string;
     getType(): Type | null;
+    asPlane(): Plane;
+    asQuaternion(): Quaternion;
+    asVector2(): Vector2;
+    asVector3(): Vector3;
+    extractMostSignificantBits(): number;
+    getElement(index: number): number;
+    toScalar(): number;
+    withElement(index: number, value: number): Vector4;
+    asVector128(): Vector128_Single;
+    [index: number]: number;
+}
+
+declare class IEquatable_Matrix {
+    equals(other: Matrix): boolean;
 }
 
 declare class Plane {
@@ -1914,6 +2614,17 @@ declare class IReadOnlyCollection_f64Vector3 {
 
 declare class IEquatable_Quaternion {
     equals(other: Quaternion): boolean;
+}
+
+declare class IEquatable_Vector3 {
+    equals(other: Vector3): boolean;
+}
+
+declare class ArrayOfVector3 {
+    /** @customName new */
+    static inst(length: number): ArrayOfVector3;
+    [index: number]: Vector3;
+    readonly length: number;
 }
 
 declare class IEquatable_Vector2 {
@@ -2217,6 +2928,153 @@ declare class IEquatable_Color3 {
     equals(other: Color3): boolean;
 }
 
+declare class ColorBGRA {
+    /** @customName new */
+    static inst(): ColorBGRA;
+    /** @customName new */
+    static inst(value: number): ColorBGRA;
+    /** @customName new */
+    static inst(value: number): ColorBGRA;
+    /** @customName new */
+    static inst(red: number, green: number, blue: number, alpha: number): ColorBGRA;
+    /** @customName new */
+    static inst(red: number, green: number, blue: number, alpha: number): ColorBGRA;
+    /** @customName new */
+    static inst(value: Vector4): ColorBGRA;
+    /** @customName new */
+    static inst(value: Vector3, alpha: number): ColorBGRA;
+    /** @customName new */
+    static inst(bgra: number): ColorBGRA;
+    /** @customName new */
+    static inst(bgra: number): ColorBGRA;
+    /** @customName new */
+    static inst(values: SingleArray): ColorBGRA;
+    /** @customName new */
+    static inst(values: ByteArray): ColorBGRA;
+    static fromBgra(color: number): ColorBGRA;
+    static fromBgra(color: number): ColorBGRA;
+    static fromRgba(color: number): ColorBGRA;
+    static fromRgba(color: number): ColorBGRA;
+    static add(left: ColorBGRA, right: ColorBGRA): ColorBGRA;
+    static subtract(left: ColorBGRA, right: ColorBGRA): ColorBGRA;
+    static modulate(left: ColorBGRA, right: ColorBGRA): ColorBGRA;
+    static scale(value: ColorBGRA, scale: number): ColorBGRA;
+    static negate(value: ColorBGRA): ColorBGRA;
+    static clamp(value: ColorBGRA, min: ColorBGRA, max: ColorBGRA): ColorBGRA;
+    static lerp(start: ColorBGRA, end: ColorBGRA, amount: number): ColorBGRA;
+    static smoothStep(start: ColorBGRA, end: ColorBGRA, amount: number): ColorBGRA;
+    static max(left: ColorBGRA, right: ColorBGRA): ColorBGRA;
+    static min(left: ColorBGRA, right: ColorBGRA): ColorBGRA;
+    static adjustContrast(value: ColorBGRA, contrast: number): ColorBGRA;
+    static adjustSaturation(value: ColorBGRA, saturation: number): ColorBGRA;
+    b: number;
+    g: number;
+    r: number;
+    a: number;
+    toBgra(): number;
+    toRgba(): number;
+    toVector3(): Vector3;
+    toColor3(): Color3;
+    toVector4(): Vector4;
+    toArray(): ByteArray;
+    getBrightness(): number;
+    getHue(): number;
+    getSaturation(): number;
+    toString(): string;
+    toString(format: string, formatProvider: IFormatProvider | null): string;
+    getHashCode(): number;
+    equals(other: ColorBGRA): boolean;
+    equals(value: Object): boolean;
+    getType(): Type | null;
+    [index: number]: number;
+}
+
+declare class Color {
+    /** @customName new */
+    static inst(): Color;
+    /** @customName new */
+    static inst(color: Vector4): Color;
+    /** @customName new */
+    static inst(color: Vector3): Color;
+    /** @customName new */
+    static inst(r: number, g: number, b: number): Color;
+    /** @customName new */
+    static inst(r: number, g: number, b: number): Color;
+    /** @customName new */
+    static inst(r: number, g: number, b: number, alpha: number): Color;
+    /** @customName new */
+    static inst(r: number, g: number, b: number, alpha: number): Color;
+    static lerp(value1: Color, value2: Color, amount: number): Color;
+    static fromNonPremultiplied(vector: Vector4): Color;
+    static fromNonPremultiplied(r: number, g: number, b: number, a: number): Color;
+    static multiply(value: Color, scale: number): Color;
+    b: number;
+    g: number;
+    r: number;
+    a: number;
+    packedValue: number;
+    equals(other: Color): boolean;
+    toVector3(): Vector3;
+    toVector4(): Vector4;
+    getHashCode(): number;
+    equals(obj: Object): boolean;
+    toString(): string;
+    getType(): Type | null;
+    darker(): Color;
+    brighter(): Color;
+    getRGB(): number;
+}
+
+declare class Vector4 {
+    /** @customName new */
+    static inst(): Vector4;
+    /** @customName new */
+    static inst(x: number, y: number, z: number, w: number): Vector4;
+    /** @customName new */
+    static inst(value: Vector2, z: number, w: number): Vector4;
+    /** @customName new */
+    static inst(value: Vector3, w: number): Vector4;
+    /** @customName new */
+    static inst(value: number): Vector4;
+    static add(value1: Vector4, value2: Vector4): Vector4;
+    static barycentric(value1: Vector4, value2: Vector4, value3: Vector4, amount1: number, amount2: number): Vector4;
+    static catmullRom(value1: Vector4, value2: Vector4, value3: Vector4, value4: Vector4, amount: number): Vector4;
+    static clamp(value1: Vector4, min: Vector4, max: Vector4): Vector4;
+    static distance(value1: Vector4, value2: Vector4): number;
+    static distanceSquared(value1: Vector4, value2: Vector4): number;
+    static divide(value1: Vector4, value2: Vector4): Vector4;
+    static divide(value1: Vector4, divider: number): Vector4;
+    static dot(vector1: Vector4, vector2: Vector4): number;
+    static hermite(value1: Vector4, tangent1: Vector4, value2: Vector4, tangent2: Vector4, amount: number): Vector4;
+    static lerp(value1: Vector4, value2: Vector4, amount: number): Vector4;
+    static max(value1: Vector4, value2: Vector4): Vector4;
+    static min(value1: Vector4, value2: Vector4): Vector4;
+    static multiply(value1: Vector4, value2: Vector4): Vector4;
+    static multiply(value1: Vector4, scaleFactor: number): Vector4;
+    static negate(value: Vector4): Vector4;
+    static normalize(vector: Vector4): Vector4;
+    static smoothStep(value1: Vector4, value2: Vector4, amount: number): Vector4;
+    static subtract(value1: Vector4, value2: Vector4): Vector4;
+    static transform(position: Vector2, matrix: Matrix): Vector4;
+    static transform(position: Vector3, matrix: Matrix): Vector4;
+    static transform(vector: Vector4, matrix: Matrix): Vector4;
+    static transform(value: Vector2, rotation: Quaternion): Vector4;
+    static transform(value: Vector3, rotation: Quaternion): Vector4;
+    static transform(value: Vector4, rotation: Quaternion): Vector4;
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+    equals(obj: Object): boolean;
+    equals(other: Vector4): boolean;
+    getHashCode(): number;
+    length(): number;
+    lengthSquared(): number;
+    normalize(): void;
+    toString(): string;
+    getType(): Type | null;
+}
+
 declare class IEnumerator_Byte {
     readonly current: number;
 }
@@ -2262,6 +3120,26 @@ declare class f64AngleSingle {
     toString(format: string, formatProvider: IFormatProvider | null): string;
     getHashCode(): number;
     equals(obj: Object): boolean;
+    getType(): Type | null;
+}
+
+declare class Euler {
+    /** @customName new */
+    static inst(): Euler;
+    /** @customName new */
+    static inst(yaw: AngleSingle, pitch: AngleSingle, roll: AngleSingle): Euler;
+    yaw: AngleSingle;
+    pitch: AngleSingle;
+    roll: AngleSingle;
+    xz: AngleSingle;
+    zy: AngleSingle;
+    xy: AngleSingle;
+    wrap(): Euler;
+    wrapPositive(): Euler;
+    equals(other: Euler): boolean;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
     getType(): Type | null;
 }
 
@@ -2417,8 +3295,133 @@ declare class ArrayOfBackendGameObject {
     readonly length: number;
 }
 
-declare class IEnumerator_Int32 {
-    readonly current: number;
+declare class List_BackendGameObject_Enumerator {
+    /** @customName new */
+    static inst(): List_BackendGameObject_Enumerator;
+    readonly current: BackendGameObject | null;
+    dispose(): void;
+    moveNext(): boolean;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
+declare class IEquatable_Vector2 {
+    equals(other: Vector2): boolean;
+}
+
+declare class ValueTuple_Vector2_Vector2 {
+    /** @customName new */
+    static inst(): ValueTuple_Vector2_Vector2;
+    /** @customName new */
+    static inst(item1: Vector2, item2: Vector2): ValueTuple_Vector2_Vector2;
+    item1: Vector2;
+    item2: Vector2;
+    equals(obj: Object): boolean;
+    equals(other: ValueTuple_Vector2_Vector2): boolean;
+    compareTo(other: ValueTuple_Vector2_Vector2): number;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
+declare class Matrix3x2 {
+    /** @customName new */
+    static inst(): Matrix3x2;
+    /** @customName new */
+    static inst(m11: number, m12: number, m21: number, m22: number, m31: number, m32: number): Matrix3x2;
+    static add(value1: Matrix3x2, value2: Matrix3x2): Matrix3x2;
+    static create(value: number): Matrix3x2;
+    static create(value: Vector2): Matrix3x2;
+    static create(x: Vector2, y: Vector2, z: Vector2): Matrix3x2;
+    static create(m11: number, m12: number, m21: number, m22: number, m31: number, m32: number): Matrix3x2;
+    static createRotation(radians: number): Matrix3x2;
+    static createRotation(radians: number, centerPoint: Vector2): Matrix3x2;
+    static createScale(scales: Vector2): Matrix3x2;
+    static createScale(xScale: number, yScale: number): Matrix3x2;
+    static createScale(xScale: number, yScale: number, centerPoint: Vector2): Matrix3x2;
+    static createScale(scales: Vector2, centerPoint: Vector2): Matrix3x2;
+    static createScale(scale: number): Matrix3x2;
+    static createScale(scale: number, centerPoint: Vector2): Matrix3x2;
+    static createSkew(radiansX: number, radiansY: number): Matrix3x2;
+    static createSkew(radiansX: number, radiansY: number, centerPoint: Vector2): Matrix3x2;
+    static createTranslation(position: Vector2): Matrix3x2;
+    static createTranslation(xPosition: number, yPosition: number): Matrix3x2;
+    static lerp(matrix1: Matrix3x2, matrix2: Matrix3x2, amount: number): Matrix3x2;
+    static multiply(value1: Matrix3x2, value2: Matrix3x2): Matrix3x2;
+    static multiply(value1: Matrix3x2, value2: number): Matrix3x2;
+    static negate(value: Matrix3x2): Matrix3x2;
+    static subtract(value1: Matrix3x2, value2: Matrix3x2): Matrix3x2;
+    readonly isIdentity: boolean;
+    translation: Vector2;
+    x: Vector2;
+    y: Vector2;
+    z: Vector2;
+    m11: number;
+    m12: number;
+    m21: number;
+    m22: number;
+    m31: number;
+    m32: number;
+    equals(obj: Object): boolean;
+    equals(other: Matrix3x2): boolean;
+    getDeterminant(): number;
+    getElement(row: number, column: number): number;
+    getRow(index: number): Vector2;
+    getHashCode(): number;
+    toString(): string;
+    withElement(row: number, column: number, value: number): Matrix3x2;
+    withRow(index: number, value: Vector2): Matrix3x2;
+    getType(): Type | null;
+    [index: number]: Vector2;
+    [index: [number, number]]: number;
+}
+
+declare class IEquatable_ValueTuple_Vector3_Vector3 {
+    equals(other: ValueTuple_Vector3_Vector3): boolean;
+}
+
+declare class IComparable_ValueTuple_Vector3_Vector3 {
+    compareTo(other: ValueTuple_Vector3_Vector3): number;
+}
+
+declare class IEquatable_Matrix4x4 {
+    equals(other: Matrix4x4): boolean;
+}
+
+declare class Plane {
+    /** @customName new */
+    static inst(): Plane;
+    /** @customName new */
+    static inst(x: number, y: number, z: number, d: number): Plane;
+    /** @customName new */
+    static inst(normal: Vector3, d: number): Plane;
+    /** @customName new */
+    static inst(value: Vector4): Plane;
+    static create(value: Vector4): Plane;
+    static create(normal: Vector3, d: number): Plane;
+    static create(x: number, y: number, z: number, d: number): Plane;
+    static createFromVertices(point1: Vector3, point2: Vector3, point3: Vector3): Plane;
+    static dot(plane: Plane, value: Vector4): number;
+    static dotCoordinate(plane: Plane, value: Vector3): number;
+    static dotNormal(plane: Plane, value: Vector3): number;
+    static normalize(value: Plane): Plane;
+    static transform(plane: Plane, matrix: Matrix4x4): Plane;
+    static transform(plane: Plane, rotation: Quaternion): Plane;
+    normal: Vector3;
+    d: number;
+    equals(obj: Object): boolean;
+    equals(other: Plane): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+    asVector4(): Vector4;
+    asVector128(): Vector128_Single;
+}
+
+declare class IEquatable_Quaternion {
+    equals(other: Quaternion): boolean;
 }
 
 declare class IList_Single {
@@ -2448,6 +3451,10 @@ declare class IReadOnlyList_Single {
 
 declare class IReadOnlyCollection_Single {
     readonly count: number;
+}
+
+declare class IEnumerator_Int32 {
+    readonly current: number;
 }
 
 declare class IList_Vector2 {
@@ -2483,83 +3490,11 @@ declare class IEquatable_Quaternion {
     equals(other: Quaternion): boolean;
 }
 
-declare class Vector3 {
-    /** @customName new */
-    static inst(): Vector3;
-    /** @customName new */
-    static inst(value: number): Vector3;
-    /** @customName new */
-    static inst(x: number, y: number, z: number): Vector3;
-    /** @customName new */
-    static inst(value: Vector2, z: number): Vector3;
-    /** @customName new */
-    static inst(values: SingleArray): Vector3;
-    static moveTo(from: Vector3& | null, to: Vector3& | null, maxTravelDistance: number): Vector3;
-    static add(left: Vector3, right: Vector3): Vector3;
-    static subtract(left: Vector3& | null, right: Vector3& | null): Vector3;
-    static multiply(value: Vector3, scale: number): Vector3;
-    static modulate(left: Vector3, right: Vector3): Vector3;
-    static divide(value: Vector3, scale: number): Vector3;
-    static demodulate(left: Vector3, right: Vector3): Vector3;
-    static negate(value: Vector3): Vector3;
-    static barycentric(value1: Vector3, value2: Vector3, value3: Vector3, amount1: number, amount2: number): Vector3;
-    static clamp(value: Vector3, min: Vector3, max: Vector3): Vector3;
-    static cross(left: Vector3& | null, right: Vector3& | null): Vector3;
-    static distance(value1: Vector3, value2: Vector3): number;
-    static distanceSquared(value1: Vector3, value2: Vector3): number;
-    static dot(left: Vector3, right: Vector3): number;
-    static normalize(value: Vector3): Vector3;
-    static lerp(start: Vector3, end: Vector3, amount: number): Vector3;
-    static smoothStep(start: Vector3, end: Vector3, amount: number): Vector3;
-    static hermite(value1: Vector3, tangent1: Vector3, value2: Vector3, tangent2: Vector3, amount: number): Vector3;
-    static catmullRom(value1: Vector3, value2: Vector3, value3: Vector3, value4: Vector3, amount: number): Vector3;
-    static mod(left: Vector3, right: Vector3): Vector3;
-    static max(left: Vector3, right: Vector3): Vector3;
-    static min(left: Vector3, right: Vector3): Vector3;
-    static project(vector: Vector3, x: number, y: number, width: number, height: number, minZ: number, maxZ: number, worldViewProjection: Matrix): Vector3;
-    static unproject(vector: Vector3, x: number, y: number, width: number, height: number, minZ: number, maxZ: number, worldViewProjection: Matrix): Vector3;
-    static reflect(vector: Vector3, normal: Vector3): Vector3;
-    static orthogonalize(destination: Vector3Array, source: Vector3Array): void;
-    static orthonormalize(destination: Vector3Array, source: Vector3Array): void;
-    static transform(vector: Vector3, rotation: Quaternion): Vector3;
-    static transform(source: Vector3Array, rotation: Quaternion& | null, destination: Vector3Array): void;
-    static transform(vector: Vector3, transform: Matrix): Vector4;
-    static transform(source: Vector3Array, transform: Matrix& | null, destination: Vector4Array): void;
-    static transformCoordinate(coordinate: Vector3, transform: Matrix): Vector3;
-    static transformCoordinate(source: Vector3Array, transform: Matrix& | null, destination: Vector3Array): void;
-    static transformNormal(normal: Vector3, transform: Matrix): Vector3;
-    static transformNormal(source: Vector3Array, transform: Matrix& | null, destination: Vector3Array): void;
-    static rotationYawPitchRoll(quaternion: Quaternion): Vector3;
-    static rotateAround(source: Vector3& | null, target: Vector3& | null, axis: Vector3& | null, angle: number): Vector3;
-    static nearEqual(left: Vector3& | null, right: Vector3& | null, epsilon: Vector3& | null): boolean;
-    readonly isNormalized: boolean;
-    x: number;
-    y: number;
-    z: number;
-    length(): number;
-    lengthSquared(): number;
-    normalize(): void;
-    pow(exponent: number): void;
-    toArray(): SingleArray;
-    toString(): string;
-    toString(format: string, formatProvider: IFormatProvider | null): string;
-    getHashCode(): number;
-    equalsStrict(other: Vector3): boolean;
-    equals(other: Vector3): boolean;
-    equals(value: Object): boolean;
-    getType(): Type | null;
-    [index: number]: number;
-}
-
 declare class ArrayOfQuaternion {
     /** @customName new */
     static inst(length: number): ArrayOfQuaternion;
     [index: number]: Quaternion;
     readonly length: number;
-}
-
-declare class IEquatable_Vector4 {
-    equals(other: Vector4): boolean;
 }
 
 declare class IEquatable_Matrix {
@@ -2641,69 +3576,56 @@ declare class IReadOnlyCollection_Vector4 {
     readonly count: number;
 }
 
-declare class IEquatable_Vector3 {
-    equals(other: Vector3): boolean;
+declare class IList_Vector3 {
+    indexOf(item: Vector3): number;
+    insert(index: number, item: Vector3): void;
+    removeAt(index: number): void;
+    [index: number]: Vector3;
 }
 
-declare class ArrayOfVector3 {
-    /** @customName new */
-    static inst(length: number): ArrayOfVector3;
+declare class ICollection_Vector3 {
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    add(item: Vector3): void;
+    clear(): void;
+    contains(item: Vector3): boolean;
+    copyTo(array: Vector3Array, arrayIndex: number): void;
+    remove(item: Vector3): boolean;
+}
+
+declare class IEnumerable_Vector3 {
+    getEnumerator(): IEnumerator_Vector3;
+}
+
+declare class IReadOnlyList_Vector3 {
     [index: number]: Vector3;
-    readonly length: number;
+}
+
+declare class IReadOnlyCollection_Vector3 {
+    readonly count: number;
+}
+
+declare class IEquatable_Vector4 {
+    equals(other: Vector4): boolean;
+}
+
+declare class ValueTuple_Vector4_Vector4 {
+    /** @customName new */
+    static inst(): ValueTuple_Vector4_Vector4;
+    /** @customName new */
+    static inst(item1: Vector4, item2: Vector4): ValueTuple_Vector4_Vector4;
+    item1: Vector4;
+    item2: Vector4;
+    equals(obj: Object): boolean;
+    equals(other: ValueTuple_Vector4_Vector4): boolean;
+    compareTo(other: ValueTuple_Vector4_Vector4): number;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
 }
 
 declare class IEquatable_Plane {
     equals(other: Plane): boolean;
-}
-
-declare class Vector4 {
-    /** @customName new */
-    static inst(): Vector4;
-    /** @customName new */
-    static inst(x: number, y: number, z: number, w: number): Vector4;
-    /** @customName new */
-    static inst(value: Vector2, z: number, w: number): Vector4;
-    /** @customName new */
-    static inst(value: Vector3, w: number): Vector4;
-    /** @customName new */
-    static inst(value: number): Vector4;
-    static add(value1: Vector4, value2: Vector4): Vector4;
-    static barycentric(value1: Vector4, value2: Vector4, value3: Vector4, amount1: number, amount2: number): Vector4;
-    static catmullRom(value1: Vector4, value2: Vector4, value3: Vector4, value4: Vector4, amount: number): Vector4;
-    static clamp(value1: Vector4, min: Vector4, max: Vector4): Vector4;
-    static distance(value1: Vector4, value2: Vector4): number;
-    static distanceSquared(value1: Vector4, value2: Vector4): number;
-    static divide(value1: Vector4, value2: Vector4): Vector4;
-    static divide(value1: Vector4, divider: number): Vector4;
-    static dot(vector1: Vector4, vector2: Vector4): number;
-    static hermite(value1: Vector4, tangent1: Vector4, value2: Vector4, tangent2: Vector4, amount: number): Vector4;
-    static lerp(value1: Vector4, value2: Vector4, amount: number): Vector4;
-    static max(value1: Vector4, value2: Vector4): Vector4;
-    static min(value1: Vector4, value2: Vector4): Vector4;
-    static multiply(value1: Vector4, value2: Vector4): Vector4;
-    static multiply(value1: Vector4, scaleFactor: number): Vector4;
-    static negate(value: Vector4): Vector4;
-    static normalize(vector: Vector4): Vector4;
-    static smoothStep(value1: Vector4, value2: Vector4, amount: number): Vector4;
-    static subtract(value1: Vector4, value2: Vector4): Vector4;
-    static transform(position: Vector2, matrix: Matrix): Vector4;
-    static transform(position: Vector3, matrix: Matrix): Vector4;
-    static transform(vector: Vector4, matrix: Matrix): Vector4;
-    static transform(value: Vector2, rotation: Quaternion): Vector4;
-    static transform(value: Vector3, rotation: Quaternion): Vector4;
-    static transform(value: Vector4, rotation: Quaternion): Vector4;
-    x: number;
-    y: number;
-    z: number;
-    w: number;
-    equals(obj: Object): boolean;
-    equals(other: Vector4): boolean;
-    getHashCode(): number;
-    length(): number;
-    lengthSquared(): number;
-    normalize(): void;
-    toString(): string;
-    getType(): Type | null;
 }
 
 declare class BoundingBox {
@@ -2792,6 +3714,35 @@ declare class BoundingFrustum {
 
 declare class IEnumerator_f64Vector3 {
     readonly current: f64Vector3;
+}
+
+declare class IList_Vector3 {
+    indexOf(item: Vector3): number;
+    insert(index: number, item: Vector3): void;
+    removeAt(index: number): void;
+    [index: number]: Vector3;
+}
+
+declare class ICollection_Vector3 {
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    add(item: Vector3): void;
+    clear(): void;
+    contains(item: Vector3): boolean;
+    copyTo(array: Vector3Array, arrayIndex: number): void;
+    remove(item: Vector3): boolean;
+}
+
+declare class IEnumerable_Vector3 {
+    getEnumerator(): IEnumerator_Vector3;
+}
+
+declare class IReadOnlyList_Vector3 {
+    [index: number]: Vector3;
+}
+
+declare class IReadOnlyCollection_Vector3 {
+    readonly count: number;
 }
 
 declare class IList_Vector2 {
@@ -3060,12 +4011,263 @@ declare class UnlimitedArray_Rad3dBoxDef_Enumerator {
     getType(): Type | null;
 }
 
+declare class IEquatable_ColorBGRA {
+    equals(other: ColorBGRA): boolean;
+}
+
+declare class Color3 {
+    /** @customName new */
+    static inst(): Color3;
+    /** @customName new */
+    static inst(value: number): Color3;
+    /** @customName new */
+    static inst(red: number, green: number, blue: number): Color3;
+    /** @customName new */
+    static inst(value: Vector3): Color3;
+    /** @customName new */
+    static inst(rgb: number): Color3;
+    /** @customName new */
+    static inst(rgb: number): Color3;
+    /** @customName new */
+    static inst(values: SingleArray): Color3;
+    static add(left: Color3, right: Color3): Color3;
+    static subtract(left: Color3, right: Color3): Color3;
+    static modulate(left: Color3, right: Color3): Color3;
+    static scale(value: Color3, scale: number): Color3;
+    static negate(value: Color3): Color3;
+    static clamp(value: Color3, min: Color3, max: Color3): Color3;
+    static lerp(start: Color3, end: Color3, amount: number): Color3;
+    static smoothStep(start: Color3, end: Color3, amount: number): Color3;
+    static max(left: Color3, right: Color3): Color3;
+    static min(left: Color3, right: Color3): Color3;
+    static adjustContrast(value: Color3, contrast: number): Color3;
+    static adjustSaturation(value: Color3, saturation: number): Color3;
+    r: number;
+    g: number;
+    b: number;
+    toRgb(): number;
+    pow(exponent: number): void;
+    toVector3(): Vector3;
+    toArray(): SingleArray;
+    toSRgb(): Color3;
+    toLinear(): Color3;
+    toColor4(): Color4;
+    toString(): string;
+    toString(format: string, formatProvider: IFormatProvider | null): string;
+    getHashCode(): number;
+    equals(other: Color3): boolean;
+    equals(value: Object): boolean;
+    getType(): Type | null;
+    [index: number]: number;
+}
+
+declare class Color4 {
+    /** @customName new */
+    static inst(): Color4;
+    /** @customName new */
+    static inst(value: number): Color4;
+    /** @customName new */
+    static inst(red: number, green: number, blue: number, alpha: number): Color4;
+    /** @customName new */
+    static inst(value: Vector4): Color4;
+    /** @customName new */
+    static inst(value: Vector3, alpha: number): Color4;
+    /** @customName new */
+    static inst(rgba: number): Color4;
+    /** @customName new */
+    static inst(rgba: number): Color4;
+    /** @customName new */
+    static inst(values: SingleArray): Color4;
+    /** @customName new */
+    static inst(color: Color3): Color4;
+    /** @customName new */
+    static inst(color: Color): Color4;
+    /** @customName new */
+    static inst(color: ColorBGRA): Color4;
+    /** @customName new */
+    static inst(color: Color3, alpha: number): Color4;
+    static add(left: Color4, right: Color4): Color4;
+    static subtract(left: Color4, right: Color4): Color4;
+    static modulate(left: Color4, right: Color4): Color4;
+    static scale(value: Color4, scale: number): Color4;
+    static negate(value: Color4): Color4;
+    static clamp(value: Color4, min: Color4, max: Color4): Color4;
+    static lerp(start: Color4, end: Color4, amount: number): Color4;
+    static smoothStep(start: Color4, end: Color4, amount: number): Color4;
+    static max(left: Color4, right: Color4): Color4;
+    static min(left: Color4, right: Color4): Color4;
+    static adjustContrast(value: Color4, contrast: number): Color4;
+    static adjustSaturation(value: Color4, saturation: number): Color4;
+    static premultiplyAlpha(value: Color4): Color4;
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+    toBgra(): number;
+    toRgba(): number;
+    toVector3(): Vector3;
+    toVector4(): Vector4;
+    toArray(): SingleArray;
+    toSRgb(): Color4;
+    toLinear(): Color4;
+    toColor3(): Color3;
+    toString(): string;
+    toString(format: string, formatProvider: IFormatProvider | null): string;
+    getHashCode(): number;
+    equals(other: Color4): boolean;
+    equals(value: Object): boolean;
+    getType(): Type | null;
+    [index: number]: number;
+}
+
+declare class Color {
+    /** @customName new */
+    static inst(): Color;
+    /** @customName new */
+    static inst(value: number): Color;
+    /** @customName new */
+    static inst(value: number): Color;
+    /** @customName new */
+    static inst(red: number, green: number, blue: number, alpha: number): Color;
+    /** @customName new */
+    static inst(red: number, green: number, blue: number): Color;
+    /** @customName new */
+    static inst(red: number, green: number, blue: number, alpha: number): Color;
+    /** @customName new */
+    static inst(red: number, green: number, blue: number): Color;
+    /** @customName new */
+    static inst(value: Vector4): Color;
+    /** @customName new */
+    static inst(value: Vector3, alpha: number): Color;
+    /** @customName new */
+    static inst(value: Vector3): Color;
+    /** @customName new */
+    static inst(rgba: number): Color;
+    /** @customName new */
+    static inst(rgba: number): Color;
+    /** @customName new */
+    static inst(values: SingleArray): Color;
+    /** @customName new */
+    static inst(values: ByteArray): Color;
+    static add(left: Color, right: Color): Color;
+    static subtract(left: Color, right: Color): Color;
+    static modulate(left: Color, right: Color): Color;
+    static scale(value: Color, scale: number): Color;
+    static negate(value: Color): Color;
+    static fromBgra(color: number): Color;
+    static fromBgra(color: number): Color;
+    static fromAbgr(color: number): Color;
+    static fromAbgr(color: number): Color;
+    static fromRgba(color: number): Color;
+    static fromRgba(color: number): Color;
+    static clamp(value: Color, min: Color, max: Color): Color;
+    static lerp(start: Color, end: Color, amount: number): Color;
+    static smoothStep(start: Color, end: Color, amount: number): Color;
+    static max(left: Color, right: Color): Color;
+    static min(left: Color, right: Color): Color;
+    static adjustContrast(value: Color, contrast: number): Color;
+    static adjustSaturation(value: Color, saturation: number): Color;
+    r: number;
+    g: number;
+    b: number;
+    a: number;
+    toBgra(): number;
+    toRgba(): number;
+    toArgb(): number;
+    toAbgr(): number;
+    toVector3(): Vector3;
+    toColor3(): Color3;
+    toVector4(): Vector4;
+    toArray(): ByteArray;
+    getBrightness(): number;
+    getHue(): number;
+    getSaturation(): number;
+    toColor4(): Color4;
+    toString(): string;
+    getHashCode(): number;
+    equals(other: Color): boolean;
+    equals(value: Object): boolean;
+    getType(): Type | null;
+    [index: number]: number;
+}
+
+declare class IEquatable_Color {
+    equals(other: Color): boolean;
+}
+
+declare class IPackedVector {
+    packFromVector4(vector: Vector4): void;
+    toVector4(): Vector4;
+}
+
+declare class IPackedVector_UInt32 {
+    packedValue: number;
+}
+
+declare class IEquatable_Vector4 {
+    equals(other: Vector4): boolean;
+}
+
+declare class ArrayOfVector4 {
+    /** @customName new */
+    static inst(length: number): ArrayOfVector4;
+    [index: number]: Vector4;
+    readonly length: number;
+}
+
 declare class IComparable_f64AngleSingle {
     compareTo(other: f64AngleSingle): number;
 }
 
 declare class IEquatable_f64AngleSingle {
     equals(other: f64AngleSingle): boolean;
+}
+
+declare class IEquatable_Euler {
+    equals(other: Euler): boolean;
+}
+
+declare class AngleSingle {
+    /** @customName new */
+    static inst(): AngleSingle;
+    /** @customName new */
+    static inst(angle: number, type: number): AngleSingle;
+    /** @customName new */
+    static inst(arcLength: number, radius: number): AngleSingle;
+    static wrap(value: AngleSingle): AngleSingle;
+    static wrapPositive(value: AngleSingle): AngleSingle;
+    static min(left: AngleSingle, right: AngleSingle): AngleSingle;
+    static max(left: AngleSingle, right: AngleSingle): AngleSingle;
+    static add(left: AngleSingle, right: AngleSingle): AngleSingle;
+    static subtract(left: AngleSingle, right: AngleSingle): AngleSingle;
+    static multiply(left: AngleSingle, right: AngleSingle): AngleSingle;
+    static divide(left: AngleSingle, right: AngleSingle): AngleSingle;
+    revolutions: number;
+    degrees: number;
+    minutes: number;
+    seconds: number;
+    radians: number;
+    milliradians: number;
+    gradians: number;
+    readonly isRight: boolean;
+    readonly isStraight: boolean;
+    readonly isFullRotation: boolean;
+    readonly isOblique: boolean;
+    readonly isAcute: boolean;
+    readonly isObtuse: boolean;
+    readonly isReflex: boolean;
+    readonly complement: AngleSingle;
+    readonly supplement: AngleSingle;
+    wrap(): void;
+    wrapPositive(): void;
+    compareTo(other: Object): number;
+    compareTo(other: AngleSingle): number;
+    equals(other: AngleSingle): boolean;
+    toString(): string;
+    toString(format: string, formatProvider: IFormatProvider | null): string;
+    getHashCode(): number;
+    equals(obj: Object): boolean;
+    getType(): Type | null;
 }
 
 declare class IEnumerator_Rad3dWheelDef {
@@ -3167,23 +4369,28 @@ declare class IEnumerator_BackendGameObject {
     readonly current: BackendGameObject | null;
 }
 
+declare class IEquatable_ValueTuple_Vector2_Vector2 {
+    equals(other: ValueTuple_Vector2_Vector2): boolean;
+}
+
+declare class IComparable_ValueTuple_Vector2_Vector2 {
+    compareTo(other: ValueTuple_Vector2_Vector2): number;
+}
+
+declare class IEquatable_Matrix3x2 {
+    equals(other: Matrix3x2): boolean;
+}
+
+declare class IEquatable_Plane {
+    equals(other: Plane): boolean;
+}
+
 declare class IEnumerator_Single {
     readonly current: number;
 }
 
 declare class IEnumerator_Vector2 {
     readonly current: Vector2;
-}
-
-declare class IEquatable_Vector3 {
-    equals(other: Vector3): boolean;
-}
-
-declare class ArrayOfVector3 {
-    /** @customName new */
-    static inst(length: number): ArrayOfVector3;
-    [index: number]: Vector3;
-    readonly length: number;
 }
 
 declare class IList_Quaternion {
@@ -3234,44 +4441,16 @@ declare class IEnumerator_Vector4 {
     readonly current: Vector4;
 }
 
-declare class IList_Vector3 {
-    indexOf(item: Vector3): number;
-    insert(index: number, item: Vector3): void;
-    removeAt(index: number): void;
-    [index: number]: Vector3;
+declare class IEnumerator_Vector3 {
+    readonly current: Vector3;
 }
 
-declare class ICollection_Vector3 {
-    readonly count: number;
-    readonly isReadOnly: boolean;
-    add(item: Vector3): void;
-    clear(): void;
-    contains(item: Vector3): boolean;
-    copyTo(array: Vector3Array, arrayIndex: number): void;
-    remove(item: Vector3): boolean;
+declare class IEquatable_ValueTuple_Vector4_Vector4 {
+    equals(other: ValueTuple_Vector4_Vector4): boolean;
 }
 
-declare class IEnumerable_Vector3 {
-    getEnumerator(): IEnumerator_Vector3;
-}
-
-declare class IReadOnlyList_Vector3 {
-    [index: number]: Vector3;
-}
-
-declare class IReadOnlyCollection_Vector3 {
-    readonly count: number;
-}
-
-declare class IEquatable_Vector4 {
-    equals(other: Vector4): boolean;
-}
-
-declare class ArrayOfVector4 {
-    /** @customName new */
-    static inst(length: number): ArrayOfVector4;
-    [index: number]: Vector4;
-    readonly length: number;
+declare class IComparable_ValueTuple_Vector4_Vector4 {
+    compareTo(other: ValueTuple_Vector4_Vector4): number;
 }
 
 declare class IEquatable_BoundingBox {
@@ -3302,6 +4481,10 @@ declare class IEquatable_BoundingSphere {
 
 declare class IEquatable_BoundingFrustum {
     equals(other: BoundingFrustum | null): boolean;
+}
+
+declare class IEnumerator_Vector3 {
+    readonly current: Vector3;
 }
 
 declare class IEnumerator_Vector2 {
@@ -3547,41 +4730,61 @@ declare class IEnumerator_Rad3dBoxDef {
     readonly current: Rad3dBoxDef;
 }
 
+declare class IEquatable_Color3 {
+    equals(other: Color3): boolean;
+}
+
+declare class IEquatable_Color4 {
+    equals(other: Color4): boolean;
+}
+
+declare class IEquatable_Color {
+    equals(other: Color): boolean;
+}
+
+declare class IList_Vector4 {
+    indexOf(item: Vector4): number;
+    insert(index: number, item: Vector4): void;
+    removeAt(index: number): void;
+    [index: number]: Vector4;
+}
+
+declare class ICollection_Vector4 {
+    readonly count: number;
+    readonly isReadOnly: boolean;
+    add(item: Vector4): void;
+    clear(): void;
+    contains(item: Vector4): boolean;
+    copyTo(array: Vector4Array, arrayIndex: number): void;
+    remove(item: Vector4): boolean;
+}
+
+declare class IEnumerable_Vector4 {
+    getEnumerator(): IEnumerator_Vector4;
+}
+
+declare class IReadOnlyList_Vector4 {
+    [index: number]: Vector4;
+}
+
+declare class IReadOnlyCollection_Vector4 {
+    readonly count: number;
+}
+
+declare class IComparable_AngleSingle {
+    compareTo(other: AngleSingle): number;
+}
+
+declare class IEquatable_AngleSingle {
+    equals(other: AngleSingle): boolean;
+}
+
 declare class IEnumerator_Color3 {
     readonly current: Color3;
 }
 
 declare class IEnumerator_Rad3dPoly {
     readonly current: Rad3dPoly;
-}
-
-declare class IList_Vector3 {
-    indexOf(item: Vector3): number;
-    insert(index: number, item: Vector3): void;
-    removeAt(index: number): void;
-    [index: number]: Vector3;
-}
-
-declare class ICollection_Vector3 {
-    readonly count: number;
-    readonly isReadOnly: boolean;
-    add(item: Vector3): void;
-    clear(): void;
-    contains(item: Vector3): boolean;
-    copyTo(array: Vector3Array, arrayIndex: number): void;
-    remove(item: Vector3): boolean;
-}
-
-declare class IEnumerable_Vector3 {
-    getEnumerator(): IEnumerator_Vector3;
-}
-
-declare class IReadOnlyList_Vector3 {
-    [index: number]: Vector3;
-}
-
-declare class IReadOnlyCollection_Vector3 {
-    readonly count: number;
 }
 
 declare class IEnumerator_Quaternion {
@@ -3614,39 +4817,6 @@ declare class IReadOnlyList_Plane {
 }
 
 declare class IReadOnlyCollection_Plane {
-    readonly count: number;
-}
-
-declare class IEnumerator_Vector3 {
-    readonly current: Vector3;
-}
-
-declare class IList_Vector4 {
-    indexOf(item: Vector4): number;
-    insert(index: number, item: Vector4): void;
-    removeAt(index: number): void;
-    [index: number]: Vector4;
-}
-
-declare class ICollection_Vector4 {
-    readonly count: number;
-    readonly isReadOnly: boolean;
-    add(item: Vector4): void;
-    clear(): void;
-    contains(item: Vector4): boolean;
-    copyTo(array: Vector4Array, arrayIndex: number): void;
-    remove(item: Vector4): boolean;
-}
-
-declare class IEnumerable_Vector4 {
-    getEnumerator(): IEnumerator_Vector4;
-}
-
-declare class IReadOnlyList_Vector4 {
-    [index: number]: Vector4;
-}
-
-declare class IReadOnlyCollection_Vector4 {
     readonly count: number;
 }
 
@@ -3707,16 +4877,12 @@ declare class IEquatable_TimeOnly {
     equals(other: TimeOnly): boolean;
 }
 
-declare class IEnumerator_Vector3 {
-    readonly current: Vector3;
+declare class IEnumerator_Vector4 {
+    readonly current: Vector4;
 }
 
 declare class IEnumerator_Plane {
     readonly current: Plane;
-}
-
-declare class IEnumerator_Vector4 {
-    readonly current: Vector4;
 }
 
 declare class IEnumerator_String {

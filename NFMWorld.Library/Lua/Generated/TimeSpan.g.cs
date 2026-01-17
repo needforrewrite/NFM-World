@@ -135,6 +135,12 @@ public partial class LuaBindings
         lua_pushcfunction(L, (TimeSpan_static_parseExact));
         lua_setfield(L, -2, "parseExact");
 
+        // Create metatable for type table (static properties and fields)
+        lua_newtable(L);
+        lua_pushcfunction(L, (TimeSpan_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
         lua_setglobal(L, "TimeSpan");
     }
 
@@ -210,16 +216,16 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (TimeSpan_method_add));
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (TimeSpan_method_compareTo));
+                lua_pushcfunction(L, (IComparable_method_compareTo));
                 return 1;
             case "duration":
                 lua_pushcfunction(L, (TimeSpan_method_duration));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (TimeSpan_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (TimeSpan_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "negate":
                 lua_pushcfunction(L, (TimeSpan_method_negate));
@@ -234,7 +240,7 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (TimeSpan_method_divide));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (TimeSpan_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (TimeSpan_method_getType));
@@ -569,6 +575,289 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for TimeSpan constructor");
+        return 0;
+    }
+
+    private static int TimeSpan_method_add(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.TimeSpan>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.TimeSpan>(L, 2)!;
+            try
+            {
+                var structValue = (System.TimeSpan)self;
+                var result = structValue.Add(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for add");
+        return 0;
+    }
+
+    private static int TimeSpan_method_duration(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.TimeSpan>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.TimeSpan)self;
+                var result = structValue.Duration();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for duration");
+        return 0;
+    }
+
+    private static int TimeSpan_method_negate(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.TimeSpan>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.TimeSpan)self;
+                var result = structValue.Negate();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for negate");
+        return 0;
+    }
+
+    private static int TimeSpan_method_subtract(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.TimeSpan>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.TimeSpan>(L, 2)!;
+            try
+            {
+                var structValue = (System.TimeSpan)self;
+                var result = structValue.Subtract(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for subtract");
+        return 0;
+    }
+
+    private static int TimeSpan_method_multiply(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.TimeSpan>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<double>(L, 2)!;
+            try
+            {
+                var structValue = (System.TimeSpan)self;
+                var result = structValue.Multiply(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for multiply");
+        return 0;
+    }
+
+    private static int TimeSpan_method_divide(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.TimeSpan>(L, 1);
+
+        if (argCount == 1)
+        {
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Divide(double)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<double>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
+            }
+            next0:
+
+            // Try overload 1: Divide(System.TimeSpan)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.TimeSpan>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<double>(L, 2)!;
+                        try
+                        {
+                            var structValue = (System.TimeSpan)self;
+                            var result = structValue.Divide(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<System.TimeSpan>(L, 2)!;
+                        try
+                        {
+                            var structValue = (System.TimeSpan)self;
+                            var result = structValue.Divide(arg0);
+                            UpdateStruct(L, 1, structValue);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for divide");
+                    return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for divide");
+        return 0;
+    }
+
+    private static int TimeSpan_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.TimeSpan>(L, 1);
+
+        if (argCount == 1)
+        {
+            string? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<string>(L, 2)!;
+            try
+            {
+                var structValue = (System.TimeSpan)self;
+                var result = structValue.ToString(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int TimeSpan_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.TimeSpan>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.TimeSpan)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 
@@ -1243,22 +1532,89 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<string>(L, 1)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 2) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 2)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Parse(string, System.IFormatProvider)
             {
-                var result = System.TimeSpan.Parse(arg0, arg1);
-                PushValue(L, result);
-                return 1;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.IFormatProvider>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: Parse(string, System.IFormatProvider)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.IFormatProvider>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<string>(L, 1)!;
+                        System.IFormatProvider? arg1;
+                        if (lua_isnil(L, 2) != 0)
+                            arg1 = null;
+                        else
+                            arg1 = ToObject<System.IFormatProvider>(L, 2)!;
+                        try
+                        {
+                            var result = System.TimeSpan.Parse(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<string>(L, 1)!;
+                        System.IFormatProvider? arg1;
+                        if (lua_isnil(L, 2) != 0)
+                            arg1 = null;
+                        else
+                            arg1 = ToObject<System.IFormatProvider>(L, 2)!;
+                        try
+                        {
+                            var result = System.TimeSpan.Parse(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for parse");
+                    return 0;
             }
         }
 
@@ -1474,304 +1830,26 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int TimeSpan_method_add(lua_State L)
+    private static int TimeSpan_type__index(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 1)
+        switch (key)
         {
-            var arg0 = ToObject<System.TimeSpan>(L, 2)!;
-            try
-            {
-                var result = ((System.TimeSpan)self).Add(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "zero":
+                PushValue(L, System.TimeSpan.Zero);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for add");
-        return 0;
-    }
-
-    private static int TimeSpan_method_compareTo(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((System.TimeSpan)self).CompareTo(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "maxValue":
+                PushValue(L, System.TimeSpan.MaxValue);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for compareTo");
-        return 0;
-    }
-
-    private static int TimeSpan_method_duration(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.TimeSpan)self).Duration();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "minValue":
+                PushValue(L, System.TimeSpan.MinValue);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for duration");
-        return 0;
-    }
-
-    private static int TimeSpan_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((System.TimeSpan)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            default:
+                lua_rawget(L, 1);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
         }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int TimeSpan_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.TimeSpan)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int TimeSpan_method_negate(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.TimeSpan)self).Negate();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for negate");
-        return 0;
-    }
-
-    private static int TimeSpan_method_subtract(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<System.TimeSpan>(L, 2)!;
-            try
-            {
-                var result = ((System.TimeSpan)self).Subtract(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for subtract");
-        return 0;
-    }
-
-    private static int TimeSpan_method_multiply(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<double>(L, 2)!;
-            try
-            {
-                var result = ((System.TimeSpan)self).Multiply(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for multiply");
-        return 0;
-    }
-
-    private static int TimeSpan_method_divide(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<double>(L, 2)!;
-            try
-            {
-                var result = ((System.TimeSpan)self).Divide(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for divide");
-        return 0;
-    }
-
-    private static int TimeSpan_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.TimeSpan)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int TimeSpan_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<System.TimeSpan>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.TimeSpan)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
-        return 0;
     }
 
 }

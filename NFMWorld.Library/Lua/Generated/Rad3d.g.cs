@@ -114,10 +114,10 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.mad.rad.Rad3d)obj).MaxRadius);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Rad3d_method_equals));
+                lua_pushcfunction(L, (IEquatable_Rad3d_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Rad3d_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Rad3d_method_getType));
@@ -200,71 +200,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for Rad3d constructor");
-        return 0;
-    }
-
-    private static int Rad3d_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.mad.rad.Rad3d>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected Rad3d as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            nfm_world_library.mad.rad.Rad3d? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<nfm_world_library.mad.rad.Rad3d>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.mad.rad.Rad3d)self).Equals(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Rad3d_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.mad.rad.Rad3d>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected Rad3d as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.mad.rad.Rad3d)self).GetHashCode();
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
         return 0;
     }
 

@@ -13,7 +13,7 @@ public partial class LuaBindings
     // =========== Bindings for Vector3 (Vector3) ===========
     private static void Register_Vector3(lua_State L)
     {
-        RegisterMetatable<Stride.Core.Mathematics.Vector3>("MT_Vector3");
+        RegisterMetatable<Microsoft.Xna.Framework.Vector3>("MT_Vector3");
 
         // Create metatable for instances
         luaL_newmetatable(L, "MT_Vector3");
@@ -30,41 +30,33 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector3__newindex));
         lua_setfield(L, -2, "__newindex");
 
+        // Operator: __eq
+        lua_pushcfunction(L, (Vector3_op_op_Equality));
+        lua_setfield(L, -2, "__eq");
+
         // Operator: __add
         lua_pushcfunction(L, (Vector3_op_op_Addition));
         lua_setfield(L, -2, "__add");
-
-        // Operator: __sub
-        lua_pushcfunction(L, (Vector3_op_op_Subtraction));
-        lua_setfield(L, -2, "__sub");
 
         // Operator: __unm
         lua_pushcfunction(L, (Vector3_op_op_UnaryNegation));
         lua_setfield(L, -2, "__unm");
 
-        // Operator: __mul
-        lua_pushcfunction(L, (Vector3_op_op_Multiply));
-        lua_setfield(L, -2, "__mul");
-
-        // Operator: __mul
-        lua_pushcfunction(L, (Vector3_op_op_Multiply));
-        lua_setfield(L, -2, "__mul");
-
-        // Operator: __mul
-        lua_pushcfunction(L, (Vector3_op_op_Multiply));
-        lua_setfield(L, -2, "__mul");
-
-        // Operator: __add
-        lua_pushcfunction(L, (Vector3_op_op_Addition));
-        lua_setfield(L, -2, "__add");
-
         // Operator: __sub
         lua_pushcfunction(L, (Vector3_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
-        // Operator: __div
-        lua_pushcfunction(L, (Vector3_op_op_Division));
-        lua_setfield(L, -2, "__div");
+        // Operator: __mul
+        lua_pushcfunction(L, (Vector3_op_op_Multiply));
+        lua_setfield(L, -2, "__mul");
+
+        // Operator: __mul
+        lua_pushcfunction(L, (Vector3_op_op_Multiply));
+        lua_setfield(L, -2, "__mul");
+
+        // Operator: __mul
+        lua_pushcfunction(L, (Vector3_op_op_Multiply));
+        lua_setfield(L, -2, "__mul");
 
         // Operator: __div
         lua_pushcfunction(L, (Vector3_op_op_Division));
@@ -73,10 +65,6 @@ public partial class LuaBindings
         // Operator: __div
         lua_pushcfunction(L, (Vector3_op_op_Division));
         lua_setfield(L, -2, "__div");
-
-        // Operator: __eq
-        lua_pushcfunction(L, (Vector3_op_op_Equality));
-        lua_setfield(L, -2, "__eq");
 
         // __tostring metamethod
         lua_pushcfunction(L, (Vector3__tostring));
@@ -91,41 +79,17 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector3_new));
         lua_setfield(L, -2, "new");
 
-        // Static method: moveTo
-        lua_pushcfunction(L, (Vector3_static_moveTo));
-        lua_setfield(L, -2, "moveTo");
-
         // Static method: add
         lua_pushcfunction(L, (Vector3_static_add));
         lua_setfield(L, -2, "add");
 
-        // Static method: subtract
-        lua_pushcfunction(L, (Vector3_static_subtract));
-        lua_setfield(L, -2, "subtract");
-
-        // Static method: multiply
-        lua_pushcfunction(L, (Vector3_static_multiply));
-        lua_setfield(L, -2, "multiply");
-
-        // Static method: modulate
-        lua_pushcfunction(L, (Vector3_static_modulate));
-        lua_setfield(L, -2, "modulate");
-
-        // Static method: divide
-        lua_pushcfunction(L, (Vector3_static_divide));
-        lua_setfield(L, -2, "divide");
-
-        // Static method: demodulate
-        lua_pushcfunction(L, (Vector3_static_demodulate));
-        lua_setfield(L, -2, "demodulate");
-
-        // Static method: negate
-        lua_pushcfunction(L, (Vector3_static_negate));
-        lua_setfield(L, -2, "negate");
-
         // Static method: barycentric
         lua_pushcfunction(L, (Vector3_static_barycentric));
         lua_setfield(L, -2, "barycentric");
+
+        // Static method: catmullRom
+        lua_pushcfunction(L, (Vector3_static_catmullRom));
+        lua_setfield(L, -2, "catmullRom");
 
         // Static method: clamp
         lua_pushcfunction(L, (Vector3_static_clamp));
@@ -143,33 +107,21 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector3_static_distanceSquared));
         lua_setfield(L, -2, "distanceSquared");
 
+        // Static method: divide
+        lua_pushcfunction(L, (Vector3_static_divide));
+        lua_setfield(L, -2, "divide");
+
         // Static method: dot
         lua_pushcfunction(L, (Vector3_static_dot));
         lua_setfield(L, -2, "dot");
-
-        // Static method: normalize
-        lua_pushcfunction(L, (Vector3_static_normalize));
-        lua_setfield(L, -2, "normalize");
-
-        // Static method: lerp
-        lua_pushcfunction(L, (Vector3_static_lerp));
-        lua_setfield(L, -2, "lerp");
-
-        // Static method: smoothStep
-        lua_pushcfunction(L, (Vector3_static_smoothStep));
-        lua_setfield(L, -2, "smoothStep");
 
         // Static method: hermite
         lua_pushcfunction(L, (Vector3_static_hermite));
         lua_setfield(L, -2, "hermite");
 
-        // Static method: catmullRom
-        lua_pushcfunction(L, (Vector3_static_catmullRom));
-        lua_setfield(L, -2, "catmullRom");
-
-        // Static method: mod
-        lua_pushcfunction(L, (Vector3_static_mod));
-        lua_setfield(L, -2, "mod");
+        // Static method: lerp
+        lua_pushcfunction(L, (Vector3_static_lerp));
+        lua_setfield(L, -2, "lerp");
 
         // Static method: max
         lua_pushcfunction(L, (Vector3_static_max));
@@ -179,49 +131,43 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector3_static_min));
         lua_setfield(L, -2, "min");
 
-        // Static method: project
-        lua_pushcfunction(L, (Vector3_static_project));
-        lua_setfield(L, -2, "project");
+        // Static method: multiply
+        lua_pushcfunction(L, (Vector3_static_multiply));
+        lua_setfield(L, -2, "multiply");
 
-        // Static method: unproject
-        lua_pushcfunction(L, (Vector3_static_unproject));
-        lua_setfield(L, -2, "unproject");
+        // Static method: negate
+        lua_pushcfunction(L, (Vector3_static_negate));
+        lua_setfield(L, -2, "negate");
+
+        // Static method: normalize
+        lua_pushcfunction(L, (Vector3_static_normalize));
+        lua_setfield(L, -2, "normalize");
 
         // Static method: reflect
         lua_pushcfunction(L, (Vector3_static_reflect));
         lua_setfield(L, -2, "reflect");
 
-        // Static method: orthogonalize
-        lua_pushcfunction(L, (Vector3_static_orthogonalize));
-        lua_setfield(L, -2, "orthogonalize");
+        // Static method: smoothStep
+        lua_pushcfunction(L, (Vector3_static_smoothStep));
+        lua_setfield(L, -2, "smoothStep");
 
-        // Static method: orthonormalize
-        lua_pushcfunction(L, (Vector3_static_orthonormalize));
-        lua_setfield(L, -2, "orthonormalize");
+        // Static method: subtract
+        lua_pushcfunction(L, (Vector3_static_subtract));
+        lua_setfield(L, -2, "subtract");
 
         // Static method: transform
         lua_pushcfunction(L, (Vector3_static_transform));
         lua_setfield(L, -2, "transform");
 
-        // Static method: transformCoordinate
-        lua_pushcfunction(L, (Vector3_static_transformCoordinate));
-        lua_setfield(L, -2, "transformCoordinate");
-
         // Static method: transformNormal
         lua_pushcfunction(L, (Vector3_static_transformNormal));
         lua_setfield(L, -2, "transformNormal");
 
-        // Static method: rotationYawPitchRoll
-        lua_pushcfunction(L, (Vector3_static_rotationYawPitchRoll));
-        lua_setfield(L, -2, "rotationYawPitchRoll");
-
-        // Static method: rotateAround
-        lua_pushcfunction(L, (Vector3_static_rotateAround));
-        lua_setfield(L, -2, "rotateAround");
-
-        // Static method: nearEqual
-        lua_pushcfunction(L, (Vector3_static_nearEqual));
-        lua_setfield(L, -2, "nearEqual");
+        // Create metatable for type table (static properties and fields)
+        lua_newtable(L);
+        lua_pushcfunction(L, (Vector3_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
 
         lua_setglobal(L, "Vector3");
     }
@@ -234,7 +180,7 @@ public partial class LuaBindings
             unsafe
             {
                 var id = *(int*)ptr;
-                RemoveObject<Stride.Core.Mathematics.Vector3>(id);
+                RemoveObject<Microsoft.Xna.Framework.Vector3>(id);
             }
         }
         return 0;
@@ -242,33 +188,27 @@ public partial class LuaBindings
 
     private static int Vector3__index(lua_State L)
     {
-        var obj = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        // Check if key is a number (array/indexer access)
-        if (lua_type(L, 2) == LUA_TNUMBER)
-        {
-            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
-            var element = obj[index];
-            PushValue(L, element);
-            return 1;
-        }
+        var obj = GetStructFromStack<Microsoft.Xna.Framework.Vector3>(L, 1);
 
         var key = lua_tostring(L, 2);
         if (key == null) { lua_pushnil(L); return 1; }
 
         switch (key)
         {
-            case "isNormalized":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3)obj).IsNormalized);
-                return 1;
             case "x":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3)obj).X);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3)obj).X);
                 return 1;
             case "y":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3)obj).Y);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3)obj).Y);
                 return 1;
             case "z":
-                PushValue(L, ((Stride.Core.Mathematics.Vector3)obj).Z);
+                PushValue(L, ((Microsoft.Xna.Framework.Vector3)obj).Z);
+                return 1;
+            case "equals":
+                lua_pushcfunction(L, (Object_method_equals));
+                return 1;
+            case "getHashCode":
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "length":
                 lua_pushcfunction(L, (Vector3_method_length));
@@ -279,23 +219,8 @@ public partial class LuaBindings
             case "normalize":
                 lua_pushcfunction(L, (Vector3_method_normalize));
                 return 1;
-            case "pow":
-                lua_pushcfunction(L, (Vector3_method_pow));
-                return 1;
-            case "toArray":
-                lua_pushcfunction(L, (Vector3_method_toArray));
-                return 1;
             case "toString":
-                lua_pushcfunction(L, (Vector3_method_toString));
-                return 1;
-            case "getHashCode":
-                lua_pushcfunction(L, (Vector3_method_getHashCode));
-                return 1;
-            case "equalsStrict":
-                lua_pushcfunction(L, (Vector3_method_equalsStrict));
-                return 1;
-            case "equals":
-                lua_pushcfunction(L, (Vector3_method_equals));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Vector3_method_getType));
@@ -308,16 +233,7 @@ public partial class LuaBindings
 
     private static int Vector3__newindex(lua_State L)
     {
-        var obj = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        // Check if key is a number (array/indexer assignment)
-        if (lua_type(L, 2) == LUA_TNUMBER)
-        {
-            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
-            var value = ToObject<float>(L, 3)!;
-            obj[index] = value;
-            return 0;
-        }
+        var obj = GetStructFromStack<Microsoft.Xna.Framework.Vector3>(L, 1);
 
         var key = lua_tostring(L, 2);
         if (key == null) return 0;
@@ -366,143 +282,41 @@ public partial class LuaBindings
 
     private static int Vector3__tostring(lua_State L)
     {
-        var obj = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
+        var obj = GetStructFromStack<Microsoft.Xna.Framework.Vector3>(L, 1);
         lua_pushstring(L, obj.ToString() ?? "");
+        return 1;
+    }
+
+    private static int Vector3_op_op_Equality(lua_State L)
+    {
+        var left = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+        var right = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+        lua_pushboolean(L, left == right ? 1 : 0);
         return 1;
     }
 
     private static int Vector3_op_op_Addition(lua_State L)
     {
-        // Multiple operator overloads - find best match
-        int bestScore = -1;
-        int bestIndex = -1;
-
-        // Try overload 0: op_Addition(Stride.Core.Mathematics.Vector3, Stride.Core.Mathematics.Vector3)
-        {
-            int score = 0;
-            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
-            if (score0 < 0) goto next0;
-            else score += score0;
-            int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 2);
-            if (score1 < 0) goto next0;
-            else score += score1;
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestIndex = 0;
-            }
-        }
-        next0:
-
-        // Try overload 1: op_Addition(Stride.Core.Mathematics.Vector3, float)
-        {
-            int score = 0;
-            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
-            if (score0 < 0) goto next1;
-            else score += score0;
-            int score1 = ScoreParameterCompatibility<float>(L, 2);
-            if (score1 < 0) goto next1;
-            else score += score1;
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestIndex = 1;
-            }
-        }
-        next1:
-
-        switch (bestIndex)
-        {
-            case 0:
-                {
-                    var left = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-                    var right = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-                    var result = left + right;
-                    PushValue(L, result);
-                    return 1;
-                }
-            case 1:
-                {
-                    var left = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-                    var right = ToObject<float>(L, 2)!;
-                    var result = left + right;
-                    PushValue(L, result);
-                    return 1;
-                }
-            default:
-                luaL_error(L, "No compatible operator overload found");
-                return 0;
-        }
-    }
-
-    private static int Vector3_op_op_Subtraction(lua_State L)
-    {
-        // Multiple operator overloads - find best match
-        int bestScore = -1;
-        int bestIndex = -1;
-
-        // Try overload 0: op_Subtraction(Stride.Core.Mathematics.Vector3, Stride.Core.Mathematics.Vector3)
-        {
-            int score = 0;
-            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
-            if (score0 < 0) goto next0;
-            else score += score0;
-            int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 2);
-            if (score1 < 0) goto next0;
-            else score += score1;
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestIndex = 0;
-            }
-        }
-        next0:
-
-        // Try overload 1: op_Subtraction(Stride.Core.Mathematics.Vector3, float)
-        {
-            int score = 0;
-            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
-            if (score0 < 0) goto next1;
-            else score += score0;
-            int score1 = ScoreParameterCompatibility<float>(L, 2);
-            if (score1 < 0) goto next1;
-            else score += score1;
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestIndex = 1;
-            }
-        }
-        next1:
-
-        switch (bestIndex)
-        {
-            case 0:
-                {
-                    var left = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-                    var right = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-                    var result = left - right;
-                    PushValue(L, result);
-                    return 1;
-                }
-            case 1:
-                {
-                    var left = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-                    var right = ToObject<float>(L, 2)!;
-                    var result = left - right;
-                    PushValue(L, result);
-                    return 1;
-                }
-            default:
-                luaL_error(L, "No compatible operator overload found");
-                return 0;
-        }
+        var left = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+        var right = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+        var result = left + right;
+        PushValue(L, result);
+        return 1;
     }
 
     private static int Vector3_op_op_UnaryNegation(lua_State L)
     {
-        var operand = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
+        var operand = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
         var result = -operand;
+        PushValue(L, result);
+        return 1;
+    }
+
+    private static int Vector3_op_op_Subtraction(lua_State L)
+    {
+        var left = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+        var right = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+        var result = left - right;
         PushValue(L, result);
         return 1;
     }
@@ -513,13 +327,13 @@ public partial class LuaBindings
         int bestScore = -1;
         int bestIndex = -1;
 
-        // Try overload 0: op_Multiply(float, Stride.Core.Mathematics.Vector3)
+        // Try overload 0: op_Multiply(Microsoft.Xna.Framework.Vector3, Microsoft.Xna.Framework.Vector3)
         {
             int score = 0;
-            int score0 = ScoreParameterCompatibility<float>(L, 1);
+            int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
             if (score0 < 0) goto next0;
             else score += score0;
-            int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 2);
+            int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 2);
             if (score1 < 0) goto next0;
             else score += score1;
             if (score > bestScore)
@@ -530,10 +344,10 @@ public partial class LuaBindings
         }
         next0:
 
-        // Try overload 1: op_Multiply(Stride.Core.Mathematics.Vector3, float)
+        // Try overload 1: op_Multiply(Microsoft.Xna.Framework.Vector3, float)
         {
             int score = 0;
-            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
+            int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
             if (score0 < 0) goto next1;
             else score += score0;
             int score1 = ScoreParameterCompatibility<float>(L, 2);
@@ -547,13 +361,13 @@ public partial class LuaBindings
         }
         next1:
 
-        // Try overload 2: op_Multiply(Stride.Core.Mathematics.Vector3, Stride.Core.Mathematics.Vector3)
+        // Try overload 2: op_Multiply(float, Microsoft.Xna.Framework.Vector3)
         {
             int score = 0;
-            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
+            int score0 = ScoreParameterCompatibility<float>(L, 1);
             if (score0 < 0) goto next2;
             else score += score0;
-            int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 2);
+            int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 2);
             if (score1 < 0) goto next2;
             else score += score1;
             if (score > bestScore)
@@ -568,15 +382,15 @@ public partial class LuaBindings
         {
             case 0:
                 {
-                    var left = ToObject<float>(L, 1)!;
-                    var right = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+                    var left = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+                    var right = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
                     var result = left * right;
                     PushValue(L, result);
                     return 1;
                 }
             case 1:
                 {
-                    var left = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
+                    var left = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
                     var right = ToObject<float>(L, 2)!;
                     var result = left * right;
                     PushValue(L, result);
@@ -584,8 +398,8 @@ public partial class LuaBindings
                 }
             case 2:
                 {
-                    var left = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-                    var right = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+                    var left = ToObject<float>(L, 1)!;
+                    var right = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
                     var result = left * right;
                     PushValue(L, result);
                     return 1;
@@ -602,13 +416,13 @@ public partial class LuaBindings
         int bestScore = -1;
         int bestIndex = -1;
 
-        // Try overload 0: op_Division(float, Stride.Core.Mathematics.Vector3)
+        // Try overload 0: op_Division(Microsoft.Xna.Framework.Vector3, Microsoft.Xna.Framework.Vector3)
         {
             int score = 0;
-            int score0 = ScoreParameterCompatibility<float>(L, 1);
+            int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
             if (score0 < 0) goto next0;
             else score += score0;
-            int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 2);
+            int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 2);
             if (score1 < 0) goto next0;
             else score += score1;
             if (score > bestScore)
@@ -619,10 +433,10 @@ public partial class LuaBindings
         }
         next0:
 
-        // Try overload 1: op_Division(Stride.Core.Mathematics.Vector3, float)
+        // Try overload 1: op_Division(Microsoft.Xna.Framework.Vector3, float)
         {
             int score = 0;
-            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
+            int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
             if (score0 < 0) goto next1;
             else score += score0;
             int score1 = ScoreParameterCompatibility<float>(L, 2);
@@ -636,45 +450,20 @@ public partial class LuaBindings
         }
         next1:
 
-        // Try overload 2: op_Division(Stride.Core.Mathematics.Vector3, Stride.Core.Mathematics.Vector3)
-        {
-            int score = 0;
-            int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
-            if (score0 < 0) goto next2;
-            else score += score0;
-            int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 2);
-            if (score1 < 0) goto next2;
-            else score += score1;
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestIndex = 2;
-            }
-        }
-        next2:
-
         switch (bestIndex)
         {
             case 0:
                 {
-                    var left = ToObject<float>(L, 1)!;
-                    var right = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+                    var left = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+                    var right = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
                     var result = left / right;
                     PushValue(L, result);
                     return 1;
                 }
             case 1:
                 {
-                    var left = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
+                    var left = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
                     var right = ToObject<float>(L, 2)!;
-                    var result = left / right;
-                    PushValue(L, result);
-                    return 1;
-                }
-            case 2:
-                {
-                    var left = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-                    var right = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
                     var result = left / right;
                     PushValue(L, result);
                     return 1;
@@ -685,104 +474,40 @@ public partial class LuaBindings
         }
     }
 
-    private static int Vector3_op_op_Equality(lua_State L)
-    {
-        var left = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-        var right = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-        lua_pushboolean(L, left == right ? 1 : 0);
-        return 1;
-    }
-
     private static int Vector3_new(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 0)
         {
-            var obj = new Stride.Core.Mathematics.Vector3();
+            var obj = new Microsoft.Xna.Framework.Vector3();
             PushObject(L, obj, "MT_Vector3");
             return 1;
         }
 
         if (argCount == 1)
         {
-            // Multiple constructors with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try constructor 0: new Vector3(float)
+            var arg0 = ToObject<float>(L, 1)!;
+            try
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<float>(L, 1);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
+                var obj = new Microsoft.Xna.Framework.Vector3(arg0);
+                PushObject(L, obj, "MT_Vector3");
+                return 1;
             }
-            next0:
-
-            // Try constructor 1: new Vector3(float[])
+            catch (System.Exception ex)
             {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<float[]>(L, 1);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<float>(L, 1)!;
-                        try
-                        {
-                            var obj = new Stride.Core.Mathematics.Vector3(arg0);
-                            PushObject(L, obj, "MT_Vector3");
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<float[]>(L, 1)!;
-                        try
-                        {
-                            var obj = new Stride.Core.Mathematics.Vector3(arg0);
-                            PushObject(L, obj, "MT_Vector3");
-                            return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible constructor found for Vector3");
-                    return 0;
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
             }
         }
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector2>(L, 1)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
             var arg1 = ToObject<float>(L, 2)!;
             try
             {
-                var obj = new Stride.Core.Mathematics.Vector3(arg0, arg1);
+                var obj = new Microsoft.Xna.Framework.Vector3(arg0, arg1);
                 PushObject(L, obj, "MT_Vector3");
                 return 1;
             }
@@ -800,7 +525,7 @@ public partial class LuaBindings
             var arg2 = ToObject<float>(L, 3)!;
             try
             {
-                var obj = new Stride.Core.Mathematics.Vector3(arg0, arg1, arg2);
+                var obj = new Microsoft.Xna.Framework.Vector3(arg0, arg1, arg2);
                 PushObject(L, obj, "MT_Vector3");
                 return 1;
             }
@@ -815,18 +540,19 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector3_static_moveTo(lua_State L)
+    private static int Vector3_method_length(lua_State L)
     {
-        var argCount = lua_gettop(L);
+        var argCount = lua_gettop(L) - 1; // First arg is self
 
-        if (argCount == 3)
+        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector3>(L, 1);
+
+        if (argCount == 0)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg2 = ToObject<float>(L, 3)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.MoveTo(arg0, arg1, arg2);
+                var structValue = (Microsoft.Xna.Framework.Vector3)self;
+                var result = structValue.Length();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }
@@ -837,7 +563,87 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for moveTo");
+        luaL_error(L, "Invalid arguments for length");
+        return 0;
+    }
+
+    private static int Vector3_method_lengthSquared(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Microsoft.Xna.Framework.Vector3)self;
+                var result = structValue.LengthSquared();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lengthSquared");
+        return 0;
+    }
+
+    private static int Vector3_method_normalize(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Microsoft.Xna.Framework.Vector3)self;
+                structValue.Normalize();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for normalize");
+        return 0;
+    }
+
+    private static int Vector3_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector3>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (Microsoft.Xna.Framework.Vector3)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 
@@ -847,11 +653,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Add(arg0, arg1);
+                var result = Microsoft.Xna.Framework.Vector3.Add(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -866,169 +672,20 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector3_static_subtract(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.Subtract(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for subtract");
-        return 0;
-    }
-
-    private static int Vector3_static_multiply(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<float>(L, 2)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.Multiply(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for multiply");
-        return 0;
-    }
-
-    private static int Vector3_static_modulate(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.Modulate(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for modulate");
-        return 0;
-    }
-
-    private static int Vector3_static_divide(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<float>(L, 2)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.Divide(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for divide");
-        return 0;
-    }
-
-    private static int Vector3_static_demodulate(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.Demodulate(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for demodulate");
-        return 0;
-    }
-
-    private static int Vector3_static_negate(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.Negate(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for negate");
-        return 0;
-    }
-
     private static int Vector3_static_barycentric(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 5)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg2 = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+            var arg2 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 3)!;
             var arg3 = ToObject<float>(L, 4)!;
             var arg4 = ToObject<float>(L, 5)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Barycentric(arg0, arg1, arg2, arg3, arg4);
+                var result = Microsoft.Xna.Framework.Vector3.Barycentric(arg0, arg1, arg2, arg3, arg4);
                 PushValue(L, result);
                 return 1;
             }
@@ -1043,18 +700,46 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector3_static_catmullRom(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 5)
+        {
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+            var arg2 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 3)!;
+            var arg3 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 4)!;
+            var arg4 = ToObject<float>(L, 5)!;
+            try
+            {
+                var result = Microsoft.Xna.Framework.Vector3.CatmullRom(arg0, arg1, arg2, arg3, arg4);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for catmullRom");
+        return 0;
+    }
+
     private static int Vector3_static_clamp(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 3)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg2 = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+            var arg2 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 3)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Clamp(arg0, arg1, arg2);
+                var result = Microsoft.Xna.Framework.Vector3.Clamp(arg0, arg1, arg2);
                 PushValue(L, result);
                 return 1;
             }
@@ -1075,11 +760,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Cross(arg0, arg1);
+                var result = Microsoft.Xna.Framework.Vector3.Cross(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1100,11 +785,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Distance(arg0, arg1);
+                var result = Microsoft.Xna.Framework.Vector3.Distance(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1125,11 +810,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.DistanceSquared(arg0, arg1);
+                var result = Microsoft.Xna.Framework.Vector3.DistanceSquared(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1144,17 +829,105 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector3_static_divide(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Divide(Microsoft.Xna.Framework.Vector3, Microsoft.Xna.Framework.Vector3)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
+            }
+            next0:
+
+            // Try overload 1: Divide(Microsoft.Xna.Framework.Vector3, float)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<float>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+                        var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+                        try
+                        {
+                            var result = Microsoft.Xna.Framework.Vector3.Divide(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+                        var arg1 = ToObject<float>(L, 2)!;
+                        try
+                        {
+                            var result = Microsoft.Xna.Framework.Vector3.Divide(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for divide");
+                    return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for divide");
+        return 0;
+    }
+
     private static int Vector3_static_dot(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Dot(arg0, arg1);
+                var result = Microsoft.Xna.Framework.Vector3.Dot(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1169,96 +942,20 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector3_static_normalize(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.Normalize(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for normalize");
-        return 0;
-    }
-
-    private static int Vector3_static_lerp(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg2 = ToObject<float>(L, 3)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.Lerp(arg0, arg1, arg2);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for lerp");
-        return 0;
-    }
-
-    private static int Vector3_static_smoothStep(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg2 = ToObject<float>(L, 3)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.SmoothStep(arg0, arg1, arg2);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for smoothStep");
-        return 0;
-    }
-
     private static int Vector3_static_hermite(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 5)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg2 = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
-            var arg3 = ToObject<Stride.Core.Mathematics.Vector3>(L, 4)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+            var arg2 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 3)!;
+            var arg3 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 4)!;
             var arg4 = ToObject<float>(L, 5)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Hermite(arg0, arg1, arg2, arg3, arg4);
+                var result = Microsoft.Xna.Framework.Vector3.Hermite(arg0, arg1, arg2, arg3, arg4);
                 PushValue(L, result);
                 return 1;
             }
@@ -1273,20 +970,18 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector3_static_catmullRom(lua_State L)
+    private static int Vector3_static_lerp(lua_State L)
     {
         var argCount = lua_gettop(L);
 
-        if (argCount == 5)
+        if (argCount == 3)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg2 = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
-            var arg3 = ToObject<Stride.Core.Mathematics.Vector3>(L, 4)!;
-            var arg4 = ToObject<float>(L, 5)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+            var arg2 = ToObject<float>(L, 3)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.CatmullRom(arg0, arg1, arg2, arg3, arg4);
+                var result = Microsoft.Xna.Framework.Vector3.Lerp(arg0, arg1, arg2);
                 PushValue(L, result);
                 return 1;
             }
@@ -1297,32 +992,7 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for catmullRom");
-        return 0;
-    }
-
-    private static int Vector3_static_mod(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.Mod(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for mod");
+        luaL_error(L, "Invalid arguments for lerp");
         return 0;
     }
 
@@ -1332,11 +1002,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Max(arg0, arg1);
+                var result = Microsoft.Xna.Framework.Vector3.Max(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1357,11 +1027,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Min(arg0, arg1);
+                var result = Microsoft.Xna.Framework.Vector3.Min(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1376,54 +1046,104 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector3_static_project(lua_State L)
+    private static int Vector3_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
 
-        if (argCount == 8)
+        if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<float>(L, 2)!;
-            var arg2 = ToObject<float>(L, 3)!;
-            var arg3 = ToObject<float>(L, 4)!;
-            var arg4 = ToObject<float>(L, 5)!;
-            var arg5 = ToObject<float>(L, 6)!;
-            var arg6 = ToObject<float>(L, 7)!;
-            var arg7 = ToObject<Stride.Core.Mathematics.Matrix>(L, 8)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Multiply(Microsoft.Xna.Framework.Vector3, Microsoft.Xna.Framework.Vector3)
             {
-                var result = Stride.Core.Mathematics.Vector3.Project(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-                PushValue(L, result);
-                return 1;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: Multiply(Microsoft.Xna.Framework.Vector3, float)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<float>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+                        var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+                        try
+                        {
+                            var result = Microsoft.Xna.Framework.Vector3.Multiply(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+                        var arg1 = ToObject<float>(L, 2)!;
+                        try
+                        {
+                            var result = Microsoft.Xna.Framework.Vector3.Multiply(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for multiply");
+                    return 0;
             }
         }
 
-        luaL_error(L, "Invalid arguments for project");
+        luaL_error(L, "Invalid arguments for multiply");
         return 0;
     }
 
-    private static int Vector3_static_unproject(lua_State L)
+    private static int Vector3_static_negate(lua_State L)
     {
         var argCount = lua_gettop(L);
 
-        if (argCount == 8)
+        if (argCount == 1)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<float>(L, 2)!;
-            var arg2 = ToObject<float>(L, 3)!;
-            var arg3 = ToObject<float>(L, 4)!;
-            var arg4 = ToObject<float>(L, 5)!;
-            var arg5 = ToObject<float>(L, 6)!;
-            var arg6 = ToObject<float>(L, 7)!;
-            var arg7 = ToObject<Stride.Core.Mathematics.Matrix>(L, 8)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Unproject(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+                var result = Microsoft.Xna.Framework.Vector3.Negate(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1434,7 +1154,31 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for unproject");
+        luaL_error(L, "Invalid arguments for negate");
+        return 0;
+    }
+
+    private static int Vector3_static_normalize(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            try
+            {
+                var result = Microsoft.Xna.Framework.Vector3.Normalize(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for normalize");
         return 0;
     }
 
@@ -1444,11 +1188,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.Reflect(arg0, arg1);
+                var result = Microsoft.Xna.Framework.Vector3.Reflect(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1463,18 +1207,20 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector3_static_orthogonalize(lua_State L)
+    private static int Vector3_static_smoothStep(lua_State L)
     {
         var argCount = lua_gettop(L);
 
-        if (argCount == 2)
+        if (argCount == 3)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
+            var arg2 = ToObject<float>(L, 3)!;
             try
             {
-                Stride.Core.Mathematics.Vector3.Orthogonalize(arg0, arg1);
-                return 0;
+                var result = Microsoft.Xna.Framework.Vector3.SmoothStep(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
             }
             catch (System.Exception ex)
             {
@@ -1483,22 +1229,23 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for orthogonalize");
+        luaL_error(L, "Invalid arguments for smoothStep");
         return 0;
     }
 
-    private static int Vector3_static_orthonormalize(lua_State L)
+    private static int Vector3_static_subtract(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                Stride.Core.Mathematics.Vector3.Orthonormalize(arg0, arg1);
-                return 0;
+                var result = Microsoft.Xna.Framework.Vector3.Subtract(arg0, arg1);
+                PushValue(L, result);
+                return 1;
             }
             catch (System.Exception ex)
             {
@@ -1507,7 +1254,7 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for orthonormalize");
+        luaL_error(L, "Invalid arguments for subtract");
         return 0;
     }
 
@@ -1521,13 +1268,13 @@ public partial class LuaBindings
             int bestScore = -1;
             int bestIndex = -1;
 
-            // Try overload 0: Transform(Stride.Core.Mathematics.Vector3, Stride.Core.Mathematics.Quaternion)
+            // Try overload 0: Transform(Microsoft.Xna.Framework.Vector3, Microsoft.Xna.Framework.Matrix)
             {
                 int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
                 if (score0 < 0) goto next0;
                 else score += score0;
-                int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Quaternion>(L, 2);
+                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Matrix>(L, 2);
                 if (score1 < 0) goto next0;
                 else score += score1;
                 if (score > bestScore)
@@ -1538,13 +1285,13 @@ public partial class LuaBindings
             }
             next0:
 
-            // Try overload 1: Transform(Stride.Core.Mathematics.Vector3, Stride.Core.Mathematics.Matrix)
+            // Try overload 1: Transform(Microsoft.Xna.Framework.Vector3, Microsoft.Xna.Framework.Quaternion)
             {
                 int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3>(L, 1);
+                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector3>(L, 1);
                 if (score0 < 0) goto next1;
                 else score += score0;
-                int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Matrix>(L, 2);
+                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Quaternion>(L, 2);
                 if (score1 < 0) goto next1;
                 else score += score1;
                 if (score > bestScore)
@@ -1559,11 +1306,11 @@ public partial class LuaBindings
             {
                 case 0:
                     {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-                        var arg1 = ToObject<Stride.Core.Mathematics.Quaternion>(L, 2)!;
+                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+                        var arg1 = ToObject<Microsoft.Xna.Framework.Matrix>(L, 2)!;
                         try
                         {
-                            var result = Stride.Core.Mathematics.Vector3.Transform(arg0, arg1);
+                            var result = Microsoft.Xna.Framework.Vector3.Transform(arg0, arg1);
                             PushValue(L, result);
                             return 1;
                         }
@@ -1575,99 +1322,13 @@ public partial class LuaBindings
                     }
                 case 1:
                     {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-                        var arg1 = ToObject<Stride.Core.Mathematics.Matrix>(L, 2)!;
+                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+                        var arg1 = ToObject<Microsoft.Xna.Framework.Quaternion>(L, 2)!;
                         try
                         {
-                            var result = Stride.Core.Mathematics.Vector3.Transform(arg0, arg1);
+                            var result = Microsoft.Xna.Framework.Vector3.Transform(arg0, arg1);
                             PushValue(L, result);
                             return 1;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                default:
-                    luaL_error(L, "No compatible overload found for transform");
-                    return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            // Multiple overloads with same argument count - find best match
-            int bestScore = -1;
-            int bestIndex = -1;
-
-            // Try overload 0: Transform(Stride.Core.Mathematics.Vector3[], Stride.Core.Mathematics.Quaternion, Stride.Core.Mathematics.Vector3[])
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3[]>(L, 1);
-                if (score0 < 0) goto next0;
-                else score += score0;
-                int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Quaternion>(L, 2);
-                if (score1 < 0) goto next0;
-                else score += score1;
-                int score2 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3[]>(L, 3);
-                if (score2 < 0) goto next0;
-                else score += score2;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 0;
-                }
-            }
-            next0:
-
-            // Try overload 1: Transform(Stride.Core.Mathematics.Vector3[], Stride.Core.Mathematics.Matrix, Stride.Core.Mathematics.Vector4[])
-            {
-                int score = 0;
-                int score0 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector3[]>(L, 1);
-                if (score0 < 0) goto next1;
-                else score += score0;
-                int score1 = ScoreParameterCompatibility<Stride.Core.Mathematics.Matrix>(L, 2);
-                if (score1 < 0) goto next1;
-                else score += score1;
-                int score2 = ScoreParameterCompatibility<Stride.Core.Mathematics.Vector4[]>(L, 3);
-                if (score2 < 0) goto next1;
-                else score += score2;
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    bestIndex = 1;
-                }
-            }
-            next1:
-
-            switch (bestIndex)
-            {
-                case 0:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 1)!;
-                        var arg1 = ToObject<Stride.Core.Mathematics.Quaternion>(L, 2)!;
-                        var arg2 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 3)!;
-                        try
-                        {
-                            Stride.Core.Mathematics.Vector3.Transform(arg0, arg1, arg2);
-                            return 0;
-                        }
-                        catch (System.Exception ex)
-                        {
-                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                            return 0;
-                        }
-                    }
-                case 1:
-                    {
-                        var arg0 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 1)!;
-                        var arg1 = ToObject<Stride.Core.Mathematics.Matrix>(L, 2)!;
-                        var arg2 = ToObject<Stride.Core.Mathematics.Vector4[]>(L, 3)!;
-                        try
-                        {
-                            Stride.Core.Mathematics.Vector3.Transform(arg0, arg1, arg2);
-                            return 0;
                         }
                         catch (System.Exception ex)
                         {
@@ -1685,78 +1346,19 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector3_static_transformCoordinate(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Matrix>(L, 2)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.TransformCoordinate(arg0, arg1);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Matrix>(L, 2)!;
-            var arg2 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 3)!;
-            try
-            {
-                Stride.Core.Mathematics.Vector3.TransformCoordinate(arg0, arg1, arg2);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for transformCoordinate");
-        return 0;
-    }
-
     private static int Vector3_static_transformNormal(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Matrix>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 1)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Matrix>(L, 2)!;
             try
             {
-                var result = Stride.Core.Mathematics.Vector3.TransformNormal(arg0, arg1);
+                var result = Microsoft.Xna.Framework.Vector3.TransformNormal(arg0, arg1);
                 PushValue(L, result);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Matrix>(L, 2)!;
-            var arg2 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 3)!;
-            try
-            {
-                Stride.Core.Mathematics.Vector3.TransformNormal(arg0, arg1, arg2);
-                return 0;
             }
             catch (System.Exception ex)
             {
@@ -1769,342 +1371,50 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector3_static_rotationYawPitchRoll(lua_State L)
+    private static int Vector3_type__index(lua_State L)
     {
-        var argCount = lua_gettop(L);
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
-        if (argCount == 1)
+        switch (key)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Quaternion>(L, 1)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.RotationYawPitchRoll(arg0);
-                PushValue(L, result);
+            case "zero":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.Zero);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for rotationYawPitchRoll");
-        return 0;
-    }
-
-    private static int Vector3_static_rotateAround(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 4)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg2 = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
-            var arg3 = ToObject<float>(L, 4)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.RotateAround(arg0, arg1, arg2, arg3);
-                PushValue(L, result);
+            case "one":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.One);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for rotateAround");
-        return 0;
-    }
-
-    private static int Vector3_static_nearEqual(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 1)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            var arg2 = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
-            try
-            {
-                var result = Stride.Core.Mathematics.Vector3.NearEqual(arg0, arg1, arg2);
-                PushValue(L, result);
+            case "unitX":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.UnitX);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for nearEqual");
-        return 0;
-    }
-
-    private static int Vector3_method_length(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Vector3)self).Length();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "unitY":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.UnitY);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for length");
-        return 0;
-    }
-
-    private static int Vector3_method_lengthSquared(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Vector3)self).LengthSquared();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "unitZ":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.UnitZ);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for lengthSquared");
-        return 0;
-    }
-
-    private static int Vector3_method_normalize(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Stride.Core.Mathematics.Vector3)self).Normalize();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for normalize");
-        return 0;
-    }
-
-    private static int Vector3_method_pow(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<float>(L, 2)!;
-            try
-            {
-                ((Stride.Core.Mathematics.Vector3)self).Pow(arg0);
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for pow");
-        return 0;
-    }
-
-    private static int Vector3_method_toArray(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Vector3)self).ToArray();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "up":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.Up);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toArray");
-        return 0;
-    }
-
-    private static int Vector3_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Vector3)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "down":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.Down);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int Vector3_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Vector3)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "right":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.Right);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int Vector3_method_equalsStrict(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Vector3)self).EqualsStrict(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "left":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.Left);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equalsStrict");
-        return 0;
-    }
-
-    private static int Vector3_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Vector3)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "forward":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.Forward);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Vector3_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Stride.Core.Mathematics.Vector3>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Stride.Core.Mathematics.Vector3)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "backward":
+                PushValue(L, Microsoft.Xna.Framework.Vector3.Backward);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
+            default:
+                lua_rawget(L, 1);
+                return 1;
         }
-
-        luaL_error(L, "Invalid arguments for getType");
-        return 0;
     }
 
 }

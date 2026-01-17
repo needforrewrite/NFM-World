@@ -163,6 +163,12 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Fixed64_static_toDecimal));
         lua_setfield(L, -2, "toDecimal");
 
+        // Create metatable for type table (static properties and fields)
+        lua_newtable(L);
+        lua_pushcfunction(L, (Fixed64_type__index));
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
         lua_setglobal(L, "Fixed64");
     }
 
@@ -199,19 +205,100 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (Fixed64_method_rawToString));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Fixed64_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Fixed64_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Fixed64_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (Fixed64_method_compareTo));
+                lua_pushcfunction(L, (IComparable_Fixed64_method_compareTo));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Fixed64_method_getType));
+                return 1;
+            case "sign":
+                lua_pushcfunction(L, (Fixed64_method_sign));
+                return 1;
+            case "isInteger":
+                lua_pushcfunction(L, (Fixed64_method_isInteger));
+                return 1;
+            case "squared":
+                lua_pushcfunction(L, (Fixed64_method_squared));
+                return 1;
+            case "round":
+                lua_pushcfunction(L, (Fixed64_method_round));
+                return 1;
+            case "roundToPrecision":
+                lua_pushcfunction(L, (Fixed64_method_roundToPrecision));
+                return 1;
+            case "clampOne":
+                lua_pushcfunction(L, (Fixed64_method_clampOne));
+                return 1;
+            case "clamp01":
+                lua_pushcfunction(L, (Fixed64_method_clamp01));
+                return 1;
+            case "abs":
+                lua_pushcfunction(L, (Fixed64_method_abs));
+                return 1;
+            case "absLessThan":
+                lua_pushcfunction(L, (Fixed64_method_absLessThan));
+                return 1;
+            case "fastAdd":
+                lua_pushcfunction(L, (Fixed64_method_fastAdd));
+                return 1;
+            case "fastSub":
+                lua_pushcfunction(L, (Fixed64_method_fastSub));
+                return 1;
+            case "fastMul":
+                lua_pushcfunction(L, (Fixed64_method_fastMul));
+                return 1;
+            case "fastMod":
+                lua_pushcfunction(L, (Fixed64_method_fastMod));
+                return 1;
+            case "floor":
+                lua_pushcfunction(L, (Fixed64_method_floor));
+                return 1;
+            case "ceiling":
+                lua_pushcfunction(L, (Fixed64_method_ceiling));
+                return 1;
+            case "roundToInt":
+                lua_pushcfunction(L, (Fixed64_method_roundToInt));
+                return 1;
+            case "ceilToInt":
+                lua_pushcfunction(L, (Fixed64_method_ceilToInt));
+                return 1;
+            case "floorToInt":
+                lua_pushcfunction(L, (Fixed64_method_floorToInt));
+                return 1;
+            case "toFormattedString":
+                lua_pushcfunction(L, (Fixed64_method_toFormattedString));
+                return 1;
+            case "toFormattedDouble":
+                lua_pushcfunction(L, (Fixed64_method_toFormattedDouble));
+                return 1;
+            case "toFormattedFloat":
+                lua_pushcfunction(L, (Fixed64_method_toFormattedFloat));
+                return 1;
+            case "toPreciseFloat":
+                lua_pushcfunction(L, (Fixed64_method_toPreciseFloat));
+                return 1;
+            case "toRadians":
+                lua_pushcfunction(L, (Fixed64_method_toRadians));
+                return 1;
+            case "toDegree":
+                lua_pushcfunction(L, (Fixed64_method_toDegree));
+                return 1;
+            case "moreThanEpsilon":
+                lua_pushcfunction(L, (Fixed64_method_moreThanEpsilon));
+                return 1;
+            case "lessThanEpsilon":
+                lua_pushcfunction(L, (Fixed64_method_lessThanEpsilon));
+                return 1;
+            case "fuzzyComponentEqual":
+                lua_pushcfunction(L, (Fixed64_method_fuzzyComponentEqual));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -830,6 +917,801 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Fixed64_method_offset(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            try
+            {
+                var structValue = (FixedMathSharp.Fixed64)self;
+                structValue.Offset(arg0);
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for offset");
+        return 0;
+    }
+
+    private static int Fixed64_method_rawToString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (FixedMathSharp.Fixed64)self;
+                var result = structValue.RawToString();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for rawToString");
+        return 0;
+    }
+
+    private static int Fixed64_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<string>(L, 2)!;
+            try
+            {
+                var structValue = (FixedMathSharp.Fixed64)self;
+                var result = structValue.ToString(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int Fixed64_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (FixedMathSharp.Fixed64)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Fixed64_method_sign(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.Sign(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for sign");
+        return 0;
+    }
+
+    private static int Fixed64_method_isInteger(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.IsInteger(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isInteger");
+        return 0;
+    }
+
+    private static int Fixed64_method_squared(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.Squared(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for squared");
+        return 0;
+    }
+
+    private static int Fixed64_method_round(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.MidpointRounding>(L, 2)!;
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.Round(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for round");
+        return 0;
+    }
+
+    private static int Fixed64_method_roundToPrecision(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.MidpointRounding>(L, 3)!;
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.RoundToPrecision(self, arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for roundToPrecision");
+        return 0;
+    }
+
+    private static int Fixed64_method_clampOne(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.ClampOne(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for clampOne");
+        return 0;
+    }
+
+    private static int Fixed64_method_clamp01(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.Clamp01(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for clamp01");
+        return 0;
+    }
+
+    private static int Fixed64_method_abs(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.Abs(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for abs");
+        return 0;
+    }
+
+    private static int Fixed64_method_absLessThan(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.AbsLessThan(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for absLessThan");
+        return 0;
+    }
+
+    private static int Fixed64_method_fastAdd(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.FastAdd(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for fastAdd");
+        return 0;
+    }
+
+    private static int Fixed64_method_fastSub(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.FastSub(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for fastSub");
+        return 0;
+    }
+
+    private static int Fixed64_method_fastMul(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.FastMul(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for fastMul");
+        return 0;
+    }
+
+    private static int Fixed64_method_fastMod(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.FastMod(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for fastMod");
+        return 0;
+    }
+
+    private static int Fixed64_method_floor(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.Floor(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for floor");
+        return 0;
+    }
+
+    private static int Fixed64_method_ceiling(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.Ceiling(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for ceiling");
+        return 0;
+    }
+
+    private static int Fixed64_method_roundToInt(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.RoundToInt(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for roundToInt");
+        return 0;
+    }
+
+    private static int Fixed64_method_ceilToInt(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.CeilToInt(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for ceilToInt");
+        return 0;
+    }
+
+    private static int Fixed64_method_floorToInt(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.FloorToInt(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for floorToInt");
+        return 0;
+    }
+
+    private static int Fixed64_method_toFormattedString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.ToFormattedString(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toFormattedString");
+        return 0;
+    }
+
+    private static int Fixed64_method_toFormattedDouble(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.ToFormattedDouble(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toFormattedDouble");
+        return 0;
+    }
+
+    private static int Fixed64_method_toFormattedFloat(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.ToFormattedFloat(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toFormattedFloat");
+        return 0;
+    }
+
+    private static int Fixed64_method_toPreciseFloat(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.ToPreciseFloat(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toPreciseFloat");
+        return 0;
+    }
+
+    private static int Fixed64_method_toRadians(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.ToRadians(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toRadians");
+        return 0;
+    }
+
+    private static int Fixed64_method_toDegree(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.ToDegree(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toDegree");
+        return 0;
+    }
+
+    private static int Fixed64_method_moreThanEpsilon(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.MoreThanEpsilon(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for moreThanEpsilon");
+        return 0;
+    }
+
+    private static int Fixed64_method_lessThanEpsilon(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.LessThanEpsilon(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lessThanEpsilon");
+        return 0;
+    }
+
+    private static int Fixed64_method_fuzzyComponentEqual(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
+            var arg1 = ToObject<FixedMathSharp.Fixed64>(L, 3)!;
+            try
+            {
+                var result = FixedMathSharp.Fixed64Extensions.FuzzyComponentEqual(self, arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for fuzzyComponentEqual");
+        return 0;
+    }
+
     private static int Fixed64_static_fraction(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1023,192 +1905,50 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Fixed64_method_offset(lua_State L)
+    private static int Fixed64_type__index(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
+        var key = lua_tostring(L, 2);
+        if (key == null) { lua_pushnil(L); return 1; }
 
-        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
-
-        if (argCount == 1)
+        switch (key)
         {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                ((FixedMathSharp.Fixed64)self).Offset(arg0);
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for offset");
-        return 0;
-    }
-
-    private static int Fixed64_method_rawToString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((FixedMathSharp.Fixed64)self).RawToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "mAX_VALUE":
+                PushValue(L, FixedMathSharp.Fixed64.MAX_VALUE);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for rawToString");
-        return 0;
-    }
-
-    private static int Fixed64_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((FixedMathSharp.Fixed64)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "mIN_VALUE":
+                PushValue(L, FixedMathSharp.Fixed64.MIN_VALUE);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int Fixed64_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((FixedMathSharp.Fixed64)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "one":
+                PushValue(L, FixedMathSharp.Fixed64.One);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Fixed64_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((FixedMathSharp.Fixed64)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "two":
+                PushValue(L, FixedMathSharp.Fixed64.Two);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int Fixed64_method_compareTo(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<FixedMathSharp.Fixed64>(L, 2)!;
-            try
-            {
-                var result = ((FixedMathSharp.Fixed64)self).CompareTo(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "three":
+                PushValue(L, FixedMathSharp.Fixed64.Three);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for compareTo");
-        return 0;
-    }
-
-    private static int Fixed64_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((FixedMathSharp.Fixed64)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
+            case "half":
+                PushValue(L, FixedMathSharp.Fixed64.Half);
                 return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
+            case "quarter":
+                PushValue(L, FixedMathSharp.Fixed64.Quarter);
+                return 1;
+            case "eighth":
+                PushValue(L, FixedMathSharp.Fixed64.Eighth);
+                return 1;
+            case "zero":
+                PushValue(L, FixedMathSharp.Fixed64.Zero);
+                return 1;
+            case "epsilon":
+                PushValue(L, FixedMathSharp.Fixed64.Epsilon);
+                return 1;
+            case "precision":
+                PushValue(L, FixedMathSharp.Fixed64.Precision);
+                return 1;
+            default:
+                lua_rawget(L, 1);
+                return 1;
         }
-
-        luaL_error(L, "Invalid arguments for getType");
-        return 0;
     }
 
 }

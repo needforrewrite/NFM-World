@@ -113,7 +113,7 @@ public partial class LuaBindings
                 PushValue(L, ((System.Globalization.Calendar)obj).TwoDigitYearMax);
                 return 1;
             case "clone":
-                lua_pushcfunction(L, (Calendar_method_clone));
+                lua_pushcfunction(L, (ICloneable_method_clone));
                 return 1;
             case "addMilliseconds":
                 lua_pushcfunction(L, (Calendar_method_addMilliseconds));
@@ -254,60 +254,6 @@ public partial class LuaBindings
         var argCount = lua_gettop(L);
 
         luaL_error(L, "Invalid arguments for Calendar constructor");
-        return 0;
-    }
-
-    private static int Calendar_static_readOnly(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<System.Globalization.Calendar>(L, 1)!;
-            try
-            {
-                var result = System.Globalization.Calendar.ReadOnly(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for readOnly");
-        return 0;
-    }
-
-    private static int Calendar_method_clone(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Globalization.Calendar>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected Calendar as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((System.Globalization.Calendar)self).Clone();
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for clone");
         return 0;
     }
 
@@ -688,6 +634,24 @@ public partial class LuaBindings
             }
         }
 
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            try
+            {
+                var result = ((System.Globalization.Calendar)self).GetDaysInMonth(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
         luaL_error(L, "Invalid arguments for getDaysInMonth");
         return 0;
     }
@@ -709,6 +673,23 @@ public partial class LuaBindings
             try
             {
                 var result = ((System.Globalization.Calendar)self).GetDaysInYear(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                var result = ((System.Globalization.Calendar)self).GetDaysInYear(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -905,6 +886,23 @@ public partial class LuaBindings
             }
         }
 
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                var result = ((System.Globalization.Calendar)self).GetMonthsInYear(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
         luaL_error(L, "Invalid arguments for getMonthsInYear");
         return 0;
     }
@@ -1033,6 +1031,25 @@ public partial class LuaBindings
             }
         }
 
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var arg3 = ToObject<int>(L, 5)!;
+            try
+            {
+                var result = ((System.Globalization.Calendar)self).IsLeapDay(arg0, arg1, arg2, arg3);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
         luaL_error(L, "Invalid arguments for isLeapDay");
         return 0;
     }
@@ -1055,6 +1072,24 @@ public partial class LuaBindings
             try
             {
                 var result = ((System.Globalization.Calendar)self).IsLeapMonth(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            try
+            {
+                var result = ((System.Globalization.Calendar)self).IsLeapMonth(arg0, arg1, arg2);
                 PushValue(L, result);
                 return 1;
             }
@@ -1096,6 +1131,23 @@ public partial class LuaBindings
             }
         }
 
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                var result = ((System.Globalization.Calendar)self).GetLeapMonth(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
         luaL_error(L, "Invalid arguments for getLeapMonth");
         return 0;
     }
@@ -1117,6 +1169,23 @@ public partial class LuaBindings
             try
             {
                 var result = ((System.Globalization.Calendar)self).IsLeapYear(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                var result = ((System.Globalization.Calendar)self).IsLeapYear(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1154,6 +1223,29 @@ public partial class LuaBindings
             try
             {
                 var result = ((System.Globalization.Calendar)self).ToDateTime(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 8)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var arg3 = ToObject<int>(L, 5)!;
+            var arg4 = ToObject<int>(L, 6)!;
+            var arg5 = ToObject<int>(L, 7)!;
+            var arg6 = ToObject<int>(L, 8)!;
+            var arg7 = ToObject<int>(L, 9)!;
+            try
+            {
+                var result = ((System.Globalization.Calendar)self).ToDateTime(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
                 PushValue(L, result);
                 return 1;
             }
@@ -1321,6 +1413,30 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for getHashCode");
+        return 0;
+    }
+
+    private static int Calendar_static_readOnly(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Globalization.Calendar>(L, 1)!;
+            try
+            {
+                var result = System.Globalization.Calendar.ReadOnly(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for readOnly");
         return 0;
     }
 

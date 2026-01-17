@@ -13,7 +13,7 @@ public partial class LuaBindings
     // =========== Bindings for IEnumerator`1 (IEnumerator_Vector3) ===========
     private static void Register_IEnumerator_Vector3(lua_State L)
     {
-        RegisterMetatable<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Vector3>>("MT_IEnumerator_Vector3");
+        RegisterMetatable<System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>>("MT_IEnumerator_Vector3");
 
         // Create metatable for instances
         luaL_newmetatable(L, "MT_IEnumerator_Vector3");
@@ -54,7 +54,7 @@ public partial class LuaBindings
             unsafe
             {
                 var id = *(int*)ptr;
-                RemoveObject<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Vector3>>(id);
+                RemoveObject<System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>>(id);
             }
         }
         return 0;
@@ -62,7 +62,7 @@ public partial class LuaBindings
 
     private static int IEnumerator_Vector3__index(lua_State L)
     {
-        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
 
         var key = lua_tostring(L, 2);
@@ -78,7 +78,7 @@ public partial class LuaBindings
                         unsafe
                         {
                             var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Vector3>)obj).Current, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Current' to {value} but the field is read-only. Nothing will be set."); });
+                            PushStructWithParent(L, ((System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>)obj).Current, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Current' to {value} but the field is read-only. Nothing will be set."); });
                         }
                     }
                 }
@@ -100,7 +100,7 @@ public partial class LuaBindings
 
     private static int IEnumerator_Vector3__newindex(lua_State L)
     {
-        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (obj == null) return 0;
 
         var key = lua_tostring(L, 2);
@@ -114,7 +114,7 @@ public partial class LuaBindings
 
     private static int IEnumerator_Vector3__tostring(lua_State L)
     {
-        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>>(L, 1);
         lua_pushstring(L, obj?.ToString() ?? "nil");
         return 1;
     }
@@ -131,7 +131,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IEnumerator`1 as first argument");
@@ -160,7 +160,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IEnumerator`1 as first argument");
@@ -190,7 +190,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IEnumerator<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IEnumerator`1 as first argument");

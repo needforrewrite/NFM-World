@@ -123,7 +123,7 @@ public partial class LuaBindings
         lua_pushcfunction(L, (f64AngleSingle_static_divide));
         lua_setfield(L, -2, "divide");
 
-        // Create metatable for type table (static properties)
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (f64AngleSingle_type__index));
         lua_setfield(L, -2, "__index");
@@ -261,16 +261,16 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (f64AngleSingle_method_wrapPositive));
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (f64AngleSingle_method_compareTo));
+                lua_pushcfunction(L, (IComparable_method_compareTo));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (f64AngleSingle_method_equals));
+                lua_pushcfunction(L, (IEquatable_f64AngleSingle_method_equals));
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (f64AngleSingle_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (f64AngleSingle_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (f64AngleSingle_method_getType));
@@ -466,6 +466,85 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for f64AngleSingle constructor");
+        return 0;
+    }
+
+    private static int f64AngleSingle_method_wrap(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.f64AngleSingle)self;
+                structValue.Wrap();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for wrap");
+        return 0;
+    }
+
+    private static int f64AngleSingle_method_wrapPositive(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.f64AngleSingle)self;
+                structValue.WrapPositive();
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for wrapPositive");
+        return 0;
+    }
+
+    private static int f64AngleSingle_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.f64AngleSingle)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 
@@ -712,192 +791,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for divide");
-        return 0;
-    }
-
-    private static int f64AngleSingle_method_wrap(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.SoftFloat.f64AngleSingle)self).Wrap();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for wrap");
-        return 0;
-    }
-
-    private static int f64AngleSingle_method_wrapPositive(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.SoftFloat.f64AngleSingle)self).WrapPositive();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for wrapPositive");
-        return 0;
-    }
-
-    private static int f64AngleSingle_method_compareTo(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
-
-        if (argCount == 1)
-        {
-            object? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<object>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64AngleSingle)self).CompareTo(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for compareTo");
-        return 0;
-    }
-
-    private static int f64AngleSingle_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<nfm_world_library.SoftFloat.f64AngleSingle>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64AngleSingle)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int f64AngleSingle_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64AngleSingle)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int f64AngleSingle_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64AngleSingle)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int f64AngleSingle_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.f64AngleSingle>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.f64AngleSingle)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 

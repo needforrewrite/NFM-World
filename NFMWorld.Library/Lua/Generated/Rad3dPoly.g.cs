@@ -104,10 +104,10 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.mad.rad.Rad3dPoly)obj).Points);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Rad3dPoly_method_equals));
+                lua_pushcfunction(L, (IEquatable_Rad3dPoly_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Rad3dPoly_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Rad3dPoly_method_getType));
@@ -182,59 +182,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Rad3dPoly_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.mad.rad.Rad3dPoly>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<nfm_world_library.mad.rad.Rad3dPoly>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.mad.rad.Rad3dPoly)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int Rad3dPoly_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.mad.rad.Rad3dPoly>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.mad.rad.Rad3dPoly)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
     private static int Rad3dPoly_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -245,8 +192,9 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((nfm_world_library.mad.rad.Rad3dPoly)self).GetType();
-                UpdateStruct(L, 1, self);
+                var structValue = (nfm_world_library.mad.rad.Rad3dPoly)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
                 PushValue(L, result);
                 return 1;
             }

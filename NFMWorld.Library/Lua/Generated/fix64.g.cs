@@ -323,7 +323,7 @@ public partial class LuaBindings
         lua_pushcfunction(L, (fix64_static_parse));
         lua_setfield(L, -2, "parse");
 
-        // Create metatable for type table (static properties)
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (fix64_type__index));
         lua_setfield(L, -2, "__index");
@@ -372,13 +372,13 @@ public partial class LuaBindings
                 }
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (fix64_method_toString));
+                lua_pushcfunction(L, (IFormattable_method_toString));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (fix64_method_equals));
+                lua_pushcfunction(L, (IEquatable_fix64_method_equals));
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (fix64_method_compareTo));
+                lua_pushcfunction(L, (IComparable_fix64_method_compareTo));
                 return 1;
             case "sign":
                 lua_pushcfunction(L, (fix64_method_sign));
@@ -387,7 +387,7 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (fix64_method_toFloat));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (fix64_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (fix64_method_getType));
@@ -1716,6 +1716,87 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int fix64_method_sign(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.fix64)self;
+                var result = structValue.Sign();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for sign");
+        return 0;
+    }
+
+    private static int fix64_method_toFloat(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.fix64)self;
+                var result = structValue.LuaToFloat();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toFloat");
+        return 0;
+    }
+
+    private static int fix64_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (nfm_world_library.SoftFloat.fix64)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
     private static int fix64_static_abs(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2268,220 +2349,93 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<string>(L, 1)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 2) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 2)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Parse(string, System.IFormatProvider)
             {
-                var result = nfm_world_library.SoftFloat.fix64.Parse(arg0, arg1);
-                PushValue(L, result);
-                return 1;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.IFormatProvider>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: Parse(string, System.IFormatProvider)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<string>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.IFormatProvider>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<string>(L, 1)!;
+                        System.IFormatProvider? arg1;
+                        if (lua_isnil(L, 2) != 0)
+                            arg1 = null;
+                        else
+                            arg1 = ToObject<System.IFormatProvider>(L, 2)!;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.fix64.Parse(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<string>(L, 1)!;
+                        System.IFormatProvider? arg1;
+                        if (lua_isnil(L, 2) != 0)
+                            arg1 = null;
+                        else
+                            arg1 = ToObject<System.IFormatProvider>(L, 2)!;
+                        try
+                        {
+                            var result = nfm_world_library.SoftFloat.fix64.Parse(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for parse");
+                    return 0;
             }
         }
 
         luaL_error(L, "Invalid arguments for parse");
-        return 0;
-    }
-
-    private static int fix64_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
-
-        if (argCount == 2)
-        {
-            string? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<string>(L, 2)!;
-            System.IFormatProvider? arg1;
-            if (lua_isnil(L, 3) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<System.IFormatProvider>(L, 3)!;
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.fix64)self).ToString(arg0, arg1);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int fix64_method_equals(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.fix64)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for equals");
-        return 0;
-    }
-
-    private static int fix64_method_compareTo(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 2)!;
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.fix64)self).CompareTo(arg0);
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for compareTo");
-        return 0;
-    }
-
-    private static int fix64_method_sign(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.fix64)self).Sign();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for sign");
-        return 0;
-    }
-
-    private static int fix64_method_toFloat(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.fix64)self).LuaToFloat();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toFloat");
-        return 0;
-    }
-
-    private static int fix64_method_getHashCode(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.fix64)self).GetHashCode();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int fix64_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<nfm_world_library.SoftFloat.fix64>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((nfm_world_library.SoftFloat.fix64)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
         return 0;
     }
 

@@ -13,7 +13,7 @@ public partial class LuaBindings
     // =========== Bindings for IEquatable`1 (IEquatable_Vector3) ===========
     private static void Register_IEquatable_Vector3(lua_State L)
     {
-        RegisterMetatable<System.IEquatable<Stride.Core.Mathematics.Vector3>>("MT_IEquatable_Vector3");
+        RegisterMetatable<System.IEquatable<Microsoft.Xna.Framework.Vector3>>("MT_IEquatable_Vector3");
 
         // Create metatable for instances
         luaL_newmetatable(L, "MT_IEquatable_Vector3");
@@ -54,7 +54,7 @@ public partial class LuaBindings
             unsafe
             {
                 var id = *(int*)ptr;
-                RemoveObject<System.IEquatable<Stride.Core.Mathematics.Vector3>>(id);
+                RemoveObject<System.IEquatable<Microsoft.Xna.Framework.Vector3>>(id);
             }
         }
         return 0;
@@ -62,7 +62,7 @@ public partial class LuaBindings
 
     private static int IEquatable_Vector3__index(lua_State L)
     {
-        var obj = GetObjectFromStack<System.IEquatable<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var obj = GetObjectFromStack<System.IEquatable<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
 
         var key = lua_tostring(L, 2);
@@ -81,7 +81,7 @@ public partial class LuaBindings
 
     private static int IEquatable_Vector3__newindex(lua_State L)
     {
-        var obj = GetObjectFromStack<System.IEquatable<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var obj = GetObjectFromStack<System.IEquatable<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (obj == null) return 0;
 
         var key = lua_tostring(L, 2);
@@ -95,7 +95,7 @@ public partial class LuaBindings
 
     private static int IEquatable_Vector3__tostring(lua_State L)
     {
-        var obj = GetObjectFromStack<System.IEquatable<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var obj = GetObjectFromStack<System.IEquatable<Microsoft.Xna.Framework.Vector3>>(L, 1);
         lua_pushstring(L, obj?.ToString() ?? "nil");
         return 1;
     }
@@ -112,7 +112,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.IEquatable<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.IEquatable<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IEquatable`1 as first argument");
@@ -121,10 +121,10 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = ((System.IEquatable<Stride.Core.Mathematics.Vector3>)self).Equals(arg0);
+                var result = ((System.IEquatable<Microsoft.Xna.Framework.Vector3>)self).Equals(arg0);
                 PushValue(L, result);
                 return 1;
             }

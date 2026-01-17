@@ -98,7 +98,7 @@ public partial class LuaBindings
                 PushValue(L, ((System.Collections.ICollection)obj).IsSynchronized);
                 return 1;
             case "add":
-                lua_pushcfunction(L, (List_BackendGameObject_method_add));
+                lua_pushcfunction(L, (ICollection_BackendGameObject_method_add));
                 return 1;
             case "addRange":
                 lua_pushcfunction(L, (List_BackendGameObject_method_addRange));
@@ -110,10 +110,10 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (List_BackendGameObject_method_binarySearch));
                 return 1;
             case "clear":
-                lua_pushcfunction(L, (List_BackendGameObject_method_clear));
+                lua_pushcfunction(L, (ICollection_BackendGameObject_method_clear));
                 return 1;
             case "contains":
-                lua_pushcfunction(L, (List_BackendGameObject_method_contains));
+                lua_pushcfunction(L, (ICollection_BackendGameObject_method_contains));
                 return 1;
             case "copyTo":
                 lua_pushcfunction(L, (List_BackendGameObject_method_copyTo));
@@ -152,10 +152,10 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (List_BackendGameObject_method_slice));
                 return 1;
             case "indexOf":
-                lua_pushcfunction(L, (List_BackendGameObject_method_indexOf));
+                lua_pushcfunction(L, (IList_BackendGameObject_method_indexOf));
                 return 1;
             case "insert":
-                lua_pushcfunction(L, (List_BackendGameObject_method_insert));
+                lua_pushcfunction(L, (IList_BackendGameObject_method_insert));
                 return 1;
             case "insertRange":
                 lua_pushcfunction(L, (List_BackendGameObject_method_insertRange));
@@ -164,13 +164,13 @@ public partial class LuaBindings
                 lua_pushcfunction(L, (List_BackendGameObject_method_lastIndexOf));
                 return 1;
             case "remove":
-                lua_pushcfunction(L, (List_BackendGameObject_method_remove));
+                lua_pushcfunction(L, (ICollection_BackendGameObject_method_remove));
                 return 1;
             case "removeAll":
                 lua_pushcfunction(L, (List_BackendGameObject_method_removeAll));
                 return 1;
             case "removeAt":
-                lua_pushcfunction(L, (List_BackendGameObject_method_removeAt));
+                lua_pushcfunction(L, (IList_BackendGameObject_method_removeAt));
                 return 1;
             case "removeRange":
                 lua_pushcfunction(L, (List_BackendGameObject_method_removeRange));
@@ -344,40 +344,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int List_BackendGameObject_method_add(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            nfm_world_library.backend.BackendGameObject? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 2)!;
-            try
-            {
-                ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Add(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for add");
-        return 0;
-    }
-
     private static int List_BackendGameObject_method_addRange(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -449,6 +415,51 @@ public partial class LuaBindings
             return 0;
         }
 
+        if (argCount == 1)
+        {
+            nfm_world_library.backend.BackendGameObject? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 2)!;
+            try
+            {
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).BinarySearch(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            nfm_world_library.backend.BackendGameObject? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 2)!;
+            System.Collections.Generic.IComparer<nfm_world_library.backend.BackendGameObject>? arg1;
+            if (lua_isnil(L, 3) != 0)
+                arg1 = null;
+            else
+                arg1 = ToObject<System.Collections.Generic.IComparer<nfm_world_library.backend.BackendGameObject>>(L, 3)!;
+            try
+            {
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).BinarySearch(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
         if (argCount == 4)
         {
             var arg0 = ToObject<int>(L, 2)!;
@@ -480,70 +491,6 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int List_BackendGameObject_method_clear(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Clear();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for clear");
-        return 0;
-    }
-
-    private static int List_BackendGameObject_method_contains(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            nfm_world_library.backend.BackendGameObject? arg0;
-            if (lua_isnil(L, 2) != 0)
-                arg0 = null;
-            else
-                arg0 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 2)!;
-            try
-            {
-                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Contains(arg0);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for contains");
-        return 0;
-    }
-
     private static int List_BackendGameObject_method_copyTo(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -561,6 +508,24 @@ public partial class LuaBindings
             try
             {
                 ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).CopyTo(arg0);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 4)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<nfm_world_library.backend.BackendGameObject[]>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            var arg3 = ToObject<int>(L, 5)!;
+            try
+            {
+                ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).CopyTo(arg0, arg1, arg2, arg3);
                 return 0;
             }
             catch (System.Exception ex)
@@ -725,6 +690,41 @@ public partial class LuaBindings
             }
         }
 
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Predicate<nfm_world_library.backend.BackendGameObject>>(L, 3)!;
+            try
+            {
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).FindIndex(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Predicate<nfm_world_library.backend.BackendGameObject>>(L, 4)!;
+            try
+            {
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).FindIndex(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
         luaL_error(L, "Invalid arguments for findIndex");
         return 0;
     }
@@ -777,6 +777,41 @@ public partial class LuaBindings
             try
             {
                 var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).FindLastIndex(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<System.Predicate<nfm_world_library.backend.BackendGameObject>>(L, 3)!;
+            try
+            {
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).FindLastIndex(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<System.Predicate<nfm_world_library.backend.BackendGameObject>>(L, 4)!;
+            try
+            {
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).FindLastIndex(arg0, arg1, arg2);
                 PushValue(L, result);
                 return 1;
             }
@@ -926,16 +961,39 @@ public partial class LuaBindings
             return 0;
         }
 
-        if (argCount == 1)
+        if (argCount == 2)
         {
             nfm_world_library.backend.BackendGameObject? arg0;
             if (lua_isnil(L, 2) != 0)
                 arg0 = null;
             else
                 arg0 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).IndexOf(arg0);
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).IndexOf(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 3)
+        {
+            nfm_world_library.backend.BackendGameObject? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            try
+            {
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).IndexOf(arg0, arg1, arg2);
                 PushValue(L, result);
                 return 1;
             }
@@ -947,41 +1005,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for indexOf");
-        return 0;
-    }
-
-    private static int List_BackendGameObject_method_insert(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 2)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            nfm_world_library.backend.BackendGameObject? arg1;
-            if (lua_isnil(L, 3) != 0)
-                arg1 = null;
-            else
-                arg1 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 3)!;
-            try
-            {
-                ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Insert(arg0, arg1);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for insert");
         return 0;
     }
 
@@ -1047,31 +1070,17 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for lastIndexOf");
-        return 0;
-    }
-
-    private static int List_BackendGameObject_method_remove(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
+        if (argCount == 2)
         {
             nfm_world_library.backend.BackendGameObject? arg0;
             if (lua_isnil(L, 2) != 0)
                 arg0 = null;
             else
                 arg0 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Remove(arg0);
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).LastIndexOf(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1082,7 +1091,29 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for remove");
+        if (argCount == 3)
+        {
+            nfm_world_library.backend.BackendGameObject? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<nfm_world_library.backend.BackendGameObject>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            var arg2 = ToObject<int>(L, 4)!;
+            try
+            {
+                var result = ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).LastIndexOf(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lastIndexOf");
         return 0;
     }
 
@@ -1114,36 +1145,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for removeAll");
-        return 0;
-    }
-
-    private static int List_BackendGameObject_method_removeAt(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected List`1 as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            try
-            {
-                ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).RemoveAt(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for removeAt");
         return 0;
     }
 
@@ -1203,6 +1204,22 @@ public partial class LuaBindings
             }
         }
 
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Reverse(arg0, arg1);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
         luaL_error(L, "Invalid arguments for reverse");
         return 0;
     }
@@ -1223,6 +1240,101 @@ public partial class LuaBindings
             try
             {
                 ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Sort();
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 1)
+        {
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Sort(System.Collections.Generic.IComparer<nfm_world_library.backend.BackendGameObject>)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Collections.Generic.IComparer<nfm_world_library.backend.BackendGameObject>>(L, 2);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
+            }
+            next0:
+
+            // Try overload 1: Sort(System.Comparison<nfm_world_library.backend.BackendGameObject>)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Comparison<nfm_world_library.backend.BackendGameObject>>(L, 2);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        System.Collections.Generic.IComparer<nfm_world_library.backend.BackendGameObject>? arg0;
+                        if (lua_isnil(L, 2) != 0)
+                            arg0 = null;
+                        else
+                            arg0 = ToObject<System.Collections.Generic.IComparer<nfm_world_library.backend.BackendGameObject>>(L, 2)!;
+                        try
+                        {
+                            ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Sort(arg0);
+                            return 0;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<System.Comparison<nfm_world_library.backend.BackendGameObject>>(L, 2)!;
+                        try
+                        {
+                            ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Sort(arg0);
+                            return 0;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for sort");
+                    return 0;
+            }
+        }
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            System.Collections.Generic.IComparer<nfm_world_library.backend.BackendGameObject>? arg2;
+            if (lua_isnil(L, 4) != 0)
+                arg2 = null;
+            else
+                arg2 = ToObject<System.Collections.Generic.IComparer<nfm_world_library.backend.BackendGameObject>>(L, 4)!;
+            try
+            {
+                ((System.Collections.Generic.List<nfm_world_library.backend.BackendGameObject>)self).Sort(arg0, arg1, arg2);
                 return 0;
             }
             catch (System.Exception ex)

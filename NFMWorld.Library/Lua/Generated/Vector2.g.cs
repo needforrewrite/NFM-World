@@ -13,7 +13,7 @@ public partial class LuaBindings
     // =========== Bindings for Vector2 (Vector2) ===========
     private static void Register_Vector2(lua_State L)
     {
-        RegisterMetatable<Microsoft.Xna.Framework.Vector2>("MT_Vector2");
+        RegisterMetatable<System.Numerics.Vector2>("MT_Vector2");
 
         // Create metatable for instances
         luaL_newmetatable(L, "MT_Vector2");
@@ -30,41 +30,41 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector2__newindex));
         lua_setfield(L, -2, "__newindex");
 
-        // Operator: __unm
-        lua_pushcfunction(L, (Vector2_op_op_UnaryNegation));
-        lua_setfield(L, -2, "__unm");
+        // Operator: __add
+        lua_pushcfunction(L, (Vector2_op_op_Addition));
+        lua_setfield(L, -2, "__add");
+
+        // Operator: __div
+        lua_pushcfunction(L, (Vector2_op_op_Division));
+        lua_setfield(L, -2, "__div");
+
+        // Operator: __div
+        lua_pushcfunction(L, (Vector2_op_op_Division));
+        lua_setfield(L, -2, "__div");
 
         // Operator: __eq
         lua_pushcfunction(L, (Vector2_op_op_Equality));
         lua_setfield(L, -2, "__eq");
 
-        // Operator: __add
-        lua_pushcfunction(L, (Vector2_op_op_Addition));
-        lua_setfield(L, -2, "__add");
+        // Operator: __mul
+        lua_pushcfunction(L, (Vector2_op_op_Multiply));
+        lua_setfield(L, -2, "__mul");
+
+        // Operator: __mul
+        lua_pushcfunction(L, (Vector2_op_op_Multiply));
+        lua_setfield(L, -2, "__mul");
+
+        // Operator: __mul
+        lua_pushcfunction(L, (Vector2_op_op_Multiply));
+        lua_setfield(L, -2, "__mul");
 
         // Operator: __sub
         lua_pushcfunction(L, (Vector2_op_op_Subtraction));
         lua_setfield(L, -2, "__sub");
 
-        // Operator: __mul
-        lua_pushcfunction(L, (Vector2_op_op_Multiply));
-        lua_setfield(L, -2, "__mul");
-
-        // Operator: __mul
-        lua_pushcfunction(L, (Vector2_op_op_Multiply));
-        lua_setfield(L, -2, "__mul");
-
-        // Operator: __mul
-        lua_pushcfunction(L, (Vector2_op_op_Multiply));
-        lua_setfield(L, -2, "__mul");
-
-        // Operator: __div
-        lua_pushcfunction(L, (Vector2_op_op_Division));
-        lua_setfield(L, -2, "__div");
-
-        // Operator: __div
-        lua_pushcfunction(L, (Vector2_op_op_Division));
-        lua_setfield(L, -2, "__div");
+        // Operator: __unm
+        lua_pushcfunction(L, (Vector2_op_op_UnaryNegation));
+        lua_setfield(L, -2, "__unm");
 
         // __tostring metamethod
         lua_pushcfunction(L, (Vector2__tostring));
@@ -79,21 +79,89 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector2_new));
         lua_setfield(L, -2, "new");
 
+        // Static method: abs
+        lua_pushcfunction(L, (Vector2_static_abs));
+        lua_setfield(L, -2, "abs");
+
         // Static method: add
         lua_pushcfunction(L, (Vector2_static_add));
         lua_setfield(L, -2, "add");
 
-        // Static method: barycentric
-        lua_pushcfunction(L, (Vector2_static_barycentric));
-        lua_setfield(L, -2, "barycentric");
+        // Static method: all
+        lua_pushcfunction(L, (Vector2_static_all));
+        lua_setfield(L, -2, "all");
 
-        // Static method: catmullRom
-        lua_pushcfunction(L, (Vector2_static_catmullRom));
-        lua_setfield(L, -2, "catmullRom");
+        // Static method: allWhereAllBitsSet
+        lua_pushcfunction(L, (Vector2_static_allWhereAllBitsSet));
+        lua_setfield(L, -2, "allWhereAllBitsSet");
+
+        // Static method: andNot
+        lua_pushcfunction(L, (Vector2_static_andNot));
+        lua_setfield(L, -2, "andNot");
+
+        // Static method: any
+        lua_pushcfunction(L, (Vector2_static_any));
+        lua_setfield(L, -2, "any");
+
+        // Static method: anyWhereAllBitsSet
+        lua_pushcfunction(L, (Vector2_static_anyWhereAllBitsSet));
+        lua_setfield(L, -2, "anyWhereAllBitsSet");
+
+        // Static method: bitwiseAnd
+        lua_pushcfunction(L, (Vector2_static_bitwiseAnd));
+        lua_setfield(L, -2, "bitwiseAnd");
+
+        // Static method: bitwiseOr
+        lua_pushcfunction(L, (Vector2_static_bitwiseOr));
+        lua_setfield(L, -2, "bitwiseOr");
 
         // Static method: clamp
         lua_pushcfunction(L, (Vector2_static_clamp));
         lua_setfield(L, -2, "clamp");
+
+        // Static method: clampNative
+        lua_pushcfunction(L, (Vector2_static_clampNative));
+        lua_setfield(L, -2, "clampNative");
+
+        // Static method: conditionalSelect
+        lua_pushcfunction(L, (Vector2_static_conditionalSelect));
+        lua_setfield(L, -2, "conditionalSelect");
+
+        // Static method: copySign
+        lua_pushcfunction(L, (Vector2_static_copySign));
+        lua_setfield(L, -2, "copySign");
+
+        // Static method: cos
+        lua_pushcfunction(L, (Vector2_static_cos));
+        lua_setfield(L, -2, "cos");
+
+        // Static method: count
+        lua_pushcfunction(L, (Vector2_static_count));
+        lua_setfield(L, -2, "count");
+
+        // Static method: countWhereAllBitsSet
+        lua_pushcfunction(L, (Vector2_static_countWhereAllBitsSet));
+        lua_setfield(L, -2, "countWhereAllBitsSet");
+
+        // Static method: create
+        lua_pushcfunction(L, (Vector2_static_create));
+        lua_setfield(L, -2, "create");
+
+        // Static method: createScalar
+        lua_pushcfunction(L, (Vector2_static_createScalar));
+        lua_setfield(L, -2, "createScalar");
+
+        // Static method: createScalarUnsafe
+        lua_pushcfunction(L, (Vector2_static_createScalarUnsafe));
+        lua_setfield(L, -2, "createScalarUnsafe");
+
+        // Static method: cross
+        lua_pushcfunction(L, (Vector2_static_cross));
+        lua_setfield(L, -2, "cross");
+
+        // Static method: degreesToRadians
+        lua_pushcfunction(L, (Vector2_static_degreesToRadians));
+        lua_setfield(L, -2, "degreesToRadians");
 
         // Static method: distance
         lua_pushcfunction(L, (Vector2_static_distance));
@@ -111,45 +179,265 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector2_static_dot));
         lua_setfield(L, -2, "dot");
 
-        // Static method: hermite
-        lua_pushcfunction(L, (Vector2_static_hermite));
-        lua_setfield(L, -2, "hermite");
+        // Static method: exp
+        lua_pushcfunction(L, (Vector2_static_exp));
+        lua_setfield(L, -2, "exp");
+
+        // Static method: equals
+        lua_pushcfunction(L, (Vector2_static_equals));
+        lua_setfield(L, -2, "equals");
+
+        // Static method: equalsAll
+        lua_pushcfunction(L, (Vector2_static_equalsAll));
+        lua_setfield(L, -2, "equalsAll");
+
+        // Static method: equalsAny
+        lua_pushcfunction(L, (Vector2_static_equalsAny));
+        lua_setfield(L, -2, "equalsAny");
+
+        // Static method: fusedMultiplyAdd
+        lua_pushcfunction(L, (Vector2_static_fusedMultiplyAdd));
+        lua_setfield(L, -2, "fusedMultiplyAdd");
+
+        // Static method: greaterThan
+        lua_pushcfunction(L, (Vector2_static_greaterThan));
+        lua_setfield(L, -2, "greaterThan");
+
+        // Static method: greaterThanAll
+        lua_pushcfunction(L, (Vector2_static_greaterThanAll));
+        lua_setfield(L, -2, "greaterThanAll");
+
+        // Static method: greaterThanAny
+        lua_pushcfunction(L, (Vector2_static_greaterThanAny));
+        lua_setfield(L, -2, "greaterThanAny");
+
+        // Static method: greaterThanOrEqual
+        lua_pushcfunction(L, (Vector2_static_greaterThanOrEqual));
+        lua_setfield(L, -2, "greaterThanOrEqual");
+
+        // Static method: greaterThanOrEqualAll
+        lua_pushcfunction(L, (Vector2_static_greaterThanOrEqualAll));
+        lua_setfield(L, -2, "greaterThanOrEqualAll");
+
+        // Static method: greaterThanOrEqualAny
+        lua_pushcfunction(L, (Vector2_static_greaterThanOrEqualAny));
+        lua_setfield(L, -2, "greaterThanOrEqualAny");
+
+        // Static method: hypot
+        lua_pushcfunction(L, (Vector2_static_hypot));
+        lua_setfield(L, -2, "hypot");
+
+        // Static method: indexOf
+        lua_pushcfunction(L, (Vector2_static_indexOf));
+        lua_setfield(L, -2, "indexOf");
+
+        // Static method: indexOfWhereAllBitsSet
+        lua_pushcfunction(L, (Vector2_static_indexOfWhereAllBitsSet));
+        lua_setfield(L, -2, "indexOfWhereAllBitsSet");
+
+        // Static method: isEvenInteger
+        lua_pushcfunction(L, (Vector2_static_isEvenInteger));
+        lua_setfield(L, -2, "isEvenInteger");
+
+        // Static method: isFinite
+        lua_pushcfunction(L, (Vector2_static_isFinite));
+        lua_setfield(L, -2, "isFinite");
+
+        // Static method: isInfinity
+        lua_pushcfunction(L, (Vector2_static_isInfinity));
+        lua_setfield(L, -2, "isInfinity");
+
+        // Static method: isInteger
+        lua_pushcfunction(L, (Vector2_static_isInteger));
+        lua_setfield(L, -2, "isInteger");
+
+        // Static method: isNaN
+        lua_pushcfunction(L, (Vector2_static_isNaN));
+        lua_setfield(L, -2, "isNaN");
+
+        // Static method: isNegative
+        lua_pushcfunction(L, (Vector2_static_isNegative));
+        lua_setfield(L, -2, "isNegative");
+
+        // Static method: isNegativeInfinity
+        lua_pushcfunction(L, (Vector2_static_isNegativeInfinity));
+        lua_setfield(L, -2, "isNegativeInfinity");
+
+        // Static method: isNormal
+        lua_pushcfunction(L, (Vector2_static_isNormal));
+        lua_setfield(L, -2, "isNormal");
+
+        // Static method: isOddInteger
+        lua_pushcfunction(L, (Vector2_static_isOddInteger));
+        lua_setfield(L, -2, "isOddInteger");
+
+        // Static method: isPositive
+        lua_pushcfunction(L, (Vector2_static_isPositive));
+        lua_setfield(L, -2, "isPositive");
+
+        // Static method: isPositiveInfinity
+        lua_pushcfunction(L, (Vector2_static_isPositiveInfinity));
+        lua_setfield(L, -2, "isPositiveInfinity");
+
+        // Static method: isSubnormal
+        lua_pushcfunction(L, (Vector2_static_isSubnormal));
+        lua_setfield(L, -2, "isSubnormal");
+
+        // Static method: isZero
+        lua_pushcfunction(L, (Vector2_static_isZero));
+        lua_setfield(L, -2, "isZero");
+
+        // Static method: lastIndexOf
+        lua_pushcfunction(L, (Vector2_static_lastIndexOf));
+        lua_setfield(L, -2, "lastIndexOf");
+
+        // Static method: lastIndexOfWhereAllBitsSet
+        lua_pushcfunction(L, (Vector2_static_lastIndexOfWhereAllBitsSet));
+        lua_setfield(L, -2, "lastIndexOfWhereAllBitsSet");
 
         // Static method: lerp
         lua_pushcfunction(L, (Vector2_static_lerp));
         lua_setfield(L, -2, "lerp");
 
+        // Static method: lessThan
+        lua_pushcfunction(L, (Vector2_static_lessThan));
+        lua_setfield(L, -2, "lessThan");
+
+        // Static method: lessThanAll
+        lua_pushcfunction(L, (Vector2_static_lessThanAll));
+        lua_setfield(L, -2, "lessThanAll");
+
+        // Static method: lessThanAny
+        lua_pushcfunction(L, (Vector2_static_lessThanAny));
+        lua_setfield(L, -2, "lessThanAny");
+
+        // Static method: lessThanOrEqual
+        lua_pushcfunction(L, (Vector2_static_lessThanOrEqual));
+        lua_setfield(L, -2, "lessThanOrEqual");
+
+        // Static method: lessThanOrEqualAll
+        lua_pushcfunction(L, (Vector2_static_lessThanOrEqualAll));
+        lua_setfield(L, -2, "lessThanOrEqualAll");
+
+        // Static method: lessThanOrEqualAny
+        lua_pushcfunction(L, (Vector2_static_lessThanOrEqualAny));
+        lua_setfield(L, -2, "lessThanOrEqualAny");
+
+        // Static method: loadUnsafe
+        lua_pushcfunction(L, (Vector2_static_loadUnsafe));
+        lua_setfield(L, -2, "loadUnsafe");
+
+        // Static method: log
+        lua_pushcfunction(L, (Vector2_static_log));
+        lua_setfield(L, -2, "log");
+
+        // Static method: log2
+        lua_pushcfunction(L, (Vector2_static_log2));
+        lua_setfield(L, -2, "log2");
+
         // Static method: max
         lua_pushcfunction(L, (Vector2_static_max));
         lua_setfield(L, -2, "max");
+
+        // Static method: maxMagnitude
+        lua_pushcfunction(L, (Vector2_static_maxMagnitude));
+        lua_setfield(L, -2, "maxMagnitude");
+
+        // Static method: maxMagnitudeNumber
+        lua_pushcfunction(L, (Vector2_static_maxMagnitudeNumber));
+        lua_setfield(L, -2, "maxMagnitudeNumber");
+
+        // Static method: maxNative
+        lua_pushcfunction(L, (Vector2_static_maxNative));
+        lua_setfield(L, -2, "maxNative");
+
+        // Static method: maxNumber
+        lua_pushcfunction(L, (Vector2_static_maxNumber));
+        lua_setfield(L, -2, "maxNumber");
 
         // Static method: min
         lua_pushcfunction(L, (Vector2_static_min));
         lua_setfield(L, -2, "min");
 
+        // Static method: minMagnitude
+        lua_pushcfunction(L, (Vector2_static_minMagnitude));
+        lua_setfield(L, -2, "minMagnitude");
+
+        // Static method: minMagnitudeNumber
+        lua_pushcfunction(L, (Vector2_static_minMagnitudeNumber));
+        lua_setfield(L, -2, "minMagnitudeNumber");
+
+        // Static method: minNative
+        lua_pushcfunction(L, (Vector2_static_minNative));
+        lua_setfield(L, -2, "minNative");
+
+        // Static method: minNumber
+        lua_pushcfunction(L, (Vector2_static_minNumber));
+        lua_setfield(L, -2, "minNumber");
+
         // Static method: multiply
         lua_pushcfunction(L, (Vector2_static_multiply));
         lua_setfield(L, -2, "multiply");
+
+        // Static method: multiplyAddEstimate
+        lua_pushcfunction(L, (Vector2_static_multiplyAddEstimate));
+        lua_setfield(L, -2, "multiplyAddEstimate");
 
         // Static method: negate
         lua_pushcfunction(L, (Vector2_static_negate));
         lua_setfield(L, -2, "negate");
 
+        // Static method: none
+        lua_pushcfunction(L, (Vector2_static_none));
+        lua_setfield(L, -2, "none");
+
+        // Static method: noneWhereAllBitsSet
+        lua_pushcfunction(L, (Vector2_static_noneWhereAllBitsSet));
+        lua_setfield(L, -2, "noneWhereAllBitsSet");
+
         // Static method: normalize
         lua_pushcfunction(L, (Vector2_static_normalize));
         lua_setfield(L, -2, "normalize");
+
+        // Static method: onesComplement
+        lua_pushcfunction(L, (Vector2_static_onesComplement));
+        lua_setfield(L, -2, "onesComplement");
+
+        // Static method: radiansToDegrees
+        lua_pushcfunction(L, (Vector2_static_radiansToDegrees));
+        lua_setfield(L, -2, "radiansToDegrees");
 
         // Static method: reflect
         lua_pushcfunction(L, (Vector2_static_reflect));
         lua_setfield(L, -2, "reflect");
 
-        // Static method: smoothStep
-        lua_pushcfunction(L, (Vector2_static_smoothStep));
-        lua_setfield(L, -2, "smoothStep");
+        // Static method: round
+        lua_pushcfunction(L, (Vector2_static_round));
+        lua_setfield(L, -2, "round");
+
+        // Static method: shuffle
+        lua_pushcfunction(L, (Vector2_static_shuffle));
+        lua_setfield(L, -2, "shuffle");
+
+        // Static method: sin
+        lua_pushcfunction(L, (Vector2_static_sin));
+        lua_setfield(L, -2, "sin");
+
+        // Static method: sinCos
+        lua_pushcfunction(L, (Vector2_static_sinCos));
+        lua_setfield(L, -2, "sinCos");
+
+        // Static method: squareRoot
+        lua_pushcfunction(L, (Vector2_static_squareRoot));
+        lua_setfield(L, -2, "squareRoot");
 
         // Static method: subtract
         lua_pushcfunction(L, (Vector2_static_subtract));
         lua_setfield(L, -2, "subtract");
+
+        // Static method: sum
+        lua_pushcfunction(L, (Vector2_static_sum));
+        lua_setfield(L, -2, "sum");
 
         // Static method: transform
         lua_pushcfunction(L, (Vector2_static_transform));
@@ -159,7 +447,15 @@ public partial class LuaBindings
         lua_pushcfunction(L, (Vector2_static_transformNormal));
         lua_setfield(L, -2, "transformNormal");
 
-        // Create metatable for type table (static properties)
+        // Static method: truncate
+        lua_pushcfunction(L, (Vector2_static_truncate));
+        lua_setfield(L, -2, "truncate");
+
+        // Static method: xor
+        lua_pushcfunction(L, (Vector2_static_xor));
+        lua_setfield(L, -2, "xor");
+
+        // Create metatable for type table (static properties and fields)
         lua_newtable(L);
         lua_pushcfunction(L, (Vector2_type__index));
         lua_setfield(L, -2, "__index");
@@ -176,7 +472,7 @@ public partial class LuaBindings
             unsafe
             {
                 var id = *(int*)ptr;
-                RemoveObject<Microsoft.Xna.Framework.Vector2>(id);
+                RemoveObject<System.Numerics.Vector2>(id);
             }
         }
         return 0;
@@ -184,7 +480,16 @@ public partial class LuaBindings
 
     private static int Vector2__index(lua_State L)
     {
-        var obj = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
+        var obj = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        // Check if key is a number (array/indexer access)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            var element = obj[index];
+            PushValue(L, element);
+            return 1;
+        }
 
         var key = lua_tostring(L, 2);
         if (key == null) { lua_pushnil(L); return 1; }
@@ -192,16 +497,19 @@ public partial class LuaBindings
         switch (key)
         {
             case "x":
-                PushValue(L, ((Microsoft.Xna.Framework.Vector2)obj).X);
+                PushValue(L, ((System.Numerics.Vector2)obj).X);
                 return 1;
             case "y":
-                PushValue(L, ((Microsoft.Xna.Framework.Vector2)obj).Y);
+                PushValue(L, ((System.Numerics.Vector2)obj).Y);
+                return 1;
+            case "copyTo":
+                lua_pushcfunction(L, (Vector2_method_copyTo));
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Vector2_method_equals));
+                lua_pushcfunction(L, (Object_method_equals));
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Vector2_method_getHashCode));
+                lua_pushcfunction(L, (Object_method_getHashCode));
                 return 1;
             case "length":
                 lua_pushcfunction(L, (Vector2_method_length));
@@ -209,14 +517,41 @@ public partial class LuaBindings
             case "lengthSquared":
                 lua_pushcfunction(L, (Vector2_method_lengthSquared));
                 return 1;
-            case "normalize":
-                lua_pushcfunction(L, (Vector2_method_normalize));
-                return 1;
             case "toString":
-                lua_pushcfunction(L, (Vector2_method_toString));
+                lua_pushcfunction(L, (Object_method_toString));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (Vector2_method_getType));
+                return 1;
+            case "asVector3":
+                lua_pushcfunction(L, (Vector2_method_asVector3));
+                return 1;
+            case "asVector3Unsafe":
+                lua_pushcfunction(L, (Vector2_method_asVector3Unsafe));
+                return 1;
+            case "asVector4":
+                lua_pushcfunction(L, (Vector2_method_asVector4));
+                return 1;
+            case "asVector4Unsafe":
+                lua_pushcfunction(L, (Vector2_method_asVector4Unsafe));
+                return 1;
+            case "extractMostSignificantBits":
+                lua_pushcfunction(L, (Vector2_method_extractMostSignificantBits));
+                return 1;
+            case "getElement":
+                lua_pushcfunction(L, (Vector2_method_getElement));
+                return 1;
+            case "toScalar":
+                lua_pushcfunction(L, (Vector2_method_toScalar));
+                return 1;
+            case "withElement":
+                lua_pushcfunction(L, (Vector2_method_withElement));
+                return 1;
+            case "asVector128":
+                lua_pushcfunction(L, (Vector2_method_asVector128));
+                return 1;
+            case "asVector128Unsafe":
+                lua_pushcfunction(L, (Vector2_method_asVector128Unsafe));
                 return 1;
             default:
                 lua_pushnil(L);
@@ -226,7 +561,16 @@ public partial class LuaBindings
 
     private static int Vector2__newindex(lua_State L)
     {
-        var obj = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
+        var obj = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        // Check if key is a number (array/indexer assignment)
+        if (lua_type(L, 2) == LUA_TNUMBER)
+        {
+            var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
+            var value = ToObject<float>(L, 3)!;
+            obj[index] = value;
+            return 0;
+        }
 
         var key = lua_tostring(L, 2);
         if (key == null) return 0;
@@ -263,58 +607,33 @@ public partial class LuaBindings
 
     private static int Vector2__tostring(lua_State L)
     {
-        var obj = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
+        var obj = GetStructFromStack<System.Numerics.Vector2>(L, 1);
         lua_pushstring(L, obj.ToString() ?? "");
-        return 1;
-    }
-
-    private static int Vector2_op_op_UnaryNegation(lua_State L)
-    {
-        var operand = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-        var result = -operand;
-        PushValue(L, result);
-        return 1;
-    }
-
-    private static int Vector2_op_op_Equality(lua_State L)
-    {
-        var left = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-        var right = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
-        lua_pushboolean(L, left == right ? 1 : 0);
         return 1;
     }
 
     private static int Vector2_op_op_Addition(lua_State L)
     {
-        var left = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-        var right = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+        var left = ToObject<System.Numerics.Vector2>(L, 1)!;
+        var right = ToObject<System.Numerics.Vector2>(L, 2)!;
         var result = left + right;
         PushValue(L, result);
         return 1;
     }
 
-    private static int Vector2_op_op_Subtraction(lua_State L)
-    {
-        var left = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-        var right = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
-        var result = left - right;
-        PushValue(L, result);
-        return 1;
-    }
-
-    private static int Vector2_op_op_Multiply(lua_State L)
+    private static int Vector2_op_op_Division(lua_State L)
     {
         // Multiple operator overloads - find best match
         int bestScore = -1;
         int bestIndex = -1;
 
-        // Try overload 0: op_Multiply(Microsoft.Xna.Framework.Vector2, Microsoft.Xna.Framework.Vector2)
+        // Try overload 0: op_Division(System.Numerics.Vector2, System.Numerics.Vector2)
         {
             int score = 0;
-            int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
+            int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
             if (score0 < 0) goto next0;
             else score += score0;
-            int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 2);
+            int score1 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 2);
             if (score1 < 0) goto next0;
             else score += score1;
             if (score > bestScore)
@@ -325,10 +644,10 @@ public partial class LuaBindings
         }
         next0:
 
-        // Try overload 1: op_Multiply(Microsoft.Xna.Framework.Vector2, float)
+        // Try overload 1: op_Division(System.Numerics.Vector2, float)
         {
             int score = 0;
-            int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
+            int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
             if (score0 < 0) goto next1;
             else score += score0;
             int score1 = ScoreParameterCompatibility<float>(L, 2);
@@ -342,13 +661,85 @@ public partial class LuaBindings
         }
         next1:
 
-        // Try overload 2: op_Multiply(float, Microsoft.Xna.Framework.Vector2)
+        switch (bestIndex)
+        {
+            case 0:
+                {
+                    var left = ToObject<System.Numerics.Vector2>(L, 1)!;
+                    var right = ToObject<System.Numerics.Vector2>(L, 2)!;
+                    var result = left / right;
+                    PushValue(L, result);
+                    return 1;
+                }
+            case 1:
+                {
+                    var left = ToObject<System.Numerics.Vector2>(L, 1)!;
+                    var right = ToObject<float>(L, 2)!;
+                    var result = left / right;
+                    PushValue(L, result);
+                    return 1;
+                }
+            default:
+                luaL_error(L, "No compatible operator overload found");
+                return 0;
+        }
+    }
+
+    private static int Vector2_op_op_Equality(lua_State L)
+    {
+        var left = ToObject<System.Numerics.Vector2>(L, 1)!;
+        var right = ToObject<System.Numerics.Vector2>(L, 2)!;
+        lua_pushboolean(L, left == right ? 1 : 0);
+        return 1;
+    }
+
+    private static int Vector2_op_op_Multiply(lua_State L)
+    {
+        // Multiple operator overloads - find best match
+        int bestScore = -1;
+        int bestIndex = -1;
+
+        // Try overload 0: op_Multiply(System.Numerics.Vector2, System.Numerics.Vector2)
+        {
+            int score = 0;
+            int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
+            if (score0 < 0) goto next0;
+            else score += score0;
+            int score1 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 2);
+            if (score1 < 0) goto next0;
+            else score += score1;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestIndex = 0;
+            }
+        }
+        next0:
+
+        // Try overload 1: op_Multiply(System.Numerics.Vector2, float)
+        {
+            int score = 0;
+            int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
+            if (score0 < 0) goto next1;
+            else score += score0;
+            int score1 = ScoreParameterCompatibility<float>(L, 2);
+            if (score1 < 0) goto next1;
+            else score += score1;
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestIndex = 1;
+            }
+        }
+        next1:
+
+        // Try overload 2: op_Multiply(float, System.Numerics.Vector2)
         {
             int score = 0;
             int score0 = ScoreParameterCompatibility<float>(L, 1);
             if (score0 < 0) goto next2;
             else score += score0;
-            int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 2);
+            int score1 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 2);
             if (score1 < 0) goto next2;
             else score += score1;
             if (score > bestScore)
@@ -363,15 +754,15 @@ public partial class LuaBindings
         {
             case 0:
                 {
-                    var left = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-                    var right = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+                    var left = ToObject<System.Numerics.Vector2>(L, 1)!;
+                    var right = ToObject<System.Numerics.Vector2>(L, 2)!;
                     var result = left * right;
                     PushValue(L, result);
                     return 1;
                 }
             case 1:
                 {
-                    var left = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
+                    var left = ToObject<System.Numerics.Vector2>(L, 1)!;
                     var right = ToObject<float>(L, 2)!;
                     var result = left * right;
                     PushValue(L, result);
@@ -380,7 +771,7 @@ public partial class LuaBindings
             case 2:
                 {
                     var left = ToObject<float>(L, 1)!;
-                    var right = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+                    var right = ToObject<System.Numerics.Vector2>(L, 2)!;
                     var result = left * right;
                     PushValue(L, result);
                     return 1;
@@ -391,68 +782,21 @@ public partial class LuaBindings
         }
     }
 
-    private static int Vector2_op_op_Division(lua_State L)
+    private static int Vector2_op_op_Subtraction(lua_State L)
     {
-        // Multiple operator overloads - find best match
-        int bestScore = -1;
-        int bestIndex = -1;
+        var left = ToObject<System.Numerics.Vector2>(L, 1)!;
+        var right = ToObject<System.Numerics.Vector2>(L, 2)!;
+        var result = left - right;
+        PushValue(L, result);
+        return 1;
+    }
 
-        // Try overload 0: op_Division(Microsoft.Xna.Framework.Vector2, Microsoft.Xna.Framework.Vector2)
-        {
-            int score = 0;
-            int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
-            if (score0 < 0) goto next0;
-            else score += score0;
-            int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 2);
-            if (score1 < 0) goto next0;
-            else score += score1;
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestIndex = 0;
-            }
-        }
-        next0:
-
-        // Try overload 1: op_Division(Microsoft.Xna.Framework.Vector2, float)
-        {
-            int score = 0;
-            int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
-            if (score0 < 0) goto next1;
-            else score += score0;
-            int score1 = ScoreParameterCompatibility<float>(L, 2);
-            if (score1 < 0) goto next1;
-            else score += score1;
-            if (score > bestScore)
-            {
-                bestScore = score;
-                bestIndex = 1;
-            }
-        }
-        next1:
-
-        switch (bestIndex)
-        {
-            case 0:
-                {
-                    var left = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-                    var right = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
-                    var result = left / right;
-                    PushValue(L, result);
-                    return 1;
-                }
-            case 1:
-                {
-                    var left = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-                    var right = ToObject<float>(L, 2)!;
-                    var result = left / right;
-                    PushValue(L, result);
-                    return 1;
-                }
-            default:
-                luaL_error(L, "No compatible operator overload found");
-                return 0;
-        }
+    private static int Vector2_op_op_UnaryNegation(lua_State L)
+    {
+        var operand = ToObject<System.Numerics.Vector2>(L, 1)!;
+        var result = -operand;
+        PushValue(L, result);
+        return 1;
     }
 
     private static int Vector2_new(lua_State L)
@@ -461,7 +805,7 @@ public partial class LuaBindings
 
         if (argCount == 0)
         {
-            var obj = new Microsoft.Xna.Framework.Vector2();
+            var obj = new System.Numerics.Vector2();
             PushObject(L, obj, "MT_Vector2");
             return 1;
         }
@@ -471,7 +815,7 @@ public partial class LuaBindings
             var arg0 = ToObject<float>(L, 1)!;
             try
             {
-                var obj = new Microsoft.Xna.Framework.Vector2(arg0);
+                var obj = new System.Numerics.Vector2(arg0);
                 PushObject(L, obj, "MT_Vector2");
                 return 1;
             }
@@ -488,7 +832,7 @@ public partial class LuaBindings
             var arg1 = ToObject<float>(L, 2)!;
             try
             {
-                var obj = new Microsoft.Xna.Framework.Vector2(arg0, arg1);
+                var obj = new System.Numerics.Vector2(arg0, arg1);
                 PushObject(L, obj, "MT_Vector2");
                 return 1;
             }
@@ -503,17 +847,452 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector2_method_copyTo(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<float[]>(L, 2)!;
+            try
+            {
+                var structValue = (System.Numerics.Vector2)self;
+                structValue.CopyTo(arg0);
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<float[]>(L, 2)!;
+            var arg1 = ToObject<int>(L, 3)!;
+            try
+            {
+                var structValue = (System.Numerics.Vector2)self;
+                structValue.CopyTo(arg0, arg1);
+                UpdateStruct(L, 1, structValue);
+                return 0;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for copyTo");
+        return 0;
+    }
+
+    private static int Vector2_method_length(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.Numerics.Vector2)self;
+                var result = structValue.Length();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for length");
+        return 0;
+    }
+
+    private static int Vector2_method_lengthSquared(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.Numerics.Vector2)self;
+                var result = structValue.LengthSquared();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lengthSquared");
+        return 0;
+    }
+
+    private static int Vector2_method_toString(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 1)
+        {
+            string? arg0;
+            if (lua_isnil(L, 2) != 0)
+                arg0 = null;
+            else
+                arg0 = ToObject<string>(L, 2)!;
+            try
+            {
+                var structValue = (System.Numerics.Vector2)self;
+                var result = structValue.ToString(arg0);
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toString");
+        return 0;
+    }
+
+    private static int Vector2_method_getType(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var structValue = (System.Numerics.Vector2)self;
+                var result = structValue.GetType();
+                UpdateStruct(L, 1, structValue);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getType");
+        return 0;
+    }
+
+    private static int Vector2_method_asVector3(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = System.Numerics.Vector.AsVector3(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for asVector3");
+        return 0;
+    }
+
+    private static int Vector2_method_asVector3Unsafe(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = System.Numerics.Vector.AsVector3Unsafe(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for asVector3Unsafe");
+        return 0;
+    }
+
+    private static int Vector2_method_asVector4(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = System.Numerics.Vector.AsVector4(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for asVector4");
+        return 0;
+    }
+
+    private static int Vector2_method_asVector4Unsafe(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = System.Numerics.Vector.AsVector4Unsafe(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for asVector4Unsafe");
+        return 0;
+    }
+
+    private static int Vector2_method_extractMostSignificantBits(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = System.Numerics.Vector.ExtractMostSignificantBits(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for extractMostSignificantBits");
+        return 0;
+    }
+
+    private static int Vector2_method_getElement(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector.GetElement(self, arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for getElement");
+        return 0;
+    }
+
+    private static int Vector2_method_toScalar(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = System.Numerics.Vector.ToScalar(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for toScalar");
+        return 0;
+    }
+
+    private static int Vector2_method_withElement(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<int>(L, 2)!;
+            var arg1 = ToObject<float>(L, 3)!;
+            try
+            {
+                var result = System.Numerics.Vector.WithElement(self, arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for withElement");
+        return 0;
+    }
+
+    private static int Vector2_method_asVector128(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = System.Runtime.Intrinsics.Vector128.AsVector128(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for asVector128");
+        return 0;
+    }
+
+    private static int Vector2_method_asVector128Unsafe(lua_State L)
+    {
+        var argCount = lua_gettop(L) - 1; // First arg is self
+
+        var self = GetStructFromStack<System.Numerics.Vector2>(L, 1);
+
+        if (argCount == 0)
+        {
+            try
+            {
+                var result = System.Runtime.Intrinsics.Vector128.AsVector128Unsafe(self);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for asVector128Unsafe");
+        return 0;
+    }
+
+    private static int Vector2_static_abs(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Abs(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for abs");
+        return 0;
+    }
+
     private static int Vector2_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Add(arg0, arg1);
+                var result = System.Numerics.Vector2.Add(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -528,20 +1307,17 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector2_static_barycentric(lua_State L)
+    private static int Vector2_static_all(lua_State L)
     {
         var argCount = lua_gettop(L);
 
-        if (argCount == 5)
+        if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
-            var arg2 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 3)!;
-            var arg3 = ToObject<float>(L, 4)!;
-            var arg4 = ToObject<float>(L, 5)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Barycentric(arg0, arg1, arg2, arg3, arg4);
+                var result = System.Numerics.Vector2.All(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -552,24 +1328,20 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for barycentric");
+        luaL_error(L, "Invalid arguments for all");
         return 0;
     }
 
-    private static int Vector2_static_catmullRom(lua_State L)
+    private static int Vector2_static_allWhereAllBitsSet(lua_State L)
     {
         var argCount = lua_gettop(L);
 
-        if (argCount == 5)
+        if (argCount == 1)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
-            var arg2 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 3)!;
-            var arg3 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 4)!;
-            var arg4 = ToObject<float>(L, 5)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.CatmullRom(arg0, arg1, arg2, arg3, arg4);
+                var result = System.Numerics.Vector2.AllWhereAllBitsSet(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -580,7 +1352,131 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for catmullRom");
+        luaL_error(L, "Invalid arguments for allWhereAllBitsSet");
+        return 0;
+    }
+
+    private static int Vector2_static_andNot(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.AndNot(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for andNot");
+        return 0;
+    }
+
+    private static int Vector2_static_any(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Any(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for any");
+        return 0;
+    }
+
+    private static int Vector2_static_anyWhereAllBitsSet(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.AnyWhereAllBitsSet(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for anyWhereAllBitsSet");
+        return 0;
+    }
+
+    private static int Vector2_static_bitwiseAnd(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.BitwiseAnd(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for bitwiseAnd");
+        return 0;
+    }
+
+    private static int Vector2_static_bitwiseOr(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.BitwiseOr(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for bitwiseOr");
         return 0;
     }
 
@@ -590,12 +1486,12 @@ public partial class LuaBindings
 
         if (argCount == 3)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
-            var arg2 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 3)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            var arg2 = ToObject<System.Numerics.Vector2>(L, 3)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Clamp(arg0, arg1, arg2);
+                var result = System.Numerics.Vector2.Clamp(arg0, arg1, arg2);
                 PushValue(L, result);
                 return 1;
             }
@@ -610,17 +1506,305 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector2_static_clampNative(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            var arg2 = ToObject<System.Numerics.Vector2>(L, 3)!;
+            try
+            {
+                var result = System.Numerics.Vector2.ClampNative(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for clampNative");
+        return 0;
+    }
+
+    private static int Vector2_static_conditionalSelect(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            var arg2 = ToObject<System.Numerics.Vector2>(L, 3)!;
+            try
+            {
+                var result = System.Numerics.Vector2.ConditionalSelect(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for conditionalSelect");
+        return 0;
+    }
+
+    private static int Vector2_static_copySign(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.CopySign(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for copySign");
+        return 0;
+    }
+
+    private static int Vector2_static_cos(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Cos(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for cos");
+        return 0;
+    }
+
+    private static int Vector2_static_count(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Count(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for count");
+        return 0;
+    }
+
+    private static int Vector2_static_countWhereAllBitsSet(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.CountWhereAllBitsSet(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for countWhereAllBitsSet");
+        return 0;
+    }
+
+    private static int Vector2_static_create(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<float>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Create(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<float>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Create(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for create");
+        return 0;
+    }
+
+    private static int Vector2_static_createScalar(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<float>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.CreateScalar(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for createScalar");
+        return 0;
+    }
+
+    private static int Vector2_static_createScalarUnsafe(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<float>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.CreateScalarUnsafe(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for createScalarUnsafe");
+        return 0;
+    }
+
+    private static int Vector2_static_cross(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Cross(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for cross");
+        return 0;
+    }
+
+    private static int Vector2_static_degreesToRadians(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.DegreesToRadians(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for degreesToRadians");
+        return 0;
+    }
+
     private static int Vector2_static_distance(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Distance(arg0, arg1);
+                var result = System.Numerics.Vector2.Distance(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -641,11 +1825,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.DistanceSquared(arg0, arg1);
+                var result = System.Numerics.Vector2.DistanceSquared(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -670,13 +1854,13 @@ public partial class LuaBindings
             int bestScore = -1;
             int bestIndex = -1;
 
-            // Try overload 0: Divide(Microsoft.Xna.Framework.Vector2, Microsoft.Xna.Framework.Vector2)
+            // Try overload 0: Divide(System.Numerics.Vector2, System.Numerics.Vector2)
             {
                 int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
                 if (score0 < 0) goto next0;
                 else score += score0;
-                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 2);
+                int score1 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 2);
                 if (score1 < 0) goto next0;
                 else score += score1;
                 if (score > bestScore)
@@ -687,10 +1871,10 @@ public partial class LuaBindings
             }
             next0:
 
-            // Try overload 1: Divide(Microsoft.Xna.Framework.Vector2, float)
+            // Try overload 1: Divide(System.Numerics.Vector2, float)
             {
                 int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
                 if (score0 < 0) goto next1;
                 else score += score0;
                 int score1 = ScoreParameterCompatibility<float>(L, 2);
@@ -708,11 +1892,11 @@ public partial class LuaBindings
             {
                 case 0:
                     {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-                        var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
                         try
                         {
-                            var result = Microsoft.Xna.Framework.Vector2.Divide(arg0, arg1);
+                            var result = System.Numerics.Vector2.Divide(arg0, arg1);
                             PushValue(L, result);
                             return 1;
                         }
@@ -724,11 +1908,11 @@ public partial class LuaBindings
                     }
                 case 1:
                     {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
                         var arg1 = ToObject<float>(L, 2)!;
                         try
                         {
-                            var result = Microsoft.Xna.Framework.Vector2.Divide(arg0, arg1);
+                            var result = System.Numerics.Vector2.Divide(arg0, arg1);
                             PushValue(L, result);
                             return 1;
                         }
@@ -754,11 +1938,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Dot(arg0, arg1);
+                var result = System.Numerics.Vector2.Dot(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -773,20 +1957,16 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector2_static_hermite(lua_State L)
+    private static int Vector2_static_exp(lua_State L)
     {
         var argCount = lua_gettop(L);
 
-        if (argCount == 5)
+        if (argCount == 1)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
-            var arg2 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 3)!;
-            var arg3 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 4)!;
-            var arg4 = ToObject<float>(L, 5)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Hermite(arg0, arg1, arg2, arg3, arg4);
+                var result = System.Numerics.Vector2.Exp(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -797,7 +1977,693 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for hermite");
+        luaL_error(L, "Invalid arguments for exp");
+        return 0;
+    }
+
+    private static int Vector2_static_equals(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Equals(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for equals");
+        return 0;
+    }
+
+    private static int Vector2_static_equalsAll(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.EqualsAll(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for equalsAll");
+        return 0;
+    }
+
+    private static int Vector2_static_equalsAny(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.EqualsAny(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for equalsAny");
+        return 0;
+    }
+
+    private static int Vector2_static_fusedMultiplyAdd(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            var arg2 = ToObject<System.Numerics.Vector2>(L, 3)!;
+            try
+            {
+                var result = System.Numerics.Vector2.FusedMultiplyAdd(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for fusedMultiplyAdd");
+        return 0;
+    }
+
+    private static int Vector2_static_greaterThan(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.GreaterThan(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for greaterThan");
+        return 0;
+    }
+
+    private static int Vector2_static_greaterThanAll(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.GreaterThanAll(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for greaterThanAll");
+        return 0;
+    }
+
+    private static int Vector2_static_greaterThanAny(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.GreaterThanAny(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for greaterThanAny");
+        return 0;
+    }
+
+    private static int Vector2_static_greaterThanOrEqual(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.GreaterThanOrEqual(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for greaterThanOrEqual");
+        return 0;
+    }
+
+    private static int Vector2_static_greaterThanOrEqualAll(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.GreaterThanOrEqualAll(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for greaterThanOrEqualAll");
+        return 0;
+    }
+
+    private static int Vector2_static_greaterThanOrEqualAny(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.GreaterThanOrEqualAny(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for greaterThanOrEqualAny");
+        return 0;
+    }
+
+    private static int Vector2_static_hypot(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Hypot(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for hypot");
+        return 0;
+    }
+
+    private static int Vector2_static_indexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IndexOf(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for indexOf");
+        return 0;
+    }
+
+    private static int Vector2_static_indexOfWhereAllBitsSet(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IndexOfWhereAllBitsSet(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for indexOfWhereAllBitsSet");
+        return 0;
+    }
+
+    private static int Vector2_static_isEvenInteger(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsEvenInteger(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isEvenInteger");
+        return 0;
+    }
+
+    private static int Vector2_static_isFinite(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsFinite(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isFinite");
+        return 0;
+    }
+
+    private static int Vector2_static_isInfinity(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsInfinity(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isInfinity");
+        return 0;
+    }
+
+    private static int Vector2_static_isInteger(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsInteger(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isInteger");
+        return 0;
+    }
+
+    private static int Vector2_static_isNaN(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsNaN(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isNaN");
+        return 0;
+    }
+
+    private static int Vector2_static_isNegative(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsNegative(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isNegative");
+        return 0;
+    }
+
+    private static int Vector2_static_isNegativeInfinity(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsNegativeInfinity(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isNegativeInfinity");
+        return 0;
+    }
+
+    private static int Vector2_static_isNormal(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsNormal(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isNormal");
+        return 0;
+    }
+
+    private static int Vector2_static_isOddInteger(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsOddInteger(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isOddInteger");
+        return 0;
+    }
+
+    private static int Vector2_static_isPositive(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsPositive(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isPositive");
+        return 0;
+    }
+
+    private static int Vector2_static_isPositiveInfinity(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsPositiveInfinity(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isPositiveInfinity");
+        return 0;
+    }
+
+    private static int Vector2_static_isSubnormal(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsSubnormal(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isSubnormal");
+        return 0;
+    }
+
+    private static int Vector2_static_isZero(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.IsZero(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for isZero");
+        return 0;
+    }
+
+    private static int Vector2_static_lastIndexOf(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.LastIndexOf(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lastIndexOf");
+        return 0;
+    }
+
+    private static int Vector2_static_lastIndexOfWhereAllBitsSet(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.LastIndexOfWhereAllBitsSet(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lastIndexOfWhereAllBitsSet");
         return 0;
     }
 
@@ -807,12 +2673,107 @@ public partial class LuaBindings
 
         if (argCount == 3)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
-            var arg2 = ToObject<float>(L, 3)!;
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: Lerp(System.Numerics.Vector2, System.Numerics.Vector2, float)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                int score2 = ScoreParameterCompatibility<float>(L, 3);
+                if (score2 < 0) goto next0;
+                else score += score2;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
+            }
+            next0:
+
+            // Try overload 1: Lerp(System.Numerics.Vector2, System.Numerics.Vector2, System.Numerics.Vector2)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                int score2 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 3);
+                if (score2 < 0) goto next1;
+                else score += score2;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+                        var arg2 = ToObject<float>(L, 3)!;
+                        try
+                        {
+                            var result = System.Numerics.Vector2.Lerp(arg0, arg1, arg2);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+                        var arg2 = ToObject<System.Numerics.Vector2>(L, 3)!;
+                        try
+                        {
+                            var result = System.Numerics.Vector2.Lerp(arg0, arg1, arg2);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for lerp");
+                    return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lerp");
+        return 0;
+    }
+
+    private static int Vector2_static_lessThan(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Lerp(arg0, arg1, arg2);
+                var result = System.Numerics.Vector2.LessThan(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -823,7 +2784,221 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for lerp");
+        luaL_error(L, "Invalid arguments for lessThan");
+        return 0;
+    }
+
+    private static int Vector2_static_lessThanAll(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.LessThanAll(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lessThanAll");
+        return 0;
+    }
+
+    private static int Vector2_static_lessThanAny(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.LessThanAny(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lessThanAny");
+        return 0;
+    }
+
+    private static int Vector2_static_lessThanOrEqual(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.LessThanOrEqual(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lessThanOrEqual");
+        return 0;
+    }
+
+    private static int Vector2_static_lessThanOrEqualAll(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.LessThanOrEqualAll(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lessThanOrEqualAll");
+        return 0;
+    }
+
+    private static int Vector2_static_lessThanOrEqualAny(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.LessThanOrEqualAny(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for lessThanOrEqualAny");
+        return 0;
+    }
+
+    private static int Vector2_static_loadUnsafe(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<float>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.LoadUnsafe(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<float>(L, 1)!;
+            var arg1 = ToObject<System.UIntPtr>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.LoadUnsafe(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for loadUnsafe");
+        return 0;
+    }
+
+    private static int Vector2_static_log(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Log(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for log");
+        return 0;
+    }
+
+    private static int Vector2_static_log2(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Log2(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for log2");
         return 0;
     }
 
@@ -833,11 +3008,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Max(arg0, arg1);
+                var result = System.Numerics.Vector2.Max(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -852,17 +3027,117 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector2_static_maxMagnitude(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.MaxMagnitude(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for maxMagnitude");
+        return 0;
+    }
+
+    private static int Vector2_static_maxMagnitudeNumber(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.MaxMagnitudeNumber(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for maxMagnitudeNumber");
+        return 0;
+    }
+
+    private static int Vector2_static_maxNative(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.MaxNative(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for maxNative");
+        return 0;
+    }
+
+    private static int Vector2_static_maxNumber(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.MaxNumber(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for maxNumber");
+        return 0;
+    }
+
     private static int Vector2_static_min(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Min(arg0, arg1);
+                var result = System.Numerics.Vector2.Min(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -877,6 +3152,106 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector2_static_minMagnitude(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.MinMagnitude(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for minMagnitude");
+        return 0;
+    }
+
+    private static int Vector2_static_minMagnitudeNumber(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.MinMagnitudeNumber(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for minMagnitudeNumber");
+        return 0;
+    }
+
+    private static int Vector2_static_minNative(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.MinNative(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for minNative");
+        return 0;
+    }
+
+    private static int Vector2_static_minNumber(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.MinNumber(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for minNumber");
+        return 0;
+    }
+
     private static int Vector2_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -887,13 +3262,13 @@ public partial class LuaBindings
             int bestScore = -1;
             int bestIndex = -1;
 
-            // Try overload 0: Multiply(Microsoft.Xna.Framework.Vector2, Microsoft.Xna.Framework.Vector2)
+            // Try overload 0: Multiply(System.Numerics.Vector2, System.Numerics.Vector2)
             {
                 int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
                 if (score0 < 0) goto next0;
                 else score += score0;
-                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 2);
+                int score1 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 2);
                 if (score1 < 0) goto next0;
                 else score += score1;
                 if (score > bestScore)
@@ -904,10 +3279,10 @@ public partial class LuaBindings
             }
             next0:
 
-            // Try overload 1: Multiply(Microsoft.Xna.Framework.Vector2, float)
+            // Try overload 1: Multiply(System.Numerics.Vector2, float)
             {
                 int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
                 if (score0 < 0) goto next1;
                 else score += score0;
                 int score1 = ScoreParameterCompatibility<float>(L, 2);
@@ -921,15 +3296,32 @@ public partial class LuaBindings
             }
             next1:
 
+            // Try overload 2: Multiply(float, System.Numerics.Vector2)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<float>(L, 1);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 2);
+                if (score1 < 0) goto next2;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 2;
+                }
+            }
+            next2:
+
             switch (bestIndex)
             {
                 case 0:
                     {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-                        var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
                         try
                         {
-                            var result = Microsoft.Xna.Framework.Vector2.Multiply(arg0, arg1);
+                            var result = System.Numerics.Vector2.Multiply(arg0, arg1);
                             PushValue(L, result);
                             return 1;
                         }
@@ -941,11 +3333,27 @@ public partial class LuaBindings
                     }
                 case 1:
                     {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
                         var arg1 = ToObject<float>(L, 2)!;
                         try
                         {
-                            var result = Microsoft.Xna.Framework.Vector2.Multiply(arg0, arg1);
+                            var result = System.Numerics.Vector2.Multiply(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 2:
+                    {
+                        var arg0 = ToObject<float>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+                        try
+                        {
+                            var result = System.Numerics.Vector2.Multiply(arg0, arg1);
                             PushValue(L, result);
                             return 1;
                         }
@@ -965,16 +3373,42 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector2_static_multiplyAddEstimate(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
+            var arg2 = ToObject<System.Numerics.Vector2>(L, 3)!;
+            try
+            {
+                var result = System.Numerics.Vector2.MultiplyAddEstimate(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for multiplyAddEstimate");
+        return 0;
+    }
+
     private static int Vector2_static_negate(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Negate(arg0);
+                var result = System.Numerics.Vector2.Negate(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -989,16 +3423,65 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector2_static_none(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<float>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.None(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for none");
+        return 0;
+    }
+
+    private static int Vector2_static_noneWhereAllBitsSet(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.NoneWhereAllBitsSet(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for noneWhereAllBitsSet");
+        return 0;
+    }
+
     private static int Vector2_static_normalize(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Normalize(arg0);
+                var result = System.Numerics.Vector2.Normalize(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1013,17 +3496,65 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector2_static_onesComplement(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.OnesComplement(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for onesComplement");
+        return 0;
+    }
+
+    private static int Vector2_static_radiansToDegrees(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.RadiansToDegrees(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for radiansToDegrees");
+        return 0;
+    }
+
     private static int Vector2_static_reflect(lua_State L)
     {
         var argCount = lua_gettop(L);
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Reflect(arg0, arg1);
+                var result = System.Numerics.Vector2.Reflect(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1038,18 +3569,16 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector2_static_smoothStep(lua_State L)
+    private static int Vector2_static_round(lua_State L)
     {
         var argCount = lua_gettop(L);
 
-        if (argCount == 3)
+        if (argCount == 1)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
-            var arg2 = ToObject<float>(L, 3)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.SmoothStep(arg0, arg1, arg2);
+                var result = System.Numerics.Vector2.Round(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1060,7 +3589,122 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for smoothStep");
+        if (argCount == 2)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.MidpointRounding>(L, 2)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Round(arg0, arg1);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for round");
+        return 0;
+    }
+
+    private static int Vector2_static_shuffle(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 3)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Byte>(L, 2)!;
+            var arg2 = ToObject<System.Byte>(L, 3)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Shuffle(arg0, arg1, arg2);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for shuffle");
+        return 0;
+    }
+
+    private static int Vector2_static_sin(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Sin(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for sin");
+        return 0;
+    }
+
+    private static int Vector2_static_sinCos(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.SinCos(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for sinCos");
+        return 0;
+    }
+
+    private static int Vector2_static_squareRoot(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.SquareRoot(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for squareRoot");
         return 0;
     }
 
@@ -1070,11 +3714,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 2)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = Microsoft.Xna.Framework.Vector2.Subtract(arg0, arg1);
+                var result = System.Numerics.Vector2.Subtract(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1089,6 +3733,30 @@ public partial class LuaBindings
         return 0;
     }
 
+    private static int Vector2_static_sum(lua_State L)
+    {
+        var argCount = lua_gettop(L);
+
+        if (argCount == 1)
+        {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            try
+            {
+                var result = System.Numerics.Vector2.Sum(arg0);
+                PushValue(L, result);
+                return 1;
+            }
+            catch (System.Exception ex)
+            {
+                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                return 0;
+            }
+        }
+
+        luaL_error(L, "Invalid arguments for sum");
+        return 0;
+    }
+
     private static int Vector2_static_transform(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1099,13 +3767,13 @@ public partial class LuaBindings
             int bestScore = -1;
             int bestIndex = -1;
 
-            // Try overload 0: Transform(Microsoft.Xna.Framework.Vector2, Microsoft.Xna.Framework.Matrix)
+            // Try overload 0: Transform(System.Numerics.Vector2, System.Numerics.Matrix3x2)
             {
                 int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
                 if (score0 < 0) goto next0;
                 else score += score0;
-                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Matrix>(L, 2);
+                int score1 = ScoreParameterCompatibility<System.Numerics.Matrix3x2>(L, 2);
                 if (score1 < 0) goto next0;
                 else score += score1;
                 if (score > bestScore)
@@ -1116,13 +3784,13 @@ public partial class LuaBindings
             }
             next0:
 
-            // Try overload 1: Transform(Microsoft.Xna.Framework.Vector2, Microsoft.Xna.Framework.Quaternion)
+            // Try overload 1: Transform(System.Numerics.Vector2, System.Numerics.Matrix4x4)
             {
                 int score = 0;
-                int score0 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Vector2>(L, 1);
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
                 if (score0 < 0) goto next1;
                 else score += score0;
-                int score1 = ScoreParameterCompatibility<Microsoft.Xna.Framework.Quaternion>(L, 2);
+                int score1 = ScoreParameterCompatibility<System.Numerics.Matrix4x4>(L, 2);
                 if (score1 < 0) goto next1;
                 else score += score1;
                 if (score > bestScore)
@@ -1133,15 +3801,32 @@ public partial class LuaBindings
             }
             next1:
 
+            // Try overload 2: Transform(System.Numerics.Vector2, System.Numerics.Quaternion)
+            {
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
+                if (score0 < 0) goto next2;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.Numerics.Quaternion>(L, 2);
+                if (score1 < 0) goto next2;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 2;
+                }
+            }
+            next2:
+
             switch (bestIndex)
             {
                 case 0:
                     {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-                        var arg1 = ToObject<Microsoft.Xna.Framework.Matrix>(L, 2)!;
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Matrix3x2>(L, 2)!;
                         try
                         {
-                            var result = Microsoft.Xna.Framework.Vector2.Transform(arg0, arg1);
+                            var result = System.Numerics.Vector2.Transform(arg0, arg1);
                             PushValue(L, result);
                             return 1;
                         }
@@ -1153,11 +3838,27 @@ public partial class LuaBindings
                     }
                 case 1:
                     {
-                        var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-                        var arg1 = ToObject<Microsoft.Xna.Framework.Quaternion>(L, 2)!;
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Matrix4x4>(L, 2)!;
                         try
                         {
-                            var result = Microsoft.Xna.Framework.Vector2.Transform(arg0, arg1);
+                            var result = System.Numerics.Vector2.Transform(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 2:
+                    {
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Quaternion>(L, 2)!;
+                        try
+                        {
+                            var result = System.Numerics.Vector2.Transform(arg0, arg1);
                             PushValue(L, result);
                             return 1;
                         }
@@ -1183,18 +3884,81 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Microsoft.Xna.Framework.Vector2>(L, 1)!;
-            var arg1 = ToObject<Microsoft.Xna.Framework.Matrix>(L, 2)!;
-            try
+            // Multiple overloads with same argument count - find best match
+            int bestScore = -1;
+            int bestIndex = -1;
+
+            // Try overload 0: TransformNormal(System.Numerics.Vector2, System.Numerics.Matrix3x2)
             {
-                var result = Microsoft.Xna.Framework.Vector2.TransformNormal(arg0, arg1);
-                PushValue(L, result);
-                return 1;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
+                if (score0 < 0) goto next0;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.Numerics.Matrix3x2>(L, 2);
+                if (score1 < 0) goto next0;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 0;
+                }
             }
-            catch (System.Exception ex)
+            next0:
+
+            // Try overload 1: TransformNormal(System.Numerics.Vector2, System.Numerics.Matrix4x4)
             {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
+                int score = 0;
+                int score0 = ScoreParameterCompatibility<System.Numerics.Vector2>(L, 1);
+                if (score0 < 0) goto next1;
+                else score += score0;
+                int score1 = ScoreParameterCompatibility<System.Numerics.Matrix4x4>(L, 2);
+                if (score1 < 0) goto next1;
+                else score += score1;
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestIndex = 1;
+                }
+            }
+            next1:
+
+            switch (bestIndex)
+            {
+                case 0:
+                    {
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Matrix3x2>(L, 2)!;
+                        try
+                        {
+                            var result = System.Numerics.Vector2.TransformNormal(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                case 1:
+                    {
+                        var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+                        var arg1 = ToObject<System.Numerics.Matrix4x4>(L, 2)!;
+                        try
+                        {
+                            var result = System.Numerics.Vector2.TransformNormal(arg0, arg1);
+                            PushValue(L, result);
+                            return 1;
+                        }
+                        catch (System.Exception ex)
+                        {
+                            luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
+                            return 0;
+                        }
+                    }
+                default:
+                    luaL_error(L, "No compatible overload found for transformNormal");
+                    return 0;
             }
         }
 
@@ -1202,19 +3966,16 @@ public partial class LuaBindings
         return 0;
     }
 
-    private static int Vector2_method_equals(lua_State L)
+    private static int Vector2_static_truncate(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
+        var argCount = lua_gettop(L);
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<object>(L, 2)!;
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
             try
             {
-                var result = ((Microsoft.Xna.Framework.Vector2)self).Equals(arg0);
-                UpdateStruct(L, 1, self);
+                var result = System.Numerics.Vector2.Truncate(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -1225,22 +3986,21 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for equals");
+        luaL_error(L, "Invalid arguments for truncate");
         return 0;
     }
 
-    private static int Vector2_method_getHashCode(lua_State L)
+    private static int Vector2_static_xor(lua_State L)
     {
-        var argCount = lua_gettop(L) - 1; // First arg is self
+        var argCount = lua_gettop(L);
 
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
-
-        if (argCount == 0)
+        if (argCount == 2)
         {
+            var arg0 = ToObject<System.Numerics.Vector2>(L, 1)!;
+            var arg1 = ToObject<System.Numerics.Vector2>(L, 2)!;
             try
             {
-                var result = ((Microsoft.Xna.Framework.Vector2)self).GetHashCode();
-                UpdateStruct(L, 1, self);
+                var result = System.Numerics.Vector2.Xor(arg0, arg1);
                 PushValue(L, result);
                 return 1;
             }
@@ -1251,136 +4011,7 @@ public partial class LuaBindings
             }
         }
 
-        luaL_error(L, "Invalid arguments for getHashCode");
-        return 0;
-    }
-
-    private static int Vector2_method_length(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector2)self).Length();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for length");
-        return 0;
-    }
-
-    private static int Vector2_method_lengthSquared(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector2)self).LengthSquared();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for lengthSquared");
-        return 0;
-    }
-
-    private static int Vector2_method_normalize(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((Microsoft.Xna.Framework.Vector2)self).Normalize();
-                UpdateStruct(L, 1, self);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for normalize");
-        return 0;
-    }
-
-    private static int Vector2_method_toString(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector2)self).ToString();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for toString");
-        return 0;
-    }
-
-    private static int Vector2_method_getType(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetStructFromStack<Microsoft.Xna.Framework.Vector2>(L, 1);
-
-        if (argCount == 0)
-        {
-            try
-            {
-                var result = ((Microsoft.Xna.Framework.Vector2)self).GetType();
-                UpdateStruct(L, 1, self);
-                PushValue(L, result);
-                return 1;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for getType");
+        luaL_error(L, "Invalid arguments for xor");
         return 0;
     }
 
@@ -1391,17 +4022,44 @@ public partial class LuaBindings
 
         switch (key)
         {
-            case "zero":
-                PushValue(L, Microsoft.Xna.Framework.Vector2.Zero);
+            case "allBitsSet":
+                PushValue(L, System.Numerics.Vector2.AllBitsSet);
+                return 1;
+            case "e":
+                PushValue(L, System.Numerics.Vector2.E);
+                return 1;
+            case "epsilon":
+                PushValue(L, System.Numerics.Vector2.Epsilon);
+                return 1;
+            case "naN":
+                PushValue(L, System.Numerics.Vector2.NaN);
+                return 1;
+            case "negativeInfinity":
+                PushValue(L, System.Numerics.Vector2.NegativeInfinity);
+                return 1;
+            case "negativeZero":
+                PushValue(L, System.Numerics.Vector2.NegativeZero);
                 return 1;
             case "one":
-                PushValue(L, Microsoft.Xna.Framework.Vector2.One);
+                PushValue(L, System.Numerics.Vector2.One);
+                return 1;
+            case "pi":
+                PushValue(L, System.Numerics.Vector2.Pi);
+                return 1;
+            case "positiveInfinity":
+                PushValue(L, System.Numerics.Vector2.PositiveInfinity);
+                return 1;
+            case "tau":
+                PushValue(L, System.Numerics.Vector2.Tau);
                 return 1;
             case "unitX":
-                PushValue(L, Microsoft.Xna.Framework.Vector2.UnitX);
+                PushValue(L, System.Numerics.Vector2.UnitX);
                 return 1;
             case "unitY":
-                PushValue(L, Microsoft.Xna.Framework.Vector2.UnitY);
+                PushValue(L, System.Numerics.Vector2.UnitY);
+                return 1;
+            case "zero":
+                PushValue(L, System.Numerics.Vector2.Zero);
                 return 1;
             default:
                 lua_rawget(L, 1);

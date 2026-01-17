@@ -197,28 +197,28 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.mad.ITransform)obj).ChildTransforms);
                 return 1;
             case "drive":
-                lua_pushcfunction(L, (BackendCar_method_drive));
+                lua_pushcfunction(L, (IInGameCar_method_drive));
                 return 1;
             case "collide":
-                lua_pushcfunction(L, (BackendCar_method_collide));
+                lua_pushcfunction(L, (IInGameCar_method_collide));
                 return 1;
             case "resetPosition":
-                lua_pushcfunction(L, (BackendCar_method_resetPosition));
+                lua_pushcfunction(L, (IInGameCar_method_resetPosition));
                 return 1;
             case "addDust":
-                lua_pushcfunction(L, (BackendCar_method_addDust));
+                lua_pushcfunction(L, (IInGameCar_method_addDust));
                 return 1;
             case "spark":
-                lua_pushcfunction(L, (BackendCar_method_spark));
+                lua_pushcfunction(L, (IInGameCar_method_spark));
                 return 1;
             case "damageX":
-                lua_pushcfunction(L, (BackendCar_method_damageX));
+                lua_pushcfunction(L, (IInGameCar_method_damageX));
                 return 1;
             case "damageY":
-                lua_pushcfunction(L, (BackendCar_method_damageY));
+                lua_pushcfunction(L, (IInGameCar_method_damageY));
                 return 1;
             case "damageZ":
-                lua_pushcfunction(L, (BackendCar_method_damageZ));
+                lua_pushcfunction(L, (IInGameCar_method_damageZ));
                 return 1;
             case "getType":
                 lua_pushcfunction(L, (BackendCar_method_getType));
@@ -453,270 +453,6 @@ public partial class LuaBindings
         }
 
         luaL_error(L, "Invalid arguments for BackendCar constructor");
-        return 0;
-    }
-
-    private static int BackendCar_method_drive(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BackendCar as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<nfm_world_library.mad.IStage>(L, 2)!;
-            try
-            {
-                ((nfm_world_library.backend.BackendCar)self).Drive(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for drive");
-        return 0;
-    }
-
-    private static int BackendCar_method_collide(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BackendCar as first argument");
-            return 0;
-        }
-
-        if (argCount == 1)
-        {
-            var arg0 = ToObject<nfm_world_library.mad.IInGameCar>(L, 2)!;
-            try
-            {
-                ((nfm_world_library.backend.BackendCar)self).Collide(arg0);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for collide");
-        return 0;
-    }
-
-    private static int BackendCar_method_resetPosition(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BackendCar as first argument");
-            return 0;
-        }
-
-        if (argCount == 0)
-        {
-            try
-            {
-                ((nfm_world_library.backend.BackendCar)self).ResetPosition();
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for resetPosition");
-        return 0;
-    }
-
-    private static int BackendCar_method_addDust(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BackendCar as first argument");
-            return 0;
-        }
-
-        if (argCount == 10)
-        {
-            var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<float>(L, 3)!;
-            var arg2 = ToObject<float>(L, 4)!;
-            var arg3 = ToObject<float>(L, 5)!;
-            var arg4 = ToObject<int>(L, 6)!;
-            var arg5 = ToObject<int>(L, 7)!;
-            var arg6 = ToObject<float>(L, 8)!;
-            var arg7 = ToObject<int>(L, 9)!;
-            var arg8 = ToObject<bool>(L, 10)!;
-            var arg9 = ToObject<int>(L, 11)!;
-            try
-            {
-                ((nfm_world_library.backend.BackendCar)self).AddDust(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for addDust");
-        return 0;
-    }
-
-    private static int BackendCar_method_spark(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BackendCar as first argument");
-            return 0;
-        }
-
-        if (argCount == 8)
-        {
-            var arg0 = ToObject<float>(L, 2)!;
-            var arg1 = ToObject<float>(L, 3)!;
-            var arg2 = ToObject<float>(L, 4)!;
-            var arg3 = ToObject<float>(L, 5)!;
-            var arg4 = ToObject<float>(L, 6)!;
-            var arg5 = ToObject<float>(L, 7)!;
-            var arg6 = ToObject<int>(L, 8)!;
-            var arg7 = ToObject<int>(L, 9)!;
-            try
-            {
-                ((nfm_world_library.backend.BackendCar)self).Spark(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for spark");
-        return 0;
-    }
-
-    private static int BackendCar_method_damageX(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BackendCar as first argument");
-            return 0;
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<nfm_world_library.mad.CarStats>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
-            try
-            {
-                ((nfm_world_library.backend.BackendCar)self).DamageX(arg0, arg1, arg2);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for damageX");
-        return 0;
-    }
-
-    private static int BackendCar_method_damageY(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BackendCar as first argument");
-            return 0;
-        }
-
-        if (argCount == 6)
-        {
-            var arg0 = ToObject<nfm_world_library.mad.CarStats>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
-            var arg3 = ToObject<bool>(L, 5)!;
-            var arg4 = ToObject<int>(L, 6)!;
-            var arg5 = ToObject<int>(L, 7)!;
-            try
-            {
-                ((nfm_world_library.backend.BackendCar)self).DamageY(arg0, arg1, arg2, arg3, arg4, arg5);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for damageY");
-        return 0;
-    }
-
-    private static int BackendCar_method_damageZ(lua_State L)
-    {
-        var argCount = lua_gettop(L) - 1; // First arg is self
-
-        var self = GetObjectFromStack<nfm_world_library.backend.BackendCar>(L, 1);
-        if (self == null)
-        {
-            luaL_error(L, "Expected BackendCar as first argument");
-            return 0;
-        }
-
-        if (argCount == 3)
-        {
-            var arg0 = ToObject<nfm_world_library.mad.CarStats>(L, 2)!;
-            var arg1 = ToObject<int>(L, 3)!;
-            var arg2 = ToObject<nfm_world_library.SoftFloat.fix64>(L, 4)!;
-            try
-            {
-                ((nfm_world_library.backend.BackendCar)self).DamageZ(arg0, arg1, arg2);
-                return 0;
-            }
-            catch (System.Exception ex)
-            {
-                luaL_error(L, $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}");
-                return 0;
-            }
-        }
-
-        luaL_error(L, "Invalid arguments for damageZ");
         return 0;
     }
 

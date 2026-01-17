@@ -13,7 +13,7 @@ public partial class LuaBindings
     // =========== Bindings for IList`1 (IList_Vector3) ===========
     private static void Register_IList_Vector3(lua_State L)
     {
-        RegisterMetatable<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>("MT_IList_Vector3");
+        RegisterMetatable<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>("MT_IList_Vector3");
 
         // Create metatable for instances
         luaL_newmetatable(L, "MT_IList_Vector3");
@@ -54,7 +54,7 @@ public partial class LuaBindings
             unsafe
             {
                 var id = *(int*)ptr;
-                RemoveObject<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(id);
+                RemoveObject<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(id);
             }
         }
         return 0;
@@ -62,7 +62,7 @@ public partial class LuaBindings
 
     private static int IList_Vector3__index(lua_State L)
     {
-        var obj = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (obj == null) { lua_pushnil(L); return 1; }
 
         // Check if key is a number (array/indexer access)
@@ -80,10 +80,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "count":
-                PushValue(L, ((System.Collections.Generic.ICollection<Stride.Core.Mathematics.Vector3>)obj).Count);
+                PushValue(L, ((System.Collections.Generic.ICollection<Microsoft.Xna.Framework.Vector3>)obj).Count);
                 return 1;
             case "isReadOnly":
-                PushValue(L, ((System.Collections.Generic.ICollection<Stride.Core.Mathematics.Vector3>)obj).IsReadOnly);
+                PushValue(L, ((System.Collections.Generic.ICollection<Microsoft.Xna.Framework.Vector3>)obj).IsReadOnly);
                 return 1;
             case "indexOf":
                 lua_pushcfunction(L, (IList_Vector3_method_indexOf));
@@ -120,14 +120,14 @@ public partial class LuaBindings
 
     private static int IList_Vector3__newindex(lua_State L)
     {
-        var obj = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (obj == null) return 0;
 
         // Check if key is a number (array/indexer assignment)
         if (lua_type(L, 2) == LUA_TNUMBER)
         {
             var index = (int)lua_tointeger(L, 2) - 1; // Convert from 1-indexed to 0-indexed
-            var value = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
+            var value = ToObject<Microsoft.Xna.Framework.Vector3>(L, 3)!;
             obj[index] = value;
             return 0;
         }
@@ -143,7 +143,7 @@ public partial class LuaBindings
 
     private static int IList_Vector3__tostring(lua_State L)
     {
-        var obj = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var obj = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         lua_pushstring(L, obj?.ToString() ?? "nil");
         return 1;
     }
@@ -160,7 +160,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IList`1 as first argument");
@@ -169,10 +169,10 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = ((System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>)self).IndexOf(arg0);
+                var result = ((System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>)self).IndexOf(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -191,7 +191,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IList`1 as first argument");
@@ -201,10 +201,10 @@ public partial class LuaBindings
         if (argCount == 2)
         {
             var arg0 = ToObject<int>(L, 2)!;
-            var arg1 = ToObject<Stride.Core.Mathematics.Vector3>(L, 3)!;
+            var arg1 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 3)!;
             try
             {
-                ((System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>)self).Insert(arg0, arg1);
+                ((System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>)self).Insert(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -222,7 +222,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IList`1 as first argument");
@@ -234,7 +234,7 @@ public partial class LuaBindings
             var arg0 = ToObject<int>(L, 2)!;
             try
             {
-                ((System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>)self).RemoveAt(arg0);
+                ((System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>)self).RemoveAt(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -252,7 +252,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IList`1 as first argument");
@@ -261,10 +261,10 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                ((System.Collections.Generic.ICollection<Stride.Core.Mathematics.Vector3>)self).Add(arg0);
+                ((System.Collections.Generic.ICollection<Microsoft.Xna.Framework.Vector3>)self).Add(arg0);
                 return 0;
             }
             catch (System.Exception ex)
@@ -282,7 +282,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IList`1 as first argument");
@@ -293,7 +293,7 @@ public partial class LuaBindings
         {
             try
             {
-                ((System.Collections.Generic.ICollection<Stride.Core.Mathematics.Vector3>)self).Clear();
+                ((System.Collections.Generic.ICollection<Microsoft.Xna.Framework.Vector3>)self).Clear();
                 return 0;
             }
             catch (System.Exception ex)
@@ -311,7 +311,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IList`1 as first argument");
@@ -320,10 +320,10 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = ((System.Collections.Generic.ICollection<Stride.Core.Mathematics.Vector3>)self).Contains(arg0);
+                var result = ((System.Collections.Generic.ICollection<Microsoft.Xna.Framework.Vector3>)self).Contains(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -342,7 +342,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IList`1 as first argument");
@@ -351,11 +351,11 @@ public partial class LuaBindings
 
         if (argCount == 2)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3[]>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3[]>(L, 2)!;
             var arg1 = ToObject<int>(L, 3)!;
             try
             {
-                ((System.Collections.Generic.ICollection<Stride.Core.Mathematics.Vector3>)self).CopyTo(arg0, arg1);
+                ((System.Collections.Generic.ICollection<Microsoft.Xna.Framework.Vector3>)self).CopyTo(arg0, arg1);
                 return 0;
             }
             catch (System.Exception ex)
@@ -373,7 +373,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IList`1 as first argument");
@@ -382,10 +382,10 @@ public partial class LuaBindings
 
         if (argCount == 1)
         {
-            var arg0 = ToObject<Stride.Core.Mathematics.Vector3>(L, 2)!;
+            var arg0 = ToObject<Microsoft.Xna.Framework.Vector3>(L, 2)!;
             try
             {
-                var result = ((System.Collections.Generic.ICollection<Stride.Core.Mathematics.Vector3>)self).Remove(arg0);
+                var result = ((System.Collections.Generic.ICollection<Microsoft.Xna.Framework.Vector3>)self).Remove(arg0);
                 PushValue(L, result);
                 return 1;
             }
@@ -404,7 +404,7 @@ public partial class LuaBindings
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
 
-        var self = GetObjectFromStack<System.Collections.Generic.IList<Stride.Core.Mathematics.Vector3>>(L, 1);
+        var self = GetObjectFromStack<System.Collections.Generic.IList<Microsoft.Xna.Framework.Vector3>>(L, 1);
         if (self == null)
         {
             luaL_error(L, "Expected IList`1 as first argument");
@@ -415,7 +415,7 @@ public partial class LuaBindings
         {
             try
             {
-                var result = ((System.Collections.Generic.IEnumerable<Stride.Core.Mathematics.Vector3>)self).GetEnumerator();
+                var result = ((System.Collections.Generic.IEnumerable<Microsoft.Xna.Framework.Vector3>)self).GetEnumerator();
                 PushValue(L, result);
                 return 1;
             }
