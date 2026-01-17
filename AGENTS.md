@@ -1042,11 +1042,119 @@ StaticClass.raiseMessage("Hello!")
 4. Static events must handle both dot and colon syntax from Lua
 5. Use `ToCamelCase()` for field names to match property naming convention
 
+### 12. Static Abstract Interface Implementation Support (January 17, 2026)
+**Issue:** Static abstract interface implementations (C# 11 feature) were being incorrectly added as instance methods, causing compile errors. For example, `TimeSpan.Parse` implementing `IParsable<TimeSpan>.Parse` was being bound as an instance method when it should be a static method.
+
+**Root Cause Analysis:**
+- C# 11+ allows interfaces to have static abstract members
+- Types implement these via static methods (e.g., `public static TimeSpan Parse(string s)`)
+- `GetMethodsInTypeAndInterfaces` returned all public methods, including static ones
+- `GenerateInstanceMethods` and `GenerateIndexMethod` didn't filter out static methods
+- `GenerateStaticMethods` only looked at type's own static methods, missing interface implementations
+- Result: Static abstract implementations appeared as instance methods in both method generation and __index metamethod (incorrect and causes compile errors)
+
+**Solution:** Implemented proper filtering and discovery of static abstract implementations in **two locations**:
+
+**Implementation Details:**
+
+1. **Modified GenerateInstanceMethods** (line ~3913):
+   ```csharp
+   var methods = GetMethodsInTypeAndInterfaces(type)
+       .Where(m => !m.Method.IsSpecialName &&
+                   !HasAttribute(m.Method, nameof(LuaHiddenAttribute)) &&
+                   !m.Method.IsGenericMethod &&
+                   !HasByRefParameters(m.Method) &&
+                   !IsCompilerMethod(m.Method) &&
+                   !HasRefReturn(m.Method) &&
+                   !m.Method.IsStatic) // Skip static methods (including static abstract interface implementations)
+       .ToList();
+   ```
+
+2. **Modified GenerateIndexMethod** (line ~2745):
+   ```csharp
+   // Instance methods
+   var allMethods = GetMethodsInTypeAndInterfaces(type)
+       .Where(m => !m.Method.IsSpecialName &&
+                   !HasAttribute(m.Method, nameof(LuaHiddenAttribute)) &&
+                   !m.Method.IsGenericMethod &&
+                   !HasByRefParameters(m.Method) &&
+                   !IsCompilerMethod(m.Method) &&
+                   !HasRefReturn(m.Method) &&
+                   !m.Method.IsStatic && // Skip static methods (including static abstract interface implementations)
+                   (!type.IsArray || (m.Method.DeclaringType != type && m.Method.DeclaringType != typeof(Array) && m.Method.DeclaringType != typeof(object))))
+       .ToList();
+   ```
+
+3. **Modified GenerateStaticMethods** (line ~3691):
+   ```csharp
+   // Get static methods from the type itself
+   var staticMethodsFromType = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+       .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m));
+
+   // Get static abstract interface implementations
+   var staticMethodsFromInterfaces = type.GetInterfaces()
+       .SelectMany(i => i.GetMethods(BindingFlags.Public | BindingFlags.Static))
+       .Where(m => m.IsAbstract && !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m));
+
+   var staticMethods = staticMethodsFromType.Concat(staticMethodsFromInterfaces)
+       .GroupBy(m => GetLuaMethodName(m))
+       .ToList();
+   ```
+
+**Test Coverage:** Created comprehensive test fixture with 8 tests covering:
+- Static abstract method: Parse (with valid, invalid, and empty input tests)
+- Static abstract property: Zero
+- Regular static method: FromDouble (to ensure normal static methods still work)
+- Instance method: Add (to ensure no confusion between static and instance)
+- Verification that Parse is NOT accessible as an instance method
+- Multiple independent parse calls
+
+**Test Fixtures Created:**
+- `TypeWithStaticAbstractInterface.cs` - struct implementing `IParsableValue<TSelf>` with Parse(string), Zero property, FromDouble(double) static method, Add(int) instance method
+- `LuaRuntimeTests.StaticAbstractInterface.cs` - 8 comprehensive runtime tests
+
+**Important Limitation:**
+Static abstract interface methods with `out` parameters (like `TryParse(string, out TSelf)`) are filtered out by the existing `HasByRefParameters` check. This is consistent with the generator's policy of not supporting ref/out/in parameters.
+
+**Lua Usage Example:**
+```lua
+-- Call static abstract interface implementation as static method
+local obj = TypeWithStaticAbstractInterface.parse('42')
+print(obj.value)  -- 42
+
+-- Static abstract property
+local zero = TypeWithStaticAbstractInterface.zero
+print(zero.value)  -- 0
+
+-- Instance method (for comparison)
+local obj2 = TypeWithStaticAbstractInterface.new(10)
+print(obj2:add(5))  -- 15
+
+-- This FAILS (correctly) - parse is static, not instance
+local obj3 = TypeWithStaticAbstractInterface.new(10)
+obj3:parse('42')  -- ERROR: parse is not an instance method
+```
+
+**Result:** Static abstract interface implementations now generate correct bindings:
+- Static abstract methods bound as static methods (not instance)
+- Compile errors eliminated
+- Both type-defined static methods and interface static methods included
+- Instance methods remain unaffected
+- All 285 tests passing (277 previous + 8 new)
+
+**Key Lessons:**
+1. C# 11 static abstract interface members are implemented via static methods on the type
+2. Always filter `!m.Method.IsStatic` from instance method discovery (both in GenerateInstanceMethods and GenerateIndexMethod)
+3. Scan both `type.GetMethods(BindingFlags.Static)` AND `type.GetInterfaces().SelectMany(i => i.GetMethods(BindingFlags.Static))` for complete static method coverage
+4. Use `method.IsAbstract` to identify interface-declared static abstract methods
+5. Test both that static methods work AND that they're not accessible as instance methods
+6. Static abstract methods with `out` parameters will be filtered out (consistent with generator policy)
+
 ---
 
 ## Test Status
 
-**Total Tests:** 277
+**Total Tests:** 285
 - **Status:** ✅ All passing
 
 ---

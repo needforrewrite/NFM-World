@@ -21,6 +21,7 @@ public partial class LuaBindings
         Register_TypeWithExtensionMembers(L);
         Register_InlineBuffer(L);
         Register_TypeWithInlineArray(L);
+        Register_TypeWithStaticAbstractInterface(L);
         Register_TypeWithArrays(L);
         Register_TypeWithIndexers(L);
         Register_TypeWithMultiDimArray(L);

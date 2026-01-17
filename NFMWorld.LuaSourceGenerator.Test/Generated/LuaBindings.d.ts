@@ -89,6 +89,21 @@ declare class TypeWithInlineArray {
     getHashCode(): number;
 }
 
+declare class TypeWithStaticAbstractInterface {
+    /** @customName new */
+    static inst(): TypeWithStaticAbstractInterface;
+    /** @customName new */
+    static inst(value: number): TypeWithStaticAbstractInterface;
+    static parse(input: string): TypeWithStaticAbstractInterface;
+    static fromDouble(value: number): TypeWithStaticAbstractInterface;
+    value: number;
+    add(other: number): number;
+    toString(): string;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    getType(): Type | null;
+}
+
 declare class TypeWithArrays {
     /** @customName new */
     static inst(): TypeWithArrays;

@@ -2749,6 +2749,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 !HasByRefParameters(m.Method) &&
                                 !IsCompilerMethod(m.Method) &&
                                 !HasRefReturn(m.Method) &&
+                                !m.Method.IsStatic && // Skip static methods (including static abstract interface implementations)
                                 (!type.IsArray || (m.Method.DeclaringType != type && m.Method.DeclaringType != typeof(Array) && m.Method.DeclaringType != typeof(object)))) // Skip array-specific and inherited methods
                     .ToList();
 
@@ -3690,8 +3691,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
     private void GenerateStaticMethods(Type type, string safeName, string fullTypeName)
     {
-        var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m))
+        // Get static methods from the type itself
+        var staticMethodsFromType = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m));
+
+        // Get static abstract interface implementations
+        var staticMethodsFromInterfaces = type.GetInterfaces()
+            .SelectMany(i => i.GetMethods(BindingFlags.Public | BindingFlags.Static))
+            .Where(m => m.IsAbstract && !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m));
+
+        var staticMethods = staticMethodsFromType.Concat(staticMethodsFromInterfaces)
             .GroupBy(m => GetLuaMethodName(m))
             .ToList();
 
@@ -3916,7 +3925,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         !m.Method.IsGenericMethod &&
                         !HasByRefParameters(m.Method) &&
                         !IsCompilerMethod(m.Method) &&
-                        !HasRefReturn(m.Method)) // Skip generic methods and byref parameters
+                        !HasRefReturn(m.Method) &&
+                        !m.Method.IsStatic) // Skip static methods (including static abstract interface implementations)
             .ToList();
 
         // Filter out methods that are interface implementations or virtual overrides

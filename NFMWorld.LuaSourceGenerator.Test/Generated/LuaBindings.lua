@@ -297,6 +297,53 @@ function TypeWithInlineArrayInstance:equals(obj) end
 function TypeWithInlineArrayInstance:getHashCode() end
 
 
+---@class TypeWithStaticAbstractInterfaceInstance : IParsableValue_TypeWithStaticAbstractInterfaceInstance
+---@field value integer
+TypeWithStaticAbstractInterfaceInstance = {}
+TypeWithStaticAbstractInterface = {}
+
+---@class (exact) TypeWithStaticAbstractInterface
+---@field zero TypeWithStaticAbstractInterfaceInstance
+---Creates a new TypeWithStaticAbstractInterface
+---@return TypeWithStaticAbstractInterfaceInstance
+function TypeWithStaticAbstractInterface.new() end
+
+---Creates a new TypeWithStaticAbstractInterface
+---@param value integer
+---@return TypeWithStaticAbstractInterfaceInstance
+function TypeWithStaticAbstractInterface.new(value) end
+
+---@param input string
+---@return TypeWithStaticAbstractInterfaceInstance
+function TypeWithStaticAbstractInterface.parse(input) end
+
+---@param value number
+---@return TypeWithStaticAbstractInterfaceInstance
+function TypeWithStaticAbstractInterface.fromDouble(value) end
+
+---@param self TypeWithStaticAbstractInterfaceInstance
+---@param other integer
+---@return integer
+function TypeWithStaticAbstractInterfaceInstance:add(other) end
+
+---@param self TypeWithStaticAbstractInterfaceInstance
+---@return string
+function TypeWithStaticAbstractInterfaceInstance:toString() end
+
+---@param self TypeWithStaticAbstractInterfaceInstance
+---@param obj? ObjectInstance
+---@return boolean
+function TypeWithStaticAbstractInterfaceInstance:equals(obj) end
+
+---@param self TypeWithStaticAbstractInterfaceInstance
+---@return integer
+function TypeWithStaticAbstractInterfaceInstance:getHashCode() end
+
+---@param self TypeWithStaticAbstractInterfaceInstance
+---@return TypeInstance
+function TypeWithStaticAbstractInterfaceInstance:getType() end
+
+
 ---@class TypeWithArraysInstance
 ---@field numbers integer[]
 ---@field names string[]
