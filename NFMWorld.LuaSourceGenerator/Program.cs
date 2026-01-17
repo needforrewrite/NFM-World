@@ -3678,6 +3678,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         // Single constructor - no ambiguity
                         var ctor = ctorsForCount[0];
                         var parameters = ctor.GetParameters();
+                        AppendLine("string? errorMsg = null;");
                         for (int i = 0; i < parameters.Length; i++)
                         {
                             GenerateParameterRead(parameters[i], i);
@@ -3697,7 +3698,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         AppendLine("{");
                         using (Indent())
                         {
-                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
+                            AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
+                        }
+                        AppendLine("}");
+                        AppendLine();
+                        AppendLine("if (errorMsg != null)");
+                        AppendLine("{");
+                        using (Indent())
+                        {
+                            AppendLine("luaL_error(L, errorMsg);");
                             AppendLine("return 0;");
                         }
                         AppendLine("}");
@@ -3706,6 +3715,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     {
                         // Multiple constructors with same argument count - use overload resolution
                         AppendLine("// Multiple constructors with same argument count - find best match");
+                        AppendLine("string? errorMsg = null;");
                         AppendLine("int bestScore = -1;");
                         AppendLine("int bestIndex = -1;");
                         AppendLine();
@@ -3778,21 +3788,30 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                         AppendLine("{");
                                         using (Indent())
                                         {
-                                            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
-                                            AppendLine("return 0;");
+                                            AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                         }
                                         AppendLine("}");
                                     }
                                     AppendLine("}");
+                                    AppendLine("break;");
                                 }
                             }
 
                             AppendLine("default:");
                             using (Indent())
                             {
-                                AppendLine($"luaL_error(L, \"No compatible constructor found for {type.Name}\");");
-                                AppendLine("return 0;");
+                                AppendLine("errorMsg = \"No compatible constructor found\";");
+                                AppendLine("break;");
                             }
+                        }
+                        AppendLine("}");
+                        AppendLine();
+                        AppendLine("if (errorMsg != null)");
+                        AppendLine("{");
+                        using (Indent())
+                        {
+                            AppendLine("luaL_error(L, errorMsg);");
+                            AppendLine("return 0;");
                         }
                         AppendLine("}");
                     }
@@ -3854,6 +3873,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             var method = methods[0];
                             var parameters = method.GetParameters();
 
+                            AppendLine("string? errorMsg = null;");
                             for (int i = 0; i < parameters.Length; i++)
                             {
                                 GenerateParameterRead(parameters[i], i);
@@ -3875,7 +3895,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
+                                    AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
+                                }
+                                AppendLine("}");
+                                AppendLine();
+                                AppendLine("if (errorMsg != null)");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine("luaL_error(L, errorMsg);");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -3895,7 +3923,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
+                                    AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
+                                }
+                                AppendLine("}");
+                                AppendLine();
+                                AppendLine("if (errorMsg != null)");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine("luaL_error(L, errorMsg);");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -3905,6 +3941,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         {
                             // Multiple overloads with same argument count - use overload resolution
                             AppendLine("// Multiple overloads with same argument count - find best match");
+                            AppendLine("string? errorMsg = null;");
                             AppendLine("int bestScore = -1;");
                             AppendLine("int bestIndex = -1;");
                             AppendLine();
@@ -3979,8 +4016,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
-                                                    AppendLine("return 0;");
+                                                    AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                                 }
                                                 AppendLine("}");
                                             }
@@ -3999,22 +4035,31 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
-                                                    AppendLine("return 0;");
+                                                    AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                                 }
                                                 AppendLine("}");
                                             }
                                         }
                                         AppendLine("}");
+                                        AppendLine("break;");
                                     }
                                 }
 
                                 AppendLine("default:");
                                 using (Indent())
                                 {
-                                    AppendLine($"luaL_error(L, \"No compatible overload found for {methodName}\");");
-                                    AppendLine("return 0;");
+                                    AppendLine("errorMsg = \"No compatible overload found\";");
+                                    AppendLine("break;");
                                 }
+                            }
+                            AppendLine("}");
+                            AppendLine();
+                            AppendLine("if (errorMsg != null)");
+                            AppendLine("{");
+                            using (Indent())
+                            {
+                                AppendLine("luaL_error(L, errorMsg);");
+                                AppendLine("return 0;");
                             }
                             AppendLine("}");
                         }
@@ -4124,6 +4169,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                             var isExtension = IsExtensionMethod(method);
                             var parameters = method.GetParameters();
 
+                            AppendLine("string? errorMsg = null;");
                             // For extension methods, skip the first parameter (this)
                             var paramStartIndex = isExtension ? 1 : 0;
                             for (int i = paramStartIndex; i < parameters.Length; i++)
@@ -4174,7 +4220,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
+                                    AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
+                                }
+                                AppendLine("}");
+
+                                AppendLine("if (errorMsg != null)");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine("luaL_error(L, errorMsg);");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -4219,7 +4273,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                 AppendLine("{");
                                 using (Indent())
                                 {
-                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
+                                    AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
+                                }
+                                AppendLine("}");
+
+                                AppendLine("if (errorMsg != null)");
+                                AppendLine("{");
+                                using (Indent())
+                                {
+                                    AppendLine("luaL_error(L, errorMsg);");
                                     AppendLine("return 0;");
                                 }
                                 AppendLine("}");
@@ -4229,6 +4291,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                         {
                             // Multiple overloads with same argument count - use overload resolution
                             AppendLine("// Multiple overloads with same argument count - find best match");
+                            AppendLine("string? errorMsg = null;");
                             AppendLine("int bestScore = -1;");
                             AppendLine("int bestIndex = -1;");
                             AppendLine();
@@ -4333,8 +4396,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
-                                                    AppendLine("return 0;");
+                                                    AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                                 }
                                                 AppendLine("}");
                                             }
@@ -4378,22 +4440,31 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                                                 AppendLine("{");
                                                 using (Indent())
                                                 {
-                                                    AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
-                                                    AppendLine("return 0;");
+                                                    AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
                                                 }
                                                 AppendLine("}");
                                             }
                                         }
                                         AppendLine("}");
+                                        AppendLine("break;");
                                     }
                                 }
 
                                 AppendLine("default:");
                                 using (Indent())
                                 {
-                                    AppendLine($"luaL_error(L, \"No compatible overload found for {methodName}\");");
-                                    AppendLine("return 0;");
+                                    AppendLine("errorMsg = \"No compatible overload found\";");
+                                    AppendLine("break;");
                                 }
+                            }
+                            AppendLine("}");
+                            AppendLine();
+                            AppendLine("if (errorMsg != null)");
+                            AppendLine("{");
+                            using (Indent())
+                            {
+                                AppendLine("luaL_error(L, errorMsg);");
+                                AppendLine("return 0;");
                             }
                             AppendLine("}");
                         }
@@ -4833,37 +4904,51 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     private void GenerateToObjectCode(string targetExpression, Type type, string luaStackIndex)
     {
         var fullTypeName = GetFullTypeName(type);
-        AppendLine("try");
         AppendLine("{");
         using (Indent())
         {
-            if (IsNullable(type))
+            AppendLine("string? errorMsg = null;");
+            AppendLine("try");
+            AppendLine("{");
+            using (Indent())
             {
-                var underlyingType = Nullable.GetUnderlyingType(type)!;
-                var underlyingTypeName = GetFullTypeName(underlyingType);
-                AppendLine($"if (lua_isnil(L, {luaStackIndex}) != 0)");
-                using (Indent())
+                if (IsNullable(type))
                 {
-                    AppendLine($"{targetExpression} = null;");
+                    var underlyingType = Nullable.GetUnderlyingType(type)!;
+                    var underlyingTypeName = GetFullTypeName(underlyingType);
+                    AppendLine($"if (lua_isnil(L, {luaStackIndex}) != 0)");
+                    using (Indent())
+                    {
+                        AppendLine($"{targetExpression} = null;");
+                    }
+                    AppendLine("else");
+                    using (Indent())
+                    {
+                        AppendLine($"{targetExpression} = ToObject<{underlyingTypeName}>(L, {luaStackIndex})!;");
+                    }
                 }
-                AppendLine("else");
-                using (Indent())
+                else
                 {
-                    AppendLine($"{targetExpression} = ToObject<{underlyingTypeName}>(L, {luaStackIndex})!;");
+                    AppendLine($"{targetExpression} = ToObject<{fullTypeName}>(L, {luaStackIndex})!;");
                 }
             }
-            else
+            AppendLine("}");
+            AppendLine("catch (System.Exception ex)");
+            AppendLine("{");
+            using (Indent())
             {
-                AppendLine($"{targetExpression} = ToObject<{fullTypeName}>(L, {luaStackIndex})!;");
+                AppendLine("errorMsg = $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\";");
             }
-        }
-        AppendLine("}");
-        AppendLine("catch (System.Exception ex)");
-        AppendLine("{");
-        using (Indent())
-        {
-            AppendLine("luaL_error(L, $\"{ex.GetType().Name}: {ex.Message}\\n{ex.StackTrace}\");");
-            AppendLine("return 0;");
+            AppendLine("}");
+            AppendLine();
+            AppendLine("if (errorMsg != null)");
+            AppendLine("{");
+            using (Indent())
+            {
+                AppendLine("luaL_error(L, errorMsg);");
+                AppendLine("return 0;");
+            }
+            AppendLine("}");
         }
         AppendLine("}");
     }

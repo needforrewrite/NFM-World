@@ -10,4 +10,10 @@
     <ItemGroup>
       <PackageReference Include="luajit.native" Version="2.1.1739213504" />
     </ItemGroup>
+
+    <ItemGroup>
+      <None Update="lua515.dll">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 </Project>
