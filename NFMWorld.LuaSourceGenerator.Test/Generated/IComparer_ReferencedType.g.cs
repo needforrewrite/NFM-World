@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for IComparer`1 (IComparer_ReferencedType) ===========
     private static void Register_IComparer_ReferencedType(lua_State L)
@@ -19,15 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IComparer_ReferencedType");
 
         // __gc metamethod
-        lua_pushcfunction(L, (IComparer_ReferencedType__gc));
+        lua_pushcfunction(L, &IComparer_ReferencedType__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (IComparer_ReferencedType__index));
+        lua_pushcfunction(L, &IComparer_ReferencedType__index);
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (IComparer_ReferencedType__tostring));
+        lua_pushcfunction(L, &IComparer_ReferencedType__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -36,26 +38,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (IComparer_ReferencedType_new));
+        lua_pushcfunction(L, &IComparer_ReferencedType_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IComparer_ReferencedType");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IComparer_ReferencedType__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IComparer_ReferencedType__index(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
@@ -67,7 +68,7 @@ public partial class LuaBindings
         switch (key)
         {
             case "compare":
-                lua_pushcfunction(L, (IComparer_ReferencedType_method_compare));
+                lua_pushcfunction(L, &IComparer_ReferencedType_method_compare);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -75,6 +76,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IComparer_ReferencedType__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.Generic.IComparer<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>(L, 1);
@@ -82,6 +84,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IComparer_ReferencedType_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -90,6 +93,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IComparer_ReferencedType_method_compare(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

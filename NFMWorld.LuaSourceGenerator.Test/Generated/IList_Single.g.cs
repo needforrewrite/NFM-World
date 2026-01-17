@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for IList`1 (IList_Single) ===========
     private static void Register_IList_Single(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IList_Single");
 
         // __gc metamethod
-        lua_pushcfunction(L, (IList_Single__gc));
+        lua_pushcfunction(L, &IList_Single__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (IList_Single__index));
+        lua_pushcfunction(L, &IList_Single__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (IList_Single__newindex));
+        lua_pushcfunction(L, &IList_Single__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (IList_Single__tostring));
+        lua_pushcfunction(L, &IList_Single__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (IList_Single_new));
+        lua_pushcfunction(L, &IList_Single_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IList_Single");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.Collections.Generic.IList<float>>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.Collections.Generic.IList<float>>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single__index(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.Generic.IList<float>>(L, 1);
@@ -86,31 +87,31 @@ public partial class LuaBindings
                 PushValue(L, ((System.Collections.Generic.ICollection<float>)obj).IsReadOnly);
                 return 1;
             case "indexOf":
-                lua_pushcfunction(L, (IList_Single_method_indexOf));
+                lua_pushcfunction(L, &IList_Single_method_indexOf);
                 return 1;
             case "insert":
-                lua_pushcfunction(L, (IList_Single_method_insert));
+                lua_pushcfunction(L, &IList_Single_method_insert);
                 return 1;
             case "removeAt":
-                lua_pushcfunction(L, (IList_Single_method_removeAt));
+                lua_pushcfunction(L, &IList_Single_method_removeAt);
                 return 1;
             case "add":
-                lua_pushcfunction(L, (IList_Single_method_add));
+                lua_pushcfunction(L, &IList_Single_method_add);
                 return 1;
             case "clear":
-                lua_pushcfunction(L, (IList_Single_method_clear));
+                lua_pushcfunction(L, &IList_Single_method_clear);
                 return 1;
             case "contains":
-                lua_pushcfunction(L, (IList_Single_method_contains));
+                lua_pushcfunction(L, &IList_Single_method_contains);
                 return 1;
             case "copyTo":
-                lua_pushcfunction(L, (IList_Single_method_copyTo));
+                lua_pushcfunction(L, &IList_Single_method_copyTo);
                 return 1;
             case "remove":
-                lua_pushcfunction(L, (IList_Single_method_remove));
+                lua_pushcfunction(L, &IList_Single_method_remove);
                 return 1;
             case "getEnumerator":
-                lua_pushcfunction(L, (IList_Single_method_getEnumerator));
+                lua_pushcfunction(L, &IList_Single_method_getEnumerator);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -118,6 +119,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.Generic.IList<float>>(L, 1);
@@ -141,6 +143,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.Generic.IList<float>>(L, 1);
@@ -148,6 +151,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -156,6 +160,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_method_indexOf(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -187,6 +192,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_method_insert(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -218,6 +224,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_method_removeAt(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -248,6 +255,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_method_add(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -278,6 +286,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_method_clear(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -307,6 +316,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_method_contains(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -338,6 +348,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_method_copyTo(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -369,6 +380,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_method_remove(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -400,6 +412,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_Single_method_getEnumerator(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

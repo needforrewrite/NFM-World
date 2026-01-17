@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for IEqualityComparer (IEqualityComparer) ===========
     private static void Register_IEqualityComparer(lua_State L)
@@ -19,15 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IEqualityComparer");
 
         // __gc metamethod
-        lua_pushcfunction(L, (IEqualityComparer__gc));
+        lua_pushcfunction(L, &IEqualityComparer__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (IEqualityComparer__index));
+        lua_pushcfunction(L, &IEqualityComparer__index);
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (IEqualityComparer__tostring));
+        lua_pushcfunction(L, &IEqualityComparer__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -36,26 +38,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (IEqualityComparer_new));
+        lua_pushcfunction(L, &IEqualityComparer_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IEqualityComparer");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEqualityComparer__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.Collections.IEqualityComparer>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.Collections.IEqualityComparer>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEqualityComparer__index(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.IEqualityComparer>(L, 1);
@@ -67,10 +68,10 @@ public partial class LuaBindings
         switch (key)
         {
             case "equals":
-                lua_pushcfunction(L, (IEqualityComparer_method_equals));
+                lua_pushcfunction(L, &IEqualityComparer_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (IEqualityComparer_method_getHashCode));
+                lua_pushcfunction(L, &IEqualityComparer_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -78,6 +79,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEqualityComparer__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.IEqualityComparer>(L, 1);
@@ -85,6 +87,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEqualityComparer_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -93,6 +96,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEqualityComparer_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -133,6 +137,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEqualityComparer_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

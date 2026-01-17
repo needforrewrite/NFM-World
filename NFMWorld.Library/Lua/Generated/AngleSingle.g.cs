@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for AngleSingle (AngleSingle) ===========
     private static void Register_AngleSingle(lua_State L)
@@ -19,59 +21,59 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_AngleSingle");
 
         // __gc metamethod
-        lua_pushcfunction(L, (AngleSingle__gc));
+        lua_pushcfunction(L, &AngleSingle__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (AngleSingle__index));
+        lua_pushcfunction(L, &AngleSingle__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (AngleSingle__newindex));
+        lua_pushcfunction(L, &AngleSingle__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __eq
-        lua_pushcfunction(L, (AngleSingle_op_op_Equality));
+        lua_pushcfunction(L, &AngleSingle_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // Operator: __lt
-        lua_pushcfunction(L, (AngleSingle_op_op_LessThan));
+        lua_pushcfunction(L, &AngleSingle_op_op_LessThan);
         lua_setfield(L, -2, "__lt");
 
         // Operator: __gt
-        lua_pushcfunction(L, (AngleSingle_op_op_GreaterThan));
+        lua_pushcfunction(L, &AngleSingle_op_op_GreaterThan);
         lua_setfield(L, -2, "__gt");
 
         // Operator: __le
-        lua_pushcfunction(L, (AngleSingle_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, &AngleSingle_op_op_LessThanOrEqual);
         lua_setfield(L, -2, "__le");
 
         // Operator: __ge
-        lua_pushcfunction(L, (AngleSingle_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, &AngleSingle_op_op_GreaterThanOrEqual);
         lua_setfield(L, -2, "__ge");
 
         // Operator: __unm
-        lua_pushcfunction(L, (AngleSingle_op_op_UnaryNegation));
+        lua_pushcfunction(L, &AngleSingle_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // Operator: __add
-        lua_pushcfunction(L, (AngleSingle_op_op_Addition));
+        lua_pushcfunction(L, &AngleSingle_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, (AngleSingle_op_op_Subtraction));
+        lua_pushcfunction(L, &AngleSingle_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, (AngleSingle_op_op_Multiply));
+        lua_pushcfunction(L, &AngleSingle_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __div
-        lua_pushcfunction(L, (AngleSingle_op_op_Division));
+        lua_pushcfunction(L, &AngleSingle_op_op_Division);
         lua_setfield(L, -2, "__div");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (AngleSingle__tostring));
+        lua_pushcfunction(L, &AngleSingle__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -80,64 +82,63 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (AngleSingle_new));
+        lua_pushcfunction(L, &AngleSingle_new);
         lua_setfield(L, -2, "new");
 
         // Static method: wrap
-        lua_pushcfunction(L, (AngleSingle_static_wrap));
+        lua_pushcfunction(L, &AngleSingle_static_wrap);
         lua_setfield(L, -2, "wrap");
 
         // Static method: wrapPositive
-        lua_pushcfunction(L, (AngleSingle_static_wrapPositive));
+        lua_pushcfunction(L, &AngleSingle_static_wrapPositive);
         lua_setfield(L, -2, "wrapPositive");
 
         // Static method: min
-        lua_pushcfunction(L, (AngleSingle_static_min));
+        lua_pushcfunction(L, &AngleSingle_static_min);
         lua_setfield(L, -2, "min");
 
         // Static method: max
-        lua_pushcfunction(L, (AngleSingle_static_max));
+        lua_pushcfunction(L, &AngleSingle_static_max);
         lua_setfield(L, -2, "max");
 
         // Static method: add
-        lua_pushcfunction(L, (AngleSingle_static_add));
+        lua_pushcfunction(L, &AngleSingle_static_add);
         lua_setfield(L, -2, "add");
 
         // Static method: subtract
-        lua_pushcfunction(L, (AngleSingle_static_subtract));
+        lua_pushcfunction(L, &AngleSingle_static_subtract);
         lua_setfield(L, -2, "subtract");
 
         // Static method: multiply
-        lua_pushcfunction(L, (AngleSingle_static_multiply));
+        lua_pushcfunction(L, &AngleSingle_static_multiply);
         lua_setfield(L, -2, "multiply");
 
         // Static method: divide
-        lua_pushcfunction(L, (AngleSingle_static_divide));
+        lua_pushcfunction(L, &AngleSingle_static_divide);
         lua_setfield(L, -2, "divide");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (AngleSingle_type__index));
+        lua_pushcfunction(L, &AngleSingle_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "AngleSingle");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<Stride.Core.Mathematics.AngleSingle>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<Stride.Core.Mathematics.AngleSingle>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle__index(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.AngleSingle>(L, 1);
@@ -192,49 +193,43 @@ public partial class LuaBindings
             case "complement":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((Stride.Core.Mathematics.AngleSingle)obj).Complement, "MT_AngleSingle", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Complement' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((Stride.Core.Mathematics.AngleSingle)obj).Complement, "MT_AngleSingle", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Complement' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "supplement":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((Stride.Core.Mathematics.AngleSingle)obj).Supplement, "MT_AngleSingle", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Supplement' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((Stride.Core.Mathematics.AngleSingle)obj).Supplement, "MT_AngleSingle", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Supplement' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "wrap":
-                lua_pushcfunction(L, (AngleSingle_method_wrap));
+                lua_pushcfunction(L, &AngleSingle_method_wrap);
                 return 1;
             case "wrapPositive":
-                lua_pushcfunction(L, (AngleSingle_method_wrapPositive));
+                lua_pushcfunction(L, &AngleSingle_method_wrapPositive);
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (IComparable_method_compareTo));
+                lua_pushcfunction(L, &IComparable_method_compareTo);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (IEquatable_AngleSingle_method_equals));
+                lua_pushcfunction(L, &IEquatable_AngleSingle_method_equals);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (AngleSingle_method_getType));
+                lua_pushcfunction(L, &AngleSingle_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -242,6 +237,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle__newindex(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.AngleSingle>(L, 1);
@@ -339,6 +335,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle__tostring(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.AngleSingle>(L, 1);
@@ -346,6 +343,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_Equality(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -354,6 +352,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_LessThan(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -363,6 +362,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_GreaterThan(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -372,6 +372,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_LessThanOrEqual(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -381,6 +382,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_GreaterThanOrEqual(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -390,6 +392,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -398,6 +401,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_Addition(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -407,6 +411,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_Subtraction(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -416,6 +421,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_Multiply(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -425,6 +431,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_op_op_Division(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.AngleSingle>(L, 1)!;
@@ -434,6 +441,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -529,6 +537,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_method_wrap(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -555,6 +564,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_method_wrapPositive(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -581,6 +591,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -608,6 +619,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_static_wrap(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -632,6 +644,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_static_wrapPositive(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -656,6 +669,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_static_min(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -681,6 +695,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_static_max(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -706,6 +721,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -731,6 +747,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_static_subtract(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -756,6 +773,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -781,6 +799,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_static_divide(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -806,6 +825,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int AngleSingle_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

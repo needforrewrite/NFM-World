@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Quaternion (Quaternion) ===========
     private static void Register_Quaternion(lua_State L)
@@ -19,51 +21,51 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Quaternion");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Quaternion__gc));
+        lua_pushcfunction(L, &Quaternion__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Quaternion__index));
+        lua_pushcfunction(L, &Quaternion__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Quaternion__newindex));
+        lua_pushcfunction(L, &Quaternion__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __add
-        lua_pushcfunction(L, (Quaternion_op_op_Addition));
+        lua_pushcfunction(L, &Quaternion_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Quaternion_op_op_Subtraction));
+        lua_pushcfunction(L, &Quaternion_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __unm
-        lua_pushcfunction(L, (Quaternion_op_op_UnaryNegation));
+        lua_pushcfunction(L, &Quaternion_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Quaternion_op_op_Multiply));
+        lua_pushcfunction(L, &Quaternion_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Quaternion_op_op_Multiply));
+        lua_pushcfunction(L, &Quaternion_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Quaternion_op_op_Multiply));
+        lua_pushcfunction(L, &Quaternion_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Quaternion_op_op_Multiply));
+        lua_pushcfunction(L, &Quaternion_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __eq
-        lua_pushcfunction(L, (Quaternion_op_op_Equality));
+        lua_pushcfunction(L, &Quaternion_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Quaternion__tostring));
+        lua_pushcfunction(L, &Quaternion__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -72,132 +74,131 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Quaternion_new));
+        lua_pushcfunction(L, &Quaternion_new);
         lua_setfield(L, -2, "new");
 
         // Static method: add
-        lua_pushcfunction(L, (Quaternion_static_add));
+        lua_pushcfunction(L, &Quaternion_static_add);
         lua_setfield(L, -2, "add");
 
         // Static method: subtract
-        lua_pushcfunction(L, (Quaternion_static_subtract));
+        lua_pushcfunction(L, &Quaternion_static_subtract);
         lua_setfield(L, -2, "subtract");
 
         // Static method: multiply
-        lua_pushcfunction(L, (Quaternion_static_multiply));
+        lua_pushcfunction(L, &Quaternion_static_multiply);
         lua_setfield(L, -2, "multiply");
 
         // Static method: negate
-        lua_pushcfunction(L, (Quaternion_static_negate));
+        lua_pushcfunction(L, &Quaternion_static_negate);
         lua_setfield(L, -2, "negate");
 
         // Static method: barycentric
-        lua_pushcfunction(L, (Quaternion_static_barycentric));
+        lua_pushcfunction(L, &Quaternion_static_barycentric);
         lua_setfield(L, -2, "barycentric");
 
         // Static method: conjugate
-        lua_pushcfunction(L, (Quaternion_static_conjugate));
+        lua_pushcfunction(L, &Quaternion_static_conjugate);
         lua_setfield(L, -2, "conjugate");
 
         // Static method: dot
-        lua_pushcfunction(L, (Quaternion_static_dot));
+        lua_pushcfunction(L, &Quaternion_static_dot);
         lua_setfield(L, -2, "dot");
 
         // Static method: angleBetween
-        lua_pushcfunction(L, (Quaternion_static_angleBetween));
+        lua_pushcfunction(L, &Quaternion_static_angleBetween);
         lua_setfield(L, -2, "angleBetween");
 
         // Static method: exponential
-        lua_pushcfunction(L, (Quaternion_static_exponential));
+        lua_pushcfunction(L, &Quaternion_static_exponential);
         lua_setfield(L, -2, "exponential");
 
         // Static method: invert
-        lua_pushcfunction(L, (Quaternion_static_invert));
+        lua_pushcfunction(L, &Quaternion_static_invert);
         lua_setfield(L, -2, "invert");
 
         // Static method: lerp
-        lua_pushcfunction(L, (Quaternion_static_lerp));
+        lua_pushcfunction(L, &Quaternion_static_lerp);
         lua_setfield(L, -2, "lerp");
 
         // Static method: lookRotation
-        lua_pushcfunction(L, (Quaternion_static_lookRotation));
+        lua_pushcfunction(L, &Quaternion_static_lookRotation);
         lua_setfield(L, -2, "lookRotation");
 
         // Static method: logarithm
-        lua_pushcfunction(L, (Quaternion_static_logarithm));
+        lua_pushcfunction(L, &Quaternion_static_logarithm);
         lua_setfield(L, -2, "logarithm");
 
         // Static method: normalize
-        lua_pushcfunction(L, (Quaternion_static_normalize));
+        lua_pushcfunction(L, &Quaternion_static_normalize);
         lua_setfield(L, -2, "normalize");
 
         // Static method: rotationAxis
-        lua_pushcfunction(L, (Quaternion_static_rotationAxis));
+        lua_pushcfunction(L, &Quaternion_static_rotationAxis);
         lua_setfield(L, -2, "rotationAxis");
 
         // Static method: rotationMatrix
-        lua_pushcfunction(L, (Quaternion_static_rotationMatrix));
+        lua_pushcfunction(L, &Quaternion_static_rotationMatrix);
         lua_setfield(L, -2, "rotationMatrix");
 
         // Static method: rotationX
-        lua_pushcfunction(L, (Quaternion_static_rotationX));
+        lua_pushcfunction(L, &Quaternion_static_rotationX);
         lua_setfield(L, -2, "rotationX");
 
         // Static method: rotationY
-        lua_pushcfunction(L, (Quaternion_static_rotationY));
+        lua_pushcfunction(L, &Quaternion_static_rotationY);
         lua_setfield(L, -2, "rotationY");
 
         // Static method: rotationZ
-        lua_pushcfunction(L, (Quaternion_static_rotationZ));
+        lua_pushcfunction(L, &Quaternion_static_rotationZ);
         lua_setfield(L, -2, "rotationZ");
 
         // Static method: rotationYawPitchRoll
-        lua_pushcfunction(L, (Quaternion_static_rotationYawPitchRoll));
+        lua_pushcfunction(L, &Quaternion_static_rotationYawPitchRoll);
         lua_setfield(L, -2, "rotationYawPitchRoll");
 
         // Static method: betweenDirections
-        lua_pushcfunction(L, (Quaternion_static_betweenDirections));
+        lua_pushcfunction(L, &Quaternion_static_betweenDirections);
         lua_setfield(L, -2, "betweenDirections");
 
         // Static method: slerp
-        lua_pushcfunction(L, (Quaternion_static_slerp));
+        lua_pushcfunction(L, &Quaternion_static_slerp);
         lua_setfield(L, -2, "slerp");
 
         // Static method: rotateTowards
-        lua_pushcfunction(L, (Quaternion_static_rotateTowards));
+        lua_pushcfunction(L, &Quaternion_static_rotateTowards);
         lua_setfield(L, -2, "rotateTowards");
 
         // Static method: squad
-        lua_pushcfunction(L, (Quaternion_static_squad));
+        lua_pushcfunction(L, &Quaternion_static_squad);
         lua_setfield(L, -2, "squad");
 
         // Static method: squadSetup
-        lua_pushcfunction(L, (Quaternion_static_squadSetup));
+        lua_pushcfunction(L, &Quaternion_static_squadSetup);
         lua_setfield(L, -2, "squadSetup");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (Quaternion_type__index));
+        lua_pushcfunction(L, &Quaternion_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "Quaternion");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<Stride.Core.Mathematics.Quaternion>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<Stride.Core.Mathematics.Quaternion>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion__index(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
@@ -228,26 +229,20 @@ public partial class LuaBindings
             case "axis":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((Stride.Core.Mathematics.Quaternion)obj).Axis, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Axis' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((Stride.Core.Mathematics.Quaternion)obj).Axis, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Axis' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "yawPitchRoll":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((Stride.Core.Mathematics.Quaternion)obj).YawPitchRoll, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'YawPitchRoll' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((Stride.Core.Mathematics.Quaternion)obj).YawPitchRoll, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'YawPitchRoll' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -264,40 +259,40 @@ public partial class LuaBindings
                 PushValue(L, ((Stride.Core.Mathematics.Quaternion)obj).W);
                 return 1;
             case "conjugate":
-                lua_pushcfunction(L, (Quaternion_method_conjugate));
+                lua_pushcfunction(L, &Quaternion_method_conjugate);
                 return 1;
             case "invert":
-                lua_pushcfunction(L, (Quaternion_method_invert));
+                lua_pushcfunction(L, &Quaternion_method_invert);
                 return 1;
             case "length":
-                lua_pushcfunction(L, (Quaternion_method_length));
+                lua_pushcfunction(L, &Quaternion_method_length);
                 return 1;
             case "lengthSquared":
-                lua_pushcfunction(L, (Quaternion_method_lengthSquared));
+                lua_pushcfunction(L, &Quaternion_method_lengthSquared);
                 return 1;
             case "normalize":
-                lua_pushcfunction(L, (Quaternion_method_normalize));
+                lua_pushcfunction(L, &Quaternion_method_normalize);
                 return 1;
             case "toArray":
-                lua_pushcfunction(L, (Quaternion_method_toArray));
+                lua_pushcfunction(L, &Quaternion_method_toArray);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "equalsStrict":
-                lua_pushcfunction(L, (Quaternion_method_equalsStrict));
+                lua_pushcfunction(L, &Quaternion_method_equalsStrict);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (IEquatable_Quaternion_method_equals));
+                lua_pushcfunction(L, &IEquatable_Quaternion_method_equals);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Quaternion_method_getType));
+                lua_pushcfunction(L, &Quaternion_method_getType);
                 return 1;
             case "toXna":
-                lua_pushcfunction(L, (Quaternion_method_toXna));
+                lua_pushcfunction(L, &Quaternion_method_toXna);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -305,6 +300,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion__newindex(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
@@ -375,6 +371,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion__tostring(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Quaternion>(L, 1);
@@ -382,6 +379,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_op_op_Addition(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Quaternion>(L, 1)!;
@@ -391,6 +389,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_op_op_Subtraction(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Quaternion>(L, 1)!;
@@ -400,6 +399,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<Stride.Core.Mathematics.Quaternion>(L, 1)!;
@@ -408,6 +408,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_op_op_Multiply(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -522,6 +523,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_op_op_Equality(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Quaternion>(L, 1)!;
@@ -530,6 +532,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -700,6 +703,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_method_conjugate(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -726,6 +730,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_method_invert(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -752,6 +757,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_method_length(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -779,6 +785,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_method_lengthSquared(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -806,6 +813,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_method_normalize(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -832,6 +840,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_method_toArray(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -859,6 +868,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_method_equalsStrict(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -887,6 +897,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -914,6 +925,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_method_toXna(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -939,6 +951,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -964,6 +977,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_subtract(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -989,6 +1003,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1077,6 +1092,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_negate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1101,6 +1117,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_barycentric(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1129,6 +1146,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_conjugate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1153,6 +1171,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_dot(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1178,6 +1197,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_angleBetween(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1203,6 +1223,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_exponential(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1227,6 +1248,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_invert(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1251,6 +1273,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_lerp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1277,6 +1300,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_lookRotation(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1302,6 +1326,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_logarithm(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1326,6 +1351,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_normalize(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1350,6 +1376,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_rotationAxis(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1375,6 +1402,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_rotationMatrix(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1399,6 +1427,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_rotationX(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1423,6 +1452,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_rotationY(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1447,6 +1477,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_rotationZ(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1471,6 +1502,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_rotationYawPitchRoll(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1497,6 +1529,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_betweenDirections(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1522,6 +1555,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_slerp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1548,6 +1582,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_rotateTowards(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1574,6 +1609,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_squad(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1602,6 +1638,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_static_squadSetup(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1629,6 +1666,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Quaternion_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

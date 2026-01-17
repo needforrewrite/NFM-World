@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Matrix4x4 (Matrix4x4) ===========
     private static void Register_Matrix4x4(lua_State L)
@@ -19,43 +21,43 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Matrix4x4");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Matrix4x4__gc));
+        lua_pushcfunction(L, &Matrix4x4__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Matrix4x4__index));
+        lua_pushcfunction(L, &Matrix4x4__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Matrix4x4__newindex));
+        lua_pushcfunction(L, &Matrix4x4__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __add
-        lua_pushcfunction(L, (Matrix4x4_op_op_Addition));
+        lua_pushcfunction(L, &Matrix4x4_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __eq
-        lua_pushcfunction(L, (Matrix4x4_op_op_Equality));
+        lua_pushcfunction(L, &Matrix4x4_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Matrix4x4_op_op_Multiply));
+        lua_pushcfunction(L, &Matrix4x4_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Matrix4x4_op_op_Multiply));
+        lua_pushcfunction(L, &Matrix4x4_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Matrix4x4_op_op_Subtraction));
+        lua_pushcfunction(L, &Matrix4x4_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __unm
-        lua_pushcfunction(L, (Matrix4x4_op_op_UnaryNegation));
+        lua_pushcfunction(L, &Matrix4x4_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Matrix4x4__tostring));
+        lua_pushcfunction(L, &Matrix4x4__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -64,188 +66,187 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Matrix4x4_new));
+        lua_pushcfunction(L, &Matrix4x4_new);
         lua_setfield(L, -2, "new");
 
         // Static method: add
-        lua_pushcfunction(L, (Matrix4x4_static_add));
+        lua_pushcfunction(L, &Matrix4x4_static_add);
         lua_setfield(L, -2, "add");
 
         // Static method: create
-        lua_pushcfunction(L, (Matrix4x4_static_create));
+        lua_pushcfunction(L, &Matrix4x4_static_create);
         lua_setfield(L, -2, "create");
 
         // Static method: createBillboard
-        lua_pushcfunction(L, (Matrix4x4_static_createBillboard));
+        lua_pushcfunction(L, &Matrix4x4_static_createBillboard);
         lua_setfield(L, -2, "createBillboard");
 
         // Static method: createBillboardLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createBillboardLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createBillboardLeftHanded);
         lua_setfield(L, -2, "createBillboardLeftHanded");
 
         // Static method: createConstrainedBillboard
-        lua_pushcfunction(L, (Matrix4x4_static_createConstrainedBillboard));
+        lua_pushcfunction(L, &Matrix4x4_static_createConstrainedBillboard);
         lua_setfield(L, -2, "createConstrainedBillboard");
 
         // Static method: createConstrainedBillboardLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createConstrainedBillboardLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createConstrainedBillboardLeftHanded);
         lua_setfield(L, -2, "createConstrainedBillboardLeftHanded");
 
         // Static method: createFromAxisAngle
-        lua_pushcfunction(L, (Matrix4x4_static_createFromAxisAngle));
+        lua_pushcfunction(L, &Matrix4x4_static_createFromAxisAngle);
         lua_setfield(L, -2, "createFromAxisAngle");
 
         // Static method: createFromQuaternion
-        lua_pushcfunction(L, (Matrix4x4_static_createFromQuaternion));
+        lua_pushcfunction(L, &Matrix4x4_static_createFromQuaternion);
         lua_setfield(L, -2, "createFromQuaternion");
 
         // Static method: createFromYawPitchRoll
-        lua_pushcfunction(L, (Matrix4x4_static_createFromYawPitchRoll));
+        lua_pushcfunction(L, &Matrix4x4_static_createFromYawPitchRoll);
         lua_setfield(L, -2, "createFromYawPitchRoll");
 
         // Static method: createLookAt
-        lua_pushcfunction(L, (Matrix4x4_static_createLookAt));
+        lua_pushcfunction(L, &Matrix4x4_static_createLookAt);
         lua_setfield(L, -2, "createLookAt");
 
         // Static method: createLookAtLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createLookAtLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createLookAtLeftHanded);
         lua_setfield(L, -2, "createLookAtLeftHanded");
 
         // Static method: createLookTo
-        lua_pushcfunction(L, (Matrix4x4_static_createLookTo));
+        lua_pushcfunction(L, &Matrix4x4_static_createLookTo);
         lua_setfield(L, -2, "createLookTo");
 
         // Static method: createLookToLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createLookToLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createLookToLeftHanded);
         lua_setfield(L, -2, "createLookToLeftHanded");
 
         // Static method: createOrthographic
-        lua_pushcfunction(L, (Matrix4x4_static_createOrthographic));
+        lua_pushcfunction(L, &Matrix4x4_static_createOrthographic);
         lua_setfield(L, -2, "createOrthographic");
 
         // Static method: createOrthographicLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createOrthographicLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createOrthographicLeftHanded);
         lua_setfield(L, -2, "createOrthographicLeftHanded");
 
         // Static method: createOrthographicOffCenter
-        lua_pushcfunction(L, (Matrix4x4_static_createOrthographicOffCenter));
+        lua_pushcfunction(L, &Matrix4x4_static_createOrthographicOffCenter);
         lua_setfield(L, -2, "createOrthographicOffCenter");
 
         // Static method: createOrthographicOffCenterLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createOrthographicOffCenterLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createOrthographicOffCenterLeftHanded);
         lua_setfield(L, -2, "createOrthographicOffCenterLeftHanded");
 
         // Static method: createPerspective
-        lua_pushcfunction(L, (Matrix4x4_static_createPerspective));
+        lua_pushcfunction(L, &Matrix4x4_static_createPerspective);
         lua_setfield(L, -2, "createPerspective");
 
         // Static method: createPerspectiveLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createPerspectiveLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createPerspectiveLeftHanded);
         lua_setfield(L, -2, "createPerspectiveLeftHanded");
 
         // Static method: createPerspectiveFieldOfView
-        lua_pushcfunction(L, (Matrix4x4_static_createPerspectiveFieldOfView));
+        lua_pushcfunction(L, &Matrix4x4_static_createPerspectiveFieldOfView);
         lua_setfield(L, -2, "createPerspectiveFieldOfView");
 
         // Static method: createPerspectiveFieldOfViewLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createPerspectiveFieldOfViewLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createPerspectiveFieldOfViewLeftHanded);
         lua_setfield(L, -2, "createPerspectiveFieldOfViewLeftHanded");
 
         // Static method: createPerspectiveOffCenter
-        lua_pushcfunction(L, (Matrix4x4_static_createPerspectiveOffCenter));
+        lua_pushcfunction(L, &Matrix4x4_static_createPerspectiveOffCenter);
         lua_setfield(L, -2, "createPerspectiveOffCenter");
 
         // Static method: createPerspectiveOffCenterLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createPerspectiveOffCenterLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createPerspectiveOffCenterLeftHanded);
         lua_setfield(L, -2, "createPerspectiveOffCenterLeftHanded");
 
         // Static method: createReflection
-        lua_pushcfunction(L, (Matrix4x4_static_createReflection));
+        lua_pushcfunction(L, &Matrix4x4_static_createReflection);
         lua_setfield(L, -2, "createReflection");
 
         // Static method: createRotationX
-        lua_pushcfunction(L, (Matrix4x4_static_createRotationX));
+        lua_pushcfunction(L, &Matrix4x4_static_createRotationX);
         lua_setfield(L, -2, "createRotationX");
 
         // Static method: createRotationY
-        lua_pushcfunction(L, (Matrix4x4_static_createRotationY));
+        lua_pushcfunction(L, &Matrix4x4_static_createRotationY);
         lua_setfield(L, -2, "createRotationY");
 
         // Static method: createRotationZ
-        lua_pushcfunction(L, (Matrix4x4_static_createRotationZ));
+        lua_pushcfunction(L, &Matrix4x4_static_createRotationZ);
         lua_setfield(L, -2, "createRotationZ");
 
         // Static method: createScale
-        lua_pushcfunction(L, (Matrix4x4_static_createScale));
+        lua_pushcfunction(L, &Matrix4x4_static_createScale);
         lua_setfield(L, -2, "createScale");
 
         // Static method: createShadow
-        lua_pushcfunction(L, (Matrix4x4_static_createShadow));
+        lua_pushcfunction(L, &Matrix4x4_static_createShadow);
         lua_setfield(L, -2, "createShadow");
 
         // Static method: createTranslation
-        lua_pushcfunction(L, (Matrix4x4_static_createTranslation));
+        lua_pushcfunction(L, &Matrix4x4_static_createTranslation);
         lua_setfield(L, -2, "createTranslation");
 
         // Static method: createViewport
-        lua_pushcfunction(L, (Matrix4x4_static_createViewport));
+        lua_pushcfunction(L, &Matrix4x4_static_createViewport);
         lua_setfield(L, -2, "createViewport");
 
         // Static method: createViewportLeftHanded
-        lua_pushcfunction(L, (Matrix4x4_static_createViewportLeftHanded));
+        lua_pushcfunction(L, &Matrix4x4_static_createViewportLeftHanded);
         lua_setfield(L, -2, "createViewportLeftHanded");
 
         // Static method: createWorld
-        lua_pushcfunction(L, (Matrix4x4_static_createWorld));
+        lua_pushcfunction(L, &Matrix4x4_static_createWorld);
         lua_setfield(L, -2, "createWorld");
 
         // Static method: lerp
-        lua_pushcfunction(L, (Matrix4x4_static_lerp));
+        lua_pushcfunction(L, &Matrix4x4_static_lerp);
         lua_setfield(L, -2, "lerp");
 
         // Static method: multiply
-        lua_pushcfunction(L, (Matrix4x4_static_multiply));
+        lua_pushcfunction(L, &Matrix4x4_static_multiply);
         lua_setfield(L, -2, "multiply");
 
         // Static method: negate
-        lua_pushcfunction(L, (Matrix4x4_static_negate));
+        lua_pushcfunction(L, &Matrix4x4_static_negate);
         lua_setfield(L, -2, "negate");
 
         // Static method: subtract
-        lua_pushcfunction(L, (Matrix4x4_static_subtract));
+        lua_pushcfunction(L, &Matrix4x4_static_subtract);
         lua_setfield(L, -2, "subtract");
 
         // Static method: transform
-        lua_pushcfunction(L, (Matrix4x4_static_transform));
+        lua_pushcfunction(L, &Matrix4x4_static_transform);
         lua_setfield(L, -2, "transform");
 
         // Static method: transpose
-        lua_pushcfunction(L, (Matrix4x4_static_transpose));
+        lua_pushcfunction(L, &Matrix4x4_static_transpose);
         lua_setfield(L, -2, "transpose");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (Matrix4x4_type__index));
+        lua_pushcfunction(L, &Matrix4x4_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "Matrix4x4");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.Numerics.Matrix4x4>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.Numerics.Matrix4x4>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4__index(lua_State L)
     {
         var obj = GetStructFromStack<System.Numerics.Matrix4x4>(L, 1);
@@ -299,65 +300,50 @@ public partial class LuaBindings
             case "translation":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).Translation, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Translation' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).Translation, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Translation' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "x":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).X, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'X' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).X, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'X' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "y":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).Y, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Y' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).Y, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Y' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "z":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).Z, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Z' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).Z, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Z' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "w":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).W, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'W' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.Numerics.Matrix4x4)obj).W, "MT_Vector4", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'W' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -410,31 +396,31 @@ public partial class LuaBindings
                 PushValue(L, ((System.Numerics.Matrix4x4)obj).M44);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "getDeterminant":
-                lua_pushcfunction(L, (Matrix4x4_method_getDeterminant));
+                lua_pushcfunction(L, &Matrix4x4_method_getDeterminant);
                 return 1;
             case "getElement":
-                lua_pushcfunction(L, (Matrix4x4_method_getElement));
+                lua_pushcfunction(L, &Matrix4x4_method_getElement);
                 return 1;
             case "getRow":
-                lua_pushcfunction(L, (Matrix4x4_method_getRow));
+                lua_pushcfunction(L, &Matrix4x4_method_getRow);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "withElement":
-                lua_pushcfunction(L, (Matrix4x4_method_withElement));
+                lua_pushcfunction(L, &Matrix4x4_method_withElement);
                 return 1;
             case "withRow":
-                lua_pushcfunction(L, (Matrix4x4_method_withRow));
+                lua_pushcfunction(L, &Matrix4x4_method_withRow);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Matrix4x4_method_getType));
+                lua_pushcfunction(L, &Matrix4x4_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -442,6 +428,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4__newindex(lua_State L)
     {
         var obj = GetStructFromStack<System.Numerics.Matrix4x4>(L, 1);
@@ -744,6 +731,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4__tostring(lua_State L)
     {
         var obj = GetStructFromStack<System.Numerics.Matrix4x4>(L, 1);
@@ -751,6 +739,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_op_op_Addition(lua_State L)
     {
         var left = ToObject<System.Numerics.Matrix4x4>(L, 1)!;
@@ -760,6 +749,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_op_op_Equality(lua_State L)
     {
         var left = ToObject<System.Numerics.Matrix4x4>(L, 1)!;
@@ -768,6 +758,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_op_op_Multiply(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -832,6 +823,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_op_op_Subtraction(lua_State L)
     {
         var left = ToObject<System.Numerics.Matrix4x4>(L, 1)!;
@@ -841,6 +833,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<System.Numerics.Matrix4x4>(L, 1)!;
@@ -849,6 +842,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -911,6 +905,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_method_getDeterminant(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -938,6 +933,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_method_getElement(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -967,6 +963,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_method_getRow(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -995,6 +992,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_method_withElement(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1025,6 +1023,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_method_withRow(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1054,6 +1053,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1081,6 +1081,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1106,6 +1107,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_create(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1265,6 +1267,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createBillboard(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1292,6 +1295,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createBillboardLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1319,6 +1323,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createConstrainedBillboard(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1347,6 +1352,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createConstrainedBillboardLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1375,6 +1381,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createFromAxisAngle(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1400,6 +1407,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createFromQuaternion(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1424,6 +1432,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createFromYawPitchRoll(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1450,6 +1459,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createLookAt(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1476,6 +1486,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createLookAtLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1502,6 +1513,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createLookTo(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1528,6 +1540,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createLookToLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1554,6 +1567,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createOrthographic(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1581,6 +1595,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createOrthographicLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1608,6 +1623,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createOrthographicOffCenter(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1637,6 +1653,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createOrthographicOffCenterLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1666,6 +1683,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createPerspective(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1693,6 +1711,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createPerspectiveLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1720,6 +1739,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createPerspectiveFieldOfView(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1747,6 +1767,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createPerspectiveFieldOfViewLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1774,6 +1795,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createPerspectiveOffCenter(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1803,6 +1825,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createPerspectiveOffCenterLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1832,6 +1855,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createReflection(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1856,6 +1880,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createRotationX(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1897,6 +1922,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createRotationY(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1938,6 +1964,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createRotationZ(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1979,6 +2006,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createScale(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2176,6 +2204,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createShadow(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2201,6 +2230,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createTranslation(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2243,6 +2273,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createViewport(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2272,6 +2303,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createViewportLeftHanded(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2301,6 +2333,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_createWorld(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2327,6 +2360,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_lerp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2353,6 +2387,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2441,6 +2476,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_negate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2465,6 +2501,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_subtract(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2490,6 +2527,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_transform(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2515,6 +2553,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_static_transpose(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2539,6 +2578,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Matrix4x4_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

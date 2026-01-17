@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Plane (Plane) ===========
     private static void Register_Plane(lua_State L)
@@ -19,35 +21,35 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Plane");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Plane__gc));
+        lua_pushcfunction(L, &Plane__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Plane__index));
+        lua_pushcfunction(L, &Plane__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Plane__newindex));
+        lua_pushcfunction(L, &Plane__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Plane_op_op_Multiply));
+        lua_pushcfunction(L, &Plane_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Plane_op_op_Multiply));
+        lua_pushcfunction(L, &Plane_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __unm
-        lua_pushcfunction(L, (Plane_op_op_UnaryNegation));
+        lua_pushcfunction(L, &Plane_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // Operator: __eq
-        lua_pushcfunction(L, (Plane_op_op_Equality));
+        lua_pushcfunction(L, &Plane_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Plane__tostring));
+        lua_pushcfunction(L, &Plane__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -56,58 +58,57 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Plane_new));
+        lua_pushcfunction(L, &Plane_new);
         lua_setfield(L, -2, "new");
 
         // Static method: multiply
-        lua_pushcfunction(L, (Plane_static_multiply));
+        lua_pushcfunction(L, &Plane_static_multiply);
         lua_setfield(L, -2, "multiply");
 
         // Static method: dot
-        lua_pushcfunction(L, (Plane_static_dot));
+        lua_pushcfunction(L, &Plane_static_dot);
         lua_setfield(L, -2, "dot");
 
         // Static method: dotCoordinate
-        lua_pushcfunction(L, (Plane_static_dotCoordinate));
+        lua_pushcfunction(L, &Plane_static_dotCoordinate);
         lua_setfield(L, -2, "dotCoordinate");
 
         // Static method: dotNormal
-        lua_pushcfunction(L, (Plane_static_dotNormal));
+        lua_pushcfunction(L, &Plane_static_dotNormal);
         lua_setfield(L, -2, "dotNormal");
 
         // Static method: project
-        lua_pushcfunction(L, (Plane_static_project));
+        lua_pushcfunction(L, &Plane_static_project);
         lua_setfield(L, -2, "project");
 
         // Static method: normalize
-        lua_pushcfunction(L, (Plane_static_normalize));
+        lua_pushcfunction(L, &Plane_static_normalize);
         lua_setfield(L, -2, "normalize");
 
         // Static method: negate
-        lua_pushcfunction(L, (Plane_static_negate));
+        lua_pushcfunction(L, &Plane_static_negate);
         lua_setfield(L, -2, "negate");
 
         // Static method: transform
-        lua_pushcfunction(L, (Plane_static_transform));
+        lua_pushcfunction(L, &Plane_static_transform);
         lua_setfield(L, -2, "transform");
 
         lua_setglobal(L, "Plane");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<Stride.Core.Mathematics.Plane>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<Stride.Core.Mathematics.Plane>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane__index(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
@@ -129,13 +130,10 @@ public partial class LuaBindings
             case "normal":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((Stride.Core.Mathematics.Plane)obj).Normal, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Normal' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((Stride.Core.Mathematics.Plane)obj).Normal, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Normal' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -143,28 +141,28 @@ public partial class LuaBindings
                 PushValue(L, ((Stride.Core.Mathematics.Plane)obj).D);
                 return 1;
             case "negate":
-                lua_pushcfunction(L, (Plane_method_negate));
+                lua_pushcfunction(L, &Plane_method_negate);
                 return 1;
             case "normalize":
-                lua_pushcfunction(L, (Plane_method_normalize));
+                lua_pushcfunction(L, &Plane_method_normalize);
                 return 1;
             case "toArray":
-                lua_pushcfunction(L, (Plane_method_toArray));
+                lua_pushcfunction(L, &Plane_method_toArray);
                 return 1;
             case "intersects":
-                lua_pushcfunction(L, (Plane_method_intersects));
+                lua_pushcfunction(L, &Plane_method_intersects);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (IEquatable_Plane_method_equals));
+                lua_pushcfunction(L, &IEquatable_Plane_method_equals);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Plane_method_getType));
+                lua_pushcfunction(L, &Plane_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -172,6 +170,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane__newindex(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
@@ -218,6 +217,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane__tostring(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Plane>(L, 1);
@@ -225,6 +225,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_op_op_Multiply(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -289,6 +290,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<Stride.Core.Mathematics.Plane>(L, 1)!;
@@ -297,6 +299,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_op_op_Equality(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Plane>(L, 1)!;
@@ -305,6 +308,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -509,6 +513,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_method_negate(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -535,6 +540,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_method_normalize(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -561,6 +567,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_method_toArray(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -588,6 +595,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_method_intersects(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -787,6 +795,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -814,6 +823,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -839,6 +849,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_static_dot(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -864,6 +875,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_static_dotCoordinate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -889,6 +901,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_static_dotNormal(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -914,6 +927,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_static_project(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -939,6 +953,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_static_normalize(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -963,6 +978,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_static_negate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -987,6 +1003,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Plane_static_transform(lua_State L)
     {
         var argCount = lua_gettop(L);

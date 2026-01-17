@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Fixed64 (Fixed64) ===========
     private static void Register_Fixed64(lua_State L)
@@ -19,107 +21,107 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Fixed64");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Fixed64__gc));
+        lua_pushcfunction(L, &Fixed64__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Fixed64__index));
+        lua_pushcfunction(L, &Fixed64__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Fixed64__newindex));
+        lua_pushcfunction(L, &Fixed64__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __add
-        lua_pushcfunction(L, (Fixed64_op_op_Addition));
+        lua_pushcfunction(L, &Fixed64_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, (Fixed64_op_op_Addition));
+        lua_pushcfunction(L, &Fixed64_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, (Fixed64_op_op_Addition));
+        lua_pushcfunction(L, &Fixed64_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, (Fixed64_op_op_Addition));
+        lua_pushcfunction(L, &Fixed64_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, (Fixed64_op_op_Addition));
+        lua_pushcfunction(L, &Fixed64_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Fixed64_op_op_Subtraction));
+        lua_pushcfunction(L, &Fixed64_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Fixed64_op_op_Subtraction));
+        lua_pushcfunction(L, &Fixed64_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Fixed64_op_op_Subtraction));
+        lua_pushcfunction(L, &Fixed64_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Fixed64_op_op_Subtraction));
+        lua_pushcfunction(L, &Fixed64_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Fixed64_op_op_Subtraction));
+        lua_pushcfunction(L, &Fixed64_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Fixed64_op_op_Multiply));
+        lua_pushcfunction(L, &Fixed64_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Fixed64_op_op_Multiply));
+        lua_pushcfunction(L, &Fixed64_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Fixed64_op_op_Multiply));
+        lua_pushcfunction(L, &Fixed64_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __div
-        lua_pushcfunction(L, (Fixed64_op_op_Division));
+        lua_pushcfunction(L, &Fixed64_op_op_Division);
         lua_setfield(L, -2, "__div");
 
         // Operator: __div
-        lua_pushcfunction(L, (Fixed64_op_op_Division));
+        lua_pushcfunction(L, &Fixed64_op_op_Division);
         lua_setfield(L, -2, "__div");
 
         // Operator: __mod
-        lua_pushcfunction(L, (Fixed64_op_op_Modulus));
+        lua_pushcfunction(L, &Fixed64_op_op_Modulus);
         lua_setfield(L, -2, "__mod");
 
         // Operator: __unm
-        lua_pushcfunction(L, (Fixed64_op_op_UnaryNegation));
+        lua_pushcfunction(L, &Fixed64_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // Operator: __gt
-        lua_pushcfunction(L, (Fixed64_op_op_GreaterThan));
+        lua_pushcfunction(L, &Fixed64_op_op_GreaterThan);
         lua_setfield(L, -2, "__gt");
 
         // Operator: __lt
-        lua_pushcfunction(L, (Fixed64_op_op_LessThan));
+        lua_pushcfunction(L, &Fixed64_op_op_LessThan);
         lua_setfield(L, -2, "__lt");
 
         // Operator: __ge
-        lua_pushcfunction(L, (Fixed64_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, &Fixed64_op_op_GreaterThanOrEqual);
         lua_setfield(L, -2, "__ge");
 
         // Operator: __le
-        lua_pushcfunction(L, (Fixed64_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, &Fixed64_op_op_LessThanOrEqual);
         lua_setfield(L, -2, "__le");
 
         // Operator: __eq
-        lua_pushcfunction(L, (Fixed64_op_op_Equality));
+        lua_pushcfunction(L, &Fixed64_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Fixed64__tostring));
+        lua_pushcfunction(L, &Fixed64__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -128,64 +130,63 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Fixed64_new));
+        lua_pushcfunction(L, &Fixed64_new);
         lua_setfield(L, -2, "new");
 
         // Static method: fraction
-        lua_pushcfunction(L, (Fixed64_static_fraction));
+        lua_pushcfunction(L, &Fixed64_static_fraction);
         lua_setfield(L, -2, "fraction");
 
         // Static method: sign
-        lua_pushcfunction(L, (Fixed64_static_sign));
+        lua_pushcfunction(L, &Fixed64_static_sign);
         lua_setfield(L, -2, "sign");
 
         // Static method: isInteger
-        lua_pushcfunction(L, (Fixed64_static_isInteger));
+        lua_pushcfunction(L, &Fixed64_static_isInteger);
         lua_setfield(L, -2, "isInteger");
 
         // Static method: parse
-        lua_pushcfunction(L, (Fixed64_static_parse));
+        lua_pushcfunction(L, &Fixed64_static_parse);
         lua_setfield(L, -2, "parse");
 
         // Static method: fromRaw
-        lua_pushcfunction(L, (Fixed64_static_fromRaw));
+        lua_pushcfunction(L, &Fixed64_static_fromRaw);
         lua_setfield(L, -2, "fromRaw");
 
         // Static method: toDouble
-        lua_pushcfunction(L, (Fixed64_static_toDouble));
+        lua_pushcfunction(L, &Fixed64_static_toDouble);
         lua_setfield(L, -2, "toDouble");
 
         // Static method: toFloat
-        lua_pushcfunction(L, (Fixed64_static_toFloat));
+        lua_pushcfunction(L, &Fixed64_static_toFloat);
         lua_setfield(L, -2, "toFloat");
 
         // Static method: toDecimal
-        lua_pushcfunction(L, (Fixed64_static_toDecimal));
+        lua_pushcfunction(L, &Fixed64_static_toDecimal);
         lua_setfield(L, -2, "toDecimal");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (Fixed64_type__index));
+        lua_pushcfunction(L, &Fixed64_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "Fixed64");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<FixedMathSharp.Fixed64>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<FixedMathSharp.Fixed64>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64__index(lua_State L)
     {
         var obj = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
@@ -199,106 +200,106 @@ public partial class LuaBindings
                 PushValue(L, ((FixedMathSharp.Fixed64)obj).m_rawValue);
                 return 1;
             case "offset":
-                lua_pushcfunction(L, (Fixed64_method_offset));
+                lua_pushcfunction(L, &Fixed64_method_offset);
                 return 1;
             case "rawToString":
-                lua_pushcfunction(L, (Fixed64_method_rawToString));
+                lua_pushcfunction(L, &Fixed64_method_rawToString);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (IComparable_Fixed64_method_compareTo));
+                lua_pushcfunction(L, &IComparable_Fixed64_method_compareTo);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Fixed64_method_getType));
+                lua_pushcfunction(L, &Fixed64_method_getType);
                 return 1;
             case "sign":
-                lua_pushcfunction(L, (Fixed64_method_sign));
+                lua_pushcfunction(L, &Fixed64_method_sign);
                 return 1;
             case "isInteger":
-                lua_pushcfunction(L, (Fixed64_method_isInteger));
+                lua_pushcfunction(L, &Fixed64_method_isInteger);
                 return 1;
             case "squared":
-                lua_pushcfunction(L, (Fixed64_method_squared));
+                lua_pushcfunction(L, &Fixed64_method_squared);
                 return 1;
             case "round":
-                lua_pushcfunction(L, (Fixed64_method_round));
+                lua_pushcfunction(L, &Fixed64_method_round);
                 return 1;
             case "roundToPrecision":
-                lua_pushcfunction(L, (Fixed64_method_roundToPrecision));
+                lua_pushcfunction(L, &Fixed64_method_roundToPrecision);
                 return 1;
             case "clampOne":
-                lua_pushcfunction(L, (Fixed64_method_clampOne));
+                lua_pushcfunction(L, &Fixed64_method_clampOne);
                 return 1;
             case "clamp01":
-                lua_pushcfunction(L, (Fixed64_method_clamp01));
+                lua_pushcfunction(L, &Fixed64_method_clamp01);
                 return 1;
             case "abs":
-                lua_pushcfunction(L, (Fixed64_method_abs));
+                lua_pushcfunction(L, &Fixed64_method_abs);
                 return 1;
             case "absLessThan":
-                lua_pushcfunction(L, (Fixed64_method_absLessThan));
+                lua_pushcfunction(L, &Fixed64_method_absLessThan);
                 return 1;
             case "fastAdd":
-                lua_pushcfunction(L, (Fixed64_method_fastAdd));
+                lua_pushcfunction(L, &Fixed64_method_fastAdd);
                 return 1;
             case "fastSub":
-                lua_pushcfunction(L, (Fixed64_method_fastSub));
+                lua_pushcfunction(L, &Fixed64_method_fastSub);
                 return 1;
             case "fastMul":
-                lua_pushcfunction(L, (Fixed64_method_fastMul));
+                lua_pushcfunction(L, &Fixed64_method_fastMul);
                 return 1;
             case "fastMod":
-                lua_pushcfunction(L, (Fixed64_method_fastMod));
+                lua_pushcfunction(L, &Fixed64_method_fastMod);
                 return 1;
             case "floor":
-                lua_pushcfunction(L, (Fixed64_method_floor));
+                lua_pushcfunction(L, &Fixed64_method_floor);
                 return 1;
             case "ceiling":
-                lua_pushcfunction(L, (Fixed64_method_ceiling));
+                lua_pushcfunction(L, &Fixed64_method_ceiling);
                 return 1;
             case "roundToInt":
-                lua_pushcfunction(L, (Fixed64_method_roundToInt));
+                lua_pushcfunction(L, &Fixed64_method_roundToInt);
                 return 1;
             case "ceilToInt":
-                lua_pushcfunction(L, (Fixed64_method_ceilToInt));
+                lua_pushcfunction(L, &Fixed64_method_ceilToInt);
                 return 1;
             case "floorToInt":
-                lua_pushcfunction(L, (Fixed64_method_floorToInt));
+                lua_pushcfunction(L, &Fixed64_method_floorToInt);
                 return 1;
             case "toFormattedString":
-                lua_pushcfunction(L, (Fixed64_method_toFormattedString));
+                lua_pushcfunction(L, &Fixed64_method_toFormattedString);
                 return 1;
             case "toFormattedDouble":
-                lua_pushcfunction(L, (Fixed64_method_toFormattedDouble));
+                lua_pushcfunction(L, &Fixed64_method_toFormattedDouble);
                 return 1;
             case "toFormattedFloat":
-                lua_pushcfunction(L, (Fixed64_method_toFormattedFloat));
+                lua_pushcfunction(L, &Fixed64_method_toFormattedFloat);
                 return 1;
             case "toPreciseFloat":
-                lua_pushcfunction(L, (Fixed64_method_toPreciseFloat));
+                lua_pushcfunction(L, &Fixed64_method_toPreciseFloat);
                 return 1;
             case "toRadians":
-                lua_pushcfunction(L, (Fixed64_method_toRadians));
+                lua_pushcfunction(L, &Fixed64_method_toRadians);
                 return 1;
             case "toDegree":
-                lua_pushcfunction(L, (Fixed64_method_toDegree));
+                lua_pushcfunction(L, &Fixed64_method_toDegree);
                 return 1;
             case "moreThanEpsilon":
-                lua_pushcfunction(L, (Fixed64_method_moreThanEpsilon));
+                lua_pushcfunction(L, &Fixed64_method_moreThanEpsilon);
                 return 1;
             case "lessThanEpsilon":
-                lua_pushcfunction(L, (Fixed64_method_lessThanEpsilon));
+                lua_pushcfunction(L, &Fixed64_method_lessThanEpsilon);
                 return 1;
             case "fuzzyComponentEqual":
-                lua_pushcfunction(L, (Fixed64_method_fuzzyComponentEqual));
+                lua_pushcfunction(L, &Fixed64_method_fuzzyComponentEqual);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -306,6 +307,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64__newindex(lua_State L)
     {
         var obj = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
@@ -331,6 +333,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64__tostring(lua_State L)
     {
         var obj = GetStructFromStack<FixedMathSharp.Fixed64>(L, 1);
@@ -338,6 +341,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_Addition(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -477,6 +481,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_Subtraction(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -616,6 +621,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_Multiply(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -705,6 +711,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_Division(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -769,6 +776,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_Modulus(lua_State L)
     {
         var left = ToObject<FixedMathSharp.Fixed64>(L, 1)!;
@@ -778,6 +786,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<FixedMathSharp.Fixed64>(L, 1)!;
@@ -786,6 +795,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_GreaterThan(lua_State L)
     {
         var left = ToObject<FixedMathSharp.Fixed64>(L, 1)!;
@@ -795,6 +805,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_LessThan(lua_State L)
     {
         var left = ToObject<FixedMathSharp.Fixed64>(L, 1)!;
@@ -804,6 +815,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_GreaterThanOrEqual(lua_State L)
     {
         var left = ToObject<FixedMathSharp.Fixed64>(L, 1)!;
@@ -813,6 +825,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_LessThanOrEqual(lua_State L)
     {
         var left = ToObject<FixedMathSharp.Fixed64>(L, 1)!;
@@ -822,6 +835,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_op_op_Equality(lua_State L)
     {
         var left = ToObject<FixedMathSharp.Fixed64>(L, 1)!;
@@ -830,6 +844,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -917,6 +932,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_offset(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -944,6 +960,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_rawToString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -971,6 +988,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -999,6 +1017,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1026,6 +1045,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_sign(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1051,6 +1071,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_isInteger(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1076,6 +1097,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_squared(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1101,6 +1123,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_round(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1127,6 +1150,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_roundToPrecision(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1154,6 +1178,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_clampOne(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1179,6 +1204,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_clamp01(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1204,6 +1230,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_abs(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1229,6 +1256,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_absLessThan(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1255,6 +1283,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_fastAdd(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1281,6 +1310,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_fastSub(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1307,6 +1337,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_fastMul(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1333,6 +1364,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_fastMod(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1359,6 +1391,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_floor(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1384,6 +1417,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_ceiling(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1409,6 +1443,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_roundToInt(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1434,6 +1469,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_ceilToInt(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1459,6 +1495,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_floorToInt(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1484,6 +1521,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_toFormattedString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1509,6 +1547,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_toFormattedDouble(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1535,6 +1574,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_toFormattedFloat(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1560,6 +1600,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_toPreciseFloat(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1585,6 +1626,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_toRadians(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1610,6 +1652,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_toDegree(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1635,6 +1678,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_moreThanEpsilon(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1660,6 +1704,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_lessThanEpsilon(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1685,6 +1730,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_method_fuzzyComponentEqual(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1712,6 +1758,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_static_fraction(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1737,6 +1784,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_static_sign(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1761,6 +1809,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_static_isInteger(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1785,6 +1834,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_static_parse(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1809,6 +1859,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_static_fromRaw(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1833,6 +1884,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_static_toDouble(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1857,6 +1909,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_static_toFloat(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1881,6 +1934,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_static_toDecimal(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1905,6 +1959,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Fixed64_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

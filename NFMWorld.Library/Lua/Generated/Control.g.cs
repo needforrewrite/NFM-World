@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Control (Control) ===========
     private static void Register_Control(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Control");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Control__gc));
+        lua_pushcfunction(L, &Control__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Control__index));
+        lua_pushcfunction(L, &Control__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Control__newindex));
+        lua_pushcfunction(L, &Control__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Control__tostring));
+        lua_pushcfunction(L, &Control__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Control_new));
+        lua_pushcfunction(L, &Control_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "Control");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.mad.Control>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.mad.Control>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Control>(L, 1);
@@ -119,22 +120,22 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.mad.Control)obj).Zyinv);
                 return 1;
             case "encode":
-                lua_pushcfunction(L, (Control_method_encode));
+                lua_pushcfunction(L, &Control_method_encode);
                 return 1;
             case "decode":
-                lua_pushcfunction(L, (Control_method_decode));
+                lua_pushcfunction(L, &Control_method_decode);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Control_method_getType));
+                lua_pushcfunction(L, &Control_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Control_method_toString));
+                lua_pushcfunction(L, &Control_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Control_method_equals));
+                lua_pushcfunction(L, &Control_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Control_method_getHashCode));
+                lua_pushcfunction(L, &Control_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -142,6 +143,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Control>(L, 1);
@@ -332,6 +334,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Control>(L, 1);
@@ -339,6 +342,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -362,6 +366,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control_method_encode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -392,6 +397,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control_method_decode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -477,6 +483,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -507,6 +514,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -537,6 +545,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -572,6 +581,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Control_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

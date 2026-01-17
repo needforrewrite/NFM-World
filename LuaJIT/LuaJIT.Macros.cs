@@ -7,7 +7,7 @@ namespace LuaJIT;
 
 using size_t = nuint;
 using lua_Number = double;
-using lua_Integer = long;
+using lua_Integer = nint;
 
 public static unsafe partial class Methods
 {
@@ -74,6 +74,11 @@ public static unsafe partial class Methods
     }
 
     public static void lua_pushliteral(lua_State L, string s)
+    {
+        lua_pushlstring(L, s);
+    }
+
+    public static void lua_pushliteral(lua_State L, ReadOnlySpan<byte> s)
     {
         lua_pushlstring(L, s);
     }
@@ -154,7 +159,7 @@ public static unsafe partial class Methods
     /// </summary>
     public static void lua_getglobal(lua_State L, ReadOnlySpan<byte> name)
     {
-        lua_getfield(L, -10002, name); // LUA_GLOBALSINDEX = -10002
+        lua_getfield(L, LUA_GLOBALSINDEX, name);
     }
 
     /// <summary>
@@ -162,7 +167,7 @@ public static unsafe partial class Methods
     /// </summary>
     public static void lua_setglobal(lua_State L, ReadOnlySpan<byte> name)
     {
-        lua_setfield(L, -10002, name); // LUA_GLOBALSINDEX = -10002
+        lua_setfield(L, LUA_GLOBALSINDEX, name);
     }
 
     /// <summary>
@@ -170,7 +175,7 @@ public static unsafe partial class Methods
     /// </summary>
     public static void lua_pushcfunction(lua_State L, delegate* unmanaged[Cdecl]<lua_State, int> f)
     {
-        Methods.lua_pushcclosure(L, f, 0);
+        lua_pushcclosure(L, f, 0);
     }
 
     #endregion
@@ -182,4 +187,89 @@ public static unsafe partial class Methods
             return 0;
         return *mem;
     }
+	
+    public static void luaL_argcheck(lua_State L, bool cond, int numarg, string extramsg)
+    {
+        if (cond == false)
+            luaL_argerror(L, numarg, extramsg);
+    }
+	
+    public static string? luaL_checkstring(lua_State L, int n)
+    {
+        return luaL_checklstring(L, n, out _);
+    }
+	
+    public static string? luaL_optstring(lua_State L, int n, string d)
+    {
+        return luaL_optlstring(L, n, d, out _);
+    }
+	
+    public static int luaL_checkint(lua_State L, int n)
+    {
+        return (int) luaL_checkinteger(L, n);
+    }
+
+    public static int luaL_optint(lua_State L, int n, lua_Integer d)
+    {
+        return (int) luaL_optinteger(L, n, d);
+    }
+	
+    public static long luaL_checklong(lua_State L, int n)
+    {
+        return luaL_checkinteger(L, n);
+    }
+	
+    public static long luaL_optlong(lua_State L, int n, lua_Integer d)
+    {
+        return luaL_optinteger(L, n, d);
+    }
+    public static string? luaL_typename(lua_State L, int i)
+    {
+        return lua_typename(L, lua_type(L, i));
+    }
+	
+    public static void luaL_getmetatable(lua_State L, string n)
+    {
+        lua_getfield(L, LUA_REGISTRYINDEX, n);
+    }
+    
+    public delegate T luaL_Function<T>(lua_State L, int n);
+	
+    public static T luaL_opt<T>(lua_State L, luaL_Function<T> f, int n, T d)
+    {
+        return lua_isnoneornil(L, n) > 0 ? d : f(L, n);
+    }
+	
+    public static void luaL_newlibtable(lua_State L, luaL_Reg* l)
+    {
+        int n = 0;
+        for (luaL_Reg* curr = l; curr->name != null; curr++)
+            n++;
+        lua_createtable(L, 0, n);
+    }
+	
+    public static void luaL_newlib(lua_State L, luaL_Reg* l)
+    {
+        luaL_newlibtable(L, l);
+        luaL_setfuncs(L, l, 0);
+    }
+	
+    public static void luaL_addchar(luaL_Buffer* B, sbyte c)
+    {
+        if (B->p >= &B->buffer + LUAL_BUFFERSIZE)
+            luaL_prepbuffer(B);
+        *(B->p) = c;
+        B->p++;
+    }
+	
+    public static void luaL_putchar(luaL_Buffer* B, sbyte c)
+    {
+        luaL_addchar(B, c);
+    }
+	
+    public static void luaL_addsize(luaL_Buffer* B, nint n)
+    {
+        B->p += n;
+    }
+
 }

@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for IConvertible (IConvertible) ===========
     private static void Register_IConvertible(lua_State L)
@@ -19,19 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IConvertible");
 
         // __gc metamethod
-        lua_pushcfunction(L, (IConvertible__gc));
+        lua_pushcfunction(L, &IConvertible__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (IConvertible__index));
+        lua_pushcfunction(L, &IConvertible__index);
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (IConvertible__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // __tostring metamethod
-        lua_pushcfunction(L, (IConvertible__tostring));
+        lua_pushcfunction(L, &IConvertible__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +38,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (IConvertible_new));
+        lua_pushcfunction(L, &IConvertible_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IConvertible");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.IConvertible>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.IConvertible>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible__index(lua_State L)
     {
         var obj = GetObjectFromStack<System.IConvertible>(L, 1);
@@ -71,55 +68,55 @@ public partial class LuaBindings
         switch (key)
         {
             case "getTypeCode":
-                lua_pushcfunction(L, (IConvertible_method_getTypeCode));
+                lua_pushcfunction(L, &IConvertible_method_getTypeCode);
                 return 1;
             case "toBoolean":
-                lua_pushcfunction(L, (IConvertible_method_toBoolean));
+                lua_pushcfunction(L, &IConvertible_method_toBoolean);
                 return 1;
             case "toChar":
-                lua_pushcfunction(L, (IConvertible_method_toChar));
+                lua_pushcfunction(L, &IConvertible_method_toChar);
                 return 1;
             case "toSByte":
-                lua_pushcfunction(L, (IConvertible_method_toSByte));
+                lua_pushcfunction(L, &IConvertible_method_toSByte);
                 return 1;
             case "toByte":
-                lua_pushcfunction(L, (IConvertible_method_toByte));
+                lua_pushcfunction(L, &IConvertible_method_toByte);
                 return 1;
             case "toInt16":
-                lua_pushcfunction(L, (IConvertible_method_toInt16));
+                lua_pushcfunction(L, &IConvertible_method_toInt16);
                 return 1;
             case "toUInt16":
-                lua_pushcfunction(L, (IConvertible_method_toUInt16));
+                lua_pushcfunction(L, &IConvertible_method_toUInt16);
                 return 1;
             case "toInt32":
-                lua_pushcfunction(L, (IConvertible_method_toInt32));
+                lua_pushcfunction(L, &IConvertible_method_toInt32);
                 return 1;
             case "toUInt32":
-                lua_pushcfunction(L, (IConvertible_method_toUInt32));
+                lua_pushcfunction(L, &IConvertible_method_toUInt32);
                 return 1;
             case "toInt64":
-                lua_pushcfunction(L, (IConvertible_method_toInt64));
+                lua_pushcfunction(L, &IConvertible_method_toInt64);
                 return 1;
             case "toUInt64":
-                lua_pushcfunction(L, (IConvertible_method_toUInt64));
+                lua_pushcfunction(L, &IConvertible_method_toUInt64);
                 return 1;
             case "toSingle":
-                lua_pushcfunction(L, (IConvertible_method_toSingle));
+                lua_pushcfunction(L, &IConvertible_method_toSingle);
                 return 1;
             case "toDouble":
-                lua_pushcfunction(L, (IConvertible_method_toDouble));
+                lua_pushcfunction(L, &IConvertible_method_toDouble);
                 return 1;
             case "toDecimal":
-                lua_pushcfunction(L, (IConvertible_method_toDecimal));
+                lua_pushcfunction(L, &IConvertible_method_toDecimal);
                 return 1;
             case "toDateTime":
-                lua_pushcfunction(L, (IConvertible_method_toDateTime));
+                lua_pushcfunction(L, &IConvertible_method_toDateTime);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (IConvertible_method_toString));
+                lua_pushcfunction(L, &IConvertible_method_toString);
                 return 1;
             case "toType":
-                lua_pushcfunction(L, (IConvertible_method_toType));
+                lua_pushcfunction(L, &IConvertible_method_toType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -127,20 +124,7 @@ public partial class LuaBindings
         }
     }
 
-    private static int IConvertible__newindex(lua_State L)
-    {
-        var obj = GetObjectFromStack<System.IConvertible>(L, 1);
-        if (obj == null) return 0;
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
-    }
-
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<System.IConvertible>(L, 1);
@@ -148,6 +132,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -156,6 +141,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_getTypeCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -186,6 +172,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toBoolean(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -221,6 +208,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toChar(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -256,6 +244,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toSByte(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -291,6 +280,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toByte(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -326,6 +316,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toInt16(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -361,6 +352,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toUInt16(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -396,6 +388,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toInt32(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -431,6 +424,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toUInt32(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -466,6 +460,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toInt64(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -501,6 +496,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toUInt64(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -536,6 +532,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toSingle(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -571,6 +568,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toDouble(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -606,6 +604,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toDecimal(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -641,6 +640,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toDateTime(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -676,6 +676,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -711,6 +712,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IConvertible_method_toType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

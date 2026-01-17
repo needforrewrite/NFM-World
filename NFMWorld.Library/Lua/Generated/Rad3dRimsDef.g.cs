@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Rad3dRimsDef (Rad3dRimsDef) ===========
     private static void Register_Rad3dRimsDef(lua_State L)
@@ -19,19 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Rad3dRimsDef");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Rad3dRimsDef__gc));
+        lua_pushcfunction(L, &Rad3dRimsDef__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Rad3dRimsDef__index));
+        lua_pushcfunction(L, &Rad3dRimsDef__index);
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (Rad3dRimsDef__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // __tostring metamethod
-        lua_pushcfunction(L, (Rad3dRimsDef__tostring));
+        lua_pushcfunction(L, &Rad3dRimsDef__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +38,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Rad3dRimsDef_new));
+        lua_pushcfunction(L, &Rad3dRimsDef_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "Rad3dRimsDef");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dRimsDef__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.mad.rad.Rad3dRimsDef>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.mad.rad.Rad3dRimsDef>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dRimsDef__index(lua_State L)
     {
         var obj = GetStructFromStack<nfm_world_library.mad.rad.Rad3dRimsDef>(L, 1);
@@ -72,13 +69,10 @@ public partial class LuaBindings
             case "color":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.rad.Rad3dRimsDef)obj).Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.rad.Rad3dRimsDef)obj).Color, "MT_Color3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Color' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -89,7 +83,7 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.mad.rad.Rad3dRimsDef)obj).Depth);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Rad3dRimsDef_method_getType));
+                lua_pushcfunction(L, &Rad3dRimsDef_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -97,19 +91,7 @@ public partial class LuaBindings
         }
     }
 
-    private static int Rad3dRimsDef__newindex(lua_State L)
-    {
-        var obj = GetStructFromStack<nfm_world_library.mad.rad.Rad3dRimsDef>(L, 1);
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
-    }
-
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dRimsDef__tostring(lua_State L)
     {
         var obj = GetStructFromStack<nfm_world_library.mad.rad.Rad3dRimsDef>(L, 1);
@@ -117,6 +99,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dRimsDef_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -150,6 +133,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dRimsDef_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithMultiDimArray (TypeWithMultiDimArray) ===========
     private static void Register_TypeWithMultiDimArray(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithMultiDimArray");
 
         // __gc metamethod
-        lua_pushcfunction(L, (TypeWithMultiDimArray__gc));
+        lua_pushcfunction(L, &TypeWithMultiDimArray__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (TypeWithMultiDimArray__index));
+        lua_pushcfunction(L, &TypeWithMultiDimArray__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (TypeWithMultiDimArray__newindex));
+        lua_pushcfunction(L, &TypeWithMultiDimArray__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (TypeWithMultiDimArray__tostring));
+        lua_pushcfunction(L, &TypeWithMultiDimArray__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,34 +42,33 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (TypeWithMultiDimArray_new));
+        lua_pushcfunction(L, &TypeWithMultiDimArray_new);
         lua_setfield(L, -2, "new");
 
         // Static method: createMatrix
-        lua_pushcfunction(L, (TypeWithMultiDimArray_static_createMatrix));
+        lua_pushcfunction(L, &TypeWithMultiDimArray_static_createMatrix);
         lua_setfield(L, -2, "createMatrix");
 
         // Static method: createIdentityMatrix
-        lua_pushcfunction(L, (TypeWithMultiDimArray_static_createIdentityMatrix));
+        lua_pushcfunction(L, &TypeWithMultiDimArray_static_createIdentityMatrix);
         lua_setfield(L, -2, "createIdentityMatrix");
 
         lua_setglobal(L, "TypeWithMultiDimArray");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray__index(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>(L, 1);
@@ -85,34 +86,34 @@ public partial class LuaBindings
                 PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray)obj).Tensor);
                 return 1;
             case "initializeMatrix":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_initializeMatrix));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_initializeMatrix);
                 return 1;
             case "getRows":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getRows));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_getRows);
                 return 1;
             case "getCols":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getCols));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_getCols);
                 return 1;
             case "getValueAt":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getValueAt));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_getValueAt);
                 return 1;
             case "setValueAt":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_setValueAt));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_setValueAt);
                 return 1;
             case "sumAll":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_sumAll));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_sumAll);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getType));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_toString));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_equals));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (TypeWithMultiDimArray_method_getHashCode));
+                lua_pushcfunction(L, &TypeWithMultiDimArray_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -120,6 +121,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>(L, 1);
@@ -156,6 +158,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>(L, 1);
@@ -163,6 +166,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -219,6 +223,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_initializeMatrix(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -250,6 +255,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_getRows(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -280,6 +286,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_getCols(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -310,6 +317,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_getValueAt(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -342,6 +350,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_setValueAt(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -374,6 +383,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_sumAll(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -404,6 +414,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -434,6 +445,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -464,6 +476,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -499,6 +512,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -529,6 +543,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_static_createMatrix(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -554,6 +569,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithMultiDimArray_static_createIdentityMatrix(lua_State L)
     {
         var argCount = lua_gettop(L);

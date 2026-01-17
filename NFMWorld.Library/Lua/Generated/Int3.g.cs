@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Int3 (Int3) ===========
     private static void Register_Int3(lua_State L)
@@ -19,47 +21,47 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Int3");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Int3__gc));
+        lua_pushcfunction(L, &Int3__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Int3__index));
+        lua_pushcfunction(L, &Int3__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Int3__newindex));
+        lua_pushcfunction(L, &Int3__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __add
-        lua_pushcfunction(L, (Int3_op_op_Addition));
+        lua_pushcfunction(L, &Int3_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Int3_op_op_Subtraction));
+        lua_pushcfunction(L, &Int3_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __unm
-        lua_pushcfunction(L, (Int3_op_op_UnaryNegation));
+        lua_pushcfunction(L, &Int3_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Int3_op_op_Multiply));
+        lua_pushcfunction(L, &Int3_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Int3_op_op_Multiply));
+        lua_pushcfunction(L, &Int3_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __div
-        lua_pushcfunction(L, (Int3_op_op_Division));
+        lua_pushcfunction(L, &Int3_op_op_Division);
         lua_setfield(L, -2, "__div");
 
         // Operator: __eq
-        lua_pushcfunction(L, (Int3_op_op_Equality));
+        lua_pushcfunction(L, &Int3_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Int3__tostring));
+        lua_pushcfunction(L, &Int3__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -68,84 +70,83 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Int3_new));
+        lua_pushcfunction(L, &Int3_new);
         lua_setfield(L, -2, "new");
 
         // Static method: add
-        lua_pushcfunction(L, (Int3_static_add));
+        lua_pushcfunction(L, &Int3_static_add);
         lua_setfield(L, -2, "add");
 
         // Static method: subtract
-        lua_pushcfunction(L, (Int3_static_subtract));
+        lua_pushcfunction(L, &Int3_static_subtract);
         lua_setfield(L, -2, "subtract");
 
         // Static method: multiply
-        lua_pushcfunction(L, (Int3_static_multiply));
+        lua_pushcfunction(L, &Int3_static_multiply);
         lua_setfield(L, -2, "multiply");
 
         // Static method: modulate
-        lua_pushcfunction(L, (Int3_static_modulate));
+        lua_pushcfunction(L, &Int3_static_modulate);
         lua_setfield(L, -2, "modulate");
 
         // Static method: divide
-        lua_pushcfunction(L, (Int3_static_divide));
+        lua_pushcfunction(L, &Int3_static_divide);
         lua_setfield(L, -2, "divide");
 
         // Static method: negate
-        lua_pushcfunction(L, (Int3_static_negate));
+        lua_pushcfunction(L, &Int3_static_negate);
         lua_setfield(L, -2, "negate");
 
         // Static method: clamp
-        lua_pushcfunction(L, (Int3_static_clamp));
+        lua_pushcfunction(L, &Int3_static_clamp);
         lua_setfield(L, -2, "clamp");
 
         // Static method: dot
-        lua_pushcfunction(L, (Int3_static_dot));
+        lua_pushcfunction(L, &Int3_static_dot);
         lua_setfield(L, -2, "dot");
 
         // Static method: lerp
-        lua_pushcfunction(L, (Int3_static_lerp));
+        lua_pushcfunction(L, &Int3_static_lerp);
         lua_setfield(L, -2, "lerp");
 
         // Static method: smoothStep
-        lua_pushcfunction(L, (Int3_static_smoothStep));
+        lua_pushcfunction(L, &Int3_static_smoothStep);
         lua_setfield(L, -2, "smoothStep");
 
         // Static method: max
-        lua_pushcfunction(L, (Int3_static_max));
+        lua_pushcfunction(L, &Int3_static_max);
         lua_setfield(L, -2, "max");
 
         // Static method: min
-        lua_pushcfunction(L, (Int3_static_min));
+        lua_pushcfunction(L, &Int3_static_min);
         lua_setfield(L, -2, "min");
 
         // Static method: round
-        lua_pushcfunction(L, (Int3_static_round));
+        lua_pushcfunction(L, &Int3_static_round);
         lua_setfield(L, -2, "round");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (Int3_type__index));
+        lua_pushcfunction(L, &Int3_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "Int3");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<Stride.Core.Mathematics.Int3>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<Stride.Core.Mathematics.Int3>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3__index(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
@@ -174,31 +175,31 @@ public partial class LuaBindings
                 PushValue(L, ((Stride.Core.Mathematics.Int3)obj).Z);
                 return 1;
             case "length":
-                lua_pushcfunction(L, (Int3_method_length));
+                lua_pushcfunction(L, &Int3_method_length);
                 return 1;
             case "lengthUntruncated":
-                lua_pushcfunction(L, (Int3_method_lengthUntruncated));
+                lua_pushcfunction(L, &Int3_method_lengthUntruncated);
                 return 1;
             case "lengthSquared":
-                lua_pushcfunction(L, (Int3_method_lengthSquared));
+                lua_pushcfunction(L, &Int3_method_lengthSquared);
                 return 1;
             case "pow":
-                lua_pushcfunction(L, (Int3_method_pow));
+                lua_pushcfunction(L, &Int3_method_pow);
                 return 1;
             case "toArray":
-                lua_pushcfunction(L, (Int3_method_toArray));
+                lua_pushcfunction(L, &Int3_method_toArray);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (IEquatable_Int3_method_equals));
+                lua_pushcfunction(L, &IEquatable_Int3_method_equals);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Int3_method_getType));
+                lua_pushcfunction(L, &Int3_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -206,6 +207,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3__newindex(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
@@ -264,6 +266,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3__tostring(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Int3>(L, 1);
@@ -271,6 +274,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_op_op_Addition(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Int3>(L, 1)!;
@@ -280,6 +284,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_op_op_Subtraction(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Int3>(L, 1)!;
@@ -289,6 +294,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<Stride.Core.Mathematics.Int3>(L, 1)!;
@@ -297,6 +303,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_op_op_Multiply(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -361,6 +368,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_op_op_Division(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Int3>(L, 1)!;
@@ -370,6 +378,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_op_op_Equality(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Int3>(L, 1)!;
@@ -378,6 +387,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -500,6 +510,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_method_length(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -527,6 +538,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_method_lengthUntruncated(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -554,6 +566,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_method_lengthSquared(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -581,6 +594,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_method_pow(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -608,6 +622,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_method_toArray(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -635,6 +650,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -662,6 +678,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -687,6 +704,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_subtract(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -712,6 +730,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -737,6 +756,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_modulate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -762,6 +782,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_divide(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -787,6 +808,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_negate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -811,6 +833,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_clamp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -837,6 +860,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_dot(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -862,6 +886,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_lerp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -888,6 +913,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_smoothStep(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -914,6 +940,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_max(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -939,6 +966,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_min(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -964,6 +992,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_static_round(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -989,6 +1018,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Int3_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

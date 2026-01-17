@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithInlineArray (TypeWithInlineArray) ===========
     private static void Register_TypeWithInlineArray(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithInlineArray");
 
         // __gc metamethod
-        lua_pushcfunction(L, (TypeWithInlineArray__gc));
+        lua_pushcfunction(L, &TypeWithInlineArray__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (TypeWithInlineArray__index));
+        lua_pushcfunction(L, &TypeWithInlineArray__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (TypeWithInlineArray__newindex));
+        lua_pushcfunction(L, &TypeWithInlineArray__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (TypeWithInlineArray__tostring));
+        lua_pushcfunction(L, &TypeWithInlineArray__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (TypeWithInlineArray_new));
+        lua_pushcfunction(L, &TypeWithInlineArray_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "TypeWithInlineArray");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray__index(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray>(L, 1);
@@ -73,36 +74,33 @@ public partial class LuaBindings
             case "buffer":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)obj).buffer, "MT_InlineBuffer", parentId, static (obj, value) => ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)obj).buffer = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)obj).buffer, "MT_InlineBuffer", parentId, static (obj, value) => ((NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray)obj).buffer = (NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer)value);
                     }
                 }
                 return 1;
             case "getBufferValue":
-                lua_pushcfunction(L, (TypeWithInlineArray_method_getBufferValue));
+                lua_pushcfunction(L, &TypeWithInlineArray_method_getBufferValue);
                 return 1;
             case "setBufferValue":
-                lua_pushcfunction(L, (TypeWithInlineArray_method_setBufferValue));
+                lua_pushcfunction(L, &TypeWithInlineArray_method_setBufferValue);
                 return 1;
             case "sumBuffer":
-                lua_pushcfunction(L, (TypeWithInlineArray_method_sumBuffer));
+                lua_pushcfunction(L, &TypeWithInlineArray_method_sumBuffer);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (TypeWithInlineArray_method_getType));
+                lua_pushcfunction(L, &TypeWithInlineArray_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (TypeWithInlineArray_method_toString));
+                lua_pushcfunction(L, &TypeWithInlineArray_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (TypeWithInlineArray_method_equals));
+                lua_pushcfunction(L, &TypeWithInlineArray_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (TypeWithInlineArray_method_getHashCode));
+                lua_pushcfunction(L, &TypeWithInlineArray_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -110,6 +108,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray>(L, 1);
@@ -135,6 +134,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray>(L, 1);
@@ -142,6 +142,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -165,6 +166,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray_method_getBufferValue(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -196,6 +198,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray_method_setBufferValue(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -227,6 +230,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray_method_sumBuffer(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -257,6 +261,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -287,6 +292,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -317,6 +323,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -352,6 +359,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithInlineArray_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

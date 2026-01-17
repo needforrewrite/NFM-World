@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for ValueTuple`2 (ValueTuple_Vector3_Vector3) ===========
     private static void Register_ValueTuple_Vector3_Vector3(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ValueTuple_Vector3_Vector3");
 
         // __gc metamethod
-        lua_pushcfunction(L, (ValueTuple_Vector3_Vector3__gc));
+        lua_pushcfunction(L, &ValueTuple_Vector3_Vector3__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (ValueTuple_Vector3_Vector3__index));
+        lua_pushcfunction(L, &ValueTuple_Vector3_Vector3__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (ValueTuple_Vector3_Vector3__newindex));
+        lua_pushcfunction(L, &ValueTuple_Vector3_Vector3__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (ValueTuple_Vector3_Vector3__tostring));
+        lua_pushcfunction(L, &ValueTuple_Vector3_Vector3__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (ValueTuple_Vector3_Vector3_new));
+        lua_pushcfunction(L, &ValueTuple_Vector3_Vector3_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ValueTuple_Vector3_Vector3");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Vector3_Vector3__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.ValueTuple<System.Numerics.Vector3, System.Numerics.Vector3>>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.ValueTuple<System.Numerics.Vector3, System.Numerics.Vector3>>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Vector3_Vector3__index(lua_State L)
     {
         var obj = GetStructFromStack<System.ValueTuple<System.Numerics.Vector3, System.Numerics.Vector3>>(L, 1);
@@ -75,43 +76,37 @@ public partial class LuaBindings
             case "item1":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.ValueTuple<System.Numerics.Vector3, System.Numerics.Vector3>)obj).Item1, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Item1' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.ValueTuple<System.Numerics.Vector3, System.Numerics.Vector3>)obj).Item1, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Item1' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "item2":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.ValueTuple<System.Numerics.Vector3, System.Numerics.Vector3>)obj).Item2, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Item2' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.ValueTuple<System.Numerics.Vector3, System.Numerics.Vector3>)obj).Item2, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Item2' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (IComparable_ValueTuple_Vector3_Vector3_method_compareTo));
+                lua_pushcfunction(L, &IComparable_ValueTuple_Vector3_Vector3_method_compareTo);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (ValueTuple_Vector3_Vector3_method_getType));
+                lua_pushcfunction(L, &ValueTuple_Vector3_Vector3_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -119,6 +114,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Vector3_Vector3__newindex(lua_State L)
     {
         var obj = GetStructFromStack<System.ValueTuple<System.Numerics.Vector3, System.Numerics.Vector3>>(L, 1);
@@ -156,6 +152,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Vector3_Vector3__tostring(lua_State L)
     {
         var obj = GetStructFromStack<System.ValueTuple<System.Numerics.Vector3, System.Numerics.Vector3>>(L, 1);
@@ -163,6 +160,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Vector3_Vector3_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -195,6 +193,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Vector3_Vector3_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

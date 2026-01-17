@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithNestedGeneric (TypeWithNestedGeneric) ===========
     private static void Register_TypeWithNestedGeneric(lua_State L)
@@ -19,15 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithNestedGeneric");
 
         // __gc metamethod
-        lua_pushcfunction(L, (TypeWithNestedGeneric__gc));
+        lua_pushcfunction(L, &TypeWithNestedGeneric__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (TypeWithNestedGeneric__index));
+        lua_pushcfunction(L, &TypeWithNestedGeneric__index);
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (TypeWithNestedGeneric__tostring));
+        lua_pushcfunction(L, &TypeWithNestedGeneric__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -36,26 +38,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (TypeWithNestedGeneric_new));
+        lua_pushcfunction(L, &TypeWithNestedGeneric_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "TypeWithNestedGeneric");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric__index(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>(L, 1);
@@ -70,25 +71,25 @@ public partial class LuaBindings
                 PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric)obj).Numbers);
                 return 1;
             case "getEnumerator":
-                lua_pushcfunction(L, (TypeWithNestedGeneric_method_getEnumerator));
+                lua_pushcfunction(L, &TypeWithNestedGeneric_method_getEnumerator);
                 return 1;
             case "getStringList":
-                lua_pushcfunction(L, (TypeWithNestedGeneric_method_getStringList));
+                lua_pushcfunction(L, &TypeWithNestedGeneric_method_getStringList);
                 return 1;
             case "getStringEnumerator":
-                lua_pushcfunction(L, (TypeWithNestedGeneric_method_getStringEnumerator));
+                lua_pushcfunction(L, &TypeWithNestedGeneric_method_getStringEnumerator);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (TypeWithNestedGeneric_method_getType));
+                lua_pushcfunction(L, &TypeWithNestedGeneric_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (TypeWithNestedGeneric_method_toString));
+                lua_pushcfunction(L, &TypeWithNestedGeneric_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (TypeWithNestedGeneric_method_equals));
+                lua_pushcfunction(L, &TypeWithNestedGeneric_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (TypeWithNestedGeneric_method_getHashCode));
+                lua_pushcfunction(L, &TypeWithNestedGeneric_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -96,6 +97,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNestedGeneric>(L, 1);
@@ -103,6 +105,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -126,6 +129,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric_method_getEnumerator(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -156,6 +160,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric_method_getStringList(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -186,6 +191,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric_method_getStringEnumerator(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -216,6 +222,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -246,6 +253,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -276,6 +284,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -311,6 +320,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithNestedGeneric_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

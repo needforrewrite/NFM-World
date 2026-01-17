@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for BaseGamemode (BaseGamemode) ===========
     private static void Register_BaseGamemode(lua_State L)
@@ -19,19 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_BaseGamemode");
 
         // __gc metamethod
-        lua_pushcfunction(L, (BaseGamemode__gc));
+        lua_pushcfunction(L, &BaseGamemode__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (BaseGamemode__index));
+        lua_pushcfunction(L, &BaseGamemode__index);
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (BaseGamemode__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // __tostring metamethod
-        lua_pushcfunction(L, (BaseGamemode__tostring));
+        lua_pushcfunction(L, &BaseGamemode__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +38,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (BaseGamemode_new));
+        lua_pushcfunction(L, &BaseGamemode_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "BaseGamemode");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.backend.gamemodes.BaseGamemode>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.backend.gamemodes.BaseGamemode>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.BaseGamemode>(L, 1);
@@ -92,34 +89,34 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.backend.gamemodes.BaseGamemode)obj).RaceState);
                 return 1;
             case "enter":
-                lua_pushcfunction(L, (IGamemode_method_enter));
+                lua_pushcfunction(L, &IGamemode_method_enter);
                 return 1;
             case "exit":
-                lua_pushcfunction(L, (IGamemode_method_exit));
+                lua_pushcfunction(L, &IGamemode_method_exit);
                 return 1;
             case "gameTick":
-                lua_pushcfunction(L, (IGamemode_method_gameTick));
+                lua_pushcfunction(L, &IGamemode_method_gameTick);
                 return 1;
             case "reset":
-                lua_pushcfunction(L, (IGamemode_method_reset));
+                lua_pushcfunction(L, &IGamemode_method_reset);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (BaseGamemode_method_getType));
+                lua_pushcfunction(L, &BaseGamemode_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (BaseGamemode_method_toString));
+                lua_pushcfunction(L, &BaseGamemode_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (BaseGamemode_method_equals));
+                lua_pushcfunction(L, &BaseGamemode_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (BaseGamemode_method_getHashCode));
+                lua_pushcfunction(L, &BaseGamemode_method_getHashCode);
                 return 1;
             case "add_RaceFinished":
-                lua_pushcfunction(L, (BaseGamemode_add_RaceFinished));
+                lua_pushcfunction(L, &BaseGamemode_add_RaceFinished);
                 return 1;
             case "remove_RaceFinished":
-                lua_pushcfunction(L, (BaseGamemode_remove_RaceFinished));
+                lua_pushcfunction(L, &BaseGamemode_remove_RaceFinished);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -127,20 +124,7 @@ public partial class LuaBindings
         }
     }
 
-    private static int BaseGamemode__newindex(lua_State L)
-    {
-        var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.BaseGamemode>(L, 1);
-        if (obj == null) return 0;
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
-    }
-
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.BaseGamemode>(L, 1);
@@ -148,6 +132,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -156,6 +141,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -186,6 +172,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -216,6 +203,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -251,6 +239,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -281,6 +270,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode_add_RaceFinished(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.BaseGamemode>(L, 1);
@@ -293,6 +283,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BaseGamemode_remove_RaceFinished(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.gamemodes.BaseGamemode>(L, 1);

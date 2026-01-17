@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for StageObject (StageObject) ===========
     private static void Register_StageObject(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_StageObject");
 
         // __gc metamethod
-        lua_pushcfunction(L, (StageObject__gc));
+        lua_pushcfunction(L, &StageObject__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (StageObject__index));
+        lua_pushcfunction(L, &StageObject__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (StageObject__newindex));
+        lua_pushcfunction(L, &StageObject__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (StageObject__tostring));
+        lua_pushcfunction(L, &StageObject__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (StageObject_new));
+        lua_pushcfunction(L, &StageObject_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "StageObject");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.backend.StageObject>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.backend.StageObject>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.StageObject>(L, 1);
@@ -79,26 +80,20 @@ public partial class LuaBindings
             case "position":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.backend.StageObject)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.backend.StageObject)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.backend.StageObject)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.backend.StageObject)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
                     }
                 }
                 return 1;
             case "rotation":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.backend.StageObject)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.StageObject)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.backend.StageObject)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.backend.StageObject)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
                     }
                 }
                 return 1;
@@ -121,19 +116,19 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.backend.StageObject)obj).FileName);
                 return 1;
             case "gameTick":
-                lua_pushcfunction(L, (StageObject_method_gameTick));
+                lua_pushcfunction(L, &StageObject_method_gameTick);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (StageObject_method_getType));
+                lua_pushcfunction(L, &StageObject_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (StageObject_method_toString));
+                lua_pushcfunction(L, &StageObject_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (StageObject_method_equals));
+                lua_pushcfunction(L, &StageObject_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (StageObject_method_getHashCode));
+                lua_pushcfunction(L, &StageObject_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -141,6 +136,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.StageObject>(L, 1);
@@ -210,6 +206,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.backend.StageObject>(L, 1);
@@ -217,6 +214,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -259,6 +257,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject_method_gameTick(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -288,6 +287,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -318,6 +318,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -348,6 +349,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -383,6 +385,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StageObject_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

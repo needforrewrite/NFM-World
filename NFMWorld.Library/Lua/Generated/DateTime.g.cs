@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for DateTime (DateTime) ===========
     private static void Register_DateTime(lua_State L)
@@ -19,51 +21,47 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_DateTime");
 
         // __gc metamethod
-        lua_pushcfunction(L, (DateTime__gc));
+        lua_pushcfunction(L, &DateTime__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (DateTime__index));
+        lua_pushcfunction(L, &DateTime__index);
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (DateTime__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // Operator: __add
-        lua_pushcfunction(L, (DateTime_op_op_Addition));
+        lua_pushcfunction(L, &DateTime_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, (DateTime_op_op_Subtraction));
+        lua_pushcfunction(L, &DateTime_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __sub
-        lua_pushcfunction(L, (DateTime_op_op_Subtraction));
+        lua_pushcfunction(L, &DateTime_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __eq
-        lua_pushcfunction(L, (DateTime_op_op_Equality));
+        lua_pushcfunction(L, &DateTime_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // Operator: __lt
-        lua_pushcfunction(L, (DateTime_op_op_LessThan));
+        lua_pushcfunction(L, &DateTime_op_op_LessThan);
         lua_setfield(L, -2, "__lt");
 
         // Operator: __le
-        lua_pushcfunction(L, (DateTime_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, &DateTime_op_op_LessThanOrEqual);
         lua_setfield(L, -2, "__le");
 
         // Operator: __gt
-        lua_pushcfunction(L, (DateTime_op_op_GreaterThan));
+        lua_pushcfunction(L, &DateTime_op_op_GreaterThan);
         lua_setfield(L, -2, "__gt");
 
         // Operator: __ge
-        lua_pushcfunction(L, (DateTime_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, &DateTime_op_op_GreaterThanOrEqual);
         lua_setfield(L, -2, "__ge");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (DateTime__tostring));
+        lua_pushcfunction(L, &DateTime__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -72,76 +70,75 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (DateTime_new));
+        lua_pushcfunction(L, &DateTime_new);
         lua_setfield(L, -2, "new");
 
         // Static method: compare
-        lua_pushcfunction(L, (DateTime_static_compare));
+        lua_pushcfunction(L, &DateTime_static_compare);
         lua_setfield(L, -2, "compare");
 
         // Static method: daysInMonth
-        lua_pushcfunction(L, (DateTime_static_daysInMonth));
+        lua_pushcfunction(L, &DateTime_static_daysInMonth);
         lua_setfield(L, -2, "daysInMonth");
 
         // Static method: equals
-        lua_pushcfunction(L, (DateTime_static_equals));
+        lua_pushcfunction(L, &DateTime_static_equals);
         lua_setfield(L, -2, "equals");
 
         // Static method: fromBinary
-        lua_pushcfunction(L, (DateTime_static_fromBinary));
+        lua_pushcfunction(L, &DateTime_static_fromBinary);
         lua_setfield(L, -2, "fromBinary");
 
         // Static method: fromFileTime
-        lua_pushcfunction(L, (DateTime_static_fromFileTime));
+        lua_pushcfunction(L, &DateTime_static_fromFileTime);
         lua_setfield(L, -2, "fromFileTime");
 
         // Static method: fromFileTimeUtc
-        lua_pushcfunction(L, (DateTime_static_fromFileTimeUtc));
+        lua_pushcfunction(L, &DateTime_static_fromFileTimeUtc);
         lua_setfield(L, -2, "fromFileTimeUtc");
 
         // Static method: fromOADate
-        lua_pushcfunction(L, (DateTime_static_fromOADate));
+        lua_pushcfunction(L, &DateTime_static_fromOADate);
         lua_setfield(L, -2, "fromOADate");
 
         // Static method: specifyKind
-        lua_pushcfunction(L, (DateTime_static_specifyKind));
+        lua_pushcfunction(L, &DateTime_static_specifyKind);
         lua_setfield(L, -2, "specifyKind");
 
         // Static method: isLeapYear
-        lua_pushcfunction(L, (DateTime_static_isLeapYear));
+        lua_pushcfunction(L, &DateTime_static_isLeapYear);
         lua_setfield(L, -2, "isLeapYear");
 
         // Static method: parse
-        lua_pushcfunction(L, (DateTime_static_parse));
+        lua_pushcfunction(L, &DateTime_static_parse);
         lua_setfield(L, -2, "parse");
 
         // Static method: parseExact
-        lua_pushcfunction(L, (DateTime_static_parseExact));
+        lua_pushcfunction(L, &DateTime_static_parseExact);
         lua_setfield(L, -2, "parseExact");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (DateTime_type__index));
+        lua_pushcfunction(L, &DateTime_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "DateTime");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.DateTime>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.DateTime>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime__index(lua_State L)
     {
         var obj = GetStructFromStack<System.DateTime>(L, 1);
@@ -154,13 +151,10 @@ public partial class LuaBindings
             case "date":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.DateTime)obj).Date, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Date' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.DateTime)obj).Date, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Date' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -203,13 +197,10 @@ public partial class LuaBindings
             case "timeOfDay":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.DateTime)obj).TimeOfDay, "MT_TimeSpan", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'TimeOfDay' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.DateTime)obj).TimeOfDay, "MT_TimeSpan", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'TimeOfDay' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -217,91 +208,91 @@ public partial class LuaBindings
                 PushValue(L, ((System.DateTime)obj).Year);
                 return 1;
             case "add":
-                lua_pushcfunction(L, (DateTime_method_add));
+                lua_pushcfunction(L, &DateTime_method_add);
                 return 1;
             case "addDays":
-                lua_pushcfunction(L, (DateTime_method_addDays));
+                lua_pushcfunction(L, &DateTime_method_addDays);
                 return 1;
             case "addHours":
-                lua_pushcfunction(L, (DateTime_method_addHours));
+                lua_pushcfunction(L, &DateTime_method_addHours);
                 return 1;
             case "addMilliseconds":
-                lua_pushcfunction(L, (DateTime_method_addMilliseconds));
+                lua_pushcfunction(L, &DateTime_method_addMilliseconds);
                 return 1;
             case "addMicroseconds":
-                lua_pushcfunction(L, (DateTime_method_addMicroseconds));
+                lua_pushcfunction(L, &DateTime_method_addMicroseconds);
                 return 1;
             case "addMinutes":
-                lua_pushcfunction(L, (DateTime_method_addMinutes));
+                lua_pushcfunction(L, &DateTime_method_addMinutes);
                 return 1;
             case "addMonths":
-                lua_pushcfunction(L, (DateTime_method_addMonths));
+                lua_pushcfunction(L, &DateTime_method_addMonths);
                 return 1;
             case "addSeconds":
-                lua_pushcfunction(L, (DateTime_method_addSeconds));
+                lua_pushcfunction(L, &DateTime_method_addSeconds);
                 return 1;
             case "addTicks":
-                lua_pushcfunction(L, (DateTime_method_addTicks));
+                lua_pushcfunction(L, &DateTime_method_addTicks);
                 return 1;
             case "addYears":
-                lua_pushcfunction(L, (DateTime_method_addYears));
+                lua_pushcfunction(L, &DateTime_method_addYears);
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (IComparable_method_compareTo));
+                lua_pushcfunction(L, &IComparable_method_compareTo);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "isDaylightSavingTime":
-                lua_pushcfunction(L, (DateTime_method_isDaylightSavingTime));
+                lua_pushcfunction(L, &DateTime_method_isDaylightSavingTime);
                 return 1;
             case "toBinary":
-                lua_pushcfunction(L, (DateTime_method_toBinary));
+                lua_pushcfunction(L, &DateTime_method_toBinary);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "subtract":
-                lua_pushcfunction(L, (DateTime_method_subtract));
+                lua_pushcfunction(L, &DateTime_method_subtract);
                 return 1;
             case "toOADate":
-                lua_pushcfunction(L, (DateTime_method_toOADate));
+                lua_pushcfunction(L, &DateTime_method_toOADate);
                 return 1;
             case "toFileTime":
-                lua_pushcfunction(L, (DateTime_method_toFileTime));
+                lua_pushcfunction(L, &DateTime_method_toFileTime);
                 return 1;
             case "toFileTimeUtc":
-                lua_pushcfunction(L, (DateTime_method_toFileTimeUtc));
+                lua_pushcfunction(L, &DateTime_method_toFileTimeUtc);
                 return 1;
             case "toLocalTime":
-                lua_pushcfunction(L, (DateTime_method_toLocalTime));
+                lua_pushcfunction(L, &DateTime_method_toLocalTime);
                 return 1;
             case "toLongDateString":
-                lua_pushcfunction(L, (DateTime_method_toLongDateString));
+                lua_pushcfunction(L, &DateTime_method_toLongDateString);
                 return 1;
             case "toLongTimeString":
-                lua_pushcfunction(L, (DateTime_method_toLongTimeString));
+                lua_pushcfunction(L, &DateTime_method_toLongTimeString);
                 return 1;
             case "toShortDateString":
-                lua_pushcfunction(L, (DateTime_method_toShortDateString));
+                lua_pushcfunction(L, &DateTime_method_toShortDateString);
                 return 1;
             case "toShortTimeString":
-                lua_pushcfunction(L, (DateTime_method_toShortTimeString));
+                lua_pushcfunction(L, &DateTime_method_toShortTimeString);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "toUniversalTime":
-                lua_pushcfunction(L, (DateTime_method_toUniversalTime));
+                lua_pushcfunction(L, &DateTime_method_toUniversalTime);
                 return 1;
             case "getDateTimeFormats":
-                lua_pushcfunction(L, (DateTime_method_getDateTimeFormats));
+                lua_pushcfunction(L, &DateTime_method_getDateTimeFormats);
                 return 1;
             case "getTypeCode":
-                lua_pushcfunction(L, (IConvertible_method_getTypeCode));
+                lua_pushcfunction(L, &IConvertible_method_getTypeCode);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (DateTime_method_getType));
+                lua_pushcfunction(L, &DateTime_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -309,19 +300,7 @@ public partial class LuaBindings
         }
     }
 
-    private static int DateTime__newindex(lua_State L)
-    {
-        var obj = GetStructFromStack<System.DateTime>(L, 1);
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
-    }
-
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime__tostring(lua_State L)
     {
         var obj = GetStructFromStack<System.DateTime>(L, 1);
@@ -329,6 +308,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_op_op_Addition(lua_State L)
     {
         var left = ToObject<System.DateTime>(L, 1)!;
@@ -338,6 +318,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_op_op_Subtraction(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -402,6 +383,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_op_op_Equality(lua_State L)
     {
         var left = ToObject<System.DateTime>(L, 1)!;
@@ -410,6 +392,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_op_op_LessThan(lua_State L)
     {
         var left = ToObject<System.DateTime>(L, 1)!;
@@ -419,6 +402,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_op_op_LessThanOrEqual(lua_State L)
     {
         var left = ToObject<System.DateTime>(L, 1)!;
@@ -428,6 +412,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_op_op_GreaterThan(lua_State L)
     {
         var left = ToObject<System.DateTime>(L, 1)!;
@@ -437,6 +422,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_op_op_GreaterThanOrEqual(lua_State L)
     {
         var left = ToObject<System.DateTime>(L, 1)!;
@@ -446,6 +432,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1265,6 +1252,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_add(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1293,6 +1281,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_addDays(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1321,6 +1310,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_addHours(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1349,6 +1339,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_addMilliseconds(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1377,6 +1368,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_addMicroseconds(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1405,6 +1397,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_addMinutes(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1433,6 +1426,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_addMonths(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1461,6 +1455,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_addSeconds(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1489,6 +1484,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_addTicks(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1517,6 +1513,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_addYears(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1545,6 +1542,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_isDaylightSavingTime(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1572,6 +1570,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toBinary(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1599,6 +1598,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_subtract(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1685,6 +1685,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toOADate(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1712,6 +1713,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toFileTime(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1739,6 +1741,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toFileTimeUtc(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1766,6 +1769,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toLocalTime(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1793,6 +1797,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toLongDateString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1820,6 +1825,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toLongTimeString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1847,6 +1853,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toShortDateString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1874,6 +1881,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toShortTimeString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1901,6 +1909,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1933,6 +1942,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_toUniversalTime(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1960,6 +1970,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_getDateTimeFormats(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -2090,6 +2101,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -2117,6 +2129,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_compare(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2142,6 +2155,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_daysInMonth(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2167,6 +2181,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_equals(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2192,6 +2207,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_fromBinary(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2216,6 +2232,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_fromFileTime(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2240,6 +2257,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_fromFileTimeUtc(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2264,6 +2282,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_fromOADate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2288,6 +2307,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_specifyKind(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2313,6 +2333,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_isLeapYear(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2337,6 +2358,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_parse(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2471,6 +2493,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_static_parseExact(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2605,6 +2628,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DateTime_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

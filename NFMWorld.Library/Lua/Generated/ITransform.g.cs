@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for ITransform (ITransform) ===========
     private static void Register_ITransform(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ITransform");
 
         // __gc metamethod
-        lua_pushcfunction(L, (ITransform__gc));
+        lua_pushcfunction(L, &ITransform__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (ITransform__index));
+        lua_pushcfunction(L, &ITransform__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (ITransform__newindex));
+        lua_pushcfunction(L, &ITransform__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (ITransform__tostring));
+        lua_pushcfunction(L, &ITransform__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (ITransform_new));
+        lua_pushcfunction(L, &ITransform_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ITransform");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ITransform__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.mad.ITransform>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.mad.ITransform>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ITransform__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.ITransform>(L, 1);
@@ -76,26 +77,20 @@ public partial class LuaBindings
             case "position":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
                     }
                 }
                 return 1;
             case "rotation":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
                     }
                 }
                 return 1;
@@ -108,6 +103,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ITransform__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.ITransform>(L, 1);
@@ -144,6 +140,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ITransform__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.ITransform>(L, 1);
@@ -151,6 +148,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ITransform_new(lua_State L)
     {
         var argCount = lua_gettop(L);

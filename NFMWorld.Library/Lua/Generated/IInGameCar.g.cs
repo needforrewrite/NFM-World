@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for IInGameCar (IInGameCar) ===========
     private static void Register_IInGameCar(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IInGameCar");
 
         // __gc metamethod
-        lua_pushcfunction(L, (IInGameCar__gc));
+        lua_pushcfunction(L, &IInGameCar__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (IInGameCar__index));
+        lua_pushcfunction(L, &IInGameCar__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (IInGameCar__newindex));
+        lua_pushcfunction(L, &IInGameCar__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (IInGameCar__tostring));
+        lua_pushcfunction(L, &IInGameCar__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (IInGameCar_new));
+        lua_pushcfunction(L, &IInGameCar_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IInGameCar");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.mad.IInGameCar>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.mad.IInGameCar>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -103,13 +104,10 @@ public partial class LuaBindings
             case "stats":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -122,26 +120,20 @@ public partial class LuaBindings
             case "wheelAngle":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).WheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).WheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).WheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).WheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
                     }
                 }
                 return 1;
             case "turningWheelAngle":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).TurningWheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).TurningWheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).TurningWheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).TurningWheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
                     }
                 }
                 return 1;
@@ -154,26 +146,20 @@ public partial class LuaBindings
             case "position":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
                     }
                 }
                 return 1;
             case "rotation":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
                     }
                 }
                 return 1;
@@ -181,58 +167,58 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.mad.ITransform)obj).Parent);
                 return 1;
             case "addDust":
-                lua_pushcfunction(L, (IInGameCar_method_addDust));
+                lua_pushcfunction(L, &IInGameCar_method_addDust);
                 return 1;
             case "spark":
-                lua_pushcfunction(L, (IInGameCar_method_spark));
+                lua_pushcfunction(L, &IInGameCar_method_spark);
                 return 1;
             case "damageX":
-                lua_pushcfunction(L, (IInGameCar_method_damageX));
+                lua_pushcfunction(L, &IInGameCar_method_damageX);
                 return 1;
             case "damageY":
-                lua_pushcfunction(L, (IInGameCar_method_damageY));
+                lua_pushcfunction(L, &IInGameCar_method_damageY);
                 return 1;
             case "damageZ":
-                lua_pushcfunction(L, (IInGameCar_method_damageZ));
+                lua_pushcfunction(L, &IInGameCar_method_damageZ);
                 return 1;
             case "drive":
-                lua_pushcfunction(L, (IInGameCar_method_drive));
+                lua_pushcfunction(L, &IInGameCar_method_drive);
                 return 1;
             case "collide":
-                lua_pushcfunction(L, (IInGameCar_method_collide));
+                lua_pushcfunction(L, &IInGameCar_method_collide);
                 return 1;
             case "resetPosition":
-                lua_pushcfunction(L, (IInGameCar_method_resetPosition));
+                lua_pushcfunction(L, &IInGameCar_method_resetPosition);
                 return 1;
             case "add_DamagedX":
-                lua_pushcfunction(L, (IInGameCar_add_DamagedX));
+                lua_pushcfunction(L, &IInGameCar_add_DamagedX);
                 return 1;
             case "remove_DamagedX":
-                lua_pushcfunction(L, (IInGameCar_remove_DamagedX));
+                lua_pushcfunction(L, &IInGameCar_remove_DamagedX);
                 return 1;
             case "add_DamagedY":
-                lua_pushcfunction(L, (IInGameCar_add_DamagedY));
+                lua_pushcfunction(L, &IInGameCar_add_DamagedY);
                 return 1;
             case "remove_DamagedY":
-                lua_pushcfunction(L, (IInGameCar_remove_DamagedY));
+                lua_pushcfunction(L, &IInGameCar_remove_DamagedY);
                 return 1;
             case "add_DamagedZ":
-                lua_pushcfunction(L, (IInGameCar_add_DamagedZ));
+                lua_pushcfunction(L, &IInGameCar_add_DamagedZ);
                 return 1;
             case "remove_DamagedZ":
-                lua_pushcfunction(L, (IInGameCar_remove_DamagedZ));
+                lua_pushcfunction(L, &IInGameCar_remove_DamagedZ);
                 return 1;
             case "add_Sparked":
-                lua_pushcfunction(L, (IInGameCar_add_Sparked));
+                lua_pushcfunction(L, &IInGameCar_add_Sparked);
                 return 1;
             case "remove_Sparked":
-                lua_pushcfunction(L, (IInGameCar_remove_Sparked));
+                lua_pushcfunction(L, &IInGameCar_remove_Sparked);
                 return 1;
             case "add_Dusted":
-                lua_pushcfunction(L, (IInGameCar_add_Dusted));
+                lua_pushcfunction(L, &IInGameCar_add_Dusted);
                 return 1;
             case "remove_Dusted":
-                lua_pushcfunction(L, (IInGameCar_remove_Dusted));
+                lua_pushcfunction(L, &IInGameCar_remove_Dusted);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -240,6 +226,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -320,6 +307,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -327,6 +315,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -335,6 +324,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_method_addDust(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -374,6 +364,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_method_spark(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -411,6 +402,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_method_damageX(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -443,6 +435,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_method_damageY(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -478,6 +471,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_method_damageZ(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -510,6 +504,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_method_drive(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -540,6 +535,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_method_collide(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -570,6 +566,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_method_resetPosition(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -599,6 +596,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_add_DamagedX(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -611,6 +609,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_remove_DamagedX(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -621,6 +620,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_add_DamagedY(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -633,6 +633,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_remove_DamagedY(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -643,6 +644,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_add_DamagedZ(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -655,6 +657,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_remove_DamagedZ(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -665,6 +668,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_add_Sparked(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -677,6 +681,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_remove_Sparked(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -687,6 +692,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_add_Dusted(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);
@@ -699,6 +705,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IInGameCar_remove_Dusted(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.IInGameCar>(L, 1);

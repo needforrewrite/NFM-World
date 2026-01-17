@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for TimeOnly (TimeOnly) ===========
     private static void Register_TimeOnly(lua_State L)
@@ -19,43 +21,39 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TimeOnly");
 
         // __gc metamethod
-        lua_pushcfunction(L, (TimeOnly__gc));
+        lua_pushcfunction(L, &TimeOnly__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (TimeOnly__index));
+        lua_pushcfunction(L, &TimeOnly__index);
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (TimeOnly__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // Operator: __eq
-        lua_pushcfunction(L, (TimeOnly_op_op_Equality));
+        lua_pushcfunction(L, &TimeOnly_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // Operator: __gt
-        lua_pushcfunction(L, (TimeOnly_op_op_GreaterThan));
+        lua_pushcfunction(L, &TimeOnly_op_op_GreaterThan);
         lua_setfield(L, -2, "__gt");
 
         // Operator: __ge
-        lua_pushcfunction(L, (TimeOnly_op_op_GreaterThanOrEqual));
+        lua_pushcfunction(L, &TimeOnly_op_op_GreaterThanOrEqual);
         lua_setfield(L, -2, "__ge");
 
         // Operator: __lt
-        lua_pushcfunction(L, (TimeOnly_op_op_LessThan));
+        lua_pushcfunction(L, &TimeOnly_op_op_LessThan);
         lua_setfield(L, -2, "__lt");
 
         // Operator: __le
-        lua_pushcfunction(L, (TimeOnly_op_op_LessThanOrEqual));
+        lua_pushcfunction(L, &TimeOnly_op_op_LessThanOrEqual);
         lua_setfield(L, -2, "__le");
 
         // Operator: __sub
-        lua_pushcfunction(L, (TimeOnly_op_op_Subtraction));
+        lua_pushcfunction(L, &TimeOnly_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (TimeOnly__tostring));
+        lua_pushcfunction(L, &TimeOnly__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -64,48 +62,47 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (TimeOnly_new));
+        lua_pushcfunction(L, &TimeOnly_new);
         lua_setfield(L, -2, "new");
 
         // Static method: fromTimeSpan
-        lua_pushcfunction(L, (TimeOnly_static_fromTimeSpan));
+        lua_pushcfunction(L, &TimeOnly_static_fromTimeSpan);
         lua_setfield(L, -2, "fromTimeSpan");
 
         // Static method: fromDateTime
-        lua_pushcfunction(L, (TimeOnly_static_fromDateTime));
+        lua_pushcfunction(L, &TimeOnly_static_fromDateTime);
         lua_setfield(L, -2, "fromDateTime");
 
         // Static method: parse
-        lua_pushcfunction(L, (TimeOnly_static_parse));
+        lua_pushcfunction(L, &TimeOnly_static_parse);
         lua_setfield(L, -2, "parse");
 
         // Static method: parseExact
-        lua_pushcfunction(L, (TimeOnly_static_parseExact));
+        lua_pushcfunction(L, &TimeOnly_static_parseExact);
         lua_setfield(L, -2, "parseExact");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (TimeOnly_type__index));
+        lua_pushcfunction(L, &TimeOnly_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "TimeOnly");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.TimeOnly>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.TimeOnly>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly__index(lua_State L)
     {
         var obj = GetStructFromStack<System.TimeOnly>(L, 1);
@@ -137,40 +134,40 @@ public partial class LuaBindings
                 PushValue(L, ((System.TimeOnly)obj).Ticks);
                 return 1;
             case "add":
-                lua_pushcfunction(L, (TimeOnly_method_add));
+                lua_pushcfunction(L, &TimeOnly_method_add);
                 return 1;
             case "addHours":
-                lua_pushcfunction(L, (TimeOnly_method_addHours));
+                lua_pushcfunction(L, &TimeOnly_method_addHours);
                 return 1;
             case "addMinutes":
-                lua_pushcfunction(L, (TimeOnly_method_addMinutes));
+                lua_pushcfunction(L, &TimeOnly_method_addMinutes);
                 return 1;
             case "isBetween":
-                lua_pushcfunction(L, (TimeOnly_method_isBetween));
+                lua_pushcfunction(L, &TimeOnly_method_isBetween);
                 return 1;
             case "toTimeSpan":
-                lua_pushcfunction(L, (TimeOnly_method_toTimeSpan));
+                lua_pushcfunction(L, &TimeOnly_method_toTimeSpan);
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (IComparable_TimeOnly_method_compareTo));
+                lua_pushcfunction(L, &IComparable_TimeOnly_method_compareTo);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (IEquatable_TimeOnly_method_equals));
+                lua_pushcfunction(L, &IEquatable_TimeOnly_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "toLongTimeString":
-                lua_pushcfunction(L, (TimeOnly_method_toLongTimeString));
+                lua_pushcfunction(L, &TimeOnly_method_toLongTimeString);
                 return 1;
             case "toShortTimeString":
-                lua_pushcfunction(L, (TimeOnly_method_toShortTimeString));
+                lua_pushcfunction(L, &TimeOnly_method_toShortTimeString);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (TimeOnly_method_getType));
+                lua_pushcfunction(L, &TimeOnly_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -178,19 +175,7 @@ public partial class LuaBindings
         }
     }
 
-    private static int TimeOnly__newindex(lua_State L)
-    {
-        var obj = GetStructFromStack<System.TimeOnly>(L, 1);
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
-    }
-
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly__tostring(lua_State L)
     {
         var obj = GetStructFromStack<System.TimeOnly>(L, 1);
@@ -198,6 +183,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_op_op_Equality(lua_State L)
     {
         var left = ToObject<System.TimeOnly>(L, 1)!;
@@ -206,6 +192,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_op_op_GreaterThan(lua_State L)
     {
         var left = ToObject<System.TimeOnly>(L, 1)!;
@@ -215,6 +202,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_op_op_GreaterThanOrEqual(lua_State L)
     {
         var left = ToObject<System.TimeOnly>(L, 1)!;
@@ -224,6 +212,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_op_op_LessThan(lua_State L)
     {
         var left = ToObject<System.TimeOnly>(L, 1)!;
@@ -233,6 +222,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_op_op_LessThanOrEqual(lua_State L)
     {
         var left = ToObject<System.TimeOnly>(L, 1)!;
@@ -242,6 +232,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_op_op_Subtraction(lua_State L)
     {
         var left = ToObject<System.TimeOnly>(L, 1)!;
@@ -251,6 +242,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -356,6 +348,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_method_add(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -384,6 +377,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_method_addHours(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -412,6 +406,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_method_addMinutes(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -440,6 +435,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_method_isBetween(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -469,6 +465,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_method_toTimeSpan(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -496,6 +493,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_method_toLongTimeString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -523,6 +521,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_method_toShortTimeString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -550,6 +549,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -644,6 +644,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -671,6 +672,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_static_fromTimeSpan(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -695,6 +697,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_static_fromDateTime(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -719,6 +722,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_static_parse(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -853,6 +857,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_static_parseExact(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1045,6 +1050,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TimeOnly_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

@@ -1,6 +1,6 @@
-using LuaNET.LuaJIT;
+using LuaJIT;
+using static LuaJIT.Methods;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using static LuaNET.LuaJIT.Lua;
 
 namespace NFMWorld.LuaSourceGenerator.Test;
 

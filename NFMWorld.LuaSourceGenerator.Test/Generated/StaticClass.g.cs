@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for StaticClass (StaticClass) ===========
     private static void Register_StaticClass(lua_State L)
@@ -17,42 +19,43 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Static method: getMagicNumber
-        lua_pushcfunction(L, (StaticClass_static_getMagicNumber));
+        lua_pushcfunction(L, &StaticClass_static_getMagicNumber);
         lua_setfield(L, -2, "getMagicNumber");
 
         // Static method: add
-        lua_pushcfunction(L, (StaticClass_static_add));
+        lua_pushcfunction(L, &StaticClass_static_add);
         lua_setfield(L, -2, "add");
 
         // Static method: greet
-        lua_pushcfunction(L, (StaticClass_static_greet));
+        lua_pushcfunction(L, &StaticClass_static_greet);
         lua_setfield(L, -2, "greet");
 
         // Static method: calculate
-        lua_pushcfunction(L, (StaticClass_static_calculate));
+        lua_pushcfunction(L, &StaticClass_static_calculate);
         lua_setfield(L, -2, "calculate");
 
         // Static method: raiseMessage
-        lua_pushcfunction(L, (StaticClass_static_raiseMessage));
+        lua_pushcfunction(L, &StaticClass_static_raiseMessage);
         lua_setfield(L, -2, "raiseMessage");
 
         // Static event: OnMessage
-        lua_pushcfunction(L, (StaticClass_add_OnMessage));
+        lua_pushcfunction(L, &StaticClass_add_OnMessage);
         lua_setfield(L, -2, "add_OnMessage");
-        lua_pushcfunction(L, (StaticClass_remove_OnMessage));
+        lua_pushcfunction(L, &StaticClass_remove_OnMessage);
         lua_setfield(L, -2, "remove_OnMessage");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (StaticClass_type__index));
+        lua_pushcfunction(L, &StaticClass_type__index);
         lua_setfield(L, -2, "__index");
-        lua_pushcfunction(L, (StaticClass_type__newindex));
+        lua_pushcfunction(L, &StaticClass_type__newindex);
         lua_setfield(L, -2, "__newindex");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "StaticClass");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StaticClass_static_getMagicNumber(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -76,6 +79,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StaticClass_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -101,6 +105,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StaticClass_static_greet(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -125,6 +130,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StaticClass_static_calculate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -151,6 +157,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StaticClass_static_raiseMessage(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -174,6 +181,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StaticClass_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);
@@ -196,6 +204,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StaticClass_type__newindex(lua_State L)
     {
         var key = lua_tostring(L, 2);
@@ -231,6 +240,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StaticClass_add_OnMessage(lua_State L)
     {
         var funcIdx = lua_type(L, 1) == LUA_TFUNCTION ? 1 : 2;
@@ -242,6 +252,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int StaticClass_remove_OnMessage(lua_State L)
     {
         // Note: Removing specific Lua function listeners is not currently supported

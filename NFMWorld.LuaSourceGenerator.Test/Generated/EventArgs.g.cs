@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for EventArgs (EventArgs) ===========
     private static void Register_EventArgs(lua_State L)
@@ -19,15 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_EventArgs");
 
         // __gc metamethod
-        lua_pushcfunction(L, (EventArgs__gc));
+        lua_pushcfunction(L, &EventArgs__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (EventArgs__index));
+        lua_pushcfunction(L, &EventArgs__index);
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (EventArgs__tostring));
+        lua_pushcfunction(L, &EventArgs__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -36,32 +38,31 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (EventArgs_new));
+        lua_pushcfunction(L, &EventArgs_new);
         lua_setfield(L, -2, "new");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (EventArgs_type__index));
+        lua_pushcfunction(L, &EventArgs_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "EventArgs");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int EventArgs__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.EventArgs>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.EventArgs>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int EventArgs__index(lua_State L)
     {
         var obj = GetObjectFromStack<System.EventArgs>(L, 1);
@@ -73,16 +74,16 @@ public partial class LuaBindings
         switch (key)
         {
             case "getType":
-                lua_pushcfunction(L, (EventArgs_method_getType));
+                lua_pushcfunction(L, &EventArgs_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (EventArgs_method_toString));
+                lua_pushcfunction(L, &EventArgs_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (EventArgs_method_equals));
+                lua_pushcfunction(L, &EventArgs_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (EventArgs_method_getHashCode));
+                lua_pushcfunction(L, &EventArgs_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -90,6 +91,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int EventArgs__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<System.EventArgs>(L, 1);
@@ -97,6 +99,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int EventArgs_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -120,6 +123,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int EventArgs_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -150,6 +154,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int EventArgs_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -180,6 +185,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int EventArgs_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -215,6 +221,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int EventArgs_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -245,6 +252,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int EventArgs_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

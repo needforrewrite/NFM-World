@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for ValueTuple`5 (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean) ===========
     private static void Register_ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean");
 
         // __gc metamethod
-        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__gc));
+        lua_pushcfunction(L, &ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__index));
+        lua_pushcfunction(L, &ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__newindex));
+        lua_pushcfunction(L, &ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__tostring));
+        lua_pushcfunction(L, &ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_new));
+        lua_pushcfunction(L, &ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.ValueTuple<bool, bool, bool, bool, bool>>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.ValueTuple<bool, bool, bool, bool, bool>>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__index(lua_State L)
     {
         var obj = GetStructFromStack<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 1);
@@ -88,19 +89,19 @@ public partial class LuaBindings
                 PushValue(L, ((System.ValueTuple<bool, bool, bool, bool, bool>)obj).Item5);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "compareTo":
-                lua_pushcfunction(L, (IComparable_ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_compareTo));
+                lua_pushcfunction(L, &IComparable_ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_compareTo);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_getType));
+                lua_pushcfunction(L, &ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -108,6 +109,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__newindex(lua_State L)
     {
         var obj = GetStructFromStack<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 1);
@@ -181,6 +183,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean__tostring(lua_State L)
     {
         var obj = GetStructFromStack<System.ValueTuple<bool, bool, bool, bool, bool>>(L, 1);
@@ -188,6 +191,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -223,6 +227,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueTuple_Boolean_Boolean_Boolean_Boolean_Boolean_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

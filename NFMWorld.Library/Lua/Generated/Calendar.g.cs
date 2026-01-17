@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Calendar (Calendar) ===========
     private static void Register_Calendar(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Calendar");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Calendar__gc));
+        lua_pushcfunction(L, &Calendar__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Calendar__index));
+        lua_pushcfunction(L, &Calendar__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Calendar__newindex));
+        lua_pushcfunction(L, &Calendar__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Calendar__tostring));
+        lua_pushcfunction(L, &Calendar__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,30 +42,29 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Calendar_new));
+        lua_pushcfunction(L, &Calendar_new);
         lua_setfield(L, -2, "new");
 
         // Static method: readOnly
-        lua_pushcfunction(L, (Calendar_static_readOnly));
+        lua_pushcfunction(L, &Calendar_static_readOnly);
         lua_setfield(L, -2, "readOnly");
 
         lua_setglobal(L, "Calendar");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.Globalization.Calendar>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.Globalization.Calendar>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar__index(lua_State L)
     {
         var obj = GetObjectFromStack<System.Globalization.Calendar>(L, 1);
@@ -77,26 +78,20 @@ public partial class LuaBindings
             case "minSupportedDateTime":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.Globalization.Calendar)obj).MinSupportedDateTime, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MinSupportedDateTime' to {value} but the field is read-only. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.Globalization.Calendar)obj).MinSupportedDateTime, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MinSupportedDateTime' to {value} but the field is read-only. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "maxSupportedDateTime":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((System.Globalization.Calendar)obj).MaxSupportedDateTime, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MaxSupportedDateTime' to {value} but the field is read-only. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((System.Globalization.Calendar)obj).MaxSupportedDateTime, "MT_DateTime", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'MaxSupportedDateTime' to {value} but the field is read-only. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -113,103 +108,103 @@ public partial class LuaBindings
                 PushValue(L, ((System.Globalization.Calendar)obj).TwoDigitYearMax);
                 return 1;
             case "clone":
-                lua_pushcfunction(L, (ICloneable_method_clone));
+                lua_pushcfunction(L, &ICloneable_method_clone);
                 return 1;
             case "addMilliseconds":
-                lua_pushcfunction(L, (Calendar_method_addMilliseconds));
+                lua_pushcfunction(L, &Calendar_method_addMilliseconds);
                 return 1;
             case "addDays":
-                lua_pushcfunction(L, (Calendar_method_addDays));
+                lua_pushcfunction(L, &Calendar_method_addDays);
                 return 1;
             case "addHours":
-                lua_pushcfunction(L, (Calendar_method_addHours));
+                lua_pushcfunction(L, &Calendar_method_addHours);
                 return 1;
             case "addMinutes":
-                lua_pushcfunction(L, (Calendar_method_addMinutes));
+                lua_pushcfunction(L, &Calendar_method_addMinutes);
                 return 1;
             case "addMonths":
-                lua_pushcfunction(L, (Calendar_method_addMonths));
+                lua_pushcfunction(L, &Calendar_method_addMonths);
                 return 1;
             case "addSeconds":
-                lua_pushcfunction(L, (Calendar_method_addSeconds));
+                lua_pushcfunction(L, &Calendar_method_addSeconds);
                 return 1;
             case "addWeeks":
-                lua_pushcfunction(L, (Calendar_method_addWeeks));
+                lua_pushcfunction(L, &Calendar_method_addWeeks);
                 return 1;
             case "addYears":
-                lua_pushcfunction(L, (Calendar_method_addYears));
+                lua_pushcfunction(L, &Calendar_method_addYears);
                 return 1;
             case "getDayOfMonth":
-                lua_pushcfunction(L, (Calendar_method_getDayOfMonth));
+                lua_pushcfunction(L, &Calendar_method_getDayOfMonth);
                 return 1;
             case "getDayOfWeek":
-                lua_pushcfunction(L, (Calendar_method_getDayOfWeek));
+                lua_pushcfunction(L, &Calendar_method_getDayOfWeek);
                 return 1;
             case "getDayOfYear":
-                lua_pushcfunction(L, (Calendar_method_getDayOfYear));
+                lua_pushcfunction(L, &Calendar_method_getDayOfYear);
                 return 1;
             case "getDaysInMonth":
-                lua_pushcfunction(L, (Calendar_method_getDaysInMonth));
+                lua_pushcfunction(L, &Calendar_method_getDaysInMonth);
                 return 1;
             case "getDaysInYear":
-                lua_pushcfunction(L, (Calendar_method_getDaysInYear));
+                lua_pushcfunction(L, &Calendar_method_getDaysInYear);
                 return 1;
             case "getEra":
-                lua_pushcfunction(L, (Calendar_method_getEra));
+                lua_pushcfunction(L, &Calendar_method_getEra);
                 return 1;
             case "getHour":
-                lua_pushcfunction(L, (Calendar_method_getHour));
+                lua_pushcfunction(L, &Calendar_method_getHour);
                 return 1;
             case "getMilliseconds":
-                lua_pushcfunction(L, (Calendar_method_getMilliseconds));
+                lua_pushcfunction(L, &Calendar_method_getMilliseconds);
                 return 1;
             case "getMinute":
-                lua_pushcfunction(L, (Calendar_method_getMinute));
+                lua_pushcfunction(L, &Calendar_method_getMinute);
                 return 1;
             case "getMonth":
-                lua_pushcfunction(L, (Calendar_method_getMonth));
+                lua_pushcfunction(L, &Calendar_method_getMonth);
                 return 1;
             case "getMonthsInYear":
-                lua_pushcfunction(L, (Calendar_method_getMonthsInYear));
+                lua_pushcfunction(L, &Calendar_method_getMonthsInYear);
                 return 1;
             case "getSecond":
-                lua_pushcfunction(L, (Calendar_method_getSecond));
+                lua_pushcfunction(L, &Calendar_method_getSecond);
                 return 1;
             case "getWeekOfYear":
-                lua_pushcfunction(L, (Calendar_method_getWeekOfYear));
+                lua_pushcfunction(L, &Calendar_method_getWeekOfYear);
                 return 1;
             case "getYear":
-                lua_pushcfunction(L, (Calendar_method_getYear));
+                lua_pushcfunction(L, &Calendar_method_getYear);
                 return 1;
             case "isLeapDay":
-                lua_pushcfunction(L, (Calendar_method_isLeapDay));
+                lua_pushcfunction(L, &Calendar_method_isLeapDay);
                 return 1;
             case "isLeapMonth":
-                lua_pushcfunction(L, (Calendar_method_isLeapMonth));
+                lua_pushcfunction(L, &Calendar_method_isLeapMonth);
                 return 1;
             case "getLeapMonth":
-                lua_pushcfunction(L, (Calendar_method_getLeapMonth));
+                lua_pushcfunction(L, &Calendar_method_getLeapMonth);
                 return 1;
             case "isLeapYear":
-                lua_pushcfunction(L, (Calendar_method_isLeapYear));
+                lua_pushcfunction(L, &Calendar_method_isLeapYear);
                 return 1;
             case "toDateTime":
-                lua_pushcfunction(L, (Calendar_method_toDateTime));
+                lua_pushcfunction(L, &Calendar_method_toDateTime);
                 return 1;
             case "toFourDigitYear":
-                lua_pushcfunction(L, (Calendar_method_toFourDigitYear));
+                lua_pushcfunction(L, &Calendar_method_toFourDigitYear);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Calendar_method_getType));
+                lua_pushcfunction(L, &Calendar_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Calendar_method_toString));
+                lua_pushcfunction(L, &Calendar_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Calendar_method_equals));
+                lua_pushcfunction(L, &Calendar_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Calendar_method_getHashCode));
+                lua_pushcfunction(L, &Calendar_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -217,6 +212,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<System.Globalization.Calendar>(L, 1);
@@ -242,6 +238,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<System.Globalization.Calendar>(L, 1);
@@ -249,6 +246,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -257,6 +255,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_addMilliseconds(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -289,6 +288,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_addDays(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -321,6 +321,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_addHours(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -353,6 +354,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_addMinutes(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -385,6 +387,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_addMonths(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -417,6 +420,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_addSeconds(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -449,6 +453,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_addWeeks(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -481,6 +486,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_addYears(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -513,6 +519,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getDayOfMonth(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -544,6 +551,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getDayOfWeek(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -575,6 +583,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getDayOfYear(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -606,6 +615,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getDaysInMonth(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -656,6 +666,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getDaysInYear(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -704,6 +715,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getEra(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -735,6 +747,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getHour(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -766,6 +779,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getMilliseconds(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -797,6 +811,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getMinute(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -828,6 +843,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getMonth(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -859,6 +875,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getMonthsInYear(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -907,6 +924,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getSecond(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -938,6 +956,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getWeekOfYear(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -971,6 +990,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getYear(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1002,6 +1022,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_isLeapDay(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1054,6 +1075,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_isLeapMonth(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1104,6 +1126,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getLeapMonth(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1152,6 +1175,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_isLeapYear(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1200,6 +1224,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_toDateTime(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1260,6 +1285,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_toFourDigitYear(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1291,6 +1317,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1321,6 +1348,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1351,6 +1379,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1386,6 +1415,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1416,6 +1446,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Calendar_static_readOnly(lua_State L)
     {
         var argCount = lua_gettop(L);

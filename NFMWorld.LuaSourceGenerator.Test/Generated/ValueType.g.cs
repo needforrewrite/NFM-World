@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for ValueType (ValueType) ===========
     private static void Register_ValueType(lua_State L)
@@ -19,15 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ValueType");
 
         // __gc metamethod
-        lua_pushcfunction(L, (ValueType__gc));
+        lua_pushcfunction(L, &ValueType__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (ValueType__index));
+        lua_pushcfunction(L, &ValueType__index);
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (ValueType__tostring));
+        lua_pushcfunction(L, &ValueType__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -36,26 +38,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (ValueType_new));
+        lua_pushcfunction(L, &ValueType_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ValueType");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueType__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.ValueType>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.ValueType>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueType__index(lua_State L)
     {
         var obj = GetObjectFromStack<System.ValueType>(L, 1);
@@ -67,16 +68,16 @@ public partial class LuaBindings
         switch (key)
         {
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (ValueType_method_getType));
+                lua_pushcfunction(L, &ValueType_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -84,6 +85,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueType__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<System.ValueType>(L, 1);
@@ -91,6 +93,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueType_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -99,6 +102,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueType_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

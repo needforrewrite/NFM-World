@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithByRefParameters (TypeWithByRefParameters) ===========
     private static void Register_TypeWithByRefParameters(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithByRefParameters");
 
         // __gc metamethod
-        lua_pushcfunction(L, (TypeWithByRefParameters__gc));
+        lua_pushcfunction(L, &TypeWithByRefParameters__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (TypeWithByRefParameters__index));
+        lua_pushcfunction(L, &TypeWithByRefParameters__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (TypeWithByRefParameters__newindex));
+        lua_pushcfunction(L, &TypeWithByRefParameters__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (TypeWithByRefParameters__tostring));
+        lua_pushcfunction(L, &TypeWithByRefParameters__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (TypeWithByRefParameters_new));
+        lua_pushcfunction(L, &TypeWithByRefParameters_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "TypeWithByRefParameters");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters__index(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
@@ -74,22 +75,22 @@ public partial class LuaBindings
                 PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters)obj).Value);
                 return 1;
             case "getValue":
-                lua_pushcfunction(L, (TypeWithByRefParameters_method_getValue));
+                lua_pushcfunction(L, &TypeWithByRefParameters_method_getValue);
                 return 1;
             case "methodWithInParam":
-                lua_pushcfunction(L, (TypeWithByRefParameters_method_methodWithInParam));
+                lua_pushcfunction(L, &TypeWithByRefParameters_method_methodWithInParam);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (TypeWithByRefParameters_method_getType));
+                lua_pushcfunction(L, &TypeWithByRefParameters_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (TypeWithByRefParameters_method_toString));
+                lua_pushcfunction(L, &TypeWithByRefParameters_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (TypeWithByRefParameters_method_equals));
+                lua_pushcfunction(L, &TypeWithByRefParameters_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (TypeWithByRefParameters_method_getHashCode));
+                lua_pushcfunction(L, &TypeWithByRefParameters_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -97,6 +98,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
@@ -122,6 +124,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>(L, 1);
@@ -129,6 +132,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -168,6 +172,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters_method_getValue(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -198,6 +203,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters_method_methodWithInParam(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -228,6 +234,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -258,6 +265,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -288,6 +296,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -323,6 +332,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithByRefParameters_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

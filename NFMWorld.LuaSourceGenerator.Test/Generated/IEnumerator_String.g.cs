@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for IEnumerator`1 (IEnumerator_String) ===========
     private static void Register_IEnumerator_String(lua_State L)
@@ -19,15 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_IEnumerator_String");
 
         // __gc metamethod
-        lua_pushcfunction(L, (IEnumerator_String__gc));
+        lua_pushcfunction(L, &IEnumerator_String__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (IEnumerator_String__index));
+        lua_pushcfunction(L, &IEnumerator_String__index);
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (IEnumerator_String__tostring));
+        lua_pushcfunction(L, &IEnumerator_String__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -36,26 +38,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (IEnumerator_String_new));
+        lua_pushcfunction(L, &IEnumerator_String_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "IEnumerator_String");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEnumerator_String__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.Collections.Generic.IEnumerator<string>>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.Collections.Generic.IEnumerator<string>>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEnumerator_String__index(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<string>>(L, 1);
@@ -70,13 +71,13 @@ public partial class LuaBindings
                 PushValue(L, ((System.Collections.Generic.IEnumerator<string>)obj).Current);
                 return 1;
             case "dispose":
-                lua_pushcfunction(L, (IEnumerator_String_method_dispose));
+                lua_pushcfunction(L, &IEnumerator_String_method_dispose);
                 return 1;
             case "moveNext":
-                lua_pushcfunction(L, (IEnumerator_String_method_moveNext));
+                lua_pushcfunction(L, &IEnumerator_String_method_moveNext);
                 return 1;
             case "reset":
-                lua_pushcfunction(L, (IEnumerator_String_method_reset));
+                lua_pushcfunction(L, &IEnumerator_String_method_reset);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -84,6 +85,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEnumerator_String__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<string>>(L, 1);
@@ -91,6 +93,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEnumerator_String_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -99,6 +102,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEnumerator_String_method_dispose(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -128,6 +132,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEnumerator_String_method_moveNext(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -158,6 +163,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEnumerator_String_method_reset(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

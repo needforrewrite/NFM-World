@@ -1,5 +1,5 @@
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using LuaJIT;
+using static LuaJIT.Methods;
 using NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 using NFMWorld.LuaSourceGenerator.Test.Bindings;
 

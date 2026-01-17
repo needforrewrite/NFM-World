@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for BoundingBox (BoundingBox) ===========
     private static void Register_BoundingBox(lua_State L)
@@ -19,23 +21,23 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_BoundingBox");
 
         // __gc metamethod
-        lua_pushcfunction(L, (BoundingBox__gc));
+        lua_pushcfunction(L, &BoundingBox__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (BoundingBox__index));
+        lua_pushcfunction(L, &BoundingBox__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (BoundingBox__newindex));
+        lua_pushcfunction(L, &BoundingBox__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __eq
-        lua_pushcfunction(L, (BoundingBox_op_op_Equality));
+        lua_pushcfunction(L, &BoundingBox_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (BoundingBox__tostring));
+        lua_pushcfunction(L, &BoundingBox__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -44,38 +46,37 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (BoundingBox_new));
+        lua_pushcfunction(L, &BoundingBox_new);
         lua_setfield(L, -2, "new");
 
         // Static method: createFromPoints
-        lua_pushcfunction(L, (BoundingBox_static_createFromPoints));
+        lua_pushcfunction(L, &BoundingBox_static_createFromPoints);
         lua_setfield(L, -2, "createFromPoints");
 
         // Static method: createFromSphere
-        lua_pushcfunction(L, (BoundingBox_static_createFromSphere));
+        lua_pushcfunction(L, &BoundingBox_static_createFromSphere);
         lua_setfield(L, -2, "createFromSphere");
 
         // Static method: createMerged
-        lua_pushcfunction(L, (BoundingBox_static_createMerged));
+        lua_pushcfunction(L, &BoundingBox_static_createMerged);
         lua_setfield(L, -2, "createMerged");
 
         lua_setglobal(L, "BoundingBox");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<Microsoft.Xna.Framework.BoundingBox>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<Microsoft.Xna.Framework.BoundingBox>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox__index(lua_State L)
     {
         var obj = GetStructFromStack<Microsoft.Xna.Framework.BoundingBox>(L, 1);
@@ -88,49 +89,43 @@ public partial class LuaBindings
             case "min":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingBox)obj).Min, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Min' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingBox)obj).Min, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Min' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "max":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingBox)obj).Max, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Max' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((Microsoft.Xna.Framework.BoundingBox)obj).Max, "MT_Vector3", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Max' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "contains":
-                lua_pushcfunction(L, (BoundingBox_method_contains));
+                lua_pushcfunction(L, &BoundingBox_method_contains);
                 return 1;
             case "getCorners":
-                lua_pushcfunction(L, (BoundingBox_method_getCorners));
+                lua_pushcfunction(L, &BoundingBox_method_getCorners);
                 return 1;
             case "intersects":
-                lua_pushcfunction(L, (BoundingBox_method_intersects));
+                lua_pushcfunction(L, &BoundingBox_method_intersects);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (IEquatable_BoundingBox_method_equals));
+                lua_pushcfunction(L, &IEquatable_BoundingBox_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (BoundingBox_method_getType));
+                lua_pushcfunction(L, &BoundingBox_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -138,6 +133,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox__newindex(lua_State L)
     {
         var obj = GetStructFromStack<Microsoft.Xna.Framework.BoundingBox>(L, 1);
@@ -175,6 +171,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox__tostring(lua_State L)
     {
         var obj = GetStructFromStack<Microsoft.Xna.Framework.BoundingBox>(L, 1);
@@ -182,6 +179,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox_op_op_Equality(lua_State L)
     {
         var left = ToObject<Microsoft.Xna.Framework.BoundingBox>(L, 1)!;
@@ -190,6 +188,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -222,6 +221,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox_method_contains(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -370,6 +370,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox_method_getCorners(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -414,6 +415,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox_method_intersects(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -596,6 +598,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -623,6 +626,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox_static_createFromPoints(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -647,6 +651,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox_static_createFromSphere(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -671,6 +676,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int BoundingBox_static_createMerged(lua_State L)
     {
         var argCount = lua_gettop(L);

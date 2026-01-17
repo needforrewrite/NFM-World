@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for UnlimitedArray`1 (UnlimitedArray_PiecePlacement) ===========
     private static void Register_UnlimitedArray_PiecePlacement(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_UnlimitedArray_PiecePlacement");
 
         // __gc metamethod
-        lua_pushcfunction(L, (UnlimitedArray_PiecePlacement__gc));
+        lua_pushcfunction(L, &UnlimitedArray_PiecePlacement__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (UnlimitedArray_PiecePlacement__index));
+        lua_pushcfunction(L, &UnlimitedArray_PiecePlacement__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (UnlimitedArray_PiecePlacement__newindex));
+        lua_pushcfunction(L, &UnlimitedArray_PiecePlacement__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (UnlimitedArray_PiecePlacement__tostring));
+        lua_pushcfunction(L, &UnlimitedArray_PiecePlacement__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (UnlimitedArray_PiecePlacement_new));
+        lua_pushcfunction(L, &UnlimitedArray_PiecePlacement_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "UnlimitedArray_PiecePlacement");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>>(L, 1);
@@ -86,52 +87,52 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>)obj).IsReadOnly);
                 return 1;
             case "getEnumerator":
-                lua_pushcfunction(L, (UnlimitedArray_PiecePlacement_method_getEnumerator));
+                lua_pushcfunction(L, &UnlimitedArray_PiecePlacement_method_getEnumerator);
                 return 1;
             case "ensureCapacity":
-                lua_pushcfunction(L, (UnlimitedArray_PiecePlacement_method_ensureCapacity));
+                lua_pushcfunction(L, &UnlimitedArray_PiecePlacement_method_ensureCapacity);
                 return 1;
             case "add":
-                lua_pushcfunction(L, (ICollection_PiecePlacement_method_add));
+                lua_pushcfunction(L, &ICollection_PiecePlacement_method_add);
                 return 1;
             case "clear":
-                lua_pushcfunction(L, (ICollection_PiecePlacement_method_clear));
+                lua_pushcfunction(L, &ICollection_PiecePlacement_method_clear);
                 return 1;
             case "contains":
-                lua_pushcfunction(L, (ICollection_PiecePlacement_method_contains));
+                lua_pushcfunction(L, &ICollection_PiecePlacement_method_contains);
                 return 1;
             case "copyTo":
-                lua_pushcfunction(L, (ICollection_PiecePlacement_method_copyTo));
+                lua_pushcfunction(L, &ICollection_PiecePlacement_method_copyTo);
                 return 1;
             case "remove":
-                lua_pushcfunction(L, (ICollection_PiecePlacement_method_remove));
+                lua_pushcfunction(L, &ICollection_PiecePlacement_method_remove);
                 return 1;
             case "indexOf":
-                lua_pushcfunction(L, (IList_PiecePlacement_method_indexOf));
+                lua_pushcfunction(L, &IList_PiecePlacement_method_indexOf);
                 return 1;
             case "insert":
-                lua_pushcfunction(L, (IList_PiecePlacement_method_insert));
+                lua_pushcfunction(L, &IList_PiecePlacement_method_insert);
                 return 1;
             case "removeAt":
-                lua_pushcfunction(L, (IList_PiecePlacement_method_removeAt));
+                lua_pushcfunction(L, &IList_PiecePlacement_method_removeAt);
                 return 1;
             case "toArray":
-                lua_pushcfunction(L, (UnlimitedArray_PiecePlacement_method_toArray));
+                lua_pushcfunction(L, &UnlimitedArray_PiecePlacement_method_toArray);
                 return 1;
             case "sort":
-                lua_pushcfunction(L, (UnlimitedArray_PiecePlacement_method_sort));
+                lua_pushcfunction(L, &UnlimitedArray_PiecePlacement_method_sort);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (UnlimitedArray_PiecePlacement_method_getType));
+                lua_pushcfunction(L, &UnlimitedArray_PiecePlacement_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (UnlimitedArray_PiecePlacement_method_toString));
+                lua_pushcfunction(L, &UnlimitedArray_PiecePlacement_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (UnlimitedArray_PiecePlacement_method_equals));
+                lua_pushcfunction(L, &UnlimitedArray_PiecePlacement_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (UnlimitedArray_PiecePlacement_method_getHashCode));
+                lua_pushcfunction(L, &UnlimitedArray_PiecePlacement_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -139,6 +140,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>>(L, 1);
@@ -162,6 +164,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.util.UnlimitedArray<nfm_world_library.mad.PiecePlacement>>(L, 1);
@@ -169,6 +172,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -208,6 +212,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement_method_getEnumerator(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -238,6 +243,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement_method_ensureCapacity(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -269,6 +275,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement_method_toArray(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -299,6 +306,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement_method_sort(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -329,6 +337,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -359,6 +368,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -389,6 +399,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -424,6 +435,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int UnlimitedArray_PiecePlacement_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self

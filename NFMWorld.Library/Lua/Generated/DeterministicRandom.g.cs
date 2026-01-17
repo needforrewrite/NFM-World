@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for DeterministicRandom (DeterministicRandom) ===========
     private static void Register_DeterministicRandom(lua_State L)
@@ -19,19 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_DeterministicRandom");
 
         // __gc metamethod
-        lua_pushcfunction(L, (DeterministicRandom__gc));
+        lua_pushcfunction(L, &DeterministicRandom__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (DeterministicRandom__index));
+        lua_pushcfunction(L, &DeterministicRandom__index);
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (DeterministicRandom__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // __tostring metamethod
-        lua_pushcfunction(L, (DeterministicRandom__tostring));
+        lua_pushcfunction(L, &DeterministicRandom__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,30 +38,29 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (DeterministicRandom_new));
+        lua_pushcfunction(L, &DeterministicRandom_new);
         lua_setfield(L, -2, "new");
 
         // Static method: fromWorldFeature
-        lua_pushcfunction(L, (DeterministicRandom_static_fromWorldFeature));
+        lua_pushcfunction(L, &DeterministicRandom_static_fromWorldFeature);
         lua_setfield(L, -2, "fromWorldFeature");
 
         lua_setglobal(L, "DeterministicRandom");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<FixedMathSharp.Utility.DeterministicRandom>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<FixedMathSharp.Utility.DeterministicRandom>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom__index(lua_State L)
     {
         var obj = GetStructFromStack<FixedMathSharp.Utility.DeterministicRandom>(L, 1);
@@ -74,31 +71,31 @@ public partial class LuaBindings
         switch (key)
         {
             case "nextU64":
-                lua_pushcfunction(L, (DeterministicRandom_method_nextU64));
+                lua_pushcfunction(L, &DeterministicRandom_method_nextU64);
                 return 1;
             case "next":
-                lua_pushcfunction(L, (DeterministicRandom_method_next));
+                lua_pushcfunction(L, &DeterministicRandom_method_next);
                 return 1;
             case "nextDouble":
-                lua_pushcfunction(L, (DeterministicRandom_method_nextDouble));
+                lua_pushcfunction(L, &DeterministicRandom_method_nextDouble);
                 return 1;
             case "nextFixed6401":
-                lua_pushcfunction(L, (DeterministicRandom_method_nextFixed6401));
+                lua_pushcfunction(L, &DeterministicRandom_method_nextFixed6401);
                 return 1;
             case "nextFixed64":
-                lua_pushcfunction(L, (DeterministicRandom_method_nextFixed64));
+                lua_pushcfunction(L, &DeterministicRandom_method_nextFixed64);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (DeterministicRandom_method_getType));
+                lua_pushcfunction(L, &DeterministicRandom_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -106,19 +103,7 @@ public partial class LuaBindings
         }
     }
 
-    private static int DeterministicRandom__newindex(lua_State L)
-    {
-        var obj = GetStructFromStack<FixedMathSharp.Utility.DeterministicRandom>(L, 1);
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
-    }
-
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom__tostring(lua_State L)
     {
         var obj = GetStructFromStack<FixedMathSharp.Utility.DeterministicRandom>(L, 1);
@@ -126,6 +111,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -157,6 +143,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom_method_nextU64(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -184,6 +171,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom_method_next(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -248,6 +236,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom_method_nextDouble(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -275,6 +264,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom_method_nextFixed6401(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -302,6 +292,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom_method_nextFixed64(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -349,6 +340,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -376,6 +368,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int DeterministicRandom_static_fromWorldFeature(lua_State L)
     {
         var argCount = lua_gettop(L);

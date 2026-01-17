@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithIndexers (TypeWithIndexers) ===========
     private static void Register_TypeWithIndexers(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithIndexers");
 
         // __gc metamethod
-        lua_pushcfunction(L, (TypeWithIndexers__gc));
+        lua_pushcfunction(L, &TypeWithIndexers__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (TypeWithIndexers__index));
+        lua_pushcfunction(L, &TypeWithIndexers__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (TypeWithIndexers__newindex));
+        lua_pushcfunction(L, &TypeWithIndexers__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (TypeWithIndexers__tostring));
+        lua_pushcfunction(L, &TypeWithIndexers__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,30 +42,29 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (TypeWithIndexers_new));
+        lua_pushcfunction(L, &TypeWithIndexers_new);
         lua_setfield(L, -2, "new");
 
         // Static method: create
-        lua_pushcfunction(L, (TypeWithIndexers_static_create));
+        lua_pushcfunction(L, &TypeWithIndexers_static_create);
         lua_setfield(L, -2, "create");
 
         lua_setglobal(L, "TypeWithIndexers");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers__index(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>(L, 1);
@@ -113,43 +114,43 @@ public partial class LuaBindings
         switch (key)
         {
             case "setNumberAt":
-                lua_pushcfunction(L, (TypeWithIndexers_method_setNumberAt));
+                lua_pushcfunction(L, &TypeWithIndexers_method_setNumberAt);
                 return 1;
             case "getNumberAt":
-                lua_pushcfunction(L, (TypeWithIndexers_method_getNumberAt));
+                lua_pushcfunction(L, &TypeWithIndexers_method_getNumberAt);
                 return 1;
             case "setValue":
-                lua_pushcfunction(L, (TypeWithIndexers_method_setValue));
+                lua_pushcfunction(L, &TypeWithIndexers_method_setValue);
                 return 1;
             case "getValue":
-                lua_pushcfunction(L, (TypeWithIndexers_method_getValue));
+                lua_pushcfunction(L, &TypeWithIndexers_method_getValue);
                 return 1;
             case "setGridValue":
-                lua_pushcfunction(L, (TypeWithIndexers_method_setGridValue));
+                lua_pushcfunction(L, &TypeWithIndexers_method_setGridValue);
                 return 1;
             case "getGridValue":
-                lua_pushcfunction(L, (TypeWithIndexers_method_getGridValue));
+                lua_pushcfunction(L, &TypeWithIndexers_method_getGridValue);
                 return 1;
             case "getNumbersLength":
-                lua_pushcfunction(L, (TypeWithIndexers_method_getNumbersLength));
+                lua_pushcfunction(L, &TypeWithIndexers_method_getNumbersLength);
                 return 1;
             case "getDataCount":
-                lua_pushcfunction(L, (TypeWithIndexers_method_getDataCount));
+                lua_pushcfunction(L, &TypeWithIndexers_method_getDataCount);
                 return 1;
             case "getGridCount":
-                lua_pushcfunction(L, (TypeWithIndexers_method_getGridCount));
+                lua_pushcfunction(L, &TypeWithIndexers_method_getGridCount);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (TypeWithIndexers_method_getType));
+                lua_pushcfunction(L, &TypeWithIndexers_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (TypeWithIndexers_method_toString));
+                lua_pushcfunction(L, &TypeWithIndexers_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (TypeWithIndexers_method_equals));
+                lua_pushcfunction(L, &TypeWithIndexers_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (TypeWithIndexers_method_getHashCode));
+                lua_pushcfunction(L, &TypeWithIndexers_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -157,6 +158,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>(L, 1);
@@ -208,6 +210,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>(L, 1);
@@ -215,6 +218,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -238,6 +242,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_setNumberAt(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -269,6 +274,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_getNumberAt(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -300,6 +306,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_setValue(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -331,6 +338,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_getValue(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -362,6 +370,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_setGridValue(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -394,6 +403,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_getGridValue(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -426,6 +436,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_getNumbersLength(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -456,6 +467,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_getDataCount(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -486,6 +498,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_getGridCount(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -516,6 +529,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -546,6 +560,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -576,6 +591,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -611,6 +627,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -641,6 +658,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithIndexers_static_create(lua_State L)
     {
         var argCount = lua_gettop(L);

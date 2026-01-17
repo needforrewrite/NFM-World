@@ -22,6 +22,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\FNA.Math\FNA.Math.csproj" />
+      <ProjectReference Include="..\LuaJIT\LuaJIT.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.MessagePack\Maxine.Extensions.MessagePack.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.VFS\Maxine.VFS.csproj" />

@@ -9,14 +9,14 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using LuaNET.LuaJIT;
+using LuaJIT;
 using Maxine.Extensions;
 using Microsoft.Collections.Extensions;
-using static LuaNET.LuaJIT.Lua;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     private static int _nextObjectId = 1;
 
@@ -24,15 +24,12 @@ public partial class LuaBindings
     // Also track parent relationships for struct fields (structId -> (parentId, updateStructInParent))
     private static readonly DictionarySlim<int, (object Obj, Type Type, (int parentId, Action<object, object> updateStructInParent)? StructParents)> _objects = [];
 
-    // Keep delegates alive to prevent GC collection
-    private static readonly HashSet<lua_CFunction> _delegates = [];
-
     /// <summary>
     /// Reset the bindings state (for test isolation).
     /// </summary>
     public static void Reset()
     {
-        _delegates.Clear();
+        _keptDelegates.Clear();
         _objectCount = 0;
         _nextObjectId = 1;
         _objects.Clear();
@@ -113,8 +110,8 @@ public partial class LuaBindings
     private static void PushObject(lua_State L, object obj, string metatableName)
     {
         var id = StoreObject(obj);
-        var ptr = lua_newuserdata(L, (ulong)sizeof(int));
-        unsafe { *(int*)ptr = id; }
+        var ptr = lua_newuserdata(L, (nuint)sizeof(int));
+        *(int*)ptr = id;
         luaL_getmetatable(L, metatableName);
         lua_setmetatable(L, -2);
     }
@@ -126,8 +123,8 @@ public partial class LuaBindings
     private static void PushStructWithParent(lua_State L, object obj, string metatableName, int parentId, Action<object, object> updateValueInParent)
     {
         var id = StoreObject(obj, (parentId, updateValueInParent));
-        var ptr = lua_newuserdata(L, (ulong)sizeof(int));
-        unsafe { *(int*)ptr = id; }
+        var ptr = lua_newuserdata(L, (nuint)sizeof(int));
+        *(int*)ptr = id;
         luaL_getmetatable(L, metatableName);
         lua_setmetatable(L, -2);
     }
@@ -138,12 +135,9 @@ public partial class LuaBindings
     private static T? GetObjectFromStack<T>(lua_State L, int idx) where T : class
     {
         var ptr = lua_touserdata(L, idx);
-        if (ptr == 0) return null;
-        unsafe
-        {
-            var id = *(int*)ptr;
-            return GetObject<T>(id);
-        }
+        if (ptr == null) return null;
+        var id = *(int*)ptr;
+        return GetObject<T>(id);
     }
 
     /// <summary>
@@ -152,14 +146,11 @@ public partial class LuaBindings
     private static T GetStructFromStack<T>(lua_State L, int idx) where T : struct
     {
         var ptr = lua_touserdata(L, idx);
-        if (ptr == 0) return default;
-        unsafe
-        {
-            var id = *(int*)ptr;
-            var obj = GetObject<T>(id);
-            if (obj is T value) return value;
-            return default;
-        }
+        if (ptr == null) return default;
+        var id = *(int*)ptr;
+        var obj = GetObject<T>(id);
+        if (obj is T value) return value;
+        return default;
     }
 
     /// <summary>
@@ -170,21 +161,18 @@ public partial class LuaBindings
     private static void UpdateStruct(lua_State L, int idx, object value)
     {
         var ptr = lua_touserdata(L, idx);
-        if (ptr == 0) return;
-        unsafe
-        {
-            var id = *(int*)ptr;
-            ref var existingValue = ref _objects.GetOrAddValueRef(id);
-            existingValue = existingValue with { Obj = value };
+        if (ptr == null) return;
+        var id = *(int*)ptr;
+        ref var existingValue = ref _objects.GetOrAddValueRef(id);
+        existingValue = existingValue with { Obj = value };
 
-            // If this struct has a parent, write it back to the parent's field
-            if (existingValue.StructParents is {} parentInfo)
+        // If this struct has a parent, write it back to the parent's field
+        if (existingValue.StructParents is {} parentInfo)
+        {
+            var (parentId, updateStructInParent) = parentInfo;
+            if (_objects.TryGetValue(parentId, out var parentObj))
             {
-                var (parentId, updateStructInParent) = parentInfo;
-                if (_objects.TryGetValue(parentId, out var parentObj))
-                {
-                    updateStructInParent(parentObj.Obj, value);
-                }
+                updateStructInParent(parentObj.Obj, value);
             }
         }
     }
@@ -198,13 +186,10 @@ public partial class LuaBindings
         if (lua_type(L, idx) != LUA_TUSERDATA) return null;
 
         var ptr = lua_touserdata(L, idx);
-        if (ptr == 0) return null;
+        if (ptr == null) return null;
 
-        unsafe
-        {
-            var id = *(int*)ptr;
-            return _objects.GetValueOrDefault(id).Type;
-        }
+        var id = *(int*)ptr;
+        return _objects.GetValueOrDefault(id).Type;
     }
 
     /// <summary>
@@ -241,7 +226,10 @@ public partial class LuaBindings
                 lua_pushinteger(L, i);
                 break;
             case uint u:
-                lua_pushinteger(L, u);
+                if (sizeof(nint) == 4)
+                    lua_pushnumber(L, (double)u);
+                else
+                    lua_pushinteger(L, (nint)u);
                 break;
             case byte by:
                 lua_pushinteger(L, by);
@@ -256,7 +244,10 @@ public partial class LuaBindings
                 lua_pushinteger(L, us);
                 break;
             case long l:
-                lua_pushinteger(L, l);
+                if (sizeof(nint) == 4)
+                    lua_pushnumber(L, (double)l);
+                else
+                    lua_pushinteger(L, (nint)l);
                 break;
             case ulong ul:
                 lua_pushnumber(L, (double)ul);
@@ -451,13 +442,10 @@ public partial class LuaBindings
         if (luaType == LUA_TUSERDATA)
         {
             var ptr = lua_touserdata(L, idx);
-            if (ptr != 0)
+            if (ptr != null)
             {
-                unsafe
-                {
-                    var id = *(int*)ptr;
-                    return GetObject<T>(id);
-                }
+                var id = *(int*)ptr;
+                return GetObject<T>(id);
             }
         }
 
@@ -559,20 +547,6 @@ public partial class LuaBindings
         }
 
         return -1; // Unknown or incompatible
-    }
-
-    #endregion
-
-    #region Delegate Management
-
-    /// <summary>
-    /// Keep a delegate alive to prevent GC collection while registered with Lua.
-    /// </summary>
-    private static lua_CFunction KeepAlive(lua_CFunction func)
-    {
-        // Unnecessary, static delegates are not collected
-        // _delegates.Add(func);
-        return func;
     }
 
     #endregion
@@ -735,81 +709,102 @@ public partial class LuaBindings
         lua_setglobal(L, name);
     }
 
+    // Keep delegates alive to prevent garbage collection
+    private static readonly List<Delegate> _keptDelegates = new();
+
     public static void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
     {
-        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        Func<lua_State, int> wrapper = (lua_State luaState) =>
         {
             var arg = ToObject<T>(luaState, 1)!;
             action(arg);
             return 0;
-        }));
+        };
+        _keptDelegates.Add(wrapper);
+        var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
 
     public static void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
     {
-        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        Func<lua_State, int> wrapper = (lua_State luaState) =>
         {
             var result = func();
             PushValue(luaState, result);
             return 1;
-        }));
+        };
+        _keptDelegates.Add(wrapper);
+        var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
 
     public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
     {
-        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        Func<lua_State, int> wrapper = (lua_State luaState) =>
         {
             var arg1 = ToObject<T1>(luaState, 1)!;
             var arg2 = ToObject<T2>(luaState, 2)!;
             action(arg1, arg2);
             return 0;
-        }));
+        };
+        _keptDelegates.Add(wrapper);
+        var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
 
     public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
     {
-        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        Func<lua_State, int> wrapper = (lua_State luaState) =>
         {
             var arg1 = ToObject<T1>(luaState, 1)!;
             var result = func(arg1);
             PushValue(luaState, result);
             return 1;
-        }));
+        };
+        _keptDelegates.Add(wrapper);
+        var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
 
     public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
     {
-        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        Func<lua_State, int> wrapper = (lua_State luaState) =>
         {
             var arg1 = ToObject<T1>(luaState, 1)!;
             var arg2 = ToObject<T2>(luaState, 2)!;
             var arg3 = ToObject<T3>(luaState, 3)!;
             action(arg1, arg2, arg3);
             return 0;
-        }));
+        };
+        _keptDelegates.Add(wrapper);
+        var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
 
     public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
     {
-        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        Func<lua_State, int> wrapper = (lua_State luaState) =>
         {
             var arg1 = ToObject<T1>(luaState, 1)!;
             var arg2 = ToObject<T2>(luaState, 2)!;
             var result = func(arg1, arg2);
             PushValue(luaState, result);
             return 1;
-        }));
+        };
+        _keptDelegates.Add(wrapper);
+        var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
 
     public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
     {
-        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        Func<lua_State, int> wrapper = (lua_State luaState) =>
         {
             var arg1 = ToObject<T1>(luaState, 1)!;
             var arg2 = ToObject<T2>(luaState, 2)!;
@@ -817,13 +812,16 @@ public partial class LuaBindings
             var arg4 = ToObject<T4>(luaState, 4)!;
             action(arg1, arg2, arg3, arg4);
             return 0;
-        }));
+        };
+        _keptDelegates.Add(wrapper);
+        var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
 
     public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
     {
-        lua_pushcfunction(L, KeepAlive((lua_State luaState) =>
+        Func<lua_State, int> wrapper = (lua_State luaState) =>
         {
             var arg1 = ToObject<T1>(luaState, 1)!;
             var arg2 = ToObject<T2>(luaState, 2)!;
@@ -831,7 +829,10 @@ public partial class LuaBindings
             var result = func(arg1, arg2, arg3);
             PushValue(luaState, result);
             return 1;
-        }));
+        };
+        _keptDelegates.Add(wrapper);
+        var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+        lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
     }
 }

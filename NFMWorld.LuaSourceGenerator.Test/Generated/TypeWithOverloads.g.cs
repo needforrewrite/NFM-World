@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithOverloads (TypeWithOverloads) ===========
     private static void Register_TypeWithOverloads(lua_State L)
@@ -19,43 +21,43 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithOverloads");
 
         // __gc metamethod
-        lua_pushcfunction(L, (TypeWithOverloads__gc));
+        lua_pushcfunction(L, &TypeWithOverloads__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (TypeWithOverloads__index));
+        lua_pushcfunction(L, &TypeWithOverloads__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (TypeWithOverloads__newindex));
+        lua_pushcfunction(L, &TypeWithOverloads__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __unm
-        lua_pushcfunction(L, (TypeWithOverloads_op_op_UnaryNegation));
+        lua_pushcfunction(L, &TypeWithOverloads_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // Operator: __add
-        lua_pushcfunction(L, (TypeWithOverloads_op_op_Addition));
+        lua_pushcfunction(L, &TypeWithOverloads_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, (TypeWithOverloads_op_op_Addition));
+        lua_pushcfunction(L, &TypeWithOverloads_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __add
-        lua_pushcfunction(L, (TypeWithOverloads_op_op_Addition));
+        lua_pushcfunction(L, &TypeWithOverloads_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, (TypeWithOverloads_op_op_Subtraction));
+        lua_pushcfunction(L, &TypeWithOverloads_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __sub
-        lua_pushcfunction(L, (TypeWithOverloads_op_op_Subtraction));
+        lua_pushcfunction(L, &TypeWithOverloads_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (TypeWithOverloads__tostring));
+        lua_pushcfunction(L, &TypeWithOverloads__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -64,30 +66,29 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (TypeWithOverloads_new));
+        lua_pushcfunction(L, &TypeWithOverloads_new);
         lua_setfield(L, -2, "new");
 
         // Static method: staticProcess
-        lua_pushcfunction(L, (TypeWithOverloads_static_staticProcess));
+        lua_pushcfunction(L, &TypeWithOverloads_static_staticProcess);
         lua_setfield(L, -2, "staticProcess");
 
         lua_setglobal(L, "TypeWithOverloads");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads__index(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
@@ -105,25 +106,25 @@ public partial class LuaBindings
                 PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads)obj).Text);
                 return 1;
             case "processNumber":
-                lua_pushcfunction(L, (TypeWithOverloads_method_processNumber));
+                lua_pushcfunction(L, &TypeWithOverloads_method_processNumber);
                 return 1;
             case "processData":
-                lua_pushcfunction(L, (TypeWithOverloads_method_processData));
+                lua_pushcfunction(L, &TypeWithOverloads_method_processData);
                 return 1;
             case "combine":
-                lua_pushcfunction(L, (TypeWithOverloads_method_combine));
+                lua_pushcfunction(L, &TypeWithOverloads_method_combine);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (TypeWithOverloads_method_getType));
+                lua_pushcfunction(L, &TypeWithOverloads_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (TypeWithOverloads_method_toString));
+                lua_pushcfunction(L, &TypeWithOverloads_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (TypeWithOverloads_method_equals));
+                lua_pushcfunction(L, &TypeWithOverloads_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (TypeWithOverloads_method_getHashCode));
+                lua_pushcfunction(L, &TypeWithOverloads_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -131,6 +132,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
@@ -167,6 +169,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
@@ -174,6 +177,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1)!;
@@ -182,6 +186,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_op_op_Addition(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -271,6 +276,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_op_op_Subtraction(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -335,6 +341,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -444,6 +451,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_method_processNumber(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -589,6 +597,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_method_processData(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -734,6 +743,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_method_combine(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -928,6 +938,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -958,6 +969,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -988,6 +1000,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1023,6 +1036,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1053,6 +1067,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithOverloads_static_staticProcess(lua_State L)
     {
         var argCount = lua_gettop(L);

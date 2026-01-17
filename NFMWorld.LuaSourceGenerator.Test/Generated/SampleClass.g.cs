@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for SampleClass (SampleClass) ===========
     private static void Register_SampleClass(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_SampleClass");
 
         // __gc metamethod
-        lua_pushcfunction(L, (SampleClass__gc));
+        lua_pushcfunction(L, &SampleClass__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (SampleClass__index));
+        lua_pushcfunction(L, &SampleClass__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (SampleClass__newindex));
+        lua_pushcfunction(L, &SampleClass__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (SampleClass__tostring));
+        lua_pushcfunction(L, &SampleClass__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,54 +42,53 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (SampleClass_new));
+        lua_pushcfunction(L, &SampleClass_new);
         lua_setfield(L, -2, "new");
 
         // Static method: add
-        lua_pushcfunction(L, (SampleClass_static_add));
+        lua_pushcfunction(L, &SampleClass_static_add);
         lua_setfield(L, -2, "add");
 
         // Static method: concat
-        lua_pushcfunction(L, (SampleClass_static_concat));
+        lua_pushcfunction(L, &SampleClass_static_concat);
         lua_setfield(L, -2, "concat");
 
         // Static method: incrementCounter
-        lua_pushcfunction(L, (SampleClass_static_incrementCounter));
+        lua_pushcfunction(L, &SampleClass_static_incrementCounter);
         lua_setfield(L, -2, "incrementCounter");
 
         // Static method: addNullable
-        lua_pushcfunction(L, (SampleClass_static_addNullable));
+        lua_pushcfunction(L, &SampleClass_static_addNullable);
         lua_setfield(L, -2, "addNullable");
 
         // Static method: getNullableValue
-        lua_pushcfunction(L, (SampleClass_static_getNullableValue));
+        lua_pushcfunction(L, &SampleClass_static_getNullableValue);
         lua_setfield(L, -2, "getNullableValue");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (SampleClass_type__index));
+        lua_pushcfunction(L, &SampleClass_type__index);
         lua_setfield(L, -2, "__index");
-        lua_pushcfunction(L, (SampleClass_type__newindex));
+        lua_pushcfunction(L, &SampleClass_type__newindex);
         lua_setfield(L, -2, "__newindex");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "SampleClass");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass__index(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>(L, 1);
@@ -144,43 +145,43 @@ public partial class LuaBindings
                     lua_pushnil(L);
                 return 1;
             case "getDoubleId":
-                lua_pushcfunction(L, (SampleClass_method_getDoubleId));
+                lua_pushcfunction(L, &SampleClass_method_getDoubleId);
                 return 1;
             case "getGreeting":
-                lua_pushcfunction(L, (SampleClass_method_getGreeting));
+                lua_pushcfunction(L, &SampleClass_method_getGreeting);
                 return 1;
             case "setValue":
-                lua_pushcfunction(L, (SampleClass_method_setValue));
+                lua_pushcfunction(L, &SampleClass_method_setValue);
                 return 1;
             case "calculate":
-                lua_pushcfunction(L, (SampleClass_method_calculate));
+                lua_pushcfunction(L, &SampleClass_method_calculate);
                 return 1;
             case "clone":
-                lua_pushcfunction(L, (SampleClass_method_clone));
+                lua_pushcfunction(L, &SampleClass_method_clone);
                 return 1;
             case "setNullableValue":
-                lua_pushcfunction(L, (SampleClass_method_setNullableValue));
+                lua_pushcfunction(L, &SampleClass_method_setNullableValue);
                 return 1;
             case "multiplyByNullable":
-                lua_pushcfunction(L, (SampleClass_method_multiplyByNullable));
+                lua_pushcfunction(L, &SampleClass_method_multiplyByNullable);
                 return 1;
             case "formatWithOptional":
-                lua_pushcfunction(L, (SampleClass_method_formatWithOptional));
+                lua_pushcfunction(L, &SampleClass_method_formatWithOptional);
                 return 1;
             case "customName":
-                lua_pushcfunction(L, (SampleClass_method_customName));
+                lua_pushcfunction(L, &SampleClass_method_customName);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (SampleClass_method_getType));
+                lua_pushcfunction(L, &SampleClass_method_getType);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (SampleClass_method_equals));
+                lua_pushcfunction(L, &SampleClass_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (SampleClass_method_getHashCode));
+                lua_pushcfunction(L, &SampleClass_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -188,6 +189,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>(L, 1);
@@ -335,6 +337,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>(L, 1);
@@ -342,6 +345,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -472,6 +476,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_getDoubleId(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -502,6 +507,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_getGreeting(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -533,6 +539,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_setValue(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -563,6 +570,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_calculate(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -596,6 +604,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_clone(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -626,6 +635,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_setNullableValue(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -660,6 +670,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_multiplyByNullable(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -698,6 +709,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_formatWithOptional(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -738,6 +750,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_customName(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -768,6 +781,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -798,6 +812,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -833,6 +848,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -863,6 +879,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -888,6 +905,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_static_concat(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -913,6 +931,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_static_incrementCounter(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -935,6 +954,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_static_addNullable(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -968,6 +988,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_static_getNullableValue(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -996,6 +1017,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);
@@ -1021,6 +1043,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int SampleClass_type__newindex(lua_State L)
     {
         var key = lua_tostring(L, 2);

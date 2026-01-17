@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Vector3Struct (Vec3) ===========
     private static void Register_Vector3Struct(lua_State L)
@@ -19,35 +21,35 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Vector3Struct");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Vector3Struct__gc));
+        lua_pushcfunction(L, &Vector3Struct__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Vector3Struct__index));
+        lua_pushcfunction(L, &Vector3Struct__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Vector3Struct__newindex));
+        lua_pushcfunction(L, &Vector3Struct__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __add
-        lua_pushcfunction(L, (Vector3Struct_op_op_Addition));
+        lua_pushcfunction(L, &Vector3Struct_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Vector3Struct_op_op_Subtraction));
+        lua_pushcfunction(L, &Vector3Struct_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Vector3Struct_op_op_Multiply));
+        lua_pushcfunction(L, &Vector3Struct_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __unm
-        lua_pushcfunction(L, (Vector3Struct_op_op_UnaryNegation));
+        lua_pushcfunction(L, &Vector3Struct_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Vector3Struct__tostring));
+        lua_pushcfunction(L, &Vector3Struct__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -56,44 +58,43 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Vector3Struct_new));
+        lua_pushcfunction(L, &Vector3Struct_new);
         lua_setfield(L, -2, "new");
 
         // Static method: cross
-        lua_pushcfunction(L, (Vector3Struct_static_cross));
+        lua_pushcfunction(L, &Vector3Struct_static_cross);
         lua_setfield(L, -2, "cross");
 
         // Static method: dot
-        lua_pushcfunction(L, (Vector3Struct_static_dot));
+        lua_pushcfunction(L, &Vector3Struct_static_dot);
         lua_setfield(L, -2, "dot");
 
         // Static method: fromVec2
-        lua_pushcfunction(L, (Vector3Struct_static_fromVec2));
+        lua_pushcfunction(L, &Vector3Struct_static_fromVec2);
         lua_setfield(L, -2, "fromVec2");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (Vector3Struct_type__index));
+        lua_pushcfunction(L, &Vector3Struct_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "Vec3");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct__index(lua_State L)
     {
         var obj = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1);
@@ -116,22 +117,22 @@ public partial class LuaBindings
                 PushValue(L, ((NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct)obj).Z);
                 return 1;
             case "normalized":
-                lua_pushcfunction(L, (Vector3Struct_method_normalized));
+                lua_pushcfunction(L, &Vector3Struct_method_normalized);
                 return 1;
             case "toVec2":
-                lua_pushcfunction(L, (Vector3Struct_method_toVec2));
+                lua_pushcfunction(L, &Vector3Struct_method_toVec2);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Vector3Struct_method_getType));
+                lua_pushcfunction(L, &Vector3Struct_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -139,6 +140,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct__newindex(lua_State L)
     {
         var obj = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1);
@@ -188,6 +190,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct__tostring(lua_State L)
     {
         var obj = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1);
@@ -195,6 +198,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_op_op_Addition(lua_State L)
     {
         var left = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
@@ -204,6 +208,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_op_op_Subtraction(lua_State L)
     {
         var left = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
@@ -213,6 +218,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_op_op_Multiply(lua_State L)
     {
         var left = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
@@ -222,6 +228,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1)!;
@@ -230,6 +237,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -263,6 +271,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_method_normalized(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -290,6 +299,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_method_toVec2(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -317,6 +327,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -344,6 +355,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_static_cross(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -369,6 +381,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_static_dot(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -394,6 +407,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_static_fromVec2(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -419,6 +433,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector3Struct_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

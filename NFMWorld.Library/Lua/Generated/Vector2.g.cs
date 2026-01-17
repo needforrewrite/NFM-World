@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Vector2 (Vector2) ===========
     private static void Register_Vector2(lua_State L)
@@ -19,55 +21,55 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Vector2");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Vector2__gc));
+        lua_pushcfunction(L, &Vector2__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Vector2__index));
+        lua_pushcfunction(L, &Vector2__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Vector2__newindex));
+        lua_pushcfunction(L, &Vector2__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __add
-        lua_pushcfunction(L, (Vector2_op_op_Addition));
+        lua_pushcfunction(L, &Vector2_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __div
-        lua_pushcfunction(L, (Vector2_op_op_Division));
+        lua_pushcfunction(L, &Vector2_op_op_Division);
         lua_setfield(L, -2, "__div");
 
         // Operator: __div
-        lua_pushcfunction(L, (Vector2_op_op_Division));
+        lua_pushcfunction(L, &Vector2_op_op_Division);
         lua_setfield(L, -2, "__div");
 
         // Operator: __eq
-        lua_pushcfunction(L, (Vector2_op_op_Equality));
+        lua_pushcfunction(L, &Vector2_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Vector2_op_op_Multiply));
+        lua_pushcfunction(L, &Vector2_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Vector2_op_op_Multiply));
+        lua_pushcfunction(L, &Vector2_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Vector2_op_op_Multiply));
+        lua_pushcfunction(L, &Vector2_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Vector2_op_op_Subtraction));
+        lua_pushcfunction(L, &Vector2_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __unm
-        lua_pushcfunction(L, (Vector2_op_op_UnaryNegation));
+        lua_pushcfunction(L, &Vector2_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Vector2__tostring));
+        lua_pushcfunction(L, &Vector2__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -76,408 +78,407 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Vector2_new));
+        lua_pushcfunction(L, &Vector2_new);
         lua_setfield(L, -2, "new");
 
         // Static method: abs
-        lua_pushcfunction(L, (Vector2_static_abs));
+        lua_pushcfunction(L, &Vector2_static_abs);
         lua_setfield(L, -2, "abs");
 
         // Static method: add
-        lua_pushcfunction(L, (Vector2_static_add));
+        lua_pushcfunction(L, &Vector2_static_add);
         lua_setfield(L, -2, "add");
 
         // Static method: all
-        lua_pushcfunction(L, (Vector2_static_all));
+        lua_pushcfunction(L, &Vector2_static_all);
         lua_setfield(L, -2, "all");
 
         // Static method: allWhereAllBitsSet
-        lua_pushcfunction(L, (Vector2_static_allWhereAllBitsSet));
+        lua_pushcfunction(L, &Vector2_static_allWhereAllBitsSet);
         lua_setfield(L, -2, "allWhereAllBitsSet");
 
         // Static method: andNot
-        lua_pushcfunction(L, (Vector2_static_andNot));
+        lua_pushcfunction(L, &Vector2_static_andNot);
         lua_setfield(L, -2, "andNot");
 
         // Static method: any
-        lua_pushcfunction(L, (Vector2_static_any));
+        lua_pushcfunction(L, &Vector2_static_any);
         lua_setfield(L, -2, "any");
 
         // Static method: anyWhereAllBitsSet
-        lua_pushcfunction(L, (Vector2_static_anyWhereAllBitsSet));
+        lua_pushcfunction(L, &Vector2_static_anyWhereAllBitsSet);
         lua_setfield(L, -2, "anyWhereAllBitsSet");
 
         // Static method: bitwiseAnd
-        lua_pushcfunction(L, (Vector2_static_bitwiseAnd));
+        lua_pushcfunction(L, &Vector2_static_bitwiseAnd);
         lua_setfield(L, -2, "bitwiseAnd");
 
         // Static method: bitwiseOr
-        lua_pushcfunction(L, (Vector2_static_bitwiseOr));
+        lua_pushcfunction(L, &Vector2_static_bitwiseOr);
         lua_setfield(L, -2, "bitwiseOr");
 
         // Static method: clamp
-        lua_pushcfunction(L, (Vector2_static_clamp));
+        lua_pushcfunction(L, &Vector2_static_clamp);
         lua_setfield(L, -2, "clamp");
 
         // Static method: clampNative
-        lua_pushcfunction(L, (Vector2_static_clampNative));
+        lua_pushcfunction(L, &Vector2_static_clampNative);
         lua_setfield(L, -2, "clampNative");
 
         // Static method: conditionalSelect
-        lua_pushcfunction(L, (Vector2_static_conditionalSelect));
+        lua_pushcfunction(L, &Vector2_static_conditionalSelect);
         lua_setfield(L, -2, "conditionalSelect");
 
         // Static method: copySign
-        lua_pushcfunction(L, (Vector2_static_copySign));
+        lua_pushcfunction(L, &Vector2_static_copySign);
         lua_setfield(L, -2, "copySign");
 
         // Static method: cos
-        lua_pushcfunction(L, (Vector2_static_cos));
+        lua_pushcfunction(L, &Vector2_static_cos);
         lua_setfield(L, -2, "cos");
 
         // Static method: count
-        lua_pushcfunction(L, (Vector2_static_count));
+        lua_pushcfunction(L, &Vector2_static_count);
         lua_setfield(L, -2, "count");
 
         // Static method: countWhereAllBitsSet
-        lua_pushcfunction(L, (Vector2_static_countWhereAllBitsSet));
+        lua_pushcfunction(L, &Vector2_static_countWhereAllBitsSet);
         lua_setfield(L, -2, "countWhereAllBitsSet");
 
         // Static method: create
-        lua_pushcfunction(L, (Vector2_static_create));
+        lua_pushcfunction(L, &Vector2_static_create);
         lua_setfield(L, -2, "create");
 
         // Static method: createScalar
-        lua_pushcfunction(L, (Vector2_static_createScalar));
+        lua_pushcfunction(L, &Vector2_static_createScalar);
         lua_setfield(L, -2, "createScalar");
 
         // Static method: createScalarUnsafe
-        lua_pushcfunction(L, (Vector2_static_createScalarUnsafe));
+        lua_pushcfunction(L, &Vector2_static_createScalarUnsafe);
         lua_setfield(L, -2, "createScalarUnsafe");
 
         // Static method: cross
-        lua_pushcfunction(L, (Vector2_static_cross));
+        lua_pushcfunction(L, &Vector2_static_cross);
         lua_setfield(L, -2, "cross");
 
         // Static method: degreesToRadians
-        lua_pushcfunction(L, (Vector2_static_degreesToRadians));
+        lua_pushcfunction(L, &Vector2_static_degreesToRadians);
         lua_setfield(L, -2, "degreesToRadians");
 
         // Static method: distance
-        lua_pushcfunction(L, (Vector2_static_distance));
+        lua_pushcfunction(L, &Vector2_static_distance);
         lua_setfield(L, -2, "distance");
 
         // Static method: distanceSquared
-        lua_pushcfunction(L, (Vector2_static_distanceSquared));
+        lua_pushcfunction(L, &Vector2_static_distanceSquared);
         lua_setfield(L, -2, "distanceSquared");
 
         // Static method: divide
-        lua_pushcfunction(L, (Vector2_static_divide));
+        lua_pushcfunction(L, &Vector2_static_divide);
         lua_setfield(L, -2, "divide");
 
         // Static method: dot
-        lua_pushcfunction(L, (Vector2_static_dot));
+        lua_pushcfunction(L, &Vector2_static_dot);
         lua_setfield(L, -2, "dot");
 
         // Static method: exp
-        lua_pushcfunction(L, (Vector2_static_exp));
+        lua_pushcfunction(L, &Vector2_static_exp);
         lua_setfield(L, -2, "exp");
 
         // Static method: equals
-        lua_pushcfunction(L, (Vector2_static_equals));
+        lua_pushcfunction(L, &Vector2_static_equals);
         lua_setfield(L, -2, "equals");
 
         // Static method: equalsAll
-        lua_pushcfunction(L, (Vector2_static_equalsAll));
+        lua_pushcfunction(L, &Vector2_static_equalsAll);
         lua_setfield(L, -2, "equalsAll");
 
         // Static method: equalsAny
-        lua_pushcfunction(L, (Vector2_static_equalsAny));
+        lua_pushcfunction(L, &Vector2_static_equalsAny);
         lua_setfield(L, -2, "equalsAny");
 
         // Static method: fusedMultiplyAdd
-        lua_pushcfunction(L, (Vector2_static_fusedMultiplyAdd));
+        lua_pushcfunction(L, &Vector2_static_fusedMultiplyAdd);
         lua_setfield(L, -2, "fusedMultiplyAdd");
 
         // Static method: greaterThan
-        lua_pushcfunction(L, (Vector2_static_greaterThan));
+        lua_pushcfunction(L, &Vector2_static_greaterThan);
         lua_setfield(L, -2, "greaterThan");
 
         // Static method: greaterThanAll
-        lua_pushcfunction(L, (Vector2_static_greaterThanAll));
+        lua_pushcfunction(L, &Vector2_static_greaterThanAll);
         lua_setfield(L, -2, "greaterThanAll");
 
         // Static method: greaterThanAny
-        lua_pushcfunction(L, (Vector2_static_greaterThanAny));
+        lua_pushcfunction(L, &Vector2_static_greaterThanAny);
         lua_setfield(L, -2, "greaterThanAny");
 
         // Static method: greaterThanOrEqual
-        lua_pushcfunction(L, (Vector2_static_greaterThanOrEqual));
+        lua_pushcfunction(L, &Vector2_static_greaterThanOrEqual);
         lua_setfield(L, -2, "greaterThanOrEqual");
 
         // Static method: greaterThanOrEqualAll
-        lua_pushcfunction(L, (Vector2_static_greaterThanOrEqualAll));
+        lua_pushcfunction(L, &Vector2_static_greaterThanOrEqualAll);
         lua_setfield(L, -2, "greaterThanOrEqualAll");
 
         // Static method: greaterThanOrEqualAny
-        lua_pushcfunction(L, (Vector2_static_greaterThanOrEqualAny));
+        lua_pushcfunction(L, &Vector2_static_greaterThanOrEqualAny);
         lua_setfield(L, -2, "greaterThanOrEqualAny");
 
         // Static method: hypot
-        lua_pushcfunction(L, (Vector2_static_hypot));
+        lua_pushcfunction(L, &Vector2_static_hypot);
         lua_setfield(L, -2, "hypot");
 
         // Static method: indexOf
-        lua_pushcfunction(L, (Vector2_static_indexOf));
+        lua_pushcfunction(L, &Vector2_static_indexOf);
         lua_setfield(L, -2, "indexOf");
 
         // Static method: indexOfWhereAllBitsSet
-        lua_pushcfunction(L, (Vector2_static_indexOfWhereAllBitsSet));
+        lua_pushcfunction(L, &Vector2_static_indexOfWhereAllBitsSet);
         lua_setfield(L, -2, "indexOfWhereAllBitsSet");
 
         // Static method: isEvenInteger
-        lua_pushcfunction(L, (Vector2_static_isEvenInteger));
+        lua_pushcfunction(L, &Vector2_static_isEvenInteger);
         lua_setfield(L, -2, "isEvenInteger");
 
         // Static method: isFinite
-        lua_pushcfunction(L, (Vector2_static_isFinite));
+        lua_pushcfunction(L, &Vector2_static_isFinite);
         lua_setfield(L, -2, "isFinite");
 
         // Static method: isInfinity
-        lua_pushcfunction(L, (Vector2_static_isInfinity));
+        lua_pushcfunction(L, &Vector2_static_isInfinity);
         lua_setfield(L, -2, "isInfinity");
 
         // Static method: isInteger
-        lua_pushcfunction(L, (Vector2_static_isInteger));
+        lua_pushcfunction(L, &Vector2_static_isInteger);
         lua_setfield(L, -2, "isInteger");
 
         // Static method: isNaN
-        lua_pushcfunction(L, (Vector2_static_isNaN));
+        lua_pushcfunction(L, &Vector2_static_isNaN);
         lua_setfield(L, -2, "isNaN");
 
         // Static method: isNegative
-        lua_pushcfunction(L, (Vector2_static_isNegative));
+        lua_pushcfunction(L, &Vector2_static_isNegative);
         lua_setfield(L, -2, "isNegative");
 
         // Static method: isNegativeInfinity
-        lua_pushcfunction(L, (Vector2_static_isNegativeInfinity));
+        lua_pushcfunction(L, &Vector2_static_isNegativeInfinity);
         lua_setfield(L, -2, "isNegativeInfinity");
 
         // Static method: isNormal
-        lua_pushcfunction(L, (Vector2_static_isNormal));
+        lua_pushcfunction(L, &Vector2_static_isNormal);
         lua_setfield(L, -2, "isNormal");
 
         // Static method: isOddInteger
-        lua_pushcfunction(L, (Vector2_static_isOddInteger));
+        lua_pushcfunction(L, &Vector2_static_isOddInteger);
         lua_setfield(L, -2, "isOddInteger");
 
         // Static method: isPositive
-        lua_pushcfunction(L, (Vector2_static_isPositive));
+        lua_pushcfunction(L, &Vector2_static_isPositive);
         lua_setfield(L, -2, "isPositive");
 
         // Static method: isPositiveInfinity
-        lua_pushcfunction(L, (Vector2_static_isPositiveInfinity));
+        lua_pushcfunction(L, &Vector2_static_isPositiveInfinity);
         lua_setfield(L, -2, "isPositiveInfinity");
 
         // Static method: isSubnormal
-        lua_pushcfunction(L, (Vector2_static_isSubnormal));
+        lua_pushcfunction(L, &Vector2_static_isSubnormal);
         lua_setfield(L, -2, "isSubnormal");
 
         // Static method: isZero
-        lua_pushcfunction(L, (Vector2_static_isZero));
+        lua_pushcfunction(L, &Vector2_static_isZero);
         lua_setfield(L, -2, "isZero");
 
         // Static method: lastIndexOf
-        lua_pushcfunction(L, (Vector2_static_lastIndexOf));
+        lua_pushcfunction(L, &Vector2_static_lastIndexOf);
         lua_setfield(L, -2, "lastIndexOf");
 
         // Static method: lastIndexOfWhereAllBitsSet
-        lua_pushcfunction(L, (Vector2_static_lastIndexOfWhereAllBitsSet));
+        lua_pushcfunction(L, &Vector2_static_lastIndexOfWhereAllBitsSet);
         lua_setfield(L, -2, "lastIndexOfWhereAllBitsSet");
 
         // Static method: lerp
-        lua_pushcfunction(L, (Vector2_static_lerp));
+        lua_pushcfunction(L, &Vector2_static_lerp);
         lua_setfield(L, -2, "lerp");
 
         // Static method: lessThan
-        lua_pushcfunction(L, (Vector2_static_lessThan));
+        lua_pushcfunction(L, &Vector2_static_lessThan);
         lua_setfield(L, -2, "lessThan");
 
         // Static method: lessThanAll
-        lua_pushcfunction(L, (Vector2_static_lessThanAll));
+        lua_pushcfunction(L, &Vector2_static_lessThanAll);
         lua_setfield(L, -2, "lessThanAll");
 
         // Static method: lessThanAny
-        lua_pushcfunction(L, (Vector2_static_lessThanAny));
+        lua_pushcfunction(L, &Vector2_static_lessThanAny);
         lua_setfield(L, -2, "lessThanAny");
 
         // Static method: lessThanOrEqual
-        lua_pushcfunction(L, (Vector2_static_lessThanOrEqual));
+        lua_pushcfunction(L, &Vector2_static_lessThanOrEqual);
         lua_setfield(L, -2, "lessThanOrEqual");
 
         // Static method: lessThanOrEqualAll
-        lua_pushcfunction(L, (Vector2_static_lessThanOrEqualAll));
+        lua_pushcfunction(L, &Vector2_static_lessThanOrEqualAll);
         lua_setfield(L, -2, "lessThanOrEqualAll");
 
         // Static method: lessThanOrEqualAny
-        lua_pushcfunction(L, (Vector2_static_lessThanOrEqualAny));
+        lua_pushcfunction(L, &Vector2_static_lessThanOrEqualAny);
         lua_setfield(L, -2, "lessThanOrEqualAny");
 
         // Static method: loadUnsafe
-        lua_pushcfunction(L, (Vector2_static_loadUnsafe));
+        lua_pushcfunction(L, &Vector2_static_loadUnsafe);
         lua_setfield(L, -2, "loadUnsafe");
 
         // Static method: log
-        lua_pushcfunction(L, (Vector2_static_log));
+        lua_pushcfunction(L, &Vector2_static_log);
         lua_setfield(L, -2, "log");
 
         // Static method: log2
-        lua_pushcfunction(L, (Vector2_static_log2));
+        lua_pushcfunction(L, &Vector2_static_log2);
         lua_setfield(L, -2, "log2");
 
         // Static method: max
-        lua_pushcfunction(L, (Vector2_static_max));
+        lua_pushcfunction(L, &Vector2_static_max);
         lua_setfield(L, -2, "max");
 
         // Static method: maxMagnitude
-        lua_pushcfunction(L, (Vector2_static_maxMagnitude));
+        lua_pushcfunction(L, &Vector2_static_maxMagnitude);
         lua_setfield(L, -2, "maxMagnitude");
 
         // Static method: maxMagnitudeNumber
-        lua_pushcfunction(L, (Vector2_static_maxMagnitudeNumber));
+        lua_pushcfunction(L, &Vector2_static_maxMagnitudeNumber);
         lua_setfield(L, -2, "maxMagnitudeNumber");
 
         // Static method: maxNative
-        lua_pushcfunction(L, (Vector2_static_maxNative));
+        lua_pushcfunction(L, &Vector2_static_maxNative);
         lua_setfield(L, -2, "maxNative");
 
         // Static method: maxNumber
-        lua_pushcfunction(L, (Vector2_static_maxNumber));
+        lua_pushcfunction(L, &Vector2_static_maxNumber);
         lua_setfield(L, -2, "maxNumber");
 
         // Static method: min
-        lua_pushcfunction(L, (Vector2_static_min));
+        lua_pushcfunction(L, &Vector2_static_min);
         lua_setfield(L, -2, "min");
 
         // Static method: minMagnitude
-        lua_pushcfunction(L, (Vector2_static_minMagnitude));
+        lua_pushcfunction(L, &Vector2_static_minMagnitude);
         lua_setfield(L, -2, "minMagnitude");
 
         // Static method: minMagnitudeNumber
-        lua_pushcfunction(L, (Vector2_static_minMagnitudeNumber));
+        lua_pushcfunction(L, &Vector2_static_minMagnitudeNumber);
         lua_setfield(L, -2, "minMagnitudeNumber");
 
         // Static method: minNative
-        lua_pushcfunction(L, (Vector2_static_minNative));
+        lua_pushcfunction(L, &Vector2_static_minNative);
         lua_setfield(L, -2, "minNative");
 
         // Static method: minNumber
-        lua_pushcfunction(L, (Vector2_static_minNumber));
+        lua_pushcfunction(L, &Vector2_static_minNumber);
         lua_setfield(L, -2, "minNumber");
 
         // Static method: multiply
-        lua_pushcfunction(L, (Vector2_static_multiply));
+        lua_pushcfunction(L, &Vector2_static_multiply);
         lua_setfield(L, -2, "multiply");
 
         // Static method: multiplyAddEstimate
-        lua_pushcfunction(L, (Vector2_static_multiplyAddEstimate));
+        lua_pushcfunction(L, &Vector2_static_multiplyAddEstimate);
         lua_setfield(L, -2, "multiplyAddEstimate");
 
         // Static method: negate
-        lua_pushcfunction(L, (Vector2_static_negate));
+        lua_pushcfunction(L, &Vector2_static_negate);
         lua_setfield(L, -2, "negate");
 
         // Static method: none
-        lua_pushcfunction(L, (Vector2_static_none));
+        lua_pushcfunction(L, &Vector2_static_none);
         lua_setfield(L, -2, "none");
 
         // Static method: noneWhereAllBitsSet
-        lua_pushcfunction(L, (Vector2_static_noneWhereAllBitsSet));
+        lua_pushcfunction(L, &Vector2_static_noneWhereAllBitsSet);
         lua_setfield(L, -2, "noneWhereAllBitsSet");
 
         // Static method: normalize
-        lua_pushcfunction(L, (Vector2_static_normalize));
+        lua_pushcfunction(L, &Vector2_static_normalize);
         lua_setfield(L, -2, "normalize");
 
         // Static method: onesComplement
-        lua_pushcfunction(L, (Vector2_static_onesComplement));
+        lua_pushcfunction(L, &Vector2_static_onesComplement);
         lua_setfield(L, -2, "onesComplement");
 
         // Static method: radiansToDegrees
-        lua_pushcfunction(L, (Vector2_static_radiansToDegrees));
+        lua_pushcfunction(L, &Vector2_static_radiansToDegrees);
         lua_setfield(L, -2, "radiansToDegrees");
 
         // Static method: reflect
-        lua_pushcfunction(L, (Vector2_static_reflect));
+        lua_pushcfunction(L, &Vector2_static_reflect);
         lua_setfield(L, -2, "reflect");
 
         // Static method: round
-        lua_pushcfunction(L, (Vector2_static_round));
+        lua_pushcfunction(L, &Vector2_static_round);
         lua_setfield(L, -2, "round");
 
         // Static method: shuffle
-        lua_pushcfunction(L, (Vector2_static_shuffle));
+        lua_pushcfunction(L, &Vector2_static_shuffle);
         lua_setfield(L, -2, "shuffle");
 
         // Static method: sin
-        lua_pushcfunction(L, (Vector2_static_sin));
+        lua_pushcfunction(L, &Vector2_static_sin);
         lua_setfield(L, -2, "sin");
 
         // Static method: sinCos
-        lua_pushcfunction(L, (Vector2_static_sinCos));
+        lua_pushcfunction(L, &Vector2_static_sinCos);
         lua_setfield(L, -2, "sinCos");
 
         // Static method: squareRoot
-        lua_pushcfunction(L, (Vector2_static_squareRoot));
+        lua_pushcfunction(L, &Vector2_static_squareRoot);
         lua_setfield(L, -2, "squareRoot");
 
         // Static method: subtract
-        lua_pushcfunction(L, (Vector2_static_subtract));
+        lua_pushcfunction(L, &Vector2_static_subtract);
         lua_setfield(L, -2, "subtract");
 
         // Static method: sum
-        lua_pushcfunction(L, (Vector2_static_sum));
+        lua_pushcfunction(L, &Vector2_static_sum);
         lua_setfield(L, -2, "sum");
 
         // Static method: transform
-        lua_pushcfunction(L, (Vector2_static_transform));
+        lua_pushcfunction(L, &Vector2_static_transform);
         lua_setfield(L, -2, "transform");
 
         // Static method: transformNormal
-        lua_pushcfunction(L, (Vector2_static_transformNormal));
+        lua_pushcfunction(L, &Vector2_static_transformNormal);
         lua_setfield(L, -2, "transformNormal");
 
         // Static method: truncate
-        lua_pushcfunction(L, (Vector2_static_truncate));
+        lua_pushcfunction(L, &Vector2_static_truncate);
         lua_setfield(L, -2, "truncate");
 
         // Static method: xor
-        lua_pushcfunction(L, (Vector2_static_xor));
+        lua_pushcfunction(L, &Vector2_static_xor);
         lua_setfield(L, -2, "xor");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (Vector2_type__index));
+        lua_pushcfunction(L, &Vector2_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "Vector2");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.Numerics.Vector2>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.Numerics.Vector2>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2__index(lua_State L)
     {
         var obj = GetStructFromStack<System.Numerics.Vector2>(L, 1);
@@ -503,55 +504,55 @@ public partial class LuaBindings
                 PushValue(L, ((System.Numerics.Vector2)obj).Y);
                 return 1;
             case "copyTo":
-                lua_pushcfunction(L, (Vector2_method_copyTo));
+                lua_pushcfunction(L, &Vector2_method_copyTo);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "length":
-                lua_pushcfunction(L, (Vector2_method_length));
+                lua_pushcfunction(L, &Vector2_method_length);
                 return 1;
             case "lengthSquared":
-                lua_pushcfunction(L, (Vector2_method_lengthSquared));
+                lua_pushcfunction(L, &Vector2_method_lengthSquared);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Vector2_method_getType));
+                lua_pushcfunction(L, &Vector2_method_getType);
                 return 1;
             case "asVector3":
-                lua_pushcfunction(L, (Vector2_method_asVector3));
+                lua_pushcfunction(L, &Vector2_method_asVector3);
                 return 1;
             case "asVector3Unsafe":
-                lua_pushcfunction(L, (Vector2_method_asVector3Unsafe));
+                lua_pushcfunction(L, &Vector2_method_asVector3Unsafe);
                 return 1;
             case "asVector4":
-                lua_pushcfunction(L, (Vector2_method_asVector4));
+                lua_pushcfunction(L, &Vector2_method_asVector4);
                 return 1;
             case "asVector4Unsafe":
-                lua_pushcfunction(L, (Vector2_method_asVector4Unsafe));
+                lua_pushcfunction(L, &Vector2_method_asVector4Unsafe);
                 return 1;
             case "extractMostSignificantBits":
-                lua_pushcfunction(L, (Vector2_method_extractMostSignificantBits));
+                lua_pushcfunction(L, &Vector2_method_extractMostSignificantBits);
                 return 1;
             case "getElement":
-                lua_pushcfunction(L, (Vector2_method_getElement));
+                lua_pushcfunction(L, &Vector2_method_getElement);
                 return 1;
             case "toScalar":
-                lua_pushcfunction(L, (Vector2_method_toScalar));
+                lua_pushcfunction(L, &Vector2_method_toScalar);
                 return 1;
             case "withElement":
-                lua_pushcfunction(L, (Vector2_method_withElement));
+                lua_pushcfunction(L, &Vector2_method_withElement);
                 return 1;
             case "asVector128":
-                lua_pushcfunction(L, (Vector2_method_asVector128));
+                lua_pushcfunction(L, &Vector2_method_asVector128);
                 return 1;
             case "asVector128Unsafe":
-                lua_pushcfunction(L, (Vector2_method_asVector128Unsafe));
+                lua_pushcfunction(L, &Vector2_method_asVector128Unsafe);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -559,6 +560,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2__newindex(lua_State L)
     {
         var obj = GetStructFromStack<System.Numerics.Vector2>(L, 1);
@@ -605,6 +607,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2__tostring(lua_State L)
     {
         var obj = GetStructFromStack<System.Numerics.Vector2>(L, 1);
@@ -612,6 +615,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_op_op_Addition(lua_State L)
     {
         var left = ToObject<System.Numerics.Vector2>(L, 1)!;
@@ -621,6 +625,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_op_op_Division(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -685,6 +690,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_op_op_Equality(lua_State L)
     {
         var left = ToObject<System.Numerics.Vector2>(L, 1)!;
@@ -693,6 +699,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_op_op_Multiply(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -782,6 +789,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_op_op_Subtraction(lua_State L)
     {
         var left = ToObject<System.Numerics.Vector2>(L, 1)!;
@@ -791,6 +799,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<System.Numerics.Vector2>(L, 1)!;
@@ -799,6 +808,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -847,6 +857,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_copyTo(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -892,6 +903,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_length(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -919,6 +931,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_lengthSquared(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -946,6 +959,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -978,6 +992,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1005,6 +1020,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_asVector3(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1030,6 +1046,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_asVector3Unsafe(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1055,6 +1072,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_asVector4(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1080,6 +1098,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_asVector4Unsafe(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1105,6 +1124,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_extractMostSignificantBits(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1130,6 +1150,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_getElement(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1156,6 +1177,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_toScalar(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1181,6 +1203,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_withElement(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1208,6 +1231,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_asVector128(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1233,6 +1257,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_method_asVector128Unsafe(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1258,6 +1283,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_abs(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1282,6 +1308,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1307,6 +1334,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_all(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1332,6 +1360,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_allWhereAllBitsSet(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1356,6 +1385,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_andNot(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1381,6 +1411,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_any(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1406,6 +1437,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_anyWhereAllBitsSet(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1430,6 +1462,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_bitwiseAnd(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1455,6 +1488,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_bitwiseOr(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1480,6 +1514,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_clamp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1506,6 +1541,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_clampNative(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1532,6 +1568,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_conditionalSelect(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1558,6 +1595,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_copySign(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1583,6 +1621,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_cos(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1607,6 +1646,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_count(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1632,6 +1672,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_countWhereAllBitsSet(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1656,6 +1697,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_create(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1697,6 +1739,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_createScalar(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1721,6 +1764,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_createScalarUnsafe(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1745,6 +1789,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_cross(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1770,6 +1815,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_degreesToRadians(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1794,6 +1840,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_distance(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1819,6 +1866,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_distanceSquared(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1844,6 +1892,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_divide(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1932,6 +1981,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_dot(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1957,6 +2007,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_exp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1981,6 +2032,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_equals(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2006,6 +2058,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_equalsAll(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2031,6 +2084,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_equalsAny(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2056,6 +2110,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_fusedMultiplyAdd(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2082,6 +2137,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_greaterThan(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2107,6 +2163,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_greaterThanAll(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2132,6 +2189,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_greaterThanAny(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2157,6 +2215,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_greaterThanOrEqual(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2182,6 +2241,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_greaterThanOrEqualAll(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2207,6 +2267,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_greaterThanOrEqualAny(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2232,6 +2293,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_hypot(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2257,6 +2319,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_indexOf(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2282,6 +2345,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_indexOfWhereAllBitsSet(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2306,6 +2370,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isEvenInteger(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2330,6 +2395,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isFinite(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2354,6 +2420,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isInfinity(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2378,6 +2445,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isInteger(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2402,6 +2470,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isNaN(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2426,6 +2495,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isNegative(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2450,6 +2520,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isNegativeInfinity(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2474,6 +2545,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isNormal(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2498,6 +2570,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isOddInteger(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2522,6 +2595,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isPositive(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2546,6 +2620,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isPositiveInfinity(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2570,6 +2645,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isSubnormal(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2594,6 +2670,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_isZero(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2618,6 +2695,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_lastIndexOf(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2643,6 +2721,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_lastIndexOfWhereAllBitsSet(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2667,6 +2746,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_lerp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2763,6 +2843,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_lessThan(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2788,6 +2869,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_lessThanAll(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2813,6 +2895,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_lessThanAny(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2838,6 +2921,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_lessThanOrEqual(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2863,6 +2947,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_lessThanOrEqualAll(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2888,6 +2973,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_lessThanOrEqualAny(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2913,6 +2999,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_loadUnsafe(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2954,6 +3041,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_log(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -2978,6 +3066,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_log2(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3002,6 +3091,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_max(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3027,6 +3117,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_maxMagnitude(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3052,6 +3143,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_maxMagnitudeNumber(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3077,6 +3169,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_maxNative(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3102,6 +3195,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_maxNumber(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3127,6 +3221,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_min(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3152,6 +3247,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_minMagnitude(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3177,6 +3273,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_minMagnitudeNumber(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3202,6 +3299,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_minNative(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3227,6 +3325,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_minNumber(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3252,6 +3351,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3373,6 +3473,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_multiplyAddEstimate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3399,6 +3500,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_negate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3423,6 +3525,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_none(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3448,6 +3551,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_noneWhereAllBitsSet(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3472,6 +3576,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_normalize(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3496,6 +3601,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_onesComplement(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3520,6 +3626,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_radiansToDegrees(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3544,6 +3651,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_reflect(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3569,6 +3677,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_round(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3610,6 +3719,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_shuffle(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3636,6 +3746,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_sin(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3660,6 +3771,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_sinCos(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3684,6 +3796,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_squareRoot(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3708,6 +3821,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_subtract(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3733,6 +3847,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_sum(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3757,6 +3872,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_transform(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3878,6 +3994,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_transformNormal(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3966,6 +4083,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_truncate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -3990,6 +4108,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_static_xor(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -4015,6 +4134,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Vector2_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

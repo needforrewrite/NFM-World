@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for f64Vector3 (f64Vector3) ===========
     private static void Register_f64Vector3(lua_State L)
@@ -19,55 +21,55 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_f64Vector3");
 
         // __gc metamethod
-        lua_pushcfunction(L, (f64Vector3__gc));
+        lua_pushcfunction(L, &f64Vector3__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (f64Vector3__index));
+        lua_pushcfunction(L, &f64Vector3__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (f64Vector3__newindex));
+        lua_pushcfunction(L, &f64Vector3__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __eq
-        lua_pushcfunction(L, (f64Vector3_op_op_Equality));
+        lua_pushcfunction(L, &f64Vector3_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // Operator: __add
-        lua_pushcfunction(L, (f64Vector3_op_op_Addition));
+        lua_pushcfunction(L, &f64Vector3_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __unm
-        lua_pushcfunction(L, (f64Vector3_op_op_UnaryNegation));
+        lua_pushcfunction(L, &f64Vector3_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // Operator: __sub
-        lua_pushcfunction(L, (f64Vector3_op_op_Subtraction));
+        lua_pushcfunction(L, &f64Vector3_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __mul
-        lua_pushcfunction(L, (f64Vector3_op_op_Multiply));
+        lua_pushcfunction(L, &f64Vector3_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (f64Vector3_op_op_Multiply));
+        lua_pushcfunction(L, &f64Vector3_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (f64Vector3_op_op_Multiply));
+        lua_pushcfunction(L, &f64Vector3_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __div
-        lua_pushcfunction(L, (f64Vector3_op_op_Division));
+        lua_pushcfunction(L, &f64Vector3_op_op_Division);
         lua_setfield(L, -2, "__div");
 
         // Operator: __div
-        lua_pushcfunction(L, (f64Vector3_op_op_Division));
+        lua_pushcfunction(L, &f64Vector3_op_op_Division);
         lua_setfield(L, -2, "__div");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (f64Vector3__tostring));
+        lua_pushcfunction(L, &f64Vector3__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -76,116 +78,115 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (f64Vector3_new));
+        lua_pushcfunction(L, &f64Vector3_new);
         lua_setfield(L, -2, "new");
 
         // Static method: add
-        lua_pushcfunction(L, (f64Vector3_static_add));
+        lua_pushcfunction(L, &f64Vector3_static_add);
         lua_setfield(L, -2, "add");
 
         // Static method: barycentric
-        lua_pushcfunction(L, (f64Vector3_static_barycentric));
+        lua_pushcfunction(L, &f64Vector3_static_barycentric);
         lua_setfield(L, -2, "barycentric");
 
         // Static method: catmullRom
-        lua_pushcfunction(L, (f64Vector3_static_catmullRom));
+        lua_pushcfunction(L, &f64Vector3_static_catmullRom);
         lua_setfield(L, -2, "catmullRom");
 
         // Static method: clamp
-        lua_pushcfunction(L, (f64Vector3_static_clamp));
+        lua_pushcfunction(L, &f64Vector3_static_clamp);
         lua_setfield(L, -2, "clamp");
 
         // Static method: cross
-        lua_pushcfunction(L, (f64Vector3_static_cross));
+        lua_pushcfunction(L, &f64Vector3_static_cross);
         lua_setfield(L, -2, "cross");
 
         // Static method: distance
-        lua_pushcfunction(L, (f64Vector3_static_distance));
+        lua_pushcfunction(L, &f64Vector3_static_distance);
         lua_setfield(L, -2, "distance");
 
         // Static method: distanceSquared
-        lua_pushcfunction(L, (f64Vector3_static_distanceSquared));
+        lua_pushcfunction(L, &f64Vector3_static_distanceSquared);
         lua_setfield(L, -2, "distanceSquared");
 
         // Static method: divide
-        lua_pushcfunction(L, (f64Vector3_static_divide));
+        lua_pushcfunction(L, &f64Vector3_static_divide);
         lua_setfield(L, -2, "divide");
 
         // Static method: dot
-        lua_pushcfunction(L, (f64Vector3_static_dot));
+        lua_pushcfunction(L, &f64Vector3_static_dot);
         lua_setfield(L, -2, "dot");
 
         // Static method: hermite
-        lua_pushcfunction(L, (f64Vector3_static_hermite));
+        lua_pushcfunction(L, &f64Vector3_static_hermite);
         lua_setfield(L, -2, "hermite");
 
         // Static method: lerp
-        lua_pushcfunction(L, (f64Vector3_static_lerp));
+        lua_pushcfunction(L, &f64Vector3_static_lerp);
         lua_setfield(L, -2, "lerp");
 
         // Static method: max
-        lua_pushcfunction(L, (f64Vector3_static_max));
+        lua_pushcfunction(L, &f64Vector3_static_max);
         lua_setfield(L, -2, "max");
 
         // Static method: min
-        lua_pushcfunction(L, (f64Vector3_static_min));
+        lua_pushcfunction(L, &f64Vector3_static_min);
         lua_setfield(L, -2, "min");
 
         // Static method: multiply
-        lua_pushcfunction(L, (f64Vector3_static_multiply));
+        lua_pushcfunction(L, &f64Vector3_static_multiply);
         lua_setfield(L, -2, "multiply");
 
         // Static method: negate
-        lua_pushcfunction(L, (f64Vector3_static_negate));
+        lua_pushcfunction(L, &f64Vector3_static_negate);
         lua_setfield(L, -2, "negate");
 
         // Static method: normalize
-        lua_pushcfunction(L, (f64Vector3_static_normalize));
+        lua_pushcfunction(L, &f64Vector3_static_normalize);
         lua_setfield(L, -2, "normalize");
 
         // Static method: reflect
-        lua_pushcfunction(L, (f64Vector3_static_reflect));
+        lua_pushcfunction(L, &f64Vector3_static_reflect);
         lua_setfield(L, -2, "reflect");
 
         // Static method: smoothStep
-        lua_pushcfunction(L, (f64Vector3_static_smoothStep));
+        lua_pushcfunction(L, &f64Vector3_static_smoothStep);
         lua_setfield(L, -2, "smoothStep");
 
         // Static method: subtract
-        lua_pushcfunction(L, (f64Vector3_static_subtract));
+        lua_pushcfunction(L, &f64Vector3_static_subtract);
         lua_setfield(L, -2, "subtract");
 
         // Static method: transform
-        lua_pushcfunction(L, (f64Vector3_static_transform));
+        lua_pushcfunction(L, &f64Vector3_static_transform);
         lua_setfield(L, -2, "transform");
 
         // Static method: transformNormal
-        lua_pushcfunction(L, (f64Vector3_static_transformNormal));
+        lua_pushcfunction(L, &f64Vector3_static_transformNormal);
         lua_setfield(L, -2, "transformNormal");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (f64Vector3_type__index));
+        lua_pushcfunction(L, &f64Vector3_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "f64Vector3");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.SoftFloat.f64Vector3>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.SoftFloat.f64Vector3>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3__index(lua_State L)
     {
         var obj = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
@@ -198,71 +199,62 @@ public partial class LuaBindings
             case "x":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.SoftFloat.f64Vector3)obj).X, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'X' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.SoftFloat.f64Vector3)obj).X, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'X' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "y":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.SoftFloat.f64Vector3)obj).Y, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Y' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.SoftFloat.f64Vector3)obj).Y, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Y' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "z":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.SoftFloat.f64Vector3)obj).Z, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Z' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.SoftFloat.f64Vector3)obj).Z, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Z' to {value} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set."); });
                     }
                 }
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Object_method_equals));
+                lua_pushcfunction(L, &Object_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "length":
-                lua_pushcfunction(L, (f64Vector3_method_length));
+                lua_pushcfunction(L, &f64Vector3_method_length);
                 return 1;
             case "lengthSquared":
-                lua_pushcfunction(L, (f64Vector3_method_lengthSquared));
+                lua_pushcfunction(L, &f64Vector3_method_lengthSquared);
                 return 1;
             case "normalize":
-                lua_pushcfunction(L, (f64Vector3_method_normalize));
+                lua_pushcfunction(L, &f64Vector3_method_normalize);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (f64Vector3_method_getType));
+                lua_pushcfunction(L, &f64Vector3_method_getType);
                 return 1;
             case "rotateZy":
-                lua_pushcfunction(L, (f64Vector3_method_rotateZy));
+                lua_pushcfunction(L, &f64Vector3_method_rotateZy);
                 return 1;
             case "rotateXz":
-                lua_pushcfunction(L, (f64Vector3_method_rotateXz));
+                lua_pushcfunction(L, &f64Vector3_method_rotateXz);
                 return 1;
             case "coefficients":
-                lua_pushcfunction(L, (f64Vector3_method_coefficients));
+                lua_pushcfunction(L, &f64Vector3_method_coefficients);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -270,6 +262,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3__newindex(lua_State L)
     {
         var obj = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
@@ -319,6 +312,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3__tostring(lua_State L)
     {
         var obj = GetStructFromStack<nfm_world_library.SoftFloat.f64Vector3>(L, 1);
@@ -326,6 +320,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_op_op_Equality(lua_State L)
     {
         var left = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
@@ -334,6 +329,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_op_op_Addition(lua_State L)
     {
         var left = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
@@ -343,6 +339,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
@@ -351,6 +348,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_op_op_Subtraction(lua_State L)
     {
         var left = ToObject<nfm_world_library.SoftFloat.f64Vector3>(L, 1)!;
@@ -360,6 +358,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_op_op_Multiply(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -449,6 +448,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_op_op_Division(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -513,6 +513,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -579,6 +580,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_method_length(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -606,6 +608,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_method_lengthSquared(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -633,6 +636,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_method_normalize(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -659,6 +663,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -686,6 +691,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_method_rotateZy(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -712,6 +718,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_method_rotateXz(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -738,6 +745,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_method_coefficients(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -765,6 +773,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -790,6 +799,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_barycentric(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -818,6 +828,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_catmullRom(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -846,6 +857,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_clamp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -872,6 +884,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_cross(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -897,6 +910,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_distance(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -922,6 +936,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_distanceSquared(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -947,6 +962,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_divide(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1035,6 +1051,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_dot(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1060,6 +1077,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_hermite(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1172,6 +1190,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_lerp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1198,6 +1217,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_max(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1223,6 +1243,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_min(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1248,6 +1269,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_multiply(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1336,6 +1358,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_negate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1360,6 +1383,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_normalize(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1384,6 +1408,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_reflect(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1409,6 +1434,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_smoothStep(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1435,6 +1461,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_subtract(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1460,6 +1487,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_transform(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1548,6 +1576,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_static_transformNormal(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1573,6 +1602,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int f64Vector3_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

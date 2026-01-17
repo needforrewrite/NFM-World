@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for ReadOnlyCollection`1 (ReadOnlyCollection_BackendGameObject) ===========
     private static void Register_ReadOnlyCollection_BackendGameObject(lua_State L)
@@ -19,19 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ReadOnlyCollection_BackendGameObject");
 
         // __gc metamethod
-        lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject__gc));
+        lua_pushcfunction(L, &ReadOnlyCollection_BackendGameObject__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject__index));
+        lua_pushcfunction(L, &ReadOnlyCollection_BackendGameObject__index);
         lua_setfield(L, -2, "__index");
 
-        // __newindex metamethod
-        lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject__newindex));
-        lua_setfield(L, -2, "__newindex");
-
         // __tostring metamethod
-        lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject__tostring));
+        lua_pushcfunction(L, &ReadOnlyCollection_BackendGameObject__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,32 +38,31 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject_new));
+        lua_pushcfunction(L, &ReadOnlyCollection_BackendGameObject_new);
         lua_setfield(L, -2, "new");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject_type__index));
+        lua_pushcfunction(L, &ReadOnlyCollection_BackendGameObject_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "ReadOnlyCollection_BackendGameObject");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReadOnlyCollection_BackendGameObject__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<System.Collections.ObjectModel.ReadOnlyCollection<nfm_world_library.backend.BackendGameObject>>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<System.Collections.ObjectModel.ReadOnlyCollection<nfm_world_library.backend.BackendGameObject>>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReadOnlyCollection_BackendGameObject__index(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<nfm_world_library.backend.BackendGameObject>>(L, 1);
@@ -101,28 +98,28 @@ public partial class LuaBindings
                 PushValue(L, ((System.Collections.ICollection)obj).IsSynchronized);
                 return 1;
             case "contains":
-                lua_pushcfunction(L, (ICollection_BackendGameObject_method_contains));
+                lua_pushcfunction(L, &ICollection_BackendGameObject_method_contains);
                 return 1;
             case "copyTo":
-                lua_pushcfunction(L, (ICollection_BackendGameObject_method_copyTo));
+                lua_pushcfunction(L, &ICollection_BackendGameObject_method_copyTo);
                 return 1;
             case "getEnumerator":
-                lua_pushcfunction(L, (IEnumerable_BackendGameObject_method_getEnumerator));
+                lua_pushcfunction(L, &IEnumerable_BackendGameObject_method_getEnumerator);
                 return 1;
             case "indexOf":
-                lua_pushcfunction(L, (IList_BackendGameObject_method_indexOf));
+                lua_pushcfunction(L, &IList_BackendGameObject_method_indexOf);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject_method_getType));
+                lua_pushcfunction(L, &ReadOnlyCollection_BackendGameObject_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject_method_toString));
+                lua_pushcfunction(L, &ReadOnlyCollection_BackendGameObject_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject_method_equals));
+                lua_pushcfunction(L, &ReadOnlyCollection_BackendGameObject_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (ReadOnlyCollection_BackendGameObject_method_getHashCode));
+                lua_pushcfunction(L, &ReadOnlyCollection_BackendGameObject_method_getHashCode);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -130,20 +127,7 @@ public partial class LuaBindings
         }
     }
 
-    private static int ReadOnlyCollection_BackendGameObject__newindex(lua_State L)
-    {
-        var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<nfm_world_library.backend.BackendGameObject>>(L, 1);
-        if (obj == null) return 0;
-
-        var key = lua_tostring(L, 2);
-        if (key == null) return 0;
-
-        switch (key)
-        {
-        }
-        return 0;
-    }
-
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReadOnlyCollection_BackendGameObject__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<System.Collections.ObjectModel.ReadOnlyCollection<nfm_world_library.backend.BackendGameObject>>(L, 1);
@@ -151,6 +135,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReadOnlyCollection_BackendGameObject_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -175,6 +160,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReadOnlyCollection_BackendGameObject_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -205,6 +191,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReadOnlyCollection_BackendGameObject_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -235,6 +222,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReadOnlyCollection_BackendGameObject_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -270,6 +258,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReadOnlyCollection_BackendGameObject_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -300,6 +289,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ReadOnlyCollection_BackendGameObject_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

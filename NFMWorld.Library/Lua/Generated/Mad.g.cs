@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Mad (Mad) ===========
     private static void Register_Mad(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Mad");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Mad__gc));
+        lua_pushcfunction(L, &Mad__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Mad__index));
+        lua_pushcfunction(L, &Mad__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Mad__newindex));
+        lua_pushcfunction(L, &Mad__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Mad__tostring));
+        lua_pushcfunction(L, &Mad__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Mad_new));
+        lua_pushcfunction(L, &Mad_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "Mad");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.mad.Mad>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.mad.Mad>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -88,13 +89,10 @@ public partial class LuaBindings
             case "stat":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Stat, "MT_CarStats", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Stat = (nfm_world_library.mad.CarStats)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Stat, "MT_CarStats", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Stat = (nfm_world_library.mad.CarStats)value);
                     }
                 }
                 return 1;
@@ -119,13 +117,10 @@ public partial class LuaBindings
             case "cxz":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Cxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Cxz = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Cxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Cxz = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -135,13 +130,10 @@ public partial class LuaBindings
             case "dcomp":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Dcomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Dcomp = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Dcomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Dcomp = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -154,13 +146,10 @@ public partial class LuaBindings
             case "drag":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._drag, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member '_drag' to {value} but the field is read-only. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._drag, "MT_fix64", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member '_drag' to {value} but the field is read-only. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -170,13 +159,10 @@ public partial class LuaBindings
             case "forca":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._forca, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._forca = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._forca, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._forca = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -186,13 +172,10 @@ public partial class LuaBindings
             case "fxz":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._fxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._fxz = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._fxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._fxz = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -211,13 +194,10 @@ public partial class LuaBindings
             case "lcomp":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Lcomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Lcomp = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Lcomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Lcomp = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -227,13 +207,10 @@ public partial class LuaBindings
             case "lxz":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._lxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._lxz = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._lxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._lxz = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -243,13 +220,10 @@ public partial class LuaBindings
             case "mxz":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Mxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Mxz = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Mxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Mxz = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -286,26 +260,20 @@ public partial class LuaBindings
             case "power":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Power, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Power = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Power, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Power = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
             case "powerup":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Powerup, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Powerup = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Powerup, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Powerup = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -321,39 +289,30 @@ public partial class LuaBindings
             case "pxy":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Pxy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Pxy = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Pxy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Pxy = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
             case "pzy":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Pzy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Pzy = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Pzy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Pzy = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
             case "rcomp":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Rcomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Rcomp = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Rcomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Rcomp = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -363,39 +322,30 @@ public partial class LuaBindings
             case "scx":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Scx, "MT_InlineArray4_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Scx = (System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Scx, "MT_InlineArray4_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Scx = (System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>)value);
                     }
                 }
                 return 1;
             case "scy":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Scy, "MT_InlineArray4_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Scy = (System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Scy, "MT_InlineArray4_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Scy = (System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>)value);
                     }
                 }
                 return 1;
             case "scz":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Scz, "MT_InlineArray4_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Scz = (System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Scz, "MT_InlineArray4_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Scz = (System.Runtime.CompilerServices.InlineArray4<nfm_world_library.SoftFloat.fix64>)value);
                     }
                 }
                 return 1;
@@ -408,13 +358,10 @@ public partial class LuaBindings
             case "speed":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Speed, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Speed = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Speed, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Speed = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -430,52 +377,40 @@ public partial class LuaBindings
             case "tilt":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._tilt, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._tilt = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj)._tilt, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj)._tilt = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
             case "travxy":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Travxy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Travxy = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Travxy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Travxy = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
             case "travxz":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Travxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Travxz = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Travxz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Travxz = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
             case "travzy":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Travzy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Travzy = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Travzy, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Travzy = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -485,26 +420,20 @@ public partial class LuaBindings
             case "txz":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Txz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Txz = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Txz, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Txz = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
             case "ucomp":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Ucomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Ucomp = (nfm_world_library.SoftFloat.fix64)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.Mad)obj).Ucomp, "MT_fix64", parentId, static (obj, value) => ((nfm_world_library.mad.Mad)obj).Ucomp = (nfm_world_library.SoftFloat.fix64)value);
                     }
                 }
                 return 1;
@@ -515,70 +444,70 @@ public partial class LuaBindings
                 PushValue(L, ((nfm_world_library.mad.Mad)obj)._xtpower);
                 return 1;
             case "setStat":
-                lua_pushcfunction(L, (Mad_method_setStat));
+                lua_pushcfunction(L, &Mad_method_setStat);
                 return 1;
             case "pointInBox":
-                lua_pushcfunction(L, (Mad_method_pointInBox));
+                lua_pushcfunction(L, &Mad_method_pointInBox);
                 return 1;
             case "colide":
-                lua_pushcfunction(L, (Mad_method_colide));
+                lua_pushcfunction(L, &Mad_method_colide);
                 return 1;
             case "bounceRebound":
-                lua_pushcfunction(L, (Mad_method_bounceRebound));
+                lua_pushcfunction(L, &Mad_method_bounceRebound);
                 return 1;
             case "drive":
-                lua_pushcfunction(L, (Mad_method_drive));
+                lua_pushcfunction(L, &Mad_method_drive);
                 return 1;
             case "reseto":
-                lua_pushcfunction(L, (Mad_method_reseto));
+                lua_pushcfunction(L, &Mad_method_reseto);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Mad_method_getType));
+                lua_pushcfunction(L, &Mad_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Mad_method_toString));
+                lua_pushcfunction(L, &Mad_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (Mad_method_equals));
+                lua_pushcfunction(L, &Mad_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Mad_method_getHashCode));
+                lua_pushcfunction(L, &Mad_method_getHashCode);
                 return 1;
             case "add_SfxPlayCrash":
-                lua_pushcfunction(L, (Mad_add_SfxPlayCrash));
+                lua_pushcfunction(L, &Mad_add_SfxPlayCrash);
                 return 1;
             case "remove_SfxPlayCrash":
-                lua_pushcfunction(L, (Mad_remove_SfxPlayCrash));
+                lua_pushcfunction(L, &Mad_remove_SfxPlayCrash);
                 return 1;
             case "add_SfxPlaySkid":
-                lua_pushcfunction(L, (Mad_add_SfxPlaySkid));
+                lua_pushcfunction(L, &Mad_add_SfxPlaySkid);
                 return 1;
             case "remove_SfxPlaySkid":
-                lua_pushcfunction(L, (Mad_remove_SfxPlaySkid));
+                lua_pushcfunction(L, &Mad_remove_SfxPlaySkid);
                 return 1;
             case "add_SfxPlayScrape":
-                lua_pushcfunction(L, (Mad_add_SfxPlayScrape));
+                lua_pushcfunction(L, &Mad_add_SfxPlayScrape);
                 return 1;
             case "remove_SfxPlayScrape":
-                lua_pushcfunction(L, (Mad_remove_SfxPlayScrape));
+                lua_pushcfunction(L, &Mad_remove_SfxPlayScrape);
                 return 1;
             case "add_SfxPlayGscrape":
-                lua_pushcfunction(L, (Mad_add_SfxPlayGscrape));
+                lua_pushcfunction(L, &Mad_add_SfxPlayGscrape);
                 return 1;
             case "remove_SfxPlayGscrape":
-                lua_pushcfunction(L, (Mad_remove_SfxPlayGscrape));
+                lua_pushcfunction(L, &Mad_remove_SfxPlayGscrape);
                 return 1;
             case "add_PowerUp":
-                lua_pushcfunction(L, (Mad_add_PowerUp));
+                lua_pushcfunction(L, &Mad_add_PowerUp);
                 return 1;
             case "remove_PowerUp":
-                lua_pushcfunction(L, (Mad_remove_PowerUp));
+                lua_pushcfunction(L, &Mad_remove_PowerUp);
                 return 1;
             case "add_Distruct":
-                lua_pushcfunction(L, (Mad_add_Distruct));
+                lua_pushcfunction(L, &Mad_add_Distruct);
                 return 1;
             case "remove_Distruct":
-                lua_pushcfunction(L, (Mad_remove_Distruct));
+                lua_pushcfunction(L, &Mad_remove_Distruct);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -586,6 +515,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1293,6 +1223,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1300,6 +1231,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1326,6 +1258,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_setStat(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1356,6 +1289,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_pointInBox(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1395,6 +1329,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_colide(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1427,6 +1362,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_bounceRebound(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1459,6 +1395,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_drive(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1491,6 +1428,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_reseto(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1522,6 +1460,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1552,6 +1491,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1582,6 +1522,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1617,6 +1558,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1647,6 +1589,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_add_SfxPlayCrash(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1659,6 +1602,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_remove_SfxPlayCrash(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1669,6 +1613,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_add_SfxPlaySkid(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1681,6 +1626,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_remove_SfxPlaySkid(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1691,6 +1637,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_add_SfxPlayScrape(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1703,6 +1650,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_remove_SfxPlayScrape(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1713,6 +1661,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_add_SfxPlayGscrape(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1725,6 +1674,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_remove_SfxPlayGscrape(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1735,6 +1685,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_add_PowerUp(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1747,6 +1698,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_remove_PowerUp(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1757,6 +1709,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_add_Distruct(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);
@@ -1769,6 +1722,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Mad_remove_Distruct(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.Mad>(L, 1);

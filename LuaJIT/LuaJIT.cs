@@ -118,50 +118,62 @@ namespace LuaJIT
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_base(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_math(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_string(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_table(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_io(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_os(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_package(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_debug(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_bit(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_jit(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_ffi(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
+        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_string_buffer(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]

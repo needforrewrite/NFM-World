@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Color3[] (ArrayOfColor3) ===========
     private static void Register_Color3Array(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Color3Array");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Color3Array__gc));
+        lua_pushcfunction(L, &Color3Array__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Color3Array__index));
+        lua_pushcfunction(L, &Color3Array__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Color3Array__newindex));
+        lua_pushcfunction(L, &Color3Array__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Color3Array__tostring));
+        lua_pushcfunction(L, &Color3Array__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Color3Array_new));
+        lua_pushcfunction(L, &Color3Array_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ArrayOfColor3");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color3Array__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.util.Color3[]>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.util.Color3[]>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color3Array__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.util.Color3[]>(L, 1);
@@ -114,6 +115,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color3Array__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.util.Color3[]>(L, 1);
@@ -140,6 +142,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color3Array__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.util.Color3[]>(L, 1);
@@ -147,6 +150,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color3Array_new(lua_State L)
     {
         var argCount = lua_gettop(L);

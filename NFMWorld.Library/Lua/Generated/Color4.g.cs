@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Color4 (Color4) ===========
     private static void Register_Color4(lua_State L)
@@ -19,47 +21,47 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Color4");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Color4__gc));
+        lua_pushcfunction(L, &Color4__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Color4__index));
+        lua_pushcfunction(L, &Color4__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Color4__newindex));
+        lua_pushcfunction(L, &Color4__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // Operator: __add
-        lua_pushcfunction(L, (Color4_op_op_Addition));
+        lua_pushcfunction(L, &Color4_op_op_Addition);
         lua_setfield(L, -2, "__add");
 
         // Operator: __sub
-        lua_pushcfunction(L, (Color4_op_op_Subtraction));
+        lua_pushcfunction(L, &Color4_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
         // Operator: __unm
-        lua_pushcfunction(L, (Color4_op_op_UnaryNegation));
+        lua_pushcfunction(L, &Color4_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Color4_op_op_Multiply));
+        lua_pushcfunction(L, &Color4_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Color4_op_op_Multiply));
+        lua_pushcfunction(L, &Color4_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __mul
-        lua_pushcfunction(L, (Color4_op_op_Multiply));
+        lua_pushcfunction(L, &Color4_op_op_Multiply);
         lua_setfield(L, -2, "__mul");
 
         // Operator: __eq
-        lua_pushcfunction(L, (Color4_op_op_Equality));
+        lua_pushcfunction(L, &Color4_op_op_Equality);
         lua_setfield(L, -2, "__eq");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Color4__tostring));
+        lua_pushcfunction(L, &Color4__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -68,84 +70,83 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Color4_new));
+        lua_pushcfunction(L, &Color4_new);
         lua_setfield(L, -2, "new");
 
         // Static method: add
-        lua_pushcfunction(L, (Color4_static_add));
+        lua_pushcfunction(L, &Color4_static_add);
         lua_setfield(L, -2, "add");
 
         // Static method: subtract
-        lua_pushcfunction(L, (Color4_static_subtract));
+        lua_pushcfunction(L, &Color4_static_subtract);
         lua_setfield(L, -2, "subtract");
 
         // Static method: modulate
-        lua_pushcfunction(L, (Color4_static_modulate));
+        lua_pushcfunction(L, &Color4_static_modulate);
         lua_setfield(L, -2, "modulate");
 
         // Static method: scale
-        lua_pushcfunction(L, (Color4_static_scale));
+        lua_pushcfunction(L, &Color4_static_scale);
         lua_setfield(L, -2, "scale");
 
         // Static method: negate
-        lua_pushcfunction(L, (Color4_static_negate));
+        lua_pushcfunction(L, &Color4_static_negate);
         lua_setfield(L, -2, "negate");
 
         // Static method: clamp
-        lua_pushcfunction(L, (Color4_static_clamp));
+        lua_pushcfunction(L, &Color4_static_clamp);
         lua_setfield(L, -2, "clamp");
 
         // Static method: lerp
-        lua_pushcfunction(L, (Color4_static_lerp));
+        lua_pushcfunction(L, &Color4_static_lerp);
         lua_setfield(L, -2, "lerp");
 
         // Static method: smoothStep
-        lua_pushcfunction(L, (Color4_static_smoothStep));
+        lua_pushcfunction(L, &Color4_static_smoothStep);
         lua_setfield(L, -2, "smoothStep");
 
         // Static method: max
-        lua_pushcfunction(L, (Color4_static_max));
+        lua_pushcfunction(L, &Color4_static_max);
         lua_setfield(L, -2, "max");
 
         // Static method: min
-        lua_pushcfunction(L, (Color4_static_min));
+        lua_pushcfunction(L, &Color4_static_min);
         lua_setfield(L, -2, "min");
 
         // Static method: adjustContrast
-        lua_pushcfunction(L, (Color4_static_adjustContrast));
+        lua_pushcfunction(L, &Color4_static_adjustContrast);
         lua_setfield(L, -2, "adjustContrast");
 
         // Static method: adjustSaturation
-        lua_pushcfunction(L, (Color4_static_adjustSaturation));
+        lua_pushcfunction(L, &Color4_static_adjustSaturation);
         lua_setfield(L, -2, "adjustSaturation");
 
         // Static method: premultiplyAlpha
-        lua_pushcfunction(L, (Color4_static_premultiplyAlpha));
+        lua_pushcfunction(L, &Color4_static_premultiplyAlpha);
         lua_setfield(L, -2, "premultiplyAlpha");
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
-        lua_pushcfunction(L, (Color4_type__index));
+        lua_pushcfunction(L, &Color4_type__index);
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "Color4");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<Stride.Core.Mathematics.Color4>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<Stride.Core.Mathematics.Color4>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4__index(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Color4>(L, 1);
@@ -177,40 +178,40 @@ public partial class LuaBindings
                 PushValue(L, ((Stride.Core.Mathematics.Color4)obj).A);
                 return 1;
             case "toBgra":
-                lua_pushcfunction(L, (Color4_method_toBgra));
+                lua_pushcfunction(L, &Color4_method_toBgra);
                 return 1;
             case "toRgba":
-                lua_pushcfunction(L, (Color4_method_toRgba));
+                lua_pushcfunction(L, &Color4_method_toRgba);
                 return 1;
             case "toVector3":
-                lua_pushcfunction(L, (Color4_method_toVector3));
+                lua_pushcfunction(L, &Color4_method_toVector3);
                 return 1;
             case "toVector4":
-                lua_pushcfunction(L, (Color4_method_toVector4));
+                lua_pushcfunction(L, &Color4_method_toVector4);
                 return 1;
             case "toArray":
-                lua_pushcfunction(L, (Color4_method_toArray));
+                lua_pushcfunction(L, &Color4_method_toArray);
                 return 1;
             case "toSRgb":
-                lua_pushcfunction(L, (Color4_method_toSRgb));
+                lua_pushcfunction(L, &Color4_method_toSRgb);
                 return 1;
             case "toLinear":
-                lua_pushcfunction(L, (Color4_method_toLinear));
+                lua_pushcfunction(L, &Color4_method_toLinear);
                 return 1;
             case "toColor3":
-                lua_pushcfunction(L, (Color4_method_toColor3));
+                lua_pushcfunction(L, &Color4_method_toColor3);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (Object_method_toString));
+                lua_pushcfunction(L, &Object_method_toString);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (Object_method_getHashCode));
+                lua_pushcfunction(L, &Object_method_getHashCode);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (IEquatable_Color4_method_equals));
+                lua_pushcfunction(L, &IEquatable_Color4_method_equals);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (Color4_method_getType));
+                lua_pushcfunction(L, &Color4_method_getType);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -218,6 +219,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4__newindex(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Color4>(L, 1);
@@ -288,6 +290,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4__tostring(lua_State L)
     {
         var obj = GetStructFromStack<Stride.Core.Mathematics.Color4>(L, 1);
@@ -295,6 +298,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_op_op_Addition(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Color4>(L, 1)!;
@@ -304,6 +308,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_op_op_Subtraction(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Color4>(L, 1)!;
@@ -313,6 +318,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_op_op_UnaryNegation(lua_State L)
     {
         var operand = ToObject<Stride.Core.Mathematics.Color4>(L, 1)!;
@@ -321,6 +327,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_op_op_Multiply(lua_State L)
     {
         // Multiple operator overloads - find best match
@@ -410,6 +417,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_op_op_Equality(lua_State L)
     {
         var left = ToObject<Stride.Core.Mathematics.Color4>(L, 1)!;
@@ -418,6 +426,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -778,6 +787,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_method_toBgra(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -805,6 +815,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_method_toRgba(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -832,6 +843,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_method_toVector3(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -859,6 +871,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_method_toVector4(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -886,6 +899,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_method_toArray(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -913,6 +927,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_method_toSRgb(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -940,6 +955,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_method_toLinear(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -967,6 +983,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_method_toColor3(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -994,6 +1011,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -1021,6 +1039,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_add(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1046,6 +1065,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_subtract(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1071,6 +1091,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_modulate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1096,6 +1117,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_scale(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1121,6 +1143,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_negate(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1145,6 +1168,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_clamp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1171,6 +1195,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_lerp(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1197,6 +1222,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_smoothStep(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1223,6 +1249,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_max(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1248,6 +1275,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_min(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1273,6 +1301,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_adjustContrast(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1298,6 +1327,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_adjustSaturation(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1323,6 +1353,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_static_premultiplyAlpha(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -1347,6 +1378,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Color4_type__index(lua_State L)
     {
         var key = lua_tostring(L, 2);

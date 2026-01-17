@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for ICar (ICar) ===========
     private static void Register_ICar(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ICar");
 
         // __gc metamethod
-        lua_pushcfunction(L, (ICar__gc));
+        lua_pushcfunction(L, &ICar__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (ICar__index));
+        lua_pushcfunction(L, &ICar__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (ICar__newindex));
+        lua_pushcfunction(L, &ICar__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (ICar__tostring));
+        lua_pushcfunction(L, &ICar__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (ICar_new));
+        lua_pushcfunction(L, &ICar_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ICar");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICar__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.mad.ICar>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.mad.ICar>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICar__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.ICar>(L, 1);
@@ -76,13 +77,10 @@ public partial class LuaBindings
             case "stats":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).Stats, "MT_CarStats", parentId, static (obj, value) => { System.Diagnostics.Debug.WriteLine($"Attempted to assign value of struct {obj} ({obj.GetType()}) member 'Stats' to {value} but the field is read-only. Nothing will be set."); });
                     }
                 }
                 return 1;
@@ -95,26 +93,20 @@ public partial class LuaBindings
             case "wheelAngle":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).WheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).WheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).WheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).WheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
                     }
                 }
                 return 1;
             case "turningWheelAngle":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).TurningWheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).TurningWheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ICar)obj).TurningWheelAngle, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ICar)obj).TurningWheelAngle = (nfm_world_library.SoftFloat.f64Euler)value);
                     }
                 }
                 return 1;
@@ -127,26 +119,20 @@ public partial class LuaBindings
             case "position":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Position, "MT_f64Vector3", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Position = (nfm_world_library.SoftFloat.f64Vector3)value);
                     }
                 }
                 return 1;
             case "rotation":
                 {
                     var ptr = lua_touserdata(L, 1);
-                    if (ptr != 0)
+                    if (ptr != null)
                     {
-                        unsafe
-                        {
-                            var parentId = *(int*)ptr;
-                            PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
-                        }
+                        var parentId = *(int*)ptr;
+                        PushStructWithParent(L, ((nfm_world_library.mad.ITransform)obj).Rotation, "MT_f64Euler", parentId, static (obj, value) => ((nfm_world_library.mad.ITransform)obj).Rotation = (nfm_world_library.SoftFloat.f64Euler)value);
                     }
                 }
                 return 1;
@@ -159,6 +145,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICar__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.ICar>(L, 1);
@@ -195,6 +182,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICar__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.ICar>(L, 1);
@@ -202,6 +190,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICar_new(lua_State L)
     {
         var argCount = lua_gettop(L);

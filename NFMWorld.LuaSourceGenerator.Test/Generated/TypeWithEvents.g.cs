@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithEvents (TypeWithEvents) ===========
     private static void Register_TypeWithEvents(lua_State L)
@@ -19,15 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_TypeWithEvents");
 
         // __gc metamethod
-        lua_pushcfunction(L, (TypeWithEvents__gc));
+        lua_pushcfunction(L, &TypeWithEvents__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (TypeWithEvents__index));
+        lua_pushcfunction(L, &TypeWithEvents__index);
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (TypeWithEvents__tostring));
+        lua_pushcfunction(L, &TypeWithEvents__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -36,36 +38,35 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (TypeWithEvents_new));
+        lua_pushcfunction(L, &TypeWithEvents_new);
         lua_setfield(L, -2, "new");
 
         // Static method: raiseStaticEvent
-        lua_pushcfunction(L, (TypeWithEvents_static_raiseStaticEvent));
+        lua_pushcfunction(L, &TypeWithEvents_static_raiseStaticEvent);
         lua_setfield(L, -2, "raiseStaticEvent");
 
         // Static event: StaticEvent
-        lua_pushcfunction(L, (TypeWithEvents_add_StaticEvent));
+        lua_pushcfunction(L, &TypeWithEvents_add_StaticEvent);
         lua_setfield(L, -2, "add_StaticEvent");
-        lua_pushcfunction(L, (TypeWithEvents_remove_StaticEvent));
+        lua_pushcfunction(L, &TypeWithEvents_remove_StaticEvent);
         lua_setfield(L, -2, "remove_StaticEvent");
 
         lua_setglobal(L, "TypeWithEvents");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents__index(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -77,52 +78,52 @@ public partial class LuaBindings
         switch (key)
         {
             case "raiseSimpleEvent":
-                lua_pushcfunction(L, (TypeWithEvents_method_raiseSimpleEvent));
+                lua_pushcfunction(L, &TypeWithEvents_method_raiseSimpleEvent);
                 return 1;
             case "raiseStandardEvent":
-                lua_pushcfunction(L, (TypeWithEvents_method_raiseStandardEvent));
+                lua_pushcfunction(L, &TypeWithEvents_method_raiseStandardEvent);
                 return 1;
             case "raiseCustomEvent":
-                lua_pushcfunction(L, (TypeWithEvents_method_raiseCustomEvent));
+                lua_pushcfunction(L, &TypeWithEvents_method_raiseCustomEvent);
                 return 1;
             case "raiseMultiParamEvent":
-                lua_pushcfunction(L, (TypeWithEvents_method_raiseMultiParamEvent));
+                lua_pushcfunction(L, &TypeWithEvents_method_raiseMultiParamEvent);
                 return 1;
             case "getType":
-                lua_pushcfunction(L, (TypeWithEvents_method_getType));
+                lua_pushcfunction(L, &TypeWithEvents_method_getType);
                 return 1;
             case "toString":
-                lua_pushcfunction(L, (TypeWithEvents_method_toString));
+                lua_pushcfunction(L, &TypeWithEvents_method_toString);
                 return 1;
             case "equals":
-                lua_pushcfunction(L, (TypeWithEvents_method_equals));
+                lua_pushcfunction(L, &TypeWithEvents_method_equals);
                 return 1;
             case "getHashCode":
-                lua_pushcfunction(L, (TypeWithEvents_method_getHashCode));
+                lua_pushcfunction(L, &TypeWithEvents_method_getHashCode);
                 return 1;
             case "add_SimpleEvent":
-                lua_pushcfunction(L, (TypeWithEvents_add_SimpleEvent));
+                lua_pushcfunction(L, &TypeWithEvents_add_SimpleEvent);
                 return 1;
             case "remove_SimpleEvent":
-                lua_pushcfunction(L, (TypeWithEvents_remove_SimpleEvent));
+                lua_pushcfunction(L, &TypeWithEvents_remove_SimpleEvent);
                 return 1;
             case "add_StandardEvent":
-                lua_pushcfunction(L, (TypeWithEvents_add_StandardEvent));
+                lua_pushcfunction(L, &TypeWithEvents_add_StandardEvent);
                 return 1;
             case "remove_StandardEvent":
-                lua_pushcfunction(L, (TypeWithEvents_remove_StandardEvent));
+                lua_pushcfunction(L, &TypeWithEvents_remove_StandardEvent);
                 return 1;
             case "add_CustomEvent":
-                lua_pushcfunction(L, (TypeWithEvents_add_CustomEvent));
+                lua_pushcfunction(L, &TypeWithEvents_add_CustomEvent);
                 return 1;
             case "remove_CustomEvent":
-                lua_pushcfunction(L, (TypeWithEvents_remove_CustomEvent));
+                lua_pushcfunction(L, &TypeWithEvents_remove_CustomEvent);
                 return 1;
             case "add_MultiParamEvent":
-                lua_pushcfunction(L, (TypeWithEvents_add_MultiParamEvent));
+                lua_pushcfunction(L, &TypeWithEvents_add_MultiParamEvent);
                 return 1;
             case "remove_MultiParamEvent":
-                lua_pushcfunction(L, (TypeWithEvents_remove_MultiParamEvent));
+                lua_pushcfunction(L, &TypeWithEvents_remove_MultiParamEvent);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -130,6 +131,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -137,6 +139,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -160,6 +163,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_method_raiseSimpleEvent(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -189,6 +193,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_method_raiseStandardEvent(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -218,6 +223,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_method_raiseCustomEvent(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -249,6 +255,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_method_raiseMultiParamEvent(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -280,6 +287,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_method_getType(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -310,6 +318,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_method_toString(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -340,6 +349,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_method_equals(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -375,6 +385,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_method_getHashCode(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -405,6 +416,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_static_raiseStaticEvent(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -428,6 +440,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_add_SimpleEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -440,6 +453,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_remove_SimpleEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -450,6 +464,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_add_StandardEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -462,6 +477,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_remove_StandardEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -472,6 +488,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_add_CustomEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -484,6 +501,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_remove_CustomEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -494,6 +512,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_add_StaticEvent(lua_State L)
     {
         var funcIdx = lua_type(L, 1) == LUA_TFUNCTION ? 1 : 2;
@@ -505,6 +524,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_remove_StaticEvent(lua_State L)
     {
         // Note: Removing specific Lua function listeners is not currently supported
@@ -513,6 +533,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_add_MultiParamEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
@@ -525,6 +546,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int TypeWithEvents_remove_MultiParamEvent(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);

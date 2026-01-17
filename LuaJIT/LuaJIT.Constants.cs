@@ -105,4 +105,18 @@ public static unsafe partial class Methods
 	public const int LUA_GCSETSTEPMUL = 7;
 	public const int LUA_GCISRUNNING = 9;
 
+	public const string LUA_FILEHANDLE = "FILE*";
+	
+	public static ReadOnlySpan<byte> LUA_COLIBNAME => "coroutine"u8;
+	public static ReadOnlySpan<byte> LUA_MATHLIBNAME => "math"u8;
+	public static ReadOnlySpan<byte> LUA_STRLIBNAME => "string"u8;
+	public static ReadOnlySpan<byte> LUA_TABLIBNAME => "table"u8;
+	public static ReadOnlySpan<byte> IOLIBNAME => "io"u8;
+	public static ReadOnlySpan<byte> OSLIBNAME => "os"u8;
+	public static ReadOnlySpan<byte> LOADLIBNAME => "package"u8;
+	public static ReadOnlySpan<byte> DBLIBNAME => "debug"u8;
+	public static ReadOnlySpan<byte> BITLIBNAME => "bit"u8;
+	public static ReadOnlySpan<byte> JITLIBNAME => "jit"u8;
+	public static ReadOnlySpan<byte> FFILIBNAME => "fii"u8;
+
 }

@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace nfm_world_library.Lua;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for Rad3dBoxDef[] (ArrayOfRad3dBoxDef) ===========
     private static void Register_Rad3dBoxDefArray(lua_State L)
@@ -19,19 +21,19 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_Rad3dBoxDefArray");
 
         // __gc metamethod
-        lua_pushcfunction(L, (Rad3dBoxDefArray__gc));
+        lua_pushcfunction(L, &Rad3dBoxDefArray__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (Rad3dBoxDefArray__index));
+        lua_pushcfunction(L, &Rad3dBoxDefArray__index);
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
-        lua_pushcfunction(L, (Rad3dBoxDefArray__newindex));
+        lua_pushcfunction(L, &Rad3dBoxDefArray__newindex);
         lua_setfield(L, -2, "__newindex");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (Rad3dBoxDefArray__tostring));
+        lua_pushcfunction(L, &Rad3dBoxDefArray__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -40,26 +42,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (Rad3dBoxDefArray_new));
+        lua_pushcfunction(L, &Rad3dBoxDefArray_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ArrayOfRad3dBoxDef");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dBoxDefArray__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<nfm_world_library.mad.rad.Rad3dBoxDef[]>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<nfm_world_library.mad.rad.Rad3dBoxDef[]>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dBoxDefArray__index(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.rad.Rad3dBoxDef[]>(L, 1);
@@ -114,6 +115,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dBoxDefArray__newindex(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.rad.Rad3dBoxDef[]>(L, 1);
@@ -140,6 +142,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dBoxDefArray__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<nfm_world_library.mad.rad.Rad3dBoxDef[]>(L, 1);
@@ -147,6 +150,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Rad3dBoxDefArray_new(lua_State L)
     {
         var argCount = lua_gettop(L);

@@ -3,12 +3,14 @@
 // ReSharper disable All
 #nullable enable
 
-using LuaNET.LuaJIT;
-using static LuaNET.LuaJIT.Lua;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using LuaJIT;
+using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
     // =========== Bindings for ICalculator (ICalculator) ===========
     private static void Register_ICalculator(lua_State L)
@@ -19,15 +21,15 @@ public partial class LuaBindings
         luaL_newmetatable(L, "MT_ICalculator");
 
         // __gc metamethod
-        lua_pushcfunction(L, (ICalculator__gc));
+        lua_pushcfunction(L, &ICalculator__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
-        lua_pushcfunction(L, (ICalculator__index));
+        lua_pushcfunction(L, &ICalculator__index);
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod
-        lua_pushcfunction(L, (ICalculator__tostring));
+        lua_pushcfunction(L, &ICalculator__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -36,26 +38,25 @@ public partial class LuaBindings
         lua_newtable(L);
 
         // Constructor: new()
-        lua_pushcfunction(L, (ICalculator_new));
+        lua_pushcfunction(L, &ICalculator_new);
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "ICalculator");
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICalculator__gc(lua_State L)
     {
         var ptr = lua_touserdata(L, 1);
-        if (ptr != 0)
+        if (ptr != null)
         {
-            unsafe
-            {
-                var id = *(int*)ptr;
-                RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator>(id);
-            }
+            var id = *(int*)ptr;
+            RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator>(id);
         }
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICalculator__index(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator>(L, 1);
@@ -67,13 +68,13 @@ public partial class LuaBindings
         switch (key)
         {
             case "add":
-                lua_pushcfunction(L, (ICalculator_method_add));
+                lua_pushcfunction(L, &ICalculator_method_add);
                 return 1;
             case "multiply":
-                lua_pushcfunction(L, (ICalculator_method_multiply));
+                lua_pushcfunction(L, &ICalculator_method_multiply);
                 return 1;
             case "getDescription":
-                lua_pushcfunction(L, (ICalculator_method_getDescription));
+                lua_pushcfunction(L, &ICalculator_method_getDescription);
                 return 1;
             default:
                 lua_pushnil(L);
@@ -81,6 +82,7 @@ public partial class LuaBindings
         }
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICalculator__tostring(lua_State L)
     {
         var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator>(L, 1);
@@ -88,6 +90,7 @@ public partial class LuaBindings
         return 1;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICalculator_new(lua_State L)
     {
         var argCount = lua_gettop(L);
@@ -96,6 +99,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICalculator_method_add(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -128,6 +132,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICalculator_method_multiply(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
@@ -160,6 +165,7 @@ public partial class LuaBindings
         return 0;
     }
 
+    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICalculator_method_getDescription(lua_State L)
     {
         var argCount = lua_gettop(L) - 1; // First arg is self
