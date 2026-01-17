@@ -45,7 +45,7 @@ public static class LuaManager
     public static lua_State LoadGamemodeLua(LuaGamemode gm, string gamemodeLuaPath)
     {
         if (luaL_loadfile(L, "mymodule.lua") != LUA_OK) {
-            // handle error
+            throw new LuaException(lua_tostring(L, -1) ?? "Unknown Lua error");
         }
 
         /* Create environment table */
