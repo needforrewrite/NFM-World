@@ -124,22 +124,18 @@ namespace LuaJIT
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_base(lua_State L);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_math(lua_State L);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_string(lua_State L);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]
         [SuppressGCTransition]
-        [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
         public static extern int luaopen_table(lua_State L);
 
         [DllImport(DllName, CallingConvention = CallingConvention.Cdecl)]

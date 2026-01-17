@@ -609,6 +609,20 @@ public static unsafe partial class Methods
     {
         return lua_tolstring(L, idx, out _);
     }
+    
+    public static int lua_tostringintobuffer(lua_State L, int idx, Span<byte> buffer)
+    {
+        nuint len;
+        var strPtr = lua_tolstring(L, idx, &len);
+        if (strPtr == null) return 0;
+
+        var bytesToCopy = (int)Math.Min(len, (nuint)buffer.Length);
+        for (int i = 0; i < bytesToCopy; i++)
+        {
+            buffer[i] = (byte)strPtr[i];
+        }
+        return bytesToCopy;
+    }
 
     public static void lua_pushlstring(lua_State L, string s)
     {

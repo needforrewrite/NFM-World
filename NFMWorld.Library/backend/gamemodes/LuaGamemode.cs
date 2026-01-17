@@ -18,7 +18,7 @@ public class LuaGamemode(string path, BaseGamemodeParameters gamemodeParameters,
     
     public readonly bool IsClient = isClient;
 
-    [LuaHidden] public lua_State? L;
+    [LuaHidden] public LuaTable GamemodeTable;
     private readonly string _path = path;
 
     public void FinishRace(byte[] playerStandings)
@@ -34,7 +34,10 @@ public class LuaGamemode(string path, BaseGamemodeParameters gamemodeParameters,
     [LuaHidden]
     public override void Enter()
     {
-        L = LuaManager.LoadGamemodeLua(this, path);
+        GamemodeTable = LuaManager.LoadLuaWithContext(path, new Dictionary<string, LuaGamemode>()
+        {
+            ["GM"] = this
+        });
         base.Enter();
         OnEnter?.Invoke();
     }
@@ -44,8 +47,6 @@ public class LuaGamemode(string path, BaseGamemodeParameters gamemodeParameters,
     {
         base.Exit();
         OnExit?.Invoke();
-        if (L is {} l)
-            LuaManager.Destroy(l);
     }
 
     [LuaHidden]
