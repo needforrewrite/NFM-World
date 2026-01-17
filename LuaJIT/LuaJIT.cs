@@ -574,7 +574,6 @@ namespace LuaJIT
         public static extern int lua_pcall(lua_State L, int nargs, int nresults, int errfunc);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern int lua_cpcall(lua_State L, [NativeTypeName("lua_CFunction")] delegate* unmanaged[Cdecl]<lua_State, int> func, void* ud);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
