@@ -76,6 +76,7 @@ namespace LuaJIT
 
         public readonly bool IsNull => Handle == 0;
         public readonly bool IsNotNull => Handle != 0;
+        public static lua_State Null => new() { Handle = 0 };
 
         public static bool operator !(lua_State state) => state.Handle == 0;
         public static bool operator ==(lua_State state1, lua_State state2) => state1.Handle == state2.Handle;
