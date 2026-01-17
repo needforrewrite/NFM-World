@@ -192,7 +192,6 @@ namespace LuaJIT
         public static extern int luaL_getmetafield(lua_State L, int obj, [NativeTypeName("const char *")] sbyte* e);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern int luaL_callmeta(lua_State L, int obj, [NativeTypeName("const char *")] sbyte* e);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
@@ -355,7 +354,6 @@ namespace LuaJIT
         public static extern lua_State lua_newstate([NativeTypeName("lua_Alloc")] delegate* unmanaged[Cdecl]<void*, void*, nuint, nuint, void*> f, void* ud);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern void lua_close(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
@@ -451,7 +449,6 @@ namespace LuaJIT
         public static extern int lua_toboolean(lua_State L, int idx);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         [return: NativeTypeName("const char *")]
         public static extern sbyte* lua_tolstring(lua_State L, int idx, [NativeTypeName("size_t *")] nuint* len);
 
@@ -523,11 +520,9 @@ namespace LuaJIT
         public static extern int lua_pushthread(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern void lua_gettable(lua_State L, int idx);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern void lua_getfield(lua_State L, int idx, [NativeTypeName("const char *")] sbyte* k);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
@@ -535,7 +530,6 @@ namespace LuaJIT
         public static extern void lua_rawget(lua_State L, int idx);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern void lua_rawgeti(lua_State L, int idx, int n);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
@@ -555,11 +549,9 @@ namespace LuaJIT
         public static extern void lua_getfenv(lua_State L, int idx);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern void lua_settable(lua_State L, int idx);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern void lua_setfield(lua_State L, int idx, [NativeTypeName("const char *")] sbyte* k);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
@@ -579,7 +571,6 @@ namespace LuaJIT
         public static extern int lua_setfenv(lua_State L, int idx);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern void lua_call(lua_State L, int nargs, int nresults);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
@@ -607,7 +598,6 @@ namespace LuaJIT
         public static extern int lua_status(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern int lua_gc(lua_State L, int what, int data);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
@@ -615,7 +605,6 @@ namespace LuaJIT
         public static extern int lua_error(lua_State L);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
-        [SuppressGCTransition]
         public static extern int lua_next(lua_State L, int idx);
 
         [DllImport("lua51", CallingConvention = CallingConvention.Cdecl)]
