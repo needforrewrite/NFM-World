@@ -2754,7 +2754,7 @@ public partial class LuaRuntimeTests
             local callCount = 0
             local obj = TypeWithEvents.new()
 
-            obj:add_SimpleEvent(function()
+            obj:add_simpleEvent(function()
                 callCount = callCount + 1
             end)
 
@@ -2777,7 +2777,7 @@ public partial class LuaRuntimeTests
             local receivedArgs = nil
             local obj = TypeWithEvents.new()
 
-            obj:add_StandardEvent(function(sender, args)
+            obj:add_standardEvent(function(sender, args)
                 receivedSender = sender
                 receivedArgs = args
             end)
@@ -2802,7 +2802,7 @@ public partial class LuaRuntimeTests
             local receivedValue = 0
             local obj = TypeWithEvents.new()
 
-            obj:add_CustomEvent(function(sender, args)
+            obj:add_customEvent(function(sender, args)
                 receivedMessage = args.message
                 receivedValue = args.value
             end)
@@ -2825,7 +2825,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             local receivedMessage = nil
 
-            TypeWithEvents.add_StaticEvent(function(message)
+            TypeWithEvents.add_staticEvent(function(message)
                 receivedMessage = message
             end)
 
@@ -2847,7 +2847,7 @@ public partial class LuaRuntimeTests
             local receivedMessage = nil
             local obj = TypeWithEvents.new()
 
-            obj:add_MultiParamEvent(function(value, message)
+            obj:add_multiParamEvent(function(value, message)
                 receivedValue = value
                 receivedMessage = message
             end)
@@ -2873,9 +2873,9 @@ public partial class LuaRuntimeTests
             local count3 = 0
             local obj = TypeWithEvents.new()
 
-            obj:add_SimpleEvent(function() count1 = count1 + 1 end)
-            obj:add_SimpleEvent(function() count2 = count2 + 1 end)
-            obj:add_SimpleEvent(function() count3 = count3 + 1 end)
+            obj:add_simpleEvent(function() count1 = count1 + 1 end)
+            obj:add_simpleEvent(function() count2 = count2 + 1 end)
+            obj:add_simpleEvent(function() count3 = count3 + 1 end)
 
             obj:raiseSimpleEvent()
 
@@ -2923,8 +2923,8 @@ public partial class LuaRuntimeTests
             local obj1 = TypeWithEvents.new()
             local obj2 = TypeWithEvents.new()
 
-            obj1:add_SimpleEvent(function() count1 = count1 + 1 end)
-            obj2:add_SimpleEvent(function() count2 = count2 + 1 end)
+            obj1:add_simpleEvent(function() count1 = count1 + 1 end)
+            obj2:add_simpleEvent(function() count2 = count2 + 1 end)
 
             obj1:raiseSimpleEvent()
             obj1:raiseSimpleEvent()
@@ -2945,7 +2945,7 @@ public partial class LuaRuntimeTests
     {
         var result = luaL_dostring(_L, @"
             local obj = TypeWithEvents.new()
-            obj:add_SimpleEvent('not a function')
+            obj:add_simpleEvent('not a function')
         ");
 
         Assert.AreNotEqual(LUA_OK, result);

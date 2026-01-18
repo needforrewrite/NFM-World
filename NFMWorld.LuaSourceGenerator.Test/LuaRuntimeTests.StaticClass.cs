@@ -138,7 +138,7 @@ public partial class LuaRuntimeTests
     {
         var result = luaL_dostring(_L, @"
             local receivedMessage = nil
-            StaticClass:add_OnMessage(function(msg)
+            StaticClass:add_onMessage(function(msg)
                 receivedMessage = msg
             end)
             StaticClass.raiseMessage('Test Message')

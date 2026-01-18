@@ -30,7 +30,7 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod (property/field lookup)
+        // __index metamethod (handles both methods and properties)
         lua_pushcfunction(L, &SingleArray__index);
         lua_setfield(L, -2, "__index");
 

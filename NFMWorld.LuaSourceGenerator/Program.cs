@@ -2453,8 +2453,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             hasInstanceMethodsArray = GenerateInstanceMethodsArray(type, safeName, isStruct, fullTypeName);
         }
         
-        // Only generate static members array if this type will have a Register method
-        bool hasStaticMembersArray = HasInitializeMethod(kind) && GenerateStaticMembersArray(type, safeName, isStruct, fullTypeName);
+        // Generate static members array (but only generate constructor for types with Register method)
+        bool hasStaticMembersArray = GenerateStaticMembersArray(type, safeName, isStruct, fullTypeName, kind);
 
         if (HasInitializeMethod(kind))
         {
@@ -2475,35 +2475,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine("lua_setfield(L, -2, \"__gc\");");
                     AppendLine();
 
-                    // __index - create instance methods table with luaL_newlib or direct __index
-                    if (hasInstanceMethodsArray && shouldGenerateIndex)
+                    // __index - always use __index function to handle both methods and properties
+                    if (shouldGenerateIndex)
                     {
-                        // We have methods and properties - use two-level lookup
-                        AppendLine("// Create instance methods table using luaL_newlib");
-                        AppendLine($"luaL_newlib(L, {safeName}_instance_methods);");
-                        AppendLine();
-                        AppendLine("// Set methods table's metatable to fall back to property/field lookup");
-                        AppendLine("lua_newtable(L);");
-                        AppendLine($"lua_pushcfunction(L, &{safeName}__index);");
-                        AppendLine("lua_setfield(L, -2, \"__index\");");
-                        AppendLine("lua_setmetatable(L, -2);");
-                        AppendLine();
-                        AppendLine("// Set instance methods table as the metatable's __index");
-                        AppendLine("lua_setfield(L, -2, \"__index\");");
-                        AppendLine();
-                    }
-                    else if (hasInstanceMethodsArray)
-                    {
-                        // We have methods but no properties - use methods table directly
-                        AppendLine("// Create instance methods table using luaL_newlib");
-                        AppendLine($"luaL_newlib(L, {safeName}_instance_methods);");
-                        AppendLine("lua_setfield(L, -2, \"__index\");");
-                        AppendLine();
-                    }
-                    else if (shouldGenerateIndex)
-                    {
-                        // We have properties but no methods - use __index function directly
-                        AppendLine("// __index metamethod (property/field lookup)");
+                        AppendLine("// __index metamethod (handles both methods and properties)");
                         AppendLine($"lua_pushcfunction(L, &{safeName}__index);");
                         AppendLine("lua_setfield(L, -2, \"__index\");");
                         AppendLine();
@@ -2708,7 +2683,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         return true;  // Array was generated
     }
 
-    private bool GenerateStaticMembersArray(Type type, string safeName, bool isStruct, string fullTypeName)
+    private bool GenerateStaticMembersArray(Type type, string safeName, bool isStruct, string fullTypeName, DiscoveredKind kind)
     {
         var isStaticClass = IsStaticClass(type);
         
@@ -2732,9 +2707,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 .ToList();
         }
 
-        // Check if we should add constructor
+        // Check if we should add constructor (only for types that will have a Register method)
         var shouldGenerateNew = false;
-        if (!isStaticClass && type != typeof(object))  // Skip System.Object constructor
+        if (HasInitializeMethod(kind) && !isStaticClass && type != typeof(object))  // Skip System.Object constructor
         {
             shouldGenerateNew = type.IsArray || isStruct;
             if (!shouldGenerateNew && !type.IsArray && !type.IsAbstract)  // Abstract classes cannot be instantiated

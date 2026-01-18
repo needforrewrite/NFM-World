@@ -40,16 +40,8 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // Create instance methods table using luaL_newlib
-        luaL_newlib(L, TypeWithMethodDeduplication_instance_methods);
-
-        // Set methods table's metatable to fall back to property/field lookup
-        lua_newtable(L);
+        // __index metamethod (handles both methods and properties)
         lua_pushcfunction(L, &TypeWithMethodDeduplication__index);
-        lua_setfield(L, -2, "__index");
-        lua_setmetatable(L, -2);
-
-        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod (shared)
