@@ -13,6 +13,21 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for EventArgs (EventArgs) ===========
+    private static readonly luaL_RegManaged[] EventArgs_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getType", func = &EventArgs_method_getType },
+        new() { name = "toString", func = &EventArgs_method_toString },
+        new() { name = "equals", func = &EventArgs_method_equals },
+        new() { name = "getHashCode", func = &EventArgs_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] EventArgs_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &EventArgs_new },
+    }
+    ;
+
     private static void Register_EventArgs(lua_State L)
     {
         RegisterMetatable<System.EventArgs>("MT_EventArgs");
@@ -24,8 +39,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, EventArgs_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &EventArgs__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod (shared)
@@ -34,12 +57,8 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for EventArgs
-        lua_newtable(L);
-
-        // Constructor: new()
-        lua_pushcfunction(L, &EventArgs_new);
-        lua_setfield(L, -2, "new");
+        // Create global type table for EventArgs with static members
+        luaL_openlib(L, "EventArgs", EventArgs_static_members, 0);
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
@@ -47,7 +66,7 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
-        lua_setglobal(L, "EventArgs");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

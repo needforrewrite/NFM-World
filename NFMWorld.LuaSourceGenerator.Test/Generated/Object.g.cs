@@ -13,6 +13,15 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for Object (Object) ===========
+    private static readonly luaL_RegManaged[] Object_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getType", func = &Object_method_getType },
+        new() { name = "toString", func = &Object_method_toString },
+        new() { name = "equals", func = &Object_method_equals },
+        new() { name = "getHashCode", func = &Object_method_getHashCode },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int Object_method_getType(lua_State L)
     {

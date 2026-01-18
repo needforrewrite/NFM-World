@@ -13,6 +13,18 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for CalculatorBase (CalculatorBase) ===========
+    private static readonly luaL_RegManaged[] CalculatorBase_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "subtract", func = &CalculatorBase_method_subtract },
+        new() { name = "divide", func = &CalculatorBase_method_divide },
+        new() { name = "getName", func = &CalculatorBase_method_getName },
+        new() { name = "getType", func = &CalculatorBase_method_getType },
+        new() { name = "toString", func = &CalculatorBase_method_toString },
+        new() { name = "equals", func = &CalculatorBase_method_equals },
+        new() { name = "getHashCode", func = &CalculatorBase_method_getHashCode },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int CalculatorBase_method_subtract(lua_State L)
     {

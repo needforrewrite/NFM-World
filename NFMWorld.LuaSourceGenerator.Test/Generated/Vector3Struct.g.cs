@@ -13,6 +13,23 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for Vector3Struct (Vec3) ===========
+    private static readonly luaL_RegManaged[] Vector3Struct_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "normalized", func = &Vector3Struct_method_normalized },
+        new() { name = "toVec2", func = &Vector3Struct_method_toVec2 },
+        new() { name = "getType", func = &Vector3Struct_method_getType },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] Vector3Struct_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &Vector3Struct_new },
+        new() { name = "cross", func = &Vector3Struct_static_cross },
+        new() { name = "dot", func = &Vector3Struct_static_dot },
+        new() { name = "fromVec2", func = &Vector3Struct_static_fromVec2 },
+    }
+    ;
+
     private static void Register_Vector3Struct(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>("MT_Vector3Struct");
@@ -24,8 +41,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, Vector3Struct_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &Vector3Struct__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -54,24 +79,8 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for Vec3
-        lua_newtable(L);
-
-        // Constructor: new()
-        lua_pushcfunction(L, &Vector3Struct_new);
-        lua_setfield(L, -2, "new");
-
-        // Static method: cross
-        lua_pushcfunction(L, &Vector3Struct_static_cross);
-        lua_setfield(L, -2, "cross");
-
-        // Static method: dot
-        lua_pushcfunction(L, &Vector3Struct_static_dot);
-        lua_setfield(L, -2, "dot");
-
-        // Static method: fromVec2
-        lua_pushcfunction(L, &Vector3Struct_static_fromVec2);
-        lua_setfield(L, -2, "fromVec2");
+        // Create global type table for Vec3 with static members
+        luaL_openlib(L, "Vec3", Vector3Struct_static_members, 0);
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
@@ -79,7 +88,7 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
-        lua_setglobal(L, "Vec3");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

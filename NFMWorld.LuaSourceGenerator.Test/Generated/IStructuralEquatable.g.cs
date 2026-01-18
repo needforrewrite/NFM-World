@@ -13,6 +13,13 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IStructuralEquatable (IStructuralEquatable) ===========
+    private static readonly luaL_RegManaged[] IStructuralEquatable_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "equals", func = &IStructuralEquatable_method_equals },
+        new() { name = "getHashCode", func = &IStructuralEquatable_method_getHashCode },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IStructuralEquatable_method_equals(lua_State L)
     {

@@ -13,6 +13,24 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithReferences (TypeWithReferences) ===========
+    private static readonly luaL_RegManaged[] TypeWithReferences_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "createReferenced", func = &TypeWithReferences_method_createReferenced },
+        new() { name = "createNumberList", func = &TypeWithReferences_method_createNumberList },
+        new() { name = "getItems", func = &TypeWithReferences_method_getItems },
+        new() { name = "sumNumbers", func = &TypeWithReferences_method_sumNumbers },
+        new() { name = "getType", func = &TypeWithReferences_method_getType },
+        new() { name = "equals", func = &TypeWithReferences_method_equals },
+        new() { name = "getHashCode", func = &TypeWithReferences_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithReferences_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithReferences_new },
+    }
+    ;
+
     private static void Register_TypeWithReferences(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithReferences>("MT_TypeWithReferences");
@@ -24,8 +42,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithReferences_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithReferences__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,14 +64,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithReferences
-        lua_newtable(L);
+        // Create global type table for TypeWithReferences with static members
+        luaL_openlib(L, "TypeWithReferences", TypeWithReferences_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithReferences_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "TypeWithReferences");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

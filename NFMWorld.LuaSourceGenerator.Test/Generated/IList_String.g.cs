@@ -13,6 +13,20 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IList`1 (IList_String) ===========
+    private static readonly luaL_RegManaged[] IList_String_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "indexOf", func = &IList_String_method_indexOf },
+        new() { name = "insert", func = &IList_String_method_insert },
+        new() { name = "removeAt", func = &IList_String_method_removeAt },
+        new() { name = "add", func = &IList_String_method_add },
+        new() { name = "clear", func = &IList_String_method_clear },
+        new() { name = "contains", func = &IList_String_method_contains },
+        new() { name = "copyTo", func = &IList_String_method_copyTo },
+        new() { name = "remove", func = &IList_String_method_remove },
+        new() { name = "getEnumerator", func = &IList_String_method_getEnumerator },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IList_String_method_indexOf(lua_State L)
     {

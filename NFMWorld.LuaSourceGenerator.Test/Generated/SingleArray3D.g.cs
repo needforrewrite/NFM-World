@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for Single[,,] (ArrayOfSingle3D) ===========
+    private static readonly luaL_RegManaged[] SingleArray3D_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &SingleArray3D_new },
+    }
+    ;
+
     private static void Register_SingleArray3D(lua_State L)
     {
         RegisterMetatable<float[,,]>("MT_SingleArray3D");
@@ -24,7 +30,7 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // __index metamethod (property/field lookup)
         lua_pushcfunction(L, &SingleArray3D__index);
         lua_setfield(L, -2, "__index");
 
@@ -38,14 +44,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for ArrayOfSingle3D
-        lua_newtable(L);
+        // Create global type table for ArrayOfSingle3D with static members
+        luaL_openlib(L, "ArrayOfSingle3D", SingleArray3D_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &SingleArray3D_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "ArrayOfSingle3D");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

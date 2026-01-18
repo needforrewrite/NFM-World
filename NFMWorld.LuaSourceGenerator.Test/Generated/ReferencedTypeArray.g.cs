@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for ReferencedType[] (ArrayOfReferencedType) ===========
+    private static readonly luaL_RegManaged[] ReferencedTypeArray_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &ReferencedTypeArray_new },
+    }
+    ;
+
     private static void Register_ReferencedTypeArray(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]>("MT_ReferencedTypeArray");
@@ -24,7 +30,7 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // __index metamethod (property/field lookup)
         lua_pushcfunction(L, &ReferencedTypeArray__index);
         lua_setfield(L, -2, "__index");
 
@@ -38,14 +44,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for ArrayOfReferencedType
-        lua_newtable(L);
+        // Create global type table for ArrayOfReferencedType with static members
+        luaL_openlib(L, "ArrayOfReferencedType", ReferencedTypeArray_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &ReferencedTypeArray_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "ArrayOfReferencedType");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

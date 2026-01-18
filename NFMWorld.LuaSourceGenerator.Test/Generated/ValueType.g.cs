@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for ValueType (ValueType) ===========
+    private static readonly luaL_RegManaged[] ValueType_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getType", func = &ValueType_method_getType },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ValueType_method_getType(lua_State L)
     {

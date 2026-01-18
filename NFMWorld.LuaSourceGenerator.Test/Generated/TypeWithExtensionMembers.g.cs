@@ -13,6 +13,26 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithExtensionMembers (TypeWithExtensionMembers) ===========
+    private static readonly luaL_RegManaged[] TypeWithExtensionMembers_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getType", func = &TypeWithExtensionMembers_method_getType },
+        new() { name = "toString", func = &TypeWithExtensionMembers_method_toString },
+        new() { name = "equals", func = &TypeWithExtensionMembers_method_equals },
+        new() { name = "getHashCode", func = &TypeWithExtensionMembers_method_getHashCode },
+        new() { name = "double", func = &TypeWithExtensionMembers_method_double },
+        new() { name = "add", func = &TypeWithExtensionMembers_method_add },
+        new() { name = "multiply", func = &TypeWithExtensionMembers_method_multiply },
+        new() { name = "formatValue", func = &TypeWithExtensionMembers_method_formatValue },
+        new() { name = "printValue", func = &TypeWithExtensionMembers_method_printValue },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithExtensionMembers_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithExtensionMembers_new },
+    }
+    ;
+
     private static void Register_TypeWithExtensionMembers(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithExtensionMembers>("MT_TypeWithExtensionMembers");
@@ -24,8 +44,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithExtensionMembers_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithExtensionMembers__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,14 +66,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithExtensionMembers
-        lua_newtable(L);
+        // Create global type table for TypeWithExtensionMembers with static members
+        luaL_openlib(L, "TypeWithExtensionMembers", TypeWithExtensionMembers_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithExtensionMembers_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "TypeWithExtensionMembers");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

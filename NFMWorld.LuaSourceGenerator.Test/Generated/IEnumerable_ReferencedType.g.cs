@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IEnumerable`1 (IEnumerable_ReferencedType) ===========
+    private static readonly luaL_RegManaged[] IEnumerable_ReferencedType_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getEnumerator", func = &IEnumerable_ReferencedType_method_getEnumerator },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEnumerable_ReferencedType_method_getEnumerator(lua_State L)
     {

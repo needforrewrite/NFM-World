@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for Int32[] (ArrayOfInt32) ===========
+    private static readonly luaL_RegManaged[] Int32Array_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &Int32Array_new },
+    }
+    ;
+
     private static void Register_Int32Array(lua_State L)
     {
         RegisterMetatable<int[]>("MT_Int32Array");
@@ -24,7 +30,7 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // __index metamethod (property/field lookup)
         lua_pushcfunction(L, &Int32Array__index);
         lua_setfield(L, -2, "__index");
 
@@ -38,14 +44,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for ArrayOfInt32
-        lua_newtable(L);
+        // Create global type table for ArrayOfInt32 with static members
+        luaL_openlib(L, "ArrayOfInt32", Int32Array_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &Int32Array_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "ArrayOfInt32");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

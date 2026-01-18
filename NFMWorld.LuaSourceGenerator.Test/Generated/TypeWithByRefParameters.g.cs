@@ -13,6 +13,23 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithByRefParameters (TypeWithByRefParameters) ===========
+    private static readonly luaL_RegManaged[] TypeWithByRefParameters_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getValue", func = &TypeWithByRefParameters_method_getValue },
+        new() { name = "methodWithInParam", func = &TypeWithByRefParameters_method_methodWithInParam },
+        new() { name = "getType", func = &TypeWithByRefParameters_method_getType },
+        new() { name = "toString", func = &TypeWithByRefParameters_method_toString },
+        new() { name = "equals", func = &TypeWithByRefParameters_method_equals },
+        new() { name = "getHashCode", func = &TypeWithByRefParameters_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithByRefParameters_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithByRefParameters_new },
+    }
+    ;
+
     private static void Register_TypeWithByRefParameters(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithByRefParameters>("MT_TypeWithByRefParameters");
@@ -24,8 +41,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithByRefParameters_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithByRefParameters__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,14 +63,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithByRefParameters
-        lua_newtable(L);
+        // Create global type table for TypeWithByRefParameters with static members
+        luaL_openlib(L, "TypeWithByRefParameters", TypeWithByRefParameters_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithByRefParameters_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "TypeWithByRefParameters");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

@@ -13,6 +13,18 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for InlineBuffer (InlineBuffer) ===========
+    private static readonly luaL_RegManaged[] InlineBuffer_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getType", func = &InlineBuffer_method_getType },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] InlineBuffer_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &InlineBuffer_new },
+    }
+    ;
+
     private static void Register_InlineBuffer(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.TestFixtures.InlineBuffer>("MT_InlineBuffer");
@@ -24,8 +36,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, InlineBuffer_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &InlineBuffer__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,14 +58,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for InlineBuffer
-        lua_newtable(L);
+        // Create global type table for InlineBuffer with static members
+        luaL_openlib(L, "InlineBuffer", InlineBuffer_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &InlineBuffer_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "InlineBuffer");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

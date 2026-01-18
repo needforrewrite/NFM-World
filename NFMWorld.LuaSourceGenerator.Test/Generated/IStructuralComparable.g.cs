@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IStructuralComparable (IStructuralComparable) ===========
+    private static readonly luaL_RegManaged[] IStructuralComparable_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "compareTo", func = &IStructuralComparable_method_compareTo },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IStructuralComparable_method_compareTo(lua_State L)
     {

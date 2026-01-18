@@ -13,6 +13,25 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithOverloads (TypeWithOverloads) ===========
+    private static readonly luaL_RegManaged[] TypeWithOverloads_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "processNumber", func = &TypeWithOverloads_method_processNumber },
+        new() { name = "processData", func = &TypeWithOverloads_method_processData },
+        new() { name = "combine", func = &TypeWithOverloads_method_combine },
+        new() { name = "getType", func = &TypeWithOverloads_method_getType },
+        new() { name = "toString", func = &TypeWithOverloads_method_toString },
+        new() { name = "equals", func = &TypeWithOverloads_method_equals },
+        new() { name = "getHashCode", func = &TypeWithOverloads_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithOverloads_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithOverloads_new },
+        new() { name = "staticProcess", func = &TypeWithOverloads_static_staticProcess },
+    }
+    ;
+
     private static void Register_TypeWithOverloads(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>("MT_TypeWithOverloads");
@@ -24,8 +43,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithOverloads_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithOverloads__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -62,18 +89,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithOverloads
-        lua_newtable(L);
+        // Create global type table for TypeWithOverloads with static members
+        luaL_openlib(L, "TypeWithOverloads", TypeWithOverloads_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithOverloads_new);
-        lua_setfield(L, -2, "new");
-
-        // Static method: staticProcess
-        lua_pushcfunction(L, &TypeWithOverloads_static_staticProcess);
-        lua_setfield(L, -2, "staticProcess");
-
-        lua_setglobal(L, "TypeWithOverloads");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

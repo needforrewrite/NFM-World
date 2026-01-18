@@ -2445,6 +2445,16 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         var shouldGenerateNewIndex = !isStaticClass && ShouldGenerateNewIndexMethod(type);
 
         AppendLine($"// =========== Bindings for {type.Name} ({luaName}) ===========");
+        
+        // Generate luaL_RegManaged arrays first (before the registration method)
+        bool hasInstanceMethodsArray = false;
+        if (!isStaticClass)
+        {
+            hasInstanceMethodsArray = GenerateInstanceMethodsArray(type, safeName, isStruct, fullTypeName);
+        }
+        
+        // Only generate static members array if this type will have a Register method
+        bool hasStaticMembersArray = HasInitializeMethod(kind) && GenerateStaticMembersArray(type, safeName, isStruct, fullTypeName);
 
         if (HasInitializeMethod(kind))
         {
@@ -2465,10 +2475,35 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine("lua_setfield(L, -2, \"__gc\");");
                     AppendLine();
 
-                    // __index (only if needed)
-                    if (shouldGenerateIndex)
+                    // __index - create instance methods table with luaL_newlib or direct __index
+                    if (hasInstanceMethodsArray && shouldGenerateIndex)
                     {
-                        AppendLine("// __index metamethod");
+                        // We have methods and properties - use two-level lookup
+                        AppendLine("// Create instance methods table using luaL_newlib");
+                        AppendLine($"luaL_newlib(L, {safeName}_instance_methods);");
+                        AppendLine();
+                        AppendLine("// Set methods table's metatable to fall back to property/field lookup");
+                        AppendLine("lua_newtable(L);");
+                        AppendLine($"lua_pushcfunction(L, &{safeName}__index);");
+                        AppendLine("lua_setfield(L, -2, \"__index\");");
+                        AppendLine("lua_setmetatable(L, -2);");
+                        AppendLine();
+                        AppendLine("// Set instance methods table as the metatable's __index");
+                        AppendLine("lua_setfield(L, -2, \"__index\");");
+                        AppendLine();
+                    }
+                    else if (hasInstanceMethodsArray)
+                    {
+                        // We have methods but no properties - use methods table directly
+                        AppendLine("// Create instance methods table using luaL_newlib");
+                        AppendLine($"luaL_newlib(L, {safeName}_instance_methods);");
+                        AppendLine("lua_setfield(L, -2, \"__index\");");
+                        AppendLine();
+                    }
+                    else if (shouldGenerateIndex)
+                    {
+                        // We have properties but no methods - use __index function directly
+                        AppendLine("// __index metamethod (property/field lookup)");
                         AppendLine($"lua_pushcfunction(L, &{safeName}__index);");
                         AppendLine("lua_setfield(L, -2, \"__index\");");
                         AppendLine();
@@ -2496,65 +2531,21 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine();
                 }
 
-                // Type table
-                AppendLine($"// Create type table for {luaName}");
-                AppendLine("lua_newtable(L);");
+                // Create global type table with luaL_openlib (if we have static members)
+                if (hasStaticMembersArray)
+                {
+                    AppendLine($"// Create global type table for {luaName} with static members");
+                    AppendLine($"luaL_openlib(L, \"{luaName}\", {safeName}_static_members, 0);");
+                }
+                else
+                {
+                    // Create empty global type table
+                    AppendLine($"// Create empty global type table for {luaName}");
+                    AppendLine($"lua_newtable(L);");
+                    AppendLine($"lua_setglobal(L, \"{luaName}\");");
+                    AppendLine($"lua_getglobal(L, \"{luaName}\");");
+                }
                 AppendLine();
-
-                // Constructor (skip for static classes)
-                if (!isStaticClass)
-                {
-                    // Check if we should generate 'new' method
-                    // Arrays and structs always get 'new', but classes only if they have accessible constructors
-                    var shouldGenerateNew = type.IsArray || isStruct;
-                    if (!shouldGenerateNew && !type.IsArray)
-                    {
-                        var hasAccessibleConstructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
-                            .Any(c => !HasAttribute(c, nameof(LuaHiddenAttribute)) && !c.ContainsGenericParameters);
-                        shouldGenerateNew = hasAccessibleConstructors;
-                    }
-
-                    if (shouldGenerateNew)
-                    {
-                        AppendLine("// Constructor: new()");
-                        AppendLine($"lua_pushcfunction(L, &{safeName}_new);");
-                        AppendLine("lua_setfield(L, -2, \"new\");");
-                        AppendLine();
-                    }
-                }
-
-                // Static methods
-                var staticMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                    .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
-                                !m.IsGenericMethod && !HasByRefParameters(m) && !HasRefReturn(m) &&
-                                !IsCompilerMethod(m))
-                    .GroupBy(GetLuaMethodName)
-                    .ToList();
-
-                foreach (var methodGroup in staticMethods)
-                {
-                    var methodName = methodGroup.Key;
-                    AppendLine($"// Static method: {methodName}");
-                    AppendLine($"lua_pushcfunction(L, &{safeName}_static_{GetSafeMethodName(methodName)});");
-                    AppendLine($"lua_setfield(L, -2, \"{methodName}\");");
-                    AppendLine();
-                }
-
-                // Static events
-                var staticEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Static)
-                    .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
-                    .ToList();
-
-                foreach (var evt in staticEvents)
-                {
-                    var eventName = evt.Name;
-                    AppendLine($"// Static event: {eventName}");
-                    AppendLine($"lua_pushcfunction(L, &{safeName}_add_{eventName});");
-                    AppendLine($"lua_setfield(L, -2, \"add_{eventName}\");");
-                    AppendLine($"lua_pushcfunction(L, &{safeName}_remove_{eventName});");
-                    AppendLine($"lua_setfield(L, -2, \"remove_{eventName}\");");
-                    AppendLine();
-                }
 
                 // Static properties and fields metatable
                 var staticProps = type.GetProperties(BindingFlags.Public | BindingFlags.Static)
@@ -2583,8 +2574,8 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine("lua_setmetatable(L, -2);");
                     AppendLine();
                 }
-
-                AppendLine($"lua_setglobal(L, \"{luaName}\");");
+                
+                AppendLine("lua_pop(L, 1);  // Pop the global table");
             }
 
             AppendLine();
@@ -2655,6 +2646,142 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 GenerateEventMethods(type, safeName, isStruct, fullTypeName, events);
             }
         }
+    }
+
+    private bool GenerateInstanceMethodsArray(Type type, string safeName, bool isStruct, string fullTypeName)
+    {
+        // Collect all instance methods
+        var methods = GetMethodsInTypeAndInterfaces(type)
+            .Where(m => !m.Method.IsSpecialName &&
+                        !HasAttribute(m.Method, nameof(LuaHiddenAttribute)) &&
+                        !m.Method.IsGenericMethod &&
+                        !HasByRefParameters(m.Method) &&
+                        !IsCompilerMethod(m.Method) &&
+                        !HasRefReturn(m.Method) &&
+                        !m.Method.IsStatic &&
+                        (!type.IsArray || (m.Method.DeclaringType != type && m.Method.DeclaringType != typeof(Array) && m.Method.DeclaringType != typeof(object))))
+            .ToList();
+
+        // Filter out deduplicated methods (interface implementations and virtual overrides)
+        // Only keep methods that have actual C function implementations
+        methods = methods.Where(m => GetImplementationSourceType(type, m.Method) == null).ToList();
+
+        // Add extension methods (extension methods are never deduplicated)
+        if (_extensionMethodsByType.TryGetValue(type, out var extensionMethods))
+        {
+            foreach (var extMethod in extensionMethods)
+                methods.Add((type, extMethod));
+        }
+
+        // Add instance event methods
+        var events = type.GetEvents(BindingFlags.Public | BindingFlags.Instance)
+            .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
+            .ToList();
+
+        if (methods.Count == 0 && events.Count == 0)
+            return false;
+
+        AppendLine($"private static readonly luaL_RegManaged[] {safeName}_instance_methods = new luaL_RegManaged[]");
+        using (Block())
+        {
+            // Group methods by Lua name
+            var methodGroups = methods.GroupBy(m => GetLuaMethodName(m.Method)).ToList();
+            
+            foreach (var methodGroup in methodGroups)
+            {
+                var luaMethodName = methodGroup.Key;
+                var safeMethodName = GetSafeMethodName(luaMethodName);  // Use Lua name, not C# name
+                AppendLine($"new() {{ name = \"{luaMethodName}\", func = &{safeName}_method_{safeMethodName} }},");
+            }
+
+            // Add event methods
+            foreach (var evt in events)
+            {
+                var eventName = ToCamelCase(evt.Name);
+                AppendLine($"new() {{ name = \"add_{eventName}\", func = &{safeName}_add_{eventName} }},");
+                AppendLine($"new() {{ name = \"remove_{eventName}\", func = &{safeName}_remove_{eventName} }},");
+            }
+        }
+        AppendLine(";");
+        AppendLine();
+        
+        return true;  // Array was generated
+    }
+
+    private bool GenerateStaticMembersArray(Type type, string safeName, bool isStruct, string fullTypeName)
+    {
+        var isStaticClass = IsStaticClass(type);
+        
+        // Collect static methods (skip System.Object - its static methods are generic)
+        var staticMethods = new List<IGrouping<string, MethodInfo>>();
+        if (type != typeof(object))
+        {
+            var staticMethodsFromType = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
+                            !m.IsGenericMethod && !HasByRefParameters(m) && !HasRefReturn(m) &&
+                            !IsCompilerMethod(m));
+
+            // Get static abstract interface implementations
+            var staticMethodsFromInterfaces = type.GetInterfaces()
+                .SelectMany(i => i.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                .Where(m => m.IsAbstract && !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) &&
+                            !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m));
+
+            staticMethods = staticMethodsFromType.Concat(staticMethodsFromInterfaces)
+                .GroupBy(GetLuaMethodName)
+                .ToList();
+        }
+
+        // Check if we should add constructor
+        var shouldGenerateNew = false;
+        if (!isStaticClass && type != typeof(object))  // Skip System.Object constructor
+        {
+            shouldGenerateNew = type.IsArray || isStruct;
+            if (!shouldGenerateNew && !type.IsArray && !type.IsAbstract)  // Abstract classes cannot be instantiated
+            {
+                var hasAccessibleConstructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                    .Any(c => !HasAttribute(c, nameof(LuaHiddenAttribute)) && !c.ContainsGenericParameters);
+                shouldGenerateNew = hasAccessibleConstructors;
+            }
+        }
+
+        // Collect static events
+        var staticEvents = type.GetEvents(BindingFlags.Public | BindingFlags.Static)
+            .Where(e => !HasAttribute(e, nameof(LuaHiddenAttribute)))
+            .ToList();
+
+        if (staticMethods.Count == 0 && !shouldGenerateNew && staticEvents.Count == 0)
+            return false;
+
+        AppendLine($"private static readonly luaL_RegManaged[] {safeName}_static_members = new luaL_RegManaged[]");
+        using (Block())
+        {
+            // Add constructor
+            if (shouldGenerateNew)
+            {
+                AppendLine($"new() {{ name = \"new\", func = &{safeName}_new }},");
+            }
+
+            // Add static methods
+            foreach (var methodGroup in staticMethods)
+            {
+                var luaMethodName = methodGroup.Key;
+                var safeMethodName = GetSafeMethodName(luaMethodName);  // Use Lua name, not C# name
+                AppendLine($"new() {{ name = \"{luaMethodName}\", func = &{safeName}_static_{safeMethodName} }},");
+            }
+
+            // Add static event methods
+            foreach (var evt in staticEvents)
+            {
+                var eventName = ToCamelCase(evt.Name);
+                AppendLine($"new() {{ name = \"add_{eventName}\", func = &{safeName}_add_{eventName} }},");
+                AppendLine($"new() {{ name = \"remove_{eventName}\", func = &{safeName}_remove_{eventName} }},");
+            }
+        }
+        AppendLine(";");
+        AppendLine();
+        
+        return true;  // Array was generated
     }
 
     private void GenerateOperatorMetamethods(Type type, string safeName)
@@ -2990,7 +3117,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
                 foreach (var evt in instanceEvents)
                 {
-                    var eventName = evt.Name;
+                    var eventName = ToCamelCase(evt.Name);  // Use camelCase for consistency
                     AppendLine($"case \"add_{eventName}\":");
                     using (Indent())
                     {
@@ -3812,12 +3939,12 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         // Get static methods from the type itself
         var staticMethodsFromType = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m));
+            .Where(m => !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m));
 
         // Get static abstract interface implementations
         var staticMethodsFromInterfaces = type.GetInterfaces()
             .SelectMany(i => i.GetMethods(BindingFlags.Public | BindingFlags.Static))
-            .Where(m => m.IsAbstract && !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m));
+            .Where(m => m.IsAbstract && !m.IsSpecialName && !HasAttribute(m, nameof(LuaHiddenAttribute)) && !m.IsGenericMethod && !HasByRefParameters(m) && !HasRefReturn(m) && !IsCompilerMethod(m));
 
         var staticMethods = staticMethodsFromType.Concat(staticMethodsFromInterfaces)
             .GroupBy(m => GetLuaMethodName(m))
@@ -4503,22 +4630,22 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
     {
         foreach (var evt in events)
         {
-            var eventName = evt.Name;
+            var eventName = ToCamelCase(evt.Name);  // Use camelCase for consistency with array entries
             var delegateType = evt.EventHandlerType!;
             var isStatic = evt.AddMethod!.IsStatic;
 
             // Generate add method
-            GenerateEventAddMethod(safeName, fullTypeName, eventName, delegateType, isStatic, isStruct);
+            GenerateEventAddMethod(safeName, fullTypeName, evt.Name, eventName, delegateType, isStatic, isStruct);
 
             // Generate remove method
-            GenerateEventRemoveMethod(safeName, fullTypeName, eventName, delegateType, isStatic, isStruct);
+            GenerateEventRemoveMethod(safeName, fullTypeName, evt.Name, eventName, delegateType, isStatic, isStruct);
         }
     }
 
-    private void GenerateEventAddMethod(string safeName, string fullTypeName, string eventName, Type delegateType, bool isStatic, bool isStruct)
+    private void GenerateEventAddMethod(string safeName, string fullTypeName, string csharpEventName, string luaEventName, Type delegateType, bool isStatic, bool isStruct)
     {
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
-        AppendLine($"private static int {safeName}_add_{eventName}(lua_State L)");
+        AppendLine($"private static int {safeName}_add_{luaEventName}(lua_State L)");
         using (Block())
         {
             if (!isStatic)
@@ -4554,15 +4681,15 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
             // Subscribe to event
             if (isStatic)
             {
-                AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, funcIdx, listener => {fullTypeName}.{eventName} -= listener);");
+                AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, funcIdx, listener => {fullTypeName}.{csharpEventName} -= listener);");
                 AppendLine();
-                AppendLine($"{fullTypeName}.{eventName} += listener;");
+                AppendLine($"{fullTypeName}.{csharpEventName} += listener;");
             }
             else
             {
-                AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, 2, listener => obj.{eventName} -= listener);");
+                AppendLine($"var listener = CreateEventDelegate<{GetFullTypeName(delegateType)}>(L, 2, listener => obj.{csharpEventName} -= listener);");
                 AppendLine();
-                AppendLine($"obj.{eventName} += listener;");
+                AppendLine($"obj.{csharpEventName} += listener;");
                 if (isStruct)
                 {
                     AppendLine("UpdateStruct(L, 1, obj);");
@@ -4574,10 +4701,10 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         AppendLine();
     }
 
-    private void GenerateEventRemoveMethod(string safeName, string fullTypeName, string eventName, Type delegateType, bool isStatic, bool isStruct)
+    private void GenerateEventRemoveMethod(string safeName, string fullTypeName, string csharpEventName, string luaEventName, Type delegateType, bool isStatic, bool isStruct)
     {
         AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
-        AppendLine($"private static int {safeName}_remove_{eventName}(lua_State L)");
+        AppendLine($"private static int {safeName}_remove_{luaEventName}(lua_State L)");
         using (Block())
         {
             if (!isStatic)

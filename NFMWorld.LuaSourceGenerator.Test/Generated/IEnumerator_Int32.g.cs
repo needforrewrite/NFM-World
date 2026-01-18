@@ -13,6 +13,14 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IEnumerator`1 (IEnumerator_Int32) ===========
+    private static readonly luaL_RegManaged[] IEnumerator_Int32_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "dispose", func = &IEnumerator_Int32_method_dispose },
+        new() { name = "moveNext", func = &IEnumerator_Int32_method_moveNext },
+        new() { name = "reset", func = &IEnumerator_Int32_method_reset },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IEnumerator_Int32_method_dispose(lua_State L)
     {

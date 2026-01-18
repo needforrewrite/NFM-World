@@ -13,6 +13,31 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithIndexers (TypeWithIndexers) ===========
+    private static readonly luaL_RegManaged[] TypeWithIndexers_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "setNumberAt", func = &TypeWithIndexers_method_setNumberAt },
+        new() { name = "getNumberAt", func = &TypeWithIndexers_method_getNumberAt },
+        new() { name = "setValue", func = &TypeWithIndexers_method_setValue },
+        new() { name = "getValue", func = &TypeWithIndexers_method_getValue },
+        new() { name = "setGridValue", func = &TypeWithIndexers_method_setGridValue },
+        new() { name = "getGridValue", func = &TypeWithIndexers_method_getGridValue },
+        new() { name = "getNumbersLength", func = &TypeWithIndexers_method_getNumbersLength },
+        new() { name = "getDataCount", func = &TypeWithIndexers_method_getDataCount },
+        new() { name = "getGridCount", func = &TypeWithIndexers_method_getGridCount },
+        new() { name = "getType", func = &TypeWithIndexers_method_getType },
+        new() { name = "toString", func = &TypeWithIndexers_method_toString },
+        new() { name = "equals", func = &TypeWithIndexers_method_equals },
+        new() { name = "getHashCode", func = &TypeWithIndexers_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithIndexers_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithIndexers_new },
+        new() { name = "create", func = &TypeWithIndexers_static_create },
+    }
+    ;
+
     private static void Register_TypeWithIndexers(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>("MT_TypeWithIndexers");
@@ -24,8 +49,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithIndexers_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithIndexers__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,18 +71,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithIndexers
-        lua_newtable(L);
+        // Create global type table for TypeWithIndexers with static members
+        luaL_openlib(L, "TypeWithIndexers", TypeWithIndexers_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithIndexers_new);
-        lua_setfield(L, -2, "new");
-
-        // Static method: create
-        lua_pushcfunction(L, &TypeWithIndexers_static_create);
-        lua_setfield(L, -2, "create");
-
-        lua_setglobal(L, "TypeWithIndexers");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

@@ -13,6 +13,24 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithInlineArray (TypeWithInlineArray) ===========
+    private static readonly luaL_RegManaged[] TypeWithInlineArray_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getBufferValue", func = &TypeWithInlineArray_method_getBufferValue },
+        new() { name = "setBufferValue", func = &TypeWithInlineArray_method_setBufferValue },
+        new() { name = "sumBuffer", func = &TypeWithInlineArray_method_sumBuffer },
+        new() { name = "getType", func = &TypeWithInlineArray_method_getType },
+        new() { name = "toString", func = &TypeWithInlineArray_method_toString },
+        new() { name = "equals", func = &TypeWithInlineArray_method_equals },
+        new() { name = "getHashCode", func = &TypeWithInlineArray_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithInlineArray_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithInlineArray_new },
+    }
+    ;
+
     private static void Register_TypeWithInlineArray(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithInlineArray>("MT_TypeWithInlineArray");
@@ -24,8 +42,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithInlineArray_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithInlineArray__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,14 +64,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithInlineArray
-        lua_newtable(L);
+        // Create global type table for TypeWithInlineArray with static members
+        luaL_openlib(L, "TypeWithInlineArray", TypeWithInlineArray_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithInlineArray_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "TypeWithInlineArray");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

@@ -13,6 +13,21 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithStaticAbstractInterface (TypeWithStaticAbstractInterface) ===========
+    private static readonly luaL_RegManaged[] TypeWithStaticAbstractInterface_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "add", func = &TypeWithStaticAbstractInterface_method_add },
+        new() { name = "getType", func = &TypeWithStaticAbstractInterface_method_getType },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithStaticAbstractInterface_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithStaticAbstractInterface_new },
+        new() { name = "parse", func = &TypeWithStaticAbstractInterface_static_parse },
+        new() { name = "fromDouble", func = &TypeWithStaticAbstractInterface_static_fromDouble },
+    }
+    ;
+
     private static void Register_TypeWithStaticAbstractInterface(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithStaticAbstractInterface>("MT_TypeWithStaticAbstractInterface");
@@ -24,8 +39,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithStaticAbstractInterface_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithStaticAbstractInterface__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,20 +61,8 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithStaticAbstractInterface
-        lua_newtable(L);
-
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithStaticAbstractInterface_new);
-        lua_setfield(L, -2, "new");
-
-        // Static method: parse
-        lua_pushcfunction(L, &TypeWithStaticAbstractInterface_static_parse);
-        lua_setfield(L, -2, "parse");
-
-        // Static method: fromDouble
-        lua_pushcfunction(L, &TypeWithStaticAbstractInterface_static_fromDouble);
-        lua_setfield(L, -2, "fromDouble");
+        // Create global type table for TypeWithStaticAbstractInterface with static members
+        luaL_openlib(L, "TypeWithStaticAbstractInterface", TypeWithStaticAbstractInterface_static_members, 0);
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
@@ -59,7 +70,7 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
-        lua_setglobal(L, "TypeWithStaticAbstractInterface");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

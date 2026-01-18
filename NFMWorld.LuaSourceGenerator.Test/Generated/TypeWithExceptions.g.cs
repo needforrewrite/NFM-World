@@ -13,6 +13,24 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithExceptions (TypeWithExceptions) ===========
+    private static readonly luaL_RegManaged[] TypeWithExceptions_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "throwsException", func = &TypeWithExceptions_method_throwsException },
+        new() { name = "throwsExceptionWithParam", func = &TypeWithExceptions_method_throwsExceptionWithParam },
+        new() { name = "getType", func = &TypeWithExceptions_method_getType },
+        new() { name = "toString", func = &TypeWithExceptions_method_toString },
+        new() { name = "equals", func = &TypeWithExceptions_method_equals },
+        new() { name = "getHashCode", func = &TypeWithExceptions_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithExceptions_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithExceptions_new },
+        new() { name = "staticThrows", func = &TypeWithExceptions_static_staticThrows },
+    }
+    ;
+
     private static void Register_TypeWithExceptions(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithExceptions>("MT_TypeWithExceptions");
@@ -24,8 +42,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithExceptions_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithExceptions__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,18 +64,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithExceptions
-        lua_newtable(L);
+        // Create global type table for TypeWithExceptions with static members
+        luaL_openlib(L, "TypeWithExceptions", TypeWithExceptions_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithExceptions_new);
-        lua_setfield(L, -2, "new");
-
-        // Static method: staticThrows
-        lua_pushcfunction(L, &TypeWithExceptions_static_staticThrows);
-        lua_setfield(L, -2, "staticThrows");
-
-        lua_setglobal(L, "TypeWithExceptions");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

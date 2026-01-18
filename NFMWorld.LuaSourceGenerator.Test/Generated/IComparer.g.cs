@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IComparer (IComparer) ===========
+    private static readonly luaL_RegManaged[] IComparer_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "compare", func = &IComparer_method_compare },
+    }
+    ;
+
     private static void Register_IComparer(lua_State L)
     {
         RegisterMetatable<System.Collections.IComparer>("MT_IComparer");
@@ -24,8 +30,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, IComparer_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &IComparer__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod (shared)
@@ -34,10 +48,12 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for IComparer
+        // Create empty global type table for IComparer
         lua_newtable(L);
-
         lua_setglobal(L, "IComparer");
+        lua_getglobal(L, "IComparer");
+
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

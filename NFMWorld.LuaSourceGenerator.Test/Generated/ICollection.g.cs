@@ -13,6 +13,13 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for ICollection (ICollection) ===========
+    private static readonly luaL_RegManaged[] ICollection_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "copyTo", func = &ICollection_method_copyTo },
+        new() { name = "getEnumerator", func = &ICollection_method_getEnumerator },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICollection_method_copyTo(lua_State L)
     {

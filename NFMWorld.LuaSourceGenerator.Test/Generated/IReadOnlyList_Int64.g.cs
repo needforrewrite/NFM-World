@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IReadOnlyList`1 (IReadOnlyList_Int64) ===========
+    private static readonly luaL_RegManaged[] IReadOnlyList_Int64_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getEnumerator", func = &IReadOnlyList_Int64_method_getEnumerator },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IReadOnlyList_Int64_method_getEnumerator(lua_State L)
     {

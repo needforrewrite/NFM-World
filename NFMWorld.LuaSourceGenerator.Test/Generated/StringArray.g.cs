@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for String[] (ArrayOfString) ===========
+    private static readonly luaL_RegManaged[] StringArray_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &StringArray_new },
+    }
+    ;
+
     private static void Register_StringArray(lua_State L)
     {
         RegisterMetatable<string[]>("MT_StringArray");
@@ -24,7 +30,7 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // __index metamethod (property/field lookup)
         lua_pushcfunction(L, &StringArray__index);
         lua_setfield(L, -2, "__index");
 
@@ -38,14 +44,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for ArrayOfString
-        lua_newtable(L);
+        // Create global type table for ArrayOfString with static members
+        luaL_openlib(L, "ArrayOfString", StringArray_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &StringArray_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "ArrayOfString");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

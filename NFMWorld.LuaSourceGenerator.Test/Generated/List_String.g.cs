@@ -13,6 +13,46 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for List`1 (List_String) ===========
+    private static readonly luaL_RegManaged[] List_String_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "addRange", func = &List_String_method_addRange },
+        new() { name = "asReadOnly", func = &List_String_method_asReadOnly },
+        new() { name = "binarySearch", func = &List_String_method_binarySearch },
+        new() { name = "copyTo", func = &List_String_method_copyTo },
+        new() { name = "ensureCapacity", func = &List_String_method_ensureCapacity },
+        new() { name = "exists", func = &List_String_method_exists },
+        new() { name = "find", func = &List_String_method_find },
+        new() { name = "findAll", func = &List_String_method_findAll },
+        new() { name = "findIndex", func = &List_String_method_findIndex },
+        new() { name = "findLast", func = &List_String_method_findLast },
+        new() { name = "findLastIndex", func = &List_String_method_findLastIndex },
+        new() { name = "forEach", func = &List_String_method_forEach },
+        new() { name = "getEnumerator", func = &List_String_method_getEnumerator },
+        new() { name = "getRange", func = &List_String_method_getRange },
+        new() { name = "slice", func = &List_String_method_slice },
+        new() { name = "indexOf", func = &List_String_method_indexOf },
+        new() { name = "insertRange", func = &List_String_method_insertRange },
+        new() { name = "lastIndexOf", func = &List_String_method_lastIndexOf },
+        new() { name = "removeAll", func = &List_String_method_removeAll },
+        new() { name = "removeRange", func = &List_String_method_removeRange },
+        new() { name = "reverse", func = &List_String_method_reverse },
+        new() { name = "sort", func = &List_String_method_sort },
+        new() { name = "toArray", func = &List_String_method_toArray },
+        new() { name = "trimExcess", func = &List_String_method_trimExcess },
+        new() { name = "trueForAll", func = &List_String_method_trueForAll },
+        new() { name = "getType", func = &List_String_method_getType },
+        new() { name = "toString", func = &List_String_method_toString },
+        new() { name = "equals", func = &List_String_method_equals },
+        new() { name = "getHashCode", func = &List_String_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] List_String_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &List_String_new },
+    }
+    ;
+
     private static void Register_List_String(lua_State L)
     {
         RegisterMetatable<System.Collections.Generic.List<string>>("MT_List_String");
@@ -24,8 +64,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, List_String_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &List_String__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,14 +86,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for List_String
-        lua_newtable(L);
+        // Create global type table for List_String with static members
+        luaL_openlib(L, "List_String", List_String_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &List_String_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "List_String");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

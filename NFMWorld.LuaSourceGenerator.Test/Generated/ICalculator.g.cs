@@ -13,6 +13,14 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for ICalculator (ICalculator) ===========
+    private static readonly luaL_RegManaged[] ICalculator_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "add", func = &ICalculator_method_add },
+        new() { name = "multiply", func = &ICalculator_method_multiply },
+        new() { name = "getDescription", func = &ICalculator_method_getDescription },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICalculator_method_add(lua_State L)
     {

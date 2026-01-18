@@ -13,36 +13,22 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for StaticClass (StaticClass) ===========
+    private static readonly luaL_RegManaged[] StaticClass_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "getMagicNumber", func = &StaticClass_static_getMagicNumber },
+        new() { name = "add", func = &StaticClass_static_add },
+        new() { name = "greet", func = &StaticClass_static_greet },
+        new() { name = "calculate", func = &StaticClass_static_calculate },
+        new() { name = "raiseMessage", func = &StaticClass_static_raiseMessage },
+        new() { name = "add_onMessage", func = &StaticClass_add_onMessage },
+        new() { name = "remove_onMessage", func = &StaticClass_remove_onMessage },
+    }
+    ;
+
     private static void Register_StaticClass(lua_State L)
     {
-        // Create type table for StaticClass
-        lua_newtable(L);
-
-        // Static method: getMagicNumber
-        lua_pushcfunction(L, &StaticClass_static_getMagicNumber);
-        lua_setfield(L, -2, "getMagicNumber");
-
-        // Static method: add
-        lua_pushcfunction(L, &StaticClass_static_add);
-        lua_setfield(L, -2, "add");
-
-        // Static method: greet
-        lua_pushcfunction(L, &StaticClass_static_greet);
-        lua_setfield(L, -2, "greet");
-
-        // Static method: calculate
-        lua_pushcfunction(L, &StaticClass_static_calculate);
-        lua_setfield(L, -2, "calculate");
-
-        // Static method: raiseMessage
-        lua_pushcfunction(L, &StaticClass_static_raiseMessage);
-        lua_setfield(L, -2, "raiseMessage");
-
-        // Static event: OnMessage
-        lua_pushcfunction(L, &StaticClass_add_OnMessage);
-        lua_setfield(L, -2, "add_OnMessage");
-        lua_pushcfunction(L, &StaticClass_remove_OnMessage);
-        lua_setfield(L, -2, "remove_OnMessage");
+        // Create global type table for StaticClass with static members
+        luaL_openlib(L, "StaticClass", StaticClass_static_members, 0);
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
@@ -52,7 +38,7 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "__newindex");
         lua_setmetatable(L, -2);
 
-        lua_setglobal(L, "StaticClass");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -287,7 +273,7 @@ public unsafe partial class LuaBindings
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int StaticClass_add_OnMessage(lua_State L)
+    private static int StaticClass_add_onMessage(lua_State L)
     {
         var funcIdx = lua_type(L, 1) == LUA_TFUNCTION ? 1 : 2;
         if (lua_type(L, funcIdx) != LUA_TFUNCTION) { lua_pushstring(L, "Expected function as listener"); lua_error(L); return 0; }
@@ -299,7 +285,7 @@ public unsafe partial class LuaBindings
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int StaticClass_remove_OnMessage(lua_State L)
+    private static int StaticClass_remove_onMessage(lua_State L)
     {
         // Note: Removing specific Lua function listeners is not currently supported
         // Event listeners will be automatically cleaned up when the Lua state is closed

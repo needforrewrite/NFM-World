@@ -13,6 +13,29 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithMultiDimArray (TypeWithMultiDimArray) ===========
+    private static readonly luaL_RegManaged[] TypeWithMultiDimArray_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "initializeMatrix", func = &TypeWithMultiDimArray_method_initializeMatrix },
+        new() { name = "getRows", func = &TypeWithMultiDimArray_method_getRows },
+        new() { name = "getCols", func = &TypeWithMultiDimArray_method_getCols },
+        new() { name = "getValueAt", func = &TypeWithMultiDimArray_method_getValueAt },
+        new() { name = "setValueAt", func = &TypeWithMultiDimArray_method_setValueAt },
+        new() { name = "sumAll", func = &TypeWithMultiDimArray_method_sumAll },
+        new() { name = "getType", func = &TypeWithMultiDimArray_method_getType },
+        new() { name = "toString", func = &TypeWithMultiDimArray_method_toString },
+        new() { name = "equals", func = &TypeWithMultiDimArray_method_equals },
+        new() { name = "getHashCode", func = &TypeWithMultiDimArray_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithMultiDimArray_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithMultiDimArray_new },
+        new() { name = "createMatrix", func = &TypeWithMultiDimArray_static_createMatrix },
+        new() { name = "createIdentityMatrix", func = &TypeWithMultiDimArray_static_createIdentityMatrix },
+    }
+    ;
+
     private static void Register_TypeWithMultiDimArray(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.TypeWithMultiDimArray>("MT_TypeWithMultiDimArray");
@@ -24,8 +47,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithMultiDimArray_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithMultiDimArray__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,22 +69,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithMultiDimArray
-        lua_newtable(L);
+        // Create global type table for TypeWithMultiDimArray with static members
+        luaL_openlib(L, "TypeWithMultiDimArray", TypeWithMultiDimArray_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithMultiDimArray_new);
-        lua_setfield(L, -2, "new");
-
-        // Static method: createMatrix
-        lua_pushcfunction(L, &TypeWithMultiDimArray_static_createMatrix);
-        lua_setfield(L, -2, "createMatrix");
-
-        // Static method: createIdentityMatrix
-        lua_pushcfunction(L, &TypeWithMultiDimArray_static_createIdentityMatrix);
-        lua_setfield(L, -2, "createIdentityMatrix");
-
-        lua_setglobal(L, "TypeWithMultiDimArray");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

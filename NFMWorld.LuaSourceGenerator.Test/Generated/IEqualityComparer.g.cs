@@ -13,6 +13,13 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IEqualityComparer (IEqualityComparer) ===========
+    private static readonly luaL_RegManaged[] IEqualityComparer_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "equals", func = &IEqualityComparer_method_equals },
+        new() { name = "getHashCode", func = &IEqualityComparer_method_getHashCode },
+    }
+    ;
+
     private static void Register_IEqualityComparer(lua_State L)
     {
         RegisterMetatable<System.Collections.IEqualityComparer>("MT_IEqualityComparer");
@@ -24,8 +31,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, IEqualityComparer_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &IEqualityComparer__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod (shared)
@@ -34,10 +49,12 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for IEqualityComparer
+        // Create empty global type table for IEqualityComparer
         lua_newtable(L);
-
         lua_setglobal(L, "IEqualityComparer");
+        lua_getglobal(L, "IEqualityComparer");
+
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IDisposable (IDisposable) ===========
+    private static readonly luaL_RegManaged[] IDisposable_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "dispose", func = &IDisposable_method_dispose },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int IDisposable_method_dispose(lua_State L)
     {

@@ -13,6 +13,14 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for IEnumerator`1 (IEnumerator_Single) ===========
+    private static readonly luaL_RegManaged[] IEnumerator_Single_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "dispose", func = &IEnumerator_Single_method_dispose },
+        new() { name = "moveNext", func = &IEnumerator_Single_method_moveNext },
+        new() { name = "reset", func = &IEnumerator_Single_method_reset },
+    }
+    ;
+
     private static void Register_IEnumerator_Single(lua_State L)
     {
         RegisterMetatable<System.Collections.Generic.IEnumerator<float>>("MT_IEnumerator_Single");
@@ -24,8 +32,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, IEnumerator_Single_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &IEnumerator_Single__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod (shared)
@@ -34,10 +50,12 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for IEnumerator_Single
+        // Create empty global type table for IEnumerator_Single
         lua_newtable(L);
-
         lua_setglobal(L, "IEnumerator_Single");
+        lua_getglobal(L, "IEnumerator_Single");
+
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

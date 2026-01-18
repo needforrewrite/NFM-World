@@ -13,6 +13,34 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for SampleClass (SampleClass) ===========
+    private static readonly luaL_RegManaged[] SampleClass_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getDoubleId", func = &SampleClass_method_getDoubleId },
+        new() { name = "getGreeting", func = &SampleClass_method_getGreeting },
+        new() { name = "setValue", func = &SampleClass_method_setValue },
+        new() { name = "calculate", func = &SampleClass_method_calculate },
+        new() { name = "clone", func = &SampleClass_method_clone },
+        new() { name = "setNullableValue", func = &SampleClass_method_setNullableValue },
+        new() { name = "multiplyByNullable", func = &SampleClass_method_multiplyByNullable },
+        new() { name = "formatWithOptional", func = &SampleClass_method_formatWithOptional },
+        new() { name = "customName", func = &SampleClass_method_customName },
+        new() { name = "getType", func = &SampleClass_method_getType },
+        new() { name = "equals", func = &SampleClass_method_equals },
+        new() { name = "getHashCode", func = &SampleClass_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] SampleClass_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &SampleClass_new },
+        new() { name = "add", func = &SampleClass_static_add },
+        new() { name = "concat", func = &SampleClass_static_concat },
+        new() { name = "incrementCounter", func = &SampleClass_static_incrementCounter },
+        new() { name = "addNullable", func = &SampleClass_static_addNullable },
+        new() { name = "getNullableValue", func = &SampleClass_static_getNullableValue },
+    }
+    ;
+
     private static void Register_SampleClass(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleClass>("MT_SampleClass");
@@ -24,8 +52,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, SampleClass_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &SampleClass__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,32 +74,8 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for SampleClass
-        lua_newtable(L);
-
-        // Constructor: new()
-        lua_pushcfunction(L, &SampleClass_new);
-        lua_setfield(L, -2, "new");
-
-        // Static method: add
-        lua_pushcfunction(L, &SampleClass_static_add);
-        lua_setfield(L, -2, "add");
-
-        // Static method: concat
-        lua_pushcfunction(L, &SampleClass_static_concat);
-        lua_setfield(L, -2, "concat");
-
-        // Static method: incrementCounter
-        lua_pushcfunction(L, &SampleClass_static_incrementCounter);
-        lua_setfield(L, -2, "incrementCounter");
-
-        // Static method: addNullable
-        lua_pushcfunction(L, &SampleClass_static_addNullable);
-        lua_setfield(L, -2, "addNullable");
-
-        // Static method: getNullableValue
-        lua_pushcfunction(L, &SampleClass_static_getNullableValue);
-        lua_setfield(L, -2, "getNullableValue");
+        // Create global type table for SampleClass with static members
+        luaL_openlib(L, "SampleClass", SampleClass_static_members, 0);
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
@@ -73,7 +85,7 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "__newindex");
         lua_setmetatable(L, -2);
 
-        lua_setglobal(L, "SampleClass");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

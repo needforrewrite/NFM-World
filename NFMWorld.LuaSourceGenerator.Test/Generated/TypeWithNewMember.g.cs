@@ -13,6 +13,23 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithNewMember (TypeWithNewMember) ===========
+    private static readonly luaL_RegManaged[] TypeWithNewMember_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "subtract", func = &TypeWithNewMember_method_subtract },
+        new() { name = "getName", func = &TypeWithNewMember_method_getName },
+        new() { name = "getType", func = &TypeWithNewMember_method_getType },
+        new() { name = "toString", func = &TypeWithNewMember_method_toString },
+        new() { name = "equals", func = &TypeWithNewMember_method_equals },
+        new() { name = "getHashCode", func = &TypeWithNewMember_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithNewMember_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithNewMember_new },
+    }
+    ;
+
     private static void Register_TypeWithNewMember(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithNewMember>("MT_TypeWithNewMember");
@@ -24,8 +41,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithNewMember_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithNewMember__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod (shared)
@@ -34,14 +59,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithNewMember
-        lua_newtable(L);
+        // Create global type table for TypeWithNewMember with static members
+        luaL_openlib(L, "TypeWithNewMember", TypeWithNewMember_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithNewMember_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "TypeWithNewMember");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

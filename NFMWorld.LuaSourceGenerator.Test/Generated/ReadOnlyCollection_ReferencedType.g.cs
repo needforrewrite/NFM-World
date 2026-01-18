@@ -13,6 +13,21 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for ReadOnlyCollection`1 (ReadOnlyCollection_ReferencedType) ===========
+    private static readonly luaL_RegManaged[] ReadOnlyCollection_ReferencedType_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getType", func = &ReadOnlyCollection_ReferencedType_method_getType },
+        new() { name = "toString", func = &ReadOnlyCollection_ReferencedType_method_toString },
+        new() { name = "equals", func = &ReadOnlyCollection_ReferencedType_method_equals },
+        new() { name = "getHashCode", func = &ReadOnlyCollection_ReferencedType_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] ReadOnlyCollection_ReferencedType_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &ReadOnlyCollection_ReferencedType_new },
+    }
+    ;
+
     private static void Register_ReadOnlyCollection_ReferencedType(lua_State L)
     {
         RegisterMetatable<System.Collections.ObjectModel.ReadOnlyCollection<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>>("MT_ReadOnlyCollection_ReferencedType");
@@ -24,8 +39,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, ReadOnlyCollection_ReferencedType_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &ReadOnlyCollection_ReferencedType__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod (shared)
@@ -34,12 +57,8 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for ReadOnlyCollection_ReferencedType
-        lua_newtable(L);
-
-        // Constructor: new()
-        lua_pushcfunction(L, &ReadOnlyCollection_ReferencedType_new);
-        lua_setfield(L, -2, "new");
+        // Create global type table for ReadOnlyCollection_ReferencedType with static members
+        luaL_openlib(L, "ReadOnlyCollection_ReferencedType", ReadOnlyCollection_ReferencedType_static_members, 0);
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
@@ -47,7 +66,7 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
-        lua_setglobal(L, "ReadOnlyCollection_ReferencedType");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

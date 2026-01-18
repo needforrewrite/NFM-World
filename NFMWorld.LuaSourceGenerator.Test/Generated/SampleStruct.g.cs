@@ -13,6 +13,24 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for SampleStruct (Vec2) ===========
+    private static readonly luaL_RegManaged[] SampleStruct_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "normalized", func = &SampleStruct_method_normalized },
+        new() { name = "scale", func = &SampleStruct_method_scale },
+        new() { name = "set", func = &SampleStruct_method_set },
+        new() { name = "getType", func = &SampleStruct_method_getType },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] SampleStruct_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &SampleStruct_new },
+        new() { name = "distance", func = &SampleStruct_static_distance },
+        new() { name = "fromAngle", func = &SampleStruct_static_fromAngle },
+        new() { name = "dot", func = &SampleStruct_static_dot },
+    }
+    ;
+
     private static void Register_SampleStruct(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.SampleStruct>("MT_SampleStruct");
@@ -24,8 +42,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, SampleStruct_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &SampleStruct__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -62,24 +88,8 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for Vec2
-        lua_newtable(L);
-
-        // Constructor: new()
-        lua_pushcfunction(L, &SampleStruct_new);
-        lua_setfield(L, -2, "new");
-
-        // Static method: distance
-        lua_pushcfunction(L, &SampleStruct_static_distance);
-        lua_setfield(L, -2, "distance");
-
-        // Static method: fromAngle
-        lua_pushcfunction(L, &SampleStruct_static_fromAngle);
-        lua_setfield(L, -2, "fromAngle");
-
-        // Static method: dot
-        lua_pushcfunction(L, &SampleStruct_static_dot);
-        lua_setfield(L, -2, "dot");
+        // Create global type table for Vec2 with static members
+        luaL_openlib(L, "Vec2", SampleStruct_static_members, 0);
 
         // Create metatable for type table (static properties and fields)
         lua_newtable(L);
@@ -87,7 +97,7 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "__index");
         lua_setmetatable(L, -2);
 
-        lua_setglobal(L, "Vec2");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

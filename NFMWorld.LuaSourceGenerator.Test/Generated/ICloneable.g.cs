@@ -13,6 +13,12 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for ICloneable (ICloneable) ===========
+    private static readonly luaL_RegManaged[] ICloneable_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "clone", func = &ICloneable_method_clone },
+    }
+    ;
+
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static int ICloneable_method_clone(lua_State L)
     {

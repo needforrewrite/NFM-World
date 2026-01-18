@@ -13,6 +13,32 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithArrays (TypeWithArrays) ===========
+    private static readonly luaL_RegManaged[] TypeWithArrays_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "getNumbers", func = &TypeWithArrays_method_getNumbers },
+        new() { name = "getNames", func = &TypeWithArrays_method_getNames },
+        new() { name = "setNumbers", func = &TypeWithArrays_method_setNumbers },
+        new() { name = "setNames", func = &TypeWithArrays_method_setNames },
+        new() { name = "sumNumbers", func = &TypeWithArrays_method_sumNumbers },
+        new() { name = "concatenateNames", func = &TypeWithArrays_method_concatenateNames },
+        new() { name = "getLength", func = &TypeWithArrays_method_getLength },
+        new() { name = "getAt", func = &TypeWithArrays_method_getAt },
+        new() { name = "getType", func = &TypeWithArrays_method_getType },
+        new() { name = "toString", func = &TypeWithArrays_method_toString },
+        new() { name = "equals", func = &TypeWithArrays_method_equals },
+        new() { name = "getHashCode", func = &TypeWithArrays_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithArrays_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithArrays_new },
+        new() { name = "createArray", func = &TypeWithArrays_static_createArray },
+        new() { name = "createStringArray", func = &TypeWithArrays_static_createStringArray },
+        new() { name = "createSequence", func = &TypeWithArrays_static_createSequence },
+    }
+    ;
+
     private static void Register_TypeWithArrays(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.TypeWithArrays>("MT_TypeWithArrays");
@@ -24,8 +50,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithArrays_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithArrays__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __newindex metamethod
@@ -38,26 +72,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithArrays
-        lua_newtable(L);
+        // Create global type table for TypeWithArrays with static members
+        luaL_openlib(L, "TypeWithArrays", TypeWithArrays_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithArrays_new);
-        lua_setfield(L, -2, "new");
-
-        // Static method: createArray
-        lua_pushcfunction(L, &TypeWithArrays_static_createArray);
-        lua_setfield(L, -2, "createArray");
-
-        // Static method: createStringArray
-        lua_pushcfunction(L, &TypeWithArrays_static_createStringArray);
-        lua_setfield(L, -2, "createStringArray");
-
-        // Static method: createSequence
-        lua_pushcfunction(L, &TypeWithArrays_static_createSequence);
-        lua_setfield(L, -2, "createSequence");
-
-        lua_setglobal(L, "TypeWithArrays");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

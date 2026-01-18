@@ -13,6 +13,22 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 public unsafe partial class LuaBindings
 {
     // =========== Bindings for TypeWithMethodDeduplication (TypeWithMethodDeduplication) ===========
+    private static readonly luaL_RegManaged[] TypeWithMethodDeduplication_instance_methods = new luaL_RegManaged[]
+    {
+        new() { name = "toString", func = &TypeWithMethodDeduplication_method_toString },
+        new() { name = "square", func = &TypeWithMethodDeduplication_method_square },
+        new() { name = "getType", func = &TypeWithMethodDeduplication_method_getType },
+        new() { name = "equals", func = &TypeWithMethodDeduplication_method_equals },
+        new() { name = "getHashCode", func = &TypeWithMethodDeduplication_method_getHashCode },
+    }
+    ;
+
+    private static readonly luaL_RegManaged[] TypeWithMethodDeduplication_static_members = new luaL_RegManaged[]
+    {
+        new() { name = "new", func = &TypeWithMethodDeduplication_new },
+    }
+    ;
+
     private static void Register_TypeWithMethodDeduplication(lua_State L)
     {
         RegisterMetatable<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithMethodDeduplication>("MT_TypeWithMethodDeduplication");
@@ -24,8 +40,16 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
-        // __index metamethod
+        // Create instance methods table using luaL_newlib
+        luaL_newlib(L, TypeWithMethodDeduplication_instance_methods);
+
+        // Set methods table's metatable to fall back to property/field lookup
+        lua_newtable(L);
         lua_pushcfunction(L, &TypeWithMethodDeduplication__index);
+        lua_setfield(L, -2, "__index");
+        lua_setmetatable(L, -2);
+
+        // Set instance methods table as the metatable's __index
         lua_setfield(L, -2, "__index");
 
         // __tostring metamethod (shared)
@@ -34,14 +58,10 @@ public unsafe partial class LuaBindings
 
         lua_pop(L, 1);
 
-        // Create type table for TypeWithMethodDeduplication
-        lua_newtable(L);
+        // Create global type table for TypeWithMethodDeduplication with static members
+        luaL_openlib(L, "TypeWithMethodDeduplication", TypeWithMethodDeduplication_static_members, 0);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &TypeWithMethodDeduplication_new);
-        lua_setfield(L, -2, "new");
-
-        lua_setglobal(L, "TypeWithMethodDeduplication");
+        lua_pop(L, 1);  // Pop the global table
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
