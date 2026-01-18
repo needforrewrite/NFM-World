@@ -20,8 +20,8 @@ public unsafe partial class LuaBindings
         // Create metatable for instances
         luaL_newmetatable(L, "MT_TypeWithStaticAbstractInterface");
 
-        // __gc metamethod
-        lua_pushcfunction(L, &TypeWithStaticAbstractInterface__gc);
+        // __gc metamethod (shared)
+        lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
@@ -32,8 +32,8 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &TypeWithStaticAbstractInterface__newindex);
         lua_setfield(L, -2, "__newindex");
 
-        // __tostring metamethod
-        lua_pushcfunction(L, &TypeWithStaticAbstractInterface__tostring);
+        // __tostring metamethod (shared)
+        lua_pushcfunction(L, &Shared__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -60,18 +60,6 @@ public unsafe partial class LuaBindings
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "TypeWithStaticAbstractInterface");
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int TypeWithStaticAbstractInterface__gc(lua_State L)
-    {
-        var ptr = lua_touserdata(L, 1);
-        if (ptr != null)
-        {
-            var id = *(int*)ptr;
-            RemoveObject<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithStaticAbstractInterface>(id);
-        }
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -140,14 +128,6 @@ public unsafe partial class LuaBindings
                 break;
         }
         return 0;
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int TypeWithStaticAbstractInterface__tostring(lua_State L)
-    {
-        var obj = GetStructFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithStaticAbstractInterface>(L, 1);
-        lua_pushstring(L, obj.ToString() ?? "");
-        return 1;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

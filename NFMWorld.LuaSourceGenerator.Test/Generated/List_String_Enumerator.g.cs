@@ -20,16 +20,16 @@ public unsafe partial class LuaBindings
         // Create metatable for instances
         luaL_newmetatable(L, "MT_List_String_Enumerator");
 
-        // __gc metamethod
-        lua_pushcfunction(L, &List_String_Enumerator__gc);
+        // __gc metamethod (shared)
+        lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
         lua_pushcfunction(L, &List_String_Enumerator__index);
         lua_setfield(L, -2, "__index");
 
-        // __tostring metamethod
-        lua_pushcfunction(L, &List_String_Enumerator__tostring);
+        // __tostring metamethod (shared)
+        lua_pushcfunction(L, &Shared__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -42,18 +42,6 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "new");
 
         lua_setglobal(L, "List_String_Enumerator");
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int List_String_Enumerator__gc(lua_State L)
-    {
-        var ptr = lua_touserdata(L, 1);
-        if (ptr != null)
-        {
-            var id = *(int*)ptr;
-            RemoveObject<System.Collections.Generic.List<string>.Enumerator>(id);
-        }
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -91,14 +79,6 @@ public unsafe partial class LuaBindings
                 lua_pushnil(L);
                 return 1;
         }
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int List_String_Enumerator__tostring(lua_State L)
-    {
-        var obj = GetStructFromStack<System.Collections.Generic.List<string>.Enumerator>(L, 1);
-        lua_pushstring(L, obj.ToString() ?? "");
-        return 1;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

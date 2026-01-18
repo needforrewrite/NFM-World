@@ -20,16 +20,16 @@ public unsafe partial class LuaBindings
         // Create metatable for instances
         luaL_newmetatable(L, "MT_IEnumerator");
 
-        // __gc metamethod
-        lua_pushcfunction(L, &IEnumerator__gc);
+        // __gc metamethod (shared)
+        lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
         lua_pushcfunction(L, &IEnumerator__index);
         lua_setfield(L, -2, "__index");
 
-        // __tostring metamethod
-        lua_pushcfunction(L, &IEnumerator__tostring);
+        // __tostring metamethod (shared)
+        lua_pushcfunction(L, &Shared__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -37,23 +37,7 @@ public unsafe partial class LuaBindings
         // Create type table for IEnumerator
         lua_newtable(L);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &IEnumerator_new);
-        lua_setfield(L, -2, "new");
-
         lua_setglobal(L, "IEnumerator");
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int IEnumerator__gc(lua_State L)
-    {
-        var ptr = lua_touserdata(L, 1);
-        if (ptr != null)
-        {
-            var id = *(int*)ptr;
-            RemoveObject<System.Collections.IEnumerator>(id);
-        }
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -80,23 +64,6 @@ public unsafe partial class LuaBindings
                 lua_pushnil(L);
                 return 1;
         }
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int IEnumerator__tostring(lua_State L)
-    {
-        var obj = GetObjectFromStack<System.Collections.IEnumerator>(L, 1);
-        lua_pushstring(L, obj?.ToString() ?? "nil");
-        return 1;
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int IEnumerator_new(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        luaL_error(L, "Invalid arguments for IEnumerator constructor");
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

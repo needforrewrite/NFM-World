@@ -176,6 +176,20 @@ declare class TypeWithMultiDimArray {
     getHashCode(): number;
 }
 
+declare class RefStructType {
+    /** @customName new */
+    static inst(): RefStructType;
+    /** @customName new */
+    static inst(x: number, y: number): RefStructType;
+    x: number;
+    y: number;
+    getSum(): number;
+    equals(obj: Object): boolean;
+    getHashCode(): number;
+    toString(): string;
+    getType(): Type | null;
+}
+
 declare class SampleClass {
     /** @customName new */
     static inst(): SampleClass;
@@ -394,10 +408,6 @@ declare class Vec3 {
 }
 
 declare class Object {
-    /** @customName new */
-    static inst(): Object;
-    static equals(objA: Object, objB: Object): boolean;
-    static referenceEquals(objA: Object, objB: Object): boolean;
     getType(): Type | null;
     toString(): string;
     equals(obj: Object): boolean;
@@ -425,39 +435,32 @@ declare class ArrayOfInt32 {
     static inst(length: number): ArrayOfInt32;
     [index: number]: number;
     readonly length: number;
-}
 
 declare class ArrayOfString {
     /** @customName new */
     static inst(length: number): ArrayOfString;
     [index: number]: string;
     readonly length: number;
-}
 
 declare class ArrayOfSingle {
     /** @customName new */
     static inst(length: number): ArrayOfSingle;
     [index: number]: number;
     readonly length: number;
-}
 
 declare class ArrayOfInt322D {
     /** @customName new */
     static inst(dim0: number, dim1: number): ArrayOfInt322D;
     get(...indices: number[]): number;
     set(value: number, ...indices: number[]): void;
-}
 
 declare class ArrayOfSingle3D {
     /** @customName new */
     static inst(dim0: number, dim1: number, dim2: number): ArrayOfSingle3D;
     get(...indices: number[]): number;
     set(value: number, ...indices: number[]): void;
-}
 
 declare class CalculatorBase {
-    /** @customName new */
-    static inst(): CalculatorBase;
     subtract(a: number, b: number): number;
     divide(a: number, b: number): number;
     getName(): string;
@@ -774,7 +777,6 @@ declare class ArrayOfInt64 {
     static inst(length: number): ArrayOfInt64;
     [index: number]: number;
     readonly length: number;
-}
 
 declare class IEnumerator {
     readonly current: Object;
@@ -943,7 +945,6 @@ declare class ArrayOfReferencedType {
     static inst(length: number): ArrayOfReferencedType;
     [index: number]: ReferencedType | null;
     readonly length: number;
-}
 
 declare class List_ReferencedType_Enumerator {
     /** @customName new */

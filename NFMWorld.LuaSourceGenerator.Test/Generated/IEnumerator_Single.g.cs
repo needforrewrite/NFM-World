@@ -20,16 +20,16 @@ public unsafe partial class LuaBindings
         // Create metatable for instances
         luaL_newmetatable(L, "MT_IEnumerator_Single");
 
-        // __gc metamethod
-        lua_pushcfunction(L, &IEnumerator_Single__gc);
+        // __gc metamethod (shared)
+        lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
         lua_pushcfunction(L, &IEnumerator_Single__index);
         lua_setfield(L, -2, "__index");
 
-        // __tostring metamethod
-        lua_pushcfunction(L, &IEnumerator_Single__tostring);
+        // __tostring metamethod (shared)
+        lua_pushcfunction(L, &Shared__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -37,23 +37,7 @@ public unsafe partial class LuaBindings
         // Create type table for IEnumerator_Single
         lua_newtable(L);
 
-        // Constructor: new()
-        lua_pushcfunction(L, &IEnumerator_Single_new);
-        lua_setfield(L, -2, "new");
-
         lua_setglobal(L, "IEnumerator_Single");
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int IEnumerator_Single__gc(lua_State L)
-    {
-        var ptr = lua_touserdata(L, 1);
-        if (ptr != null)
-        {
-            var id = *(int*)ptr;
-            RemoveObject<System.Collections.Generic.IEnumerator<float>>(id);
-        }
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -83,23 +67,6 @@ public unsafe partial class LuaBindings
                 lua_pushnil(L);
                 return 1;
         }
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int IEnumerator_Single__tostring(lua_State L)
-    {
-        var obj = GetObjectFromStack<System.Collections.Generic.IEnumerator<float>>(L, 1);
-        lua_pushstring(L, obj?.ToString() ?? "nil");
-        return 1;
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int IEnumerator_Single_new(lua_State L)
-    {
-        var argCount = lua_gettop(L);
-
-        luaL_error(L, "Invalid arguments for IEnumerator`1 constructor");
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

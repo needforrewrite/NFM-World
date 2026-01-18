@@ -585,6 +585,45 @@ function TypeWithMultiDimArrayInstance:equals(obj) end
 function TypeWithMultiDimArrayInstance:getHashCode() end
 
 
+---@class RefStructTypeInstance
+---@field x integer
+---@field y integer
+RefStructTypeInstance = {}
+RefStructType = {}
+
+---@class (exact) RefStructType
+---Creates a new RefStructType
+---@return RefStructTypeInstance
+function RefStructType.new() end
+
+---Creates a new RefStructType
+---@param x integer
+---@param y integer
+---@return RefStructTypeInstance
+function RefStructType.new(x, y) end
+
+---@param self RefStructTypeInstance
+---@return integer
+function RefStructTypeInstance:getSum() end
+
+---@param self RefStructTypeInstance
+---@param obj? ObjectInstance
+---@return boolean
+function RefStructTypeInstance:equals(obj) end
+
+---@param self RefStructTypeInstance
+---@return integer
+function RefStructTypeInstance:getHashCode() end
+
+---@param self RefStructTypeInstance
+---@return string
+function RefStructTypeInstance:toString() end
+
+---@param self RefStructTypeInstance
+---@return TypeInstance
+function RefStructTypeInstance:getType() end
+
+
 ---@class SampleClassInstance
 ---@field id integer
 ---@field name string
@@ -1316,20 +1355,6 @@ ObjectInstance = {}
 Object = {}
 
 ---@class (exact) Object
----Creates a new Object
----@return ObjectInstance
-function Object.new() end
-
----@param objA? ObjectInstance
----@param objB? ObjectInstance
----@return boolean
-function Object.equals(objA, objB) end
-
----@param objA? ObjectInstance
----@param objB? ObjectInstance
----@return boolean
-function Object.referenceEquals(objA, objB) end
-
 ---@param self ObjectInstance
 ---@return TypeInstance
 function ObjectInstance:getType() end
@@ -2307,10 +2332,6 @@ CalculatorBaseInstance = {}
 CalculatorBase = {}
 
 ---@class (exact) CalculatorBase
----Creates a new CalculatorBase
----@return CalculatorBaseInstance
-function CalculatorBase.new() end
-
 ---@param self CalculatorBaseInstance
 ---@param a integer
 ---@param b integer

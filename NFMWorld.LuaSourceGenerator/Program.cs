@@ -180,7 +180,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         _indent++;
         return new BlockDisposable(this);
     }
-    
+
     private readonly struct BlockDisposable(LuaBindingGenerator gen) : IDisposable
     {
         public void Dispose()
@@ -897,7 +897,7 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 /// <summary>
                 /// Remove a managed object by ID.
                 /// </summary>
-                private static void RemoveObject<T>(int id)
+                private static void RemoveObject(int id)
                 {
                     _objects.Remove(id);
                     _objectCount--;
@@ -1467,6 +1467,36 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     }
                     _eventDelegateRefs.Clear();
                 }
+                #endregion
+
+                #region Shared Metamethods
+
+                /// <summary>
+                /// Shared __gc metamethod for all .NET types.
+                /// </summary>
+                [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+                private static int Shared__gc(lua_State L)
+                {
+                    var ptr = lua_touserdata(L, 1);
+                    if (ptr != null)
+                    {
+                        var id = *(int*)ptr;
+                        RemoveObject(id);
+                    }
+                    return 0;
+                }
+
+                /// <summary>
+                /// Shared __tostring metamethod for all .NET types.
+                /// </summary>
+                [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+                private static int Shared__tostring(lua_State L)
+                {
+                    var obj = GetObjectFromStack<object>(L, 1);
+                    lua_pushstring(L, obj?.ToString() ?? "null");
+                    return 1;
+                }
+
                 #endregion
 
                 public static void DefineGlobalVariable<T>(lua_State L, string name, T value)
@@ -2422,9 +2452,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     AppendLine($"luaL_newmetatable(L, \"{metatableName}\");");
                     AppendLine();
 
-                    // __gc
-                    AppendLine("// __gc metamethod");
-                    AppendLine($"lua_pushcfunction(L, &{safeName}__gc);");
+                    // __gc (shared)
+                    AppendLine("// __gc metamethod (shared)");
+                    AppendLine("lua_pushcfunction(L, &Shared__gc);");
                     AppendLine("lua_setfield(L, -2, \"__gc\");");
                     AppendLine();
 
@@ -2449,9 +2479,9 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     // Operator metamethods
                     GenerateOperatorMetamethods(type, safeName);
 
-                    // __tostring
-                    AppendLine("// __tostring metamethod");
-                    AppendLine($"lua_pushcfunction(L, &{safeName}__tostring);");
+                    // __tostring (shared)
+                    AppendLine("// __tostring metamethod (shared)");
+                    AppendLine("lua_pushcfunction(L, &Shared__tostring);");
                     AppendLine("lua_setfield(L, -2, \"__tostring\");");
                     AppendLine();
 
@@ -2467,10 +2497,23 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 // Constructor (skip for static classes)
                 if (!isStaticClass)
                 {
-                    AppendLine("// Constructor: new()");
-                    AppendLine($"lua_pushcfunction(L, &{safeName}_new);");
-                    AppendLine("lua_setfield(L, -2, \"new\");");
-                    AppendLine();
+                    // Check if we should generate 'new' method
+                    // Arrays and structs always get 'new', but classes only if they have accessible constructors
+                    var shouldGenerateNew = type.IsArray || isStruct;
+                    if (!shouldGenerateNew && !type.IsArray)
+                    {
+                        var hasAccessibleConstructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                            .Any(c => !HasAttribute(c, nameof(LuaHiddenAttribute)) && !c.ContainsGenericParameters);
+                        shouldGenerateNew = hasAccessibleConstructors;
+                    }
+
+                    if (shouldGenerateNew)
+                    {
+                        AppendLine("// Constructor: new()");
+                        AppendLine($"lua_pushcfunction(L, &{safeName}_new);");
+                        AppendLine("lua_setfield(L, -2, \"new\");");
+                        AppendLine();
+                    }
                 }
 
                 // Static methods
@@ -2545,8 +2588,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
         {
             if (HasInitializeMethod(kind))
             {
-                GenerateGcMethod(safeName, fullTypeName);
-
                 // Only generate __index if it would have content
                 if (shouldGenerateIndex)
                 {
@@ -2559,9 +2600,22 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                     GenerateNewIndexMethod(type, safeName, isStruct, fullTypeName);
                 }
 
-                GenerateTostringMethod(safeName, isStruct, fullTypeName);
                 GenerateOperatorMethods(type, safeName, fullTypeName);
-                GenerateConstructorMethod(type, safeName, isStruct, fullTypeName);
+
+                // Check if we should generate constructor method
+                // Arrays and structs always get 'new', but classes only if they have accessible constructors
+                var shouldGenerateConstructor = type.IsArray || isStruct;
+                if (!shouldGenerateConstructor && !type.IsArray)
+                {
+                    var hasAccessibleConstructors = type.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                        .Any(c => !HasAttribute(c, nameof(LuaHiddenAttribute)) && !c.ContainsGenericParameters);
+                    shouldGenerateConstructor = hasAccessibleConstructors;
+                }
+
+                if (shouldGenerateConstructor)
+                {
+                    GenerateConstructorMethod(type, safeName, isStruct, fullTypeName);
+                }
             }
 
             GenerateInstanceMethods(type, safeName, isStruct, fullTypeName);
@@ -2611,24 +2665,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 AppendLine();
             }
         }
-    }
-
-    private void GenerateGcMethod(string safeName, string fullTypeName)
-    {
-        AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
-        AppendLine($"private static int {safeName}__gc(lua_State L)");
-        using (Block())
-        {
-            AppendLine("var ptr = lua_touserdata(L, 1);");
-            AppendLine("if (ptr != null)");
-            using (Block())
-            {
-                AppendLine("var id = *(int*)ptr;");
-                AppendLine($"RemoveObject<{fullTypeName}>(id);");
-            }
-            AppendLine("return 0;");
-        }
-        AppendLine();
     }
 
     private void GenerateIndexMethod(Type type, string safeName, bool isStruct, string fullTypeName)
@@ -3343,27 +3379,6 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
                 }
             }
             AppendLine("return 0;");
-        }
-        AppendLine();
-    }
-
-    private void GenerateTostringMethod(string safeName, bool isStruct, string fullTypeName)
-    {
-        AppendLine($"[UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]");
-        AppendLine($"private static int {safeName}__tostring(lua_State L)");
-        using (Block())
-        {
-            if (isStruct)
-            {
-                AppendLine($"var obj = GetStructFromStack<{fullTypeName}>(L, 1);");
-                AppendLine("lua_pushstring(L, obj.ToString() ?? \"\");");
-            }
-            else
-            {
-                AppendLine($"var obj = GetObjectFromStack<{fullTypeName}>(L, 1);");
-                AppendLine("lua_pushstring(L, obj?.ToString() ?? \"nil\");");
-            }
-            AppendLine("return 1;");
         }
         AppendLine();
     }

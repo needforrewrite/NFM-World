@@ -1,4 +1,5 @@
-﻿using nfm_world_library.Lua;
+﻿using LuaJIT;
+using nfm_world_library.Lua;
 
 namespace NFMWorld.Library.Test;
 

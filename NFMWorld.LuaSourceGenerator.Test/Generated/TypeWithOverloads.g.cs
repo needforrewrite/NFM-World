@@ -20,8 +20,8 @@ public unsafe partial class LuaBindings
         // Create metatable for instances
         luaL_newmetatable(L, "MT_TypeWithOverloads");
 
-        // __gc metamethod
-        lua_pushcfunction(L, &TypeWithOverloads__gc);
+        // __gc metamethod (shared)
+        lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
@@ -56,8 +56,8 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &TypeWithOverloads_op_op_Subtraction);
         lua_setfield(L, -2, "__sub");
 
-        // __tostring metamethod
-        lua_pushcfunction(L, &TypeWithOverloads__tostring);
+        // __tostring metamethod (shared)
+        lua_pushcfunction(L, &Shared__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -74,18 +74,6 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "staticProcess");
 
         lua_setglobal(L, "TypeWithOverloads");
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int TypeWithOverloads__gc(lua_State L)
-    {
-        var ptr = lua_touserdata(L, 1);
-        if (ptr != null)
-        {
-            var id = *(int*)ptr;
-            RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(id);
-        }
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -183,14 +171,6 @@ public unsafe partial class LuaBindings
                 break;
         }
         return 0;
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int TypeWithOverloads__tostring(lua_State L)
-    {
-        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.TypeWithOverloads>(L, 1);
-        lua_pushstring(L, obj?.ToString() ?? "nil");
-        return 1;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

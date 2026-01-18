@@ -20,16 +20,16 @@ public unsafe partial class LuaBindings
         // Create metatable for instances
         luaL_newmetatable(L, "MT_TypeWithEvents");
 
-        // __gc metamethod
-        lua_pushcfunction(L, &TypeWithEvents__gc);
+        // __gc metamethod (shared)
+        lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
         lua_pushcfunction(L, &TypeWithEvents__index);
         lua_setfield(L, -2, "__index");
 
-        // __tostring metamethod
-        lua_pushcfunction(L, &TypeWithEvents__tostring);
+        // __tostring metamethod (shared)
+        lua_pushcfunction(L, &Shared__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -52,18 +52,6 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "remove_StaticEvent");
 
         lua_setglobal(L, "TypeWithEvents");
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int TypeWithEvents__gc(lua_State L)
-    {
-        var ptr = lua_touserdata(L, 1);
-        if (ptr != null)
-        {
-            var id = *(int*)ptr;
-            RemoveObject<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(id);
-        }
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -129,14 +117,6 @@ public unsafe partial class LuaBindings
                 lua_pushnil(L);
                 return 1;
         }
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int TypeWithEvents__tostring(lua_State L)
-    {
-        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.TestFixtures.TypeWithEvents>(L, 1);
-        lua_pushstring(L, obj?.ToString() ?? "nil");
-        return 1;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

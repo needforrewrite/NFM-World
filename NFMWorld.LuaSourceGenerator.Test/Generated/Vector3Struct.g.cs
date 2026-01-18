@@ -20,8 +20,8 @@ public unsafe partial class LuaBindings
         // Create metatable for instances
         luaL_newmetatable(L, "MT_Vector3Struct");
 
-        // __gc metamethod
-        lua_pushcfunction(L, &Vector3Struct__gc);
+        // __gc metamethod (shared)
+        lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
@@ -48,8 +48,8 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &Vector3Struct_op_op_UnaryNegation);
         lua_setfield(L, -2, "__unm");
 
-        // __tostring metamethod
-        lua_pushcfunction(L, &Vector3Struct__tostring);
+        // __tostring metamethod (shared)
+        lua_pushcfunction(L, &Shared__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -80,18 +80,6 @@ public unsafe partial class LuaBindings
         lua_setmetatable(L, -2);
 
         lua_setglobal(L, "Vec3");
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int Vector3Struct__gc(lua_State L)
-    {
-        var ptr = lua_touserdata(L, 1);
-        if (ptr != null)
-        {
-            var id = *(int*)ptr;
-            RemoveObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(id);
-        }
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -212,14 +200,6 @@ public unsafe partial class LuaBindings
                 break;
         }
         return 0;
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int Vector3Struct__tostring(lua_State L)
-    {
-        var obj = GetStructFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.Vector3Struct>(L, 1);
-        lua_pushstring(L, obj.ToString() ?? "");
-        return 1;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

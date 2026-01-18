@@ -20,8 +20,8 @@ public unsafe partial class LuaBindings
         // Create metatable for instances
         luaL_newmetatable(L, "MT_TypeWithIndexers");
 
-        // __gc metamethod
-        lua_pushcfunction(L, &TypeWithIndexers__gc);
+        // __gc metamethod (shared)
+        lua_pushcfunction(L, &Shared__gc);
         lua_setfield(L, -2, "__gc");
 
         // __index metamethod
@@ -32,8 +32,8 @@ public unsafe partial class LuaBindings
         lua_pushcfunction(L, &TypeWithIndexers__newindex);
         lua_setfield(L, -2, "__newindex");
 
-        // __tostring metamethod
-        lua_pushcfunction(L, &TypeWithIndexers__tostring);
+        // __tostring metamethod (shared)
+        lua_pushcfunction(L, &Shared__tostring);
         lua_setfield(L, -2, "__tostring");
 
         lua_pop(L, 1);
@@ -50,18 +50,6 @@ public unsafe partial class LuaBindings
         lua_setfield(L, -2, "create");
 
         lua_setglobal(L, "TypeWithIndexers");
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int TypeWithIndexers__gc(lua_State L)
-    {
-        var ptr = lua_touserdata(L, 1);
-        if (ptr != null)
-        {
-            var id = *(int*)ptr;
-            RemoveObject<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>(id);
-        }
-        return 0;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -208,14 +196,6 @@ public unsafe partial class LuaBindings
         {
         }
         return 0;
-    }
-
-    [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    private static int TypeWithIndexers__tostring(lua_State L)
-    {
-        var obj = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.TypeWithIndexers>(L, 1);
-        lua_pushstring(L, obj?.ToString() ?? "nil");
-        return 1;
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
