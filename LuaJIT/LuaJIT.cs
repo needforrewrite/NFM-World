@@ -6,6 +6,12 @@ using System.Runtime.InteropServices;
 
 namespace LuaJIT
 {
+    public unsafe partial struct luaL_RegManaged
+    {
+        public string name;
+        public lua_CFunction func;
+    }
+
     public unsafe partial struct luaL_Reg
     {
         [NativeTypeName("const char *")]

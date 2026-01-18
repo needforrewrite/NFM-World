@@ -249,6 +249,23 @@ public static unsafe partial class Methods
         luaL_newlibtable(L, l);
         luaL_setfuncs(L, l, 0);
     }
+
+    public static void luaL_newlib(lua_State L, ReadOnlySpan<luaL_RegManaged> l)
+    {
+        lua_createtable(L, 0, l.Length);
+        Span<luaL_Reg> regs = stackalloc luaL_Reg[l.Length + 1];
+        for (int i = 0; i < l.Length; i++)
+        {
+            regs[i].name = (sbyte*)Marshal.StringToHGlobalAnsi(l[i].name);
+            regs[i].func = l[i].func;
+        }
+        regs[l.Length].name = null;
+        regs[l.Length].func = null;
+        fixed (luaL_Reg* p = &regs[0])
+        {
+            luaL_setfuncs(L, p, 0);
+        }
+    }
 	
     public static void luaL_addchar(luaL_Buffer* B, sbyte c)
     {
