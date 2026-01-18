@@ -253,18 +253,50 @@ public static unsafe partial class Methods
     public static void luaL_newlib(lua_State L, ReadOnlySpan<luaL_RegManaged> l)
     {
         lua_createtable(L, 0, l.Length);
+        luaL_setfuncs(L, l, 0);
+    }
+
+    private static void luaL_setfuncs(lua_State L, ReadOnlySpan<luaL_RegManaged> l, int nup)
+    {
         Span<luaL_Reg> regs = stackalloc luaL_Reg[l.Length + 1];
-        for (int i = 0; i < l.Length; i++)
+        try
         {
-            regs[i].name = (sbyte*)Marshal.StringToHGlobalAnsi(l[i].name);
-            regs[i].func = l[i].func;
+            for (int i = 0; i < l.Length; i++)
+            {
+                regs[i].name = (sbyte*)Marshal.StringToHGlobalAnsi(l[i].name);
+                regs[i].func = l[i].func;
+            }
+
+            regs[l.Length].name = null;
+            regs[l.Length].func = null;
+            fixed (luaL_Reg* p = &regs[0])
+            {
+                luaL_setfuncs(L, p, nup);
+            }
         }
-        regs[l.Length].name = null;
-        regs[l.Length].func = null;
-        fixed (luaL_Reg* p = &regs[0])
+        finally
         {
-            luaL_setfuncs(L, p, 0);
+            for (int i = 0; i < l.Length; i++)
+            {
+                Marshal.FreeHGlobal((nint)regs[i].name);
+            }
         }
+    }
+
+    public static void luaL_openlib(lua_State L, string libname, ReadOnlySpan<luaL_RegManaged> l, int nup)
+    {
+        if (libname != null)
+        {
+            lua_getglobal(L, libname);
+            if (lua_isnil(L, -1) == 1)
+            {
+                lua_pop(L, 1);
+                lua_createtable(L, 0, l.Length);
+                lua_pushvalue(L, -1);
+                lua_setglobal(L, libname);
+            }
+        }
+        luaL_setfuncs(L, l, nup);
     }
 	
     public static void luaL_addchar(luaL_Buffer* B, sbyte c)
