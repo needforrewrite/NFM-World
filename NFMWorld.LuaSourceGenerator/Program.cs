@@ -421,6 +421,13 @@ public class LuaBindingGenerator(Assembly assembly, string @namespace)
 
             if (luaVisibleAttr != null)
             {
+                // Skip ref structs - they cannot be marshalled to Lua
+                if (IsRefStruct(type))
+                {
+                    Console.WriteLine($"Skipping ref struct: {type.Name}");
+                    continue;
+                }
+
                 discoveredTypes.Add(type, DiscoveredKind.LuaVisible);
             }
         }

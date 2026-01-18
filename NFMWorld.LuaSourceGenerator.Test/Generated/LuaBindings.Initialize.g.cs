@@ -25,7 +25,6 @@ public partial class LuaBindings
         Register_TypeWithArrays(L);
         Register_TypeWithIndexers(L);
         Register_TypeWithMultiDimArray(L);
-        Register_RefStructType(L);
         Register_SampleClass(L);
         Register_SampleStruct(L);
         Register_TypeWithByRefParameters(L);

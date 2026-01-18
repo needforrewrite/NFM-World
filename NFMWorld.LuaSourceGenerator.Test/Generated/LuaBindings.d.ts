@@ -176,20 +176,6 @@ declare class TypeWithMultiDimArray {
     getHashCode(): number;
 }
 
-declare class RefStructType {
-    /** @customName new */
-    static inst(): RefStructType;
-    /** @customName new */
-    static inst(x: number, y: number): RefStructType;
-    x: number;
-    y: number;
-    getSum(): number;
-    equals(obj: Object): boolean;
-    getHashCode(): number;
-    toString(): string;
-    getType(): Type | null;
-}
-
 declare class SampleClass {
     /** @customName new */
     static inst(): SampleClass;
