@@ -1,6 +1,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NFMWorld.LuaSourceGenerator.Test.Bindings;
 using LuaJIT;
+using NFMWorld.LuaSourceGenerator.TestFixtures;
 using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test;
@@ -131,6 +132,7 @@ public partial class LuaRuntimeTests
         AssertLuaOk(result);
         var value = lua_tointeger(_L, -1);
         Assert.AreEqual(100, value);
+        Assert.AreEqual(100, StaticClass.StaticField);
     }
 
     [TestMethod]

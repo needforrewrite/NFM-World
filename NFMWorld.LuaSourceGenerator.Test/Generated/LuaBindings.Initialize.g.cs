@@ -3,66 +3,214 @@
 // ReSharper disable All
 #nullable enable
 
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using LuaJIT;
 using static LuaJIT.Methods;
 
 namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
-public partial class LuaBindings
+public unsafe partial class LuaBindings
 {
-    /// <summary>
-    /// Initialize all Lua bindings for types marked with [LuaVisible]
-    /// </summary>
     public static void Initialize(lua_State L)
     {
-        Register_StaticClass(L);
-        Register_TypeWithEvents(L);
-        Register_CustomEventArgs(L);
-        Register_TypeWithExtensionMembers(L);
-        Register_InlineBuffer(L);
-        Register_TypeWithInlineArray(L);
-        Register_TypeWithStaticAbstractInterface(L);
-        Register_TypeWithArrays(L);
-        Register_TypeWithIndexers(L);
-        Register_TypeWithMultiDimArray(L);
-        Register_SampleClass(L);
-        Register_SampleStruct(L);
-        Register_TypeWithByRefParameters(L);
-        Register_TypeWithExceptions(L);
-        Register_TypeWithMethodDeduplication(L);
-        Register_AnotherCalculator(L);
-        Register_TypeWithNewMember(L);
-        Register_TypeWithNestedGeneric(L);
-        Register_TypeWithOverloads(L);
-        Register_TypeWithReferences(L);
-        Register_Vector3Struct(L);
-        Register_EventArgs(L);
-        Register_Int32Array(L);
-        Register_StringArray(L);
-        Register_SingleArray(L);
-        Register_Int32Array2D(L);
-        Register_SingleArray3D(L);
-        Register_List_Int32(L);
-        Register_List_Int32_Enumerator(L);
-        Register_List_String(L);
-        Register_List_String_Enumerator(L);
-        Register_ReferencedType(L);
-        Register_List_ReferencedType(L);
-        Register_Int64Array(L);
-        Register_IEnumerator(L);
-        Register_ReadOnlyCollection_Int32(L);
-        Register_IComparer_Int32(L);
-        Register_ReadOnlyCollection_String(L);
-        Register_IComparer_String(L);
-        Register_ReadOnlyCollection_ReferencedType(L);
-        Register_IComparer_ReferencedType(L);
-        Register_ReferencedTypeArray(L);
-        Register_List_ReferencedType_Enumerator(L);
-        Register_IComparer(L);
-        Register_IEqualityComparer(L);
-        Register_IEnumerator_Single(L);
-        Register_IEnumerator_ReferencedType(L);
-        Register_IEnumerator_Int64(L);
+        Register(
+            L,
+            "StaticClass",
+            "MT_StaticClass",
+            StaticClass_instance_methods,
+            null,
+            StaticClass_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithEvents",
+            "MT_TypeWithEvents",
+            TypeWithEvents_instance_methods,
+            null,
+            TypeWithEvents_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithInlineArray",
+            "MT_TypeWithInlineArray",
+            TypeWithInlineArray_instance_methods,
+            null,
+            null,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithStaticAbstractInterface",
+            "MT_TypeWithStaticAbstractInterface",
+            TypeWithStaticAbstractInterface_instance_methods,
+            null,
+            TypeWithStaticAbstractInterface_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithArrays",
+            "MT_TypeWithArrays",
+            TypeWithArrays_instance_methods,
+            null,
+            TypeWithArrays_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithIndexers",
+            "MT_TypeWithIndexers",
+            TypeWithIndexers_instance_methods,
+            null,
+            TypeWithIndexers_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithMultiDimArray",
+            "MT_TypeWithMultiDimArray",
+            TypeWithMultiDimArray_instance_methods,
+            null,
+            TypeWithMultiDimArray_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "SampleClass",
+            "MT_SampleClass",
+            SampleClass_instance_methods,
+            null,
+            SampleClass_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "Vec2",
+            "MT_SampleStruct",
+            Vec2_instance_methods,
+            Vec2_operators,
+            Vec2_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithByRefParameters",
+            "MT_TypeWithByRefParameters",
+            TypeWithByRefParameters_instance_methods,
+            null,
+            null,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithExceptions",
+            "MT_TypeWithExceptions",
+            TypeWithExceptions_instance_methods,
+            null,
+            TypeWithExceptions_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithMethodDeduplication",
+            "MT_TypeWithMethodDeduplication",
+            TypeWithMethodDeduplication_instance_methods,
+            null,
+            null,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "AnotherCalculator",
+            "MT_AnotherCalculator",
+            AnotherCalculator_instance_methods,
+            null,
+            null,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithNewMember",
+            "MT_TypeWithNewMember",
+            TypeWithNewMember_instance_methods,
+            null,
+            null,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithNestedGeneric",
+            "MT_TypeWithNestedGeneric",
+            TypeWithNestedGeneric_instance_methods,
+            null,
+            null,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithOverloads",
+            "MT_TypeWithOverloads",
+            TypeWithOverloads_instance_methods,
+            TypeWithOverloads_operators,
+            TypeWithOverloads_static_methods,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "TypeWithReferences",
+            "MT_TypeWithReferences",
+            TypeWithReferences_instance_methods,
+            null,
+            null,
+            null,
+            null
+        );
+        
+        Register(
+            L,
+            "Vec3",
+            "MT_Vector3Struct",
+            Vec3_instance_methods,
+            Vec3_operators,
+            Vec3_static_methods,
+            null,
+            null
+        );
+        
     }
-
 }

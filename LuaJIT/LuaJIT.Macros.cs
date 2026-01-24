@@ -256,7 +256,7 @@ public static unsafe partial class Methods
         luaL_setfuncs(L, l, 0);
     }
 
-    private static void luaL_setfuncs(lua_State L, ReadOnlySpan<luaL_RegManaged> l, int nup)
+    public static void luaL_setfuncs(lua_State L, ReadOnlySpan<luaL_RegManaged> l, int nup)
     {
         Span<luaL_Reg> regs = stackalloc luaL_Reg[l.Length + 1];
         try

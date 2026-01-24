@@ -18,6 +18,93 @@ namespace NFMWorld.LuaSourceGenerator.Test.Bindings;
 
 public unsafe partial class LuaBindings
 {
+    /// <summary>
+    /// Register a type with Lua, including its instance and static methods, and field/property accessors.
+    /// </summary>
+    private static void Register(
+        lua_State L,
+        string typeName,
+        string metatableName,
+        ReadOnlySpan<luaL_RegManaged> instanceMethods,
+        ReadOnlySpan<luaL_RegManaged> instanceOperators,
+        ReadOnlySpan<luaL_RegManaged> staticMethods,
+        delegate* unmanaged[Cdecl]<LuaJIT.lua_State, int> instanceFieldsIndex,
+        delegate* unmanaged[Cdecl]<LuaJIT.lua_State, int> staticFieldsIndex
+    )
+    {
+        // Create metatable for instances
+        luaL_newmetatable(L, metatableName); // Stack: metatable
+
+        if (instanceOperators.Length > 0)
+        {
+            luaL_setfuncs(L, instanceOperators, 0); // Stack: metatable
+        }
+
+        // Create instance methods table
+        if (instanceMethods.Length == 0)
+        {
+            // If there are no instance methods, create an empty table
+            lua_newtable(L); // Stack: metatable, instanceMethodsTable
+        }
+        else
+        {
+            luaL_newlib(L, instanceMethods); // Stack: metatable, instanceMethodsTable
+        }
+
+        if (instanceFieldsIndex != null)
+        {
+            // Create metatable for instance fields
+            luaL_newmetatable(L, metatableName + "_instance_fields"); // Stack: metatable, instanceMethodsTable, instanceFieldsMetatable
+            lua_pushcfunction(L, instanceFieldsIndex); // Stack: metatable, instanceMethodsTable, instanceFieldsMetatable, instanceFieldsIndexFunction
+
+            // Set __index to the instance fields index function
+            lua_setfield(L, -2, "__index"u8); // Stack: metatable, instanceMethodsTable, instanceFieldsMetatable
+
+            // Set the instance fields metatable as the metatable of the instance methods table
+            lua_setmetatable(L, -2); // Stack: metatable, instanceMethodsTable
+        }
+
+        // Set __index of the instance metatable to the instance methods table
+        lua_setfield(L, -2, "__index"u8); // Stack: metatable
+
+        // Pop the metatable
+        lua_pop(L, 1); // Stack: (empty)
+
+        // Indexing order:
+        // - First look for operators in metatable
+        // - Then look in instance methods table (__index)
+        // - Then look in instance fields metatable (__index of instanceMethodsTable)
+
+        // Create global type table for static members
+        if (staticMethods.Length == 0)
+        {
+            // If there are no static methods, create an empty table
+            lua_newtable(L); // Stack: typeTable
+        }
+        else
+        {
+            luaL_newlib(L, staticMethods); // Stack: typeTable
+        }
+
+        if (staticFieldsIndex != null)
+        {
+            // Create metatable for type table (static properties and fields)
+            luaL_newmetatable(L, typeName + "_static_fields"); // Stack: typeTable, staticFieldsMetatable
+            lua_pushcfunction(L, staticFieldsIndex); // Stack: typeTable, staticFieldsMetatable, staticFieldsIndexFunction
+            // Set __index to the static fields index function
+            lua_setfield(L, -2, "__index"u8); // Stack: typeTable, staticFieldsMetatable
+            // Set the static fields metatable as the metatable of the type table
+            lua_setmetatable(L, -2); // Stack: typeTable
+        }
+
+        // Set the type table in the global namespace
+        lua_setglobal(L, typeName); // Stack: (empty)
+
+        // Indexing order:
+        // - First look in static members table
+        // - Then look in static fields metatable (__index of typeTable)
+    }
+
     private static int _nextObjectId = 1;
 
     // Global storage for all managed objects (non-generic to allow runtime type queries), and  their .NET types (for overload resolution)
@@ -130,27 +217,14 @@ public unsafe partial class LuaBindings
     }
 
     /// <summary>
-    /// Get a managed reference type object from userdata at stack index.
+    /// Get an object from userdata at stack index.
     /// </summary>
-    private static T? GetObjectFromStack<T>(lua_State L, int idx) where T : class
-    {
-        var ptr = lua_touserdata(L, idx);
-        if (ptr == null) return null;
-        var id = *(int*)ptr;
-        return GetObject<T>(id);
-    }
-
-    /// <summary>
-    /// Get a struct from userdata at stack index (returns copy for value type semantics).
-    /// </summary>
-    private static T GetStructFromStack<T>(lua_State L, int idx) where T : struct
+    private static T? GetObjectFromStack<T>(lua_State L, int idx)
     {
         var ptr = lua_touserdata(L, idx);
         if (ptr == null) return default;
         var id = *(int*)ptr;
-        var obj = GetObject<T>(id);
-        if (obj is T value) return value;
-        return default;
+        return GetObject<T>(id);
     }
 
     /// <summary>
@@ -298,6 +372,15 @@ public unsafe partial class LuaBindings
         }
     }
 
+    public static T? ToObjectNullable<T>(lua_State L, int idx) where T : struct
+    {
+        var luaType = lua_type(L, idx);
+
+        if (luaType == LUA_TNIL) return null;
+
+        return ToObject<T>(L, idx);
+    }
+
     /// <summary>
     /// Convert Lua value at stack index to a C# object of the target type.
     /// </summary>
@@ -392,50 +475,6 @@ public unsafe partial class LuaBindings
             
                     // Convert the element
                     array[i] = ToObject<float>(L, -1)!;
-            
-                    // Pop the element from stack
-                    lua_pop(L, 1);
-                }
-            
-                return (T)(object)array;
-            }
-            if (typeof(T) == typeof(long[]))
-            {
-                // Get the length of the table
-                var length = (int)lua_objlen(L, idx);
-            
-                // Create the array
-                var array = new long[length];
-            
-                for (int i = 0; i < length; i++)
-                {
-                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                    lua_rawgeti(L, idx, i + 1);
-            
-                    // Convert the element
-                    array[i] = ToObject<long>(L, -1)!;
-            
-                    // Pop the element from stack
-                    lua_pop(L, 1);
-                }
-            
-                return (T)(object)array;
-            }
-            if (typeof(T) == typeof(NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[]))
-            {
-                // Get the length of the table
-                var length = (int)lua_objlen(L, idx);
-            
-                // Create the array
-                var array = new NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType[length];
-            
-                for (int i = 0; i < length; i++)
-                {
-                    // Push table[i+1] onto stack (Lua arrays are 1-indexed)
-                    lua_rawgeti(L, idx, i + 1);
-            
-                    // Convert the element
-                    array[i] = ToObject<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ReferencedType>(L, -1)!;
             
                     // Pop the element from stack
                     lua_pop(L, 1);
@@ -576,17 +615,6 @@ public unsafe partial class LuaBindings
         var funcRef = luaL_ref(L, LUA_REGISTRYINDEX);
 
         // Create a delegate that calls back into Lua
-        if (typeof(TDelegate) == typeof(System.Action<string>))
-        {
-            var invoker = new EventInvoker1<string> { L = L, FuncRef = funcRef };
-            var @delegate = (TDelegate)(Delegate)(System.Action<string>)((arg0) => invoker.Invoke(arg0!));
-            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
-            {
-                unregister(@delegate);
-                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
-            }));
-            return @delegate;
-        }
         if (typeof(TDelegate) == typeof(System.Action))
         {
             var invoker = new EventInvoker0 { L = L, FuncRef = funcRef };
@@ -602,17 +630,6 @@ public unsafe partial class LuaBindings
         {
             var invoker = new EventInvoker2<object, System.EventArgs> { L = L, FuncRef = funcRef };
             var @delegate = (TDelegate)(Delegate)(System.EventHandler)((arg0, arg1) => invoker.Invoke(arg0!, arg1!));
-            _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
-            {
-                unregister(@delegate);
-                luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
-            }));
-            return @delegate;
-        }
-        if (typeof(TDelegate) == typeof(System.EventHandler<NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs>))
-        {
-            var invoker = new EventInvoker2<object, NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs> { L = L, FuncRef = funcRef };
-            var @delegate = (TDelegate)(Delegate)(System.EventHandler<NFMWorld.LuaSourceGenerator.TestFixtures.CustomEventArgs>)((arg0, arg1) => invoker.Invoke(arg0!, arg1!));
             _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
             {
                 unregister(@delegate);
@@ -654,26 +671,6 @@ public unsafe partial class LuaBindings
         }
 
         ~EventInvoker0()
-        {
-            // Clean up Lua function reference when the invoker is garbage collected
-            luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
-        }
-    }
-    private sealed class EventInvoker1<T0> : BaseEventInvoker
-    {
-        public void Invoke(T0 arg0)
-        {
-            lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
-            PushValue(L, arg0);
-            if (lua_pcall(L, 1, 0, 0) != LUA_OK)
-            {
-                var errorMsg = lua_tostring(L, -1);
-                lua_pop(L, 1); // Remove error message from stack
-                throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
-            }
-        }
-    
-        ~EventInvoker1()
         {
             // Clean up Lua function reference when the invoker is garbage collected
             luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
@@ -872,6 +869,11 @@ public unsafe partial class LuaBindings
         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
         lua_pushcfunction(L, funcPtr);
         lua_setglobal(L, name);
+    }
+
+    private static int Unreachable()
+    {
+        throw new InvalidOperationException("Unreachable code executed");
     }
 }
 

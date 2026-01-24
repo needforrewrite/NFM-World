@@ -15,7 +15,7 @@ public class TypeInfoTests
         // Arrange
         var type = typeof(SampleStruct);
         // Act
-        var typeInfo = new TypeInfo(type);
+        var typeInfo = new LuaVisibleType(type.Assembly, type);
 
         // Assert
         Assert.AreEqual("Vec2", typeInfo.LuaName);
@@ -27,7 +27,7 @@ public class TypeInfoTests
         // Arrange
         var type = typeof(SampleClass);
         // Act
-        var typeInfo = new TypeInfo(type);
+        var typeInfo = new LuaVisibleType(type.Assembly, type);
 
         // Assert
         Assert.AreEqual("SampleClass", typeInfo.LuaName);
@@ -39,7 +39,7 @@ public class TypeInfoTests
         // Arrange
         var type = typeof(SampleClass);
         // Act
-        var typeInfo = new TypeInfo(type);
+        var typeInfo = new LuaVisibleType(type.Assembly, type);
 
         // Assert
         Assert.AreEqual(type, typeInfo.Type);
