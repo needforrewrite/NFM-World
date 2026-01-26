@@ -326,4 +326,30 @@ public static class Helpers
             _ => null
         };
     }
+
+    extension(MethodBase methodBase)
+    {
+        public Type ReturnType =>
+            methodBase switch
+            {
+                MethodInfo mi => mi.ReturnType,
+                ConstructorInfo => typeof(void),
+                _ => throw new InvalidOperationException("Unknown MethodBase type for ReturnType.")
+            };
+    }
+
+    extension(IndentedStringBuilder sb)
+    {
+        public void GeneratePushValue(Type valueType, string valueExpression)
+        {
+            if (valueType.IsNullable())
+            {
+                sb.AppendLine($"PushNullableValue(L, {valueExpression});");
+            }
+            else
+            {
+                sb.AppendLine($"PushValue(L, {valueExpression});");
+            }
+        }
+    }
 }

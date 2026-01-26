@@ -37,56 +37,22 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                       lua_State L,
                       string typeName,
                       string metatableName,
-                      ReadOnlySpan<luaL_RegManaged> instanceMethods,
-                      ReadOnlySpan<luaL_RegManaged> instanceOperators,
+                      ReadOnlySpan<luaL_RegManaged> instanceMetamethods,
                       ReadOnlySpan<luaL_RegManaged> staticMethods,
-                      delegate* unmanaged[Cdecl]<LuaJIT.lua_State, int> instanceFieldsIndex,
-                      delegate* unmanaged[Cdecl]<LuaJIT.lua_State, int> staticFieldsIndex
+                      ReadOnlySpan<luaL_RegManaged> staticMetamethods,
                   )
                   {
                       // Create metatable for instances
                       luaL_newmetatable(L, metatableName); // Stack: metatable
                       
-                      if (instanceOperators.Length > 0)
+                      if (instanceMetamethods.Length > 0)
                       {
-                          luaL_setfuncs(L, instanceOperators, 0); // Stack: metatable
+                          luaL_setfuncs(L, instanceMetamethods, 0); // Stack: metatable
                       }
-                      
-                      // Create instance methods table
-                      if (instanceMethods.Length == 0)
-                      {
-                          // If there are no instance methods, create an empty table
-                          lua_newtable(L); // Stack: metatable, instanceMethodsTable
-                      }
-                      else
-                      {
-                          luaL_newlib(L, instanceMethods); // Stack: metatable, instanceMethodsTable
-                      }
-                      
-                      if (instanceFieldsIndex != null)
-                      {
-                          // Create metatable for instance fields
-                          luaL_newmetatable(L, metatableName + "_instance_fields"); // Stack: metatable, instanceMethodsTable, instanceFieldsMetatable
-                          lua_pushcfunction(L, instanceFieldsIndex); // Stack: metatable, instanceMethodsTable, instanceFieldsMetatable, instanceFieldsIndexFunction
-                          
-                          // Set __index to the instance fields index function
-                          lua_setfield(L, -2, "__index"u8); // Stack: metatable, instanceMethodsTable, instanceFieldsMetatable
-                          
-                          // Set the instance fields metatable as the metatable of the instance methods table
-                          lua_setmetatable(L, -2); // Stack: metatable, instanceMethodsTable
-                      }
-                      
-                      // Set __index of the instance metatable to the instance methods table
-                      lua_setfield(L, -2, "__index"u8); // Stack: metatable
                       
                       // Pop the metatable
                       lua_pop(L, 1); // Stack: (empty)
-                  
-                      // Indexing order:
-                      // - First look for operators in metatable
-                      // - Then look in instance methods table (__index)
-                      // - Then look in instance fields metatable (__index of instanceMethodsTable)
-                      
+
                       // Create global type table for static members
                       if (staticMethods.Length == 0)
                       {
@@ -98,23 +64,16 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                           luaL_newlib(L, staticMethods); // Stack: typeTable
                       }
                       
-                      if (staticFieldsIndex != null)
+                      if (staticMetamethods.Length > 0)
                       {
-                          // Create metatable for type table (static properties and fields)
-                          luaL_newmetatable(L, typeName + "_static_fields"); // Stack: typeTable, staticFieldsMetatable
-                          lua_pushcfunction(L, staticFieldsIndex); // Stack: typeTable, staticFieldsMetatable, staticFieldsIndexFunction
-                          // Set __index to the static fields index function
-                          lua_setfield(L, -2, "__index"u8); // Stack: typeTable, staticFieldsMetatable
-                          // Set the static fields metatable as the metatable of the type table
+                          // Create and set the metatable for the type table
+                          lua_newtable(L); // Stack: typeTable, metatable
+                          luaL_setfuncs(L, staticMetamethods, 0); // Stack: typeTable, metatable
                           lua_setmetatable(L, -2); // Stack: typeTable
                       }
                       
                       // Set the type table in the global namespace
                       lua_setglobal(L, typeName); // Stack: (empty)
-                      
-                      // Indexing order:
-                      // - First look in static members table
-                      // - Then look in static fields metatable (__index of typeTable)
                   }
 
                   private static int _nextObjectId = 1;
@@ -293,6 +252,18 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                       }
               
                       return (luaType, dotnetType);
+                  }
+                  
+                  public static void PushNullableValue<T>(lua_State L, T? value) where T : struct
+                  {
+                      if (value.HasValue)
+                      {
+                          PushValue(L, value.Value);
+                      }
+                      else
+                      {
+                          lua_pushnil(L);
+                      }
                   }
               
                   /// <summary>
@@ -900,6 +871,11 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                   private static int Unreachable()
                   {
                       throw new InvalidOperationException("Unreachable code executed");
+                  }
+                  
+                  private static string FormatException(Exception ex)
+                  {
+                      return $"{ex.GetType().FullName}: {ex.Message}\n{ex.StackTrace}";
                   }
               }
 

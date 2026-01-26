@@ -15,9 +15,15 @@ public record LuaVisibleProperty(PropertyInfo Property, bool IsExtensionProperty
                              setMethod.GetCustomAttribute<LuaHiddenAttribute>() is null &&
                              setMethod.IsPublic;
     public Type? DeclaringType => Property.DeclaringType;
+    public string Name => Property.Name;
 }
 
-public record LuaVisibleMethod(MethodInfo Method, bool IsExtensionMethod)
+public record LuaVisibleIndexer(PropertyInfo Property) : LuaVisibleProperty(Property, false)
+{
+    public ParameterInfo[] IndexParameters => Property.GetIndexParameters();
+}
+
+public record LuaVisibleMethod(MethodBase Method, bool IsExtensionMethod)
 {
     public string LuaName => Method.GetCustomAttribute<LuaNameAttribute>()?.Name ?? Method.Name.ToCamelCase();
     public ParameterInfo[] Parameters => Method.GetParameters();
@@ -37,13 +43,13 @@ public record LuaVisibleField(FieldInfo Field)
     public string LuaName => Field.GetCustomAttribute<LuaNameAttribute>()?.Name ?? Field.Name.ToCamelCase();
     public Type FieldType => Field.FieldType;
     public Type? DeclaringType => Field.DeclaringType;
+    public string Name => Field.Name;
+    public bool IsReadOnly => Field.IsInitOnly;
 }
 
-public record LuaVisibleConstructor(ConstructorInfo Constructor)
+public record LuaVisibleConstructor(ConstructorInfo Constructor) : LuaVisibleMethod(Constructor, false)
 {
-    public ParameterInfo[] Parameters => Constructor.GetParameters();
-    public string BindingName => $"{Constructor.DeclaringType?.GetGenericTypeLuaName()}_new";
-    public Type? DeclaringType => Constructor.DeclaringType;
+    public override string BindingName => $"{Constructor.DeclaringType?.GetGenericTypeLuaName()}_new";
 }
 
 public record LuaVisibleEvent(EventInfo Event)
@@ -56,7 +62,7 @@ public record LuaVisibleEvent(EventInfo Event)
     public Type? DeclaringType => Event.DeclaringType;
 }
 
-public record LuaVisibleOperator(MethodInfo Method) : LuaVisibleMethod(Method, false)
+public record LuaVisibleOperator(MethodBase Method) : LuaVisibleMethod(Method, false)
 {
     public override string BindingName => $"{DeclaringType?.GetGenericTypeLuaName()}_{Method.Name}";
 }
@@ -70,11 +76,13 @@ public class LuaVisibleType
     public LuaVisibleMethod[] InstanceMethods { get; }
     public LuaVisibleField[] InstanceFields { get; }
     public LuaVisibleProperty[] InstanceProperties { get; }
+    public LuaVisibleIndexer? InstanceIndexer { get; set; }
     public LuaVisibleEvent[] InstanceEvents { get; }
     
     public LuaVisibleMethod[] StaticMethods { get; }
     public LuaVisibleField[] StaticFields { get; }
     public LuaVisibleProperty[] StaticProperties { get; }
+    public LuaVisibleIndexer? StaticIndexer { get; set; }
     public LuaVisibleEvent[] StaticEvents { get; }
     public LuaVisibleConstructor[] Constructors { get; }
     public LuaVisibleOperator[] Operators { get; }
@@ -87,6 +95,9 @@ public class LuaVisibleType
     public Type? BaseType => Type.BaseType;
     public IEnumerable<Type> InterfaceTypes => Type.GetInterfaces();
     public string MetatableName { get; }
+    public bool IsArray => Type.IsArray;
+    public int? ArrayRank => Type.IsArray ? Type.GetArrayRank() : null;
+    public Type? ElementType => Type.GetElementType();
 
     public LuaVisibleType(Assembly originAssembly, Type type)
     {
@@ -122,6 +133,12 @@ public class LuaVisibleType
                 .Select(p => new LuaVisibleProperty(p, IsExtensionMethod(p.GetMethod ?? p.SetMethod!)))
                 .ToArray()
             : [];
+        InstanceIndexer = IsVisibleToLua
+            ? GetPropertiesInTypeAndInterfaces(type)
+                .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() is null && IsCandidateIndexer(p))
+                .Select(p => new LuaVisibleIndexer(p))
+                .FirstOrDefault()
+            : null;
         InstanceEvents = IsVisibleToLua
             ? type.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.FlattenHierarchy)
                 .Where(e => e.GetCustomAttribute<LuaHiddenAttribute>() is null && IsCandidateEvent(e))
@@ -146,6 +163,12 @@ public class LuaVisibleType
                 .Select(p => new LuaVisibleProperty(p, false))
                 .ToArray()
             : [];
+        StaticIndexer = IsVisibleToLua
+            ? type.GetProperties(BindingFlags.Public | BindingFlags.Static)
+                .Where(p => p.GetCustomAttribute<LuaHiddenAttribute>() is null && IsCandidateIndexer(p))
+                .Select(p => new LuaVisibleIndexer(p))
+                .FirstOrDefault()
+            : null;
         StaticEvents = IsVisibleToLua
             ? type.GetEvents(BindingFlags.Public | BindingFlags.Static)
                 .Where(e => e.GetCustomAttribute<LuaHiddenAttribute>() is null && IsCandidateEvent(e))
@@ -244,6 +267,41 @@ public class LuaVisibleType
         var getMethod = propertyInfo.GetGetMethod();
         var setMethod = propertyInfo.GetSetMethod();
 
+        if (getMethod != null && !IsCandidateGetterSetter(getMethod))
+            return false;
+
+        if (setMethod != null && !IsCandidateGetterSetter(setMethod))
+            return false;
+        
+        if (!IsCandidateType(propertyInfo.PropertyType))
+            return false;
+        
+        if (propertyInfo.GetIndexParameters().Length > 0)
+            return false;
+
+        return true;
+    }
+
+    private static bool IsCandidateGetterSetter(MethodInfo methodInfo)
+    {
+        if (methodInfo.GetParameters().Any(p => !IsCandidateType(p.ParameterType)))
+            return false;
+        
+        if (!IsCandidateType(methodInfo.ReturnType))
+            return false;
+        
+        // Exclude generic methods
+        if (methodInfo.IsGenericMethod)
+            return false;
+        
+        return true;
+    }
+
+    private static bool IsCandidateIndexer(PropertyInfo propertyInfo)
+    {
+        var getMethod = propertyInfo.GetGetMethod();
+        var setMethod = propertyInfo.GetSetMethod();
+
         if (getMethod != null && !IsCandidateMethod(getMethod))
             return false;
 
@@ -251,6 +309,15 @@ public class LuaVisibleType
             return false;
         
         if (!IsCandidateType(propertyInfo.PropertyType))
+            return false;
+        
+        if (propertyInfo.GetIndexParameters().Length == 0)
+            return false;
+        
+        if (propertyInfo.GetIndexParameters().Any(p => !IsCandidateType(p.ParameterType)))
+            return false;
+        
+        if (propertyInfo.GetIndexParameters().Any(p => p.ParameterType != typeof(int) && p.ParameterType != typeof(long) && p.ParameterType != typeof(string)))
             return false;
 
         return true;

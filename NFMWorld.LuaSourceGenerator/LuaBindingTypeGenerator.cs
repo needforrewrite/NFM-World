@@ -99,9 +99,10 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                     sb.AppendLine();
                 }
                 
+                sb.AppendLine();
                 foreach (var group in type.Operators.GroupBy(method => method.Name))
                 {
-                    var methodGenerator = new LuaBindingMethodGenerator(type, group.ToArray(), false, 0);
+                    var methodGenerator = new LuaBindingMethodGenerator(type, group.ToArray(), true, 0);
                     sb.AppendLine(methodGenerator.GenerateCode());
                     sb.AppendLine();
                 }
@@ -113,7 +114,7 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
             // Static Methods
             if (type.IsVisibleToLua)
             {
-                if (type.StaticMethods.Length > 0)
+                if (type.StaticMethods.Length > 0 || type.Constructors.Length > 0 || type.IsStruct)
                 {
                     sb.AppendLine("#region Static Methods");
                     sb.AppendLine($"private static readonly luaL_RegManaged[] {type.LuaName}_static_methods = new luaL_RegManaged[]");
@@ -125,6 +126,17 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                             sb.AppendLine(
                                 $$"""new() { name = "{{group.Key}}", func = &{{group.First().BindingName}} },""");
                         }
+
+                        if (type.Constructors.Length > 0)
+                        {
+                            sb.AppendLine(
+                                $$"""new() { name = "new", func = &{{type.Constructors[0].BindingName}} },""");
+                        }
+                        else if (type.IsStruct)
+                        {
+                            sb.AppendLine(
+                                $$"""new() { name = "new", func = &{{type.Type.GetGenericTypeLuaName()}}_struct_new },""");
+                        }
                     }
 
                     foreach (var group in type.StaticMethods.GroupBy(method => method.Name))
@@ -133,8 +145,60 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                         sb.AppendLine(methodGenerator.GenerateCode());
                         sb.AppendLine();
                     }
+
+                    if (type.Constructors.Length > 0)
+                    {
+                        sb.AppendLine();
+                        var methodGenerator = new LuaBindingMethodGenerator(type, type.Constructors.ToArray(), true, 0);
+                        sb.AppendLine(methodGenerator.GenerateCode());
+                        sb.AppendLine();
+                    } else if (type.IsStruct)
+                    {
+                        sb.AppendLine(
+                            $$"""
+                              [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+                              private static int {{type.Type.GetGenericTypeLuaName()}}_struct_new(lua_State L)
+                              {
+                                  string? errorMsg = null;
+                                  try
+                                  {
+                                      var argCount = lua_gettop(L);
+                              
+                                      var result = new {{type.Type.GetFullTypeName()}}();
+                                      PushValue(L, result);
+                                      return 1;
+                                  }
+                                  catch (System.Exception ex)
+                                  {
+                                      errorMsg = FormatException(ex);
+                                  }
+                                  if (errorMsg != null)
+                                  {
+                                      return luaL_error(L, errorMsg);
+                                  }
+                                  return Unreachable();
+                              }
+                              """);
+                    }
+                    
                     sb.AppendLine("#endregion");
                 }
+            }
+            
+            // Instance Fields & Properties
+            if (type.IsVisibleToLua && (type.InstanceFields.Length > 0 || type.InstanceProperties.Length > 0 || type.InstanceIndexer != null))
+            {
+                var indexGenerator = new LuaBindingIndexGenerator(type, type.InstanceFields, type.InstanceProperties, type.InstanceIndexer, false);
+                sb.AppendLine(indexGenerator.GenerateCode());
+                sb.AppendLine();
+            }
+            
+            // Static Fields & Properties
+            if (type.IsVisibleToLua && (type.StaticFields.Length > 0 || type.StaticProperties.Length > 0 || type.StaticIndexer != null))
+            {
+                var indexGenerator = new LuaBindingIndexGenerator(type, type.StaticFields, type.StaticProperties, type.StaticIndexer, true);
+                sb.AppendLine(indexGenerator.GenerateCode());
+                sb.AppendLine();
             }
         }
         
@@ -144,25 +208,16 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
     public string GenerateInitializeCode()
     {
         var sb = new IndentedStringBuilder();
-        sb.AppendLine("Register(");
+        sb.AppendLine($"Register(");
         using (sb.Indent())
         {
             sb.AppendLine("L,");
             sb.AppendLine($"\"{type.LuaName}\",");
             sb.AppendLine($"\"{type.MetatableName}\",");
 
-            if (type.IsVisibleToLua && type.InstanceMethods.Length > 0)
+            if (type.IsVisibleToLua && (type.InstanceMethods.Length > 0 || type.Operators.Length > 0))
             {
-                sb.AppendLine($"{type.LuaName}_instance_methods,");
-            }
-            else
-            {
-                sb.AppendLine("null,");
-            }
-
-            if (type.IsVisibleToLua && type.Operators.Length > 0)
-            {
-                sb.AppendLine($"{type.LuaName}_operators,");
+                sb.AppendLine($"{type.LuaName}_instance_metamethods,");
             }
             else
             {
@@ -177,15 +232,24 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
             {
                 sb.AppendLine("null,");
             }
-                    
-            // instanceFieldsIndex (todo)
-            sb.AppendLine("null,");
-                    
-            // staticFieldsIndex (todo)
-            sb.AppendLine("null");
+
+            if (type.IsVisibleToLua && (type.StaticFields.Length > 0 || type.StaticProperties.Length > 0 || type.StaticIndexer != null))
+            {
+                sb.AppendLine($"{type.LuaName}_static_metamethods");
+            }
+            else
+            {
+                sb.AppendLine("null");
+            }
         }
 
         sb.AppendLine(");");
+
+        if (type.IsVisibleToLua && !type.Type.IsStaticClass())
+        {
+            sb.AppendLine($"RegisterMetatable<{type.Type.GetFullTypeName()}>(\"{type.MetatableName}\");");
+        }
+        
         return sb.ToString();
     }
 

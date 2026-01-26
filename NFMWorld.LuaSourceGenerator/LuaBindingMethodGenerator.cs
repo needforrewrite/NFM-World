@@ -2,7 +2,7 @@
 
 namespace NFMWorld.LuaSourceGenerator;
 
-internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaVisibleMethod> overloads, bool isStatic, int indentLevel)
+internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaVisibleMethod> overloads, bool isStatic, int indentLevel = 0)
 {
     public string GenerateCode()
     {
@@ -13,6 +13,20 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
         sb.AppendLine($"private static int {bindingName}(lua_State L)");
         using (sb.Block())
         {
+            // sb.AppendDirective("#if DEBUG");
+            // sb.AppendLine(
+            //     """
+            //     var __top = lua_gettop(L);
+            //     int CheckTop(int offset)
+            //     {
+            //         if (lua_gettop(L) != __top + offset)
+            //         {
+            //     	    luaL_error(L, "Error stack corrupted");
+            //         }
+            //     }
+            //     """
+            // );
+            // sb.AppendDirective("#endif");
             sb.AppendLine("string? errorMsg = null;");
             sb.AppendLine("try");
             using (sb.Block())
@@ -32,7 +46,8 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
                         sb.AppendLine("if (self == null)");
                         using (sb.Block())
                         {
-                            sb.AppendLine($"return luaL_error(L, \"Expected {type.Type.GetFullTypeName()} as first argument\"u8);");
+                            sb.AppendLine($"errorMsg = \"Expected {type.Type.GetFullTypeName()} as first argument to {bindingName}\";");
+                            sb.AppendLine("goto fail;");
                         }
                     }
                 }
@@ -70,6 +85,8 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
                         sb.AppendLine("int bestScore = -1;");
                         sb.AppendLine("int bestIndex = -1;");
                         sb.AppendLine();
+                        
+                        var parameterOffset = isStatic ? 0 : 1;
 
                         for (int methodIdx = 0; methodIdx < overloads.Count; methodIdx++)
                         {
@@ -84,7 +101,7 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
                                 for (int i = 0; i < parameters.Length; i++)
                                 {
                                     var paramTypeName = parameters[i].ParameterType.GetFullTypeName();
-                                    sb.AppendLine($"int score{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 1});");
+                                    sb.AppendLine($"int score{i} = ScoreParameterCompatibility<{paramTypeName}>(L, {i + 1 + parameterOffset});");
                                     sb.AppendLine($"if (score{i} < 0) goto next{methodIdx};");
                                     sb.AppendLine($"else score += score{i};");
                                 }
@@ -122,15 +139,17 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
                         }
                     }
 
-                    sb.AppendLine($"return luaL_error(L, \"Invalid arguments for {overloads[0].LuaName}\"u8);");
+                    sb.AppendLine($"errorMsg = \"Invalid arguments for {overloads[0].LuaName}\";");
+                    sb.AppendLine("goto fail;");
                 }
             }
             sb.AppendLine(
                 """
                 catch (System.Exception ex)
                 {
-                    errorMsg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+                    errorMsg = FormatException(ex);
                 }
+                fail:
                 if (errorMsg != null)
                 {
                     return luaL_error(L, errorMsg);
@@ -190,7 +209,17 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
                 throw new InvalidOperationException("Operator overloads must have 1 or 2 parameters");
             }
             
-            GeneratePushValue(sb, "result");
+            sb.GeneratePushValue(overload.ReturnType, "result");
+            sb.AppendLine("return 1;");
+        }
+        else if (overload is LuaVisibleConstructor)
+        {
+            // Constructor method
+
+            var argumentList = string.Join(", ", Enumerable.Range(0, overload.Parameters.Length)
+                .Select(i => $"arg{i}"));
+            sb.AppendLine($"var result = new {overload.DeclaringType!.GetFullTypeName()}({argumentList});");
+            sb.GeneratePushValue(type.Type, "result");
             sb.AppendLine("return 1;");
         }
         else
@@ -242,8 +271,7 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
             {
                 if (isStatic)
                 {
-                    sb.AppendLine(
-                        $"var result = {overload.DeclaringType!.GetFullTypeName()}.{overload.Name}({argumentList});");
+                    sb.AppendLine($"var result = {overload.DeclaringType!.GetFullTypeName()}.{overload.Name}({argumentList});");
                 }
                 else
                 {
@@ -276,7 +304,7 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
                     }
                 }
 
-                GeneratePushValue(sb, "result");
+                sb.GeneratePushValue(overload.ReturnType, "result");
                 sb.AppendLine("return 1;");
             }
         }
@@ -299,18 +327,6 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
         else
         {
             sb.AppendLine($"{fullTypeName} {varName} = ToObject<{fullTypeName}>(L, {stackIndex})!;");
-        }
-    }
-
-    private void GeneratePushValue(IndentedStringBuilder sb, string valueExpression)
-    {
-        if (type.IsNullable)
-        {
-            sb.AppendLine($"PushNullableValue(L, {valueExpression});");
-        }
-        else
-        {
-            sb.AppendLine($"PushValue(L, {valueExpression});");
         }
     }
 }
