@@ -92,6 +92,8 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                         sb.AppendLine($$"""new() { name = "__newindex", func = &{{type.Type.GetGenericTypeLuaName()}}_newindex },""");
                         sb.AppendLine("""new() { name = "__gc", func = &Shared__gc },""");
                         sb.AppendLine("""new() { name = "__tostring", func = &Shared__tostring },""");
+                        sb.AppendLine("""new() { name = "__len", func = &Shared__len },""");
+                        sb.AppendLine("""new() { name = "__pairs", func = &Shared__pairs },""");
                     }
                 }
                 

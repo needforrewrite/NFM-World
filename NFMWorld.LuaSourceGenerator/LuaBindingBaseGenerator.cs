@@ -749,7 +749,98 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                       lua_pushstring(L, obj?.ToString() ?? "null");
                       return 1;
                   }
-
+              
+                  /// <summary>
+                  /// Shared __pairs metamethod for enumerable .NET types.
+                  /// </summary>
+                  [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+                  private static int Shared__pairs(lua_State L)
+                  {
+                      var obj = GetObjectFromStack<IEnumerable>(L, 1);
+                      if (obj == null)
+                      {
+                          return luaL_error(L, "Object is not enumerable"u8);
+                      }
+                      
+                      // Push the iterator function
+                      lua_pushcfunction(L, &Shared__next);
+                  
+                      // Push the enumerator (the userdata)
+                      PushOpaqueObject(L, obj.GetEnumerator());
+                  
+                      // Push nil as the initial key
+                      lua_pushnil(L);
+                  
+                      return 3; // Return iterator, table, initial key
+                  }
+                  
+                  /// <summary>
+                  /// Shared iterator function for .NET enumerators.
+                  /// </summary>
+                  [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+                  private static int Shared__next(lua_State L)
+                  {
+                      var enumerator = GetObjectFromStack<IEnumerator>(L, 1);
+                      if (enumerator == null)
+                      {
+                          return luaL_error(L, "Enumerator is not valid"u8);
+                      }
+                  
+                      if (enumerator.MoveNext())
+                      {
+                          PushValue(L, enumerator.Current);
+                          return 1; // Return the current value
+                      }
+                      else
+                      {
+                          return 0; // No more values
+                      }
+                  }
+                  
+                  [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+                  private static int Shared__len(lua_State L)
+                  {
+                      var obj = GetObjectFromStack<object>(L, 1);
+                      if (obj == null)
+                      {
+                          return luaL_error(L, "Object is null"u8);
+                      }
+                  
+                      if (obj is Array arr)
+                      {
+                          lua_pushinteger(L, arr.Length);
+                          return 1;
+                      }
+                      else if (obj is ICollection coll)
+                      {
+                          lua_pushinteger(L, coll.Count);
+                          return 1;
+                      }
+                      else if (obj is IEnumerable enumerable)
+                      {
+                          int count = 0;
+                          var enumerator = enumerable.GetEnumerator();
+                          try
+                          {
+                              while (enumerator.MoveNext())
+                              {
+                                  count++;
+                              }
+                          }
+                          finally
+                          {
+                              (enumerator as IDisposable)?.Dispose();
+                          }
+                  
+                          lua_pushinteger(L, count);
+                          return 1;
+                      }
+                      else
+                      {
+                          return luaL_error(L, "Object does not have a length"u8);
+                      }
+                  }
+                  
                   #endregion
 
                   public static void DefineGlobalVariable<T>(lua_State L, string name, T value)
