@@ -71,12 +71,12 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
         {
             sb.AppendLine($"// =========== Bindings for {type.FullName} ({type.LuaName}) ===========");
 
-            if ((type.IsVisibleToLua && _hasInstanceMetamethods) || _doesRequireInstanceMethodsForInheritance)
+            if (_hasInstanceMetamethods || _doesRequireInstanceMethodsForInheritance)
             {
                 sb.AppendLine("#region Instance Methods");
                 
                 // Instance Methods & Operators: only if visible to Lua
-                if (type.IsVisibleToLua && _hasInstanceMetamethods)
+                if (_hasInstanceMetamethods)
                 {
                     sb.AppendLine($"private static readonly luaL_RegManaged[] {type.Type.GetGenericTypeLuaName()}_instance_metamethods = new luaL_RegManaged[]");
 
@@ -89,7 +89,9 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                         }
 
                         sb.AppendLine($$"""new() { name = "__index", func = &{{type.Type.GetGenericTypeLuaName()}}_index },""");
-                        // sb.AppendLine($$"""new() { name = "__newindex", func = &{{type.LuaName}}_newindex },""");
+                        sb.AppendLine($$"""new() { name = "__newindex", func = &{{type.Type.GetGenericTypeLuaName()}}_newindex },""");
+                        sb.AppendLine("""new() { name = "__gc", func = &Shared__gc },""");
+                        sb.AppendLine("""new() { name = "__tostring", func = &Shared__tostring },""");
                     }
                 }
                 
@@ -215,7 +217,7 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                         private static readonly luaL_RegManaged[] {{type.Type.GetGenericTypeLuaName()}}_static_metamethods = new luaL_RegManaged[]
                         {
                             new() { name = "__index", func = &{{type.Type.GetGenericTypeLuaName()}}_static_index },
-                            // new() { name = "__newindex", func = &{{type.Type.GetGenericTypeLuaName()}}_static_newindex },
+                            new() { name = "__newindex", func = &{{type.Type.GetGenericTypeLuaName()}}_static_newindex },
                         };
                         """
                     );
@@ -228,6 +230,10 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                 var indexGenerator = new LuaBindingIndexGenerator(type, type.InstanceFields, type.InstanceProperties, type.InstanceIndexer, type.InstanceMethods, false);
                 sb.AppendLine(indexGenerator.GenerateCode());
                 sb.AppendLine();
+                
+                var newIndexGenerator = new LuaBindingNewIndexGenerator(type, type.InstanceFields, type.InstanceProperties, type.InstanceIndexer, false);
+                sb.AppendLine(newIndexGenerator.GenerateCode());
+                sb.AppendLine();
             }
             
             // Static Fields & Properties
@@ -235,6 +241,10 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
             {
                 var indexGenerator = new LuaBindingIndexGenerator(type, type.StaticFields, type.StaticProperties, type.StaticIndexer, [], true);
                 sb.AppendLine(indexGenerator.GenerateCode());
+                sb.AppendLine();
+                
+                var newIndexGenerator = new LuaBindingNewIndexGenerator(type, type.StaticFields, type.StaticProperties, type.StaticIndexer, true);
+                sb.AppendLine(newIndexGenerator.GenerateCode());
                 sb.AppendLine();
             }
         }

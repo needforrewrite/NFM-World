@@ -10,6 +10,8 @@ namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 [LuaVisible]
 public class TypeWithReferences
 {
+    public static ReferencedType SampleReferencedType { get; } = new ReferencedType(100, "Constructor");
+    
     // Reference to a non-generic type (should be auto-discovered)
     public ReferencedType? Referenced { get; set; }
 

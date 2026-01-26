@@ -329,13 +329,35 @@ public class LuaVisibleType
 
     private static bool IsCandidateIndexer(PropertyInfo propertyInfo)
     {
+        if (propertyInfo.Name != "Item")
+            return false;
+        
         var getMethod = propertyInfo.GetGetMethod();
         var setMethod = propertyInfo.GetSetMethod();
+        
+        static bool IsCandidateIndexerMethod(MethodInfo methodInfo)
+        {
+            if (methodInfo.GetParameters().Any(p => !IsCandidateType(p.ParameterType)))
+                return false;
+        
+            if (!IsCandidateType(methodInfo.ReturnType))
+                return false;
+        
+            // Exclude generic methods
+            if (methodInfo.IsGenericMethod)
+                return false;
+        
+            // Exclude compiler-generated methods
+            if (IsCompilerMethod(methodInfo))
+                return false;
+        
+            return true;
+        }
 
-        if (getMethod != null && !IsCandidateMethod(getMethod))
+        if (getMethod != null && !IsCandidateIndexerMethod(getMethod))
             return false;
 
-        if (setMethod != null && !IsCandidateMethod(setMethod))
+        if (setMethod != null && !IsCandidateIndexerMethod(setMethod))
             return false;
         
         if (!IsCandidateType(propertyInfo.PropertyType))

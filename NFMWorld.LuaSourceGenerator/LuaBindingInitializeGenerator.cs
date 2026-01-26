@@ -32,6 +32,22 @@ internal class LuaBindingInitializeGenerator(IEnumerable<string> initializers, s
                 {
                     sb.AppendLine(initializer);
                 }
+
+                sb.AppendLine(
+                    """
+                    Register(
+                        L,
+                        "OpaqueObject",
+                        "OpaqueObject",
+                        [
+                            new luaL_RegManaged { name = "__gc", func = &Shared__gc },
+                            new luaL_RegManaged { name = "__tostring", func = &Shared__tostring },
+                        ],
+                        null,
+                        null
+                    );
+                    """
+                );
             }
         }
         

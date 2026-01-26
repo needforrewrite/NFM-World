@@ -45,9 +45,9 @@ internal class LuaBindingIndexGenerator(
                 }
                 
                 // Check for array or indexer access first (when key is number or table)
-                var isArray = type.IsArray;
+                var isArray = type.IsArray && !isStatic;
 
-                var isInlineArray = type.IsInlineArray;
+                var isInlineArray = type.IsInlineArray && !isStatic;
                 if (isArray || indexer != null || isInlineArray)
                 {
                     AppendArrayIndexing(isInlineArray, isArray, sb);
@@ -65,10 +65,10 @@ internal class LuaBindingIndexGenerator(
                     // Properties
                     foreach (var prop in properties)
                     {
-                        sb.AppendLine($"case \"{prop.LuaName}\":");
-                        using (sb.Block())
+                        if (prop.HasGetter)
                         {
-                            if (prop.HasGetter)
+                            sb.AppendLine($"case \"{prop.LuaName}\":");
+                            using (sb.Block())
                             {
                                 if (isStatic)
                                 {

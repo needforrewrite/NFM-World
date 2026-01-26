@@ -57,6 +57,18 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
                 if (overloads.Count == 1)
                 {
                     // Single overload: no need for overload resolution
+
+                    // BUG: LuaJIT __unm passes two arguments instead of one
+                    if (overloads[0].Name != "op_UnaryNegation")
+                    {
+                        sb.AppendLine($"if (argCount != {overloads[0].Parameters.Length})");
+                        using (sb.Block())
+                        {
+                            sb.AppendLine($"errorMsg = \"Invalid argument count for {overloads[0].LuaName}, expected {overloads[0].Parameters.Length} arguments\";");
+                            sb.AppendLine("goto fail;");
+                        }
+                    }
+
                     AppendMethodCall(sb, overloads[0]);
                 }
                 else
@@ -77,6 +89,11 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
                                 AppendMethodCall(sb, overload);
                             }
                         }
+                        
+                        sb.AppendLine(overloads.Count == 1
+                            ? $"errorMsg = \"Invalid argument count for {overloads[0].LuaName}, expected {overloads[0].Parameters.Length} arguments\";"
+                            : $"errorMsg = \"Invalid argument count for {overloads[0].LuaName}, expected one of ({string.Join(", ", overloads.Select(overload => overload.Parameters.Length).Distinct())}) arguments\";");
+                        sb.AppendLine("goto fail;");
                     }
                     else
                     {
@@ -221,14 +238,17 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
 
             if (type.IsArray)
             {
-                sb.AppendLine(
-                    """
-                    if (arg0 < 0)
-                    {
-                        errorMsg = "Array size must be non-negative.";
-                        goto fail;
-                    }
-                    """);
+                foreach (var i in Enumerable.Range(0, overload.Parameters.Length))
+                {
+                    sb.AppendLine(
+                        $$"""
+                        if (arg{{i}} < 0)
+                        {
+                            errorMsg = "Array size must be non-negative.";
+                            goto fail;
+                        }
+                        """);
+                }
             }
 
             sb.AppendLine(type.IsArray

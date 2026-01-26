@@ -176,6 +176,18 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                       luaL_getmetatable(L, metatableName);
                       lua_setmetatable(L, -2);
                   }
+                  
+                  /// <summary>
+                  /// Push an opaque userdata for a managed object onto the Lua stack (no metatable).
+                  /// </summary>
+                  private static void PushOpaqueObject(lua_State L, object obj)
+                  {
+                      var id = StoreObject(obj);
+                      var ptr = lua_newuserdata(L, (nuint)sizeof(int));
+                      *(int*)ptr = id;
+                      luaL_getmetatable(L, "OpaqueObject"u8);
+                      lua_setmetatable(L, -2);
+                  }
               
                   /// <summary>
                   /// Push a struct userdata with parent tracking (for field/property access).
@@ -330,16 +342,16 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                                   return;
                               }
               
-                              // For all other types, push based on runtime type
-                              if (GetMetatableNameForType(value.GetType()) is {} metatable)
-                              {
-                                  PushObject(L, value, metatable);
-                                  return;
-                              }
-              
-                              // Slow path: attempt to push a base type (in between value.GetType() and <T>)'s metatable
                               if (value.GetType() != typeof(T))
                               {
+                                  // For all other types, push based on runtime type
+                                  if (GetMetatableNameForType(value.GetType()) is {} metatable)
+                                  {
+                                      PushObject(L, value, metatable);
+                                      return;
+                                  }
+                                  
+                                  // Slow path: attempt to push a base type (in between value.GetType() and <T>)'s metatable
                                   Type? baseType;
                                   while ((baseType = value.GetType().BaseType) != null)
                                   {
@@ -354,7 +366,9 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                                   }
                               }
               
-                              throw new InvalidOperationException($"Type {value.GetType()} is not supported");
+                              // No metatable found, push opaque type
+                              PushOpaqueObject(L, value);
+                              return;
                       }
                   }
                   

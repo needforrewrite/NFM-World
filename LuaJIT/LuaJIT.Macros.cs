@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 
 // ReSharper disable InconsistentNaming
 // ReSharper disable ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
@@ -110,7 +111,7 @@ public static unsafe partial class Methods
     /// Execute a Lua string. Equivalent to luaL_dostring macro.
     /// Returns 0 on success, non-zero on error (with error message on stack).
     /// </summary>
-    public static int luaL_dostring(lua_State L, string str)
+    public static int luaL_dostring(lua_State L, [LanguageInjection("Lua")] string str)
     {
         var result = luaL_loadstring(L, str);
         if (result != 0) return result;
@@ -121,7 +122,7 @@ public static unsafe partial class Methods
     /// Execute a Lua string. Equivalent to luaL_dostring macro.
     /// Returns 0 on success, non-zero on error (with error message on stack).
     /// </summary>
-    public static int luaL_dostring(lua_State L, ReadOnlySpan<byte> str)
+    public static int luaL_dostring(lua_State L, [LanguageInjection("Lua")] ReadOnlySpan<byte> str)
     {
         var result = luaL_loadstring(L, str);
         if (result != 0) return result;
@@ -225,6 +226,11 @@ public static unsafe partial class Methods
     }
 	
     public static void luaL_getmetatable(lua_State L, string n)
+    {
+        lua_getfield(L, LUA_REGISTRYINDEX, n);
+    }
+	
+    public static void luaL_getmetatable(lua_State L, ReadOnlySpan<byte> n)
     {
         lua_getfield(L, LUA_REGISTRYINDEX, n);
     }

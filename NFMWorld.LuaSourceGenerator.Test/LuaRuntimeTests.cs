@@ -1647,12 +1647,15 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             local obj = TypeWithReferences.new()
             local ref = obj:createReferenced(99, 'Created')
-            return ref.value, ref.name
+            return ref
         ");
         AssertLuaOk(result);
 
-        var name = lua_tostring(_L, -1);
-        var value = lua_tointeger(_L, -2);
+        var @ref = LuaBindings.ToObject<ReferencedType>(_L, -1);
+        Assert.IsNotNull(@ref);
+
+        var name = @ref.Name;
+        var value = @ref.Value;
 
         Assert.AreEqual(99, value);
         Assert.AreEqual("Created", name);
@@ -1663,17 +1666,18 @@ public partial class LuaRuntimeTests
     {
         var result = luaL_dostring(_L, @"
             local obj = TypeWithReferences.new()
-            local ref = ReferencedType.new(50, 'Property')
-            obj.referenced = ref
-            return obj.referenced.value, obj.referenced.name
+            obj.referenced = TypeWithReferences.sampleReferencedType
+            return obj.referenced
         ");
         AssertLuaOk(result);
 
-        var name = lua_tostring(_L, -1);
-        var value = lua_tointeger(_L, -2);
+        var @ref = LuaBindings.ToObject<ReferencedType>(_L, -1);
+        Assert.IsNotNull(@ref);
+        var name = @ref.Name;
+        var value = @ref.Value;
 
-        Assert.AreEqual(50, value);
-        Assert.AreEqual("Property", name);
+        Assert.AreEqual(100, value);
+        Assert.AreEqual("Constructor", name);
     }
 
     [TestMethod]
@@ -1696,17 +1700,14 @@ public partial class LuaRuntimeTests
     public void TypeWithReferences_ConstructorWithReferencedType_Works()
     {
         var result = luaL_dostring(_L, @"
-            local ref = ReferencedType.new(100, 'Constructor')
+            local ref = TypeWithReferences.sampleReferencedType
             local obj = TypeWithReferences.new(ref)
-            return obj.referenced.value, obj.referenced.name
+            return obj.referenced
         ");
         AssertLuaOk(result);
 
-        var name = lua_tostring(_L, -1);
-        var value = lua_tointeger(_L, -2);
-
-        Assert.AreEqual(100, value);
-        Assert.AreEqual("Constructor", name);
+        var value = LuaBindings.ToObject<ReferencedType>(_L, -1);
+        Assert.AreSame(TypeWithReferences.SampleReferencedType, value);
     }
 
     #endregion
@@ -1984,7 +1985,7 @@ public partial class LuaRuntimeTests
     public void TypeWithIndexers_Constructor_CreatesEmptyObject()
     {
         var result = luaL_dostring(_L, @"
-            local obj = TypeWithIndexers.new()
+            local obj = TypeWithIntIndexer.new()
             return obj ~= nil
         ");
         AssertLuaOk(result);
@@ -1997,7 +1998,7 @@ public partial class LuaRuntimeTests
     public void TypeWithIndexers_IntIndexer_ReadAndWrite()
     {
         var result = luaL_dostring(_L, @"
-            local obj = TypeWithIndexers.new()
+            local obj = TypeWithIntIndexer.new()
             obj[1] = 10
             obj[5] = 50
             return obj[1], obj[5]
@@ -2015,7 +2016,7 @@ public partial class LuaRuntimeTests
     public void TypeWithIndexers_IntIndexer_StaysInSync()
     {
         var result = luaL_dostring(_L, @"
-            local obj = TypeWithIndexers.new()
+            local obj = TypeWithIntIndexer.new()
             obj[3] = 123
             return obj:getNumberAt(2)
         ");
@@ -2029,7 +2030,7 @@ public partial class LuaRuntimeTests
     public void TypeWithIndexers_MultiParamIndexer_TableSyntax_ReadAndWrite()
     {
         var result = luaL_dostring(_L, @"
-            local obj = TypeWithIndexers.new()
+            local obj = TypeWithMultiParamIndexer.new()
             obj[{1,2}] = 'hello'
             obj[{3,4}] = 'world'
             return obj[{1,2}], obj[{3,4}]
@@ -2047,7 +2048,7 @@ public partial class LuaRuntimeTests
     public void TypeWithIndexers_MultiParamIndexer_StaysInSync()
     {
         var result = luaL_dostring(_L, @"
-            local obj = TypeWithIndexers.new()
+            local obj = TypeWithMultiParamIndexer.new()
             obj[{5,6}] = 'test'
             return obj:getGridValue(5, 6)
         ");
@@ -2055,31 +2056,6 @@ public partial class LuaRuntimeTests
 
         var val = lua_tostring(_L, -1);
         Assert.AreEqual("test", val, "Indexer and method should access same data");
-    }
-
-    [TestMethod]
-    public void TypeWithIndexers_MixedIndexerAccess()
-    {
-        var result = luaL_dostring(_L, @"
-            local obj = TypeWithIndexers.new()
-            -- Int indexer (1D)
-            obj[1] = 111
-            -- Grid indexer (2D table)
-            obj[{10,20}] = 'grid_value'
-
-            return obj[1], obj[{10,20}], obj:getNumberAt(0), obj:getGridValue(10, 20)
-        ");
-        AssertLuaOk(result);
-
-        var gridVal2 = lua_tostring(_L, -1);
-        var intVal2 = lua_tointeger(_L, -2);
-        var gridVal1 = lua_tostring(_L, -3);
-        var intVal1 = lua_tointeger(_L, -4);
-
-        Assert.AreEqual(111, intVal1);
-        Assert.AreEqual("grid_value", gridVal1);
-        Assert.AreEqual(111, intVal2);
-        Assert.AreEqual("grid_value", gridVal2);
     }
 
     #endregion
@@ -2385,7 +2361,7 @@ public partial class LuaRuntimeTests
 
         Assert.AreNotEqual(LUA_OK, result);
         var error = lua_tostring(_L, -1);
-        Assert.IsTrue(error?.Contains("Expected 2 arguments") == true);
+        Assert.IsTrue(error?.Contains("Expected 2 arguments") == true, "Error message '{0}' did not mention expected argument count", error);
     }
 
     [TestMethod]
@@ -2457,7 +2433,7 @@ public partial class LuaRuntimeTests
 
         Assert.AreNotEqual(LUA_OK, result);
         var error = lua_tostring(_L, -1);
-        Assert.IsTrue(error?.Contains("Expected 3 arguments") == true);
+        Assert.IsTrue(error?.Contains("Expected 3 arguments") == true, "Error message '{0}' did not mention expected argument count", error);
     }
 
     [TestMethod]
@@ -2548,7 +2524,7 @@ public partial class LuaRuntimeTests
 
         Assert.AreNotEqual(LUA_OK, result);
         var error = lua_tostring(_L, -1);
-        Assert.IsTrue(error?.Contains("Index out of range") == true);
+        Assert.IsTrue(error?.Contains("out of bounds") == true, "Error message '{0}' did not mention index out of range", error);
     }
 
     [TestMethod]
@@ -2561,7 +2537,7 @@ public partial class LuaRuntimeTests
 
         Assert.AreNotEqual(LUA_OK, result);
         var error = lua_tostring(_L, -1);
-        Assert.IsTrue(error?.Contains("Index out of range") == true);
+        Assert.IsTrue(error?.Contains("out of bounds") == true, "Error message '{0}' did not mention index out of range", error);
     }
 
     [TestMethod]

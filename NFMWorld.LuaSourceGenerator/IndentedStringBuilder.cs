@@ -18,7 +18,7 @@ public class IndentedStringBuilder(int indentLevel = 0)
         if (string.IsNullOrEmpty(line))
         {
 #if DEBUG
-            PadCentered($"{Path.GetFileName(callerFilePath)}:{callerLineNumber} ({callerMemberName})", 55);      
+            PadCentered($"{Path.GetFileName(callerFilePath)}:{callerLineNumber} ({callerMemberName})", 60);      
 #endif
             _sb.AppendLine();
         }
@@ -29,7 +29,7 @@ public class IndentedStringBuilder(int indentLevel = 0)
 #if DEBUG
                 if (!line.AsSpan(range).TrimStart().StartsWith("#"))
                 {
-                    PadCentered($"{Path.GetFileName(callerFilePath)}:{callerLineNumber} ({callerMemberName})", 55);
+                    PadCentered($"{Path.GetFileName(callerFilePath)}:{callerLineNumber} ({callerMemberName})", 60);
                 }
 #endif
                 _sb.Append(' ', IndentLevel * 4);

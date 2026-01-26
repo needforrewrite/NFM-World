@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
       <PackageReference Include="luajit.native" Version="2.1.1739213504" />
     </ItemGroup>
 

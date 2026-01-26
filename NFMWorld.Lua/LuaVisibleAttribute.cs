@@ -32,14 +32,14 @@ public sealed class LuaNameAttribute(string name) : Attribute
 /// Marks an assembly to indicate that type T should be considered Lua visible.
 /// </summary>
 /// <typeparam name="T">The type.</typeparam>
-[AttributeUsage(AttributeTargets.Assembly)]
+[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 public sealed class AssemblyLuaVisibleAttribute<T>() : AssemblyLuaVisibleAttribute(typeof(T));
 
 /// <summary>
 /// Marks an assembly to indicate that the specified type should be considered Lua visible.
 /// </summary>
 /// <param name="type"></param>
-[AttributeUsage(AttributeTargets.Assembly)]
+[AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
 public class AssemblyLuaVisibleAttribute(Type type) : Attribute
 {
     public Type Type { get; } = type;
