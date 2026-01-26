@@ -283,6 +283,26 @@
 /*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:293 (GenerateInitializeCode)    */ );
 /*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:297 (GenerateInitializeCode)    */ RegisterMetatable<float[,,]>("MT_SingleArray3D");
 /*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:258 (GenerateInitializeCode)    */ Register(
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:261 (GenerateInitializeCode)    */     L,
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:262 (GenerateInitializeCode)    */     "List_Int32_Enumerator",
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:263 (GenerateInitializeCode)    */     "MT_List_Int32_Enumerator",
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:267 (GenerateInitializeCode)    */     List_Int32_Enumerator_instance_metamethods,
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:276 (GenerateInitializeCode)    */     List_Int32_Enumerator_static_methods,
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:289 (GenerateInitializeCode)    */     null
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:293 (GenerateInitializeCode)    */ );
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:297 (GenerateInitializeCode)    */ RegisterMetatable<System.Collections.Generic.List<int>.Enumerator>("MT_List_Int32_Enumerator");
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:258 (GenerateInitializeCode)    */ Register(
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:261 (GenerateInitializeCode)    */     L,
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:262 (GenerateInitializeCode)    */     "List_String_Enumerator",
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:263 (GenerateInitializeCode)    */     "MT_List_String_Enumerator",
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:267 (GenerateInitializeCode)    */     List_String_Enumerator_instance_metamethods,
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:276 (GenerateInitializeCode)    */     List_String_Enumerator_static_methods,
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:289 (GenerateInitializeCode)    */     null
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:293 (GenerateInitializeCode)    */ );
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         /*   LuaBindingTypeGenerator.cs:297 (GenerateInitializeCode)    */ RegisterMetatable<System.Collections.Generic.List<string>.Enumerator>("MT_List_String_Enumerator");
+/*      LuaBindingInitializeGenerator.cs:33 (GenerateCode)      */         
 /*      LuaBindingInitializeGenerator.cs:36 (GenerateCode)      */         Register(
 /*      LuaBindingInitializeGenerator.cs:36 (GenerateCode)      */             L,
 /*      LuaBindingInitializeGenerator.cs:36 (GenerateCode)      */             "OpaqueObject",

@@ -4,3 +4,5 @@
 [assembly: AssemblyLuaVisible<string[]>]
 [assembly: AssemblyLuaVisible<int[,]>]
 [assembly: AssemblyLuaVisible<float[,,]>]
+[assembly: AssemblyLuaVisible<List<int>.Enumerator>]
+[assembly: AssemblyLuaVisible<List<string>.Enumerator>]

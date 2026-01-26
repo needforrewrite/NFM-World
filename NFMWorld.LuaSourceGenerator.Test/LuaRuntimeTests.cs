@@ -2050,7 +2050,7 @@ public partial class LuaRuntimeTests
         var result = luaL_dostring(_L, @"
             local obj = TypeWithMultiParamIndexer.new()
             obj[{5,6}] = 'test'
-            return obj:getGridValue(5, 6)
+            return obj:getGridValue(4, 5)
         ");
         AssertLuaOk(result);
 
