@@ -3,16 +3,15 @@ using System.Runtime.CompilerServices;
 
 namespace NFMWorld.LuaSourceGenerator;
 
-internal class LuaBindingIndexGenerator(
+internal class LuaBindingNewIndexGenerator(
     LuaVisibleType type,
     IReadOnlyList<LuaVisibleField> fields,
     IReadOnlyList<LuaVisibleProperty> properties,
     LuaVisibleIndexer? indexer,
-    IReadOnlyList<LuaVisibleMethod> methods,
     bool isStatic,
     int indentLevel = 0)
 {
-    public string BindingName => $"{type.Type.GetGenericTypeLuaName()}_{(isStatic ? "static_index" : "index")}";
+    public string BindingName => $"{type.Type.GetGenericTypeLuaName()}_{(isStatic ? "static_newindex" : "newindex")}";
     
     public string GenerateCode()
     {
@@ -68,25 +67,19 @@ internal class LuaBindingIndexGenerator(
                         sb.AppendLine($"case \"{prop.LuaName}\":");
                         using (sb.Block())
                         {
-                            if (prop.HasGetter)
+                            if (prop.HasSetter)
                             {
+                                AppendRead(sb, "value", prop.PropertyType, 3);
                                 if (isStatic)
                                 {
-                                    sb.GeneratePushValue(prop.PropertyType, $"{prop.DeclaringType!.GetFullTypeName()}.{prop.Name}");
+                                    sb.AppendLine($"{prop.DeclaringType!.GetFullTypeName()}.{prop.Name} = value;");
                                 }
                                 else
                                 {
-                                    AppendPushValueWithParentTracking(
-                                        sb,
-                                        containingTypeExpression: $"(({prop.DeclaringType!.GetFullTypeName()})obj)",
-                                        memberExpression: prop.Name,
-                                        type: prop.PropertyType,
-                                        parentType: type.Type,
-                                        isReadOnly: !prop.HasSetter
-                                    );
+                                    sb.AppendLine($"obj.{prop.Name} = value;");
+                                    if (type.IsStruct && !prop.IsExtensionProperty) sb.AppendLine("UpdateStruct(L, 1, obj);");
                                 }
-
-                                sb.AppendLine("return 1;");
+                                sb.AppendLine("return 0;");
                             }
                         }
                     }
@@ -97,34 +90,17 @@ internal class LuaBindingIndexGenerator(
                         sb.AppendLine($"case \"{field.LuaName}\":");
                         using (sb.Block())
                         {
+                            AppendRead(sb, "value", field.FieldType, 3);
                             if (isStatic)
                             {
-                                sb.GeneratePushValue(field.FieldType, $"{type.Type.GetFullTypeName()}.{field.Name}");
+                                sb.AppendLine($"{field.DeclaringType!.GetFullTypeName()}.{field.Name} = value;");
                             }
                             else
                             {
-                                AppendPushValueWithParentTracking(
-                                    sb,
-                                    containingTypeExpression: $"(({type.Type.GetFullTypeName()})obj)",
-                                    memberExpression: field.Name,
-                                    type: field.FieldType,
-                                    parentType: type.Type,
-                                    isReadOnly: field.IsReadOnly
-                                );
+                                sb.AppendLine($"obj.{field.Name} = value;");
+                                if (type.IsStruct) sb.AppendLine("UpdateStruct(L, 1, obj);");
                             }
-
-                            sb.AppendLine("return 1;");
-                        }
-                    }
-                    
-                    // Methods
-                    foreach (var method in methods.DistinctBy(method => method.LuaName))
-                    {
-                        sb.AppendLine($"case \"{method.LuaName}\":");
-                        using (sb.Block())
-                        {
-                            sb.AppendLine($"lua_pushcfunction(L, &{method.BindingName});");
-                            sb.AppendLine("return 1;");
+                            sb.AppendLine("return 0;");
                         }
                     }
 
@@ -132,8 +108,7 @@ internal class LuaBindingIndexGenerator(
                     sb.AppendLine("default:");
                     using (sb.Block())
                     {
-                        sb.AppendLine("lua_pushnil(L);");
-                        sb.AppendLine("return 1;");
+                        sb.AppendLine("return 0;");
                     }
                 }
             }
@@ -154,43 +129,6 @@ internal class LuaBindingIndexGenerator(
         }
 
         return sb.ToString();
-    }
-
-    private static void AppendPushValueWithParentTracking(IndentedStringBuilder sb, string containingTypeExpression, string memberExpression, Type type, Type parentType, bool isReadOnly)
-    {
-        // Only use parent tracking for value types (structs)
-        if (type is { IsValueType: true, IsPrimitive: false, IsEnum: false } && !type.IsNullable())
-        {
-            var typeName = type.GetFullTypeName();
-            var metatable = type.GetSafeTypeName();
-
-            // For structs, we need to get the ID from userdata on the stack
-            using (sb.Block())
-            {
-                sb.AppendLine("var ptr = lua_touserdata(L, 1);");
-                sb.AppendLine("if (ptr != null)");
-                using (sb.Block())
-                {
-                    sb.AppendLine("var parentId = *(int*)ptr;");
-                    if (parentType.IsValueType)
-                    {
-                        sb.AppendLine($"PushStructWithParent(L, {containingTypeExpression}.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {{ System.Diagnostics.Debug.WriteLine($\"Attempted to assign value of struct {{obj}} ({{obj.GetType()}}) member '{memberExpression}' to {{value}} but Lua only owns a temporary value and there is no way to track it to its parent. Nothing will be set.\"); }});");
-                    }
-                    else if (isReadOnly)
-                    {
-                        sb.AppendLine($"PushStructWithParent(L, {containingTypeExpression}.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {{ System.Diagnostics.Debug.WriteLine($\"Attempted to assign value of struct {{obj}} ({{obj.GetType()}}) member '{memberExpression}' to {{value}} but the field is read-only. Nothing will be set.\"); }});");
-                    }
-                    else
-                    {
-                        sb.AppendLine($"PushStructWithParent(L, {containingTypeExpression}.{memberExpression}, \"MT_{metatable}\", parentId, static (obj, value) => {containingTypeExpression}.{memberExpression} = ({typeName})value);");
-                    }
-                }
-            }
-        }
-        else
-        {
-            sb.GeneratePushValue(type, $"{containingTypeExpression}.{memberExpression}");
-        }
     }
 
     private void AppendArrayIndexing(bool isInlineArray, bool isArray, IndentedStringBuilder sb)
@@ -257,9 +195,10 @@ internal class LuaBindingIndexGenerator(
                     }
                 }
 
-                sb.AppendLine("var element = obj[index];");
-                sb.GeneratePushValue(elementType, "element");
-                sb.AppendLine("return 1;");
+                AppendRead(sb, "value", elementType, 3);
+                sb.AppendLine("obj[index] = value;");
+                if (type.IsStruct) sb.AppendLine("UpdateStruct(L, 1, obj);");
+                sb.AppendLine("return 0;");
             }
 
             sb.AppendLine();
@@ -295,11 +234,29 @@ internal class LuaBindingIndexGenerator(
                     sb.AppendLine("lua_pop(L, 1);");
                 }
 
-                sb.AppendLine($"var element = obj[{string.Join(", ", Enumerable.Range(0, rank).Select(i => $"index{i}"))}];");
-                sb.GeneratePushValue(elementType, "element");
-                sb.AppendLine("return 1;");
+                AppendRead(sb, "value", elementType, 3);
+                sb.AppendLine($"obj[{string.Join(", ", Enumerable.Range(0, rank).Select(i => $"index{i}"))}] = value;");
+                if (type.IsStruct) sb.AppendLine("UpdateStruct(L, 1, obj);");
+                sb.AppendLine("return 0;");
             }
             sb.AppendLine();
+        }
+    }
+
+    private static void AppendRead(IndentedStringBuilder sb, string varName, Type type, int stackIndex)
+    {
+        var fullTypeName = type.GetFullTypeName();
+
+        if (type.IsNullable())
+        {
+            // Nullable value type (int?, float?, etc.)
+            var underlyingType = Nullable.GetUnderlyingType(type)!;
+            var underlyingTypeName = underlyingType.GetFullTypeName();
+            sb.AppendLine($"{fullTypeName} {varName} = ToObjectNullable<{underlyingTypeName}>(L, {stackIndex})!;");
+        }
+        else
+        {
+            sb.AppendLine($"{fullTypeName} {varName} = ToObject<{fullTypeName}>(L, {stackIndex})!;");
         }
     }
 }

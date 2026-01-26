@@ -218,7 +218,23 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
 
             var argumentList = string.Join(", ", Enumerable.Range(0, overload.Parameters.Length)
                 .Select(i => $"arg{i}"));
-            sb.AppendLine($"var result = new {overload.DeclaringType!.GetFullTypeName()}({argumentList});");
+
+            if (type.IsArray)
+            {
+                sb.AppendLine(
+                    """
+                    if (arg0 < 0)
+                    {
+                        errorMsg = "Array size must be non-negative.";
+                        goto fail;
+                    }
+                    """);
+            }
+
+            sb.AppendLine(type.IsArray
+                ? $"var result = new {type.Type.GetElementType()!.GetFullTypeName()}[{argumentList}];"
+                : $"var result = new {overload.DeclaringType!.GetFullTypeName()}({argumentList});");
+
             sb.GeneratePushValue(type.Type, "result");
             sb.AppendLine("return 1;");
         }

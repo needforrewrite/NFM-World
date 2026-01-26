@@ -43,6 +43,10 @@ public class LuaBindingGeneratorV2
             // Analyze referenced types
             foreach (var method in type.InstanceMethods)
             {
+                if (method.IsExtensionMethod && method.DeclaringType != null)
+                {
+                    Add(new LuaVisibleType(assembly, method.DeclaringType), DiscoveredKind.ExtensionMethodDeclaringType);
+                }
                 foreach (var param in method.Method.GetParameters())
                 {
                     Add(new LuaVisibleType(assembly, param.ParameterType), DiscoveredKind.MethodParameter);

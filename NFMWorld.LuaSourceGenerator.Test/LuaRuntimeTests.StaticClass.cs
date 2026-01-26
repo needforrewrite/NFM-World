@@ -132,7 +132,7 @@ public partial class LuaRuntimeTests
         AssertLuaOk(result);
         var value = lua_tointeger(_L, -1);
         Assert.AreEqual(100, value);
-        Assert.AreEqual(100, StaticClass.StaticField);
+        Assert.AreEqual(100, StaticClass.StaticField, "C# static should also be updated");
     }
 
     [TestMethod]

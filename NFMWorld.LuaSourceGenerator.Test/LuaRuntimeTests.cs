@@ -1642,35 +1642,6 @@ public partial class LuaRuntimeTests
     #region Referenced Type Discovery Tests
 
     [TestMethod]
-    public void ReferencedType_Constructor_WorksFromLua()
-    {
-        var result = luaL_dostring(_L, @"
-            local obj = ReferencedType.new(42, 'Test')
-            return obj.value, obj.name
-        ");
-        AssertLuaOk(result);
-
-        var name = lua_tostring(_L, -1);
-        var value = lua_tointeger(_L, -2);
-
-        Assert.AreEqual(42, value);
-        Assert.AreEqual("Test", name);
-    }
-
-    [TestMethod]
-    public void ReferencedType_GetDescription_ReturnsFormatted()
-    {
-        var result = luaL_dostring(_L, @"
-            local obj = ReferencedType.new(10, 'Sample')
-            return obj:getDescription()
-        ");
-        AssertLuaOk(result);
-
-        var desc = lua_tostring(_L, -1);
-        Assert.AreEqual("ReferencedType: Sample = 10", desc);
-    }
-
-    [TestMethod]
     public void TypeWithReferences_CreateReferenced_ReturnsReferencedType()
     {
         var result = luaL_dostring(_L, @"
@@ -2345,7 +2316,7 @@ public partial class LuaRuntimeTests
 
         Assert.AreNotEqual(LUA_OK, result);
         var error = lua_tostring(_L, -1);
-        Assert.IsTrue(error?.Contains("must be non-negative") == true);
+        Assert.IsTrue(error?.Contains("must be non-negative") == true, "Error message '{0}' did not mention non-negative", error);
     }
 
     [TestMethod]

@@ -12,27 +12,26 @@
 /*      LuaBindingTypeGenerator.cs:53 (GenerateCode)       */ 
 /*      LuaBindingTypeGenerator.cs:53 (GenerateCode)       */ public unsafe partial class LuaBindings
 /*           IndentedStringBuilder.cs:75 (Block)           */ {
-/*      LuaBindingTypeGenerator.cs:72 (GenerateCode)       */     // =========== Bindings for System.IEquatable`1[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] (IEquatable_Int32) ===========
+/*      LuaBindingTypeGenerator.cs:72 (GenerateCode)       */     // =========== Bindings for System.Collections.Generic.IEnumerable`1[[System.Int64, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] (IEnumerable_Int64) ===========
     #region Instance Methods
 /*      LuaBindingTypeGenerator.cs:99 (GenerateCode)       */ 
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:12 (GenerateCode)      */ [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:13 (GenerateCode)      */ private static int IEquatable_Int32_method_Equals(lua_State L)
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:13 (GenerateCode)      */ private static int IEnumerable_Int64_method_GetEnumerator(lua_State L)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */ {
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:30 (GenerateCode)      */     string? errorMsg = null;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:31 (GenerateCode)      */     try
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */     {
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:40 (GenerateCode)      */         var argCount = lua_gettop(L) - 1; // First arg is self
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:41 (GenerateCode)      */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:42 (GenerateCode)      */         var self = GetObjectFromStack<System.IEquatable<int>>(L, 1);
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:42 (GenerateCode)      */         var self = GetObjectFromStack<System.Collections.Generic.IEnumerable<long>>(L, 1);
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:46 (GenerateCode)      */         if (self == null)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */         {
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:49 (GenerateCode)      */             errorMsg = "Expected System.IEquatable<int> as first argument to IEquatable_Int32_method_Equals";
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:49 (GenerateCode)      */             errorMsg = "Expected System.Collections.Generic.IEnumerable<long> as first argument to IEnumerable_Int64_method_GetEnumerator";
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:50 (GenerateCode)      */             goto fail;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*          IndentedStringBuilder.cs:85 (Dispose)          */         }
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:55 (GenerateCode)      */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /* LuaBindingMethodGenerator.cs:345 (AppendParameterRead)  */         int arg0 = ToObject<int>(L, 2)!;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:174 (AppendMethodCall)   */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:316 (AppendMethodCall)   */         var result = self.Equals(arg0);
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:316 (AppendMethodCall)   */         var result = self.GetEnumerator();
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           Helpers.cs:351 (GeneratePushValue)            */         PushValue(L, result);
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:324 (AppendMethodCall)   */         return 1;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*          IndentedStringBuilder.cs:85 (Dispose)          */     }

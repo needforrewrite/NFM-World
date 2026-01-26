@@ -12,28 +12,27 @@
 /*      LuaBindingTypeGenerator.cs:53 (GenerateCode)       */ 
 /*      LuaBindingTypeGenerator.cs:53 (GenerateCode)       */ public unsafe partial class LuaBindings
 /*           IndentedStringBuilder.cs:75 (Block)           */ {
-/*      LuaBindingTypeGenerator.cs:72 (GenerateCode)       */     // =========== Bindings for NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator (ICalculator) ===========
+/*      LuaBindingTypeGenerator.cs:72 (GenerateCode)       */     // =========== Bindings for System.Collections.Generic.IList`1[[System.Int64, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]] (IList_Int64) ===========
     #region Instance Methods
 /*      LuaBindingTypeGenerator.cs:99 (GenerateCode)       */ 
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:12 (GenerateCode)      */ [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:13 (GenerateCode)      */ private static int ICalculator_method_Add(lua_State L)
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:13 (GenerateCode)      */ private static int IList_Int64_method_IndexOf(lua_State L)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */ {
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:30 (GenerateCode)      */     string? errorMsg = null;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:31 (GenerateCode)      */     try
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */     {
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:40 (GenerateCode)      */         var argCount = lua_gettop(L) - 1; // First arg is self
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:41 (GenerateCode)      */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:42 (GenerateCode)      */         var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator>(L, 1);
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:42 (GenerateCode)      */         var self = GetObjectFromStack<System.Collections.Generic.IList<long>>(L, 1);
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:46 (GenerateCode)      */         if (self == null)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */         {
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:49 (GenerateCode)      */             errorMsg = "Expected NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator as first argument to ICalculator_method_Add";
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:49 (GenerateCode)      */             errorMsg = "Expected System.Collections.Generic.IList<long> as first argument to IList_Int64_method_IndexOf";
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:50 (GenerateCode)      */             goto fail;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*          IndentedStringBuilder.cs:85 (Dispose)          */         }
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:55 (GenerateCode)      */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /* LuaBindingMethodGenerator.cs:345 (AppendParameterRead)  */         int arg0 = ToObject<int>(L, 2)!;
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /* LuaBindingMethodGenerator.cs:345 (AppendParameterRead)  */         int arg1 = ToObject<int>(L, 3)!;
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /* LuaBindingMethodGenerator.cs:345 (AppendParameterRead)  */         long arg0 = ToObject<long>(L, 2)!;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:174 (AppendMethodCall)   */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:316 (AppendMethodCall)   */         var result = self.Add(arg0, arg1);
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:316 (AppendMethodCall)   */         var result = self.IndexOf(arg0);
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           Helpers.cs:351 (GeneratePushValue)            */         PushValue(L, result);
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:324 (AppendMethodCall)   */         return 1;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*          IndentedStringBuilder.cs:85 (Dispose)          */     }
@@ -51,26 +50,25 @@
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     
 /*      LuaBindingTypeGenerator.cs:104 (GenerateCode)      */ 
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:12 (GenerateCode)      */ [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:13 (GenerateCode)      */ private static int ICalculator_method_Multiply(lua_State L)
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:13 (GenerateCode)      */ private static int IList_Int64_method_Insert(lua_State L)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */ {
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:30 (GenerateCode)      */     string? errorMsg = null;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:31 (GenerateCode)      */     try
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */     {
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:40 (GenerateCode)      */         var argCount = lua_gettop(L) - 1; // First arg is self
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:41 (GenerateCode)      */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:42 (GenerateCode)      */         var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator>(L, 1);
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:42 (GenerateCode)      */         var self = GetObjectFromStack<System.Collections.Generic.IList<long>>(L, 1);
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:46 (GenerateCode)      */         if (self == null)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */         {
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:49 (GenerateCode)      */             errorMsg = "Expected NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator as first argument to ICalculator_method_Multiply";
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:49 (GenerateCode)      */             errorMsg = "Expected System.Collections.Generic.IList<long> as first argument to IList_Int64_method_Insert";
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:50 (GenerateCode)      */             goto fail;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*          IndentedStringBuilder.cs:85 (Dispose)          */         }
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:55 (GenerateCode)      */
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /* LuaBindingMethodGenerator.cs:345 (AppendParameterRead)  */         int arg0 = ToObject<int>(L, 2)!;
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /* LuaBindingMethodGenerator.cs:345 (AppendParameterRead)  */         int arg1 = ToObject<int>(L, 3)!;
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /* LuaBindingMethodGenerator.cs:345 (AppendParameterRead)  */         long arg1 = ToObject<long>(L, 3)!;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:174 (AppendMethodCall)   */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:316 (AppendMethodCall)   */         var result = self.Multiply(arg0, arg1);
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           Helpers.cs:351 (GeneratePushValue)            */         PushValue(L, result);
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:324 (AppendMethodCall)   */         return 1;
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:277 (AppendMethodCall)   */         self.Insert(arg0, arg1);
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:284 (AppendMethodCall)   */         return 0;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*          IndentedStringBuilder.cs:85 (Dispose)          */     }
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:146 (GenerateCode)     */     catch (System.Exception ex)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:146 (GenerateCode)     */     {
@@ -86,24 +84,24 @@
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     
 /*      LuaBindingTypeGenerator.cs:104 (GenerateCode)      */ 
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:12 (GenerateCode)      */ [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:13 (GenerateCode)      */ private static int ICalculator_method_GetDescription(lua_State L)
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:13 (GenerateCode)      */ private static int IList_Int64_method_RemoveAt(lua_State L)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */ {
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:30 (GenerateCode)      */     string? errorMsg = null;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:31 (GenerateCode)      */     try
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */     {
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:40 (GenerateCode)      */         var argCount = lua_gettop(L) - 1; // First arg is self
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:41 (GenerateCode)      */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:42 (GenerateCode)      */         var self = GetObjectFromStack<NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator>(L, 1);
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:42 (GenerateCode)      */         var self = GetObjectFromStack<System.Collections.Generic.IList<long>>(L, 1);
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:46 (GenerateCode)      */         if (self == null)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           IndentedStringBuilder.cs:75 (Block)           */         {
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:49 (GenerateCode)      */             errorMsg = "Expected NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator as first argument to ICalculator_method_GetDescription";
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:49 (GenerateCode)      */             errorMsg = "Expected System.Collections.Generic.IList<long> as first argument to IList_Int64_method_RemoveAt";
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:50 (GenerateCode)      */             goto fail;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*          IndentedStringBuilder.cs:85 (Dispose)          */         }
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:55 (GenerateCode)      */
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /* LuaBindingMethodGenerator.cs:345 (AppendParameterRead)  */         int arg0 = ToObject<int>(L, 2)!;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:174 (AppendMethodCall)   */
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:316 (AppendMethodCall)   */         var result = self.GetDescription();
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*           Helpers.cs:351 (GeneratePushValue)            */         PushValue(L, result);
-/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:324 (AppendMethodCall)   */         return 1;
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:277 (AppendMethodCall)   */         self.RemoveAt(arg0);
+/*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*   LuaBindingMethodGenerator.cs:284 (AppendMethodCall)   */         return 0;
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*          IndentedStringBuilder.cs:85 (Dispose)          */     }
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:146 (GenerateCode)     */     catch (System.Exception ex)
 /*      LuaBindingTypeGenerator.cs:103 (GenerateCode)      */     /*     LuaBindingMethodGenerator.cs:146 (GenerateCode)     */     {

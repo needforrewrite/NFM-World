@@ -73,6 +73,8 @@ public class LuaVisibleType
     public string LuaName { get; }
     
     public LuaVisibleMethod[] DeclaredInstanceMethods { get; }
+    public LuaVisibleMethod[] DeclaredExtensionMethods { get; }
+
     public LuaVisibleMethod[] InstanceMethods { get; }
     public LuaVisibleField[] InstanceFields { get; }
     public LuaVisibleProperty[] InstanceProperties { get; }
@@ -98,19 +100,47 @@ public class LuaVisibleType
     public bool IsArray => Type.IsArray;
     public int? ArrayRank => Type.IsArray ? Type.GetArrayRank() : null;
     public Type? ElementType => Type.GetElementType();
+    public bool IsStatic => Type.IsStaticClass();
+
+    /// <summary>
+    /// Check if a type has the InlineArrayAttribute (indexable types without reflection-visible indexers).
+    /// </summary>
+    public bool IsInlineArray => Type.GetCustomAttribute<InlineArrayAttribute>() != null;
+
+    /// <summary>
+    /// Get the length of an inline array from its InlineArrayAttribute.
+    /// Returns null if the type doesn't have the attribute.
+    /// </summary>
+    public int? InlineArrayLength => Type.GetCustomAttribute<InlineArrayAttribute>()?.Length;
+
+    /// <summary>
+    /// Get the element type of an inline array by finding its first field.
+    /// </summary>
+    public Type? InlineArrayElementType => IsInlineArray
+        ? Type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+            .FirstOrDefault()
+            ?.FieldType
+        : null;
 
     public LuaVisibleType(Assembly originAssembly, Type type)
     {
         OriginAssembly = originAssembly;
         Type = type;
         IsVisibleToLua = type.GetCustomAttribute<LuaVisibleAttribute>() is not null
-                         || originAssembly.GetCustomAttributes<AssemblyLuaVisibleAttribute>().Any(e => e.Type == type);
+                         || originAssembly.GetCustomAttributes<AssemblyLuaVisibleAttribute>().Any(e => e.Type == type)
+                         || (type.IsArray && (type.GetElementType()!.GetCustomAttribute<LuaVisibleAttribute>() is not null || 
+                             originAssembly.GetCustomAttributes<AssemblyLuaVisibleAttribute>()
+                                 .Any(e => e.Type == type.GetElementType())));
         LuaName = type.GetCustomAttribute<LuaVisibleAttribute>()?.Name
                   ?? type.GetCustomAttribute<LuaNameAttribute>()?.Name
                   ?? type.GetGenericTypeLuaName();
         MetatableName = $"MT_{Type.GetSafeTypeName()}";
         DeclaredInstanceMethods = GetDeclaredInstanceMethods(type)
             .Where(m => m.GetCustomAttribute<LuaHiddenAttribute>() is null && IsCandidateMethod(m))
+            .Select(m => new LuaVisibleMethod(m, false))
+            .ToArray();
+        DeclaredExtensionMethods = type.GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Where(m => m.GetCustomAttribute<LuaHiddenAttribute>() is null && IsCandidateMethod(m) && IsExtensionMethod(m))
             .Select(m => new LuaVisibleMethod(m, false))
             .ToArray();
         InstanceMethods = IsVisibleToLua
@@ -364,6 +394,10 @@ public class LuaVisibleType
         if (IsCompilerMethod(methodInfo))
             return false;
         
+        // Exclude array methods Get, Set, Address
+        if (methodInfo.DeclaringType?.IsArray == true && methodInfo.Name is "Get" or "Set" or "Address")
+            return false;
+        
         return true;
     }
     
@@ -412,33 +446,21 @@ public class LuaVisibleType
     }
 
     /// <summary>
-    /// Check if a method is an extension method (static method with first parameter marked with ExtensionAttribute).
+    /// Check if a method is an extension method (static method with marked with ExtensionAttribute).
     /// </summary>
     private static bool IsExtensionMethod(MethodInfo method)
     {
         if (!method.IsStatic || method.GetParameters().Length == 0)
             return false;
 
-        var firstParam = method.GetParameters()[0];
-        var hasExtensionAttr = firstParam.GetCustomAttributesData()
-            .Any(a => a.AttributeType.Name == "ExtensionAttribute" ||
-                      a.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute");
-
-        // Also check if the method has the ExtensionAttribute directly (some compilers add it to the method too)
-        if (!hasExtensionAttr)
-        {
-            hasExtensionAttr = method.GetCustomAttributesData()
-                .Any(a => a.AttributeType.Name == "ExtensionAttribute" ||
-                          a.AttributeType.FullName == "System.Runtime.CompilerServices.ExtensionAttribute");
-        }
+        var hasExtensionAttr = method.GetCustomAttribute<ExtensionAttribute>() != null;
 
         return hasExtensionAttr;
     }
     
     private static bool IsCompilerMethod(MethodInfo methodInfo)
     {
-        return methodInfo.GetCustomAttributes()
-                   .Any(attr => attr.GetType().FullName == "System.Runtime.CompilerServices.CompilerGeneratedAttribute")
+        return methodInfo.GetCustomAttribute<CompilerGeneratedAttribute>() != null
                || methodInfo.Name.Contains('<') && methodInfo.Name.Contains('>');
     }
 
@@ -562,5 +584,6 @@ public enum DiscoveredKind
     EventReturnType = 128,
     ArrayElementType = 256,
     EventParameterType = 512,
-    LuaVisible = 1024
+    LuaVisible = 1024,
+    ExtensionMethodDeclaringType = 2048,
 }

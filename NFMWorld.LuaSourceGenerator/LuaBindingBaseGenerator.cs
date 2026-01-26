@@ -39,7 +39,7 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                       string metatableName,
                       ReadOnlySpan<luaL_RegManaged> instanceMetamethods,
                       ReadOnlySpan<luaL_RegManaged> staticMethods,
-                      ReadOnlySpan<luaL_RegManaged> staticMetamethods,
+                      ReadOnlySpan<luaL_RegManaged> staticMetamethods
                   )
                   {
                       // Create metatable for instances
@@ -54,26 +54,29 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                       lua_pop(L, 1); // Stack: (empty)
 
                       // Create global type table for static members
-                      if (staticMethods.Length == 0)
+                      if (staticMethods.Length > 0 || staticMetamethods.Length > 0)
                       {
-                          // If there are no static methods, create an empty table
-                          lua_newtable(L); // Stack: typeTable
+                          if (staticMethods.Length == 0)
+                          {
+                              // If there are no static methods, create an empty table
+                              lua_newtable(L); // Stack: typeTable
+                          }
+                          else
+                          {
+                              luaL_newlib(L, staticMethods); // Stack: typeTable
+                          }
+                          
+                          if (staticMetamethods.Length > 0)
+                          {
+                              // Create and set the metatable for the type table
+                              lua_newtable(L); // Stack: typeTable, metatable
+                              luaL_setfuncs(L, staticMetamethods, 0); // Stack: typeTable, metatable
+                              lua_setmetatable(L, -2); // Stack: typeTable
+                          }
+                          
+                          // Set the type table in the global namespace
+                          lua_setglobal(L, typeName); // Stack: (empty)
                       }
-                      else
-                      {
-                          luaL_newlib(L, staticMethods); // Stack: typeTable
-                      }
-                      
-                      if (staticMetamethods.Length > 0)
-                      {
-                          // Create and set the metatable for the type table
-                          lua_newtable(L); // Stack: typeTable, metatable
-                          luaL_setfuncs(L, staticMetamethods, 0); // Stack: typeTable, metatable
-                          lua_setmetatable(L, -2); // Stack: typeTable
-                      }
-                      
-                      // Set the type table in the global namespace
-                      lua_setglobal(L, typeName); // Stack: (empty)
                   }
 
                   private static int _nextObjectId = 1;
