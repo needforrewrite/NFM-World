@@ -1,5 +1,7 @@
 ﻿namespace nfm_world_library.SoftFloat;
 
+using FixedMathSharp;
+
 public static partial class FixedTrigLUT
 {
     public static fix64 SinDeg(fix64 value)
@@ -10,8 +12,8 @@ public static partial class FixedTrigLUT
             degrees += 360;
         // scale to 0-36000, interpolate with fractional part
         var scaled = degrees * 100;
-        var index = (int)(scaled.Raw >> fix64.FRACTION_BITS); // integer part
-        var frac = scaled - fix64.FromRaw((long)index << fix64.FRACTION_BITS); // fractional part
+        var index = (int)(scaled.m_rawValue >> FixedMath.SHIFT_AMOUNT_I); // integer part
+        var frac = scaled - fix64.FromRaw((long)index << FixedMath.SHIFT_AMOUNT_I); // fractional part
         var nextIndex = index + 1;
         if (nextIndex >= 36000)
             nextIndex = 0;
@@ -34,8 +36,8 @@ public static partial class FixedTrigLUT
             degrees += 360;
         // scale to 0-36000, interpolate with fractional part
         var scaled = degrees * 100;
-        var index = (int)(scaled.Raw >> fix64.FRACTION_BITS); // integer part
-        var frac = scaled - fix64.FromRaw((long)index << fix64.FRACTION_BITS); // fractional part
+        var index = (int)(scaled.m_rawValue >> FixedMath.SHIFT_AMOUNT_I); // integer part
+        var frac = scaled - fix64.FromRaw((long)index << FixedMath.SHIFT_AMOUNT_I); // fractional part
         var nextIndex = index + 1;
         if (nextIndex >= 36000)
             nextIndex = 0;

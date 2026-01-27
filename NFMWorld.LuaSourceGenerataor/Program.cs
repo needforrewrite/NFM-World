@@ -3,6 +3,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using FixedMathSharp;
 using nfm_world_library.mad;
 using nfm_world_library.SoftFloat;
 using nfm_world_library.util;
@@ -133,7 +134,7 @@ foreach (var field in typeof(Mad).GetFields(BindingFlags.Instance | BindingFlags
              """;
         fields.Add(new Field(name, getter, setter));
     }
-    else if (field.FieldType == typeof(InlineArray4<fix64>))
+    else if (field.FieldType == typeof(InlineArray4<Fixed64>))
     {
         var getter =
             $"""
@@ -149,7 +150,7 @@ foreach (var field in typeof(Mad).GetFields(BindingFlags.Instance | BindingFlags
              """;
         fields.Add(new Field(name, getter, setter));
     }
-    else if (field.FieldType == typeof(f64Vector3))
+    else if (field.FieldType == typeof(Vector3d))
     {
         var getter =
             $"""

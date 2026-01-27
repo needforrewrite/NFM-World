@@ -1,14 +1,14 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using nfm_world_library.SoftFloat;
+using FixedMathSharp;
 
 var table = new List<long>();
 for (int angle = 0; angle < 36000; angle++)
 {
     var actualAngle = angle / 100d;
     var sin = Math.Sin(actualAngle * Math.PI / 180);
-    Console.WriteLine(((fix64)sin));
-    table.Add(((fix64)sin).Raw);
+    Console.WriteLine(((Fixed64)sin));
+    table.Add(((Fixed64)sin).m_rawValue);
 }
 
 using var s = new StreamWriter(File.OpenWrite("SinTable.txt"));

@@ -19,3 +19,6 @@
 [submodule "FontStashSharp.Base"]
 	path = FontStashSharp.Base
 	url = https://github.com/uwx/FontStashSharp.Base
+[submodule "FixedMathSharp"]
+	path = FixedMathSharp
+	url = https://github.com/uwx/FixedMathSharp

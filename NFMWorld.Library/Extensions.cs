@@ -255,15 +255,6 @@ public static class Extensions2
             => new(span[0], span[1], span[2]);
     }
 
-    extension(ref DeterministicRandom random)
-    {
-        public fix64 NextF64() => new(random.NextFixed6401());
-        public fix64 NextF64(fix64 maxExclusive) => new(random.NextFixed64(maxExclusive.Value));
-
-        public fix64 NextF64(fix64 minInclusive, fix64 maxExclusive) =>
-            new(random.NextFixed64(minInclusive.Value, maxExclusive.Value));
-    }
-
     private const double Factor = 0.7;
 
     extension(Color color)
