@@ -57,7 +57,7 @@ public struct f64Euler(f64AngleSingle yaw, f64AngleSingle pitch, f64AngleSingle 
 
     private static fix64 WrapSingle(fix64 radians)
     {
-        var newangle = fix64.IEEERemainder(radians, fix64.TwoPi);
+        var newangle = radians % fix64.TwoPi;
 
         if (newangle <= -fix64.Pi)
             newangle += fix64.TwoPi;
@@ -69,7 +69,7 @@ public struct f64Euler(f64AngleSingle yaw, f64AngleSingle pitch, f64AngleSingle 
 
     private static f64AngleSingle WrapSingle(f64AngleSingle radians)
     {
-        var newangle = fix64.IEEERemainder(radians.Radians, fix64.TwoPi);
+        var newangle = radians.Radians % fix64.TwoPi;
 
         if (newangle <= -fix64.Pi)
             newangle += fix64.TwoPi;

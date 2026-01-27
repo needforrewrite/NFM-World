@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using nfm_world_library.SoftFloat;
+using nfm_world_library.util;
 
 namespace nfm_world_library.mad.collision;
 
@@ -8,20 +9,19 @@ public static class CollisionExtensions
     extension(f64Vector3 vec)
     {
         public f64Vector3 RotateZy(fix64 zy) {
-            var a = zy * fix64.DegToRad;
             return new f64Vector3(
                 vec.X,
-                vec.Y * fix64.Cos(a) + vec.Z * -fix64.Sin(a),
-                vec.Y * fix64.Sin(a) + vec.Z * fix64.Cos(a)
+                vec.Y * UMath.Cos(zy) + vec.Z * -UMath.Sin(zy),
+                vec.Y * UMath.Sin(zy) + vec.Z * UMath.Cos(zy)
             );
         }
 
         public f64Vector3 RotateXz(fix64 xz) {
-            var a = -xz * fix64.DegToRad;
+            var a = -xz;
             return new f64Vector3(
-                vec.X * fix64.Cos(a) + vec.Z * fix64.Sin(a),
+                vec.X * UMath.Cos(a) + vec.Z * UMath.Sin(a),
                 vec.Y,
-                vec.X * -fix64.Sin(a) + vec.Z * fix64.Cos(a)
+                vec.X * -UMath.Sin(a) + vec.Z * UMath.Cos(a)
             );
         }
 
@@ -39,6 +39,7 @@ public static class CollisionExtensions
             if (fix64.Abs(det) < (fix64)1e-9)
             {
                 ThrowArgumentException();
+                return default;
             }
 
             var x1 = ( a22 * b1 - a12 * b2) / det;

@@ -72,7 +72,7 @@ public struct f64AngleSingle : IComparable, IComparable<f64AngleSingle>, IEquata
     /// </summary>
     public void Wrap()
     {
-        fix64 newangle = fix64.IEEERemainder(Degrees, 360);
+        fix64 newangle = Degrees % 360;
 
         if (newangle <= -180)
             newangle += 360;

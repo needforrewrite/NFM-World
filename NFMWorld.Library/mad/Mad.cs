@@ -20,6 +20,7 @@ namespace nfm_world_library.mad;
 public class Mad
 {
     private static readonly fix64 _tickRate = Physics.PHYSICS_MULTIPLIER_F64;
+    private static readonly fix64 _oneOverTickRate = 1 / _tickRate;
     public Boolean Halted = false;
 
     public event EventHandler<(float f, int i)> SfxPlayCrash;
@@ -48,7 +49,7 @@ public class Mad
     public fix64 Dcomp;
     public bool Wasted;
     public readonly UnlimitedArray<bool> _dominate = [];
-    public readonly fix64 _drag = (fix64)(0.5F);
+    public readonly fix64 _drag = fix64.Half;
     public int _fixes = -1;
     public fix64 _forca;
     public bool Ftab;
@@ -208,18 +209,18 @@ public class Mad
                             {
                                 f130 = 300;
                             }
-                            if (f130 < (fix64)(-300.0F))
+                            if (f130 < -300)
                             {
-                                f130 = (fix64)(-300.0F);
+                                f130 = -300;
                             }
                             var f131 = Scx[wheel] * Stat.Push;
                             if (f131 > 300)
                             {
                                 f131 = 300;
                             }
-                            if (f131 < (fix64)(-300.0F))
+                            if (f131 < -300)
                             {
-                                f131 = (fix64)(-300.0F);
+                                f131 = -300;
                             }
                             othermad.Scx[otherwheel] += f131;
                             if (IsClientPlayer)
@@ -246,12 +247,12 @@ public class Mad
                             if (UMath.RandomBoolean())
                             {
                                 otherconto.Spark(
-                                    (wheelx[wheel] + otherwheelx[otherwheel]) / 2, 
-                                    (wheely[wheel] + otherwheely[otherwheel]) / 2,
-                                    (wheelz[wheel] + otherwheelz[otherwheel]) / 2, 
-                                    (othermad.Scx[otherwheel] + Scx[wheel]) / 4,
-                                    (othermad.Scy[otherwheel] + Scy[wheel]) / 4,
-                                    (othermad.Scz[otherwheel] + Scz[wheel]) / 4,
+                                    (wheelx[wheel] + otherwheelx[otherwheel]) * fix64.Half, 
+                                    (wheely[wheel] + otherwheely[otherwheel]) * fix64.Half,
+                                    (wheelz[wheel] + otherwheelz[otherwheel]) * fix64.Half, 
+                                    (othermad.Scx[otherwheel] + Scx[wheel]) * fix64.Quarter,
+                                    (othermad.Scy[otherwheel] + Scy[wheel]) * fix64.Quarter,
+                                    (othermad.Scz[otherwheel] + Scz[wheel]) * fix64.Quarter,
                                     2,
                                     (wheelGround + otherWheelGround) / 2
                                 );
@@ -264,18 +265,18 @@ public class Mad
                             {
                                 f132 = 300;
                             }
-                            if (f132 < (fix64)(-300.0F))
+                            if (f132 < -300)
                             {
-                                f132 = (fix64)(-300.0F);
+                                f132 = -300;
                             }
                             var f133 = Scz[wheel] * Stat.Push;
                             if (f133 > 300)
                             {
                                 f133 = 300;
                             }
-                            if (f133 < (fix64)(-300.0F))
+                            if (f133 < -300)
                             {
-                                f133 = (fix64)(-300.0F);
+                                f133 = -300;
                             }
                             othermad.Scz[otherwheel] += f133;
                             if (IsClientPlayer)
@@ -302,12 +303,12 @@ public class Mad
                             if (UMath.RandomBoolean())
                             {
                                 otherconto.Spark(
-                                    (wheelx[wheel] + otherwheelx[otherwheel]) / 2, 
-                                    (wheely[wheel] + otherwheely[otherwheel]) / 2,
-                                    (wheelz[wheel] + otherwheelz[otherwheel]) / 2,
-                                    (othermad.Scx[otherwheel] + Scx[wheel]) / 4,
-                                    (othermad.Scy[otherwheel] + Scy[wheel]) / 4, 
-                                    (othermad.Scz[otherwheel] + Scz[wheel]) / 4,
+                                    (wheelx[wheel] + otherwheelx[otherwheel]) * fix64.Half, 
+                                    (wheely[wheel] + otherwheely[otherwheel]) * fix64.Half,
+                                    (wheelz[wheel] + otherwheelz[otherwheel]) * fix64.Half,
+                                    (othermad.Scx[otherwheel] + Scx[wheel]) * fix64.Quarter,
+                                    (othermad.Scy[otherwheel] + Scy[wheel]) * fix64.Quarter, 
+                                    (othermad.Scz[otherwheel] + Scz[wheel]) * fix64.Quarter,
                                     2,
                                     (wheelGround + otherWheelGround) / 2);
                             }
@@ -343,7 +344,7 @@ public class Mad
         int wheelGround;
         if (World.IsHyperglidingEnabled)
         {
-            wheelGround = (int)((bottomy * (fix64)1f / _tickRate) * ((fix64)1f - _tickRate));
+            wheelGround = (int)((bottomy * _oneOverTickRate) * (fix64.One - _tickRate));
             if (!mad.BadLanding)
             {
                 wheelGround = -wheelGround;
@@ -411,7 +412,7 @@ public class Mad
             // but all three are equivalent
             // Scy[wi] -= fix64.Abs(Scy[wi] * rebound);
             // Scy[wi] -= Scy[wi] * rebound; // don't need the abs, both are always positive
-            Scy[wi] = (fix64)(-1) * Scy[wi] * (rebound - (fix64)1);
+            Scy[wi] = (fix64)(-1) * Scy[wi] * (rebound - fix64.One);
     }
     internal int Mtcount = 0;
     internal fix64 py = 0;
@@ -560,7 +561,7 @@ public class Mad
 
         if (Loop == 1)
         {
-            var f13 = (Scy[0] + Scy[1] + Scy[2] + Scy[3]) / 4;
+            var f13 = (Scy[0] + Scy[1] + Scy[2] + Scy[3]) * fix64.Quarter;
             for (var i14 = 0; i14 < 4; i14++)
             {
                 Scy[i14] = f13;
@@ -593,7 +594,7 @@ public class Mad
 
                     if (Ucomp < 20)
                     {
-                        Ucomp += (fix64)0.5f * Stat.Airs * _tickRate; //
+                        Ucomp += fix64.Half * Stat.Airs * _tickRate; //
                     }
 
                     airx = -Stat.Airc * UMath.Sin(conto.Xz) * zneg * _tickRate;
@@ -601,7 +602,7 @@ public class Mad
                 }
                 else if (Ucomp != 0 && Ucomp > -2)
                 {
-                    Ucomp -= (fix64)0.5f * Stat.Airs * _tickRate; //
+                    Ucomp -= fix64.Half * Stat.Airs * _tickRate; //
                 }
 
                 if (control.Down)
@@ -624,14 +625,14 @@ public class Mad
 
                     if (Dcomp < 20)
                     {
-                        Dcomp += (fix64)0.5f * Stat.Airs * _tickRate; //
+                        Dcomp += fix64.Half * Stat.Airs * _tickRate; //
                     }
 
                     airy = -Stat.Airc * _tickRate;
                 }
                 else if (Dcomp != 0 && Ucomp > -2)
                 {
-                    Dcomp -= (fix64)0.5f * Stat.Airs * _tickRate;
+                    Dcomp -= fix64.Half * Stat.Airs * _tickRate;
                 } //
 
                 if (control.Left)
@@ -715,7 +716,7 @@ public class Mad
                         if (i16 != 2)
                         {
                             //
-                            Speed -= (Stat.Acelf.AsSpan()[i16] / 2 + f15 * Stat.Acelf.AsSpan()[i16] / 196) * _tickRate;
+                            Speed -= (Stat.Acelf.AsSpan()[i16] * fix64.Half + f15 * Stat.Acelf.AsSpan()[i16] / 196) * _tickRate;
                         }
                         else
                         {
@@ -743,7 +744,7 @@ public class Mad
 
                         if (i18 != 3)
                         {
-                            Speed += (Stat.Acelf.AsSpan()[i18] / 2 + f15 * Stat.Acelf.AsSpan()[i18] / 196) * _tickRate;
+                            Speed += (Stat.Acelf.AsSpan()[i18] * fix64.Half + f15 * Stat.Acelf.AsSpan()[i18] / 196) * _tickRate;
                         }
                         else
                         {
@@ -1005,7 +1006,7 @@ public class Mad
             //
             if (UMath.SafeAbs(Mxz - Cxz) < 30)
             {
-                Cxz += (Mxz - Cxz) / 4 * _tickRate; //
+                Cxz += (Mxz - Cxz) * fix64.Quarter * _tickRate; //
             }
             else
             {
@@ -1037,8 +1038,8 @@ public class Mad
         UMath.Rot(wheely, wheelz, conto.Y, conto.Z, Pzy, 4);
         UMath.Rot(wheelx, wheelz, conto.X, conto.Z, conto.Xz, 4);
         var wasMtouch = false;
-        var i26 = ((Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4);
-        var i27 = ((Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4);
+        var i26 = ((Scx[0] + Scx[1] + Scx[2] + Scx[3]) * fix64.Quarter);
+        var i27 = ((Scz[0] + Scz[1] + Scz[2] + Scz[3]) * fix64.Quarter);
         for (var wheelid = 0; wheelid < 4; wheelid++)
         {
             if (Scx[wheelid] - i26 > 200)
@@ -1067,8 +1068,8 @@ public class Mad
         for (var i29 = 0; i29 < 4; i29++)
         {
             wheely[i29] += Scy[i29] * _tickRate;
-            wheelx[i29] += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) / 4 * _tickRate;
-            wheelz[i29] += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) / 4 * _tickRate;
+            wheelx[i29] += (Scx[0] + Scx[1] + Scx[2] + Scx[3]) * fix64.Quarter * _tickRate;
+            wheelz[i29] += (Scz[0] + Scz[1] + Scz[2] + Scz[3]) * fix64.Quarter * _tickRate;
         } //
 
         var surfaceType = 1;
@@ -1098,10 +1099,10 @@ public class Mad
         {
             // Jacher: 1/_tickrate for traction; Txz is set on previous tick so we need to scale
             var traction = Stat.Grip;
-            traction -= fix64.Abs(Txz - conto.Xz) * (1 / _tickRate) * Speed / 250;
+            traction -= fix64.Abs(Txz - conto.Xz) * (_oneOverTickRate) * Speed / 250;
             if (control.Handb)
             {
-                traction -= fix64.Abs(Txz - conto.Xz) * (1 / _tickRate) * 4;
+                traction -= fix64.Abs(Txz - conto.Xz) * (_oneOverTickRate) * 4;
             }
 
             if (traction < Stat.Grip)
@@ -1249,9 +1250,8 @@ public class Mad
 
                 if (surfaceType == 3 || surfaceType == 4)
                 {
-                    int
-                        k = (int)fix64.Floor(random.NextF64() * 4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
-                    fix64 bumpLift = surfaceType == 3 ? (fix64)(-100F) : (fix64)(-150F);
+                    int k = random.Next(4); // choose 4 wheels randomly to bounce up, usually some wheel will be chosen twice, which means another wheel is not chosen, causing tilt
+                    fix64 bumpLift = surfaceType == 3 ? -100 : -150;
                     fix64 rng = (fix64)0.55F;
                     Scy[k] = bumpLift * rng * Speed / Stat.Swits[2] * (Stat.Bounce - (fix64)0.3F);
                 }
@@ -1268,8 +1268,8 @@ public class Mad
                 sczsum += Scz[j];
             }
 
-            fix64 scxavg = scxsum / 4; /* nwheels */
-            fix64 sczavg = sczsum / 4;
+            fix64 scxavg = scxsum * fix64.Quarter; /* nwheels */
+            fix64 sczavg = sczsum * fix64.Quarter;
             fix64 scxz = fix64.Hypot(sczavg, scxavg);
 
             Mxz = (int)(UMath.dAtan2(-scxsum, sczsum));
@@ -1411,7 +1411,7 @@ public class Mad
             }
 
             assistxz %= 90;
-            if (assistxz > (fix64)89.5f || assistxz < (fix64)0.5f)
+            if (assistxz > (fix64)89.5f || assistxz < fix64.Half)
             {
                 conto.Xz = fix64.Round(conto.Xz / 90) * 90;
             }
@@ -1558,10 +1558,10 @@ public class Mad
             _cntouch = 0; // CHK12
                           //DS-addons: Bad landing hotfix
 
-        fix64 newy = ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) / 4 - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
+        fix64 newy = ((wheely[0] + wheely[1] + wheely[2] + wheely[3]) * fix64.Quarter - bottomy * UMath.Cos(Pzy) * UMath.Cos(Pxy) + airy);
         py = conto.Y - newy;
         conto.Y = newy;
-        //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) / 4 - (fix64) i_10 * Cos(this.Pzy) * Cos(this.Pxy) + f_12);
+        //conto.y = (int) ((fs_23[0] + fs_23[1] + fs_23[2] + fs_23[3]) * fix64.Quarter - (fix64) i_10 * Cos(this.Pzy) * Cos(this.Pxy) + f_12);
         //
         if (zyinv)
             xneg = -1;
@@ -1575,13 +1575,13 @@ public class Mad
         conto.X = ((wheelx[0] - conto.Keyx[0] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[0] * UMath.Sin(conto.Xz) +
             wheelx[1] - conto.Keyx[1] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[1] * UMath.Sin(conto.Xz) +
             wheelx[2] - conto.Keyx[2] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[2] * UMath.Sin(conto.Xz) +
-            wheelx[3] - conto.Keyx[3] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz)) / 4
+            wheelx[3] - conto.Keyx[3] * UMath.Cos(conto.Xz) + xneg * conto.Keyz[3] * UMath.Sin(conto.Xz)) * fix64.Quarter
             + bottomy * UMath.Sin(Pxy) * UMath.Cos(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Sin(conto.Xz) + airx);
 
         conto.Z = ((wheelz[0] - xneg * conto.Keyz[0] * UMath.Cos(conto.Xz) - conto.Keyx[0] * UMath.Sin(conto.Xz)
             + wheelz[1] - xneg * conto.Keyz[1] * UMath.Cos(conto.Xz) - conto.Keyx[1] * UMath.Sin(conto.Xz)
             + wheelz[2] - xneg * conto.Keyz[2] * UMath.Cos(conto.Xz) - conto.Keyx[2] * UMath.Sin(conto.Xz)
-            + wheelz[3] - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz) - conto.Keyx[3] * UMath.Sin(conto.Xz)) / 4
+            + wheelz[3] - xneg * conto.Keyz[3] * UMath.Cos(conto.Xz) - conto.Keyx[3] * UMath.Sin(conto.Xz)) * fix64.Quarter
             + bottomy * UMath.Sin(Pxy) * UMath.Sin(conto.Xz) - bottomy * UMath.Sin(Pzy) * UMath.Cos(conto.Xz) + airz);
 
         if (fix64.Abs(Speed) > 10 || !Mtouch)
@@ -1590,11 +1590,11 @@ public class Mad
             {
                 if (Pxy > conto.Xy)
                 {
-                    conto.Xy += (2 + (Pxy - conto.Xy) / 2);
+                    conto.Xy += (2 + (Pxy - conto.Xy) * fix64.Half);
                 }
                 else
                 {
-                    conto.Xy -= (2 + (conto.Xy - Pxy) / 2);
+                    conto.Xy -= (2 + (conto.Xy - Pxy) * fix64.Half);
                 }
             }
             else
@@ -1605,11 +1605,11 @@ public class Mad
             {
                 if (Pzy > conto.Zy)
                 {
-                    conto.Zy += (2 + (Pzy - conto.Zy) / 2);
+                    conto.Zy += (2 + (Pzy - conto.Zy) * fix64.Half);
                 }
                 else
                 {
-                    conto.Zy -= (2 + (conto.Zy - Pzy) / 2);
+                    conto.Zy -= (2 + (conto.Zy - Pzy) * fix64.Half);
                 }
             }
             else
@@ -1963,7 +1963,7 @@ public class Mad
                 Travxz += (_lxz - conto.Xz) * _tickRate;
                 _lxz = conto.Xz;
             }
-            if (_srfcnt < (10 * (1/_tickRate)))
+            if (_srfcnt < (10 * (_oneOverTickRate)))
             {
                 if (control.Wall != -1)
                 {
@@ -2046,11 +2046,11 @@ public class Mad
                             Power = 98;
                             if (Powerup > 150)
                             {
-                                _xtpower = (int)(200 / _tickRate);
+                                _xtpower = (int)(200 * _oneOverTickRate);
                             }
                             else
                             {
-                                _xtpower = (int)(100 / _tickRate);
+                                _xtpower = (int)(100 * _oneOverTickRate);
                             }
                         }
                     } // CHK17
@@ -2248,7 +2248,7 @@ public class Mad
                             // sparks and scrapes
                             if (collidable.Box.Skid != 2)
                                 _crank[0, k]++;
-                            if (collidable.Box.Skid == 5 && random.NextF64() > (fix64)0.5f)
+                            if (collidable.Box.Skid == 5 && random.NextF64() > fix64.Half)
                                 _crank[0, k]++;
                             if (_crank[0, k] > 1)
                             {
@@ -2365,7 +2365,7 @@ public class Mad
             {
                 f += 100;
             }
-            Shakedam = (int)((fix64.Abs(f) + Shakedam) / 2);
+            Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             if (/*Im == XTGraphics.Im*/true || _colidim)
             {
                 SfxPlayCrash(this, ((int)f, 0));
@@ -2444,7 +2444,7 @@ public class Mad
             }
             if (i99 * i98 == 0)
             {
-                Shakedam = (int)((fix64.Abs(f) + Shakedam) / 2);
+                Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             }
             
             if (/*Im == XTGraphics.Im ||*/true || _colidim)
@@ -2530,7 +2530,7 @@ public class Mad
             {
                 f += 100;
             }
-            Shakedam = (int)((fix64.Abs(f) + Shakedam) / 2);
+            Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             
             if (/*Im == XTGraphics.Im ||*/true || _colidim)
             {
