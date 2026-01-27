@@ -38,14 +38,16 @@ public readonly partial struct fix64(Fixed64 value) : IEquatable<fix64>, ICompar
     public const int FRACTION_BITS = FixedMath.SHIFT_AMOUNT_I;
 
     public readonly Fixed64 Value = value;
-    public static fix64 MinusOne => new(-Fixed64.One);
-    public static fix64 Zero => new(Fixed64.Zero);
-    public static fix64 One => new(Fixed64.One);
-    public static fix64 Two => new(Fixed64.Two);
-    public static fix64 Half => new(Fixed64.Half);
-    public static fix64 Quarter => new(Fixed64.Quarter);
-    public static fix64 MinValue => new(Fixed64.MIN_VALUE);
-    public static fix64 MaxValue => new(Fixed64.MAX_VALUE);
+    public static fix64 MinusOne { get; } = new(-Fixed64.One);
+    public static fix64 Zero { get; } = new(Fixed64.Zero);
+    public static fix64 One { get; } = new(Fixed64.One);
+    public static fix64 Two { get; } = new(Fixed64.Two);
+    public static fix64 Three { get; } = new(Fixed64.Three);
+    public static fix64 Half { get; } = new(Fixed64.Half);
+    public static fix64 Quarter { get; } = new(Fixed64.Quarter);
+    public static fix64 Eighth { get; } = new(Fixed64.Eighth);
+    public static fix64 MinValue { get; } = new(Fixed64.MIN_VALUE);
+    public static fix64 MaxValue { get; } = new(Fixed64.MAX_VALUE);
     public long Raw
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -58,7 +60,7 @@ public readonly partial struct fix64(Fixed64 value) : IEquatable<fix64>, ICompar
     {
     }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public string ToString(string? format, IFormatProvider? formatProvider) => ((double)Value).ToString(format, CultureInfo.InvariantCulture);;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public string ToString(string? format, IFormatProvider? formatProvider) => ((double)Value).ToString(format, CultureInfo.InvariantCulture);
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public bool Equals(fix64 other) => Value.Equals(other.Value);
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public int CompareTo(fix64 other) => Value.CompareTo(other.Value);
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public override string ToString() => Value.ToString();
