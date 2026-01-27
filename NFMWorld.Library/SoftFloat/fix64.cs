@@ -24,6 +24,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using FixedMathSharp;
@@ -57,7 +58,7 @@ public readonly partial struct fix64(Fixed64 value) : IEquatable<fix64>, ICompar
     {
     }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)] public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format!);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)] public string ToString(string? format, IFormatProvider? formatProvider) => ((double)Value).ToString(format, CultureInfo.InvariantCulture);;
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public bool Equals(fix64 other) => Value.Equals(other.Value);
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public int CompareTo(fix64 other) => Value.CompareTo(other.Value);
     [MethodImpl(MethodImplOptions.AggressiveInlining)] public override string ToString() => Value.ToString();
