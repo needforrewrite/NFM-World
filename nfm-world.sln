@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixedMathSharp", "FixedMath
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixedMathSharp.Tests", "FixedMathSharp\tests\FixedMathSharp.Tests\FixedMathSharp.Tests.csproj", "{67DB32CF-3B72-4D4F-B7C0-267AF4CE1F5B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FixedMathSharp.Benchmarks", "FixedMathSharp\tests\FixedMathSharp.Benchmarks\FixedMathSharp.Benchmarks.csproj", "{4D333336-376C-40EA-AF58-34F013B8E16A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -144,5 +146,9 @@ Global
 		{67DB32CF-3B72-4D4F-B7C0-267AF4CE1F5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{67DB32CF-3B72-4D4F-B7C0-267AF4CE1F5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{67DB32CF-3B72-4D4F-B7C0-267AF4CE1F5B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D333336-376C-40EA-AF58-34F013B8E16A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D333336-376C-40EA-AF58-34F013B8E16A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D333336-376C-40EA-AF58-34F013B8E16A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D333336-376C-40EA-AF58-34F013B8E16A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
