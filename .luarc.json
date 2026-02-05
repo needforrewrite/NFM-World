@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "workspace.library": [
+    "${workspaceFolder}/NFMWorld.Library/Lua/Generated",
+  ],
+  "runtime.version": "LuaJIT",
+  "hint.enable": true,
+  "type.checkTableShape": true,
+    "diagnostics.globals": [
+        "_ENV",
+        "key1",
+        "key2",
+        "key3"
+    ]
+}

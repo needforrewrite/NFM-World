@@ -17,14 +17,16 @@
         <PackageReference Include="MessagePack" Version="3.1.4" />
         <PackageReference Include="MessagePack.Experimental" Version="3.1.4" />
         <PackageReference Include="Stride.Core.Mathematics" Version="4.3.0.2507" />
-        <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest" />
+        <None Include="data\**\*" CopyToOutputDirectory="Always" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\FNA.Math\FNA.Math.csproj" />
+      <ProjectReference Include="..\LuaJIT\LuaJIT.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.MessagePack\Maxine.Extensions.MessagePack.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj" />
       <ProjectReference Include="..\Maxine.Extensions\Maxine.VFS\Maxine.VFS.csproj" />
+      <ProjectReference Include="..\NFMWorld.Lua\NFMWorld.Lua.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
@@ -33,9 +35,5 @@
 
     <ItemGroup Condition="'$(OS)' != 'Windows_NT'">
         <ProjectReference Include="..\Facepunch.Steamworks\Facepunch.Steamworks\Facepunch.Steamworks.Posix.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="data\" />
     </ItemGroup>
 </Project>

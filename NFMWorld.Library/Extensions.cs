@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using CommunityToolkit.HighPerformance;
 using FixedMathSharp.Utility;
+using nfm_world_library.Lua;
 using nfm_world_library.SoftFloat;
 using nfm_world_library.util;
 using Steamworks;

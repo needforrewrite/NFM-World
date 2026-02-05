@@ -6,6 +6,7 @@ using Maxine.Extensions;
 using Maxine.VFS;
 using nfm_world_library.backend;
 using nfm_world_library.backend.gamemodes;
+using nfm_world_library.Lua;
 using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
 using nfm_world_library.util;

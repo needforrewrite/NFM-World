@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using FixedMathSharp.Utility;
+using nfm_world_library.Lua;
 using nfm_world_library.mad.collision;
 using nfm_world_library.SoftFloat;
 using nfm_world_library.util;
@@ -17,6 +18,7 @@ using nfm_world_library.util;
 
 namespace nfm_world_library.mad;
 
+[LuaVisible]
 public class Mad
 {
     private static readonly fix64 _tickRate = Physics.PHYSICS_MULTIPLIER_F64;

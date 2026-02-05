@@ -1,10 +1,11 @@
 using System.Text.Json.Serialization;
 using MessagePack;
+using nfm_world_library.Lua;
 using nfm_world_library.SoftFloat;
 
 namespace nfm_world_library.mad;
 
-[MessagePackObject]
+[MessagePackObject, LuaVisible]
 public record struct CarStats
 {
     [JsonPropertyName("swits"), Key(0)] public Int3 Swits { get; init; }

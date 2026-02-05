@@ -11,6 +11,7 @@ public abstract class BaseGamemode(BaseGamemodeParameters gamemodeParameters, IR
     public UnlimitedArray<IInGameCar> carsInRace => raceValues.CarsInRace;
     public BackendStage currentStage => raceValues.CurrentStage;
     public int NumPlayers => players.Count;
+    public RaceState RaceState => raceValues.raceState;
 
     /// <summary>
     /// Arguments: byte[] player standings indexed by player index
