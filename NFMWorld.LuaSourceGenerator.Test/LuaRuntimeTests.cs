@@ -2845,10 +2845,11 @@ public partial class LuaRuntimeTests
             local callCount = 0
             local obj = TypeWithEvents.new()
 
-            obj:add_SimpleEvent(function() callCount = callCount + 1 end)
+            local function fun() callCount = callCount + 1 end
+            obj:add_simpleEvent(fun)
             obj:raiseSimpleEvent()
 
-            obj:remove_SimpleEvent()
+            obj:remove_simpleEvent(fun)
             obj:raiseSimpleEvent()
 
             return callCount
@@ -2856,8 +2857,7 @@ public partial class LuaRuntimeTests
 
         AssertLuaOk(result);
         var callCount = lua_tointeger(_L, -1);
-        // Note: RemoveListener is currently a no-op, so the event will still be called
-        Assert.AreEqual(2, callCount, "RemoveListener currently doesn't remove listeners (not yet implemented)");
+        Assert.AreEqual(1, callCount);
     }
 
     [TestMethod]

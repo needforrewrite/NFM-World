@@ -580,7 +580,7 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
 
                   private static ConditionalWeakTable<BaseEventInvoker, DelegateRef> _eventDelegateRefs = new();
 
-                  private record DelegateRef(int FuncRef, Action Unsubscribe);
+                  private record DelegateRef(Delegate Delegate, int FuncRef, Action Unsubscribe);
 
                   /// <summary>
                   /// Create a .NET delegate from a Lua function for event subscription.
@@ -617,7 +617,7 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
                   {
                       var invoker = new EventInvoker{{argumentCount}}{{t}} { L = L, FuncRef = funcRef };
                       var @delegate = (TDelegate)(Delegate)({{fullTypeName}})(({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"arg{i}"))}}) => invoker.Invoke({{string.Join(", ", Enumerable.Range(0, argumentCount).Select(i => $"arg{i}!"))}}));
-                      _eventDelegateRefs.TryAdd(invoker, new DelegateRef(funcRef, () =>
+                      _eventDelegateRefs.TryAdd(invoker, new DelegateRef(@delegate, funcRef, () =>
                       {
                           unregister(@delegate);
                           luaL_unref(L, LUA_REGISTRYINDEX, funcIdx);
@@ -633,6 +633,24 @@ internal class LuaBindingBaseGenerator(Dictionary<LuaVisibleType, DiscoveredKind
         sb.AppendLine(
             $$"""
                       throw new NotSupportedException($"Event delegate type {typeof(TDelegate)} is not supported");
+                  }
+
+                  private static TDelegate? GetExistingEventDelegate<TDelegate>(lua_State L, int funcIdx)
+                      where TDelegate : Delegate
+                  {
+                      // push the saved functions onto the stack and compare with lua_rawequal
+                      foreach (var (invoker, delegateRef) in _eventDelegateRefs)
+                      {
+                          lua_rawgeti(L, LUA_REGISTRYINDEX, delegateRef.FuncRef);
+                          lua_pushvalue(L, funcIdx);
+                          var isEqual = lua_rawequal(L, -1, -2) != 0;
+                          lua_pop(L, 2); // pop the two function references
+                          if (isEqual)
+                          {
+                              return (TDelegate)delegateRef.Delegate;
+                          }
+                      }
+                      return default;
                   }
 
                   private abstract class BaseEventInvoker

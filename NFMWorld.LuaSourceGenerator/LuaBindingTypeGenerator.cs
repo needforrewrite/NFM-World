@@ -12,7 +12,7 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
     private readonly bool _hasInstanceMetamethods = type.IsVisibleToLua && !type.IsStatic;
     private readonly bool _hasInstanceIndexer = type.IsVisibleToLua && (type.InstanceFields.Length > 0 || type.InstanceProperties.Length > 0 || type.InstanceIndexer != null || type.InstanceMethods.Length > 0 || type.IsArray || type.IsInlineArray) && !type.IsStatic;
     private readonly bool _hasStaticIndexer = type.IsVisibleToLua && (type.StaticFields.Length > 0 || type.StaticProperties.Length > 0 || type.StaticIndexer != null);
-    private readonly bool _hasStaticMethods = type.IsVisibleToLua && (type.StaticMethods.Length > 0 || type.Constructors.Length > 0 || type.IsStruct);
+    private readonly bool _hasStaticMethods = type.IsVisibleToLua && (type.StaticMethods.Length > 0 || type.Constructors.Length > 0 || type.StaticEvents.Length > 0 || type.IsStruct);
 
     public bool HasAnythingToGenerate()
     {
@@ -22,6 +22,9 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                 return true;
 
             if (type.Operators.Length != 0)
+                return true;
+            
+            if (type.DeclaredInstanceEvents.Length != 0)
                 return true;
         }
 
@@ -115,6 +118,18 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                         sb.AppendLine(methodGenerator.GenerateCode());
                         sb.AppendLine();
                     }
+
+                    sb.AppendLine();
+                    foreach (var group in type.DeclaredInstanceEvents.GroupBy(@event => @event.Name))
+                    {
+                        var addGenerator = new LuaBindingEventAddGenerator(type, group.First(), false, 0);
+                        sb.AppendLine(addGenerator.GenerateCode());
+                        sb.AppendLine();
+                        
+                        var removeGenerator = new LuaBindingEventRemoveGenerator(type, group.First(), false, 0);
+                        sb.AppendLine(removeGenerator.GenerateCode());
+                        sb.AppendLine();
+                    }
                 }
                 
                 sb.AppendLine("#endregion");
@@ -163,6 +178,17 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                             sb.AppendLine(
                                 $$"""new() { name = "new", func = &{{type.Type.GetGenericTypeLuaName()}}_struct_new },""");
                         }
+
+                        if (type.StaticEvents.Length > 0)
+                        {
+                            foreach (var group in type.StaticEvents.GroupBy(@event => @event.LuaName))
+                            {
+                                sb.AppendLine(
+                                    $$"""new() { name = "add_{{group.Key}}", func = &{{group.First().BindingName}}_add },""");
+                                sb.AppendLine(
+                                    $$"""new() { name = "remove_{{group.Key}}", func = &{{group.First().BindingName}}_remove },""");
+                            }
+                        }
                     }
 
                     foreach (var group in type.StaticMethods.GroupBy(method => method.Name))
@@ -208,6 +234,18 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
                               """);
                     }
                     
+                    sb.AppendLine();
+                    foreach (var group in type.StaticEvents.GroupBy(@event => @event.Name))
+                    {
+                        var addGenerator = new LuaBindingEventAddGenerator(type, group.First(), true, 0);
+                        sb.AppendLine(addGenerator.GenerateCode());
+                        sb.AppendLine();
+                        
+                        var removeGenerator = new LuaBindingEventRemoveGenerator(type, group.First(), true, 0);
+                        sb.AppendLine(removeGenerator.GenerateCode());
+                        sb.AppendLine();
+                    }
+                    
                     sb.AppendLine("#endregion");
                 }
                 
@@ -229,7 +267,7 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
             // Instance Fields & Properties
             if (_hasInstanceIndexer)
             {
-                var indexGenerator = new LuaBindingIndexGenerator(type, type.InstanceFields, type.InstanceProperties, type.InstanceIndexer, type.InstanceMethods, false);
+                var indexGenerator = new LuaBindingIndexGenerator(type, type.InstanceFields, type.InstanceProperties, type.InstanceIndexer, type.InstanceMethods, type.InstanceEvents, false);
                 sb.AppendLine(indexGenerator.GenerateCode());
                 sb.AppendLine();
                 
@@ -241,7 +279,7 @@ internal class LuaBindingTypeGenerator(LuaVisibleType type, DiscoveredKind kind,
             // Static Fields & Properties
             if (_hasStaticIndexer)
             {
-                var indexGenerator = new LuaBindingIndexGenerator(type, type.StaticFields, type.StaticProperties, type.StaticIndexer, [], true);
+                var indexGenerator = new LuaBindingIndexGenerator(type, type.StaticFields, type.StaticProperties, type.StaticIndexer, [], [], true);
                 sb.AppendLine(indexGenerator.GenerateCode());
                 sb.AppendLine();
                 

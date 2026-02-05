@@ -9,6 +9,7 @@ internal class LuaBindingIndexGenerator(
     IReadOnlyList<LuaVisibleProperty> properties,
     LuaVisibleIndexer? indexer,
     IReadOnlyList<LuaVisibleMethod> methods,
+    IReadOnlyList<LuaVisibleEvent> events,
     bool isStatic,
     int indentLevel = 0)
 {
@@ -124,6 +125,23 @@ internal class LuaBindingIndexGenerator(
                         using (sb.Block())
                         {
                             sb.AppendLine($"lua_pushcfunction(L, &{method.BindingName});");
+                            sb.AppendLine("return 1;");
+                        }
+                    }
+                    
+                    // Events
+                    foreach (var @event in events.DistinctBy(@event => @event.LuaName))
+                    {
+                        sb.AppendLine($"case \"add_{@event.LuaName}\":");
+                        using (sb.Block())
+                        {
+                            sb.AppendLine($"lua_pushcfunction(L, &{@event.BindingName}_add);");
+                            sb.AppendLine("return 1;");
+                        }
+                        sb.AppendLine($"case \"remove_{@event.LuaName}\":");
+                        using (sb.Block())
+                        {
+                            sb.AppendLine($"lua_pushcfunction(L, &{@event.BindingName}_remove);");
                             sb.AppendLine("return 1;");
                         }
                     }

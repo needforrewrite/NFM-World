@@ -60,6 +60,8 @@ public record LuaVisibleEvent(EventInfo Event)
     public Type[] ParameterTypes => InvokeMethod.GetParameters().Select(p => p.ParameterType).ToArray();
     public Type ReturnType => InvokeMethod.ReturnType;
     public Type? DeclaringType => Event.DeclaringType;
+    public string BindingName => $"{Event.DeclaringType?.GetGenericTypeLuaName()}_event_{Event.Name}";
+    public string Name => Event.Name;
 }
 
 public record LuaVisibleOperator(MethodBase Method) : LuaVisibleMethod(Method, false)
@@ -74,6 +76,7 @@ public class LuaVisibleType
     
     public LuaVisibleMethod[] DeclaredInstanceMethods { get; }
     public LuaVisibleMethod[] DeclaredExtensionMethods { get; }
+    public LuaVisibleEvent[] DeclaredInstanceEvents { get; }
 
     public LuaVisibleMethod[] InstanceMethods { get; }
     public LuaVisibleField[] InstanceFields { get; }
@@ -143,6 +146,12 @@ public class LuaVisibleType
             .Where(m => m.GetCustomAttribute<LuaHiddenAttribute>() is null && IsCandidateMethod(m) && IsExtensionMethod(m))
             .Select(m => new LuaVisibleMethod(m, false))
             .ToArray();
+        DeclaredInstanceEvents = IsVisibleToLua
+            ? type.GetEvents(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+                .Where(e => e.GetCustomAttribute<LuaHiddenAttribute>() is null && IsCandidateEvent(e))
+                .Select(e => new LuaVisibleEvent(e))
+                .ToArray()
+            : [];
         InstanceMethods = IsVisibleToLua
             ? GetMethodsInTypeAndInterfaces(type)
                 .Where(m => m.GetCustomAttribute<LuaHiddenAttribute>() is null && IsCandidateMethod(m))
@@ -451,13 +460,13 @@ public class LuaVisibleType
         if (eventHandlerType == null)
             return false;
 
-        // Exclude events with non-candidate event handler types
-        if (!IsCandidateType(eventHandlerType))
-            return false;
+        // // Exclude events with non-candidate event handler types
+        // if (!IsCandidateType(eventHandlerType))
+        //     return false;
         
-        // Exclude generic event handler types
-        if (eventHandlerType.IsGenericType)
-            return false;
+        // // Exclude generic event handler types
+        // if (eventHandlerType.IsGenericType)
+        //     return false;
         
         // Exclude events with delegates that have non-candidate methods
         var invokeMethod = eventHandlerType.GetMethod("Invoke");

@@ -41,7 +41,7 @@ internal class LuaBindingMethodGenerator(LuaVisibleType type, IReadOnlyList<LuaV
                     sb.AppendLine();
                     sb.AppendLine($"var self = GetObjectFromStack<{type.Type.GetFullTypeName()}>(L, 1);");
 
-                    if (!type.Type.IsValueType)
+                    if (!type.IsStruct)
                     {
                         sb.AppendLine("if (self == null)");
                         using (sb.Block())
