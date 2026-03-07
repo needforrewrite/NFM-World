@@ -284,6 +284,78 @@ public static class Helpers
 
             return type.Name.Replace(".", "_").Replace("+", "_").Replace("`", "_");
         }
+
+        public string GetLuaStubTypeName()
+        {
+            // Primitive types
+            if (type == typeof(bool)) return "boolean";
+            if (type == typeof(string)) return "string";
+            if (type == typeof(int) || type == typeof(long) || type == typeof(short) || type == typeof(byte) || type == typeof(sbyte) || type == typeof(uint) || type == typeof(ulong) || type == typeof(ushort)) return "integer";
+            if (type == typeof(float) || type == typeof(double) || type == typeof(decimal)) return "number";
+
+            // Nullable types
+            if (IsNullable(type))
+            {
+                var underlyingType = Nullable.GetUnderlyingType(type)!;
+                return GetLuaStubTypeName(underlyingType) + "?";
+            }
+
+            // Array types
+            if (type.IsArray)
+            {
+                var elementType = type.GetElementType()!;
+                var elementTypeName = GetLuaStubTypeName(elementType);
+                return $"{elementTypeName}[]";
+            }
+
+            // Other types - use the safe type name
+            return GetSafeTypeName(type) + "Instance";
+        }
+
+        public string GetTypeScriptTypeName()
+        {
+            // Handle void
+            if (type == typeof(void)) return "void";
+
+            // Handle primitives
+            if (type == typeof(bool)) return "boolean";
+            if (type == typeof(string)) return "string";
+            if (type == typeof(int) || type == typeof(long) || type == typeof(short) ||
+                type == typeof(byte) || type == typeof(sbyte) || type == typeof(uint) ||
+                type == typeof(ulong) || type == typeof(ushort) || type == typeof(float) ||
+                type == typeof(double) || type == typeof(decimal))
+                return "number";
+
+            // Handle enums
+            if (type.IsEnum) return "number";
+
+            // Handle nullable
+            if (IsNullable(type))
+            {
+                var underlyingType = Nullable.GetUnderlyingType(type)!;
+                return $"({GetTypeScriptTypeName(underlyingType)} | null)";
+            }
+
+            // Handle arrays
+            if (type.IsArray)
+            {
+                return GetSafeTypeName(type);
+            }
+
+            // Handle generic types
+            if (type.IsGenericType && !type.IsGenericTypeDefinition)
+            {
+                return GetSafeTypeName(type);
+            }
+
+            // Handle reference types (can be null)
+            if (!type.IsValueType && type != typeof(object))
+            {
+                return $"({GetSafeTypeName(type)} | null)";
+            }
+
+            return GetSafeTypeName(type);
+        }
     }
 
     extension(string name)

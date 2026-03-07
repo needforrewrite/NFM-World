@@ -75,7 +75,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */         int arg0 = ToObject<int>(L, 2)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */         var result = self.GetLength(arg0);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)
@@ -114,7 +114,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */         int arg0 = ToObject<int>(L, 2)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */         var result = self.GetUpperBound(arg0);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)
@@ -153,7 +153,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */         int arg0 = ToObject<int>(L, 2)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */         var result = self.GetLowerBound(arg0);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)
@@ -325,7 +325,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */                     int[] arg0 = ToObject<int[]>(L, 2)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */                     var result = self.GetValue(arg0);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */                     PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */                     PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */                     return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */                 }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:147 (GenerateCode)        */             case 1:
@@ -333,7 +333,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */                     int arg0 = ToObject<int>(L, 2)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */                     var result = self.GetValue(arg0);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */                     PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */                     PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */                     return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */                 }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:147 (GenerateCode)        */             case 2:
@@ -342,7 +342,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */                     int arg1 = ToObject<int>(L, 3)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */                     var result = self.GetValue(arg0, arg1);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */                     PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */                     PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */                     return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */                 }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:147 (GenerateCode)        */             case 3:
@@ -352,7 +352,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */                     int arg2 = ToObject<int>(L, 4)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */                     var result = self.GetValue(arg0, arg1, arg2);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */                     PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */                     PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */                     return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */                 }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:147 (GenerateCode)        */             case 4:
@@ -360,7 +360,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */                     long arg0 = ToObject<long>(L, 2)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */                     var result = self.GetValue(arg0);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */                     PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */                     PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */                     return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */                 }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:147 (GenerateCode)        */             case 5:
@@ -369,7 +369,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */                     long arg1 = ToObject<long>(L, 3)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */                     var result = self.GetValue(arg0, arg1);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */                     PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */                     PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */                     return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */                 }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:147 (GenerateCode)        */             case 6:
@@ -379,7 +379,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */                     long arg2 = ToObject<long>(L, 4)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */                     var result = self.GetValue(arg0, arg1, arg2);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */                     PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */                     PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */                     return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */                 }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:147 (GenerateCode)        */             case 7:
@@ -387,7 +387,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */                     long[] arg0 = ToObject<long[]>(L, 2)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */                     var result = self.GetValue(arg0);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */                     PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */                     PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */                     return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */                 }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */         }
@@ -692,7 +692,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */         int arg0 = ToObject<int>(L, 2)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */         var result = self.GetLongLength(arg0);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)
@@ -730,7 +730,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */         }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */         var result = self.Clone();
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)
@@ -856,7 +856,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */         }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */         var result = self.GetEnumerator();
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)

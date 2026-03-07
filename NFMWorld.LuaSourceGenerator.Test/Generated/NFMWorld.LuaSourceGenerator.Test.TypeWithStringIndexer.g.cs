@@ -86,7 +86,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*    LuaBindingMethodGenerator.cs:365 (AppendParameterRead)    */         string arg0 = ToObject<string>(L, 2)!;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */         var result = self.GetValue(arg0);
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)
@@ -124,7 +124,7 @@
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */         }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:336 (AppendMethodCall)      */         var result = self.GetDataCount();
-/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:110 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)
@@ -165,7 +165,7 @@
 /*        LuaBindingTypeGenerator.cs:197 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */         }
 /*        LuaBindingTypeGenerator.cs:197 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:197 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:310 (AppendMethodCall)      */         var result = NFMWorld.LuaSourceGenerator.Test.TypeWithStringIndexer.Create();
-/*        LuaBindingTypeGenerator.cs:197 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:197 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:197 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:344 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:197 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:197 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)
@@ -197,7 +197,7 @@
 /*        LuaBindingTypeGenerator.cs:205 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */         }
 /*        LuaBindingTypeGenerator.cs:205 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:191 (AppendMethodCall)      */
 /*        LuaBindingTypeGenerator.cs:205 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:254 (AppendMethodCall)      */         var result = new NFMWorld.LuaSourceGenerator.Test.TypeWithStringIndexer();
-/*        LuaBindingTypeGenerator.cs:205 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */         PushValue(L, result);
+/*        LuaBindingTypeGenerator.cs:205 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */         PushValue(L, result);
 /*        LuaBindingTypeGenerator.cs:205 (GenerateCode)         */     /*     LuaBindingMethodGenerator.cs:259 (AppendMethodCall)      */         return 1;
 /*        LuaBindingTypeGenerator.cs:205 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */     }
 /*        LuaBindingTypeGenerator.cs:205 (GenerateCode)         */     /*       LuaBindingMethodGenerator.cs:163 (GenerateCode)        */     catch (System.Exception ex)
@@ -232,7 +232,7 @@
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*             IndentedStringBuilder.cs:75 (Block)              */         {
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*    LuaBindingIndexGenerator.cs:261 (AppendArrayIndexing)     */             var index = lua_tostring(L, 2);
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*    LuaBindingIndexGenerator.cs:278 (AppendArrayIndexing)     */             var element = obj[index];
-/*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */             PushValue(L, element);
+/*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */             PushValue(L, element);
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*    LuaBindingIndexGenerator.cs:280 (AppendArrayIndexing)     */             return 1;
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */         }
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*    LuaBindingIndexGenerator.cs:283 (AppendArrayIndexing)     */

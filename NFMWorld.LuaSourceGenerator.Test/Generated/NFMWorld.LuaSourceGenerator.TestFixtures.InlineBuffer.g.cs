@@ -74,7 +74,7 @@
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*    LuaBindingIndexGenerator.cs:274 (AppendArrayIndexing)     */                 goto fail;
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */             }
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*    LuaBindingIndexGenerator.cs:278 (AppendArrayIndexing)     */             var element = obj[index];
-/*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*              Helpers.cs:351 (GeneratePushValue)              */             PushValue(L, element);
+/*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*              Helpers.cs:423 (GeneratePushValue)              */             PushValue(L, element);
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*    LuaBindingIndexGenerator.cs:280 (AppendArrayIndexing)     */             return 1;
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*            IndentedStringBuilder.cs:85 (Dispose)             */         }
 /*        LuaBindingTypeGenerator.cs:271 (GenerateCode)         */     /*    LuaBindingIndexGenerator.cs:283 (AppendArrayIndexing)     */

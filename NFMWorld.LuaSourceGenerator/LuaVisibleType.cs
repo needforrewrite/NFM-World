@@ -57,6 +57,7 @@ public record LuaVisibleEvent(EventInfo Event)
     public string LuaName => Event.GetCustomAttribute<LuaNameAttribute>()?.Name ?? Event.Name.ToCamelCase();
     public Type EventHandlerType => Event.EventHandlerType!;
     public MethodInfo InvokeMethod => EventHandlerType.GetMethod("Invoke")!;
+    public ParameterInfo[] Parameters => InvokeMethod.GetParameters().ToArray();
     public Type[] ParameterTypes => InvokeMethod.GetParameters().Select(p => p.ParameterType).ToArray();
     public Type ReturnType => InvokeMethod.ReturnType;
     public Type? DeclaringType => Event.DeclaringType;

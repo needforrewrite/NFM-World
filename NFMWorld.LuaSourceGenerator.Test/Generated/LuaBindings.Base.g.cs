@@ -684,23 +684,23 @@
 /*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */         throw new NotSupportedException($"Event delegate type {typeof(TDelegate)} is not supported");
 /*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */     }
 /*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */ 
-    private static TDelegate? GetExistingEventDelegate<TDelegate>(lua_State L, int funcIdx)
-        where TDelegate : Delegate
-    {
-        // push the saved functions onto the stack and compare with lua_rawequal
-        foreach (var (invoker, delegateRef) in _eventDelegateRefs)
-        {
-            lua_rawgeti(L, LUA_REGISTRYINDEX, delegateRef.FuncRef);
-            lua_pushvalue(L, funcIdx);
-            var isEqual = lua_rawequal(L, -1, -2) == 1;
-            lua_pop(L, 2); // pop the two function references
-            if (isEqual)
-            {
-                return (TDelegate)delegateRef.Delegate;
-            }
-        }
-          return default;
-    }
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */     private static TDelegate? GetExistingEventDelegate<TDelegate>(lua_State L, int funcIdx)
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */         where TDelegate : Delegate
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */         // push the saved functions onto the stack and compare with lua_rawequal
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */         foreach (var (invoker, delegateRef) in _eventDelegateRefs)
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */             lua_rawgeti(L, LUA_REGISTRYINDEX, delegateRef.FuncRef);
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */             lua_pushvalue(L, funcIdx);
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */             var isEqual = lua_rawequal(L, -1, -2) != 0;
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */             lua_pop(L, 2); // pop the two function references
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */             if (isEqual)
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */             {
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */                 return (TDelegate)delegateRef.Delegate;
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */             }
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */         return default;
+/*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */     }
 /*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */ 
 /*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */     private abstract class BaseEventInvoker
 /*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */     {
@@ -727,326 +727,326 @@
 /*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */             luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
 /*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */         }
 /*        LuaBindingBaseGenerator.cs:633 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */     private sealed class EventInvoker1<T0> : BaseEventInvoker
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */         public void Invoke(T0 arg0)
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
-/*        LuaBindingBaseGenerator.cs:701 (GenerateCode)         */             PushValue(L, arg0);
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             if (lua_pcall(L, 1, 0, 0) != LUA_OK)
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             {
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */                 var errorMsg = lua_tostring(L, -1);
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */                 lua_pop(L, 1); // Remove error message from stack
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */                 throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             }
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */     
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */         ~EventInvoker1()
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             // Clean up Lua function reference when the invoker is garbage collected
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */     private sealed class EventInvoker2<T0, T1> : BaseEventInvoker
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */         public void Invoke(T0 arg0, T1 arg1)
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:688 (GenerateCode)         */             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
-/*        LuaBindingBaseGenerator.cs:701 (GenerateCode)         */             PushValue(L, arg0);
-/*        LuaBindingBaseGenerator.cs:701 (GenerateCode)         */             PushValue(L, arg1);
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             if (lua_pcall(L, 2, 0, 0) != LUA_OK)
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             {
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */                 var errorMsg = lua_tostring(L, -1);
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */                 lua_pop(L, 1); // Remove error message from stack
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */                 throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             }
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */     
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */         ~EventInvoker2()
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             // Clean up Lua function reference when the invoker is garbage collected
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */             luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:706 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void CleanupEventDelegates()
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         foreach (var entry in _eventDelegateRefs)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             entry.Value.Unsubscribe();
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         _eventDelegateRefs.Clear();
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */     private sealed class EventInvoker1<T0> : BaseEventInvoker
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */         public void Invoke(T0 arg0)
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+/*        LuaBindingBaseGenerator.cs:704 (GenerateCode)         */             PushValue(L, arg0);
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             if (lua_pcall(L, 1, 0, 0) != LUA_OK)
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             {
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */                 var errorMsg = lua_tostring(L, -1);
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */                 lua_pop(L, 1); // Remove error message from stack
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */                 throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             }
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */     
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */         ~EventInvoker1()
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             // Clean up Lua function reference when the invoker is garbage collected
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */     private sealed class EventInvoker2<T0, T1> : BaseEventInvoker
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */         public void Invoke(T0 arg0, T1 arg1)
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:691 (GenerateCode)         */             lua_rawgeti(L, LUA_REGISTRYINDEX, FuncRef);
+/*        LuaBindingBaseGenerator.cs:704 (GenerateCode)         */             PushValue(L, arg0);
+/*        LuaBindingBaseGenerator.cs:704 (GenerateCode)         */             PushValue(L, arg1);
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             if (lua_pcall(L, 2, 0, 0) != LUA_OK)
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             {
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */                 var errorMsg = lua_tostring(L, -1);
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */                 lua_pop(L, 1); // Remove error message from stack
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */                 throw new LuaException($"Error invoking Lua event handler: {errorMsg}");
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             }
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */     
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */         ~EventInvoker2()
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             // Clean up Lua function reference when the invoker is garbage collected
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */             luaL_unref(L, LUA_REGISTRYINDEX, FuncRef);
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:709 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void CleanupEventDelegates()
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         foreach (var entry in _eventDelegateRefs)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             entry.Value.Unsubscribe();
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         _eventDelegateRefs.Clear();
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
     #endregion
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
     #region Shared Metamethods
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// <summary>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// Shared __gc metamethod for all .NET types.
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// </summary>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     private static int Shared__gc(lua_State L)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var ptr = lua_touserdata(L, 1);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         if (ptr != null)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var id = *(int*)ptr;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             RemoveObject(id);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         return 0;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// <summary>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// Shared __tostring metamethod for all .NET types.
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// </summary>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     private static int Shared__tostring(lua_State L)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var obj = GetObjectFromStack<object>(L, 1);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushstring(L, obj?.ToString() ?? "null");
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         return 1;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// <summary>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// Shared __pairs metamethod for enumerable .NET types.
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// </summary>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     private static int Shared__pairs(lua_State L)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var obj = GetObjectFromStack<IEnumerable>(L, 1);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         if (obj == null)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return luaL_error(L, "Object is not enumerable"u8);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         // Push the iterator function
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushcfunction(L, &Shared__next);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         // Push the enumerator (the userdata)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         PushOpaqueObject(L, obj.GetEnumerator());
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         // Push nil as the initial key
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushnil(L);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         return 3; // Return iterator, table, initial key
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// <summary>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// Shared iterator function for .NET enumerators.
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     /// </summary>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     private static int Shared__next(lua_State L)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var enumerator = GetObjectFromStack<IEnumerator>(L, 1);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         if (enumerator == null)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return luaL_error(L, "Enumerator is not valid"u8);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         if (enumerator.MoveNext())
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             PushValue(L, enumerator.Current);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 1; // Return the current value
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         else
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 0; // No more values
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     private static int Shared__len(lua_State L)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var obj = GetObjectFromStack<object>(L, 1);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         if (obj == null)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return luaL_error(L, "Object is null"u8);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         if (obj is Array arr)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             lua_pushinteger(L, arr.Length);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 1;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         else if (obj is ICollection coll)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             lua_pushinteger(L, coll.Count);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 1;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         else if (obj is IEnumerable enumerable)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             int count = 0;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var enumerator = enumerable.GetEnumerator();
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             try
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */                 while (enumerator.MoveNext())
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */                 {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */                     count++;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */                 }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             finally
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */                 (enumerator as IDisposable)?.Dispose();
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             lua_pushinteger(L, count);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 1;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         else
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return luaL_error(L, "Object does not have a length"u8);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// <summary>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// Shared __gc metamethod for all .NET types.
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// </summary>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     private static int Shared__gc(lua_State L)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var ptr = lua_touserdata(L, 1);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         if (ptr != null)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var id = *(int*)ptr;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             RemoveObject(id);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         return 0;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// <summary>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// Shared __tostring metamethod for all .NET types.
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// </summary>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     private static int Shared__tostring(lua_State L)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var obj = GetObjectFromStack<object>(L, 1);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushstring(L, obj?.ToString() ?? "null");
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         return 1;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// <summary>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// Shared __pairs metamethod for enumerable .NET types.
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// </summary>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     private static int Shared__pairs(lua_State L)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var obj = GetObjectFromStack<IEnumerable>(L, 1);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         if (obj == null)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return luaL_error(L, "Object is not enumerable"u8);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         // Push the iterator function
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushcfunction(L, &Shared__next);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         // Push the enumerator (the userdata)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         PushOpaqueObject(L, obj.GetEnumerator());
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         // Push nil as the initial key
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushnil(L);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         return 3; // Return iterator, table, initial key
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// <summary>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// Shared iterator function for .NET enumerators.
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     /// </summary>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     private static int Shared__next(lua_State L)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var enumerator = GetObjectFromStack<IEnumerator>(L, 1);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         if (enumerator == null)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return luaL_error(L, "Enumerator is not valid"u8);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         if (enumerator.MoveNext())
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             PushValue(L, enumerator.Current);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 1; // Return the current value
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         else
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 0; // No more values
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     private static int Shared__len(lua_State L)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var obj = GetObjectFromStack<object>(L, 1);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         if (obj == null)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return luaL_error(L, "Object is null"u8);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         if (obj is Array arr)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             lua_pushinteger(L, arr.Length);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 1;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         else if (obj is ICollection coll)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             lua_pushinteger(L, coll.Count);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 1;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         else if (obj is IEnumerable enumerable)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             int count = 0;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var enumerator = enumerable.GetEnumerator();
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             try
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */                 while (enumerator.MoveNext())
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */                 {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */                     count++;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */                 }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             finally
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */                 (enumerator as IDisposable)?.Dispose();
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             lua_pushinteger(L, count);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 1;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         else
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return luaL_error(L, "Object does not have a length"u8);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
     #endregion
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void DefineGlobalVariable<T>(lua_State L, string name, T value)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         PushValue(L, value);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_setglobal(L, name);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     // Keep delegates alive to prevent garbage collection
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     private static readonly DictionarySlim<nint, Delegate> _keptDelegates = new();
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg = ToObject<T>(luaState, 1)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             action(arg);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 0;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         };
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_setglobal(L, name);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var result = func();
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             PushValue(luaState, result);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 1;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         };
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_setglobal(L, name);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             action(arg1, arg2);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 0;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         };
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_setglobal(L, name);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var result = func(arg1);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             PushValue(luaState, result);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 1;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         };
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_setglobal(L, name);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg3 = ToObject<T3>(luaState, 3)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             action(arg1, arg2, arg3);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 0;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         };
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_setglobal(L, name);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var result = func(arg1, arg2);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             PushValue(luaState, result);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 1;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         };
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_setglobal(L, name);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg3 = ToObject<T3>(luaState, 3)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg4 = ToObject<T4>(luaState, 4)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             action(arg1, arg2, arg3, arg4);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 0;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         };
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_setglobal(L, name);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var arg3 = ToObject<T3>(luaState, 3)!;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             var result = func(arg1, arg2, arg3);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             PushValue(luaState, result);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */             return 1;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         };
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         lua_setglobal(L, name);
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     private static int Unreachable()
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         throw new InvalidOperationException("Unreachable code executed");
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     private static string FormatException(Exception ex)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */         return $"{ex.GetType().FullName}: {ex.Message}\n{ex.StackTrace}";
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ 
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ public class LuaException : Exception
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     public LuaException(string message) : base(message)
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     {
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */     }
-/*        LuaBindingBaseGenerator.cs:728 (GenerateCode)         */ }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void DefineGlobalVariable<T>(lua_State L, string name, T value)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         PushValue(L, value);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_setglobal(L, name);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     // Keep delegates alive to prevent garbage collection
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     private static readonly DictionarySlim<nint, Delegate> _keptDelegates = new();
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void DefineGlobalFunction<T>(lua_State L, string name, Action<T> action)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg = ToObject<T>(luaState, 1)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             action(arg);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 0;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         };
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_setglobal(L, name);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void DefineGlobalFunction<T>(lua_State L, string name, Func<T> func)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var result = func();
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             PushValue(luaState, result);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 1;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         };
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_setglobal(L, name);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Action<T1, T2> action)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             action(arg1, arg2);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 0;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         };
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_setglobal(L, name);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2>(lua_State L, string name, Func<T1, T2> func)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var result = func(arg1);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             PushValue(luaState, result);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 1;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         };
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_setglobal(L, name);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Action<T1, T2, T3> action)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg3 = ToObject<T3>(luaState, 3)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             action(arg1, arg2, arg3);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 0;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         };
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_setglobal(L, name);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2, T3>(lua_State L, string name, Func<T1, T2, T3> func)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var result = func(arg1, arg2);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             PushValue(luaState, result);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 1;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         };
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_setglobal(L, name);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Action<T1, T2, T3, T4> action)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg3 = ToObject<T3>(luaState, 3)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg4 = ToObject<T4>(luaState, 4)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             action(arg1, arg2, arg3, arg4);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 0;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         };
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_setglobal(L, name);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public static void DefineGlobalFunction<T1, T2, T3, T4>(lua_State L, string name, Func<T1, T2, T3, T4> func)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         Func<lua_State, int> wrapper = (lua_State luaState) =>
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg1 = ToObject<T1>(luaState, 1)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg2 = ToObject<T2>(luaState, 2)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var arg3 = ToObject<T3>(luaState, 3)!;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             var result = func(arg1, arg2, arg3);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             PushValue(luaState, result);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */             return 1;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         };
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         var funcPtr = (delegate* unmanaged[Cdecl]<lua_State, int>)Marshal.GetFunctionPointerForDelegate(wrapper);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         _keptDelegates.GetOrAddValueRef((nint)funcPtr) = wrapper;
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_pushcfunction(L, funcPtr);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         lua_setglobal(L, name);
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     private static int Unreachable()
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         throw new InvalidOperationException("Unreachable code executed");
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     private static string FormatException(Exception ex)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */         return $"{ex.GetType().FullName}: {ex.Message}\n{ex.StackTrace}";
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ 
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ public class LuaException : Exception
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     public LuaException(string message) : base(message)
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     {
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */     }
+/*        LuaBindingBaseGenerator.cs:731 (GenerateCode)         */ }
