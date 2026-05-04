@@ -30,3 +30,4 @@ replay_pid*
 *.user
 
 /publish
+*.lscache
