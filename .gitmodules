@@ -1,21 +1,28 @@
 [submodule "FNA"]
 	path = FNA
 	url = https://github.com/uwx/FNA
+	branch = master
 [submodule "FontStashSharp"]
 	path = FontStashSharp
 	url = https://github.com/uwx/FontStashSharp
+	branch = main
 [submodule "NvgSharp"]
 	path = NvgSharp
 	url = https://github.com/uwx/NvgSharp
+	branch = master
 [submodule "Facepunch.Steamworks"]
 	path = Facepunch.Steamworks
 	url = https://github.com/uwx/Facepunch.Steamworks
+	branch = master
 [submodule "Maxine.Extensions"]
 	path = Maxine.Extensions
 	url = https://github.com/uwx/Maxine.Extensions
+	branch = master
 [submodule "FontStashSharp.Base"]
 	path = FontStashSharp.Base
 	url = https://github.com/uwx/FontStashSharp.Base
+	branch = master
 [submodule "XamlX"]
 	path = XamlX
 	url = https://github.com/kekekeks/XamlX
+	branch = master
