@@ -48,6 +48,15 @@ public class Program : MoonWorks.Game
     public bool IsActive => true;
     #pragma warning restore CS0618
 
+    /// <summary>
+    /// Sets VSync on/off by changing the swapchain present mode.
+    /// </summary>
+    public void SetVSync(bool enabled)
+    {
+        var mode = enabled ? PresentMode.VSync : PresentMode.Immediate;
+        GraphicsDevice.SetSwapchainParameters(MainWindow, SwapchainComposition.SDR, mode);
+    }
+
     public static RenderTarget2D[] shadowRenderTargets { get; private set; }
     public static Texture[] shadowDepthTargets { get; private set; }
     public static Texture MainDepthTexture { get; private set; }
@@ -199,11 +208,11 @@ public class Program : MoonWorks.Game
                 ScreenMode = ScreenMode.Windowed,
                 SystemResizable = true
             },
-            FramePacingSettings.CreateCapped(
+            FramePacingSettings.CreateUncapped(
                 (int)Physics.TargetTps,
-                3
+                150
             ),
-            ShaderFormat.SPIRV,
+            ShaderFormat.DXIL,
             debugMode: false
         )
     {

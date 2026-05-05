@@ -460,6 +460,7 @@ public class SettingsMenu(Program game)
         if (game._graphics.SynchronizeWithVerticalRetrace != _vsync)
         {
             game._graphics.SynchronizeWithVerticalRetrace = _vsync;
+            game.SetVSync(_vsync);
             graphicsChanged = true;
         }
         
