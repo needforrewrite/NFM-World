@@ -1,5 +1,8 @@
+#nullable enable
+
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
@@ -52,10 +55,10 @@ public class ImGuiRenderer : IDisposable
 	private Shader _vertexShader;
 	private Shader _fragmentShader;
 	private GraphicsPipeline _pipeline;
-	private Sampler _sampler;
+	private readonly Sampler _sampler;
 
-	private GpuBuffer _vertexBuffer;
-	private GpuBuffer _indexBuffer;
+	private GpuBuffer? _vertexBuffer;
+	private GpuBuffer? _indexBuffer;
 	private int _vertexBufferSize;
 	private int _indexBufferSize;
 
@@ -86,6 +89,7 @@ public class ImGuiRenderer : IDisposable
 		SetupBackendCapabilities();
 	}
 
+	[MemberNotNull(nameof(_vertexShader), nameof(_fragmentShader))]
 	private void LoadShaders(TitleStorage storage, string shaderDir)
 	{
 		_vertexShader = ShaderCross.Create(
@@ -105,6 +109,7 @@ public class ImGuiRenderer : IDisposable
 		);
 	}
 
+	[MemberNotNull(nameof(_pipeline))]
 	private void CreatePipeline()
 	{
 		_pipeline = GraphicsPipeline.Create(_device, new GraphicsPipelineCreateInfo
@@ -139,10 +144,10 @@ public class ImGuiRenderer : IDisposable
 
 	private void SetupBackendCapabilities()
 	{
-		ImGuiIOPtr io = ImGui.GetIO();
+		var io = ImGui.GetIO();
 		io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
 
-		ImGuiPlatformIOPtr platformIO = ImGui.GetPlatformIO();
+		var platformIO = ImGui.GetPlatformIO();
 		platformIO.RendererTextureMaxWidth = 8192;
 		platformIO.RendererTextureMaxHeight = 8192;
 	}
@@ -151,8 +156,8 @@ public class ImGuiRenderer : IDisposable
 
 	public virtual unsafe ImTextureRef BindTexture(Texture texture)
 	{
-		IntPtr texId = new IntPtr(_nextTexId++);
-		_textures[(ImTextureID)texId] = new TextureInfo
+		var texId = new IntPtr(_nextTexId++);
+		_textures[texId] = new TextureInfo
 		{
 			Texture = texture,
 			IsManaged = false,
@@ -162,7 +167,7 @@ public class ImGuiRenderer : IDisposable
 
 	public virtual void UnbindTexture(ImTextureRef textureRef)
 	{
-		if (_textures.TryGetValue(textureRef.TexID, out TextureInfo textureInfo))
+		if (_textures.TryGetValue(textureRef.TexID, out var textureInfo))
 		{
 			if (textureInfo.IsManaged)
 				textureInfo.Texture?.Dispose();
@@ -181,14 +186,14 @@ public class ImGuiRenderer : IDisposable
 		ImGui.NewFrame();
 	}
 
-	public virtual void EndLayout(GpuCommandBuffer GpuCommandBuffer, RenderPass renderPass)
+	public virtual void EndLayout(GpuCommandBuffer gpuCommandBuffer, RenderPass renderPass)
 	{
 		ImGui.Render();
 		unsafe
 		{
-			ImDrawDataPtr drawData = ImGui.GetDrawData();
+			var drawData = ImGui.GetDrawData();
 			ProcessTextureUpdates(drawData);
-			RenderDrawData(GpuCommandBuffer, renderPass, drawData);
+			RenderDrawData(gpuCommandBuffer, renderPass, drawData);
 		}
 	}
 
@@ -204,7 +209,7 @@ public class ImGuiRenderer : IDisposable
 
 	private unsafe void CreateManagedTexture(ImTextureDataPtr textureData)
 	{
-		TextureFormat format = textureData.Format == ImTextureFormat.Rgba32
+		var format = textureData.Format == ImTextureFormat.Rgba32
 			? TextureFormat.R8G8B8A8Unorm
 			: TextureFormat.R8Unorm;
 
@@ -220,12 +225,12 @@ public class ImGuiRenderer : IDisposable
 
 	private unsafe void UpdateManagedTexture(ImTextureDataPtr textureData)
 	{
-		IntPtr texId = textureData.GetTexID();
-		if (!_textures.TryGetValue(texId, out TextureInfo textureInfo) || textureInfo.Texture == null)
+		var texId = textureData.GetTexID();
+		if (!_textures.TryGetValue(texId, out var textureInfo) || textureInfo.Texture == null)
 			return;
 
 		var texture = textureInfo.Texture;
-		TextureFormat newFormat = textureData.Format == ImTextureFormat.Rgba32
+		var newFormat = textureData.Format == ImTextureFormat.Rgba32
 			? TextureFormat.R8G8B8A8Unorm
 			: TextureFormat.R8Unorm;
 
@@ -245,8 +250,8 @@ public class ImGuiRenderer : IDisposable
 
 	private unsafe void UploadTextureData(Texture texture, ImTextureDataPtr textureData)
 	{
-		int bytesPerPixel = textureData.Format == ImTextureFormat.Rgba32 ? 4 : 1;
-		uint dataSize = (uint)(textureData.Width * textureData.Height * bytesPerPixel);
+		var bytesPerPixel = textureData.Format == ImTextureFormat.Rgba32 ? 4 : 1;
+		var dataSize = (uint)(textureData.Width * textureData.Height * bytesPerPixel);
 
 		var transferBuffer = TransferBuffer.Create<byte>(_device, TransferBufferUsage.Upload, dataSize);
 		var span = transferBuffer.Map<byte>(false);
@@ -263,8 +268,8 @@ public class ImGuiRenderer : IDisposable
 
 	private void DestroyManagedTexture(ImTextureDataPtr textureData)
 	{
-		IntPtr texId = textureData.GetTexID();
-		if (_textures.TryGetValue(texId, out TextureInfo textureInfo))
+		var texId = textureData.GetTexID();
+		if (_textures.TryGetValue(texId, out var textureInfo))
 		{
 			if (textureInfo.IsManaged)
 				textureInfo.Texture?.Dispose();
@@ -288,7 +293,7 @@ public class ImGuiRenderer : IDisposable
 		foreach (var scancode in Enum.GetValues<ScanCode>())
 		{
 			if (scancode == ScanCode.Unknown) continue;
-			if (TryMapKey(scancode, out ImGuiKey imguiKey))
+			if (TryMapKey(scancode, out var imguiKey))
 				io.AddKeyEvent(imguiKey, keyboard.IsHeld(scancode));
 		}
 	}
@@ -350,11 +355,11 @@ public class ImGuiRenderer : IDisposable
 	private unsafe void ProcessTextureUpdates(ImDrawDataPtr drawData)
 	{
 		if (drawData.Textures.Data == null) return;
-		for (int i = 0; i < drawData.Textures.Size; i++)
+		for (var i = 0; i < drawData.Textures.Size; i++)
 			UpdateTexture(drawData.Textures.Data[i]);
 	}
 
-	private unsafe void RenderDrawData(GpuCommandBuffer GpuCommandBuffer, RenderPass renderPass, ImDrawData* drawData)
+	private unsafe void RenderDrawData(GpuCommandBuffer gpuCommandBuffer, RenderPass renderPass, ImDrawData* drawData)
 	{
 		if (drawData->TotalVtxCount == 0) return;
 
@@ -370,14 +375,14 @@ public class ImGuiRenderer : IDisposable
 			io.DisplaySize.Y, 0f,
 			-1f, 1f
 		);
-		GpuCommandBuffer.PushVertexUniformData(new VertexUniforms { ProjectionMatrix = projection });
+		gpuCommandBuffer.PushVertexUniformData(new VertexUniforms { ProjectionMatrix = projection });
 
 		renderPass.BindGraphicsPipeline(_pipeline);
 		renderPass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
 		renderPass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.Sixteen);
 		renderPass.SetViewport(new Viewport { X = 0, Y = 0, W = (uint)io.DisplaySize.X, H = (uint)io.DisplaySize.Y, MinDepth = 0, MaxDepth = 1 });
 
-		RenderCommandLists(GpuCommandBuffer, renderPass, drawData);
+		RenderCommandLists(gpuCommandBuffer, renderPass, drawData);
 	}
 
 	private unsafe void UpdateBuffers(ImDrawData* drawData)
@@ -406,12 +411,12 @@ public class ImGuiRenderer : IDisposable
 		var idxSpan = idxTransfer.Map<byte>(false);
 
 		int vtxOffset = 0, idxOffset = 0;
-		int vtxStride = sizeof(ImGuiVertex);
-		for (int n = 0; n < drawData->CmdListsCount; n++)
+		var vtxStride = sizeof(ImGuiVertex);
+		for (var n = 0; n < drawData->CmdListsCount; n++)
 		{
 			ImDrawList* cmdList = drawData->CmdLists.Data[n];
-			int vtxSize = cmdList->VtxBuffer.Size * vtxStride;
-			int idxSize = cmdList->IdxBuffer.Size * sizeof(ushort);
+			var vtxSize = cmdList->VtxBuffer.Size * vtxStride;
+			var idxSize = cmdList->IdxBuffer.Size * sizeof(ushort);
 
 			new Span<byte>(cmdList->VtxBuffer.Data, vtxSize)
 				.CopyTo(vtxSpan.Slice(vtxOffset * vtxStride, vtxSize));
@@ -444,19 +449,19 @@ public class ImGuiRenderer : IDisposable
 		idxTransfer.Dispose();
 	}
 
-	private unsafe void RenderCommandLists(GpuCommandBuffer GpuCommandBuffer, RenderPass renderPass, ImDrawData* drawData)
+	private unsafe void RenderCommandLists(GpuCommandBuffer gpuCommandBuffer, RenderPass renderPass, ImDrawData* drawData)
 	{
 		int vtxOffset = 0, idxOffset = 0;
-		for (int n = 0; n < drawData->CmdListsCount; n++)
+		for (var n = 0; n < drawData->CmdListsCount; n++)
 		{
 			ImDrawList* cmdList = drawData->CmdLists.Data[n];
-			for (int cmdi = 0; cmdi < cmdList->CmdBuffer.Size; cmdi++)
+			for (var cmdi = 0; cmdi < cmdList->CmdBuffer.Size; cmdi++)
 			{
-				ImDrawCmd* drawCmd = &cmdList->CmdBuffer.Data[cmdi];
+				var drawCmd = &cmdList->CmdBuffer.Data[cmdi];
 				if (drawCmd->ElemCount == 0) continue;
 
-				ImTextureID texId = drawCmd->TexRef.GetTexID();
-				if (!_textures.TryGetValue(texId, out TextureInfo textureInfo) || textureInfo.Texture == null)
+				var texId = drawCmd->TexRef.GetTexID();
+				if (!_textures.TryGetValue(texId, out var textureInfo) || textureInfo.Texture == null)
 					throw new InvalidOperationException($"Could not find a texture with id '{texId}'");
 
 				renderPass.SetScissor(new Rect
@@ -484,10 +489,10 @@ public class ImGuiRenderer : IDisposable
 
 	public void Dispose()
 	{
-		_vertexShader?.Dispose();
-		_fragmentShader?.Dispose();
-		_pipeline?.Dispose();
-		_sampler?.Dispose();
+		_vertexShader.Dispose();
+		_fragmentShader.Dispose();
+		_pipeline.Dispose();
+		_sampler.Dispose();
 		_vertexBuffer?.Dispose();
 		_indexBuffer?.Dispose();
 

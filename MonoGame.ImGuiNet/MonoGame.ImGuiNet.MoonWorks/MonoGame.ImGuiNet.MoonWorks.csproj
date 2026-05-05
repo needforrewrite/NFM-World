@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="Shaders\**\*">
+        <Content Include="data\shaders\**\*">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
     </ItemGroup>
@@ -18,5 +18,9 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\MoonWorks\MoonWorks.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="data\" />
     </ItemGroup>
 </Project>
