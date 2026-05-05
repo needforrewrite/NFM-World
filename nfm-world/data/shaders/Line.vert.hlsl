@@ -1,29 +1,28 @@
 // Line.vert.hlsl — Line vertex shader (replaces Line.fx "Basic" technique VS)
 
 #include "Mad.hlsli"
+#include "SDLGPURegisters.hlsli"
 
-cbuffer LineUniforms : register(b0, space1)
+cbuffer LineUniforms : SDL_VS_UNIFORM(0)
 {
     float4x4 View;
     float4x4 Projection;
     float4x4 ViewProj;
-    float3 CameraPosition;
-    float Alpha;
-    float3 SnapColor;
-    float FogDistance;
-    float3 LightDirection;
-    float FogDensity;
-    float3 FogColor;
-    float Darken;
-    float3 BaseColor;
-    float RandomFloat;
-    float2 EnvironmentLight;
-    bool IsFullbright;
-    bool UseBaseColor;
-    bool Expand;
-    float HalfThickness;
-    float ChargedBlinkAmount;
-    float3 _pad;
+    float3   CameraPosition;
+    float    Alpha;
+    float3   SnapColor;
+    float    Darken;
+    float3   LightDirection;
+    float    RandomFloat;
+    float2   EnvironmentLight;
+    bool     IsFullbright;
+    bool     UseBaseColor;
+    float3   BaseColor;
+    bool     Expand;
+    float    HalfThickness;
+    float    ChargedBlinkAmount;
+    float2   _pad;
+    FogParams Fog;
 };
 
 struct VSInput
@@ -113,7 +112,7 @@ VSOutput main(VSInput input)
         color.b = 1.0;
     }
 
-    VS_ApplyFog(color, viewPos.xyz, FogColor, FogDistance, FogDensity);
+    VS_ApplyFog(color, viewPos.xyz, Fog.Color, Fog.Distance, Fog.Density);
     VS_ColorCorrect(color);
 
     output.Color = float4(color, min(alphaOverride, Alpha));

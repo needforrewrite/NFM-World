@@ -1,5 +1,9 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
+using RasterizerState = nfm_world.compat.RasterizerState;
+using DepthStencilState = nfm_world.compat.DepthStencilState;
+using BlendState = nfm_world.compat.BlendState;
+using nfm_world.compat;
+using MoonWorks.Graphics;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.SoftFloat;

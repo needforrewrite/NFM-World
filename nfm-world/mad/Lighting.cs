@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
+using nfm_world.compat;
+using MoonWorks.Graphics;
 using nfm_world.camera;
 
 namespace nfm_world;

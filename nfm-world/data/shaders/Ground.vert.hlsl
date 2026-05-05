@@ -1,15 +1,13 @@
 // Ground.vert.hlsl — Ground vertex shader (replaces Ground.fx "Fullbright" technique VS)
 
 #include "Mad.hlsli"
+#include "SDLGPURegisters.hlsli"
 
-cbuffer GroundUniforms : register(b0, space1)
+cbuffer GroundUniforms : SDL_VS_UNIFORM(0)
 {
-    float4x4 WorldView;
-    float4x4 WorldViewProj;
-    float3 FogColor;
-    float FogDistance;
-    float FogDensity;
-    float3 _pad;
+    float4x4  WorldView;
+    float4x4  WorldViewProj;
+    FogParams Fog;
 };
 
 struct VSInput

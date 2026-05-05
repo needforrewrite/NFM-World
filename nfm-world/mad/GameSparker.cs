@@ -1,6 +1,8 @@
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Microsoft.Xna.Framework.Graphics;
+using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.mad.rad;

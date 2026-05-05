@@ -1,13 +1,21 @@
 // Ground.frag.hlsl — Ground fragment shader (replaces Ground.fx "Fullbright" technique PS)
 
 #include "Mad.hlsli"
+#include "SDLGPURegisters.hlsli"
 
-cbuffer GroundFragUniforms : register(b0, space3)
+// ─── Resources (fragment stage) ─────────────────────────────────────────────
+
+Texture2D      ShadowMap0        : SDL_PS_TEXTURE(0);
+SamplerState   ShadowMapSampler0 : SDL_PS_SAMPLER(0);
+Texture2D      ShadowMap1        : SDL_PS_TEXTURE(1);
+SamplerState   ShadowMapSampler1 : SDL_PS_SAMPLER(1);
+Texture2D      ShadowMap2        : SDL_PS_TEXTURE(2);
+SamplerState   ShadowMapSampler2 : SDL_PS_SAMPLER(2);
+
+cbuffer GroundFragUniforms : SDL_PS_UNIFORM(0)
 {
-    float3 FogColor;
-    float FogDistance;
-    float FogDensity;
-    float3 _pad;
+    FogParams    Fog;
+    ShadowParams Shadow;
 };
 
 struct PSInput
@@ -22,9 +30,12 @@ float4 main(PSInput input) : SV_TARGET
 {
     float3 diffuse = input.Color.xyz;
 
-    VS_ApplyFog(diffuse, input.Position1.z, FogColor, FogDistance, FogDensity);
+    VS_ApplyFog(diffuse, input.Position1.z, Fog.Color, Fog.Distance, Fog.Density);
 
-    PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1));
+    PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1), Shadow,
+        ShadowMap0, ShadowMapSampler0,
+        ShadowMap1, ShadowMapSampler1,
+        ShadowMap2, ShadowMapSampler2);
 
     return float4(diffuse, input.Color.w);
 }

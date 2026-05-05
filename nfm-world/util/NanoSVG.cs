@@ -6,7 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Buffers;
-using Microsoft.Xna.Framework;
 using nfm_world.driverinterface;
 using NvgSharp;
 using static NanoSVG.NSVGpaintType;
@@ -321,19 +320,19 @@ public static unsafe partial class Methods
 
 public static unsafe class NanoSVG
 {
-	static Color getNVGColor(uint color)
+	static MoonWorks.Graphics.Color getNVGColor(uint color)
 	{
-		return new Color(
-			(color >> 0) & 0xff,
-			(color >> 8) & 0xff,
-			(color >> 16) & 0xff,
-			(color >> 24) & 0xff
+		return new MoonWorks.Graphics.Color(
+			(byte)((color >> 0) & 0xff),
+			(byte)((color >> 8) & 0xff),
+			(byte)((color >> 16) & 0xff),
+			(byte)((color >> 24) & 0xff)
 		);
 	}
 
 	private static void nvgTransformInverse(
 		NvgContext vg,
-		InlineArray6<float> dst,
+		out Transform dst,
 		NSVGgradient._xform_e__FixedBuffer src)
 	{
 		var transform = new Transform
@@ -345,35 +344,19 @@ public static unsafe class NanoSVG
 			T5 = src[4],
 			T6 = src[5]
 		};
-		transform = transform.BuildInverse();
-		dst[0] = transform.T1;
-		dst[1] = transform.T2;
-		dst[2] = transform.T3;
-		dst[3] = transform.T4;
-		dst[4] = transform.T5;
-		dst[5] = transform.T6;
+		dst = transform.BuildInverse();
 	}
 
-	private static void nvgTransformPoint(out float dstx, out float dsty, InlineArray6<float> xform, float srcx, float srcy)
+	private static void nvgTransformPoint(out float dstx, out float dsty, Transform xform, float srcx, float srcy)
 	{
-		var transform = new Transform
-		{
-			T1 = xform[0],
-			T2 = xform[1],
-			T3 = xform[2],
-			T4 = xform[3],
-			T5 = xform[4],
-			T6 = xform[5]
-		};
-
-		transform.TransformPoint(out dstx, out dsty, srcx, srcy);
+		xform.TransformPoint(out dstx, out dsty, srcx, srcy);
 	}
 
 	private static Paint getPaint(NvgContext vg, NSVGpaint *p)
 	{
 		NSVGgradient *g;
-		Color icol, ocol;
-		var inverse = new InlineArray6<float>();
+		MoonWorks.Graphics.Color icol, ocol;
+		var inverse = new Transform();
 		Vector2 s, e;
 
 		Debug.Assert(p->type == (sbyte)NSVG_PAINT_LINEAR_GRADIENT || p->type == (sbyte)NSVG_PAINT_RADIAL_GRADIENT);
@@ -382,7 +365,7 @@ public static unsafe class NanoSVG
 		icol = getNVGColor(g->stops[0].color);
 		ocol = getNVGColor(g->stops[g->nstops - 1].color);
 
-		nvgTransformInverse(vg, inverse, g->xform);
+		nvgTransformInverse(vg, out inverse, g->xform);
 
 		// FIXME: Is it always the case that the gradient should be transformed from (0, 0) to (0, 1)?
 		nvgTransformPoint(out s.X, out s.Y, inverse, 0, 0);

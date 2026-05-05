@@ -43,12 +43,14 @@
         <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9"/>
         <PackageReference Include="ManagedBass" Version="4.0.1"/>
         <PackageReference Include="ManagedBass.Fx" Version="4.0.1"/>
+        <PackageReference Include="StbImageSharp" Version="2.30.15"/>
         <None Include="data\**\*" CopyToOutputDirectory="PreserveNewest"/>
         <PackageReference Include="ManagedBass.Opus" Version="4.0.1"/>
         <PackageReference Include="Yoga-CS" Version="1.0.0"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj"/>
+        <ProjectReference Include="..\FNA.Math\FNA.Math.csproj"/>
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj"/>
         <ProjectReference Include="..\Maxine.Extensions\RayTech.RayLog.MEL\RayTech.RayLog.MEL.csproj" />
         <ProjectReference Include="..\MonoGame.ImGuiNet\MonoGame.ImGuiNet.MoonWorks\MonoGame.ImGuiNet.MoonWorks.csproj"/>

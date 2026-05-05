@@ -1,7 +1,8 @@
 ﻿using System.Collections.Concurrent;
 using System.Text;
 using FontStashSharp;
-using Microsoft.Xna.Framework.Graphics;
+using MoonWorks.Graphics;
+using MoonWorks.Storage;
 using NanoSVG;
 using nfm_world_library.util;
 using nfm_world.driverinterface;
@@ -9,17 +10,30 @@ using nfm_world.skiadriver;
 using nfm_world.util;
 using NvgSharp;
 using TextHorizontalAlignment = nfm_world.driverinterface.TextHorizontalAlignment;
+using GpuCommandBuffer = MoonWorks.Graphics.CommandBuffer;
 
 namespace nfm_world;
 
 public class NanoVGRenderer
 {
     private NvgContext _context;
+    private MoonWorksRenderer _renderer;
+    private NanoVGBackend _backend;
 
-    public NanoVGRenderer(GraphicsDevice graphicsDevice)
+    public NanoVGRenderer(GraphicsDevice graphicsDevice, TitleStorage storage)
     {
-        _context = new NvgContext(graphicsDevice);
-        IBackend.Backend = new NanoVGBackend(_context);
+        _renderer = new MoonWorksRenderer(
+            graphicsDevice, storage,
+            "data/shaders", TextureFormat.B8G8R8A8Unorm);
+        _context = new NvgContext(_renderer);
+        _backend = new NanoVGBackend(_context, graphicsDevice);
+        IBackend.Backend = _backend;
+    }
+
+    public void SetRenderContext(GpuCommandBuffer commandBuffer, RenderPass renderPass, uint viewportWidth, uint viewportHeight)
+    {
+        _renderer.SetRenderContext(commandBuffer, renderPass, viewportWidth, viewportHeight);
+        _backend.ViewportSize = new Vector2(viewportWidth, viewportHeight);
     }
 
     public void Render()
@@ -28,9 +42,12 @@ public class NanoVGRenderer
     }
 }
 
-internal class NanoVGBackend(NvgContext context) : IBackend
+internal class NanoVGBackend(NvgContext context, GraphicsDevice graphicsDevice) : IBackend
 {
     public float Scale { get; set; } = 1;
+    
+    /// <summary>Set by NanoVGRenderer before each frame.</summary>
+    internal Vector2 ViewportSize;
     
     private ConcurrentDictionary<string, IImage> _imageCache = new();
 
@@ -46,7 +63,7 @@ internal class NanoVGBackend(NvgContext context) : IBackend
         {
             return NanoSVGImage.FromStream(stream);
         }
-        return new NanoVGImage(Texture2D.FromStream(context.GraphicsDevice, stream));
+        return new NanoVGImage(TextureHelper.LoadTexture(graphicsDevice, stream));
     }
     
     public IImage LoadCachedImage(string file)
@@ -117,14 +134,14 @@ internal class NanoVGBackend(NvgContext context) : IBackend
             }
             
             var gradientPaint = _context.LinearGradient(x, y, x + width, y + height, 
-                new Microsoft.Xna.Framework.Color(colors[0].R, colors[0].G, colors[0].B, colors[0].A), 
-                new Microsoft.Xna.Framework.Color(colors[1].R, colors[1].G, colors[1].B, colors[1].A));
+                new MoonWorks.Graphics.Color(colors[0].R, colors[0].G, colors[0].B, colors[0].A), 
+                new MoonWorks.Graphics.Color(colors[1].R, colors[1].G, colors[1].B, colors[1].A));
             _paint = gradientPaint;
         }
 
         public void SetColor(Color c)
         {
-            _paint = new Paint(new Microsoft.Xna.Framework.Color(c.R, c.G, c.B, c.A));
+            _paint = new Paint(new MoonWorks.Graphics.Color(c.R, c.G, c.B, c.A));
         }
 
         public void FillPolygon(ReadOnlySpan<int> x, ReadOnlySpan<int> y, int n)
@@ -289,7 +306,7 @@ internal class NanoVGBackend(NvgContext context) : IBackend
         SoundClip.SetAllVolumes(vol);
     }
 
-    public Vector2 Viewport => new(context.GraphicsDevice.Viewport.Width, context.GraphicsDevice.Viewport.Height);
+    public Vector2 Viewport => ViewportSize;
 }
 
 internal struct NanoVGFontMetrics(DynamicSpriteFont font) : IFontMetrics
@@ -378,9 +395,9 @@ public readonly struct TextLayout(DynamicSpriteFont font, string text, Vector2 b
     }
 }
 
-internal class NanoVGImage(Texture2D texture) : IImage
+internal class NanoVGImage(Texture texture) : IImage
 {
-    public Texture2D Texture { get; } = texture;
-    public int Height => Texture.Height;
-    public int Width => Texture.Width;
+    public Texture Texture { get; } = texture;
+    public int Height => (int)Texture.Height;
+    public int Width => (int)Texture.Width;
 }

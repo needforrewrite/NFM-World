@@ -1,6 +1,8 @@
 // Sky.vert.hlsl — Sky vertex shader (replaces Sky.fx "Fullbright" technique VS)
 
-cbuffer SkyUniforms : register(b0, space1)
+#include "SDLGPURegisters.hlsli"
+
+cbuffer SkyUniforms : SDL_VS_UNIFORM(0)
 {
     float4x4 WorldViewProj;
 };

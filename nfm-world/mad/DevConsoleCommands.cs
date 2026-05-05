@@ -1,3 +1,4 @@
+using nfm_world.compat;
 using System.Reflection;
 using nfm_world_library;
 using nfm_world_library.backend;

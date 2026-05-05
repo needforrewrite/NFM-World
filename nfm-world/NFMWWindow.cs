@@ -1,3 +1,5 @@
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
+using nfm_world.compat;
 using System.Collections.Frozen;
 using ManagedBass;
 using System.Diagnostics;
@@ -5,13 +7,14 @@ using System.Reflection;
 using Hexa.NET.ImGui;
 using ManagedBass;
 using Microsoft.Extensions.Logging;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using MonoGame.ImGuiNet;
+using MoonWorks;
+using MoonWorks.Graphics;
+using MoonWorks.Input;
+using MonoGame.ImGuiNet.MoonWorks;
 using nfm_world_library;
 using nfm_world_library.util;
 using nfm_world.driverinterface;
+using nfm_world.compat;
 using nfm_world.skiadriver;
 using nfm_world.ui.hud;
 using nfm_world.ui.yoga;
@@ -22,35 +25,50 @@ using Keys = nfm_world.util.Keys;
 namespace nfm_world;
 
 /// <summary>
-/// This sample demonstrates how to load a Direct2D1 bitmap from a file.
-/// This method will be part of a future version of SharpDX API.
+/// NFM-World main game class (MoonWorks).
 /// </summary>
-public class Program : Game
+public class Program : MoonWorks.Game
 {
-    public GraphicsDeviceManager _graphics;
-    public static SpriteBatch _spriteBatch { get; private set; }
-    public static Effect _polyShader { get; private set; }
-    public static Effect _lineShader { get; private set; }
-    public static Effect _skyShader { get; private set; }
-    public static Effect _groundShader { get; private set; }
-    public static Effect _mountainsShader { get; private set; }
+    public static Shader _polyVertexShader { get; private set; }
+    public static Shader _polyFragmentShader { get; private set; }
+    public static Shader _lineVertexShader { get; private set; }
+    public static Shader _lineFragmentShader { get; private set; }
+    public static Shader _skyVertexShader { get; private set; }
+    public static Shader _skyFragmentShader { get; private set; }
+    public static Shader _groundVertexShader { get; private set; }
+    public static Shader _groundFragmentShader { get; private set; }
+    public static Shader _mountainsVertexShader { get; private set; }
+    public static Shader _mountainsFragmentShader { get; private set; }
+
+    // FNA compat: Effect stubs for legacy rendering code
+    #pragma warning disable CS0618
+    public static Effect _polyShader { get; } = new();
+    public static Effect _lineShader { get; } = new();
+    public static Effect _skyShader { get; } = new();
+    public static Effect _groundShader { get; } = new();
+    public static Effect _mountainsShader { get; } = new();
+
+    // FNA compat: GraphicsDeviceManager stub
+    public GraphicsDeviceManager _graphics { get; } = new();
+    public bool IsFixedTimeStep { get; set; } = true;
+    public TimeSpan TargetElapsedTime { get; set; } = TimeSpan.FromMilliseconds(1000d / 60);
+    public bool IsActive => true;
+    #pragma warning restore CS0618
+
     public static RenderTarget2D[] shadowRenderTargets { get; private set; }
+    public static Texture[] shadowDepthTargets { get; private set; }
     private ImGuiRenderer _imguiRenderer;
     public static ImGuiRenderer ImguiRenderer { get; private set; }
 
     internal static int _lastFrameTime;
     internal static int _lastTickTime;
     internal static int _lastTickCount;
-    private KeyboardState oldKeyState;
-    private MouseState oldMouseState;
     private NanoVGRenderer _nvg;
     private TimeStep _tickTimeStep = new((1000f / Physics.TargetTps) / 1000f);
     public const int NumCascades = 3;
 
     private static bool loaded;
     private const int FrameDelay = (int) (1000 / 21.3f);
-    
-    private static readonly Microsoft.Xna.Framework.Input.Keys[] XnaKeys = Enum.GetValues<Microsoft.Xna.Framework.Input.Keys>();
 
     private static bool _yogaInspectorEnabled = false;
     private static int _yogaInspectorPage = 0;
@@ -60,210 +78,210 @@ public class Program : Game
     internal static Node? DebugUiRoot;
 #endif
 
-    private static Keys TranslateKey(Microsoft.Xna.Framework.Input.Keys key)
+    private static Keys TranslateScanCode(ScanCode scancode)
     {
-        return key switch
+        return scancode switch
         {
-            Microsoft.Xna.Framework.Input.Keys.Space => Keys.Space,
-            Microsoft.Xna.Framework.Input.Keys.D0 => Keys.D0,
-            Microsoft.Xna.Framework.Input.Keys.D1 => Keys.D1,
-            Microsoft.Xna.Framework.Input.Keys.D2 => Keys.D2,
-            Microsoft.Xna.Framework.Input.Keys.D3 => Keys.D3,
-            Microsoft.Xna.Framework.Input.Keys.D4 => Keys.D4,
-            Microsoft.Xna.Framework.Input.Keys.D5 => Keys.D5,
-            Microsoft.Xna.Framework.Input.Keys.D6 => Keys.D6,
-            Microsoft.Xna.Framework.Input.Keys.D7 => Keys.D7,
-            Microsoft.Xna.Framework.Input.Keys.D8 => Keys.D8,
-            Microsoft.Xna.Framework.Input.Keys.D9 => Keys.D9,
-            Microsoft.Xna.Framework.Input.Keys.OemSemicolon => Keys.OemSemicolon,
-            Microsoft.Xna.Framework.Input.Keys.A => Keys.A,
-            Microsoft.Xna.Framework.Input.Keys.B => Keys.B,
-            Microsoft.Xna.Framework.Input.Keys.C => Keys.C,
-            Microsoft.Xna.Framework.Input.Keys.D => Keys.D,
-            Microsoft.Xna.Framework.Input.Keys.E => Keys.E,
-            Microsoft.Xna.Framework.Input.Keys.F => Keys.F,
-            Microsoft.Xna.Framework.Input.Keys.G => Keys.G,
-            Microsoft.Xna.Framework.Input.Keys.H => Keys.H,
-            Microsoft.Xna.Framework.Input.Keys.I => Keys.I,
-            Microsoft.Xna.Framework.Input.Keys.J => Keys.J,
-            Microsoft.Xna.Framework.Input.Keys.K => Keys.K,
-            Microsoft.Xna.Framework.Input.Keys.L => Keys.L,
-            Microsoft.Xna.Framework.Input.Keys.M => Keys.M,
-            Microsoft.Xna.Framework.Input.Keys.N => Keys.N,
-            Microsoft.Xna.Framework.Input.Keys.O => Keys.O,
-            Microsoft.Xna.Framework.Input.Keys.P => Keys.P,
-            Microsoft.Xna.Framework.Input.Keys.Q => Keys.Q,
-            Microsoft.Xna.Framework.Input.Keys.R => Keys.R,
-            Microsoft.Xna.Framework.Input.Keys.S => Keys.S,
-            Microsoft.Xna.Framework.Input.Keys.T => Keys.T,
-            Microsoft.Xna.Framework.Input.Keys.U => Keys.U,
-            Microsoft.Xna.Framework.Input.Keys.V => Keys.V,
-            Microsoft.Xna.Framework.Input.Keys.W => Keys.W,
-            Microsoft.Xna.Framework.Input.Keys.X => Keys.X,
-            Microsoft.Xna.Framework.Input.Keys.Y => Keys.Y,
-            Microsoft.Xna.Framework.Input.Keys.Z => Keys.Z,
-            Microsoft.Xna.Framework.Input.Keys.Escape => Keys.Escape,
-            Microsoft.Xna.Framework.Input.Keys.Enter => Keys.Enter,
-            Microsoft.Xna.Framework.Input.Keys.Tab => Keys.Tab,
-            Microsoft.Xna.Framework.Input.Keys.Back => Keys.Back,
-            Microsoft.Xna.Framework.Input.Keys.Insert => Keys.Insert,
-            Microsoft.Xna.Framework.Input.Keys.Delete => Keys.Delete,
-            Microsoft.Xna.Framework.Input.Keys.Right => Keys.Right,
-            Microsoft.Xna.Framework.Input.Keys.Left => Keys.Left,
-            Microsoft.Xna.Framework.Input.Keys.Down => Keys.Down,
-            Microsoft.Xna.Framework.Input.Keys.Up => Keys.Up,
-            Microsoft.Xna.Framework.Input.Keys.PageUp => Keys.PageUp,
-            Microsoft.Xna.Framework.Input.Keys.PageDown => Keys.PageDown,
-            Microsoft.Xna.Framework.Input.Keys.Home => Keys.Home,
-            Microsoft.Xna.Framework.Input.Keys.End => Keys.End,
-            Microsoft.Xna.Framework.Input.Keys.CapsLock => Keys.CapsLock,
-            Microsoft.Xna.Framework.Input.Keys.Scroll => Keys.Scroll,
-            Microsoft.Xna.Framework.Input.Keys.NumLock => Keys.NumLock,
-            Microsoft.Xna.Framework.Input.Keys.PrintScreen => Keys.PrintScreen,
-            Microsoft.Xna.Framework.Input.Keys.Pause => Keys.Pause,
-            Microsoft.Xna.Framework.Input.Keys.F1 => Keys.F1,
-            Microsoft.Xna.Framework.Input.Keys.F2 => Keys.F2,
-            Microsoft.Xna.Framework.Input.Keys.F3 => Keys.F3,
-            Microsoft.Xna.Framework.Input.Keys.F4 => Keys.F4,
-            Microsoft.Xna.Framework.Input.Keys.F5 => Keys.F5,
-            Microsoft.Xna.Framework.Input.Keys.F6 => Keys.F6,
-            Microsoft.Xna.Framework.Input.Keys.F7 => Keys.F7,
-            Microsoft.Xna.Framework.Input.Keys.F8 => Keys.F8,
-            Microsoft.Xna.Framework.Input.Keys.F9 => Keys.F9,
-            Microsoft.Xna.Framework.Input.Keys.F10 => Keys.F10,
-            Microsoft.Xna.Framework.Input.Keys.F11 => Keys.F11,
-            Microsoft.Xna.Framework.Input.Keys.F12 => Keys.F12,
-            Microsoft.Xna.Framework.Input.Keys.F13 => Keys.F13,
-            Microsoft.Xna.Framework.Input.Keys.F14 => Keys.F14,
-            Microsoft.Xna.Framework.Input.Keys.F15 => Keys.F15,
-            Microsoft.Xna.Framework.Input.Keys.F16 => Keys.F16,
-            Microsoft.Xna.Framework.Input.Keys.F17 => Keys.F17,
-            Microsoft.Xna.Framework.Input.Keys.F18 => Keys.F18,
-            Microsoft.Xna.Framework.Input.Keys.F19 => Keys.F19,
-            Microsoft.Xna.Framework.Input.Keys.F20 => Keys.F20,
-            Microsoft.Xna.Framework.Input.Keys.F21 => Keys.F21,
-            Microsoft.Xna.Framework.Input.Keys.F22 => Keys.F22,
-            Microsoft.Xna.Framework.Input.Keys.F23 => Keys.F23,
-            Microsoft.Xna.Framework.Input.Keys.F24 => Keys.F24,
-            Microsoft.Xna.Framework.Input.Keys.NumPad0 => Keys.NumPad0,
-            Microsoft.Xna.Framework.Input.Keys.NumPad1 => Keys.NumPad1,
-            Microsoft.Xna.Framework.Input.Keys.NumPad2 => Keys.NumPad2,
-            Microsoft.Xna.Framework.Input.Keys.NumPad3 => Keys.NumPad3,
-            Microsoft.Xna.Framework.Input.Keys.NumPad4 => Keys.NumPad4,
-            Microsoft.Xna.Framework.Input.Keys.NumPad5 => Keys.NumPad5,
-            Microsoft.Xna.Framework.Input.Keys.NumPad6 => Keys.NumPad6,
-            Microsoft.Xna.Framework.Input.Keys.NumPad7 => Keys.NumPad7,
-            Microsoft.Xna.Framework.Input.Keys.NumPad8 => Keys.NumPad8,
-            Microsoft.Xna.Framework.Input.Keys.NumPad9 => Keys.NumPad9,
-            Microsoft.Xna.Framework.Input.Keys.LeftShift => Keys.LShiftKey,
-            Microsoft.Xna.Framework.Input.Keys.LeftControl => Keys.LControlKey,
-            Microsoft.Xna.Framework.Input.Keys.LeftAlt => Keys.Alt,
-            Microsoft.Xna.Framework.Input.Keys.RightShift => Keys.RShiftKey,
-            Microsoft.Xna.Framework.Input.Keys.RightControl => Keys.RControlKey,
-            Microsoft.Xna.Framework.Input.Keys.RightAlt => Keys.Alt,
-            Microsoft.Xna.Framework.Input.Keys.Select => Keys.Select,
-            Microsoft.Xna.Framework.Input.Keys.Print => Keys.Print,
-            Microsoft.Xna.Framework.Input.Keys.Execute => Keys.Execute,
-            Microsoft.Xna.Framework.Input.Keys.Help => Keys.Help,
-            Microsoft.Xna.Framework.Input.Keys.LeftWindows => Keys.LWin,
-            Microsoft.Xna.Framework.Input.Keys.RightWindows => Keys.RWin,
-            Microsoft.Xna.Framework.Input.Keys.Apps => Keys.Apps,
-            Microsoft.Xna.Framework.Input.Keys.Sleep => Keys.Sleep,
-            Microsoft.Xna.Framework.Input.Keys.Multiply => Keys.Multiply,
-            Microsoft.Xna.Framework.Input.Keys.Add => Keys.Add,
-            Microsoft.Xna.Framework.Input.Keys.Separator => Keys.Separator,
-            Microsoft.Xna.Framework.Input.Keys.Subtract => Keys.Subtract,
-            Microsoft.Xna.Framework.Input.Keys.Decimal => Keys.Decimal,
-            Microsoft.Xna.Framework.Input.Keys.Divide => Keys.Divide,
-            Microsoft.Xna.Framework.Input.Keys.BrowserBack => Keys.BrowserBack,
-            Microsoft.Xna.Framework.Input.Keys.BrowserForward => Keys.BrowserForward,
-            Microsoft.Xna.Framework.Input.Keys.BrowserRefresh => Keys.BrowserRefresh,
-            Microsoft.Xna.Framework.Input.Keys.BrowserStop => Keys.BrowserStop,
-            Microsoft.Xna.Framework.Input.Keys.BrowserSearch => Keys.BrowserSearch,
-            Microsoft.Xna.Framework.Input.Keys.BrowserFavorites => Keys.BrowserFavorites,
-            Microsoft.Xna.Framework.Input.Keys.BrowserHome => Keys.BrowserHome,
-            Microsoft.Xna.Framework.Input.Keys.VolumeMute => Keys.VolumeMute,
-            Microsoft.Xna.Framework.Input.Keys.VolumeDown => Keys.VolumeDown,
-            Microsoft.Xna.Framework.Input.Keys.VolumeUp => Keys.VolumeUp,
-            Microsoft.Xna.Framework.Input.Keys.MediaNextTrack => Keys.MediaNextTrack,
-            Microsoft.Xna.Framework.Input.Keys.MediaPreviousTrack => Keys.MediaPreviousTrack,
-            Microsoft.Xna.Framework.Input.Keys.MediaStop => Keys.MediaStop,
-            Microsoft.Xna.Framework.Input.Keys.MediaPlayPause => Keys.MediaPlayPause,
-            Microsoft.Xna.Framework.Input.Keys.LaunchMail => Keys.LaunchMail,
-            Microsoft.Xna.Framework.Input.Keys.SelectMedia => Keys.SelectMedia,
-            Microsoft.Xna.Framework.Input.Keys.LaunchApplication1 => Keys.LaunchApplication1,
-            Microsoft.Xna.Framework.Input.Keys.LaunchApplication2 => Keys.LaunchApplication2,
-            Microsoft.Xna.Framework.Input.Keys.OemPlus => Keys.Oemplus,
-            Microsoft.Xna.Framework.Input.Keys.OemComma => Keys.Oemcomma,
-            Microsoft.Xna.Framework.Input.Keys.OemMinus => Keys.OemMinus,
-            Microsoft.Xna.Framework.Input.Keys.OemPeriod => Keys.OemPeriod,
-            Microsoft.Xna.Framework.Input.Keys.OemQuestion => Keys.OemQuestion,
-            Microsoft.Xna.Framework.Input.Keys.OemTilde => Keys.Oemtilde,
-            Microsoft.Xna.Framework.Input.Keys.OemOpenBrackets => Keys.OemOpenBrackets,
-            Microsoft.Xna.Framework.Input.Keys.OemPipe => Keys.OemPipe,
-            Microsoft.Xna.Framework.Input.Keys.OemCloseBrackets => Keys.OemCloseBrackets,
-            Microsoft.Xna.Framework.Input.Keys.OemQuotes => Keys.OemQuotes,
-            Microsoft.Xna.Framework.Input.Keys.Oem8 => Keys.Oem8,
-            Microsoft.Xna.Framework.Input.Keys.OemBackslash => Keys.OemBackslash,
-            Microsoft.Xna.Framework.Input.Keys.ProcessKey => Keys.ProcessKey,
-            Microsoft.Xna.Framework.Input.Keys.Attn => Keys.Attn,
-            Microsoft.Xna.Framework.Input.Keys.Crsel => Keys.Crsel,
-            Microsoft.Xna.Framework.Input.Keys.Exsel => Keys.Exsel,
-            Microsoft.Xna.Framework.Input.Keys.EraseEof => Keys.EraseEof,
-            Microsoft.Xna.Framework.Input.Keys.Play => Keys.Play,
-            Microsoft.Xna.Framework.Input.Keys.Zoom => Keys.Zoom,
-            Microsoft.Xna.Framework.Input.Keys.Pa1 => Keys.Pa1,
-            Microsoft.Xna.Framework.Input.Keys.OemClear => Keys.OemClear,
-            Microsoft.Xna.Framework.Input.Keys.ChatPadGreen => Keys.None,
-            Microsoft.Xna.Framework.Input.Keys.ChatPadOrange => Keys.None,
-            Microsoft.Xna.Framework.Input.Keys.ImeConvert => Keys.IMEConvert,
-            Microsoft.Xna.Framework.Input.Keys.ImeNoConvert => Keys.IMENonconvert,
-            Microsoft.Xna.Framework.Input.Keys.Kana => Keys.KanaMode,
-            Microsoft.Xna.Framework.Input.Keys.Kanji => Keys.KanjiMode,
-            Microsoft.Xna.Framework.Input.Keys.OemAuto => Keys.None,
-            Microsoft.Xna.Framework.Input.Keys.OemCopy => Keys.None,
-            Microsoft.Xna.Framework.Input.Keys.OemEnlW => Keys.None,
-            Microsoft.Xna.Framework.Input.Keys.None => Keys.None,
+            ScanCode.Space => Keys.Space,
+            ScanCode.D0 => Keys.D0,
+            ScanCode.D1 => Keys.D1,
+            ScanCode.D2 => Keys.D2,
+            ScanCode.D3 => Keys.D3,
+            ScanCode.D4 => Keys.D4,
+            ScanCode.D5 => Keys.D5,
+            ScanCode.D6 => Keys.D6,
+            ScanCode.D7 => Keys.D7,
+            ScanCode.D8 => Keys.D8,
+            ScanCode.D9 => Keys.D9,
+            ScanCode.Semicolon => Keys.OemSemicolon,
+            ScanCode.A => Keys.A,
+            ScanCode.B => Keys.B,
+            ScanCode.C => Keys.C,
+            ScanCode.D => Keys.D,
+            ScanCode.E => Keys.E,
+            ScanCode.F => Keys.F,
+            ScanCode.G => Keys.G,
+            ScanCode.H => Keys.H,
+            ScanCode.I => Keys.I,
+            ScanCode.J => Keys.J,
+            ScanCode.K => Keys.K,
+            ScanCode.L => Keys.L,
+            ScanCode.M => Keys.M,
+            ScanCode.N => Keys.N,
+            ScanCode.O => Keys.O,
+            ScanCode.P => Keys.P,
+            ScanCode.Q => Keys.Q,
+            ScanCode.R => Keys.R,
+            ScanCode.S => Keys.S,
+            ScanCode.T => Keys.T,
+            ScanCode.U => Keys.U,
+            ScanCode.V => Keys.V,
+            ScanCode.W => Keys.W,
+            ScanCode.X => Keys.X,
+            ScanCode.Y => Keys.Y,
+            ScanCode.Z => Keys.Z,
+            ScanCode.Escape => Keys.Escape,
+            ScanCode.Return => Keys.Enter,
+            ScanCode.Tab => Keys.Tab,
+            ScanCode.Backspace => Keys.Back,
+            ScanCode.Insert => Keys.Insert,
+            ScanCode.Delete => Keys.Delete,
+            ScanCode.Right => Keys.Right,
+            ScanCode.Left => Keys.Left,
+            ScanCode.Down => Keys.Down,
+            ScanCode.Up => Keys.Up,
+            ScanCode.PageUp => Keys.PageUp,
+            ScanCode.PageDown => Keys.PageDown,
+            ScanCode.Home => Keys.Home,
+            ScanCode.End => Keys.End,
+            ScanCode.CapsLock => Keys.CapsLock,
+            ScanCode.ScrollLock => Keys.Scroll,
+            ScanCode.NumLockClear => Keys.NumLock,
+            ScanCode.PrintScreen => Keys.PrintScreen,
+            ScanCode.Pause => Keys.Pause,
+            ScanCode.F1 => Keys.F1,
+            ScanCode.F2 => Keys.F2,
+            ScanCode.F3 => Keys.F3,
+            ScanCode.F4 => Keys.F4,
+            ScanCode.F5 => Keys.F5,
+            ScanCode.F6 => Keys.F6,
+            ScanCode.F7 => Keys.F7,
+            ScanCode.F8 => Keys.F8,
+            ScanCode.F9 => Keys.F9,
+            ScanCode.F10 => Keys.F10,
+            ScanCode.F11 => Keys.F11,
+            ScanCode.F12 => Keys.F12,
+            ScanCode.Keypad0 => Keys.NumPad0,
+            ScanCode.Keypad1 => Keys.NumPad1,
+            ScanCode.Keypad2 => Keys.NumPad2,
+            ScanCode.Keypad3 => Keys.NumPad3,
+            ScanCode.Keypad4 => Keys.NumPad4,
+            ScanCode.Keypad5 => Keys.NumPad5,
+            ScanCode.Keypad6 => Keys.NumPad6,
+            ScanCode.Keypad7 => Keys.NumPad7,
+            ScanCode.Keypad8 => Keys.NumPad8,
+            ScanCode.Keypad9 => Keys.NumPad9,
+            ScanCode.LeftShift => Keys.LShiftKey,
+            ScanCode.LeftControl => Keys.LControlKey,
+            ScanCode.LeftAlt => Keys.Alt,
+            ScanCode.RightShift => Keys.RShiftKey,
+            ScanCode.RightControl => Keys.RControlKey,
+            ScanCode.RightAlt => Keys.Alt,
+            ScanCode.KeypadMultiply => Keys.Multiply,
+            ScanCode.KeypadPlus => Keys.Add,
+            ScanCode.KeypadMinus => Keys.Subtract,
+            ScanCode.KeypadPeriod => Keys.Decimal,
+            ScanCode.KeypadDivide => Keys.Divide,
+            ScanCode.Equals => Keys.Oemplus,
+            ScanCode.Comma => Keys.Oemcomma,
+            ScanCode.Minus => Keys.OemMinus,
+            ScanCode.Period => Keys.OemPeriod,
+            ScanCode.Slash => Keys.OemQuestion,
+            ScanCode.Grave => Keys.Oemtilde,
+            ScanCode.LeftBracket => Keys.OemOpenBrackets,
+            ScanCode.Backslash => Keys.OemPipe,
+            ScanCode.RightBracket => Keys.OemCloseBrackets,
+            ScanCode.Apostrophe => Keys.OemQuotes,
             _ => Keys.None
         };
     }
 
+    // Track previous keyboard/mouse state for edge detection
+    private readonly HashSet<ScanCode> _prevKeysDown = new();
+    private bool _prevMouseLeft;
+    private bool _prevMouseRight;
+    private int _prevMouseX;
+    private int _prevMouseY;
+    private int _prevMouseWheel;
+
     private Program()
+        : base(
+            new AppInfo("NFM-World", "NFM-World"),
+            new WindowCreateInfo
+            {
+                WindowTitle = "NFM-World",
+                WindowWidth = 1280,
+                WindowHeight = 720,
+                ScreenMode = ScreenMode.Windowed,
+                SystemResizable = true
+            },
+            FramePacingSettings.CreateCapped(
+                (int)Physics.TargetTps,
+                3
+            ),
+            ShaderFormat.SPIRV,
+            debugMode: false
+        )
     {
         GameThreadContext.Install();
-        
-        _graphics = new GraphicsDeviceManager(this);
-        _graphics.GraphicsProfile = GraphicsProfile.Reach;
-        Content.RootDirectory = "Content";
-        IsMouseVisible = true;
 
-        _graphics.SynchronizeWithVerticalRetrace = true;
-        IsFixedTimeStep = false;
-        TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / Physics.TargetTps);
-        _graphics.PreferredBackBufferWidth = 1280;
-        _graphics.PreferredBackBufferHeight = 720;
-        _graphics.PreferMultiSampling = false;
-
-        // IBackend.Backend = new DummyBackend();
-        Window.AllowUserResizing = true;
-        Window.ClientSizeChanged += (sender, args) =>
+        MainWindow.RegisterSizeChangeCallback((w, h) =>
         {
-            var viewport = new Viewport(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height);
-            GraphicsDevice.Viewport = viewport;
-            // _skia.RemakeRenderTarget(Window.ClientBounds.Width, Window.ClientBounds.Height);
-            GameSparker.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
-            GameSparker.CurrentPhase.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
-            G.Scale = Window.ClientBounds.Height / 720f;
-        };
+            GameSparker.WindowSizeChanged((int)w, (int)h);
+            GameSparker.CurrentPhase.WindowSizeChanged((int)w, (int)h);
+            G.Scale = h / 720f;
+        });
+
+#if USE_BASS
+        Bass.Init();
+#endif
+
+#if DEBUG
+#pragma warning disable IL3050
+#pragma warning disable IL2026
+        XamlHotReload.Initialize();
+#pragma warning restore IL2026
+#pragma warning restore IL3050
+#endif
+
+        _nvg = new NanoVGRenderer(GraphicsDevice, RootTitleStorage);
+
+        _imguiRenderer = new ImGuiRenderer(
+            GraphicsDevice, MainWindow, RootTitleStorage,
+            "data/shaders", TextureFormat.B8G8R8A8Unorm);
+        ImguiRenderer = _imguiRenderer;
+
+        LoadShaders();
+        LoadShadowTargets();
+
+        GameSparker.Load(this);
+
+        _imguiRenderer.RebuildFontAtlas();
+        SetupImGuiStyle();
+    }
+    private void LoadShaders()
+    {
+        // TODO: Load shaders via ShaderCross when porting 3D rendering pipeline.
+        // For now, shader loading is deferred until the 3D rendering migration.
+        // The old FNA Effect shaders (.fxb) need to be replaced with HLSL source + ShaderCross.
     }
 
-    protected override void Update(GameTime gameTime)
+    private void LoadShadowTargets()
     {
-        base.Update(gameTime);
-        FPSCounter.Update(gameTime);
+        shadowRenderTargets = new RenderTarget2D[NumCascades];
+        shadowDepthTargets = new Texture[NumCascades];
+        for (int i = 0; i < NumCascades; i++)
+        {
+            shadowRenderTargets[i] = new RenderTarget2D(
+                GraphicsDevice, 2048, 2048, false,
+                SurfaceFormat.Single, DepthFormat.None);
+            shadowDepthTargets[i] = Texture.Create2D(
+                GraphicsDevice, 2048, 2048,
+                GraphicsDevice.SupportedDepthFormat,
+                TextureUsageFlags.DepthStencilTarget);
+        }
+    }
+
+    protected override void Step()
+    {
+        // Called once per accumulation iteration
+    }
+
+    protected override void Update(TimeSpan delta)
+    {
+        FPSCounter.Update(delta);
         
         UpdateInput();
-        UpdateMouse();
 
         if (!loaded)
         {
@@ -273,7 +291,7 @@ public class Program : Game
         var tick = new MicroStopwatch();
         tick.Start();
 
-        var timesToTick = _tickTimeStep.Update(gameTime);
+        var timesToTick = _tickTimeStep.Update(delta);
         for (int i = 0; i < timesToTick; i++)
         {
             GameSparker.CurrentPhase.BeginGameTick();
@@ -288,88 +306,19 @@ public class Program : Game
         _lastTickTime = (int)tick.ElapsedMicroseconds;
     }
 
-    protected override void Initialize()
+    protected override void Destroy()
     {
-        _imguiRenderer = new ImGuiRenderer(this);
-        ImguiRenderer = _imguiRenderer;
-
-#if USE_BASS
-        Bass.Init();
-#endif
-        
-#if DEBUG
-#pragma warning disable IL3050
-#pragma warning disable IL2026
-        XamlHotReload.Initialize();
-#pragma warning restore IL2026
-#pragma warning restore IL3050
-#endif
-
-        oldKeyState = Keyboard.GetState();
-        oldMouseState = Mouse.GetState();
-        
-        _nvg = new NanoVGRenderer(GraphicsDevice);
-        
-        base.Initialize();
+        foreach (var shadowRenderTarget in shadowRenderTargets)
+            shadowRenderTarget.Dispose();
+        foreach (var shadowDepthTarget in shadowDepthTargets)
+            shadowDepthTarget.Dispose();
+        _imguiRenderer.Dispose();
     }
 
-    protected override void Dispose(bool disposing)
+    private void SetupImGuiStyle()
     {
-        base.Dispose(disposing);
-
-        if (disposing)
-        {
-            foreach (var shadowRenderTarget in shadowRenderTargets)
-            {
-                shadowRenderTarget.Dispose();
-            }
-            _imguiRenderer.Dispose();
-        }
-    }
-
-    protected override void LoadContent()
-    {
-        _polyShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Poly.fxb"));
-        _lineShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Line.fxb"));
-        _skyShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Sky.fxb"));
-        _groundShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Ground.fxb"));
-        _mountainsShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Mountains.fxb"));
-        
-        GameSparker.Load(this);
-
-        // Create floating point render target
-        shadowRenderTargets = new RenderTarget2D[3];
-        for (int i = NumCascades - 1; i >= 0; i--)
-        {
-            shadowRenderTargets[i] = new RenderTarget2D(
-                GraphicsDevice,
-                2048,
-                2048,
-                false,
-                SurfaceFormat.Single,
-                DepthFormat.Depth24,
-                0,
-                RenderTargetUsage.DiscardContents);
-        }
-        
-        // Clear all render targets AFTER creating them all
-        for (int i = 0; i < NumCascades; i++)
-        {
-            GraphicsDevice.SetRenderTarget(shadowRenderTargets[i]);
-            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Microsoft.Xna.Framework.Color.White, 1.0f, 0);
-            GraphicsDevice.SetRenderTarget(null);
-        }
-        
-        _imguiRenderer.RebuildFontAtlas();
-
-        #region Imgui
-        
-        // Initialize ImGui
-        ImGui.CreateContext();
         ImGui.StyleColorsDark();
 
-
-        // custom style
         var style = ImGui.GetStyle();
         
         // Rounding 
@@ -458,8 +407,6 @@ public class Program : Game
         style.WindowPadding = new System.Numerics.Vector2(10, 10);
         style.FramePadding = new System.Numerics.Vector2(5, 3);
         style.ItemSpacing = new System.Numerics.Vector2(8, 4);
-        
-        #endregion
 
         return;
 
@@ -468,60 +415,64 @@ public class Program : Game
 
     private void UpdateInput()
     {
-        var newState = Keyboard.GetState();
-        
-        foreach (var xnaKey in XnaKeys)
+        var keyboard = Inputs.Keyboard;
+        var mouse = Inputs.Mouse;
+
+        // Keyboard — edge detection via prev state
+        foreach (var scancode in Enum.GetValues<ScanCode>())
         {
-            var nfmKey = TranslateKey(xnaKey);
-            if (newState.IsKeyDown(xnaKey) && !oldKeyState.IsKeyDown(xnaKey))
+            if (scancode == ScanCode.Unknown) continue;
+            bool isDown = keyboard.IsHeld(scancode);
+            bool wasDown = _prevKeysDown.Contains(scancode);
+
+            if (isDown && !wasDown)
             {
-                KeyDown(nfmKey);
+                KeyDown(TranslateScanCode(scancode));
+                _prevKeysDown.Add(scancode);
             }
-            else if (newState.IsKeyUp(xnaKey) && !oldKeyState.IsKeyUp(xnaKey))
+            else if (!isDown && wasDown)
             {
-                KeyUp(nfmKey);
+                KeyUp(TranslateScanCode(scancode));
+                _prevKeysDown.Remove(scancode);
             }
         }
 
-        // Update saved state.
-        oldKeyState = newState;
-    }
+        // Mouse buttons
+        bool mouseLeft = mouse.LeftButton.IsHeld;
+        if (mouseLeft && !_prevMouseLeft)
+            MouseDown(mouse.X, mouse.Y);
+        else if (!mouseLeft && _prevMouseLeft)
+            MouseUp(mouse.X, mouse.Y);
+        _prevMouseLeft = mouseLeft;
 
-    private void UpdateMouse()
-    {
-        var newState = Mouse.GetState();
-        
-        if (newState.LeftButton == ButtonState.Pressed && oldMouseState.LeftButton != ButtonState.Pressed)
-        {
-            MouseDown(newState.X, newState.Y);
-        }
-        else if (newState.LeftButton == ButtonState.Released && oldMouseState.LeftButton != ButtonState.Released)
-        {
-            MouseUp(newState.X, newState.Y);
-        }
-
-        if (newState.X != oldMouseState.X || newState.Y != oldMouseState.Y)
+        // Mouse move
+        if (mouse.X != _prevMouseX || mouse.Y != _prevMouseY)
         {
 #if DEBUG
             if (_yogaInspectorEnabled)
-                YogaDebugger.MouseMove(newState.X, newState.Y);
+                YogaDebugger.MouseMove(mouse.X, mouse.Y);
 #endif
-
-            GameSparker.CurrentPhase.MouseMoved(newState.X, newState.Y, ImGui.GetIO().WantCaptureMouse);
+            GameSparker.CurrentPhase.MouseMoved(mouse.X, mouse.Y, ImGui.GetIO().WantCaptureMouse);
         }
+        _prevMouseX = mouse.X;
+        _prevMouseY = mouse.Y;
 
-        if (newState.ScrollWheelValue != oldMouseState.ScrollWheelValue)
+        // Mouse scroll (MoonWorks gives delta per frame)
+        if (mouse.Wheel != 0)
         {
-            var delta = newState.ScrollWheelValue - oldMouseState.ScrollWheelValue;
-            GameSparker.CurrentPhase.MouseScrolled(delta, ImGui.GetIO().WantCaptureMouse);
+            GameSparker.CurrentPhase.MouseScrolled((int)(mouse.Wheel * 120), ImGui.GetIO().WantCaptureMouse);
         }
-
-        oldMouseState = newState;
     }
 
-    protected override void Draw(GameTime gameTime)
+    protected override void Draw(double alpha)
     {
-        GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
+        var cmd = GraphicsDevice.AcquireCommandBuffer();
+        var backbuffer = cmd.AcquireSwapchainTexture(MainWindow);
+        if (backbuffer == null)
+        {
+            GraphicsDevice.Submit(cmd);
+            return;
+        }
 
         var t = Stopwatch.StartNew();
         
@@ -529,9 +480,10 @@ public class Program : Game
         Node.__INTERNAL_YogaRootsThisFrame.Clear();
 #endif
         
+        // TODO: 3D rendering (GameSparker.Render / CurrentPhase.Render)
+        // requires porting Scene.cs, Effects, Meshes to MoonWorks command buffer model.
+        // For now, call the game logic render hooks (they will no-op on 3D parts that aren't ported yet).
         GameSparker.Render();
-        
-        // Render based on game state
         GameSparker.CurrentPhase.Render();
         
 #if DEBUG
@@ -564,43 +516,39 @@ public class Program : Game
 #endif
 
         FPSCounter.Render();
-        
+
+        // Begin main render pass for 2D overlays (NVG + ImGui)
+        var colorTarget = new ColorTargetInfo
+        {
+            Texture = backbuffer,
+            LoadOp = LoadOp.Clear,
+            StoreOp = StoreOp.Store,
+            ClearColor = new MoonWorks.Graphics.Color(100, 149, 237, 255) // CornflowerBlue
+        };
+
+        var renderPass = cmd.BeginRenderPass(colorTarget);
+
+        // NVG flush into this render pass
+        _nvg.SetRenderContext(cmd, renderPass, MainWindow.Width, MainWindow.Height);
         _nvg.Render();
 
         GameSparker.CurrentPhase.RenderAfterSkia();
         
-        // // Render ImGui
-        _imguiRenderer.BeginLayout(gameTime);
+        // ImGui render
+        float deltaTime = (float)(1.0 / 60.0); // TODO: track actual delta
+        _imguiRenderer.BeginLayout(deltaTime, Inputs, MainWindow.Width, MainWindow.Height);
         GameSparker.RenderImgui();
         GameSparker.CurrentPhase.RenderImgui();
-        _imguiRenderer.EndLayout();
+        _imguiRenderer.EndLayout(cmd, renderPass);
+
+        cmd.EndRenderPass(renderPass);
+        GraphicsDevice.Submit(cmd);
         
-        base.Draw(gameTime);
         _lastFrameTime = (int)t.ElapsedMilliseconds;
     }
 
     public static void Main(string[] args)
     {
-        var fnaLogger = Logging.LoggerFactory.CreateLogger("FNA");
-        FNALoggerEXT.LogError += (message) =>
-        {
-            fnaLogger.LogError(message);
-        };
-        FNALoggerEXT.LogInfo += (message) =>
-        {
-            fnaLogger.LogInformation(message);
-        };
-        FNALoggerEXT.LogWarn += (message) =>
-        {
-            fnaLogger.LogWarning(message);
-        };
-        
-        // TODO figure out why SDL ProcessExit doesn't work properly
-        AppDomain.CurrentDomain.ProcessExit += static (sender, args) =>
-        {
-            Process.GetCurrentProcess().Kill();
-        };
-
 #if DEBUG
         if (args.IndexOf("-debugui", StringComparer.OrdinalIgnoreCase) is var index and >= 0)
         {

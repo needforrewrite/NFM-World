@@ -1,30 +1,33 @@
 // Mad.hlsli — Shared utilities for NFM-World shaders (MoonWorks / ShaderCross)
 // This replaces Mad.fxh for the non-Effect HLSL pipeline.
+//
+// This header declares NO resources (textures, samplers, cbuffers).
+// Each material shader controls its own resource layout.
+// Shared uniform sub-structs are provided for embedding in per-shader cbuffers.
 
 #ifndef MAD_HLSLI
 #define MAD_HLSLI
 
-// ─── Shadow map resources (fragment stage, slots 0-2) ───────────────────────
+// ─── Shared uniform structs ─────────────────────────────────────────────────
+// Embed these in your per-shader cbuffer. They are padded to float4 boundaries
+// so C# LayoutKind.Sequential structs match without FieldOffset.
 
-Texture2D ShadowMap0 : register(t0);
-SamplerState ShadowMapSampler0 : register(s0);
-
-Texture2D ShadowMap1 : register(t1);
-SamplerState ShadowMapSampler1 : register(s1);
-
-Texture2D ShadowMap2 : register(t2);
-SamplerState ShadowMapSampler2 : register(s2);
-
-// ─── Shadow uniform buffer (fragment stage, slot 1) ─────────────────────────
-
-cbuffer ShadowParams : register(b1, space3)
+struct FogParams
 {
-    float4x4 LightViewProj0;
-    float4x4 LightViewProj1;
-    float4x4 LightViewProj2;
-    float DepthBias;
-    float3 _shadowPad;
-};
+    float3 Color;       // offset  0 (12 bytes)
+    float  Distance;    // offset 12 (4 bytes)  — completes row 0
+    float  Density;     // offset 16 (4 bytes)
+    float3 _fogPad;     // offset 20 (12 bytes) — completes row 1
+};                      // total: 32 bytes (2 × float4)
+
+struct ShadowParams
+{
+    float4x4 LightViewProj0;   // offset   0 (64 bytes)
+    float4x4 LightViewProj1;   // offset  64 (64 bytes)
+    float4x4 LightViewProj2;   // offset 128 (64 bytes)
+    float    DepthBias;         // offset 192 (4 bytes)
+    float3   _shadowPad;        // offset 196 (12 bytes) — completes row
+};                              // total: 208 bytes (13 × float4)
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -148,6 +151,7 @@ void VS_ApplyFog(
 }
 
 // ─── Shadow mapping (pixel shader) ──────────────────────────────────────────
+// All resources and uniforms are passed in — no global declarations.
 
 void applyShadowingSingle(
     inout float3 diffuse,
@@ -155,6 +159,7 @@ void applyShadowingSingle(
     in float4x4 lightViewProj,
     in Texture2D shadowMap,
     in SamplerState shadowSampler,
+    in float depthBias,
     out bool isInLight)
 {
     float4 lightingPosition = mul(worldPos, lightViewProj);
@@ -168,7 +173,7 @@ void applyShadowingSingle(
         lightingPosition.z > 0.0)
     {
         float shadowdepth = shadowMap.Sample(shadowSampler, shadowTexCoord).r;
-        float ourdepth = (lightingPosition.z / lightingPosition.w) - DepthBias;
+        float ourdepth = (lightingPosition.z / lightingPosition.w) - depthBias;
 
         if (shadowdepth < ourdepth)
         {
@@ -182,20 +187,26 @@ void applyShadowingSingle(
     }
 }
 
-void PS_ApplyShadowing(inout float3 diffuse, in float4 worldPos)
+void PS_ApplyShadowing(
+    inout float3 diffuse,
+    in float4 worldPos,
+    in ShadowParams shadow,
+    in Texture2D shadowMap0, in SamplerState shadowSampler0,
+    in Texture2D shadowMap1, in SamplerState shadowSampler1,
+    in Texture2D shadowMap2, in SamplerState shadowSampler2)
 {
     bool isInLight0 = false;
-    applyShadowingSingle(diffuse, worldPos, LightViewProj0, ShadowMap0, ShadowMapSampler0, isInLight0);
+    applyShadowingSingle(diffuse, worldPos, shadow.LightViewProj0, shadowMap0, shadowSampler0, shadow.DepthBias, isInLight0);
 
     if (!isInLight0)
     {
         bool isInLight1 = false;
-        applyShadowingSingle(diffuse, worldPos, LightViewProj1, ShadowMap1, ShadowMapSampler1, isInLight1);
+        applyShadowingSingle(diffuse, worldPos, shadow.LightViewProj1, shadowMap1, shadowSampler1, shadow.DepthBias, isInLight1);
 
         if (!isInLight1)
         {
             bool isInLight2 = false;
-            applyShadowingSingle(diffuse, worldPos, LightViewProj2, ShadowMap2, ShadowMapSampler2, isInLight2);
+            applyShadowingSingle(diffuse, worldPos, shadow.LightViewProj2, shadowMap2, shadowSampler2, shadow.DepthBias, isInLight2);
         }
     }
 }

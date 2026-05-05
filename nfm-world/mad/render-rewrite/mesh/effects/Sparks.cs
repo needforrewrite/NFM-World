@@ -1,4 +1,11 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
+using DepthStencilState = nfm_world.compat.DepthStencilState;
+using RasterizerState = nfm_world.compat.RasterizerState;
+using BlendState = nfm_world.compat.BlendState;
+using SamplerState = nfm_world.compat.SamplerState;
+using VertexElementFormat = nfm_world.compat.VertexElementFormat;
+using nfm_world.compat;
+using MoonWorks.Graphics;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.util;
@@ -53,7 +60,7 @@ public class Sparks : IDisposable
             Name = "Sparks Vertex Buffer",
             Tag = this
         };
-        _indexBuffer = new DynamicIndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits,
+        _indexBuffer = new DynamicIndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwo,
             100 * LineMeshHelpers.IndicesPerLine, BufferUsage.WriteOnly)
         {
             Name = "Sparks Index Buffer",

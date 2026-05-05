@@ -1,6 +1,8 @@
 // PolyShadow.vert.hlsl — Poly shadow map vertex shader (replaces Poly.fx "CreateShadowMap" technique VS)
 
-cbuffer ShadowUniforms : register(b0, space1)
+#include "SDLGPURegisters.hlsli"
+
+cbuffer ShadowUniforms : SDL_VS_UNIFORM(0)
 {
     float4x4 View;
     float4x4 Projection;

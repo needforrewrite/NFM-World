@@ -1,5 +1,13 @@
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
+using DepthStencilState = nfm_world.compat.DepthStencilState;
+using RasterizerState = nfm_world.compat.RasterizerState;
+using BlendState = nfm_world.compat.BlendState;
+using SamplerState = nfm_world.compat.SamplerState;
+using VertexElementFormat = nfm_world.compat.VertexElementFormat;
+using CullMode = nfm_world.compat.CullMode;
+using nfm_world.compat;
 using Hexa.NET.ImGui;
-using Microsoft.Xna.Framework.Graphics;
+using MoonWorks.Graphics;
 using nfm_world_library;
 using nfm_world_library.backend;
 using nfm_world_library.mad;
@@ -413,8 +421,8 @@ public class StageEditorPhase : BasePhase
         
         // Initialize camera
         camera.Fov = 60f;
-        camera.Width = GameSparker._game.GraphicsDevice.Viewport.Width;
-        camera.Height = GameSparker._game.GraphicsDevice.Viewport.Height;
+        camera.Width = GameSparker._graphicsDevice.Viewport.Width;
+        camera.Height = GameSparker._graphicsDevice.Viewport.Height;
         camera.Near = 1f;
         camera.Far = 100000f;
         
@@ -2849,8 +2857,8 @@ public class StageEditorPhase : BasePhase
     
     private void RenderImGuiUI()
     {
-        var screenWidth = GameSparker._game.GraphicsDevice.Viewport.Width;
-        var screenHeight = GameSparker._game.GraphicsDevice.Viewport.Height;
+        var screenWidth = GameSparker._graphicsDevice.Viewport.Width;
+        var screenHeight = GameSparker._graphicsDevice.Viewport.Height;
         
         // Menu bar at the top
         if (ImGui.BeginMainMenuBar())

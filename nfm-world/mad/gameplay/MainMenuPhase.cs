@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
+using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad.rad;
 using nfm_world_library.util;

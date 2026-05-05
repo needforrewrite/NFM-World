@@ -147,6 +147,8 @@ public class ImGuiRenderer : IDisposable
 		platformIO.RendererTextureMaxHeight = 8192;
 	}
 
+	public virtual void RebuildFontAtlas() { }
+
 	public virtual unsafe ImTextureRef BindTexture(Texture texture)
 	{
 		IntPtr texId = new IntPtr(_nextTexId++);
