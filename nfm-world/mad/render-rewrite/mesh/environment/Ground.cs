@@ -1,29 +1,24 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using BlendState = nfm_world.compat.BlendState;
-using SamplerState = nfm_world.compat.SamplerState;
-using VertexElementFormat = nfm_world.compat.VertexElementFormat;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world.camera;
+using nfm_world.shaders;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh.environment;
 
 public class Ground : Transform, IImmediateRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
-    private readonly VertexBuffer _vertexBuffer;
-    private readonly Effect _material;
-    private readonly int _triangleCount;
+    private readonly GpuBuffer _vertexBuffer;
+    private readonly uint _vertexCount;
 
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
     public Ground(GraphicsDevice graphicsDevice)
     {
-        // Generate a quad on World.Ground extending infinitely in X and Z
         _graphicsDevice = graphicsDevice;
         const int size = 1_000_000;
         var color = World.GroundColor.Snap(World.Snap);
@@ -37,15 +32,23 @@ public class Ground : Transform, IImmediateRenderable
             new(new Vector3(size, World.Ground, size), color)
         ];
 
-        _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Length, BufferUsage.None)
-        {
-            Name = "Ground Vertex Buffer",
-            Tag = this
-        };
-        _vertexBuffer.SetDataEXT(data);
-        _triangleCount = data.Length / 3;
+        _vertexCount = (uint)data.Length;
 
-        _material = Program._groundShader;
+        _vertexBuffer = GpuBuffer.Create<VertexPositionColor>(graphicsDevice, BufferUsageFlags.Vertex, _vertexCount);
+        var transfer = TransferBuffer.Create<VertexPositionColor>(graphicsDevice, TransferBufferUsage.Upload, _vertexCount);
+        var span = transfer.Map<VertexPositionColor>(false);
+        data.CopyTo(span);
+        transfer.Unmap();
+
+        var cmd = graphicsDevice.AcquireCommandBuffer();
+        var copyPass = cmd.BeginCopyPass();
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(transfer, 0),
+            new BufferRegion(_vertexBuffer, 0, _vertexCount * (uint)Marshal.SizeOf<VertexPositionColor>()),
+            false);
+        cmd.EndCopyPass(copyPass);
+        graphicsDevice.Submit(cmd);
+        transfer.Dispose();
     }
     
     ~Ground()
@@ -57,24 +60,43 @@ public class Ground : Transform, IImmediateRenderable
     {
         if (lighting?.IsCreateShadowMap == true) return;
 
-        _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-        _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        _material.Parameters["WorldView"]?.SetValue(camera.ViewMatrix);
-        _material.Parameters["WorldViewProj"]?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        
-        _material.Parameters["DepthBias"]?.SetValue(0.00005f);
-        _material.Parameters["FogColor"]?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
-        _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
-        
-        lighting?.SetShadowMapParameters(_material);
-        
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
+
+        // Push vertex uniforms
+        var fog = new FogParams
         {
-            pass.Apply();
-    
-            _graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, _triangleCount);
+            Color = (Vector3)World.Fog.Snap(World.Snap),
+            Distance = World.FadeFrom,
+            Density = World.FogDensity / (World.FogDensity + 1f)
+        };
+        var vertUniforms = new GroundVertexUniforms
+        {
+            WorldView = camera.ViewMatrix,
+            WorldViewProj = camera.ViewMatrix * camera.ProjectionMatrix,
+            Fog = fog
+        };
+        cmd.PushVertexUniformData(vertUniforms);
+
+        // Push fragment uniforms (fog + shadow params)
+        var fragUniforms = new GroundFragUniforms
+        {
+            Fog = fog,
+            Shadow = lighting?.ToShadowParams() ?? default
+        };
+        cmd.PushFragmentUniformData(fragUniforms);
+
+        // Bind pipeline and resources
+        pass.BindGraphicsPipeline(Pipelines.Ground);
+        pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
+
+        // Bind shadow map textures
+        if (lighting != null && !lighting.IsCreateShadowMap)
+        {
+            lighting.BindShadowMaps(pass);
         }
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+
+        pass.DrawPrimitives(_vertexCount, 1, 0, 0);
     }
 }

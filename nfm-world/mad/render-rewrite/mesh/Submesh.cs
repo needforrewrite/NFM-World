@@ -1,30 +1,23 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using BlendState = nfm_world.compat.BlendState;
-using SamplerState = nfm_world.compat.SamplerState;
-using VertexElementFormat = nfm_world.compat.VertexElementFormat;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
 using nfm_world.camera;
 using nfm_world.shaders;
 using nfm_world.stage;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh;
 
 public class Submesh : IInstancedRenderElement, IDisposable
 {
-    private readonly PolyEffect _material = new(Program._polyShader);
     public readonly PolyType PolyType;
     
-    private readonly VertexBuffer _vertexBuffer;
-    private readonly IndexBuffer _indexBuffer;
-
-    private readonly int _vertexCount;
-    private readonly int _triangleCount;
+    private readonly GpuBuffer _vertexBuffer;
+    private readonly GpuBuffer _indexBuffer;
+    private readonly uint _indexCount;
     private readonly Mesh _supermesh;
     private readonly GraphicsDevice _graphicsDevice;
 
@@ -38,21 +31,49 @@ public class Submesh : IInstancedRenderElement, IDisposable
         _supermesh = supermesh;
         _graphicsDevice = graphicsDevice;
         PolyType = polyType;
-        _vertexBuffer = new VertexBuffer(graphicsDevice, Mesh.VertexPositionNormalColorCentroid.VertexDeclaration, vertices.Length, BufferUsage.None)
+        _indexCount = (uint)indices.Length;
+
+        // Create and upload vertex buffer
+        _vertexBuffer = GpuBuffer.Create<Mesh.VertexPositionNormalColorCentroid>(
+            graphicsDevice, BufferUsageFlags.Vertex, (uint)vertices.Length);
         {
-            Name = "Submesh Vertex Buffer",
-            Tag = this
-        };
-        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwo, indices.Length, BufferUsage.None)
+            var transfer = TransferBuffer.Create<Mesh.VertexPositionNormalColorCentroid>(
+                graphicsDevice, TransferBufferUsage.Upload, (uint)vertices.Length);
+            var span = transfer.Map<Mesh.VertexPositionNormalColorCentroid>(false);
+            vertices.CopyTo(span);
+            transfer.Unmap();
+
+            var cmd = graphicsDevice.AcquireCommandBuffer();
+            var copyPass = cmd.BeginCopyPass();
+            copyPass.UploadToBuffer(
+                new TransferBufferLocation(transfer, 0),
+                new BufferRegion(_vertexBuffer, 0,
+                    (uint)vertices.Length * (uint)Marshal.SizeOf<Mesh.VertexPositionNormalColorCentroid>()),
+                false);
+            cmd.EndCopyPass(copyPass);
+            graphicsDevice.Submit(cmd);
+            transfer.Dispose();
+        }
+
+        // Create and upload index buffer
+        _indexBuffer = GpuBuffer.Create<int>(graphicsDevice, BufferUsageFlags.Index, _indexCount);
         {
-            Name = "Submesh Index Buffer",
-            Tag = this
-        };
-        _vertexCount = vertices.Length;
-        _triangleCount = indices.Length / 3;
-        
-        _vertexBuffer.SetDataEXT(vertices);
-        _indexBuffer.SetDataEXT(indices);
+            var transfer = TransferBuffer.Create<int>(
+                graphicsDevice, TransferBufferUsage.Upload, _indexCount);
+            var span = transfer.Map<int>(false);
+            indices.CopyTo(span);
+            transfer.Unmap();
+
+            var cmd = graphicsDevice.AcquireCommandBuffer();
+            var copyPass = cmd.BeginCopyPass();
+            copyPass.UploadToBuffer(
+                new TransferBufferLocation(transfer, 0),
+                new BufferRegion(_indexBuffer, 0, _indexCount * sizeof(int)),
+                false);
+            cmd.EndCopyPass(copyPass);
+            graphicsDevice.Submit(cmd);
+            transfer.Dispose();
+        }
     }
 
     ~Submesh()
@@ -60,60 +81,75 @@ public class Submesh : IInstancedRenderElement, IDisposable
         Dispose(false);
     }
 
-    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
+    public void Render(Camera camera, Lighting? lighting, GpuBuffer instanceBuffer, int instanceCount)
     {
-        _graphicsDevice.SetVertexBuffers(_vertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
-        _graphicsDevice.Indices = _indexBuffer;
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        
-        // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.SnapColor?.SetValue((Vector3)World.Snap);
-        _material.IsFullbright?.SetValue((PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn));
-        _material.UseBaseColor?.SetValue(PolyType is PolyType.Glass);
-        _material.BaseColor?.SetValue((Vector3)World.Sky);
-        _material.LightDirection?.SetValue(World.LightDirection);
-        _material.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.FogDistance?.SetValue(World.FadeFrom);
-        _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
-        _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00005f);
-        _material.Alpha?.SetValue(PolyType is PolyType.Glass ? 0.7f : 1f);
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
 
-        _graphicsDevice.BlendState = BlendState.NonPremultiplied;
+        bool isShadowPass = lighting?.IsCreateShadowMap == true;
 
-        if (lighting?.IsCreateShadowMap == true)
+        if (isShadowPass)
         {
-            _material.View?.SetValue(lighting.CascadeLightCamera.ViewMatrix);
-            _material.Projection?.SetValue(lighting.CascadeLightCamera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position);
-            _material.ViewProj?.SetValue(lighting.CascadeLightCamera.ViewMatrix * lighting.CascadeLightCamera.ProjectionMatrix);
+            // Shadow map pass — use PolyShadow pipeline
+            var shadowUniforms = new PolyShadowVertexUniforms
+            {
+                View = lighting.CascadeLightCamera.ViewMatrix,
+                Projection = lighting.CascadeLightCamera.ProjectionMatrix
+            };
+            cmd.PushVertexUniformData(shadowUniforms);
+
+            pass.BindGraphicsPipeline(Pipelines.PolyShadow);
         }
         else
         {
-            _material.View?.SetValue(camera.ViewMatrix);
-            _material.Projection?.SetValue(camera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(camera.Position);
-            _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
+            // Main pass — use Poly pipeline
+            var vertUniforms = new PolyVertexUniforms
+            {
+                View = camera.ViewMatrix,
+                Projection = camera.ProjectionMatrix,
+                ViewProj = camera.ViewMatrix * camera.ProjectionMatrix,
+                CameraPosition = camera.Position,
+                Alpha = PolyType is PolyType.Glass ? 0.7f : 1f,
+                SnapColor = (Vector3)World.Snap,
+                Darken = _supermesh.Darken,
+                LightDirection = World.LightDirection,
+                RandomFloat = URandom.Single(),
+                EnvironmentLight = new Vector2(World.BlackPoint, World.WhitePoint),
+                IsFullbright = (PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn),
+                UseBaseColor = PolyType is PolyType.Glass,
+                BaseColor = (Vector3)World.Sky,
+                Expand = _supermesh.Expand,
+                Fog = new FogParams
+                {
+                    Color = (Vector3)World.Fog.Snap(World.Snap),
+                    Distance = World.FadeFrom,
+                    Density = World.FogDensity / (World.FogDensity + 1f)
+                }
+            };
+            cmd.PushVertexUniformData(vertUniforms);
+
+            var fragUniforms = new PolyFragUniforms
+            {
+                Shadow = lighting?.ToShadowParams() ?? default
+            };
+            cmd.PushFragmentUniformData(fragUniforms);
+
+            pass.BindGraphicsPipeline(Pipelines.Poly);
+
+            if (lighting != null)
+            {
+                lighting.BindShadowMaps(pass);
+            }
         }
 
-        _material.CurrentTechnique = lighting?.IsCreateShadowMap == true ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
-        
-        lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
+        // Bind mesh + instance vertex buffers and index buffer
+        pass.BindVertexBuffers(0,
+            new BufferBinding(_vertexBuffer, 0),
+            new BufferBinding(instanceBuffer, 0));
+        pass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.ThirtyTwo);
 
-        _material.Expand?.SetValue(_supermesh.Expand);
-        _material.Darken?.SetValue(_supermesh.Darken);
-        _material.RandomFloat?.SetValue(URandom.Single());
-        
-        foreach (var pass in _material.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-    
-            _graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, _vertexCount, 0, _triangleCount, instanceCount);
-        }
-        
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
-        _graphicsDevice.BlendState = BlendState.Opaque;
+        pass.DrawIndexedPrimitives(_indexCount, (uint)instanceCount, 0, 0, 0);
     }
 
     private void ReleaseUnmanagedResources()

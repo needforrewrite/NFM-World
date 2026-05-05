@@ -192,7 +192,7 @@ public class Mesh : IDisposable
         Vector3 Normal,
         Vector3 Centroid,
         Color Color,
-        float DecalOffset)
+        float DecalOffset) : MoonWorks.Graphics.IVertexType
     {
         /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />
         public static readonly VertexDeclaration VertexDeclaration = new(
@@ -202,6 +202,17 @@ public class Mesh : IDisposable
 	        new VertexElement(36, VertexElementFormat.Color, VertexElementUsage.Color, 0),
 	        new VertexElement(40, VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0)
 	    );
+
+        public static MoonWorks.Graphics.VertexElementFormat[] Formats =>
+        [
+            MoonWorks.Graphics.VertexElementFormat.Float3,     // location 0: Position
+            MoonWorks.Graphics.VertexElementFormat.Float3,     // location 1: Normal
+            MoonWorks.Graphics.VertexElementFormat.Float3,     // location 2: Centroid
+            MoonWorks.Graphics.VertexElementFormat.Ubyte4Norm, // location 3: Color
+            MoonWorks.Graphics.VertexElementFormat.Float       // location 4: DecalOffset
+        ];
+
+        public static uint[] Offsets => [0, 12, 24, 36, 40];
     }
 
     public virtual void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)

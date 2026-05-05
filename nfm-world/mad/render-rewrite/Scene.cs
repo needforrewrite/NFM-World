@@ -1,9 +1,4 @@
 using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using BlendState = nfm_world.compat.BlendState;
-using SamplerState = nfm_world.compat.SamplerState;
-using VertexElementFormat = nfm_world.compat.VertexElementFormat;
 using nfm_world.compat;
 using System.Buffers;
 using System.Collections;
@@ -12,6 +7,7 @@ using MoonWorks.Graphics;
 using nfm_world_library.mad;
 using nfm_world.camera;
 using nfm_world.stage;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world;
 
@@ -34,6 +30,11 @@ public class Scene
     
     public void Render(bool useShadowMapping, bool clearRenderBuffer = true)
     {
+        var cmd = RenderState.Cmd;
+        var backbuffer = RenderState.Backbuffer;
+        var mainDepth = RenderState.MainDepthTexture;
+        if (cmd == null || backbuffer == null || mainDepth == null) return;
+
         _camera.OnBeforeRender();
         foreach (var lightCamera in _lightCameras)
         {
@@ -44,43 +45,85 @@ public class Scene
         {
             renderable.OnBeforeRender();
         }
-        
-        _graphicsDevice.BlendState = BlendState.Opaque;
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
 
-        // CREATE SHADOW MAP
+        // Gather render data and prepare instance buffers
+        _renderDataCache.Clear();
+        foreach (var obj in Objects)
+        {
+            foreach (var renderData in obj.GetRenderData(null))
+            {
+                _renderDataCache.Add(renderData);
+            }
+        }
 
+        // Upload instance data that changed via CopyPass
+        _renderDataCache.PrepareAndUpload(cmd);
+
+        // ── Shadow map passes ───────────────────────────────────────
         if (useShadowMapping)
         {
             for (var cascade = 0; cascade < Math.Min(_lightCameras.Length, Program.shadowRenderTargets.Length); cascade++)
             {
-                // Set our render target to our floating point render target
-                _graphicsDevice.SetRenderTarget(Program.shadowRenderTargets[cascade]);
+                var shadowColor = new ColorTargetInfo
+                {
+                    Texture = Program.shadowRenderTargets[cascade].Texture,
+                    LoadOp = LoadOp.Clear,
+                    StoreOp = StoreOp.Store,
+                    ClearColor = new MoonWorks.Graphics.Color(255, 255, 255, 255)
+                };
+                var shadowDepth = new DepthStencilTargetInfo
+                {
+                    Texture = Program.shadowDepthTargets[cascade],
+                    LoadOp = LoadOp.Clear,
+                    StoreOp = StoreOp.DontCare,
+                    StencilLoadOp = LoadOp.DontCare,
+                    StencilStoreOp = StoreOp.DontCare,
+                    ClearDepth = 1.0f
+                };
 
-                // Clear the render target to white or all 1's
-                // We set the clear to white since that represents the 
-                // furthest the object could be away
-                _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.White);
+                var pass = cmd.BeginRenderPass(shadowDepth, shadowColor);
+                RenderState.Pass = pass;
 
-                RenderInternal(true, cascade);
+                var lighting = new Lighting(_lightCameras, Program.shadowRenderTargets, true, cascade);
+                RenderInternal(lighting);
+
+                cmd.EndRenderPass(pass);
             }
-            
-            _graphicsDevice.SetRenderTarget(null);
         }
 
-        // DRAW WITH SHADOW MAP
-        
-        if (clearRenderBuffer)
-            _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
+        // ── Main pass ───────────────────────────────────────────────
+        {
+            var mainColor = new ColorTargetInfo
+            {
+                Texture = backbuffer,
+                LoadOp = clearRenderBuffer ? LoadOp.Clear : LoadOp.Load,
+                StoreOp = StoreOp.Store,
+                ClearColor = new MoonWorks.Graphics.Color(100, 149, 237, 255)
+            };
+            var mainDepthInfo = new DepthStencilTargetInfo
+            {
+                Texture = mainDepth,
+                LoadOp = LoadOp.Clear,
+                StoreOp = StoreOp.DontCare,
+                StencilLoadOp = LoadOp.DontCare,
+                StencilStoreOp = StoreOp.DontCare,
+                ClearDepth = 1.0f
+            };
 
-        for (var i = 0; i < 16; i++)
-            _graphicsDevice.SamplerStates[i] = SamplerState.PointClamp;
+            var pass = cmd.BeginRenderPass(mainDepthInfo, mainColor);
+            RenderState.Pass = pass;
 
-        RenderInternal();
+            var lighting = new Lighting(_lightCameras, Program.shadowRenderTargets);
+            RenderInternal(lighting);
 
+            cmd.EndRenderPass(pass);
+        }
+
+        RenderState.Pass = null;
+        RenderState.SceneRenderedThisFrame = true;
     }
     
-    private class RenderDataCache(GraphicsDevice graphicsDevice) : IEnumerable<(DynamicVertexBuffer Buffer, int InstanceCount, IInstancedRenderElement Element)>
+    private class RenderDataCache(GraphicsDevice graphicsDevice)
     {
         private class CachedRenderData(
             List<RenderData> renderData
@@ -88,19 +131,23 @@ public class Scene
         {
             public List<RenderData> RenderData = renderData;
             public List<RenderData> OldRenderData = [];
-            public DynamicVertexBuffer? VertexBuffer = null;
+            public GpuBuffer? GpuBuffer = null;
+            public TransferBuffer? TransferBuffer = null;
+            public int BufferCapacity = 0;
             public int HashCode = 0;
+            public bool NeedsUpload = false;
         }
 
-        // dict of render order -> (dict of render element -> cached render data)
         private SortedDictionary<int, Dictionary<IInstancedRenderElement, CachedRenderData>> _cache = new();
+        private List<CachedRenderData> _entriesToUpload = new();
 
         ~RenderDataCache()
         {
             foreach (var (_, innerCache) in _cache)
             foreach (var (_, data) in innerCache)
             {
-                data.VertexBuffer?.Dispose();
+                data.GpuBuffer?.Dispose();
+                data.TransferBuffer?.Dispose();
             }
         }
 
@@ -116,14 +163,11 @@ public class Scene
         
         private static bool AreRenderDataListsEqual(ReadOnlySpan<RenderData> a, ReadOnlySpan<RenderData> b, int aHashCode, int bHashCode)
         {
-            if (aHashCode != bHashCode)
-                return false;
-            if (a.Length != b.Length)
-                return false;
+            if (aHashCode != bHashCode) return false;
+            if (a.Length != b.Length) return false;
             for (var i = 0; i < a.Length; i++)
             {
-                if (!a[i].Equals(b[i]))
-                    return false;
+                if (!a[i].Equals(b[i])) return false;
             }
             return true;
         }
@@ -131,7 +175,6 @@ public class Scene
         private readonly List<IInstancedRenderElement> _elementsToPrune = new();
         public void Clear()
         {
-            // Delete any instance not rendered for two consecutive frames.
             foreach (var (renderOrder, innerCache) in _cache)
             {
                 _elementsToPrune.Clear();
@@ -152,12 +195,12 @@ public class Scene
                 {
                     if (innerCache.TryGetValue(element, out var data))
                     {
-                        data.VertexBuffer?.Dispose();
+                        data.GpuBuffer?.Dispose();
+                        data.TransferBuffer?.Dispose();
                         innerCache.Remove(element);
                     }
                 }
             }
-
         }
 
         public void Add(RenderData renderData)
@@ -178,8 +221,14 @@ public class Scene
             }
         }
 
-        public IEnumerator<(DynamicVertexBuffer Buffer, int InstanceCount, IInstancedRenderElement Element)> GetEnumerator()
+        /// <summary>
+        /// Prepare instance data for upload: check for changes, create/resize GPU buffers,
+        /// map and fill transfer buffers, then upload all changed data via a single CopyPass.
+        /// </summary>
+        public void PrepareAndUpload(CommandBuffer cmd)
         {
+            _entriesToUpload.Clear();
+
             foreach (var (renderOrder, innerCache) in _cache)
             foreach (var (renderElement, cachedRenderData) in innerCache)
             {
@@ -187,69 +236,87 @@ public class Scene
                 if (instances.Count == 0) continue;
                 
                 var oldInstances = cachedRenderData.OldRenderData;
-                
                 var currentHashCode = GetHashCode(CollectionsMarshal.AsSpan(instances));
                 var oldHashCode = cachedRenderData.HashCode;
                 
-                if (cachedRenderData.VertexBuffer == null ||
+                if (cachedRenderData.GpuBuffer == null ||
                     !AreRenderDataListsEqual(
                         CollectionsMarshal.AsSpan(instances),
                         CollectionsMarshal.AsSpan(oldInstances),
                         currentHashCode,
-                        oldHashCode
-                    ))
+                        oldHashCode))
                 {
-                    using var instanceDataArray = MemoryPool<InstanceData>.Shared.Rent(instances.Count);
-                    var instanceDataArraySpan = instanceDataArray.Memory.Span.Slice(0, instances.Count);
-                    var i = 0;
-                    foreach (var renderData in instances)
+                    // Resize buffers if needed
+                    if (cachedRenderData.GpuBuffer == null || cachedRenderData.BufferCapacity < instances.Count)
                     {
-                        instanceDataArraySpan[i++] = renderData.ToInstanceData();
+                        cachedRenderData.GpuBuffer?.Dispose();
+                        cachedRenderData.TransferBuffer?.Dispose();
+                        cachedRenderData.BufferCapacity = instances.Count;
+                        cachedRenderData.GpuBuffer = GpuBuffer.Create<InstanceData>(
+                            graphicsDevice, BufferUsageFlags.Vertex, (uint)instances.Count);
+                        cachedRenderData.TransferBuffer = TransferBuffer.Create<InstanceData>(
+                            graphicsDevice, TransferBufferUsage.Upload, (uint)instances.Count);
                     }
 
-                    if (cachedRenderData.VertexBuffer == null || cachedRenderData.VertexBuffer.VertexCount < instances.Count)
+                    // Fill transfer buffer
+                    var span = cachedRenderData.TransferBuffer.Map<InstanceData>(false);
+                    for (var i = 0; i < instances.Count; i++)
                     {
-                        cachedRenderData.VertexBuffer?.Dispose();
-                        cachedRenderData.VertexBuffer = new DynamicVertexBuffer(graphicsDevice, InstanceData.InstanceDeclaration, instances.Count, BufferUsage.WriteOnly)
-                        {
-                            Name = "Instance Data Vertex Buffer",
-                            Tag = this
-                        };
+                        span[i] = instances[i].ToInstanceData();
                     }
+                    cachedRenderData.TransferBuffer.Unmap();
 
-                    cachedRenderData.VertexBuffer.SetDataEXT(instanceDataArraySpan, SetDataOptions.Discard);
+                    cachedRenderData.NeedsUpload = true;
                     cachedRenderData.HashCode = currentHashCode;
                     
-                    // Swap old and new instance lists
                     CollectionsMarshal.SetCount(oldInstances, instances.Count);
                     CollectionsMarshal.AsSpan(instances).CopyTo(CollectionsMarshal.AsSpan(oldInstances));
+
+                    _entriesToUpload.Add(cachedRenderData);
                 }
-                yield return (cachedRenderData.VertexBuffer, instances.Count, renderElement);
+            }
+
+            // Upload all changed instance data in one CopyPass
+            if (_entriesToUpload.Count > 0)
+            {
+                var copyPass = cmd.BeginCopyPass();
+                foreach (var entry in _entriesToUpload)
+                {
+                    var byteCount = (uint)(entry.RenderData.Count * Marshal.SizeOf<InstanceData>());
+                    copyPass.UploadToBuffer(
+                        new TransferBufferLocation(entry.TransferBuffer, 0),
+                        new BufferRegion(entry.GpuBuffer, 0, byteCount),
+                        true);
+                    entry.NeedsUpload = false;
+                }
+                cmd.EndCopyPass(copyPass);
             }
         }
 
-        IEnumerator IEnumerable.GetEnumerator()
+        /// <summary>
+        /// Iterate over all render entries with their GPU instance buffers.
+        /// </summary>
+        public IEnumerable<(GpuBuffer Buffer, int InstanceCount, IInstancedRenderElement Element)> GetEntries()
         {
-            return GetEnumerator();
+            foreach (var (renderOrder, innerCache) in _cache)
+            foreach (var (renderElement, cachedRenderData) in innerCache)
+            {
+                if (cachedRenderData.RenderData.Count == 0 || cachedRenderData.GpuBuffer == null) continue;
+                yield return (cachedRenderData.GpuBuffer, cachedRenderData.RenderData.Count, renderElement);
+            }
         }
     }
     
-    private void RenderInternal(bool isCreateShadowMap = false, int numCascade = -1)
+    private void RenderInternal(Lighting lighting)
     {
-        var lighting = new Lighting(_lightCameras, Program.shadowRenderTargets, isCreateShadowMap, numCascade);
-
-        _renderDataCache.Clear();
+        // Render immediate objects (Sky, Ground, Mountains, etc.)
         foreach (var obj in Objects)
         {
             obj.Render(_camera, lighting);
-            
-            foreach (var renderData in obj.GetRenderData(lighting))
-            {
-                _renderDataCache.Add(renderData);
-            }
         }
 
-        foreach (var (buffer, instanceCount, element) in _renderDataCache)
+        // Render instanced objects (Submesh, LineMesh)
+        foreach (var (buffer, instanceCount, element) in _renderDataCache.GetEntries())
         {
             element.Render(_camera, lighting, buffer, instanceCount);
         }

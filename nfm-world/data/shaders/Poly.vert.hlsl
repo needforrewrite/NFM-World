@@ -24,13 +24,13 @@ cbuffer PolyUniforms : SDL_VS_UNIFORM(0)
 
 struct VSInput
 {
-    float3 Position  : POSITION0;
-    float3 Normal    : NORMAL0;
-    float3 Color     : COLOR0;
-    float3 Centroid  : POSITION1;
-    float DecalOffset : TEXCOORD0;
+    float3 Position   : POSITION0;
+    float3 Normal     : NORMAL0;
+    float3 Centroid   : POSITION1;
+    float4 Color      : COLOR0;
+    float  DecalOffset : TEXCOORD0;
     // Instance data
-    float4x4 World   : TEXCOORD3; // slots 3-6
+    float4x4 World    : TEXCOORD3; // slots 3-6
     float4 Parameters : TEXCOORD7;
 };
 
@@ -65,7 +65,7 @@ VSOutput main(VSInput input)
 
     float4 viewPos = mul(output.WorldPos, View);
 
-    float3 color = input.Color;
+    float3 color = input.Color.rgb;
 
     if (UseBaseColor)
     {

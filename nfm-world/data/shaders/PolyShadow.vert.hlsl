@@ -12,9 +12,9 @@ struct VSInput
 {
     float3 Position   : POSITION0;
     float3 Normal     : NORMAL0;
-    float3 Color      : COLOR0;
     float3 Centroid   : POSITION1;
-    float DecalOffset : TEXCOORD0;
+    float4 Color      : COLOR0;
+    float  DecalOffset : TEXCOORD0;
     // Instance data
     float4x4 World    : TEXCOORD3; // slots 3-6
 };

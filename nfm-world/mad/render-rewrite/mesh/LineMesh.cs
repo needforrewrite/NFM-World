@@ -1,31 +1,24 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using BlendState = nfm_world.compat.BlendState;
-using SamplerState = nfm_world.compat.SamplerState;
-using VertexElementFormat = nfm_world.compat.VertexElementFormat;
-using nfm_world.compat;
 using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
 using nfm_world.camera;
 using nfm_world.shaders;
 using nfm_world.stage;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh;
 
 public class LineMesh : IInstancedRenderElement, IDisposable
 {
-    private readonly LineEffect _material = new(Program._lineShader);
     private readonly Mesh _supermesh;
     private readonly GraphicsDevice _graphicsDevice;
-    private readonly VertexBuffer _lineVertexBuffer;
-    private readonly IndexBuffer _lineIndexBuffer;
-    private readonly int _lineTriangleCount;
+    private readonly GpuBuffer _lineVertexBuffer;
+    private readonly GpuBuffer _lineIndexBuffer;
+    private readonly uint _lineIndexCount;
     private readonly LineType _lineType;
-    private readonly int _lineVertexCount;
 
     public LineMesh(
         Mesh supermesh,
@@ -44,7 +37,6 @@ public class LineMesh : IInstancedRenderElement, IDisposable
 
         foreach (var line in lines)
         {
-            // Create two quads for each line segment to give it some thickness
             var p0 = line.Key.Point0;
             var p1 = line.Key.Point1;
             var poly = line.Value.Poly;
@@ -63,29 +55,52 @@ public class LineMesh : IInstancedRenderElement, IDisposable
             data.AddRange(verts);
         }
 
-        var lineVertexBuffer = new VertexBuffer(graphicsDevice, LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None)
-        {
-            Name = "Line Mesh Vertex Buffer",
-            Tag = this
-        };
-        lineVertexBuffer.SetDataEXT(data);
+        var vtxCount = (uint)data.Count;
+        _lineIndexCount = (uint)indices.Count;
 
-        var lineIndexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwo, indices.Count, BufferUsage.None)
+        // Create and upload vertex buffer
+        _lineVertexBuffer = GpuBuffer.Create<LineMeshVertexAttribute>(
+            graphicsDevice, BufferUsageFlags.Vertex, vtxCount);
         {
-            Name = "Line Mesh Index Buffer",
-            Tag = this
-        };
-        lineIndexBuffer.SetDataEXT(indices);
+            var transfer = TransferBuffer.Create<LineMeshVertexAttribute>(
+                graphicsDevice, TransferBufferUsage.Upload, vtxCount);
+            var span = transfer.Map<LineMeshVertexAttribute>(false);
+            CollectionsMarshal.AsSpan(data).CopyTo(span);
+            transfer.Unmap();
 
-        var lineVertexCount = data.Count;
-        var lineTriangleCount = indices.Count / 3;
+            var cmd = graphicsDevice.AcquireCommandBuffer();
+            var copyPass = cmd.BeginCopyPass();
+            copyPass.UploadToBuffer(
+                new TransferBufferLocation(transfer, 0),
+                new BufferRegion(_lineVertexBuffer, 0, vtxCount * (uint)Marshal.SizeOf<LineMeshVertexAttribute>()),
+                false);
+            cmd.EndCopyPass(copyPass);
+            graphicsDevice.Submit(cmd);
+            transfer.Dispose();
+        }
+
+        // Create and upload index buffer
+        _lineIndexBuffer = GpuBuffer.Create<int>(graphicsDevice, BufferUsageFlags.Index, _lineIndexCount);
+        {
+            var transfer = TransferBuffer.Create<int>(
+                graphicsDevice, TransferBufferUsage.Upload, _lineIndexCount);
+            var span = transfer.Map<int>(false);
+            CollectionsMarshal.AsSpan(indices).CopyTo(span);
+            transfer.Unmap();
+
+            var cmd = graphicsDevice.AcquireCommandBuffer();
+            var copyPass = cmd.BeginCopyPass();
+            copyPass.UploadToBuffer(
+                new TransferBufferLocation(transfer, 0),
+                new BufferRegion(_lineIndexBuffer, 0, _lineIndexCount * sizeof(int)),
+                false);
+            cmd.EndCopyPass(copyPass);
+            graphicsDevice.Submit(cmd);
+            transfer.Dispose();
+        }
 
         _supermesh = supermesh;
         _graphicsDevice = graphicsDevice;
-        _lineVertexBuffer = lineVertexBuffer;
-        _lineIndexBuffer = lineIndexBuffer;
-        _lineTriangleCount = lineTriangleCount;
-        _lineVertexCount = lineVertexCount;
     }
 
     ~LineMesh()
@@ -93,48 +108,59 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         Dispose(false);
     }
 
-    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
+    public void Render(Camera camera, Lighting? lighting, GpuBuffer instanceBuffer, int instanceCount)
     {
-        _graphicsDevice.SetVertexBuffers(_lineVertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
-        _graphicsDevice.Indices = _lineIndexBuffer;
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        if (lighting?.IsCreateShadowMap == true) return; // Lines don't cast shadows
 
-        // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.SnapColor?.SetValue((Vector3)World.Snap);
-        _material.IsFullbright?.SetValue(false);
-        _material.UseBaseColor?.SetValue(false);
-        _material.BaseColor?.SetValue(new Vector3(0, 0, 0));
-        _material.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
-        _material.HalfThickness?.SetValue(World.OutlineThickness);
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
 
-        _material.LightDirection?.SetValue(World.LightDirection);
-        _material.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.FogDistance?.SetValue(World.FadeFrom);
-        _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
-        _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00005f);
-
-        _material.View?.SetValue(camera.ViewMatrix);
-        _material.Projection?.SetValue(camera.ProjectionMatrix);
-        _material.CameraPosition?.SetValue(camera.Position);
-
-        _material.CurrentTechnique = _material.Techniques["Basic"];
-
-        _material.Expand?.SetValue(_supermesh.Expand);
-        _material.Darken?.SetValue(_supermesh.Darken);
-        _material.RandomFloat?.SetValue(URandom.Single());
-        _material.Alpha?.SetValue(1.0f);
-
-        lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
-        
-        _graphicsDevice.BlendState = BlendState.NonPremultiplied;
-
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        var vertUniforms = new LineVertexUniforms
         {
-            pass.Apply();
+            View = camera.ViewMatrix,
+            Projection = camera.ProjectionMatrix,
+            ViewProj = camera.ViewMatrix * camera.ProjectionMatrix,
+            CameraPosition = camera.Position,
+            Alpha = 1.0f,
+            SnapColor = (Vector3)World.Snap,
+            Darken = _supermesh.Darken,
+            LightDirection = World.LightDirection,
+            RandomFloat = URandom.Single(),
+            EnvironmentLight = new Vector2(World.BlackPoint, World.WhitePoint),
+            IsFullbright = false,
+            UseBaseColor = false,
+            BaseColor = Vector3.Zero,
+            Expand = _supermesh.Expand,
+            HalfThickness = World.OutlineThickness,
+            ChargedBlinkAmount = _lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f,
+            Fog = new FogParams
+            {
+                Color = (Vector3)World.Fog.Snap(World.Snap),
+                Distance = World.FadeFrom,
+                Density = World.FogDensity / (World.FogDensity + 1f)
+            }
+        };
+        cmd.PushVertexUniformData(vertUniforms);
 
-            _graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineVertexCount, 0, _lineTriangleCount, instanceCount);
+        var fragUniforms = new LineFragUniforms
+        {
+            Shadow = lighting?.ToShadowParams() ?? default
+        };
+        cmd.PushFragmentUniformData(fragUniforms);
+
+        pass.BindGraphicsPipeline(Pipelines.Line);
+        pass.BindVertexBuffers(0,
+            new BufferBinding(_lineVertexBuffer, 0),
+            new BufferBinding(instanceBuffer, 0));
+        pass.BindIndexBuffer(new BufferBinding(_lineIndexBuffer, 0), IndexElementSize.ThirtyTwo);
+
+        if (lighting != null)
+        {
+            lighting.BindShadowMaps(pass);
         }
+
+        pass.DrawIndexedPrimitives(_lineIndexCount, (uint)instanceCount, 0, 0, 0);
     }
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
@@ -146,18 +172,31 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         float DecalOffset,
         Vector3 Right,
         Vector3 Up
-    )
+    ) : MoonWorks.Graphics.IVertexType
     {
         /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />
         public static readonly VertexDeclaration VertexDeclaration = new(
-            new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-            new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
-            new VertexElement(24, VertexElementFormat.Vector3, VertexElementUsage.Position, 1),
-            new VertexElement(36, VertexElementFormat.Color, VertexElementUsage.Color, 0),
-            new VertexElement(40, VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0),
-            new VertexElement(44, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 1),
-            new VertexElement(56, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 2)
+            new VertexElement(0, compat.VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
+            new VertexElement(12, compat.VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
+            new VertexElement(24, compat.VertexElementFormat.Vector3, VertexElementUsage.Position, 1),
+            new VertexElement(36, compat.VertexElementFormat.Color, VertexElementUsage.Color, 0),
+            new VertexElement(40, compat.VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0),
+            new VertexElement(44, compat.VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 1),
+            new VertexElement(56, compat.VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 2)
         );
+
+        public static MoonWorks.Graphics.VertexElementFormat[] Formats =>
+        [
+            MoonWorks.Graphics.VertexElementFormat.Float3,     // location 0: Position
+            MoonWorks.Graphics.VertexElementFormat.Float3,     // location 1: Normal
+            MoonWorks.Graphics.VertexElementFormat.Float3,     // location 2: Centroid
+            MoonWorks.Graphics.VertexElementFormat.Ubyte4Norm, // location 3: Color
+            MoonWorks.Graphics.VertexElementFormat.Float,      // location 4: DecalOffset
+            MoonWorks.Graphics.VertexElementFormat.Float3,     // location 5: Right
+            MoonWorks.Graphics.VertexElementFormat.Float3      // location 6: Up
+        ];
+
+        public static uint[] Offsets => [0, 12, 24, 36, 40, 44, 56];
     }
 
     private void ReleaseUnmanagedResources()

@@ -57,6 +57,7 @@ public class Program : MoonWorks.Game
 
     public static RenderTarget2D[] shadowRenderTargets { get; private set; }
     public static Texture[] shadowDepthTargets { get; private set; }
+    public static Texture MainDepthTexture { get; private set; }
     private ImGuiRenderer _imguiRenderer;
     public static ImGuiRenderer ImguiRenderer { get; private set; }
 
@@ -220,6 +221,7 @@ public class Program : MoonWorks.Game
             GameSparker.WindowSizeChanged((int)w, (int)h);
             GameSparker.CurrentPhase.WindowSizeChanged((int)w, (int)h);
             G.Scale = h / 720f;
+            RecreateMainDepthTexture(w, h);
         });
 
 #if USE_BASS
@@ -243,6 +245,7 @@ public class Program : MoonWorks.Game
 
         LoadShaders();
         LoadShadowTargets();
+        RecreateMainDepthTexture(MainWindow.Width, MainWindow.Height);
 
         GameSparker.Load(this);
 
@@ -251,9 +254,16 @@ public class Program : MoonWorks.Game
     }
     private void LoadShaders()
     {
-        // TODO: Load shaders via ShaderCross when porting 3D rendering pipeline.
-        // For now, shader loading is deferred until the 3D rendering migration.
-        // The old FNA Effect shaders (.fxb) need to be replaced with HLSL source + ShaderCross.
+        Pipelines.Initialize(GraphicsDevice, RootTitleStorage,
+            MainWindow.SwapchainFormat, GraphicsDevice.SupportedDepthFormat);
+    }
+
+    private void RecreateMainDepthTexture(uint width, uint height)
+    {
+        MainDepthTexture?.Dispose();
+        MainDepthTexture = Texture.Create2D(GraphicsDevice, width, height,
+            GraphicsDevice.SupportedDepthFormat,
+            TextureUsageFlags.DepthStencilTarget);
     }
 
     private void LoadShadowTargets()
@@ -480,11 +490,17 @@ public class Program : MoonWorks.Game
         Node.__INTERNAL_YogaRootsThisFrame.Clear();
 #endif
         
-        // TODO: 3D rendering (GameSparker.Render / CurrentPhase.Render)
-        // requires porting Scene.cs, Effects, Meshes to MoonWorks command buffer model.
-        // For now, call the game logic render hooks (they will no-op on 3D parts that aren't ported yet).
+        // Set render context so Scene/renderers can access the command buffer
+        RenderState.Cmd = cmd;
+
+        // 3D rendering (GameSparker.Render / CurrentPhase.Render)
+        // Scene.Render() will create shadow + main render passes within this cmd.
+        RenderState.Backbuffer = backbuffer;
+        RenderState.MainDepthTexture = MainDepthTexture;
         GameSparker.Render();
         GameSparker.CurrentPhase.Render();
+        RenderState.Backbuffer = null;
+        RenderState.MainDepthTexture = null;
         
 #if DEBUG
         if (DebugUiClass != null)
@@ -517,11 +533,12 @@ public class Program : MoonWorks.Game
 
         FPSCounter.Render();
 
-        // Begin main render pass for 2D overlays (NVG + ImGui)
+        // Begin overlay render pass for 2D (NVG + ImGui).
+        // Use LoadOp.Load to preserve any 3D content already rendered to backbuffer.
         var colorTarget = new ColorTargetInfo
         {
             Texture = backbuffer,
-            LoadOp = LoadOp.Clear,
+            LoadOp = RenderState.SceneRenderedThisFrame ? LoadOp.Load : LoadOp.Clear,
             StoreOp = StoreOp.Store,
             ClearColor = new MoonWorks.Graphics.Color(100, 149, 237, 255) // CornflowerBlue
         };
@@ -542,6 +559,11 @@ public class Program : MoonWorks.Game
         _imguiRenderer.EndLayout(cmd, renderPass);
 
         cmd.EndRenderPass(renderPass);
+
+        // Clear render context
+        RenderState.Cmd = null;
+        RenderState.SceneRenderedThisFrame = false;
+
         GraphicsDevice.Submit(cmd);
         
         _lastFrameTime = (int)t.ElapsedMilliseconds;

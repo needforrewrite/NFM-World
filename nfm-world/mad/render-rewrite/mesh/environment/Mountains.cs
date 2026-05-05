@@ -1,26 +1,21 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using BlendState = nfm_world.compat.BlendState;
-using SamplerState = nfm_world.compat.SamplerState;
-using VertexElementFormat = nfm_world.compat.VertexElementFormat;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
 using nfm_world.camera;
+using nfm_world.shaders;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh.environment;
 
 public class Mountains : Transform, IImmediateRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
-    private readonly VertexBuffer _vertexBuffer;
-    private readonly IndexBuffer _indexBuffer;
-    private readonly Effect _material;
-    private readonly int _triangleCount;
-    private readonly int _vertexCount;
+    private readonly GpuBuffer _vertexBuffer;
+    private readonly GpuBuffer _indexBuffer;
+    private readonly uint _indexCount;
 
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
@@ -56,23 +51,46 @@ public class Mountains : Transform, IImmediateRenderable
             }
         }
 
-        _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None)
-        {
-            Name = "Mountains Vertex Buffer",
-            Tag = this
-        };
-        _vertexBuffer.SetDataEXT(data);
+        var vtxCount = (uint)data.Count;
+        _indexCount = (uint)indices.Count;
 
-        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwo, indices.Count, BufferUsage.None)
+        // Create and upload vertex buffer
+        _vertexBuffer = GpuBuffer.Create<VertexPositionColor>(graphicsDevice, BufferUsageFlags.Vertex, vtxCount);
         {
-            Name = "Mountains Index Buffer",
-            Tag = this
-        };
-        _indexBuffer.SetDataEXT(indices);
-        _triangleCount = indices.Count / 3;
-        _vertexCount = data.Count;
+            var transfer = TransferBuffer.Create<VertexPositionColor>(graphicsDevice, TransferBufferUsage.Upload, vtxCount);
+            var span = transfer.Map<VertexPositionColor>(false);
+            CollectionsMarshal.AsSpan(data).CopyTo(span);
+            transfer.Unmap();
 
-        _material = Program._mountainsShader;
+            var cmd = graphicsDevice.AcquireCommandBuffer();
+            var copyPass = cmd.BeginCopyPass();
+            copyPass.UploadToBuffer(
+                new TransferBufferLocation(transfer, 0),
+                new BufferRegion(_vertexBuffer, 0, vtxCount * (uint)Marshal.SizeOf<VertexPositionColor>()),
+                false);
+            cmd.EndCopyPass(copyPass);
+            graphicsDevice.Submit(cmd);
+            transfer.Dispose();
+        }
+
+        // Create and upload index buffer
+        _indexBuffer = GpuBuffer.Create<int>(graphicsDevice, BufferUsageFlags.Index, _indexCount);
+        {
+            var transfer = TransferBuffer.Create<int>(graphicsDevice, TransferBufferUsage.Upload, _indexCount);
+            var span = transfer.Map<int>(false);
+            CollectionsMarshal.AsSpan(indices).CopyTo(span);
+            transfer.Unmap();
+
+            var cmd = graphicsDevice.AcquireCommandBuffer();
+            var copyPass = cmd.BeginCopyPass();
+            copyPass.UploadToBuffer(
+                new TransferBufferLocation(transfer, 0),
+                new BufferRegion(_indexBuffer, 0, _indexCount * sizeof(int)),
+                false);
+            cmd.EndCopyPass(copyPass);
+            graphicsDevice.Submit(cmd);
+            transfer.Dispose();
+        }
     }
 
     ~Mountains()
@@ -85,24 +103,42 @@ public class Mountains : Transform, IImmediateRenderable
     {
         if (lighting?.IsCreateShadowMap == true) return;
 
-        _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-        _graphicsDevice.Indices = _indexBuffer;
-        _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        _material.Parameters["WorldView"]?.SetValue(camera.ViewMatrix);
-        _material.Parameters["WorldViewProj"]?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        
-        _material.Parameters["DepthBias"]?.SetValue(0.00005f);
-        _material.Parameters["FogColor"]?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
-        _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
 
-        lighting?.SetShadowMapParameters(_material);
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        // Push vertex uniforms
+        var fog = new FogParams
         {
-            pass.Apply();
-    
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _vertexCount, 0, _triangleCount);
+            Color = (Vector3)World.Fog.Snap(World.Snap),
+            Distance = World.FadeFrom,
+            Density = World.FogDensity / (World.FogDensity + 1f)
+        };
+        var vertUniforms = new MountainsVertexUniforms
+        {
+            WorldView = camera.ViewMatrix,
+            WorldViewProj = camera.ViewMatrix * camera.ProjectionMatrix,
+            Fog = fog
+        };
+        cmd.PushVertexUniformData(vertUniforms);
+
+        // Push fragment uniforms
+        var fragUniforms = new MountainsFragUniforms
+        {
+            Shadow = lighting?.ToShadowParams() ?? default
+        };
+        cmd.PushFragmentUniformData(fragUniforms);
+
+        // Bind pipeline and resources
+        pass.BindGraphicsPipeline(Pipelines.Mountains);
+        pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
+        pass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.ThirtyTwo);
+
+        if (lighting != null && !lighting.IsCreateShadowMap)
+        {
+            lighting.BindShadowMaps(pass);
         }
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+
+        pass.DrawIndexedPrimitives(_indexCount, 1, 0, 0, 0);
     }
 }
