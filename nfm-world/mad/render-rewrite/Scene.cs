@@ -98,7 +98,10 @@ public class Scene
                 Texture = backbuffer,
                 LoadOp = clearRenderBuffer ? LoadOp.Clear : LoadOp.Load,
                 StoreOp = StoreOp.Store,
-                ClearColor = new MoonWorks.Graphics.Color(100, 149, 237, 255)
+                ClearColor = new MoonWorks.Graphics.Color(
+                    (byte)Math.Clamp((int)World.Sky.R, 0, 255),
+                    (byte)Math.Clamp((int)World.Sky.G, 0, 255),
+                    (byte)Math.Clamp((int)World.Sky.B, 0, 255), (byte)255)
             };
             var mainDepthInfo = new DepthStencilTargetInfo
             {
