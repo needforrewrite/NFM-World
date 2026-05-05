@@ -1,13 +1,12 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using BlendState = nfm_world.compat.BlendState;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.SoftFloat;
 using nfm_world.camera;
+using nfm_world.shaders;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh.effects;
 
@@ -32,19 +31,16 @@ public class Dust : IDisposable
     private int _vertexCount;
     private int[] _indices = new int[20 * 8 * 3];
     private int _indexCount;
-    private readonly BasicEffect _effect;
+    private readonly GpuBuffer _vertexBuffer;
+    private readonly GpuBuffer _indexBuffer;
 
     public Dust(ClientCar car, GraphicsDevice graphicsDevice)
     {
         _car = car;
         _graphicsDevice = graphicsDevice;
 
-        _effect = new BasicEffect(graphicsDevice)
-        {
-            LightingEnabled = false,
-            TextureEnabled = false,
-            VertexColorEnabled = true
-        };
+        _vertexBuffer = GpuBuffer.Create<VertexPositionColor>(graphicsDevice, BufferUsageFlags.Vertex, 20 * 8);
+        _indexBuffer = GpuBuffer.Create<int>(graphicsDevice, BufferUsageFlags.Index, 20 * 8 * 3);
     }
     
     public void AddDust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
@@ -316,37 +312,53 @@ public class Dust : IDisposable
         {
             return;
         }
-        
-        _effect.World = Matrix.Identity;
-        _effect.View = camera.ViewMatrix;
-        _effect.Projection = camera.ProjectionMatrix;
-        
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        _graphicsDevice.BlendState = BlendState.NonPremultiplied;
-        foreach (var pass in _effect.CurrentTechnique.Passes)
-        {
-            pass.Apply();
 
-            _graphicsDevice.DrawUserIndexedPrimitives(
-                PrimitiveType.TriangleList,
-                _verts,
-                0,
-                _vertexCount,
-                _indices,
-                0,
-                _indexCount / 3,
-                VertexPositionColor.VertexDeclaration
-            );
-        }
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
-        _graphicsDevice.BlendState = BlendState.Opaque;
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+        // Upload dynamic data
+        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(
+            _graphicsDevice, TransferBufferUsage.Upload, (uint)_vertexCount);
+        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
+        _verts.AsSpan(0, _vertexCount).CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
+
+        var idxTransfer = TransferBuffer.Create<int>(
+            _graphicsDevice, TransferBufferUsage.Upload, (uint)_indexCount);
+        var idxSpan = idxTransfer.Map<int>(false);
+        _indices.AsSpan(0, _indexCount).CopyTo(idxSpan);
+        idxTransfer.Unmap();
+
+        var uploadCmd = _graphicsDevice.AcquireCommandBuffer();
+        var copyPass = uploadCmd.BeginCopyPass();
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(vtxTransfer, 0),
+            new BufferRegion(_vertexBuffer, 0, (uint)(_vertexCount * Marshal.SizeOf<VertexPositionColor>())),
+            true);
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(idxTransfer, 0),
+            new BufferRegion(_indexBuffer, 0, (uint)(_indexCount * sizeof(int))),
+            true);
+        uploadCmd.EndCopyPass(copyPass);
+        _graphicsDevice.Submit(uploadCmd);
+        vtxTransfer.Dispose();
+        idxTransfer.Dispose();
+
+        // Render with depth-read-only + alpha blend
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
+
+        var wvp = camera.ViewMatrix * camera.ProjectionMatrix; // World = Identity
+        cmd.PushVertexUniformData(new BasicEffectVertexUniforms { WorldViewProjection = wvp });
+
+        pass.BindGraphicsPipeline(Pipelines.BasicEffectDepthReadOnly);
+        pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
+        pass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.ThirtyTwo);
+        pass.DrawIndexedPrimitives((uint)_indexCount, 1, 0, 0, 0);
     }
 
     private void ReleaseUnmanagedResources()
     {
-        _effect.Dispose();
+        _vertexBuffer.Dispose();
+        _indexBuffer.Dispose();
     }
 
     private void Dispose(bool disposing)

@@ -51,6 +51,9 @@ public static class Pipelines
     /// <summary>BasicEffect: non-instanced VertexPositionColor, alpha blend, depth R/W, CullNone → swapchain format.</summary>
     public static GraphicsPipeline BasicEffect { get; private set; }
 
+    /// <summary>BasicEffect variant: depth read-only (no write), alpha blend, CullNone → swapchain format. Used by particle effects (Dust).</summary>
+    public static GraphicsPipeline BasicEffectDepthReadOnly { get; private set; }
+
     // ─── Samplers ───────────────────────────────────────────────────────────
 
     /// <summary>Point-clamp sampler for shadow map sampling.</summary>
@@ -359,6 +362,42 @@ public static class Pipelines
             {
                 EnableDepthTest = true,
                 EnableDepthWrite = true,
+                CompareOp = CompareOp.LessOrEqual
+            },
+            TargetInfo = new GraphicsPipelineTargetInfo
+            {
+                ColorTargetDescriptions =
+                [
+                    new ColorTargetDescription
+                    {
+                        Format = swapchainFormat,
+                        BlendState = ColorTargetBlendState.NonPremultipliedAlphaBlend
+                    }
+                ],
+                HasDepthStencilTarget = true,
+                DepthStencilFormat = depthFormat
+            }
+        });
+
+        // ── BasicEffect (depth read-only) ───────────────────────────
+        BasicEffectDepthReadOnly = GraphicsPipeline.Create(device, new GraphicsPipelineCreateInfo
+        {
+            Name = "BasicEffectDepthReadOnly",
+            VertexShader = BasicEffectVert,
+            FragmentShader = BasicEffectFrag,
+            VertexInputState = _simpleVIS,
+            PrimitiveType = PrimitiveType.TriangleList,
+            RasterizerState = new MoonWorks.Graphics.RasterizerState
+            {
+                CullMode = MoonWorks.Graphics.CullMode.None,
+                FillMode = FillMode.Fill,
+                FrontFace = FrontFace.CounterClockwise
+            },
+            MultisampleState = MultisampleState.None,
+            DepthStencilState = new MoonWorks.Graphics.DepthStencilState
+            {
+                EnableDepthTest = true,
+                EnableDepthWrite = false,
                 CompareOp = CompareOp.LessOrEqual
             },
             TargetInfo = new GraphicsPipelineTargetInfo

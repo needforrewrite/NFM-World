@@ -1,10 +1,11 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world.camera;
+using nfm_world.shaders;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh.effects;
 
@@ -16,7 +17,7 @@ public class Flames : IDisposable
     private int[] _pa, _pb;
 
     private VertexPositionColor[] _triangles;
-    private readonly BasicEffect _flameEffect;
+    private readonly GpuBuffer _vertexBuffer;
 
     private int _tick;
 
@@ -27,13 +28,9 @@ public class Flames : IDisposable
         _pa = new int[car.Mesh.Polys.Length];
         _pb = new int[car.Mesh.Polys.Length];
         
-        _flameEffect = new BasicEffect(graphicsDevice)
-        {
-            LightingEnabled = false,
-            TextureEnabled = false,
-            VertexColorEnabled = true
-        };
-        _triangles = new VertexPositionColor[9 * car.Mesh.Polys.Length];
+        var maxVerts = (uint)(9 * car.Mesh.Polys.Length);
+        _vertexBuffer = GpuBuffer.Create<VertexPositionColor>(graphicsDevice, BufferUsageFlags.Vertex, maxVerts);
+        _triangles = new VertexPositionColor[maxVerts];
     }
 
     public void GameTick()
@@ -295,31 +292,41 @@ public class Flames : IDisposable
                 _triangles[triBase + 8] = new VertexPositionColor(inner2, innerColor);
             }
             
-            
-            _flameEffect.World = _car.MatrixWorld;
-            _flameEffect.View = camera.ViewMatrix;
-            _flameEffect.Projection = camera.ProjectionMatrix;
-        
-            _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-            foreach (var pass in _flameEffect.CurrentTechnique.Passes)
-            {
-                pass.Apply();
+            var vtxCount = (uint)(9 * _car.Mesh.Polys.Length);
 
-                _graphicsDevice.DrawUserPrimitives(
-                    PrimitiveType.TriangleList,
-                    _triangles,
-                    0,
-                    3 * _car.Mesh.Polys.Length,
-                    VertexPositionColor.VertexDeclaration
-                );
-            }
-            _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+            // Upload dynamic vertex data
+            var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, vtxCount);
+            var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
+            _triangles.AsSpan(0, (int)vtxCount).CopyTo(vtxSpan);
+            vtxTransfer.Unmap();
+
+            var uploadCmd = _graphicsDevice.AcquireCommandBuffer();
+            var copyPass = uploadCmd.BeginCopyPass();
+            copyPass.UploadToBuffer(
+                new TransferBufferLocation(vtxTransfer, 0),
+                new BufferRegion(_vertexBuffer, 0, vtxCount * (uint)Marshal.SizeOf<VertexPositionColor>()),
+                true);
+            uploadCmd.EndCopyPass(copyPass);
+            _graphicsDevice.Submit(uploadCmd);
+            vtxTransfer.Dispose();
+
+            // Render
+            var cmd = RenderState.Cmd;
+            var pass = RenderState.Pass;
+            if (cmd == null || pass == null) return;
+
+            var wvp = _car.MatrixWorld * camera.ViewMatrix * camera.ProjectionMatrix;
+            cmd.PushVertexUniformData(new BasicEffectVertexUniforms { WorldViewProjection = wvp });
+
+            pass.BindGraphicsPipeline(Pipelines.BasicEffect);
+            pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
+            pass.DrawPrimitives(vtxCount, 1, 0, 0);
         }
     }
 
     private void ReleaseUnmanagedResources()
     {
-        _flameEffect.Dispose();
+        _vertexBuffer.Dispose();
     }
 
     private void Dispose(bool disposing)
