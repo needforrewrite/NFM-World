@@ -57,7 +57,7 @@ VSOutput main(VSInput input)
 
     VSOutput output = (VSOutput)0;
 
-    float distanceToCamera = mul(mul(mul(float4(input.Position, 1), input.World), View), Projection).z;
+    float distanceToCamera = mul(Projection, mul(View, mul(input.World, float4(input.Position, 1)))).z;
 
     float3 position = input.Position + input.Right * HalfThickness * distanceToCamera + input.Up * HalfThickness * distanceToCamera;
 
@@ -68,10 +68,10 @@ VSOutput main(VSInput input)
         VS_Expand(position, input.Centroid, RandomFloat);
     }
 
-    output.WorldPos = mul(float4(position, 1), input.World);
+    output.WorldPos = mul(input.World, float4(position, 1));
     output.GetsShadowed = getsShadowed ? 1.0 : 0.0;
 
-    float4 viewPos = mul(output.WorldPos, View);
+    float4 viewPos = mul(View, output.WorldPos);
 
     float3 color = input.Color.rgb;
 
@@ -80,7 +80,7 @@ VSOutput main(VSInput input)
         color = BaseColor;
     }
 
-    output.Position = mul(viewPos, Projection);
+    output.Position = mul(Projection, viewPos);
 
     if (Darken < 1.0f)
     {
@@ -96,8 +96,8 @@ VSOutput main(VSInput input)
     {
         VS_ApplyPolygonDiffuse(
             color,
-            mul(float4(input.Centroid, 1), input.World).xyz,
-            normalize(mul(float4(input.Normal, 0), input.World).xyz),
+            mul(input.World, float4(input.Centroid, 1)).xyz,
+            normalize(mul(input.World, float4(input.Normal, 0)).xyz),
             LightDirection,
             CameraPosition,
             EnvironmentLight);

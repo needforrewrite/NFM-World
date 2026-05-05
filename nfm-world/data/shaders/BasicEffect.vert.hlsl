@@ -23,7 +23,7 @@ struct VSOutput
 VSOutput main(VSInput input)
 {
     VSOutput output;
-    output.Position = mul(float4(input.Position, 1.0), WorldViewProjection);
+    output.Position = mul(WorldViewProjection, float4(input.Position, 1.0));
     output.Color = input.Color;
     return output;
 }

@@ -29,7 +29,7 @@ VSOutput main(VSInput input)
 {
     VSOutput output = (VSOutput)0;
 
-    output.Position = mul(mul(mul(float4(input.Position, 1), input.World), View), Projection);
+    output.Position = mul(Projection, mul(View, mul(input.World, float4(input.Position, 1))));
     output.Depth = output.Position.z / output.Position.w;
 
     return output;

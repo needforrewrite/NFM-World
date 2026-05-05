@@ -162,7 +162,7 @@ void applyShadowingSingle(
     in float depthBias,
     out bool isInLight)
 {
-    float4 lightingPosition = mul(worldPos, lightViewProj);
+    float4 lightingPosition = mul(lightViewProj, worldPos);
 
     float2 shadowTexCoord = 0.5 * lightingPosition.xy /
                             lightingPosition.w + float2(0.5, 0.5);

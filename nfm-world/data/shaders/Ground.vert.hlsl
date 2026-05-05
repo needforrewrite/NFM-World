@@ -27,8 +27,8 @@ struct VSOutput
 VSOutput main(VSInput input)
 {
     VSOutput output;
-    output.Position = mul(input.Position, WorldViewProj);
-    output.Position1 = mul(input.Position, WorldViewProj);
+    output.Position = mul(WorldViewProj, input.Position);
+    output.Position1 = mul(WorldViewProj, input.Position);
 
     float3 color = input.Color;
 

@@ -26,10 +26,10 @@ struct VSOutput
 VSOutput main(VSInput input)
 {
     VSOutput output;
-    output.Position = mul(input.Position, WorldViewProj);
+    output.Position = mul(WorldViewProj, input.Position);
 
     float3 color = input.Color;
-    float3 viewPos = mul(input.Position, WorldView).xyz;
+    float3 viewPos = mul(WorldView, input.Position).xyz;
     VS_ApplyFog(color, viewPos, Fog.Color, Fog.Distance, Fog.Density);
 
     VS_ColorCorrect(color);
