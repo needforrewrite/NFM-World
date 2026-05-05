@@ -1,10 +1,11 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world.camera;
+using nfm_world.shaders;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh.effects;
 
@@ -26,9 +27,9 @@ public class Chips : IDisposable
     private readonly GraphicsDevice _graphicsDevice;
     
     private Chip[] _chips;
-    private readonly BasicEffect _effect;
     private readonly VertexPositionColor[] _triangles;
     private int _triangleCount;
+    private readonly GpuBuffer _vertexBuffer;
 
     public Chips(ClientCar car, GraphicsDevice graphicsDevice)
     {
@@ -36,13 +37,9 @@ public class Chips : IDisposable
         _graphicsDevice = graphicsDevice;
         _chips = new Chip[_car.Mesh.Polys.Length];
         
-        _effect = new BasicEffect(graphicsDevice)
-        {
-            LightingEnabled = false,
-            TextureEnabled = false,
-            VertexColorEnabled = true
-        };
-        _triangles = new VertexPositionColor[3 * _car.Mesh.Polys.Length];
+        var maxVerts = (uint)(3 * _car.Mesh.Polys.Length);
+        _vertexBuffer = GpuBuffer.Create<VertexPositionColor>(graphicsDevice, BufferUsageFlags.Vertex, maxVerts);
+        _triangles = new VertexPositionColor[maxVerts];
     }
 
     public void GameTick()
@@ -147,24 +144,34 @@ public class Chips : IDisposable
     {
         if (_triangleCount == 0) return;
 
-        _effect.World = _car.MatrixWorld;
-        _effect.View = camera.ViewMatrix;
-        _effect.Projection = camera.ProjectionMatrix;
-        
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        foreach (var pass in _effect.CurrentTechnique.Passes)
-        {
-            pass.Apply();
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
 
-            _graphicsDevice.DrawUserPrimitives(
-                PrimitiveType.TriangleList,
-                _triangles,
-                0,
-                _triangleCount,
-                VertexPositionColor.VertexDeclaration
-            );
-        }
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+        var vtxCount = (uint)(_triangleCount * 3);
+
+        // Upload dynamic vertex data
+        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, vtxCount);
+        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
+        _triangles.AsSpan(0, (int)vtxCount).CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
+
+        var uploadCmd = _graphicsDevice.AcquireCommandBuffer();
+        var copyPass = uploadCmd.BeginCopyPass();
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(vtxTransfer, 0),
+            new BufferRegion(_vertexBuffer, 0, vtxCount * (uint)Marshal.SizeOf<VertexPositionColor>()),
+            true);
+        uploadCmd.EndCopyPass(copyPass);
+        _graphicsDevice.Submit(uploadCmd);
+        vtxTransfer.Dispose();
+
+        var wvp = _car.MatrixWorld * camera.ViewMatrix * camera.ProjectionMatrix;
+        cmd.PushVertexUniformData(new BasicEffectVertexUniforms { WorldViewProjection = wvp });
+
+        pass.BindGraphicsPipeline(Pipelines.BasicEffect);
+        pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
+        pass.DrawPrimitives(vtxCount, 1, 0, 0);
     }
 
     public void AddChip(int polyIdx, float breakFactor)
@@ -184,7 +191,7 @@ public class Chips : IDisposable
 
     private void ReleaseUnmanagedResources()
     {
-        _effect.Dispose();
+        _vertexBuffer.Dispose();
     }
 
     private void Dispose(bool disposing)
