@@ -16,11 +16,11 @@ public class FPSCounter
     /// </summary>
     public static void Update(TimeSpan delta)
     {
-        elapsed += delta.TotalSeconds;
+        elapsed = _stopwatch.Elapsed.TotalSeconds;
         if (elapsed > msgFrequency)
         {
             msg = $"Fps: {frames / elapsed:0.00}\nElapsed time: {elapsed:0.00}\nUpdates: {updates}\nFrames: {frames}";
-            elapsed = 0;
+            _stopwatch.Restart();
             frames = 0;
             updates = 0;
         }
