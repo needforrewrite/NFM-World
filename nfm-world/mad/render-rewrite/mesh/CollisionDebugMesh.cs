@@ -1,11 +1,6 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using BlendState = nfm_world.compat.BlendState;
-using SamplerState = nfm_world.compat.SamplerState;
-using VertexElementFormat = nfm_world.compat.VertexElementFormat;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
@@ -13,17 +8,16 @@ using nfm_world_library.util;
 using nfm_world.camera;
 using nfm_world.shaders;
 using nfm_world.stage;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh;
 
 public sealed class CollisionDebugMesh : GameObject, IDisposable
 {
-    private LineEffect _material;
-    private int lineTriangleCount;
-    private IndexBuffer lineIndexBuffer;
-    private VertexBuffer lineVertexBuffer;
-    private readonly int lineVertexCount;
-    private VertexBuffer lineInstanceBuffer;
+    private readonly uint _lineIndexCount;
+    private readonly GpuBuffer _lineVertexBuffer;
+    private readonly GpuBuffer _lineIndexBuffer;
+    private readonly GpuBuffer _lineInstanceBuffer;
 
     public CollisionDebugMesh(Span<Rad3dBoxDef> boxes)
     {
@@ -142,31 +136,49 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
             }
         }
 
-        lineVertexBuffer = new VertexBuffer(GameSparker._graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None)
-        {
-            Name = "Collision Debug Mesh Vertex Buffer",
-            Tag = this
-        };
-        lineVertexBuffer.SetDataEXT(data);
-	    
-        lineIndexBuffer = new IndexBuffer(GameSparker._graphicsDevice, IndexElementSize.ThirtyTwo, indices.Count, BufferUsage.None)
-        {
-            Name = "Collision Debug Mesh Index Buffer",
-            Tag = this
-        };
-        lineIndexBuffer.SetDataEXT(indices);
-	    
-        lineTriangleCount = indices.Count / 3;
-        lineVertexCount = data.Count;
-        
-        lineInstanceBuffer = new DynamicVertexBuffer(GameSparker._graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.WriteOnly)
-        {
-            Name = "Collision Debug Mesh Instance Buffer",
-            Tag = this
-        };
-        lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);
+        var device = GameSparker._graphicsDevice;
+        var vtxCount = (uint)data.Count;
+        _lineIndexCount = (uint)indices.Count;
 
-        _material = new LineEffect(Program._lineShader);
+        _lineVertexBuffer = GpuBuffer.Create<LineMesh.LineMeshVertexAttribute>(device, BufferUsageFlags.Vertex, vtxCount);
+        _lineIndexBuffer = GpuBuffer.Create<int>(device, BufferUsageFlags.Index, _lineIndexCount);
+        _lineInstanceBuffer = GpuBuffer.Create<InstanceData>(device, BufferUsageFlags.Vertex, 1);
+
+        var vtxTransfer = TransferBuffer.Create<LineMesh.LineMeshVertexAttribute>(device, TransferBufferUsage.Upload, vtxCount);
+        var vtxSpan = vtxTransfer.Map<LineMesh.LineMeshVertexAttribute>(false);
+        CollectionsMarshal.AsSpan(data).CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
+
+        var idxTransfer = TransferBuffer.Create<int>(device, TransferBufferUsage.Upload, _lineIndexCount);
+        var idxSpan = idxTransfer.Map<int>(false);
+        CollectionsMarshal.AsSpan(indices).CopyTo(idxSpan);
+        idxTransfer.Unmap();
+
+        var instTransfer = TransferBuffer.Create<InstanceData>(device, TransferBufferUsage.Upload, 1);
+        var instSpan = instTransfer.Map<InstanceData>(false);
+        instSpan[0] = new InstanceData(MatrixWorld);
+        instTransfer.Unmap();
+
+        var cmd = device.AcquireCommandBuffer();
+        var copyPass = cmd.BeginCopyPass();
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(vtxTransfer, 0),
+            new BufferRegion(_lineVertexBuffer, 0, vtxCount * (uint)Marshal.SizeOf<LineMesh.LineMeshVertexAttribute>()),
+            false);
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(idxTransfer, 0),
+            new BufferRegion(_lineIndexBuffer, 0, _lineIndexCount * sizeof(int)),
+            false);
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(instTransfer, 0),
+            new BufferRegion(_lineInstanceBuffer, 0, (uint)Marshal.SizeOf<InstanceData>()),
+            false);
+        cmd.EndCopyPass(copyPass);
+        device.Submit(cmd);
+
+        vtxTransfer.Dispose();
+        idxTransfer.Dispose();
+        instTransfer.Dispose();
 
         #endregion
     }
@@ -179,54 +191,73 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
     public override void Render(Camera camera, Lighting? lighting)
     {
         if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
-        lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);
 
-        GameSparker._graphicsDevice.SetVertexBuffers(lineVertexBuffer, new VertexBufferBinding(lineInstanceBuffer, 0, 1));
-        GameSparker._graphicsDevice.Indices = lineIndexBuffer;
+        // Upload updated instance data (MatrixWorld may change)
+        var device = GameSparker._graphicsDevice;
+        var instTransfer = TransferBuffer.Create<InstanceData>(device, TransferBufferUsage.Upload, 1);
+        var instSpan = instTransfer.Map<InstanceData>(false);
+        instSpan[0] = new InstanceData(MatrixWorld);
+        instTransfer.Unmap();
+        var uploadCmd = device.AcquireCommandBuffer();
+        var copyPass = uploadCmd.BeginCopyPass();
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(instTransfer, 0),
+            new BufferRegion(_lineInstanceBuffer, 0, (uint)Marshal.SizeOf<InstanceData>()),
+            true);
+        uploadCmd.EndCopyPass(copyPass);
+        device.Submit(uploadCmd);
+        instTransfer.Dispose();
 
-        // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.SnapColor?.SetValue((Vector3)new Color3(100, 100, 100));
-        _material.IsFullbright?.SetValue(true);
-        _material.UseBaseColor?.SetValue(false);
-        _material.BaseColor?.SetValue(new Vector3(0, 0, 0));
-        _material.ChargedBlinkAmount?.SetValue(0.0f);
-        _material.HalfThickness?.SetValue(World.OutlineThickness);
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
 
-        _material.LightDirection?.SetValue(World.LightDirection);
-        _material.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.FogDistance?.SetValue(World.FadeFrom);
-        _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
-        _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00005f);
-        _material.GetsShadowed?.SetValue(false);
-        _material.Alpha?.SetValue(1f);
-
-        _material.View?.SetValue(camera.ViewMatrix);
-        _material.Projection?.SetValue(camera.ProjectionMatrix);
-        _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        _material.CameraPosition?.SetValue(camera.Position);
-
-        _material.CurrentTechnique = _material.Techniques["Basic"];
-
-        _material.Expand?.SetValue(false);
-        _material.Darken?.SetValue(1.0f);
-        _material.RandomFloat?.SetValue(URandom.Single());
-
-        _material.Glow?.SetValue(false);
-        
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        var fog = new FogParams
         {
-            pass.Apply();
-    
-            GameSparker._graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, lineVertexCount, 0, lineTriangleCount, 1);
-        }
+            Color = (Vector3)World.Fog.Snap(World.Snap),
+            Distance = World.FadeFrom,
+            Density = World.FogDensity / (World.FogDensity + 1f)
+        };
+
+        cmd.PushVertexUniformData(new LineVertexUniforms
+        {
+            View = camera.ViewMatrix,
+            Projection = camera.ProjectionMatrix,
+            ViewProj = camera.ViewMatrix * camera.ProjectionMatrix,
+            CameraPosition = camera.Position,
+            Alpha = 1f,
+            SnapColor = (Vector3)new Color3(100, 100, 100),
+            Darken = 1.0f,
+            LightDirection = World.LightDirection,
+            RandomFloat = URandom.Single(),
+            EnvironmentLight = new Vector2(World.BlackPoint, World.WhitePoint),
+            IsFullbright = true,
+            UseBaseColor = false,
+            BaseColor = Vector3.Zero,
+            Expand = false,
+            Fog = fog,
+            HalfThickness = World.OutlineThickness,
+            ChargedBlinkAmount = 0f
+        });
+
+        cmd.PushFragmentUniformData(new LineFragUniforms
+        {
+            Shadow = default
+        });
+
+        pass.BindGraphicsPipeline(Pipelines.Line);
+        pass.BindVertexBuffers(
+            new BufferBinding(_lineVertexBuffer, 0),
+            new BufferBinding(_lineInstanceBuffer, 0));
+        pass.BindIndexBuffer(new BufferBinding(_lineIndexBuffer, 0), IndexElementSize.ThirtyTwo);
+        pass.DrawIndexedPrimitives(_lineIndexCount, 1, 0, 0, 0);
     }
 
     private void ReleaseUnmanagedResources()
     {
-        lineIndexBuffer.Dispose();
-        lineVertexBuffer.Dispose();
-        lineInstanceBuffer.Dispose();
+        _lineIndexBuffer.Dispose();
+        _lineVertexBuffer.Dispose();
+        _lineInstanceBuffer.Dispose();
     }
 
     private void Dispose(bool disposing)

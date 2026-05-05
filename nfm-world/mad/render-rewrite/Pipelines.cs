@@ -25,6 +25,8 @@ public static class Pipelines
     public static Shader GroundFrag { get; private set; }
     public static Shader MountainsVert { get; private set; }
     public static Shader MountainsFrag { get; private set; }
+    public static Shader BasicEffectVert { get; private set; }
+    public static Shader BasicEffectFrag { get; private set; }
 
     // ─── Pipelines ──────────────────────────────────────────────────────────
 
@@ -45,6 +47,9 @@ public static class Pipelines
 
     /// <summary>Mountains: non-instanced VertexPositionColor, opaque, depth read-only → swapchain format.</summary>
     public static GraphicsPipeline Mountains { get; private set; }
+
+    /// <summary>BasicEffect: non-instanced VertexPositionColor, alpha blend, depth R/W, CullNone → swapchain format.</summary>
+    public static GraphicsPipeline BasicEffect { get; private set; }
 
     // ─── Samplers ───────────────────────────────────────────────────────────
 
@@ -89,6 +94,8 @@ public static class Pipelines
         GroundFrag      = ShaderCross.Create(device, storage, $"{dir}/Ground.frag.hlsl",      "main", fmt, ShaderStage.Fragment, includeDir: dir);
         MountainsVert   = ShaderCross.Create(device, storage, $"{dir}/Mountains.vert.hlsl",   "main", fmt, ShaderStage.Vertex,   includeDir: dir);
         MountainsFrag   = ShaderCross.Create(device, storage, $"{dir}/Mountains.frag.hlsl",   "main", fmt, ShaderStage.Fragment, includeDir: dir);
+        BasicEffectVert = ShaderCross.Create(device, storage, $"{dir}/BasicEffect.vert.hlsl", "main", fmt, ShaderStage.Vertex,   includeDir: dir);
+        BasicEffectFrag = ShaderCross.Create(device, storage, $"{dir}/BasicEffect.frag.hlsl", "main", fmt, ShaderStage.Fragment, includeDir: dir);
     }
 
     private static void CreateVertexInputStates()
@@ -326,6 +333,42 @@ public static class Pipelines
                     {
                         Format = swapchainFormat,
                         BlendState = ColorTargetBlendState.NoBlend
+                    }
+                ],
+                HasDepthStencilTarget = true,
+                DepthStencilFormat = depthFormat
+            }
+        });
+
+        // ── BasicEffect ─────────────────────────────────────────────
+        BasicEffect = GraphicsPipeline.Create(device, new GraphicsPipelineCreateInfo
+        {
+            Name = "BasicEffect",
+            VertexShader = BasicEffectVert,
+            FragmentShader = BasicEffectFrag,
+            VertexInputState = _simpleVIS,
+            PrimitiveType = PrimitiveType.TriangleList,
+            RasterizerState = new MoonWorks.Graphics.RasterizerState
+            {
+                CullMode = MoonWorks.Graphics.CullMode.None,
+                FillMode = FillMode.Fill,
+                FrontFace = FrontFace.CounterClockwise
+            },
+            MultisampleState = MultisampleState.None,
+            DepthStencilState = new MoonWorks.Graphics.DepthStencilState
+            {
+                EnableDepthTest = true,
+                EnableDepthWrite = true,
+                CompareOp = CompareOp.LessOrEqual
+            },
+            TargetInfo = new GraphicsPipelineTargetInfo
+            {
+                ColorTargetDescriptions =
+                [
+                    new ColorTargetDescription
+                    {
+                        Format = swapchainFormat,
+                        BlendState = ColorTargetBlendState.NonPremultipliedAlphaBlend
                     }
                 ],
                 HasDepthStencilTarget = true,

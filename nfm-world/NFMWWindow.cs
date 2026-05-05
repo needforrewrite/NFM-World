@@ -40,15 +40,8 @@ public class Program : MoonWorks.Game
     public static Shader _mountainsVertexShader { get; private set; }
     public static Shader _mountainsFragmentShader { get; private set; }
 
-    // FNA compat: Effect stubs for legacy rendering code
-    #pragma warning disable CS0618
-    public static Effect _polyShader { get; } = new();
-    public static Effect _lineShader { get; } = new();
-    public static Effect _skyShader { get; } = new();
-    public static Effect _groundShader { get; } = new();
-    public static Effect _mountainsShader { get; } = new();
-
     // FNA compat: GraphicsDeviceManager stub
+    #pragma warning disable CS0618
     public GraphicsDeviceManager _graphics { get; } = new();
     public bool IsFixedTimeStep { get; set; } = true;
     public TimeSpan TargetElapsedTime { get; set; } = TimeSpan.FromMilliseconds(1000d / 60);

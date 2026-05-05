@@ -1,11 +1,6 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using BlendState = nfm_world.compat.BlendState;
-using SamplerState = nfm_world.compat.SamplerState;
-using VertexElementFormat = nfm_world.compat.VertexElementFormat;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.backend;
 using nfm_world_library.mad;
@@ -13,6 +8,8 @@ using nfm_world_library.SoftFloat;
 using nfm_world_library.util;
 using nfm_world.camera;
 using nfm_world.mesh;
+using nfm_world.shaders;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.stage;
 
@@ -21,25 +18,24 @@ public class FixHoop : StageObjectGameObject
     private readonly GraphicsDevice _graphicsDevice;
     
     private const int CntLines = 4;
+    private const int VertCount = 8 * CntLines;
+    private const int IdxCount = 18 * CntLines;
     
     private readonly int[] _edl = new int[CntLines];
     private readonly int[] _edr = new int[CntLines];
     private readonly int[] _elc = new int[CntLines];
 
-    private BasicEffect _fixhoopEffect;
+    private readonly GpuBuffer _vertexBuffer;
+    private readonly GpuBuffer _indexBuffer;
 
-    private VertexPositionColor[] _vertices = new VertexPositionColor[8*CntLines];
-    private short[] _indices = new short[18*CntLines];
+    private VertexPositionColor[] _vertices = new VertexPositionColor[VertCount];
+    private ushort[] _indices = new ushort[IdxCount];
 
     public FixHoop(Mesh mesh, StageObject obj) : base(mesh, obj)
     {
         _graphicsDevice = mesh.GraphicsDevice;
-        _fixhoopEffect = new BasicEffect(_graphicsDevice)
-        {
-            LightingEnabled = false,
-            TextureEnabled = false,
-            VertexColorEnabled = true
-        };
+        _vertexBuffer = GpuBuffer.Create<VertexPositionColor>(_graphicsDevice, BufferUsageFlags.Vertex, VertCount);
+        _indexBuffer = GpuBuffer.Create<ushort>(_graphicsDevice, BufferUsageFlags.Index, IdxCount);
     }
 
     public bool IsSpecial { get; set; }
@@ -51,28 +47,47 @@ public class FixHoop : StageObjectGameObject
             PrepareLine(i);
         }
 
-        _fixhoopEffect.World = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
-                               Matrix.CreateTranslation((Vector3)Position);
-        _fixhoopEffect.View = camera.ViewMatrix;
-        _fixhoopEffect.Projection = camera.ProjectionMatrix;
-        
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        foreach (var pass in _fixhoopEffect.CurrentTechnique.Passes)
-        {
-            pass.Apply();
+        // Upload dynamic vertex/index data via separate command buffer
+        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, VertCount);
+        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
+        _vertices.AsSpan().CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
 
-            _graphicsDevice.DrawUserIndexedPrimitives(
-                PrimitiveType.TriangleList,
-                _vertices,
-                0,
-                8*CntLines,
-                _indices,
-                0,
-                6*CntLines,
-                VertexPositionColor.VertexDeclaration
-            );
-        }
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+        var idxTransfer = TransferBuffer.Create<ushort>(_graphicsDevice, TransferBufferUsage.Upload, IdxCount);
+        var idxSpan = idxTransfer.Map<ushort>(false);
+        _indices.AsSpan().CopyTo(idxSpan);
+        idxTransfer.Unmap();
+
+        var uploadCmd = _graphicsDevice.AcquireCommandBuffer();
+        var copyPass = uploadCmd.BeginCopyPass();
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(vtxTransfer, 0),
+            new BufferRegion(_vertexBuffer, 0, (uint)(VertCount * Marshal.SizeOf<VertexPositionColor>())),
+            true);
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(idxTransfer, 0),
+            new BufferRegion(_indexBuffer, 0, (uint)(IdxCount * sizeof(ushort))),
+            true);
+        uploadCmd.EndCopyPass(copyPass);
+        _graphicsDevice.Submit(uploadCmd);
+        vtxTransfer.Dispose();
+        idxTransfer.Dispose();
+
+        // Build WVP matrix
+        var world = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
+                    Matrix.CreateTranslation((Vector3)Position);
+        var wvp = world * camera.ViewMatrix * camera.ProjectionMatrix;
+
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
+
+        cmd.PushVertexUniformData(new BasicEffectVertexUniforms { WorldViewProjection = wvp });
+
+        pass.BindGraphicsPipeline(Pipelines.BasicEffect);
+        pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
+        pass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.Sixteen);
+        pass.DrawIndexedPrimitives(IdxCount, 1, 0, 0, 0);
     }
 
     private void PrepareLine(int idx)
@@ -158,24 +173,24 @@ public class FixHoop : StageObjectGameObject
         // we need to create indices for 4 triangles to fill the shape
 
         int startTriIdx = idx * 18;
-        _indices[startTriIdx + 0] = (short)(startVertIdx + 0);
-        _indices[startTriIdx + 1] = (short)(startVertIdx + 1);
-        _indices[startTriIdx + 2] = (short)(startVertIdx + 7);
-        _indices[startTriIdx + 3] = (short)(startVertIdx + 1);
-        _indices[startTriIdx + 4] = (short)(startVertIdx + 6);
-        _indices[startTriIdx + 5] = (short)(startVertIdx + 7);
-        _indices[startTriIdx + 6] = (short)(startVertIdx + 1);
-        _indices[startTriIdx + 7] = (short)(startVertIdx + 2);
-        _indices[startTriIdx + 8] = (short)(startVertIdx + 6);
-        _indices[startTriIdx + 9] = (short)(startVertIdx + 2);
-        _indices[startTriIdx + 10] = (short)(startVertIdx + 5);
-        _indices[startTriIdx + 11] = (short)(startVertIdx + 6);
-        _indices[startTriIdx + 12] = (short)(startVertIdx + 2);
-        _indices[startTriIdx + 13] = (short)(startVertIdx + 3);
-        _indices[startTriIdx + 14] = (short)(startVertIdx + 5);
-        _indices[startTriIdx + 15] = (short)(startVertIdx + 3);
-        _indices[startTriIdx + 16] = (short)(startVertIdx + 4);
-        _indices[startTriIdx + 17] = (short)(startVertIdx + 5);
+        _indices[startTriIdx + 0] = (ushort)(startVertIdx + 0);
+        _indices[startTriIdx + 1] = (ushort)(startVertIdx + 1);
+        _indices[startTriIdx + 2] = (ushort)(startVertIdx + 7);
+        _indices[startTriIdx + 3] = (ushort)(startVertIdx + 1);
+        _indices[startTriIdx + 4] = (ushort)(startVertIdx + 6);
+        _indices[startTriIdx + 5] = (ushort)(startVertIdx + 7);
+        _indices[startTriIdx + 6] = (ushort)(startVertIdx + 1);
+        _indices[startTriIdx + 7] = (ushort)(startVertIdx + 2);
+        _indices[startTriIdx + 8] = (ushort)(startVertIdx + 6);
+        _indices[startTriIdx + 9] = (ushort)(startVertIdx + 2);
+        _indices[startTriIdx + 10] = (ushort)(startVertIdx + 5);
+        _indices[startTriIdx + 11] = (ushort)(startVertIdx + 6);
+        _indices[startTriIdx + 12] = (ushort)(startVertIdx + 2);
+        _indices[startTriIdx + 13] = (ushort)(startVertIdx + 3);
+        _indices[startTriIdx + 14] = (ushort)(startVertIdx + 5);
+        _indices[startTriIdx + 15] = (ushort)(startVertIdx + 3);
+        _indices[startTriIdx + 16] = (ushort)(startVertIdx + 4);
+        _indices[startTriIdx + 17] = (ushort)(startVertIdx + 5);
 
         if (_elc[idx] > URandom.Single() * 60.0F)
         {

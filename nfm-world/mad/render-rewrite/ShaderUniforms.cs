@@ -3,6 +3,17 @@ using Microsoft.Xna.Framework;
 
 namespace nfm_world.shaders;
 
+// ─── BasicEffect uniforms ───────────────────────────────────────────────────
+
+/// <summary>
+/// Vertex uniform for BasicEffect.vert.hlsl (slot 0). 64 bytes.
+/// </summary>
+[StructLayout(LayoutKind.Sequential)]
+public struct BasicEffectVertexUniforms
+{
+    public Matrix WorldViewProjection;  // offset 0
+}
+
 // ─── Shared sub-structs (match HLSL structs in Mad.hlsli) ───────────────────
 
 /// <summary>

@@ -1,16 +1,12 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using BlendState = nfm_world.compat.BlendState;
-using SamplerState = nfm_world.compat.SamplerState;
-using VertexElementFormat = nfm_world.compat.VertexElementFormat;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.util;
 using nfm_world.camera;
 using nfm_world.shaders;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh.effects;
 
@@ -39,39 +35,38 @@ public class Sparks : IDisposable
     private int[] _lineIndices = new int[100 * LineMeshHelpers.IndicesPerLine];
     private int _vertexCount;
     private int _triangleCount;
-    private readonly LineEffect _material;
     private int _sparkCount;
-    private readonly DynamicVertexBuffer _vertexBuffer;
-    private readonly DynamicIndexBuffer _indexBuffer;
-    private readonly VertexBuffer _instanceBuffer;
+    private readonly GpuBuffer _vertexBuffer;
+    private readonly GpuBuffer _indexBuffer;
+    private readonly GpuBuffer _instanceBuffer;
 
     public Sparks(ClientCar car, GraphicsDevice graphicsDevice)
     {
         _car = car;
         _graphicsDevice = graphicsDevice;
 
-        _material = new LineEffect(Program._lineShader);
-
         _sprkat = _car.Wheels.FirstOrDefault().Sparkat;
 
-        _vertexBuffer = new DynamicVertexBuffer(graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration,
-            100 * LineMeshHelpers.VerticesPerLine, BufferUsage.WriteOnly)
-        {
-            Name = "Sparks Vertex Buffer",
-            Tag = this
-        };
-        _indexBuffer = new DynamicIndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwo,
-            100 * LineMeshHelpers.IndicesPerLine, BufferUsage.WriteOnly)
-        {
-            Name = "Sparks Index Buffer",
-            Tag = this
-        };
-        _instanceBuffer = new VertexBuffer(graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.None)
-        {
-            Name = "Sparks Instance Buffer",
-            Tag = this
-        };
-        _instanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(Matrix.Identity)]);
+        _vertexBuffer = GpuBuffer.Create<LineMesh.LineMeshVertexAttribute>(graphicsDevice, BufferUsageFlags.Vertex,
+            (uint)(100 * LineMeshHelpers.VerticesPerLine));
+        _indexBuffer = GpuBuffer.Create<int>(graphicsDevice, BufferUsageFlags.Index,
+            (uint)(100 * LineMeshHelpers.IndicesPerLine));
+
+        // Single identity instance for instanced rendering
+        _instanceBuffer = GpuBuffer.Create<InstanceData>(graphicsDevice, BufferUsageFlags.Vertex, 1);
+        var instTransfer = TransferBuffer.Create<InstanceData>(graphicsDevice, TransferBufferUsage.Upload, 1);
+        var instSpan = instTransfer.Map<InstanceData>(false);
+        instSpan[0] = new InstanceData(Matrix.Identity);
+        instTransfer.Unmap();
+        var instCmd = graphicsDevice.AcquireCommandBuffer();
+        var instCopy = instCmd.BeginCopyPass();
+        instCopy.UploadToBuffer(
+            new TransferBufferLocation(instTransfer, 0),
+            new BufferRegion(_instanceBuffer, 0, (uint)Marshal.SizeOf<InstanceData>()),
+            false);
+        instCmd.EndCopyPass(instCopy);
+        graphicsDevice.Submit(instCmd);
+        instTransfer.Dispose();
     }
     
     ~Sparks()
@@ -244,66 +239,90 @@ public class Sparks : IDisposable
 
             if (_vertexCount > 0 && _triangleCount > 0)
             {
-                _vertexBuffer.SetDataEXT(_lineVertices.AsSpan(0, _vertexCount), SetDataOptions.Discard);
-                _indexBuffer.SetDataEXT(_lineIndices.AsSpan(0, _triangleCount * 3), SetDataOptions.Discard);
+                UploadDynamicData();
             }
         }
         Sprk = 0;
     }
 
+    private void UploadDynamicData()
+    {
+        var vtxTransfer = TransferBuffer.Create<LineMesh.LineMeshVertexAttribute>(
+            _graphicsDevice, TransferBufferUsage.Upload, (uint)_vertexCount);
+        var vtxSpan = vtxTransfer.Map<LineMesh.LineMeshVertexAttribute>(false);
+        _lineVertices.AsSpan(0, _vertexCount).CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
+
+        var idxCount = (uint)(_triangleCount * 3);
+        var idxTransfer = TransferBuffer.Create<int>(
+            _graphicsDevice, TransferBufferUsage.Upload, idxCount);
+        var idxSpan = idxTransfer.Map<int>(false);
+        _lineIndices.AsSpan(0, (int)idxCount).CopyTo(idxSpan);
+        idxTransfer.Unmap();
+
+        var cmd = _graphicsDevice.AcquireCommandBuffer();
+        var copyPass = cmd.BeginCopyPass();
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(vtxTransfer, 0),
+            new BufferRegion(_vertexBuffer, 0, (uint)(_vertexCount * Marshal.SizeOf<LineMesh.LineMeshVertexAttribute>())),
+            true);
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(idxTransfer, 0),
+            new BufferRegion(_indexBuffer, 0, idxCount * sizeof(int)),
+            true);
+        cmd.EndCopyPass(copyPass);
+        _graphicsDevice.Submit(cmd);
+        vtxTransfer.Dispose();
+        idxTransfer.Dispose();
+    }
+
     public void Render(Camera camera)
     {
         if (_vertexCount == 0 || _triangleCount == 0) return;
-        
-        _graphicsDevice.SetVertexBuffers(_vertexBuffer, new VertexBufferBinding(_instanceBuffer, 0, 1));
-        _graphicsDevice.Indices = _indexBuffer;
 
-        // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.SnapColor?.SetValue((Vector3)new Color3(100, 100, 100));
-        _material.IsFullbright?.SetValue(true);
-        _material.UseBaseColor?.SetValue(false);
-        _material.BaseColor?.SetValue(new Vector3(0, 0, 0));
-        _material.ChargedBlinkAmount?.SetValue(0.0f);
-        _material.HalfThickness?.SetValue(World.OutlineThickness);
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
 
-        _material.LightDirection?.SetValue(World.LightDirection);
-        _material.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.FogDistance?.SetValue(World.FadeFrom);
-        _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
-        _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00005f);
-        _material.GetsShadowed?.SetValue(false);
-        _material.Alpha?.SetValue(1f);
-
-        _material.View?.SetValue(camera.ViewMatrix);
-        _material.Projection?.SetValue(camera.ProjectionMatrix);
-        _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        _material.CameraPosition?.SetValue(camera.Position);
-
-        _material.CurrentTechnique = _material.Techniques["Basic"];
-
-        _material.Expand?.SetValue(false);
-        _material.Darken?.SetValue(1.0f);
-        _material.RandomFloat?.SetValue(URandom.Single());
-
-        _material.Glow?.SetValue(false);
-
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        var fog = new FogParams
         {
-            pass.Apply();
+            Color = (Vector3)World.Fog.Snap(World.Snap),
+            Distance = World.FadeFrom,
+            Density = World.FogDensity / (World.FogDensity + 1f)
+        };
 
-            _graphicsDevice.DrawInstancedPrimitives(
-                PrimitiveType.TriangleList,
-                0,
-                0,
-                _vertexCount,
-                0,
-                _triangleCount,
-                1
-            );
-        }
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+        cmd.PushVertexUniformData(new LineVertexUniforms
+        {
+            View = camera.ViewMatrix,
+            Projection = camera.ProjectionMatrix,
+            ViewProj = camera.ViewMatrix * camera.ProjectionMatrix,
+            CameraPosition = camera.Position,
+            Alpha = 1f,
+            SnapColor = (Vector3)new Color3(100, 100, 100),
+            Darken = 1.0f,
+            LightDirection = World.LightDirection,
+            RandomFloat = URandom.Single(),
+            EnvironmentLight = new Vector2(World.BlackPoint, World.WhitePoint),
+            IsFullbright = true,
+            UseBaseColor = false,
+            BaseColor = Vector3.Zero,
+            Expand = false,
+            Fog = fog,
+            HalfThickness = World.OutlineThickness,
+            ChargedBlinkAmount = 0f
+        });
+
+        cmd.PushFragmentUniformData(new LineFragUniforms
+        {
+            Shadow = default
+        });
+
+        pass.BindGraphicsPipeline(Pipelines.Line);
+        pass.BindVertexBuffers(
+            new BufferBinding(_vertexBuffer, 0),
+            new BufferBinding(_instanceBuffer, 0));
+        pass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.ThirtyTwo);
+        pass.DrawIndexedPrimitives((uint)(_triangleCount * 3), 1, 0, 0, 0);
     }
 
     private void ReleaseUnmanagedResources()

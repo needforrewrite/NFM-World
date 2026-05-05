@@ -1,33 +1,25 @@
-using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
-using DepthStencilState = nfm_world.compat.DepthStencilState;
-using RasterizerState = nfm_world.compat.RasterizerState;
-using BlendState = nfm_world.compat.BlendState;
-using SamplerState = nfm_world.compat.SamplerState;
-using VertexElementFormat = nfm_world.compat.VertexElementFormat;
-using nfm_world.compat;
+using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world.compat;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
 using nfm_world.camera;
+using nfm_world.shaders;
+using GpuBuffer = MoonWorks.Graphics.Buffer;
 
 namespace nfm_world.mesh.environment;
 
 public class GroundPolys : Transform, IImmediateRenderable
 {
-    private readonly GraphicsDevice _graphicsDevice;
-    private readonly VertexBuffer _vertexBuffer;
-    private readonly IndexBuffer _indexBuffer;
-    private readonly Effect _material;
-    private readonly int _triangleCount;
-    private readonly int _vertexCount;
+    private readonly GpuBuffer _vertexBuffer;
+    private readonly GpuBuffer _indexBuffer;
+    private readonly uint _indexCount;
 
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
     public GroundPolys(GraphicsDevice graphicsDevice, Rad3dPoly[] polys)
     {
-        _graphicsDevice = graphicsDevice;
-        
         var triangulation = Array.ConvertAll(polys,
             poly => MeshHelpers.TriangulateIfNeeded(poly.Points));
 
@@ -56,23 +48,37 @@ public class GroundPolys : Transform, IImmediateRenderable
             }
         }
 
-        _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None)
-        {
-            Name = "Ground Polys Vertex Buffer",
-            Tag = this
-        };
-        _vertexBuffer.SetDataEXT(data);
+        _indexCount = (uint)indices.Count;
+        var vtxCount = (uint)data.Count;
 
-        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwo, indices.Count, BufferUsage.None)
-        {
-            Name = "Ground Polys Index Buffer",
-            Tag = this
-        };
-        _indexBuffer.SetDataEXT(indices);
-        _triangleCount = indices.Count / 3;
-        _vertexCount = data.Count;
+        _vertexBuffer = GpuBuffer.Create<VertexPositionColor>(graphicsDevice, BufferUsageFlags.Vertex, vtxCount);
+        _indexBuffer = GpuBuffer.Create<int>(graphicsDevice, BufferUsageFlags.Index, _indexCount);
 
-        _material = Program._groundShader;
+        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(graphicsDevice, TransferBufferUsage.Upload, vtxCount);
+        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
+        CollectionsMarshal.AsSpan(data).CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
+
+        var idxTransfer = TransferBuffer.Create<int>(graphicsDevice, TransferBufferUsage.Upload, _indexCount);
+        var idxSpan = idxTransfer.Map<int>(false);
+        CollectionsMarshal.AsSpan(indices).CopyTo(idxSpan);
+        idxTransfer.Unmap();
+
+        var cmd = graphicsDevice.AcquireCommandBuffer();
+        var copyPass = cmd.BeginCopyPass();
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(vtxTransfer, 0),
+            new BufferRegion(_vertexBuffer, 0, vtxCount * (uint)Marshal.SizeOf<VertexPositionColor>()),
+            false);
+        copyPass.UploadToBuffer(
+            new TransferBufferLocation(idxTransfer, 0),
+            new BufferRegion(_indexBuffer, 0, _indexCount * sizeof(int)),
+            false);
+        cmd.EndCopyPass(copyPass);
+        graphicsDevice.Submit(cmd);
+
+        vtxTransfer.Dispose();
+        idxTransfer.Dispose();
     }
     
     ~GroundPolys()
@@ -85,25 +91,39 @@ public class GroundPolys : Transform, IImmediateRenderable
     {
         if (lighting?.IsCreateShadowMap == true) return;
 
-        _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-        _graphicsDevice.Indices = _indexBuffer;
-        _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        _material.Parameters["WorldView"]?.SetValue(camera.ViewMatrix);
-        _material.Parameters["WorldViewProj"]?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        
-        _material.Parameters["DepthBias"]?.SetValue(0.00005f);
-        _material.Parameters["FogColor"]?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
-        _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
 
-        lighting?.SetShadowMapParameters(_material);
-
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        var fog = new FogParams
         {
-            pass.Apply();
-    
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _vertexCount, 0, _triangleCount);
+            Color = (Vector3)World.Fog.Snap(World.Snap),
+            Distance = World.FadeFrom,
+            Density = World.FogDensity / (World.FogDensity + 1f)
+        };
+
+        cmd.PushVertexUniformData(new GroundVertexUniforms
+        {
+            WorldView = camera.ViewMatrix,
+            WorldViewProj = camera.ViewMatrix * camera.ProjectionMatrix,
+            Fog = fog
+        });
+
+        cmd.PushFragmentUniformData(new GroundFragUniforms
+        {
+            Fog = fog,
+            Shadow = lighting?.ToShadowParams() ?? default
+        });
+
+        pass.BindGraphicsPipeline(Pipelines.Ground);
+        pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
+        pass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.ThirtyTwo);
+
+        if (lighting != null && !lighting.IsCreateShadowMap)
+        {
+            lighting.BindShadowMaps(pass);
         }
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+
+        pass.DrawIndexedPrimitives(_indexCount, 1, 0, 0, 0);
     }
 }
