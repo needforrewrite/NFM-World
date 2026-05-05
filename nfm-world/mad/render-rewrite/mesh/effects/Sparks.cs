@@ -236,11 +236,11 @@ public class Sparks : IDisposable
                     _rtg[i]++;
                 }
             }
+        }
 
-            if (_vertexCount > 0 && _triangleCount > 0)
-            {
-                UploadDynamicData();
-            }
+        if (_vertexCount > 0 && _triangleCount > 0)
+        {
+            UploadDynamicData();
         }
         Sprk = 0;
     }
