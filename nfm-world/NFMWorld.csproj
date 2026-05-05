@@ -129,7 +129,7 @@
     <Target Name="CopyCustomContentLinux" AfterTargets="AfterBuild" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
         <ItemGroup>
             <SoFiles Include="skiadriver/*.so"/>
-            <SoFiles Include="skiadriver/*.so.0"/>
+            <SoFiles Include="skiadriver/*.so.*"/>
         </ItemGroup>
         <Copy SourceFiles="@(SoFiles)" DestinationFolder="$(OutDir)"/>
     </Target>
@@ -137,7 +137,7 @@
     <Target Name="CopyCustomContentLinux_Publish" AfterTargets="Publish" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
         <ItemGroup>
             <SoFiles Include="skiadriver/*.so"/>
-            <SoFiles Include="skiadriver/*.so.0"/>
+            <SoFiles Include="skiadriver/*.so.*"/>
         </ItemGroup>
         <Copy SourceFiles="@(SoFiles)" DestinationFolder="$(PublishDir)"/>
     </Target>
