@@ -26,3 +26,6 @@
 	path = XamlX
 	url = https://github.com/kekekeks/XamlX
 	branch = master
+[submodule "MoonWorks"]
+	path = MoonWorks
+	url = https://github.com/MoonsideGames/MoonWorks

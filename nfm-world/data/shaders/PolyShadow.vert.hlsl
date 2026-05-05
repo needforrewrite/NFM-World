@@ -1,0 +1,34 @@
+// PolyShadow.vert.hlsl — Poly shadow map vertex shader (replaces Poly.fx "CreateShadowMap" technique VS)
+
+cbuffer ShadowUniforms : register(b0, space1)
+{
+    float4x4 View;
+    float4x4 Projection;
+};
+
+struct VSInput
+{
+    float3 Position   : POSITION0;
+    float3 Normal     : NORMAL0;
+    float3 Color      : COLOR0;
+    float3 Centroid   : POSITION1;
+    float DecalOffset : TEXCOORD0;
+    // Instance data
+    float4x4 World    : TEXCOORD3; // slots 3-6
+};
+
+struct VSOutput
+{
+    float4 Position : SV_POSITION;
+    float  Depth    : TEXCOORD0;
+};
+
+VSOutput main(VSInput input)
+{
+    VSOutput output = (VSOutput)0;
+
+    output.Position = mul(mul(mul(float4(input.Position, 1), input.World), View), Projection);
+    output.Depth = output.Position.z / output.Position.w;
+
+    return output;
+}
