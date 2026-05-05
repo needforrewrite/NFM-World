@@ -188,25 +188,23 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
         Dispose(false);
     }
 
-    public override void Render(Camera camera, Lighting? lighting)
+    public override void UploadBuffers()
     {
-        if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
+        base.UploadBuffers();
+        if (!GameSparker.devRenderTrackers) return;
 
-        // Upload updated instance data (MatrixWorld may change)
         var device = GameSparker._graphicsDevice;
         var instTransfer = TransferBuffer.Create<InstanceData>(device, TransferBufferUsage.Upload, 1);
         var instSpan = instTransfer.Map<InstanceData>(false);
         instSpan[0] = new InstanceData(MatrixWorld);
         instTransfer.Unmap();
-        var uploadCmd = device.AcquireCommandBuffer();
-        var copyPass = uploadCmd.BeginCopyPass();
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(instTransfer, 0),
-            new BufferRegion(_lineInstanceBuffer, 0, (uint)Marshal.SizeOf<InstanceData>()),
-            true);
-        uploadCmd.EndCopyPass(copyPass);
-        device.Submit(uploadCmd);
-        instTransfer.Dispose();
+
+        RenderState.EnqueueUpload(instTransfer, _lineInstanceBuffer, (uint)Marshal.SizeOf<InstanceData>());
+    }
+
+    public override void Render(Camera camera, Lighting? lighting)
+    {
+        if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
 
         var cmd = RenderState.Cmd;
         var pass = RenderState.Pass;

@@ -40,6 +40,14 @@ public class GameObject : Transform, IImmediateRenderable
         }
     }
 
+    public virtual void UploadBuffers()
+    {
+        foreach (var child in Children)
+        {
+            child.UploadBuffers();
+        }
+    }
+
     public override void GameTick(IStage? stage = null)
     {
         base.GameTick(stage);

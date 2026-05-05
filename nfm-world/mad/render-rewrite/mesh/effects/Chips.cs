@@ -140,6 +140,19 @@ public class Chips : IDisposable
         }
     }
 
+    public void UploadBuffers()
+    {
+        if (_triangleCount == 0) return;
+
+        var vtxCount = (uint)(_triangleCount * 3);
+        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, vtxCount);
+        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
+        _triangles.AsSpan(0, (int)vtxCount).CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
+
+        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer, vtxCount * (uint)Marshal.SizeOf<VertexPositionColor>());
+    }
+
     public void Render(Camera camera)
     {
         if (_triangleCount == 0) return;
@@ -149,22 +162,6 @@ public class Chips : IDisposable
         if (cmd == null || pass == null) return;
 
         var vtxCount = (uint)(_triangleCount * 3);
-
-        // Upload dynamic vertex data
-        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, vtxCount);
-        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
-        _triangles.AsSpan(0, (int)vtxCount).CopyTo(vtxSpan);
-        vtxTransfer.Unmap();
-
-        var uploadCmd = _graphicsDevice.AcquireCommandBuffer();
-        var copyPass = uploadCmd.BeginCopyPass();
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(vtxTransfer, 0),
-            new BufferRegion(_vertexBuffer, 0, vtxCount * (uint)Marshal.SizeOf<VertexPositionColor>()),
-            true);
-        uploadCmd.EndCopyPass(copyPass);
-        _graphicsDevice.Submit(uploadCmd);
-        vtxTransfer.Dispose();
 
         var wvp = _car.MatrixWorld * camera.ViewMatrix * camera.ProjectionMatrix;
         cmd.PushVertexUniformData(new BasicEffectVertexUniforms { WorldViewProjection = wvp });

@@ -47,32 +47,6 @@ public class FixHoop : StageObjectGameObject
             PrepareLine(i);
         }
 
-        // Upload dynamic vertex/index data via separate command buffer
-        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, VertCount);
-        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
-        _vertices.AsSpan().CopyTo(vtxSpan);
-        vtxTransfer.Unmap();
-
-        var idxTransfer = TransferBuffer.Create<ushort>(_graphicsDevice, TransferBufferUsage.Upload, IdxCount);
-        var idxSpan = idxTransfer.Map<ushort>(false);
-        _indices.AsSpan().CopyTo(idxSpan);
-        idxTransfer.Unmap();
-
-        var uploadCmd = _graphicsDevice.AcquireCommandBuffer();
-        var copyPass = uploadCmd.BeginCopyPass();
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(vtxTransfer, 0),
-            new BufferRegion(_vertexBuffer, 0, (uint)(VertCount * Marshal.SizeOf<VertexPositionColor>())),
-            true);
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(idxTransfer, 0),
-            new BufferRegion(_indexBuffer, 0, (uint)(IdxCount * sizeof(ushort))),
-            true);
-        uploadCmd.EndCopyPass(copyPass);
-        _graphicsDevice.Submit(uploadCmd);
-        vtxTransfer.Dispose();
-        idxTransfer.Dispose();
-
         // Build WVP matrix
         var world = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
                     Matrix.CreateTranslation((Vector3)Position);
@@ -88,6 +62,26 @@ public class FixHoop : StageObjectGameObject
         pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
         pass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.Sixteen);
         pass.DrawIndexedPrimitives(IdxCount, 1, 0, 0, 0);
+    }
+
+    public override void UploadBuffers()
+    {
+        base.UploadBuffers();
+
+        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, VertCount);
+        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
+        _vertices.AsSpan().CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
+
+        var idxTransfer = TransferBuffer.Create<ushort>(_graphicsDevice, TransferBufferUsage.Upload, IdxCount);
+        var idxSpan = idxTransfer.Map<ushort>(false);
+        _indices.AsSpan().CopyTo(idxSpan);
+        idxTransfer.Unmap();
+
+        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer,
+            (uint)(VertCount * Marshal.SizeOf<VertexPositionColor>()));
+        RenderState.EnqueueUpload(idxTransfer, _indexBuffer,
+            (uint)(IdxCount * sizeof(ushort)));
     }
 
     private void PrepareLine(int idx)

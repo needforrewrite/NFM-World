@@ -36,6 +36,7 @@ public class Sparks : IDisposable
     private int _vertexCount;
     private int _triangleCount;
     private int _sparkCount;
+    private bool _needsUpload;
     private readonly GpuBuffer _vertexBuffer;
     private readonly GpuBuffer _indexBuffer;
     private readonly GpuBuffer _instanceBuffer;
@@ -240,13 +241,16 @@ public class Sparks : IDisposable
 
         if (_vertexCount > 0 && _triangleCount > 0)
         {
-            UploadDynamicData();
+            _needsUpload = true;
         }
         Sprk = 0;
     }
 
-    private void UploadDynamicData()
+    public void UploadBuffers()
     {
+        if (!_needsUpload || _vertexCount == 0 || _triangleCount == 0) return;
+        _needsUpload = false;
+
         var vtxTransfer = TransferBuffer.Create<LineMesh.LineMeshVertexAttribute>(
             _graphicsDevice, TransferBufferUsage.Upload, (uint)_vertexCount);
         var vtxSpan = vtxTransfer.Map<LineMesh.LineMeshVertexAttribute>(false);
@@ -260,20 +264,10 @@ public class Sparks : IDisposable
         _lineIndices.AsSpan(0, (int)idxCount).CopyTo(idxSpan);
         idxTransfer.Unmap();
 
-        var cmd = _graphicsDevice.AcquireCommandBuffer();
-        var copyPass = cmd.BeginCopyPass();
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(vtxTransfer, 0),
-            new BufferRegion(_vertexBuffer, 0, (uint)(_vertexCount * Marshal.SizeOf<LineMesh.LineMeshVertexAttribute>())),
-            true);
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(idxTransfer, 0),
-            new BufferRegion(_indexBuffer, 0, idxCount * sizeof(int)),
-            true);
-        cmd.EndCopyPass(copyPass);
-        _graphicsDevice.Submit(cmd);
-        vtxTransfer.Dispose();
-        idxTransfer.Dispose();
+        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer,
+            (uint)(_vertexCount * Marshal.SizeOf<LineMesh.LineMeshVertexAttribute>()));
+        RenderState.EnqueueUpload(idxTransfer, _indexBuffer,
+            idxCount * sizeof(int));
     }
 
     public void Render(Camera camera)

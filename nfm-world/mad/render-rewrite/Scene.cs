@@ -59,6 +59,13 @@ public class Scene
         // Upload instance data that changed via CopyPass
         _renderDataCache.PrepareAndUpload(cmd);
 
+        // Gather and flush all per-frame buffer uploads in one CopyPass
+        foreach (var obj in Objects)
+        {
+            obj.UploadBuffers();
+        }
+        RenderState.FlushUploads(cmd);
+
         // ── Shadow map passes ───────────────────────────────────────
         if (useShadowMapping)
         {

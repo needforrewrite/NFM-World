@@ -201,6 +201,16 @@ public class ClientCar : MeshedGameObject, ICar, IDisposable
         }
     }
 
+    public override void UploadBuffers()
+    {
+        base.UploadBuffers();
+
+        Flames.UploadBuffers();
+        Dust.UploadBuffers();
+        Chips.UploadBuffers();
+        Sparks.UploadBuffers();
+    }
+
     private void ReleaseUnmanagedResources()
     {
     }

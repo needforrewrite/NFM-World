@@ -306,14 +306,10 @@ public class Dust : IDisposable
         }
     }
 
-    public void Render(Camera camera)
+    public void UploadBuffers()
     {
-        if (_vertexCount == 0 || _indexCount == 0)
-        {
-            return;
-        }
+        if (_vertexCount == 0 || _indexCount == 0) return;
 
-        // Upload dynamic data
         var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(
             _graphicsDevice, TransferBufferUsage.Upload, (uint)_vertexCount);
         var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
@@ -326,22 +322,19 @@ public class Dust : IDisposable
         _indices.AsSpan(0, _indexCount).CopyTo(idxSpan);
         idxTransfer.Unmap();
 
-        var uploadCmd = _graphicsDevice.AcquireCommandBuffer();
-        var copyPass = uploadCmd.BeginCopyPass();
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(vtxTransfer, 0),
-            new BufferRegion(_vertexBuffer, 0, (uint)(_vertexCount * Marshal.SizeOf<VertexPositionColor>())),
-            true);
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(idxTransfer, 0),
-            new BufferRegion(_indexBuffer, 0, (uint)(_indexCount * sizeof(int))),
-            true);
-        uploadCmd.EndCopyPass(copyPass);
-        _graphicsDevice.Submit(uploadCmd);
-        vtxTransfer.Dispose();
-        idxTransfer.Dispose();
+        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer,
+            (uint)(_vertexCount * Marshal.SizeOf<VertexPositionColor>()));
+        RenderState.EnqueueUpload(idxTransfer, _indexBuffer,
+            (uint)(_indexCount * sizeof(int)));
+    }
 
-        // Render with depth-read-only + alpha blend
+    public void Render(Camera camera)
+    {
+        if (_vertexCount == 0 || _indexCount == 0)
+        {
+            return;
+        }
+
         var cmd = RenderState.Cmd;
         var pass = RenderState.Pass;
         if (cmd == null || pass == null) return;

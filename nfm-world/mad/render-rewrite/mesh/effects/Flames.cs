@@ -18,6 +18,7 @@ public class Flames : IDisposable
 
     private VertexPositionColor[] _triangles;
     private readonly GpuBuffer _vertexBuffer;
+    private uint _vtxCountForRender;
 
     private int _tick;
 
@@ -292,36 +293,38 @@ public class Flames : IDisposable
                 _triangles[triBase + 8] = new VertexPositionColor(inner2, innerColor);
             }
             
-            var vtxCount = (uint)(9 * _car.Mesh.Polys.Length);
-
-            // Upload dynamic vertex data
-            var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, vtxCount);
-            var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
-            _triangles.AsSpan(0, (int)vtxCount).CopyTo(vtxSpan);
-            vtxTransfer.Unmap();
-
-            var uploadCmd = _graphicsDevice.AcquireCommandBuffer();
-            var copyPass = uploadCmd.BeginCopyPass();
-            copyPass.UploadToBuffer(
-                new TransferBufferLocation(vtxTransfer, 0),
-                new BufferRegion(_vertexBuffer, 0, vtxCount * (uint)Marshal.SizeOf<VertexPositionColor>()),
-                true);
-            uploadCmd.EndCopyPass(copyPass);
-            _graphicsDevice.Submit(uploadCmd);
-            vtxTransfer.Dispose();
-
-            // Render
-            var cmd = RenderState.Cmd;
-            var pass = RenderState.Pass;
-            if (cmd == null || pass == null) return;
-
-            var wvp = _car.MatrixWorld * camera.ViewMatrix * camera.ProjectionMatrix;
-            cmd.PushVertexUniformData(new BasicEffectVertexUniforms { WorldViewProjection = wvp });
-
-            pass.BindGraphicsPipeline(Pipelines.BasicEffect);
-            pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
-            pass.DrawPrimitives(vtxCount, 1, 0, 0);
+            _vtxCountForRender = (uint)(9 * _car.Mesh.Polys.Length);
         }
+
+        RenderInternal(camera);
+    }
+
+    public void UploadBuffers()
+    {
+        if (_vtxCountForRender == 0) return;
+
+        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, _vtxCountForRender);
+        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
+        _triangles.AsSpan(0, (int)_vtxCountForRender).CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
+
+        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer, _vtxCountForRender * (uint)Marshal.SizeOf<VertexPositionColor>());
+    }
+
+    private void RenderInternal(Camera camera)
+    {
+        if (_vtxCountForRender == 0) return;
+
+        var cmd = RenderState.Cmd;
+        var pass = RenderState.Pass;
+        if (cmd == null || pass == null) return;
+
+        var wvp = _car.MatrixWorld * camera.ViewMatrix * camera.ProjectionMatrix;
+        cmd.PushVertexUniformData(new BasicEffectVertexUniforms { WorldViewProjection = wvp });
+
+        pass.BindGraphicsPipeline(Pipelines.BasicEffect);
+        pass.BindVertexBuffers(new BufferBinding(_vertexBuffer, 0));
+        pass.DrawPrimitives(_vtxCountForRender, 1, 0, 0);
     }
 
     private void ReleaseUnmanagedResources()
