@@ -1,5 +1,7 @@
 // PolyShadow.frag.hlsl — Poly shadow map fragment shader (replaces Poly.fx "CreateShadowMap" technique PS)
 
+#include "SDLGPU.hlsli"
+
 struct PSInput
 {
     float4 Position : SV_POSITION;

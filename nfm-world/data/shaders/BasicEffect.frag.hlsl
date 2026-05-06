@@ -1,5 +1,7 @@
 // BasicEffect fragment shader — outputs interpolated vertex color.
 
+#include "SDLGPU.hlsli"
+
 struct PSInput
 {
     float4 Position : SV_Position;
