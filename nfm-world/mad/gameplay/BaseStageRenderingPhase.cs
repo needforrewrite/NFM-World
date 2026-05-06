@@ -11,8 +11,9 @@ using nfm_world_library.mad;
 using nfm_world_library.util;
 using nfm_world.camera;
 using nfm_world.driverinterface;
-using nfm_world.stage;
+using nfm_world.gameobject;
 using nfm_world.util;
+using Keys = nfm_world.util.Keys;
 
 namespace nfm_world.gameplay;
 

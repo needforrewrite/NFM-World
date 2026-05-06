@@ -1,7 +1,6 @@
 using nfm_world.compat;
 using MoonWorks.Graphics;
 using nfm_world.camera;
-using nfm_world.shaders;
 
 namespace nfm_world;
 

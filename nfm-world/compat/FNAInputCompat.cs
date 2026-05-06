@@ -3,7 +3,7 @@
 // These stubs let it compile until it's ported to MoonWorks.Input.
 #pragma warning disable CS0618
 
-namespace Microsoft.Xna.Framework.Input;
+namespace nfm_world.compat;
 
 [Obsolete("Port to MoonWorks.Input")]
 public static class Keyboard

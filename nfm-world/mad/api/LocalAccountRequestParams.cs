@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace nfm_world.mad.api;
+namespace nfm_world.api;
 
 public struct LocalAccountRequestParams
 {

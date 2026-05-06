@@ -1,9 +1,7 @@
 using MoonWorks.Graphics;
 using StbImageSharp;
-using GpuBuffer = MoonWorks.Graphics.Buffer;
-using GpuCommandBuffer = MoonWorks.Graphics.CommandBuffer;
 
-namespace nfm_world;
+namespace nfm_world.util;
 
 /// <summary>
 /// Helper for loading textures from streams/files into MoonWorks GPU textures.

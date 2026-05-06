@@ -14,12 +14,13 @@ using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
 using nfm_world_library.SoftFloat;
 using nfm_world.camera;
+using nfm_world.gameobject;
 using nfm_world.gameplay;
-using nfm_world.mesh;
-using nfm_world.mesh.environment;
-using nfm_world.stage;
+using nfm_world.renderable.environment;
+using nfm_world.renderable.mesh;
 using nfm_world.util;
-using Environment = nfm_world.mesh.environment.Environment;
+using Environment = nfm_world.renderable.environment.Environment;
+using Keys = nfm_world.util.Keys;
 
 namespace nfm_world.ui;
 
@@ -2374,8 +2375,8 @@ public class StageEditorPhase : BasePhase
         }
         
         // Check if right mouse button is currently held down
-        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
-        bool isRightButtonHeld = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+        var mouseState = Mouse.GetState();
+        bool isRightButtonHeld = mouseState.RightButton == ButtonState.Pressed;
         
         // Start dragging if right button is held, we're in viewport, in Scene view, and not already dragging
         if (isRightButtonHeld && IsMouseInViewport(x, y) && ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.Scene && !_isRightDragging)
@@ -2416,9 +2417,9 @@ public class StageEditorPhase : BasePhase
         _mouseY = y;
         
         // Check if it's right mouse button via Microsoft.Xna.Framework.Input.Mouse
-        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+        var mouseState = Mouse.GetState();
         
-        if (mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
+        if (mouseState.RightButton == ButtonState.Pressed)
         {
             // Right-click for camera rotation (only in Scene view)
             _isRightButtonDown = true;
@@ -2508,9 +2509,9 @@ public class StageEditorPhase : BasePhase
     public override void MouseReleased(int x, int y, bool imguiWantsMouse)
     {
         // Check if it's right mouse button
-        var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
+        var mouseState = Mouse.GetState();
         
-        if (mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Released && _isRightButtonDown)
+        if (mouseState.RightButton == ButtonState.Released && _isRightButtonDown)
         {
             _isRightButtonDown = false;
             
@@ -2525,7 +2526,7 @@ public class StageEditorPhase : BasePhase
                 _hasValidPlacementPos = false;
             }
         }
-        else if (mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Released && _isLeftButtonDown)
+        else if (mouseState.LeftButton == ButtonState.Released && _isLeftButtonDown)
         {
             _isLeftButtonDown = false;
             

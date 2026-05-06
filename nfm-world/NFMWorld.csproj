@@ -180,5 +180,10 @@
         </Compile>
     </ItemGroup>
 
+
+    <ItemGroup>
+      <Folder Include="mad\renderer\renderable\" />
+    </ItemGroup>
+
     <!-- Shader HLSL source files are deployed to output via data\**\* and loaded at runtime by ShaderCross -->
 </Project>
