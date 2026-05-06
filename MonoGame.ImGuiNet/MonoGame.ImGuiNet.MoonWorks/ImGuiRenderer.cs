@@ -253,7 +253,7 @@ public class ImGuiRenderer : IDisposable
 		var bytesPerPixel = textureData.Format == ImTextureFormat.Rgba32 ? 4 : 1;
 		var dataSize = (uint)(textureData.Width * textureData.Height * bytesPerPixel);
 
-		var transferBuffer = TransferBuffer.Create<byte>(_device, TransferBufferUsage.Upload, dataSize);
+		using var transferBuffer = TransferBuffer.Create<byte>(_device, TransferBufferUsage.Upload, dataSize);
 		var span = transferBuffer.Map<byte>(false);
 		new Span<byte>(textureData.Pixels, (int)dataSize).CopyTo(span);
 		transferBuffer.Unmap();
@@ -263,7 +263,6 @@ public class ImGuiRenderer : IDisposable
 		copyPass.UploadToTexture(transferBuffer, texture, false);
 		cmd.EndCopyPass(copyPass);
 		_device.Submit(cmd);
-		transferBuffer.Dispose();
 	}
 
 	private void DestroyManagedTexture(ImTextureDataPtr textureData)
