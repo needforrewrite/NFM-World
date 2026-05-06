@@ -64,7 +64,7 @@ public class FixHoop : StageObjectGameObject
         pass.DrawIndexedPrimitives(IdxCount, 1, 0, 0, 0);
     }
 
-    public override void UploadBuffers()
+    public override void UploadBuffers(CopyPass copyPass)
     {
         base.UploadBuffers();
 

@@ -57,12 +57,13 @@ public class Scene
         }
 
         // Upload instance data that changed via CopyPass
-        _renderDataCache.PrepareAndUpload(cmd);
+        var copyPass = cmd.BeginCopyPass();
+        _renderDataCache.PrepareAndUpload(copyPass);
 
         // Gather and flush all per-frame buffer uploads in one CopyPass
         foreach (var obj in Objects)
         {
-            obj.UploadBuffers();
+            obj.UploadBuffers(copyPass);
         }
         RenderState.FlushUploads(cmd);
 
@@ -235,7 +236,7 @@ public class Scene
         /// Prepare instance data for upload: check for changes, create/resize GPU buffers,
         /// map and fill transfer buffers, then upload all changed data via a single CopyPass.
         /// </summary>
-        public void PrepareAndUpload(CommandBuffer cmd)
+        public void PrepareAndUpload(CopyPass copyPass)
         {
             _entriesToUpload.Clear();
 
@@ -289,17 +290,15 @@ public class Scene
             // Upload all changed instance data in one CopyPass
             if (_entriesToUpload.Count > 0)
             {
-                var copyPass = cmd.BeginCopyPass();
                 foreach (var entry in _entriesToUpload)
                 {
-                    var byteCount = (uint)(entry.RenderData.Count * Marshal.SizeOf<InstanceData>());
-                    copyPass.UploadToBuffer(
-                        new TransferBufferLocation(entry.TransferBuffer, 0),
-                        new BufferRegion(entry.GpuBuffer, 0, byteCount),
+                    copyPass.UploadToBuffer<InstanceData>(
+                        entry.TransferBuffer,
+                        entry.GpuBuffer,
+                        0, 0, (uint)entry.RenderData.Count,
                         true);
                     entry.NeedsUpload = false;
                 }
-                cmd.EndCopyPass(copyPass);
             }
         }
 

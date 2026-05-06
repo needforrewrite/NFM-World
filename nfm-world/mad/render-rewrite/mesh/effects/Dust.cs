@@ -306,7 +306,7 @@ public class Dust : IDisposable
         }
     }
 
-    public void UploadBuffers()
+    public void UploadBuffers(CopyPass copyPass)
     {
         if (_vertexCount == 0 || _indexCount == 0) return;
 
@@ -321,7 +321,7 @@ public class Dust : IDisposable
         var idxSpan = idxTransfer.Map<int>(false);
         _indices.AsSpan(0, _indexCount).CopyTo(idxSpan);
         idxTransfer.Unmap();
-
+        
         RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer,
             (uint)(_vertexCount * Marshal.SizeOf<VertexPositionColor>()));
         RenderState.EnqueueUpload(idxTransfer, _indexBuffer,

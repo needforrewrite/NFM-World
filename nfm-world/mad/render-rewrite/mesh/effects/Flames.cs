@@ -299,16 +299,16 @@ public class Flames : IDisposable
         RenderInternal(camera);
     }
 
-    public void UploadBuffers()
+    public void UploadBuffers(CopyPass copyPass)
     {
         if (_vtxCountForRender == 0) return;
 
-        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, _vtxCountForRender);
+        using var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, _vtxCountForRender);
         var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
         _triangles.AsSpan(0, (int)_vtxCountForRender).CopyTo(vtxSpan);
         vtxTransfer.Unmap();
 
-        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer, _vtxCountForRender * (uint)Marshal.SizeOf<VertexPositionColor>());
+        copyPass.UploadToBuffer<VertexPositionColor>(vtxTransfer, _vertexBuffer, 0, 0, _vtxCountForRender, true);
     }
 
     private void RenderInternal(Camera camera)

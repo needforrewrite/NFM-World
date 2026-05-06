@@ -1,4 +1,5 @@
-﻿using nfm_world_library.mad;
+﻿using MoonWorks.Graphics;
+using nfm_world_library.mad;
 using nfm_world.camera;
 using nfm_world.mesh;
 
@@ -40,11 +41,11 @@ public class GameObject : Transform, IImmediateRenderable
         }
     }
 
-    public virtual void UploadBuffers()
+    public virtual void UploadBuffers(CopyPass copyPass)
     {
         foreach (var child in Children)
         {
-            child.UploadBuffers();
+            child.UploadBuffers(copyPass);
         }
     }
 

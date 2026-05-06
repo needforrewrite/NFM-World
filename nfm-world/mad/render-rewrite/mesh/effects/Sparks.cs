@@ -246,7 +246,7 @@ public class Sparks : IDisposable
         Sprk = 0;
     }
 
-    public void UploadBuffers()
+    public void UploadBuffers(CopyPass copyPass)
     {
         if (!_needsUpload || _vertexCount == 0 || _triangleCount == 0) return;
         _needsUpload = false;

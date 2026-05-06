@@ -140,7 +140,7 @@ public class Chips : IDisposable
         }
     }
 
-    public void UploadBuffers()
+    public void UploadBuffers(CopyPass copyPass)
     {
         if (_triangleCount == 0) return;
 

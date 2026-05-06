@@ -188,7 +188,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
         Dispose(false);
     }
 
-    public override void UploadBuffers()
+    public override void UploadBuffers(CopyPass copyPass)
     {
         base.UploadBuffers();
         if (!GameSparker.devRenderTrackers) return;

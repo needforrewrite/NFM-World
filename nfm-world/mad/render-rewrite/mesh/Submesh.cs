@@ -45,10 +45,10 @@ public class Submesh : IInstancedRenderElement, IDisposable
 
             var cmd = graphicsDevice.AcquireCommandBuffer();
             var copyPass = cmd.BeginCopyPass();
-            copyPass.UploadToBuffer(
-                new TransferBufferLocation(transfer, 0),
-                new BufferRegion(_vertexBuffer, 0,
-                    (uint)vertices.Length * (uint)Marshal.SizeOf<Mesh.VertexPositionNormalColorCentroid>()),
+            copyPass.UploadToBuffer<Mesh.VertexPositionNormalColorCentroid>(
+                transfer,
+                _vertexBuffer,
+                0, 0, (uint)vertices.Length,
                 false);
             cmd.EndCopyPass(copyPass);
             graphicsDevice.Submit(cmd);
