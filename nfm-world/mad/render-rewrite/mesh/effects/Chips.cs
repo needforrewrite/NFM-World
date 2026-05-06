@@ -145,12 +145,12 @@ public class Chips : IDisposable
         if (_triangleCount == 0) return;
 
         var vtxCount = (uint)(_triangleCount * 3);
-        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, vtxCount);
+        using var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, vtxCount);
         var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
         _triangles.AsSpan(0, (int)vtxCount).CopyTo(vtxSpan);
         vtxTransfer.Unmap();
 
-        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer, vtxCount * (uint)Marshal.SizeOf<VertexPositionColor>());
+        copyPass.UploadToBuffer<VertexPositionColor>(vtxTransfer, _vertexBuffer, 0, 0, vtxCount, true);
     }
 
     public void Render(Camera camera)

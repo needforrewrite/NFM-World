@@ -36,44 +36,28 @@ public class Submesh : IInstancedRenderElement, IDisposable
         // Create and upload vertex buffer
         _vertexBuffer = GpuBuffer.Create<Mesh.VertexPositionNormalColorCentroid>(
             graphicsDevice, BufferUsageFlags.Vertex, (uint)vertices.Length);
-        {
-            var transfer = TransferBuffer.Create<Mesh.VertexPositionNormalColorCentroid>(
-                graphicsDevice, TransferBufferUsage.Upload, (uint)vertices.Length);
-            var span = transfer.Map<Mesh.VertexPositionNormalColorCentroid>(false);
-            vertices.CopyTo(span);
-            transfer.Unmap();
-
-            var cmd = graphicsDevice.AcquireCommandBuffer();
-            var copyPass = cmd.BeginCopyPass();
-            copyPass.UploadToBuffer<Mesh.VertexPositionNormalColorCentroid>(
-                transfer,
-                _vertexBuffer,
-                0, 0, (uint)vertices.Length,
-                false);
-            cmd.EndCopyPass(copyPass);
-            graphicsDevice.Submit(cmd);
-            transfer.Dispose();
-        }
+        using var vtxTransfer = TransferBuffer.Create<Mesh.VertexPositionNormalColorCentroid>(
+            graphicsDevice, TransferBufferUsage.Upload, (uint)vertices.Length);
+        var vtxSpan = vtxTransfer.Map<Mesh.VertexPositionNormalColorCentroid>(false);
+        vertices.CopyTo(vtxSpan);
+        vtxTransfer.Unmap();
 
         // Create and upload index buffer
         _indexBuffer = GpuBuffer.Create<int>(graphicsDevice, BufferUsageFlags.Index, _indexCount);
-        {
-            var transfer = TransferBuffer.Create<int>(
-                graphicsDevice, TransferBufferUsage.Upload, _indexCount);
-            var span = transfer.Map<int>(false);
-            indices.CopyTo(span);
-            transfer.Unmap();
+        using var idxTransfer = TransferBuffer.Create<int>(
+            graphicsDevice, TransferBufferUsage.Upload, _indexCount);
+        var idxSpan = idxTransfer.Map<int>(false);
+        indices.CopyTo(idxSpan);
+        idxTransfer.Unmap();
 
-            var cmd = graphicsDevice.AcquireCommandBuffer();
-            var copyPass = cmd.BeginCopyPass();
-            copyPass.UploadToBuffer(
-                new TransferBufferLocation(transfer, 0),
-                new BufferRegion(_indexBuffer, 0, _indexCount * sizeof(int)),
-                false);
-            cmd.EndCopyPass(copyPass);
-            graphicsDevice.Submit(cmd);
-            transfer.Dispose();
-        }
+        var cmd = graphicsDevice.AcquireCommandBuffer();
+        var copyPass = cmd.BeginCopyPass();
+        copyPass.UploadToBuffer<Mesh.VertexPositionNormalColorCentroid>(
+            vtxTransfer, _vertexBuffer, 0, 0, (uint)vertices.Length, false);
+        copyPass.UploadToBuffer<int>(
+            idxTransfer, _indexBuffer, 0, 0, _indexCount, false);
+        cmd.EndCopyPass(copyPass);
+        graphicsDevice.Submit(cmd);
     }
 
     ~Submesh()

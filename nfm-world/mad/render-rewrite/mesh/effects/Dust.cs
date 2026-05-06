@@ -310,22 +310,20 @@ public class Dust : IDisposable
     {
         if (_vertexCount == 0 || _indexCount == 0) return;
 
-        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(
+        using var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(
             _graphicsDevice, TransferBufferUsage.Upload, (uint)_vertexCount);
         var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
         _verts.AsSpan(0, _vertexCount).CopyTo(vtxSpan);
         vtxTransfer.Unmap();
 
-        var idxTransfer = TransferBuffer.Create<int>(
+        using var idxTransfer = TransferBuffer.Create<int>(
             _graphicsDevice, TransferBufferUsage.Upload, (uint)_indexCount);
         var idxSpan = idxTransfer.Map<int>(false);
         _indices.AsSpan(0, _indexCount).CopyTo(idxSpan);
         idxTransfer.Unmap();
-        
-        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer,
-            (uint)(_vertexCount * Marshal.SizeOf<VertexPositionColor>()));
-        RenderState.EnqueueUpload(idxTransfer, _indexBuffer,
-            (uint)(_indexCount * sizeof(int)));
+
+        copyPass.UploadToBuffer<VertexPositionColor>(vtxTransfer, _vertexBuffer, 0, 0, (uint)_vertexCount, true);
+        copyPass.UploadToBuffer<int>(idxTransfer, _indexBuffer, 0, 0, (uint)_indexCount, true);
     }
 
     public void Render(Camera camera)

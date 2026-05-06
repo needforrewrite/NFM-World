@@ -144,41 +144,31 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
         _lineIndexBuffer = GpuBuffer.Create<int>(device, BufferUsageFlags.Index, _lineIndexCount);
         _lineInstanceBuffer = GpuBuffer.Create<InstanceData>(device, BufferUsageFlags.Vertex, 1);
 
-        var vtxTransfer = TransferBuffer.Create<LineMesh.LineMeshVertexAttribute>(device, TransferBufferUsage.Upload, vtxCount);
+        using var vtxTransfer = TransferBuffer.Create<LineMesh.LineMeshVertexAttribute>(device, TransferBufferUsage.Upload, vtxCount);
         var vtxSpan = vtxTransfer.Map<LineMesh.LineMeshVertexAttribute>(false);
         CollectionsMarshal.AsSpan(data).CopyTo(vtxSpan);
         vtxTransfer.Unmap();
 
-        var idxTransfer = TransferBuffer.Create<int>(device, TransferBufferUsage.Upload, _lineIndexCount);
+        using var idxTransfer = TransferBuffer.Create<int>(device, TransferBufferUsage.Upload, _lineIndexCount);
         var idxSpan = idxTransfer.Map<int>(false);
         CollectionsMarshal.AsSpan(indices).CopyTo(idxSpan);
         idxTransfer.Unmap();
 
-        var instTransfer = TransferBuffer.Create<InstanceData>(device, TransferBufferUsage.Upload, 1);
+        using var instTransfer = TransferBuffer.Create<InstanceData>(device, TransferBufferUsage.Upload, 1);
         var instSpan = instTransfer.Map<InstanceData>(false);
         instSpan[0] = new InstanceData(MatrixWorld);
         instTransfer.Unmap();
 
         var cmd = device.AcquireCommandBuffer();
         var copyPass = cmd.BeginCopyPass();
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(vtxTransfer, 0),
-            new BufferRegion(_lineVertexBuffer, 0, vtxCount * (uint)Marshal.SizeOf<LineMesh.LineMeshVertexAttribute>()),
-            false);
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(idxTransfer, 0),
-            new BufferRegion(_lineIndexBuffer, 0, _lineIndexCount * sizeof(int)),
-            false);
-        copyPass.UploadToBuffer(
-            new TransferBufferLocation(instTransfer, 0),
-            new BufferRegion(_lineInstanceBuffer, 0, (uint)Marshal.SizeOf<InstanceData>()),
-            false);
+        copyPass.UploadToBuffer<LineMesh.LineMeshVertexAttribute>(
+            vtxTransfer, _lineVertexBuffer, 0, 0, vtxCount, false);
+        copyPass.UploadToBuffer<int>(
+            idxTransfer, _lineIndexBuffer, 0, 0, _lineIndexCount, false);
+        copyPass.UploadToBuffer<InstanceData>(
+            instTransfer, _lineInstanceBuffer, 0, 0, 1, false);
         cmd.EndCopyPass(copyPass);
         device.Submit(cmd);
-
-        vtxTransfer.Dispose();
-        idxTransfer.Dispose();
-        instTransfer.Dispose();
 
         #endregion
     }
@@ -190,16 +180,16 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
 
     public override void UploadBuffers(CopyPass copyPass)
     {
-        base.UploadBuffers();
+        base.UploadBuffers(copyPass);
         if (!GameSparker.devRenderTrackers) return;
 
         var device = GameSparker._graphicsDevice;
-        var instTransfer = TransferBuffer.Create<InstanceData>(device, TransferBufferUsage.Upload, 1);
+        using var instTransfer = TransferBuffer.Create<InstanceData>(device, TransferBufferUsage.Upload, 1);
         var instSpan = instTransfer.Map<InstanceData>(false);
         instSpan[0] = new InstanceData(MatrixWorld);
         instTransfer.Unmap();
 
-        RenderState.EnqueueUpload(instTransfer, _lineInstanceBuffer, (uint)Marshal.SizeOf<InstanceData>());
+        copyPass.UploadToBuffer<InstanceData>(instTransfer, _lineInstanceBuffer, 0, 0, 1, true);
     }
 
     public override void Render(Camera camera, Lighting? lighting)

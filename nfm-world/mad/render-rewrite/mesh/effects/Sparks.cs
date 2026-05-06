@@ -251,23 +251,21 @@ public class Sparks : IDisposable
         if (!_needsUpload || _vertexCount == 0 || _triangleCount == 0) return;
         _needsUpload = false;
 
-        var vtxTransfer = TransferBuffer.Create<LineMesh.LineMeshVertexAttribute>(
+        using var vtxTransfer = TransferBuffer.Create<LineMesh.LineMeshVertexAttribute>(
             _graphicsDevice, TransferBufferUsage.Upload, (uint)_vertexCount);
         var vtxSpan = vtxTransfer.Map<LineMesh.LineMeshVertexAttribute>(false);
         _lineVertices.AsSpan(0, _vertexCount).CopyTo(vtxSpan);
         vtxTransfer.Unmap();
 
         var idxCount = (uint)(_triangleCount * 3);
-        var idxTransfer = TransferBuffer.Create<int>(
+        using var idxTransfer = TransferBuffer.Create<int>(
             _graphicsDevice, TransferBufferUsage.Upload, idxCount);
         var idxSpan = idxTransfer.Map<int>(false);
         _lineIndices.AsSpan(0, (int)idxCount).CopyTo(idxSpan);
         idxTransfer.Unmap();
 
-        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer,
-            (uint)(_vertexCount * Marshal.SizeOf<LineMesh.LineMeshVertexAttribute>()));
-        RenderState.EnqueueUpload(idxTransfer, _indexBuffer,
-            idxCount * sizeof(int));
+        copyPass.UploadToBuffer<LineMesh.LineMeshVertexAttribute>(vtxTransfer, _vertexBuffer, 0, 0, (uint)_vertexCount, true);
+        copyPass.UploadToBuffer<int>(idxTransfer, _indexBuffer, 0, 0, idxCount, true);
     }
 
     public void Render(Camera camera)

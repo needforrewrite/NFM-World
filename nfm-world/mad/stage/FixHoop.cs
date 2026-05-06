@@ -66,22 +66,20 @@ public class FixHoop : StageObjectGameObject
 
     public override void UploadBuffers(CopyPass copyPass)
     {
-        base.UploadBuffers();
+        base.UploadBuffers(copyPass);
 
-        var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, VertCount);
+        using var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, VertCount);
         var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
         _vertices.AsSpan().CopyTo(vtxSpan);
         vtxTransfer.Unmap();
 
-        var idxTransfer = TransferBuffer.Create<ushort>(_graphicsDevice, TransferBufferUsage.Upload, IdxCount);
+        using var idxTransfer = TransferBuffer.Create<ushort>(_graphicsDevice, TransferBufferUsage.Upload, IdxCount);
         var idxSpan = idxTransfer.Map<ushort>(false);
         _indices.AsSpan().CopyTo(idxSpan);
         idxTransfer.Unmap();
 
-        RenderState.EnqueueUpload(vtxTransfer, _vertexBuffer,
-            (uint)(VertCount * Marshal.SizeOf<VertexPositionColor>()));
-        RenderState.EnqueueUpload(idxTransfer, _indexBuffer,
-            (uint)(IdxCount * sizeof(ushort)));
+        copyPass.UploadToBuffer<VertexPositionColor>(vtxTransfer, _vertexBuffer, 0, 0, VertCount, true);
+        copyPass.UploadToBuffer<ushort>(idxTransfer, _indexBuffer, 0, 0, IdxCount, true);
     }
 
     private void PrepareLine(int idx)

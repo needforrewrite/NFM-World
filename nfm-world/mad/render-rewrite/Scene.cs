@@ -65,7 +65,7 @@ public class Scene
         {
             obj.UploadBuffers(copyPass);
         }
-        RenderState.FlushUploads(cmd);
+        cmd.EndCopyPass(copyPass);
 
         // ── Shadow map passes ───────────────────────────────────────
         if (useShadowMapping)
