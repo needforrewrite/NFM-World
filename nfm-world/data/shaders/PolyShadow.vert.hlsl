@@ -1,6 +1,6 @@
 // PolyShadow.vert.hlsl — Poly shadow map vertex shader (replaces Poly.fx "CreateShadowMap" technique VS)
 
-#include "SDLGPURegisters.hlsli"
+#include "SDLGPU.hlsli"
 
 cbuffer ShadowUniforms : SDL_VS_UNIFORM(0)
 {
@@ -10,19 +10,19 @@ cbuffer ShadowUniforms : SDL_VS_UNIFORM(0)
 
 struct VSInput
 {
-    float3 Position   : POSITION0;
-    float3 Normal     : NORMAL0;
-    float3 Centroid   : POSITION1;
-    float4 Color      : COLOR0;
-    float  DecalOffset : TEXCOORD0;
+    float3 Position   : ATTRIBUTE(0);
+    float3 Normal     : ATTRIBUTE(1);
+    float3 Centroid   : ATTRIBUTE(2);
+    float4 Color      : ATTRIBUTE(3);
+    float  DecalOffset : ATTRIBUTE(4);
     // Instance data
-    float4x4 World    : TEXCOORD3; // slots 3-6
+    float4x4 World    : ATTRIBUTE(5); // slots 5-8
 };
 
 struct VSOutput
 {
     float4 Position : SV_POSITION;
-    float  Depth    : TEXCOORD0;
+    float  Depth    : ATTRIBUTE(0);
 };
 
 VSOutput main(VSInput input)

@@ -1,7 +1,7 @@
 // Poly.frag.hlsl — Poly main fragment shader (replaces Poly.fx "Basic" technique PS)
 
 #include "Mad.hlsli"
-#include "SDLGPURegisters.hlsli"
+#include "SDLGPU.hlsli"
 
 // ─── Resources (fragment stage) ─────────────────────────────────────────────
 
@@ -21,8 +21,8 @@ struct PSInput
 {
     float4 Position     : SV_POSITION;
     float4 Color        : COLOR0;
-    float4 WorldPos     : TEXCOORD2;
-    float  GetsShadowed : TEXCOORD3;
+    float4 WorldPos     : ATTRIBUTE(2);
+    float  GetsShadowed : ATTRIBUTE(3);
 };
 
 float4 main(PSInput input) : SV_TARGET

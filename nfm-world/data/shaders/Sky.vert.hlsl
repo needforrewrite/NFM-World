@@ -1,6 +1,6 @@
 // Sky.vert.hlsl — Sky vertex shader (replaces Sky.fx "Fullbright" technique VS)
 
-#include "SDLGPURegisters.hlsli"
+#include "SDLGPU.hlsli"
 
 cbuffer SkyUniforms : SDL_VS_UNIFORM(0)
 {
@@ -9,8 +9,8 @@ cbuffer SkyUniforms : SDL_VS_UNIFORM(0)
 
 struct VSInput
 {
-    float4 Position : POSITION;
-    float4 Color    : COLOR0;
+    float4 Position : ATTRIBUTE(0);
+    float4 Color    : ATTRIBUTE(1);
 };
 
 struct VSOutput

@@ -1,7 +1,7 @@
 // Mountains.vert.hlsl — Mountains vertex shader (replaces Mountains.fx "Fullbright" technique VS)
 
 #include "Mad.hlsli"
-#include "SDLGPURegisters.hlsli"
+#include "SDLGPU.hlsli"
 
 cbuffer MountainsUniforms : SDL_VS_UNIFORM(0)
 {
@@ -12,15 +12,15 @@ cbuffer MountainsUniforms : SDL_VS_UNIFORM(0)
 
 struct VSInput
 {
-    float4 Position : POSITION;
-    float3 Color    : COLOR0;
+    float4 Position : ATTRIBUTE(0);
+    float3 Color    : ATTRIBUTE(1);
 };
 
 struct VSOutput
 {
     float4 Position : SV_POSITION;
     float4 Color    : COLOR0;
-    float4 WorldPos : TEXCOORD2;
+    float4 WorldPos : ATTRIBUTE(2);
 };
 
 VSOutput main(VSInput input)

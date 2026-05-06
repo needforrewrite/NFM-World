@@ -1,7 +1,7 @@
 // Poly.vert.hlsl — Poly main vertex shader (replaces Poly.fx "Basic" technique VS)
 
 #include "Mad.hlsli"
-#include "SDLGPURegisters.hlsli"
+#include "SDLGPU.hlsli"
 
 cbuffer PolyUniforms : SDL_VS_UNIFORM(0)
 {
@@ -24,22 +24,22 @@ cbuffer PolyUniforms : SDL_VS_UNIFORM(0)
 
 struct VSInput
 {
-    float3 Position   : POSITION0;
-    float3 Normal     : NORMAL0;
-    float3 Centroid   : POSITION1;
-    float4 Color      : COLOR0;
-    float  DecalOffset : TEXCOORD0;
+    float3 Position   : ATTRIBUTE(0);
+    float3 Normal     : ATTRIBUTE(1);
+    float3 Centroid   : ATTRIBUTE(2);
+    float4 Color      : ATTRIBUTE(3);
+    float  DecalOffset : ATTRIBUTE(4);
     // Instance data
-    float4x4 World    : TEXCOORD3; // slots 3-6
-    float4 Parameters : TEXCOORD7;
+    float4x4 World    : ATTRIBUTE(5); // slots 5-8
+    float4 Parameters : ATTRIBUTE(9);
 };
 
 struct VSOutput
 {
     float4 Position     : SV_POSITION;
     float4 Color        : COLOR0;
-    float4 WorldPos     : TEXCOORD2;
-    float  GetsShadowed : TEXCOORD3;
+    float4 WorldPos     : ATTRIBUTE(2);
+    float  GetsShadowed : ATTRIBUTE(3);
 };
 
 VSOutput main(VSInput input)

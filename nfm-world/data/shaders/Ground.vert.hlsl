@@ -1,7 +1,7 @@
 // Ground.vert.hlsl — Ground vertex shader (replaces Ground.fx "Fullbright" technique VS)
 
 #include "Mad.hlsli"
-#include "SDLGPURegisters.hlsli"
+#include "SDLGPU.hlsli"
 
 cbuffer GroundUniforms : SDL_VS_UNIFORM(0)
 {
@@ -12,16 +12,16 @@ cbuffer GroundUniforms : SDL_VS_UNIFORM(0)
 
 struct VSInput
 {
-    float4 Position : POSITION;
-    float3 Color    : COLOR0;
+    float4 Position : ATTRIBUTE(0);
+    float3 Color    : ATTRIBUTE(1);
 };
 
 struct VSOutput
 {
     float4 Position  : SV_POSITION;
     float4 Color     : COLOR0;
-    float4 WorldPos  : TEXCOORD2;
-    float4 Position1 : TEXCOORD3;
+    float4 WorldPos  : ATTRIBUTE(2);
+    float4 Position1 : ATTRIBUTE(3);
 };
 
 VSOutput main(VSInput input)

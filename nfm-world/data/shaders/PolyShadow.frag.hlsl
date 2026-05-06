@@ -3,7 +3,7 @@
 struct PSInput
 {
     float4 Position : SV_POSITION;
-    float  Depth    : TEXCOORD0;
+    float  Depth    : ATTRIBUTE(0);
 };
 
 float4 main(PSInput input) : SV_TARGET

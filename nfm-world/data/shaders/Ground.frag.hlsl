@@ -1,7 +1,7 @@
 // Ground.frag.hlsl — Ground fragment shader (replaces Ground.fx "Fullbright" technique PS)
 
 #include "Mad.hlsli"
-#include "SDLGPURegisters.hlsli"
+#include "SDLGPU.hlsli"
 
 // ─── Resources (fragment stage) ─────────────────────────────────────────────
 
@@ -22,8 +22,8 @@ struct PSInput
 {
     float4 Position  : SV_POSITION;
     float4 Color     : COLOR0;
-    float4 WorldPos  : TEXCOORD2;
-    float4 Position1 : TEXCOORD3;
+    float4 WorldPos  : ATTRIBUTE(2);
+    float4 Position1 : ATTRIBUTE(3);
 };
 
 float4 main(PSInput input) : SV_TARGET
