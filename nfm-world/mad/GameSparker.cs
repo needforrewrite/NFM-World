@@ -21,7 +21,7 @@ namespace nfm_world;
 
 public class GameSparker
 {
-    public static Program _game;
+    public static WorldGame _game;
     public static GraphicsDevice _graphicsDevice;
     public static readonly string version = GetVersionString();
     public static AccountManager AccountManager = new AccountManager();
@@ -160,7 +160,7 @@ public class GameSparker
         
         return stages;
     }
-    public static void Load(Program game)
+    public static void Load(WorldGame game)
     {
         _game = game;
         _graphicsDevice = game.GraphicsDevice;
@@ -251,11 +251,17 @@ public class GameSparker
     {
     }
 
+    public static void Render3DOverlays()
+    {
+        CurrentPhase.Render3DOverlays();
+    }
+
     public static void RenderImgui()
     {
         devConsole.Render();
         MessageWindow.Render();
         SettingsMenu.Render();
+        CurrentPhase.RenderImgui();
     }
 
     public static void WindowSizeChanged(int width, int height)

@@ -413,7 +413,7 @@ public class StageEditorPhase : BasePhase
         // Clear stale shadow maps left over from any previous gameplay session.
         // Scene.RenderInternal always passes Program.shadowRenderTargets to the shader,
         // so old shadow data would bleed into the editor if not wiped here.
-        foreach (var rt in Program.shadowRenderTargets)
+        foreach (var rt in WorldGame.shadowRenderTargets)
         {
             _graphicsDevice.SetRenderTarget(rt);
             _graphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Microsoft.Xna.Framework.Color.White, 1.0f, 0);
@@ -1957,7 +1957,7 @@ public class StageEditorPhase : BasePhase
         
         _graphicsDevice.SetRenderTargets(prevRTs);
         
-        var texRef = Program.ImguiRenderer.BindTexture(rt);
+        var texRef = WorldGame.ImguiRenderer.BindTexture(rt);
         _partPreviews[name] = (rt, texRef);
     }
     

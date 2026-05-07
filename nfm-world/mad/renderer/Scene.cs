@@ -4,6 +4,7 @@ using System.Buffers;
 using System.Collections;
 using System.Runtime.InteropServices;
 using MoonWorks.Graphics;
+using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world.camera;
 using nfm_world.gameobject;
@@ -34,7 +35,6 @@ public class Scene
         var cmd = RenderState.Cmd;
         var backbuffer = RenderState.Backbuffer;
         var mainDepth = RenderState.MainDepthTexture;
-        if (cmd == null || backbuffer == null || mainDepth == null) return;
 
         _camera.OnBeforeRender();
         foreach (var lightCamera in _lightCameras)
@@ -71,18 +71,18 @@ public class Scene
         // ── Shadow map passes ───────────────────────────────────────
         if (useShadowMapping)
         {
-            for (var cascade = 0; cascade < Math.Min(_lightCameras.Length, Program.shadowRenderTargets.Length); cascade++)
+            for (var cascade = 0; cascade < Math.Min(_lightCameras.Length, WorldGame.shadowRenderTargets.Length); cascade++)
             {
                 var shadowColor = new ColorTargetInfo
                 {
-                    Texture = Program.shadowRenderTargets[cascade].Texture,
+                    Texture = WorldGame.shadowRenderTargets[cascade].Texture,
                     LoadOp = LoadOp.Clear,
                     StoreOp = StoreOp.Store,
                     ClearColor = new MoonWorks.Graphics.Color(255, 255, 255, 255)
                 };
                 var shadowDepth = new DepthStencilTargetInfo
                 {
-                    Texture = Program.shadowDepthTargets[cascade],
+                    Texture = WorldGame.shadowDepthTargets[cascade],
                     LoadOp = LoadOp.Clear,
                     StoreOp = StoreOp.DontCare,
                     StencilLoadOp = LoadOp.DontCare,
@@ -93,7 +93,7 @@ public class Scene
                 var pass = cmd.BeginRenderPass(shadowDepth, shadowColor);
                 RenderState.Pass = pass;
 
-                var lighting = new Lighting(_lightCameras, Program.shadowRenderTargets, true, cascade);
+                var lighting = new Lighting(_lightCameras, WorldGame.shadowRenderTargets, true, cascade);
                 RenderInternal(lighting);
 
                 cmd.EndRenderPass(pass);
@@ -102,15 +102,17 @@ public class Scene
 
         // ── Main pass ───────────────────────────────────────────────
         {
+            var skyCol = World.Sky.Snap(World.Snap);
             var mainColor = new ColorTargetInfo
             {
                 Texture = backbuffer,
                 LoadOp = clearRenderBuffer ? LoadOp.Clear : LoadOp.Load,
                 StoreOp = StoreOp.Store,
                 ClearColor = new MoonWorks.Graphics.Color(
-                    (byte)Math.Clamp((int)World.Sky.R, 0, 255),
-                    (byte)Math.Clamp((int)World.Sky.G, 0, 255),
-                    (byte)Math.Clamp((int)World.Sky.B, 0, 255), (byte)255)
+                    (byte)Math.Clamp((int)skyCol.R, 0, 255),
+                    (byte)Math.Clamp((int)skyCol.G, 0, 255),
+                    (byte)Math.Clamp((int)skyCol.B, 0, 255)
+                )
             };
             var mainDepthInfo = new DepthStencilTargetInfo
             {
@@ -125,14 +127,13 @@ public class Scene
             var pass = cmd.BeginRenderPass(mainDepthInfo, mainColor);
             RenderState.Pass = pass;
 
-            var lighting = new Lighting(_lightCameras, Program.shadowRenderTargets);
+            var lighting = new Lighting(_lightCameras, WorldGame.shadowRenderTargets);
             RenderInternal(lighting);
 
             cmd.EndRenderPass(pass);
         }
 
         RenderState.Pass = null;
-        RenderState.SceneRenderedThisFrame = true;
     }
     
     private class RenderDataCache(GraphicsDevice graphicsDevice)

@@ -7,6 +7,7 @@ using nfm_world.camera;
 using nfm_world.compat;
 using nfm_world.renderable.mesh.utils;
 using GpuBuffer = MoonWorks.Graphics.Buffer;
+using VertexElementFormat = MoonWorks.Graphics.VertexElementFormat;
 
 namespace nfm_world.renderable.mesh.render_elements;
 
@@ -184,7 +185,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
             new VertexElement(56, compat.VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 2)
         );
 
-        public static MoonWorks.Graphics.VertexElementFormat[] Formats =>
+        public static ReadOnlySpan<VertexElementFormat> Formats =>
         [
             MoonWorks.Graphics.VertexElementFormat.Float3,     // location 0: Position
             MoonWorks.Graphics.VertexElementFormat.Float3,     // location 1: Normal
@@ -195,7 +196,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
             MoonWorks.Graphics.VertexElementFormat.Float3      // location 6: Up
         ];
 
-        public static uint[] Offsets => [0, 12, 24, 36, 40, 44, 56];
+        public static ReadOnlySpan<uint> Offsets => [0, 12, 24, 36, 40, 44, 56];
     }
 
     private void ReleaseUnmanagedResources()

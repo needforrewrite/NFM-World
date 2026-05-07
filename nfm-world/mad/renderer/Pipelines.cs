@@ -109,7 +109,7 @@ public static class Pipelines
 
         // Poly instanced: mesh vertices (slot 0) + instance data (slot 1)
         var polyMesh = VertexInputState.CreateSingleBinding<Mesh.VertexPositionNormalColorCentroid>(slot: 0, locationOffset: 0);
-        var polyInst = VertexInputState.CreateSingleBinding<InstanceData>(slot: 1, inputRate: VertexInputRate.Instance, stepRate: 1, locationOffset: 5);
+        var polyInst = VertexInputState.CreateSingleBinding<InstanceData>(slot: 1, inputRate: VertexInputRate.Instance, stepRate: 0, locationOffset: 5);
         _polyInstancedVIS = new VertexInputState
         {
             VertexBufferDescriptions = [..polyMesh.VertexBufferDescriptions, ..polyInst.VertexBufferDescriptions],
@@ -118,7 +118,7 @@ public static class Pipelines
 
         // Line instanced: line vertices (slot 0) + instance data (slot 1)
         var lineMesh = VertexInputState.CreateSingleBinding<LineMesh.LineMeshVertexAttribute>(slot: 0, locationOffset: 0);
-        var lineInst = VertexInputState.CreateSingleBinding<InstanceData>(slot: 1, inputRate: VertexInputRate.Instance, stepRate: 1, locationOffset: 7);
+        var lineInst = VertexInputState.CreateSingleBinding<InstanceData>(slot: 1, inputRate: VertexInputRate.Instance, stepRate: 0, locationOffset: 7);
         _lineInstancedVIS = new VertexInputState
         {
             VertexBufferDescriptions = [..lineMesh.VertexBufferDescriptions, ..lineInst.VertexBufferDescriptions],

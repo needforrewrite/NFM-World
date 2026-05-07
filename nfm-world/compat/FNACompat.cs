@@ -308,13 +308,13 @@ public struct VertexPositionColor : MoonWorks.Graphics.IVertexType
         Color = color;
     }
 
-    public static MoonWorks.Graphics.VertexElementFormat[] Formats =>
+    public static ReadOnlySpan<MoonWorks.Graphics.VertexElementFormat> Formats =>
     [
         MoonWorks.Graphics.VertexElementFormat.Float3,
         MoonWorks.Graphics.VertexElementFormat.Ubyte4Norm
     ];
 
-    public static uint[] Offsets => [0, 12];
+    public static ReadOnlySpan<uint> Offsets => [0, 12];
 
     public static readonly VertexDeclaration VertexDeclaration = new(
         new VertexElement(0, VertexElementFormat.Float3, VertexElementUsage.Position, 0),

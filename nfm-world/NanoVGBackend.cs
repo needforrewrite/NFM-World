@@ -20,24 +20,24 @@ public class NanoVGRenderer
     private MoonWorksRenderer _renderer;
     private NanoVGBackend _backend;
 
-    public NanoVGRenderer(GraphicsDevice graphicsDevice, TitleStorage storage)
+    public NanoVGRenderer(GraphicsDevice graphicsDevice, TitleStorage storage, ResourceUploader? uploader = null)
     {
         _renderer = new MoonWorksRenderer(
-            graphicsDevice, storage,
-            "data/shaders", TextureFormat.B8G8R8A8Unorm);
+            graphicsDevice,
+            storage,
+            "data/shaders",
+            TextureFormat.B8G8R8A8Unorm,
+            uploader ?? new ResourceUploader(graphicsDevice)
+        );
         _context = new NvgContext(_renderer);
         _backend = new NanoVGBackend(_context, graphicsDevice);
         IBackend.Backend = _backend;
     }
 
-    public void SetRenderContext(GpuCommandBuffer commandBuffer, RenderPass renderPass, uint viewportWidth, uint viewportHeight)
+    public void Render(GpuCommandBuffer commandBuffer, RenderPass renderPass, uint viewportWidth, uint viewportHeight)
     {
         _renderer.SetRenderContext(commandBuffer, renderPass, viewportWidth, viewportHeight);
         _backend.ViewportSize = new Vector2(viewportWidth, viewportHeight);
-    }
-
-    public void Render()
-    {
         _context.Flush();
     }
 }

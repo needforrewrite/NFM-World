@@ -199,7 +199,7 @@ public class Mesh : IDisposable
 	        new VertexElement(40, VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0)
 	    );
 
-        public static MoonWorks.Graphics.VertexElementFormat[] Formats =>
+        public static ReadOnlySpan<MoonWorks.Graphics.VertexElementFormat> Formats =>
         [
             MoonWorks.Graphics.VertexElementFormat.Float3,     // location 0: Position
             MoonWorks.Graphics.VertexElementFormat.Float3,     // location 1: Normal
@@ -208,7 +208,7 @@ public class Mesh : IDisposable
             MoonWorks.Graphics.VertexElementFormat.Float       // location 4: DecalOffset
         ];
 
-        public static uint[] Offsets => [0, 12, 24, 36, 40];
+        public static ReadOnlySpan<uint> Offsets => [0, 12, 24, 36, 40];
     }
 
     public virtual void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)

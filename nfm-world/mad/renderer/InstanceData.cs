@@ -22,7 +22,7 @@ public struct InstanceData(Matrix world, bool getsShadowed = false, float alphaO
         new VertexElement(64, VertexElementFormat.Vector4, VertexElementUsage.TextureCoordinate, 7)
     );
 
-    public static MoonWorks.Graphics.VertexElementFormat[] Formats =>
+    public static ReadOnlySpan<MoonWorks.Graphics.VertexElementFormat> Formats =>
     [
         MoonWorks.Graphics.VertexElementFormat.Float4, // location 0: World Row 0
         MoonWorks.Graphics.VertexElementFormat.Float4, // location 1: World Row 1
@@ -31,7 +31,7 @@ public struct InstanceData(Matrix world, bool getsShadowed = false, float alphaO
         MoonWorks.Graphics.VertexElementFormat.Float4  // location 4: AdditionalData
     ];
 
-    public static uint[] Offsets => [0, 16, 32, 48, 64];
+    public static ReadOnlySpan<uint> Offsets => [0, 16, 32, 48, 64];
     
     public Matrix World = Matrix.Transpose(world);
     public Vector4 AdditionalData = new(getsShadowed ? 1.0f : 0.0f, alphaOverride, isFullbright ? 1.0f : 0.0f, glow ? 1.0f : 0.0f); // x: GetsShadowed (1.0 or 0.0), y: AlphaOverride, z: IsFullbright (1.0 or 0.0), w: Glow (1.0 or 0.0)
