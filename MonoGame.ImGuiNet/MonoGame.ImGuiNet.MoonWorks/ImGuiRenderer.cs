@@ -33,14 +33,14 @@ public class ImGuiRenderer : IDisposable
 		public Vector2 TexCoord;
 		public uint Color; // RGBA packed as uint (matches ImDrawVert layout)
 
-		public static VertexElementFormat[] Formats =>
+		public static ReadOnlySpan<VertexElementFormat> Formats =>
 		[
 			VertexElementFormat.Float2,     // Position
 			VertexElementFormat.Float2,     // TexCoord
 			VertexElementFormat.Ubyte4Norm  // Color
 		];
 
-		public static uint[] Offsets => [0, 8, 16];
+		public static ReadOnlySpan<uint> Offsets => [0, 8, 16];
 	}
 
 	[StructLayout(LayoutKind.Sequential)]
@@ -50,6 +50,7 @@ public class ImGuiRenderer : IDisposable
 	}
 
 	private readonly GraphicsDevice _device;
+	private readonly ResourceUploader _uploader;
 	private readonly Window _window;
 
 	private Shader _vertexShader;
@@ -69,13 +70,20 @@ public class ImGuiRenderer : IDisposable
 
 	public ImGuiRenderer(
 		GraphicsDevice device,
+		ResourceUploader uploader,
 		Window window,
 		TitleStorage storage,
 		string shaderDir,
 		TextureFormat colorTargetFormat
 	)
 	{
-		_device = device ?? throw new ArgumentNullException(nameof(device));
+		ArgumentNullException.ThrowIfNull(device);
+		ArgumentNullException.ThrowIfNull(uploader);
+		ArgumentNullException.ThrowIfNull(window);
+		ArgumentNullException.ThrowIfNull(storage);
+		
+		_device = device;
+		_uploader = uploader;
 		_window = window;
 		_colorTargetFormat = colorTargetFormat;
 
@@ -253,16 +261,7 @@ public class ImGuiRenderer : IDisposable
 		var bytesPerPixel = textureData.Format == ImTextureFormat.Rgba32 ? 4 : 1;
 		var dataSize = (uint)(textureData.Width * textureData.Height * bytesPerPixel);
 
-		using var transferBuffer = TransferBuffer.Create<byte>(_device, TransferBufferUsage.Upload, dataSize);
-		var span = transferBuffer.Map<byte>(false);
-		new Span<byte>(textureData.Pixels, (int)dataSize).CopyTo(span);
-		transferBuffer.Unmap();
-
-		var cmd = _device.AcquireCommandBuffer();
-		var copyPass = cmd.BeginCopyPass();
-		copyPass.UploadToTexture(transferBuffer, texture, false);
-		cmd.EndCopyPass(copyPass);
-		_device.Submit(cmd);
+		_uploader.SetTextureData(texture, new Span<byte>(textureData.Pixels, (int)dataSize), false);
 	}
 
 	private void DestroyManagedTexture(ImTextureDataPtr textureData)
@@ -381,7 +380,7 @@ public class ImGuiRenderer : IDisposable
 		renderPass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.Sixteen);
 		renderPass.SetViewport(new Viewport { X = 0, Y = 0, W = (uint)io.DisplaySize.X, H = (uint)io.DisplaySize.Y, MinDepth = 0, MaxDepth = 1 });
 
-		RenderCommandLists(gpuCommandBuffer, renderPass, drawData);
+		RenderCommandLists(renderPass, drawData);
 	}
 
 	private unsafe void UpdateBuffers(ImDrawData* drawData)
@@ -401,54 +400,34 @@ public class ImGuiRenderer : IDisposable
 			_indexBufferSize = (int)(drawData->TotalIdxCount * 1.5f);
 			_indexBuffer = GpuBuffer.Create<ushort>(_device, BufferUsageFlags.Index, (uint)_indexBufferSize);
 		}
+		
+		// Two loops are required here because the result of MapBufferData is invalid after another call to
+		// MapBufferData.
 
-		// Upload via transfer GpuBuffer
-		var vtxTransfer = TransferBuffer.Create<ImGuiVertex>(_device, TransferBufferUsage.Upload, (uint)drawData->TotalVtxCount);
-		var idxTransfer = TransferBuffer.Create<ushort>(_device, TransferBufferUsage.Upload, (uint)drawData->TotalIdxCount);
+		var vtxSpan = _uploader.MapBufferData<ImGuiVertex>(_vertexBuffer, 0, (uint)drawData->TotalVtxCount, true);
 
-		var vtxSpan = vtxTransfer.Map<byte>(false);
-		var idxSpan = idxTransfer.Map<byte>(false);
-
-		int vtxOffset = 0, idxOffset = 0;
-		var vtxStride = sizeof(ImGuiVertex);
+		int vtxOffset = 0;
 		for (var n = 0; n < drawData->CmdListsCount; n++)
 		{
 			ImDrawList* cmdList = drawData->CmdLists.Data[n];
-			var vtxSize = cmdList->VtxBuffer.Size * vtxStride;
-			var idxSize = cmdList->IdxBuffer.Size * sizeof(ushort);
-
-			new Span<byte>(cmdList->VtxBuffer.Data, vtxSize)
-				.CopyTo(vtxSpan.Slice(vtxOffset * vtxStride, vtxSize));
-			new Span<byte>(cmdList->IdxBuffer.Data, idxSize)
-				.CopyTo(idxSpan.Slice(idxOffset * sizeof(ushort), idxSize));
-
+			new Span<ImGuiVertex>(cmdList->VtxBuffer.Data, cmdList->VtxBuffer.Size)
+				.CopyTo(vtxSpan.Slice(vtxOffset, cmdList->VtxBuffer.Size));
 			vtxOffset += cmdList->VtxBuffer.Size;
+		}
+		
+		var idxSpan = _uploader.MapBufferData<ushort>(_indexBuffer, 0, (uint)drawData->TotalIdxCount, true);
+		
+		int idxOffset = 0;
+		for (var n = 0; n < drawData->CmdListsCount; n++)
+		{
+			ImDrawList* cmdList = drawData->CmdLists.Data[n];
+			new Span<ushort>(cmdList->IdxBuffer.Data, cmdList->IdxBuffer.Size)
+				.CopyTo(idxSpan.Slice(idxOffset, cmdList->IdxBuffer.Size));
 			idxOffset += cmdList->IdxBuffer.Size;
 		}
-
-		vtxTransfer.Unmap();
-		idxTransfer.Unmap();
-
-		var cmd = _device.AcquireCommandBuffer();
-		var copyPass = cmd.BeginCopyPass();
-		copyPass.UploadToBuffer(
-			new TransferBufferLocation(vtxTransfer, 0),
-			new BufferRegion(_vertexBuffer, 0, (uint)(drawData->TotalVtxCount * vtxStride)),
-			true
-		);
-		copyPass.UploadToBuffer(
-			new TransferBufferLocation(idxTransfer, 0),
-			new BufferRegion(_indexBuffer, 0, (uint)(drawData->TotalIdxCount * sizeof(ushort))),
-			true
-		);
-		cmd.EndCopyPass(copyPass);
-		_device.Submit(cmd);
-
-		vtxTransfer.Dispose();
-		idxTransfer.Dispose();
 	}
 
-	private unsafe void RenderCommandLists(GpuCommandBuffer gpuCommandBuffer, RenderPass renderPass, ImDrawData* drawData)
+	private unsafe void RenderCommandLists(RenderPass renderPass, ImDrawData* drawData)
 	{
 		int vtxOffset = 0, idxOffset = 0;
 		for (var n = 0; n < drawData->CmdListsCount; n++)
