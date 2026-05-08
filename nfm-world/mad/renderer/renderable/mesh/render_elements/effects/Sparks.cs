@@ -113,8 +113,7 @@ public class Sparks : IDisposable
 
     public void GameTick()
     {
-        if (++_tick == Physics
-                .OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
+        if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
         {
             _vertexCount = 0;
             _triangleCount = 0;
