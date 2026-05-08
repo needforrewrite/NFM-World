@@ -48,8 +48,8 @@ public class SettingsMenu(WorldGame game)
     private int _selectedBindingIndex = -1;
 
     // Video settings
-    private int _selectedRenderer = 3; // 0-2 = old FNA renderers. 3-5 = new SDL_GPU renderers
-    private static readonly string[] Renderers = ["D3D12", "Vulkan", "Metal"];
+    private int _selectedRenderer = 3; // 0-2 = old FNA renderers. 3-6 = new SDL_GPU renderers
+    private static readonly string[] Renderers = ["Auto", "D3D12", "Vulkan", "Metal"];
     private int _selectedResolution = 2;
     private static readonly string[] Resolutions = ["800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440"];
     private int _selectedDisplayMode = 1;
