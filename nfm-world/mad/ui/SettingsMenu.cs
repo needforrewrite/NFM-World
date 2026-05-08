@@ -561,13 +561,19 @@ public class SettingsMenu(WorldGame game)
     }
 
     private static string? _cachedConfigRenderer;
-    public static string GetRendererFromConfig()
+    public static string? GetRendererFromConfig()
     {
         return _cachedConfigRenderer ??= GetRendererImpl();
 
-        static string GetRendererImpl()
+        static string? GetRendererImpl()
         {
             string configPath = Path.Combine("data", "cfg", "config.cfg");
+            
+            if (!File.Exists(configPath))
+            {
+                Logging.Info("No config file found, using default renderer.");
+                return null;
+            }
 
             foreach (var line in File.ReadLines(configPath))
             {
@@ -590,7 +596,7 @@ public class SettingsMenu(WorldGame game)
                 }
             }
 
-            return Renderers[0];
+            return null;
         }
     }
     
