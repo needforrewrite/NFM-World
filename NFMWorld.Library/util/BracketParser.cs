@@ -1,7 +1,7 @@
 ﻿using System.Globalization;
 using System.Runtime.InteropServices;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public static class BracketParser
 {

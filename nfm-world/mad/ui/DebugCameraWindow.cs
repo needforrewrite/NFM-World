@@ -1,7 +1,7 @@
 using Hexa.NET.ImGui;
-using nfm_world.camera;
+using NFMWorld.Camera;
 
-namespace nfm_world.ui
+namespace NFMWorld.UI
 {
     public class DebugCameraWindow
     {

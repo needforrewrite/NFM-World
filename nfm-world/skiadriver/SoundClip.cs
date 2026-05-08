@@ -1,7 +1,7 @@
 using ManagedBass;
-using nfm_world.driverinterface;
+using NFMWorld.DriverInterface;
 
-namespace nfm_world.skiadriver;
+namespace NFMWorld.SkiaDriver;
 
 internal class SoundClip : ISoundClip
 {

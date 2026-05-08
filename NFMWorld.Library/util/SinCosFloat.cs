@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public readonly record struct SinCosFloat : IFloatingPointIeee754<SinCosFloat>, IComparisonOperators<SinCosFloat, float, bool>, IComparisonOperators<SinCosFloat, int, bool>
 {

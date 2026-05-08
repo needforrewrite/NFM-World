@@ -1,17 +1,16 @@
 using System.Text;
 using Hexa.NET.ImGui;
-using Microsoft.Extensions.Logging;
-using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.SoftFloat;
-using nfm_world.camera;
-using nfm_world.gameplay;
-using nfm_world.util;
 using Maxine.Extensions.Mathematics;
+using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Camera;
+using NFMWorld.Gameplay;
+using NFMWorld.Util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world.ui;
+namespace NFMWorld.UI;
 
 // Class to hold the state for a single model editor tab
 public class ModelEditorTab

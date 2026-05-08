@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using MessagePack;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public interface IReadableWritable<out TSelf>
 {

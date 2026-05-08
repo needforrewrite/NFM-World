@@ -1,14 +1,13 @@
 using Hexa.NET.ImGui;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world.multiplayer;
-using nfm_world.multiplayer.packets.c2s;
-using nfm_world.multiplayer.packets.s2c;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Multiplayer;
+using NFMWorldLibrary.Mad.Multiplayer.packets.c2s;
+using NFMWorldLibrary.Mad.Multiplayer.packets.s2c;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world.gameplay;
+namespace NFMWorld.Gameplay;
 
 public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTransport transport) : BasePhase
 {
@@ -99,7 +98,7 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
 
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0.0f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Vector2.Zero);
+        ImGui.PushStyleVar(ImGuiStyleVar.WindowPadding, Microsoft.Xna.Framework.Vector2.Zero);
 
         var windowFlags = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | 
                          ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove |
@@ -147,7 +146,7 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
         foreach (var player in _players)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, player.Color);
-            ImGui.Text($"• {player.Name}");
+            ImGui.Text($"ï¿½ {player.Name}");
             ImGui.PopStyleColor();
             
             ImGui.Indent(20);

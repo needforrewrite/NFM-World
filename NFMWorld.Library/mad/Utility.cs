@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace nfm_world_library.mad;
+namespace NFMWorldLibrary.Mad;
 
 public static class Utility
 {

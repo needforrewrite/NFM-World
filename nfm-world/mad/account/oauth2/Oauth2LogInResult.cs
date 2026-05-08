@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace nfm_world.account.oauth2;
+namespace NFMWorld.Account.OAuth2;
 
 public class Oauth2LogInResult(string message, HttpStatusCode code) : RequestResult(message, code)
 {

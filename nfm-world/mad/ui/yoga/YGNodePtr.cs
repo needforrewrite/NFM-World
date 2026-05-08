@@ -1,7 +1,7 @@
 ﻿using System.Collections;
 using Yoga;
 
-namespace nfm_world.ui.yoga;
+namespace NFMWorld.UI.Yoga;
 
 public readonly unsafe struct YGNodePtr : IDisposable, IEnumerable<YGNodePtr>
 {

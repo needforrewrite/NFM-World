@@ -1,9 +1,9 @@
 using Hexa.NET.ImGui;
-using nfm_world_library.util;
-using nfm_world.account.oauth2;
-using nfm_world.account.oauth2.discord;
+using NFMWorld.Account.OAuth2;
+using NFMWorld.Account.OAuth2.discord;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world.account;
+namespace NFMWorld.Account;
 
 
 /// <summary>

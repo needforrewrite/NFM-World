@@ -1,4 +1,4 @@
-﻿namespace nfm_world.ui.yoga;
+﻿namespace NFMWorld.UI.Yoga;
 
 /// <summary>
 /// Represents a generic container view that can hold multiple child nodes.

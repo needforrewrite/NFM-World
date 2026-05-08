@@ -1,13 +1,13 @@
 using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.backend;
-using nfm_world_library.mad;
-using nfm_world_library.util;
-using nfm_world.camera;
-using nfm_world.driverinterface;
-using nfm_world.util;
+using NFMWorld.Camera;
+using NFMWorld.DriverInterface;
+using NFMWorld.Util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world.gameplay;
+namespace NFMWorld.Gameplay;
 
 public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : BasePhase
 {
@@ -19,7 +19,7 @@ public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : B
     public readonly GraphicsDevice GraphicsDevice = graphicsDevice;
 
     public PerspectiveCamera camera = new();
-    public Camera[] lightCameras = [
+    public Camera.Camera[] lightCameras = [
         new OrthoLightCamera
         {
             Width = 3000,

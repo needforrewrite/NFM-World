@@ -1,9 +1,9 @@
-﻿using nfm_world_library.backend.ai;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.SoftFloat;
+﻿using NFMWorldLibrary.Backend.AI;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world_library.backend;
+namespace NFMWorldLibrary.Backend;
 
 public class BackendCar : BackendGameObject, IInGameCar
 {
@@ -13,7 +13,7 @@ public class BackendCar : BackendGameObject, IInGameCar
     public f64Euler TurningWheelAngle { get; set; }
     public IReadOnlyList<Rad3dWheelDef> Wheels { get; }
 
-    public Mad Mad { get; }
+    public Mad.Mad Mad { get; }
     public Control Control { get; }
     public ushort currentCheckpoint { get; set; }
     public byte currentLap { get; set; } // mad.nlaps
@@ -55,7 +55,7 @@ public class BackendCar : BackendGameObject, IInGameCar
         MaxRadius = rad.MaxRadius;
         Wheels = rad.Wheels;
         
-        Mad = new Mad(Stats, im, isClientPlayer);
+        Mad = new Mad.Mad(Stats, im, isClientPlayer);
         Control = new Control();
         
         Position = new f64Vector3(x, World.Ground - GroundAt, z);

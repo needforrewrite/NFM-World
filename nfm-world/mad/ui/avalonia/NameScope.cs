@@ -1,7 +1,7 @@
 ﻿using Avalonia.Controls;
-using nfm_world.ui.yoga;
+using NFMWorld.UI.Yoga;
 
-namespace nfm_world.ui.avalonia;
+namespace NFMWorld.UI.Avalonia;
 
 public sealed class NameScope(Node node) : INameScope
 {

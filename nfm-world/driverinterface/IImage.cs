@@ -1,4 +1,4 @@
-namespace nfm_world.driverinterface;
+namespace NFMWorld.DriverInterface;
 
 public interface IImage
 {

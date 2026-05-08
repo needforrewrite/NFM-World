@@ -1,4 +1,4 @@
-namespace nfm_world_library.backend.gamemodes;
+namespace NFMWorldLibrary.Backend.Gamemodes;
 
 public class FootballGamemode(BaseGamemodeParameters gamemodeParameters, IRaceValues raceValues)
     : BaseGamemode(gamemodeParameters, raceValues)

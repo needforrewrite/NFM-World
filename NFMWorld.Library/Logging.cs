@@ -3,11 +3,11 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
-using Microsoft.Extensions.Options;
 using RayTech.RayLog.MEL;
+
 #pragma warning disable CA2254
 
-namespace nfm_world_library;
+namespace NFMWorldLibrary;
 
 public static class Logging
 {

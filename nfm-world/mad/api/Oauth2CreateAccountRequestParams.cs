@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace nfm_world.api;
+namespace NFMWorld.Api;
 
 public struct Oauth2CreateAccountRequestParams
 {

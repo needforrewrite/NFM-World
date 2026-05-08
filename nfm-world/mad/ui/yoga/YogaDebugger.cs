@@ -1,10 +1,8 @@
 ﻿using Maxine.Extensions;
-using nfm_world;
-using nfm_world.driverinterface;
-using nfm_world.util;
-using Maxine.Extensions.Mathematics;
+using NFMWorld.DriverInterface;
+using NFMWorld.Util;
 
-namespace nfm_world.ui.yoga;
+namespace NFMWorld.UI.Yoga;
 
 public static class YogaDebugger
 {

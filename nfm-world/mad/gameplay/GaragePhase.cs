@@ -1,16 +1,16 @@
 using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.backend;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.util;
-using nfm_world.camera;
-using nfm_world.driverinterface;
-using nfm_world.ui.menu;
-using nfm_world.util;
+using NFMWorld.Camera;
+using NFMWorld.DriverInterface;
+using NFMWorld.UI.Menu;
+using NFMWorld.Util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world.gameplay;
+namespace NFMWorld.Gameplay;
 
 public class GaragePhase(GraphicsDevice graphicsDevice) : BaseStageRenderingPhase(graphicsDevice)
 {

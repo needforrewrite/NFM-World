@@ -1,5 +1,3 @@
-using System.Collections.Frozen;
-using ManagedBass;
 using System.Diagnostics;
 using System.Reflection;
 using Hexa.NET.ImGui;
@@ -8,18 +6,19 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Monogame.ImGuiNet;
 using MonoGame.ImGuiNet;
-using nfm_world_library;
-using nfm_world_library.util;
-using nfm_world.driverinterface;
-using nfm_world.skiadriver;
-using nfm_world.ui.hud;
-using nfm_world.ui.yoga;
-using nfm_world.ui.yoga.xaml;
-using Font = nfm_world.util.Font;
-using Keys = nfm_world.util.Keys;
+using NFMWorld.DriverInterface;
+using NFMWorld.SkiaDriver;
+using NFMWorld.UI.Hud;
+using NFMWorld.UI.Yoga;
+using NFMWorld.UI.Yoga.Xaml;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Util;
+using Font = NFMWorld.Util.Font;
+using Keys = NFMWorld.Util.Keys;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 /// <summary>
 /// This sample demonstrates how to load a Direct2D1 bitmap from a file.

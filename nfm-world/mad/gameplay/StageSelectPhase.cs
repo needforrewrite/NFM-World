@@ -1,14 +1,13 @@
 using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library.backend;
-using nfm_world_library.mad;
-using nfm_world_library.util;
-using nfm_world.camera;
-using nfm_world.driverinterface;
-using nfm_world.util;
-using Maxine.Extensions.Mathematics;
+using NFMWorld.Camera;
+using NFMWorld.DriverInterface;
+using NFMWorld.Util;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world.gameplay;
+namespace NFMWorld.Gameplay;
 
 public class StageSelectPhase(GraphicsDevice graphicsDevice) : BaseStageRenderingPhase(graphicsDevice)
 {

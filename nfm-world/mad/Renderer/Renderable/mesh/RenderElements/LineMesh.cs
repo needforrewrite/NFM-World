@@ -1,12 +1,11 @@
 ﻿using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world.camera;
-using nfm_world.shaders;
+using NFMWorld.Shaders;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class LineMesh : IInstancedRenderElement, IDisposable
 {
@@ -85,7 +84,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         Dispose(false);
     }
 
-    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
+    public void Render(Camera.Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
     {
         _graphicsDevice.SetVertexBuffers(_lineVertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
         _graphicsDevice.Indices = _lineIndexBuffer;
@@ -140,7 +139,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         Vector3 Up
     )
     {
-        /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />
+        /// <inheritdoc cref="P:IVertexType.VertexDeclaration" />
         public static readonly VertexDeclaration VertexDeclaration = new(
             new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
             new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),

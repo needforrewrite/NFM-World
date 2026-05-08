@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace nfm_world_library;
+namespace NFMWorldLibrary;
 
 // helpful little utility for showing information on screen without cluttering the console. messages are cleared
 // at the start of a frame.

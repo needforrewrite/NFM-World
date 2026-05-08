@@ -1,16 +1,15 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world.camera;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class Lighting
 {
-    public Camera[] LightCameras;
+    public Camera.Camera[] LightCameras;
     public RenderTarget2D[] ShadowMaps;
     public bool IsCreateShadowMap;
     public int NumCascade;
 
-    public Lighting(Camera[] lightCameras, RenderTarget2D[] shadowMaps, bool isCreateShadowMap = false, int numCascade = -1)
+    public Lighting(Camera.Camera[] lightCameras, RenderTarget2D[] shadowMaps, bool isCreateShadowMap = false, int numCascade = -1)
     {
         LightCameras = lightCameras;
         ShadowMaps = shadowMaps;
@@ -22,7 +21,7 @@ public class Lighting
         }
     }
 
-    public Camera? CascadeLightCamera;
+    public Camera.Camera? CascadeLightCamera;
 
     public void SetShadowMapParameters(Effect effect)
     {

@@ -1,4 +1,4 @@
-﻿namespace nfm_world_library.mad.rad;
+﻿namespace NFMWorldLibrary.Mad.Rad;
 
 public enum PolyType
 {

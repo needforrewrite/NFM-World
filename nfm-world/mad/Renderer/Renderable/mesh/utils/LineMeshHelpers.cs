@@ -1,6 +1,6 @@
-using nfm_world_library;
+using NFMWorldLibrary;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class LineMeshHelpers
 {

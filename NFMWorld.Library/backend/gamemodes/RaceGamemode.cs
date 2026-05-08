@@ -1,10 +1,10 @@
 using System.Diagnostics;
 using Maxine.Extensions;
-using nfm_world_library.backend.ai;
-using nfm_world_library.mad;
-using nfm_world_library.mad.helpers;
+using NFMWorldLibrary.Backend.AI;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Helpers;
 
-namespace nfm_world_library.backend.gamemodes;
+namespace NFMWorldLibrary.Backend.Gamemodes;
 
 public class RaceGamemode(BaseGamemodeParameters gamemodeParameters, IRaceValues raceValues)
     : BaseGamemode(gamemodeParameters, raceValues)

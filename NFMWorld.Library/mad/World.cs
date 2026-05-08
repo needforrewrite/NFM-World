@@ -1,4 +1,4 @@
-﻿namespace nfm_world_library.mad;
+﻿namespace NFMWorldLibrary.Mad;
 
 public static class World
 {

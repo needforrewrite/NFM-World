@@ -2,10 +2,9 @@
 using System.Runtime.InteropServices;
 using HoleyDiver;
 using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library.mad.rad;
-using nfm_world.camera;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class Mesh : IDisposable
 {
@@ -186,7 +185,7 @@ public class Mesh : IDisposable
         Color Color,
         float DecalOffset)
     {
-        /// <inheritdoc cref="P:Microsoft.Xna.Framework.Graphics.IVertexType.VertexDeclaration" />
+        /// <inheritdoc cref="P:IVertexType.VertexDeclaration" />
         public static readonly VertexDeclaration VertexDeclaration = new(
 	        new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
 	        new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
@@ -196,7 +195,7 @@ public class Mesh : IDisposable
 	    );
     }
 
-    public virtual void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)
+    public virtual void Render(Camera.Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)
     {
     }
 

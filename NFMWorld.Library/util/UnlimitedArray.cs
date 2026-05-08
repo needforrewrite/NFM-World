@@ -2,13 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using MessagePack;
 using MessagePack.Formatters;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>
 {

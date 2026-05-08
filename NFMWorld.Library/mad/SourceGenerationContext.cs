@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
-using nfm_world_library.mad.rad;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world_library.mad;
+namespace NFMWorldLibrary.Mad;
 
 [JsonSourceGenerationOptions(WriteIndented = false, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(Rad3dWheelDef))]

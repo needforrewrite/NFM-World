@@ -1,9 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using Maxine.Extensions;
-using nfm_world.multiplayer.packets.c2s;
-using nfm_world.multiplayer.packets.s2c;
+using NFMWorldLibrary.Mad.Multiplayer.packets.c2s;
+using NFMWorldLibrary.Mad.Multiplayer.packets.s2c;
 
-namespace nfm_world.multiplayer;
+namespace NFMWorldLibrary.Mad.Multiplayer;
 
 public class GameOrchestrator
 {

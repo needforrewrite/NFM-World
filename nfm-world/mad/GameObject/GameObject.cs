@@ -1,7 +1,6 @@
-﻿using nfm_world_library.mad;
-using nfm_world.camera;
+﻿using NFMWorldLibrary.Mad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class GameObject : Transform, IImmediateRenderable
 {
@@ -23,7 +22,7 @@ public class GameObject : Transform, IImmediateRenderable
         }
     }
 
-    public virtual void Render(Camera camera, Lighting? lighting)
+    public virtual void Render(Camera.Camera camera, Lighting? lighting)
     {
         foreach (var child in Children)
         {

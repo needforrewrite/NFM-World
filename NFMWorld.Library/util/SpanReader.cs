@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public ref struct SpanReader(ReadOnlySpan<byte> span)
 {

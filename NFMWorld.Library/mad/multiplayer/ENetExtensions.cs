@@ -1,7 +1,7 @@
 ﻿using ENet;
 using Maxine.Extensions;
 
-namespace nfm_world.multiplayer;
+namespace NFMWorldLibrary.Mad.Multiplayer;
 
 public static class ENetExtensions
 {

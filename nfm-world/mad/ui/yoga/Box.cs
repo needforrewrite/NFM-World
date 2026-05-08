@@ -2,7 +2,7 @@
 using Avalonia.Metadata;
 using Maxine.Extensions;
 
-namespace nfm_world.ui.yoga;
+namespace NFMWorld.UI.Yoga;
 
 /// <summary>
 /// Represents a container node that can hold multiple child nodes.

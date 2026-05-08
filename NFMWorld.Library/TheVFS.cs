@@ -1,6 +1,6 @@
 ﻿using Maxine.VFS;
 
-namespace nfm_world_library;
+namespace NFMWorldLibrary;
 
 public class TheVFS
 {

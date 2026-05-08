@@ -1,13 +1,11 @@
 using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.backend;
-using nfm_world_library.mad;
-using nfm_world_library.util;
-using nfm_world.camera;
-using nfm_world.environment;
-using Environment = nfm_world.environment.Environment;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Util;
+using Environment = NFMWorld.Environment;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 /**
 Represents a stage. Holds all information relating to track pices, scenery, etc.
@@ -207,7 +205,7 @@ public class ClientStageRenderer : GameObject
         ground = new Ground(graphicsDevice);
     }
 
-    public override void Render(Camera camera, Lighting? lighting)
+    public override void Render(Camera.Camera camera, Lighting? lighting)
     {
         sky?.Render(camera, lighting);
         ground?.Render(camera, lighting);

@@ -1,7 +1,7 @@
-﻿using nfm_world_library.SoftFloat;
-using nfm_world_library.util;
+﻿using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world_library.mad.rad;
+namespace NFMWorldLibrary.Mad.Rad;
 
 public class RadParser
 {

@@ -3,10 +3,11 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
-using nfm_world_library.util;
 using Maxine.Extensions.Mathematics;
+using NFMWorld.LuaSourceGenerataor;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Util;
 using File = System.IO.File;
 
 var fields = new List<Field>();
@@ -235,4 +236,7 @@ static string IndentLines(string lines, int indentLevel)
     return indent + indentedLines;
 }
 
-public readonly record struct Field(string Name, string Getter, string Setter);
+namespace NFMWorld.LuaSourceGenerataor
+{
+    public readonly record struct Field(string Name, string Getter, string Setter);
+}

@@ -1,12 +1,10 @@
 using System.ComponentModel;
-using System.Drawing;
 using System.Globalization;
-using Yoga;
-using Font = nfm_world.util.Font;
-using FontFamily = nfm_world.util.FontFamily;
-using FontStyle = nfm_world.util.FontStyle;
+using Font = NFMWorld.Util.Font;
+using FontFamily = NFMWorld.Util.FontFamily;
+using FontStyle = NFMWorld.Util.FontStyle;
 
-namespace nfm_world.ui.yoga.xaml;
+namespace NFMWorld.UI.Yoga.Xaml;
 
 /// <summary>
 /// Type converter for Font - parses "FontFamily,Flags,Size" format.

@@ -1,4 +1,4 @@
-﻿namespace nfm_world.ui.yoga;
+﻿namespace NFMWorld.UI.Yoga;
 
 /// <summary>
 /// Represents a box element with solid colors for border, background, and content.

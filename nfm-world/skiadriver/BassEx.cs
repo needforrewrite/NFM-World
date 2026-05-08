@@ -2,7 +2,7 @@
 using ManagedBass;
 using ManagedBass.Opus;
 
-namespace nfm_world.skiadriver;
+namespace NFMWorld.SkiaDriver;
 
 public unsafe class BassEx
 {

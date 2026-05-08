@@ -1,7 +1,7 @@
-﻿using nfm_world_library.mad;
-using nfm_world_library.util;
+﻿using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world_library.backend.gamemodes;
+namespace NFMWorldLibrary.Backend.Gamemodes;
 
 public interface IGamemode
 {

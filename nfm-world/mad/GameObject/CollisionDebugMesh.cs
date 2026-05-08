@@ -1,12 +1,11 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.util;
-using nfm_world.camera;
-using nfm_world.shaders;
+using NFMWorld.Shaders;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public sealed class CollisionDebugMesh : GameObject, IDisposable
 {
@@ -168,7 +167,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
         Dispose(false);
     }
 
-    public override void Render(Camera camera, Lighting? lighting)
+    public override void Render(Camera.Camera camera, Lighting? lighting)
     {
         if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
         lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);

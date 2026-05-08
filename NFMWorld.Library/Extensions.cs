@@ -3,13 +3,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using CommunityToolkit.HighPerformance;
 using FixedMathSharp.Utility;
-using nfm_world_library.SoftFloat;
-using nfm_world_library.util;
+using Maxine.Extensions.Mathematics;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Util;
 using Steamworks;
 using Steamworks.Data;
-using Maxine.Extensions.Mathematics;
 
-namespace nfm_world_library;
+namespace NFMWorldLibrary;
 
 public static class Extensions
 {

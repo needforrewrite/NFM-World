@@ -1,10 +1,10 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library.backend.gamemodes;
-using nfm_world.gameplay.gamemodes;
-using nfm_world.multiplayer;
-using nfm_world.util;
+using NFMWorld.Gameplay.Gamemodes;
+using NFMWorld.Util;
+using NFMWorldLibrary.Backend.Gamemodes;
+using NFMWorldLibrary.Mad.Multiplayer;
 
-namespace nfm_world.gameplay;
+namespace NFMWorld.Gameplay;
 
 public class InRacePhase(GraphicsDevice graphicsDevice) : BaseRacePhase(graphicsDevice)
 {

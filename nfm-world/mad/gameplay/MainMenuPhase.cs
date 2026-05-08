@@ -1,13 +1,13 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad.rad;
-using nfm_world_library.util;
-using nfm_world.account;
-using nfm_world.multiplayer;
-using nfm_world.ui;
-using nfm_world.util;
+using NFMWorld.Account;
+using NFMWorld.DriverInterface;
+using NFMWorld.UI;
+using NFMWorld.Util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad.Multiplayer;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world.gameplay;
+namespace NFMWorld.Gameplay;
 
 // TODO: implement the same menu as in nfm-lit
 
@@ -281,8 +281,8 @@ public class MainMenuPhase : BasePhase
             loginText,
             b.X + b.Width,
             startY + buttonHeight + spacing,
-            driverinterface.TextHorizontalAlignment.Right,
-            driverinterface.TextVerticalAlignment.Bottom
+            TextHorizontalAlignment.Right,
+            TextVerticalAlignment.Bottom
         );
 
 

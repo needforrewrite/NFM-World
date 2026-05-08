@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using MessagePack;
 using MessagePack.Formatters;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 internal sealed unsafe class UnsafeUnmanagedStructListFormatter<T>(sbyte typeCode) : IMessagePackFormatter<List<T>?>
     where T : unmanaged

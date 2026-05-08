@@ -1,4 +1,4 @@
-﻿namespace nfm_world.multiplayer;
+﻿namespace NFMWorldLibrary.Mad.Multiplayer;
 
 public enum ClientState
 {

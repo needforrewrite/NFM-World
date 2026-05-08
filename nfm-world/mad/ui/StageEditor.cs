@@ -1,17 +1,16 @@
 using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.backend;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.SoftFloat;
-using nfm_world.camera;
-using nfm_world.environment;
-using nfm_world.gameplay;
-using nfm_world.util;
-using Environment = nfm_world.environment.Environment;
+using NFMWorld.Camera;
+using NFMWorld.Gameplay;
+using NFMWorld.Util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
+using Environment = NFMWorld.Environment;
 
-namespace nfm_world.ui;
+namespace NFMWorld.UI;
 
 // Custom Stage class for the editor that doesn't require loading from file
 public class EditorStage : BackendStage
@@ -1700,7 +1699,7 @@ public class StageEditorPhase : BasePhase
     private bool WorldToScreen(Vector3 worldPos, out System.Numerics.Vector2 screenPos)
     {
         var viewport = _graphicsDevice.Viewport;
-        var clip = Microsoft.Xna.Framework.Vector4.Transform(new Microsoft.Xna.Framework.Vector4(worldPos, 1f),
+        var clip = Microsoft.Xna.Framework.Vector4.Transform(new Vector4(worldPos, 1f),
             camera.ViewMatrix * camera.ProjectionMatrix);
         screenPos = default;
         if (clip.W <= 0f) return false;
@@ -1967,7 +1966,7 @@ public class StageEditorPhase : BasePhase
         float ndcX = (2.0f * screenX) / viewport.Width - 1.0f;
         float ndcY = 1.0f - (2.0f * screenY) / viewport.Height;
         
-        var rayClip = new Microsoft.Xna.Framework.Vector4(ndcX, ndcY, -1.0f, 1.0f);
+        var rayClip = new Vector4(ndcX, ndcY, -1.0f, 1.0f);
         var projMatrix = camera.ProjectionMatrix;
         Matrix.Invert(ref projMatrix, out var invProj);
         var rayEye = Microsoft.Xna.Framework.Vector4.Transform(rayClip, invProj);
@@ -2001,7 +2000,7 @@ public class StageEditorPhase : BasePhase
         float ndcY = 1.0f - (2.0f * screenY) / viewport.Height;
         
         // Create ray in clip space
-        var rayClip = new Microsoft.Xna.Framework.Vector4(ndcX, ndcY, -1.0f, 1.0f);
+        var rayClip = new Vector4(ndcX, ndcY, -1.0f, 1.0f);
         
         // Transform to view space
         var projMatrix = camera.ProjectionMatrix;
@@ -3573,7 +3572,7 @@ public class StageEditorPhase : BasePhase
             float ndcX = (2.0f * _mouseX) / viewport.Width - 1.0f;
             float ndcY = 1.0f - (2.0f * _mouseY) / viewport.Height;
             
-            var rayClip = new Microsoft.Xna.Framework.Vector4(ndcX, ndcY, -1.0f, 1.0f);
+            var rayClip = new Vector4(ndcX, ndcY, -1.0f, 1.0f);
             var projMatrix = camera.ProjectionMatrix;
             Matrix.Invert(ref projMatrix, out var invProj);
             var rayEye = Microsoft.Xna.Framework.Vector4.Transform(rayClip, invProj);

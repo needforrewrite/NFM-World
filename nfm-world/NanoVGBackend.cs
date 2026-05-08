@@ -2,15 +2,13 @@
 using System.Text;
 using FontStashSharp;
 using Microsoft.Xna.Framework.Graphics;
-using NanoSVG;
-using nfm_world_library.util;
-using nfm_world.driverinterface;
-using nfm_world.skiadriver;
-using nfm_world.util;
+using NFMWorld.DriverInterface;
+using NFMWorld.SkiaDriver;
+using NFMWorld.Util;
 using NvgSharp;
-using TextHorizontalAlignment = nfm_world.driverinterface.TextHorizontalAlignment;
+using TextHorizontalAlignment = NFMWorld.DriverInterface.TextHorizontalAlignment;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class NanoVGRenderer
 {

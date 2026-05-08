@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 
-namespace nfm_world.shaders;
+namespace NFMWorld.Shaders;
 
 public class PolyEffect(Effect effect)
 {

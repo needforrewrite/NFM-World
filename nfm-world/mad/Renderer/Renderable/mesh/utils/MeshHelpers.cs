@@ -1,6 +1,6 @@
 ﻿using HoleyDiver;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class MeshHelpers
 {

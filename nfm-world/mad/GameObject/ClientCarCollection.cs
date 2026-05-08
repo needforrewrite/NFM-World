@@ -1,8 +1,7 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library.mad;
-using nfm_world.camera;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class ClientCarCollection(GraphicsDevice graphicsDevice, IReadOnlyCollection<IInGameCar> backendCars) : GameObject
 {
@@ -38,7 +37,7 @@ public class ClientCarCollection(GraphicsDevice graphicsDevice, IReadOnlyCollect
         }
     }
 
-    public override void Render(Camera camera, Lighting? lighting)
+    public override void Render(Camera.Camera camera, Lighting? lighting)
     {
         base.Render(camera, lighting);
         

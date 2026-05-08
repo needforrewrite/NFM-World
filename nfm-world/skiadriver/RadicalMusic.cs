@@ -1,10 +1,10 @@
 using System.IO.Compression;
 using ManagedBass;
 using ManagedBass.Fx;
-using nfm_world_library;
-using nfm_world.driverinterface;
+using NFMWorld.DriverInterface;
+using NFMWorldLibrary;
 
-namespace nfm_world.skiadriver;
+namespace NFMWorld.SkiaDriver;
 
 internal class RadicalMusic : IRadicalMusic
 {

@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
-using nfm_world_library.SoftFloat;
+using NFMWorldLibrary.FixedMath;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public static class UMath
 {

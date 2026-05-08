@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 using MessagePack;
-using nfm_world_library.SoftFloat;
+using NFMWorldLibrary.FixedMath;
 
-namespace nfm_world_library.mad.rad;
+namespace NFMWorldLibrary.Mad.Rad;
 
 [MessagePackObject]
 public readonly record struct Rad3dWheelDef(

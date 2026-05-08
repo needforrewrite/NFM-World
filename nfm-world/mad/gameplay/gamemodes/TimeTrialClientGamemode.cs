@@ -1,16 +1,15 @@
 using System.Diagnostics;
-using nfm_world_library;
-using nfm_world_library.backend;
-using nfm_world_library.backend.gamemodes;
-using nfm_world_library.mad.helpers;
-using nfm_world.driverinterface;
-using nfm_world.files;
-using nfm_world.sfx;
-using nfm_world.ui.hud;
-using nfm_world.ui.yoga;
-using nfm_world.util;
+using NFMWorld.DriverInterface;
+using NFMWorld.Sfx;
+using NFMWorld.UI.Hud;
+using NFMWorld.UI.Yoga;
+using NFMWorld.Util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Backend.Gamemodes;
+using NFMWorldLibrary.Mad.Files;
 
-namespace nfm_world.gameplay.gamemodes;
+namespace NFMWorld.Gameplay.Gamemodes;
 
 public class TimeTrialClientGamemode(BaseGamemodeParameters gamemodeParameters, BaseRacePhase raceValues)
     : TimeTrialGamemode(gamemodeParameters, raceValues), IClientGamemode

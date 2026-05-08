@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using MessagePack;
 
-namespace nfm_world_library.mad.rad;
+namespace NFMWorldLibrary.Mad.Rad;
 
 [MessagePackObject]
 [method: SerializationConstructor]

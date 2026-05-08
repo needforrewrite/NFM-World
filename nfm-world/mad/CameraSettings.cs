@@ -1,6 +1,6 @@
-﻿using nfm_world.camera;
+﻿using NFMWorld.Camera;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class CameraSettings
 {

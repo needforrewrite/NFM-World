@@ -1,4 +1,4 @@
-namespace nfm_world.util;
+namespace NFMWorld.Util;
 
 public enum Keys
 {

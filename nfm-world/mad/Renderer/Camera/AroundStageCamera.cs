@@ -1,8 +1,8 @@
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world.camera;
+namespace NFMWorld.Camera;
 
 public class AroundStageCamera
 {

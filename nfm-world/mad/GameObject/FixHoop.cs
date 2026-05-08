@@ -1,11 +1,10 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.backend;
-using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
-using nfm_world.camera;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class FixHoop : StageObjectGameObject
 {
@@ -35,7 +34,7 @@ public class FixHoop : StageObjectGameObject
 
     public bool IsSpecial { get; set; }
 
-    private void RenderFixHoop(Camera camera)
+    private void RenderFixHoop(Camera.Camera camera)
     {
         for (var i = 0; i < 4; i++)
         {
@@ -178,7 +177,7 @@ public class FixHoop : StageObjectGameObject
         }
     }
 
-    public override void Render(Camera camera, Lighting? lighting)
+    public override void Render(Camera.Camera camera, Lighting? lighting)
     {
         base.Render(camera, lighting);
         if (lighting?.IsCreateShadowMap != true)

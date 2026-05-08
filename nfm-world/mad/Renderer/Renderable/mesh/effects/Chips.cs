@@ -1,9 +1,8 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world.camera;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class Chips : IDisposable
 {
@@ -140,7 +139,7 @@ public class Chips : IDisposable
         }
     }
 
-    public void Render(Camera camera)
+    public void Render(Camera.Camera camera)
     {
         if (_triangleCount == 0) return;
 

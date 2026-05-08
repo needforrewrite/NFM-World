@@ -1,4 +1,4 @@
-﻿namespace nfm_world;
+﻿namespace NFMWorld;
 
 public readonly record struct RenderData(
     IInstancedRenderElement RenderElement,

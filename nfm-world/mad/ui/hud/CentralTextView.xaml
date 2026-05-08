@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<View xmlns="clr-namespace:nfm_world.ui.yoga"
-      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      x:Class="nfm_world.ui.hud.CentralTextView"
+<yoga:View
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:yoga="clr-namespace:NFMWorld.UI.Yoga"
+    x:Class="nfm_world.ui.hud.CentralTextView"
       Name="CentralText"
       AlignItems="Center"
       FlexDirection="Column">
 
-    <Box AlignItems="Center" Flex="1">
-        <TextRun Name="CenterText"
+    <yoga:Box AlignItems="Center" Flex="1">
+        <yoga:TextRun Name="CenterText"
                  Color="black"
                  Font="bold 1px Adventure"
                  Display="None" />
-    </Box>
+    </yoga:Box>
 
-    <Node Flex="1" />
-</View>
+    <yoga:Node Flex="1" />
+</yoga:View>

@@ -1,6 +1,6 @@
-﻿using nfm_world_library.mad.helpers;
+﻿using NFMWorldLibrary.Mad.Helpers;
 
-namespace nfm_world_library.backend.gamemodes;
+namespace NFMWorldLibrary.Backend.Gamemodes;
 
 public class TimeTrialGamemode(BaseGamemodeParameters gamemodeParameters, IRaceValues raceValues)
     : BaseGamemode(gamemodeParameters, raceValues)

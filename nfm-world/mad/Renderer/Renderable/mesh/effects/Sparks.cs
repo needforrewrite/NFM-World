@@ -1,11 +1,10 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.util;
-using nfm_world.camera;
-using nfm_world.shaders;
+using NFMWorld.Shaders;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class Sparks : IDisposable
 {
@@ -244,7 +243,7 @@ public class Sparks : IDisposable
         Sprk = 0;
     }
 
-    public void Render(Camera camera)
+    public void Render(Camera.Camera camera)
     {
         if (_vertexCount == 0 || _triangleCount == 0) return;
         

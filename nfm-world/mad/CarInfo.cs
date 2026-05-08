@@ -1,8 +1,8 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class CarMesh : Mesh
 {

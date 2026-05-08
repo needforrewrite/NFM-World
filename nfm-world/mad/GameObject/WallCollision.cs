@@ -1,8 +1,8 @@
-﻿using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.SoftFloat;
+﻿using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class WallCollision : GameObject, ICollidable
 {

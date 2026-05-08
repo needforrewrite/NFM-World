@@ -1,18 +1,16 @@
-﻿using System.Reflection;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using CommunityToolkit.HighPerformance.Buffers;
 using Maxine.Extensions;
 using Maxine.VFS;
-using nfm_world_library.backend;
-using nfm_world_library.backend.gamemodes;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.util;
-using nfm_world.files;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Backend.Gamemodes;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Files;
+using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world_library;
+namespace NFMWorldLibrary;
 
 public static class BackendGameSparker
 {

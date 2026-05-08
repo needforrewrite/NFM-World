@@ -1,7 +1,7 @@
-﻿using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
+﻿using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world_library.backend;
+namespace NFMWorldLibrary.Backend;
 
 public class BackendGameObject : ITransform
 {

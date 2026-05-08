@@ -1,11 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using MessagePack;
-using nfm_world_library.mad.rad;
-using nfm_world_library.SoftFloat;
-using nfm_world_library.util;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world_library.mad;
+namespace NFMWorldLibrary.Mad;
 
 [MessagePackObject]
 public readonly record struct PiecePlacement(

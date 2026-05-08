@@ -1,13 +1,10 @@
 using System.IO.Compression;
 using MessagePack;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.util;
-using nfm_world.files.demo;
-using nfm_world.multiplayer.packets;
+using NFMWorldLibrary.Mad.Files.Demo;
+using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world.files;
+namespace NFMWorldLibrary.Mad.Files;
 
 [MessagePackObject(AllowPrivate = true)]
 public partial class SavedTimeTrial
@@ -16,7 +13,7 @@ public partial class SavedTimeTrial
     
     [Key(0)] public string CarName;
     [Key(1)] public string StageName;
-    [Key(2)] public Demo DemoData;
+    [Key(2)] public Demo.Demo DemoData;
     [Key(3)] public Splits Splits;
     [Key(4)] public int? Version; // New in version 1, defaults to 0
     [Key(5)] public StageLoader? StageData; // New in version 2 
@@ -38,7 +35,7 @@ public partial class SavedTimeTrial
         CarName = carName;
         StageName = stageName;
 
-        DemoData = new Demo()
+        DemoData = new Demo.Demo()
         {
             Ticks = []
         };

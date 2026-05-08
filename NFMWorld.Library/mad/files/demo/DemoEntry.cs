@@ -1,10 +1,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Maxine.Extensions;
-using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
+using NFMWorldLibrary.FixedMath;
 
-namespace nfm_world.files.demo;
+namespace NFMWorldLibrary.Mad.Files.Demo;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct DemoEntry

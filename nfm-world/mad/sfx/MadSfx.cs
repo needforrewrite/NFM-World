@@ -1,8 +1,8 @@
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
+using NFMWorldLibrary;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world.sfx;
+namespace NFMWorld.Sfx;
 
 public class MadSfx
 {

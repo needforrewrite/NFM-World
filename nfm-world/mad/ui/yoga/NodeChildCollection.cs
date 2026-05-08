@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace nfm_world.ui.yoga;
+namespace NFMWorld.UI.Yoga;
 
 public class NodeChildCollection(Node parent) : IList<Node>
 {

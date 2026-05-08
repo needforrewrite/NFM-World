@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library.mad.rad;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class WheelMeshBuilder
 {

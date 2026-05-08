@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class ObjectInfo(Mesh mesh)
 {

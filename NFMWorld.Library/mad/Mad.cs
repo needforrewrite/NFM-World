@@ -1,8 +1,8 @@
 using System.Runtime.CompilerServices;
 using FixedMathSharp.Utility;
-using nfm_world_library.mad.collision;
-using nfm_world_library.SoftFloat;
-using nfm_world_library.util;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad.Collision;
+using NFMWorldLibrary.Util;
 
 /*************************************
  *
@@ -15,7 +15,7 @@ using nfm_world_library.util;
  *
 **************************************/
 
-namespace nfm_world_library.mad;
+namespace NFMWorldLibrary.Mad;
 
 public class Mad
 {

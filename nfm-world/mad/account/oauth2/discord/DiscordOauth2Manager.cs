@@ -4,7 +4,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace nfm_world.account.oauth2.discord;
+namespace NFMWorld.Account.OAuth2.discord;
 
 /// <summary>
 /// Manager to help process Discord Oauth2 account management.

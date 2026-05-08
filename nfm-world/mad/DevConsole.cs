@@ -1,8 +1,8 @@
 using Hexa.NET.ImGui;
-using nfm_world_library;
-using nfm_world.ui;
+using NFMWorld.UI;
+using NFMWorldLibrary;
 
-namespace nfm_world
+namespace NFMWorld
 {
     public class DevConsole
     {

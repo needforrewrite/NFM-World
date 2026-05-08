@@ -1,6 +1,6 @@
 ﻿using Maxine.Extensions.Mathematics;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public struct Euler(AngleSingle yaw, AngleSingle pitch, AngleSingle roll) : IEquatable<Euler>
 {

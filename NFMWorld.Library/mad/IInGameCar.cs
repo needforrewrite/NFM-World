@@ -1,8 +1,8 @@
-﻿using nfm_world_library.backend;
-using nfm_world_library.backend.ai;
-using nfm_world_library.SoftFloat;
+﻿using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Backend.AI;
+using NFMWorldLibrary.FixedMath;
 
-namespace nfm_world_library.mad;
+namespace NFMWorldLibrary.Mad;
 
 public interface IInGameCar : ICar
 {

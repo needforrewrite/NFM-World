@@ -1,6 +1,6 @@
-﻿using nfm_world.util;
+﻿using NFMWorld.Util;
 
-namespace nfm_world.ui.yoga;
+namespace NFMWorld.UI.Yoga;
 
 public class GarageDynamicStatBar : Node
 {

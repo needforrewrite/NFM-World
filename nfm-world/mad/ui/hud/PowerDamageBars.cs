@@ -1,10 +1,8 @@
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.util;
-using nfm_world.driverinterface;
-using nfm_world.ui.yoga;
+using NFMWorld.UI.Yoga;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world.ui.hud;
+namespace NFMWorld.UI.Hud;
 
 public partial class PowerDamageBars : Box
 {

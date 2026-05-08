@@ -1,3 +1,3 @@
-﻿namespace nfm_world.multiplayer.packets;
+﻿namespace NFMWorldLibrary.Mad.Multiplayer.packets;
 
 public interface IPacket;

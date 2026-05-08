@@ -1,4 +1,4 @@
-namespace nfm_world.interp;
+namespace NFMWorld.Interp;
 
 public class Interpolation {
     public static int InterpolateCoord(int current, int prev, float ratio) {

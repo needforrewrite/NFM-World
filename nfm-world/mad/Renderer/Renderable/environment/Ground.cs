@@ -1,9 +1,8 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world.camera;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world.environment;
+namespace NFMWorld;
 
 public class Ground : Transform, IImmediateRenderable
 {
@@ -46,7 +45,7 @@ public class Ground : Transform, IImmediateRenderable
         _vertexBuffer.Dispose();
     }
 
-    public void Render(Camera camera, Lighting? lighting = null)
+    public void Render(Camera.Camera camera, Lighting? lighting = null)
     {
         if (lighting?.IsCreateShadowMap == true) return;
 

@@ -2,20 +2,19 @@
 using System.Collections;
 using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library.mad;
-using nfm_world.camera;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class Scene
 {
     private readonly GraphicsDevice _graphicsDevice;
-    private readonly Camera _camera;
-    private readonly Camera[] _lightCameras;
+    private readonly Camera.Camera _camera;
+    private readonly Camera.Camera[] _lightCameras;
     public readonly List<GameObject> Objects;
     private readonly RenderDataCache _renderDataCache;
 
-    public Scene(GraphicsDevice graphicsDevice, IEnumerable<GameObject> objects, Camera camera, Camera[] lightCameras)
+    public Scene(GraphicsDevice graphicsDevice, IEnumerable<GameObject> objects, Camera.Camera camera, Camera.Camera[] lightCameras)
     {
         _graphicsDevice = graphicsDevice;
         _camera = camera;

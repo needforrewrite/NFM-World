@@ -1,10 +1,9 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
-using nfm_world.camera;
+using NFMWorldLibrary;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class Dust : IDisposable
 {
@@ -305,7 +304,7 @@ public class Dust : IDisposable
         }
     }
 
-    public void Render(Camera camera)
+    public void Render(Camera.Camera camera)
     {
         if (_vertexCount == 0 || _indexCount == 0)
         {

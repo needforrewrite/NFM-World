@@ -1,7 +1,7 @@
-﻿using nfm_world_library.backend;
-using nfm_world_library.mad;
+﻿using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class StageObjectGameObject : MeshedGameObject
 {

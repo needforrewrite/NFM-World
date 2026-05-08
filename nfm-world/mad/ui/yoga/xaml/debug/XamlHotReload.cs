@@ -7,8 +7,8 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using Avalonia.Markup.Xaml;
 using Maxine.Extensions;
-using nfm_world_library;
 using NFMWorld.XamlX.Core;
+using NFMWorldLibrary;
 using XamlX;
 using XamlX.Emit;
 using XamlX.IL;
@@ -16,7 +16,7 @@ using XamlX.Parsers;
 using XamlX.Transform;
 using XamlX.TypeSystem;
 
-namespace nfm_world.ui.yoga.xaml;
+namespace NFMWorld.UI.Yoga.Xaml;
 
 public class XamlHotReload
 {

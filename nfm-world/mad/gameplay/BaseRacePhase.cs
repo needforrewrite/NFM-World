@@ -1,13 +1,12 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.backend;
-using nfm_world_library.mad;
-using nfm_world_library.util;
-using nfm_world.camera;
-using nfm_world.ui;
-using nfm_world.util;
+using NFMWorld.Camera;
+using NFMWorld.UI;
+using NFMWorld.Util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world.gameplay;
+namespace NFMWorld.Gameplay;
 
 public abstract class BaseRacePhase(GraphicsDevice _graphicsDevice) : BaseStageRenderingPhase(_graphicsDevice), IRaceValues
 {

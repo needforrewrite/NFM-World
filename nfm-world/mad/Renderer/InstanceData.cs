@@ -1,7 +1,6 @@
-﻿using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public struct InstanceData(Matrix world, bool getsShadowed = false, float alphaOverride = 1.0f, bool isFullbright = false, bool glow = false)
 {

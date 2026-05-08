@@ -1,6 +1,4 @@
-using nfm_world.driverinterface;
-
-namespace nfm_world.ui.yoga;
+namespace NFMWorld.UI.Yoga;
 
 public class MeasureBar : Image
 {

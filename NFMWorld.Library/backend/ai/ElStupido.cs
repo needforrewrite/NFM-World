@@ -1,9 +1,9 @@
 ﻿using FixedMathSharp.Utility;
-using nfm_world_library.backend.gamemodes;
-using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
+using NFMWorldLibrary.Backend.Gamemodes;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world_library.backend.ai;
+namespace NFMWorldLibrary.Backend.AI;
 
 /// <summary>
 /// Handles AI decision making, path finding, and control inputs based on difficulty and race conditions.
@@ -95,7 +95,7 @@ public class ElStupido(BaseGamemode gamemode, IRaceValues racePhase) : BaseAi
     /// Detects when the car is stuck against a wall and applies avoidance steering.
     /// Checks if the car has low speed despite throttle input, indicating a collision.
     /// </summary>
-    private void DetectAndAvoidObstacles(IInGameCar car, Mad mad, IStage stage)
+    private void DetectAndAvoidObstacles(IInGameCar car, Mad.Mad mad, IStage stage)
     {
         // Decrease avoidance timer
         if (_avoidanceTimer > 0)
@@ -184,7 +184,7 @@ public class ElStupido(BaseGamemode gamemode, IRaceValues racePhase) : BaseAi
         return fix64.Sqrt(minDistSq);
     }
 
-    private void FindDrivingTarget(IInGameCar car, fix64 rubberbandingFactor, Mad mad, ref DeterministicRandom random)
+    private void FindDrivingTarget(IInGameCar car, fix64 rubberbandingFactor, Mad.Mad mad, ref DeterministicRandom random)
     {
         // If distance to target node <5000 units, target next node, except if the current node is a checkpoint
         var targetNodeIndex = _targetNode;
@@ -401,7 +401,7 @@ public class ElStupido(BaseGamemode gamemode, IRaceValues racePhase) : BaseAi
         Target(car, racePhase.CurrentStage.nodes[targetNodeIndex].Position);
     }
 
-    private void Steer(IInGameCar car, Mad mad, Control u)
+    private void Steer(IInGameCar car, Mad.Mad mad, Control u)
     {
         // Reset input controls
         u.Up = false;

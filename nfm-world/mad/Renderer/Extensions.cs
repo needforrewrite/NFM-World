@@ -2,12 +2,9 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance;
-using ManagedBass;
 using Microsoft.Xna.Framework.Graphics;
-using Steamworks;
-using Steamworks.Data;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public static class Extensions
 {

@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Avalonia.Metadata;
-using nfm_world.driverinterface;
-using nfm_world.util;
+using NFMWorld.DriverInterface;
+using NFMWorld.Util;
 
-namespace nfm_world.ui.yoga;
+namespace NFMWorld.UI.Yoga;
 
 public class TextRun : Node
 {

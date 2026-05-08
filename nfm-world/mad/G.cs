@@ -1,8 +1,7 @@
-using nfm_world_library.util;
-using nfm_world.driverinterface;
-using nfm_world.util;
+using NFMWorld.DriverInterface;
+using NFMWorld.Util;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public static class G
 {

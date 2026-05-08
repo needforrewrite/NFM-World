@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using Avalonia.Metadata;
-using nfm_world.ui.yoga.xaml;
+using NFMWorld.UI.Yoga.Xaml;
 
 // Assembly-level XAML namespace mappings
 [assembly: XmlnsDefinition("clr-namespace:nfm_world.ui.yoga", "nfm_world.ui.yoga")]

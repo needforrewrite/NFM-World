@@ -1,7 +1,7 @@
 using Maxine.Extensions;
-using nfm_world_library.mad;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world_library.backend.gamemodes;
+namespace NFMWorldLibrary.Backend.Gamemodes;
 
 public class SandboxGamemode(BaseGamemodeParameters gamemodeParameters, IRaceValues raceValues)
     : BaseGamemode(gamemodeParameters, raceValues)

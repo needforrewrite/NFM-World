@@ -1,6 +1,6 @@
-﻿using nfm_world_library.SoftFloat;
+﻿using NFMWorldLibrary.FixedMath;
 
-namespace nfm_world_library.mad.collision;
+namespace NFMWorldLibrary.Mad.Collision;
 
 public readonly struct BoxRoad(f64Vector3 rad, f64Vector3 trackersPosition, fix64 contoXz, f64Vector3 contoPosition)
 {

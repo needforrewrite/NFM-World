@@ -1,10 +1,9 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world.camera;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world.environment;
+namespace NFMWorld;
 
 public class GroundPolys : Transform, IImmediateRenderable
 {
@@ -74,7 +73,7 @@ public class GroundPolys : Transform, IImmediateRenderable
         _indexBuffer.Dispose();
     }
 
-    public void Render(Camera camera, Lighting? lighting = null)
+    public void Render(Camera.Camera camera, Lighting? lighting = null)
     {
         if (lighting?.IsCreateShadowMap == true) return;
 

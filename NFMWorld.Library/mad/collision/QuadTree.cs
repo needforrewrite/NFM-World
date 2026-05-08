@@ -1,9 +1,9 @@
 ﻿using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using nfm_world_library.SoftFloat;
+using NFMWorldLibrary.FixedMath;
 
-namespace nfm_world_library.mad.collision;
+namespace NFMWorldLibrary.Mad.Collision;
 
 /// <summary>
 /// Represents a rectangular boundary for quadtree nodes

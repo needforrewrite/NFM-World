@@ -1,9 +1,9 @@
-﻿using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.util;
-using Random = nfm_world_library.util.Random;
+﻿using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Util;
+using Random = NFMWorldLibrary.Util.Random;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public static class MeshDamage
 {

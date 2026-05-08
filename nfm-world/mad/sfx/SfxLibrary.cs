@@ -1,6 +1,6 @@
-using nfm_world.driverinterface;
+using NFMWorld.DriverInterface;
 
-namespace nfm_world.sfx;
+namespace NFMWorld.Sfx;
 
 public static class SfxLibrary
 {

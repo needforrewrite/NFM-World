@@ -1,6 +1,6 @@
 using Hexa.NET.ImGui;
 
-namespace nfm_world.ui;
+namespace NFMWorld.UI;
 
 /// <summary>
 /// Universal message window using ImGui that can display messages with configurable buttons.

@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using nfm_world_library.SoftFloat;
+using NFMWorldLibrary.FixedMath;
 
-namespace nfm_world_library.mad.collision;
+namespace NFMWorldLibrary.Mad.Collision;
 
 public static class CollisionExtensions
 {

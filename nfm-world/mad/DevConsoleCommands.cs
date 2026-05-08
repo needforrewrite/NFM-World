@@ -1,18 +1,18 @@
 using System.Reflection;
-using nfm_world_library;
-using nfm_world_library.backend;
-using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
-using nfm_world.camera;
-using nfm_world.driverinterface;
-using nfm_world.gameplay;
-using nfm_world.gameplay.gamemodes;
-using nfm_world.multiplayer;
-using nfm_world.ui;
-using nfm_world.ui.yoga;
+using NFMWorld.Camera;
+using NFMWorld.DriverInterface;
+using NFMWorld.Gameplay;
+using NFMWorld.Gameplay.Gamemodes;
+using NFMWorld.UI;
+using NFMWorld.UI.Yoga;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Multiplayer;
 using Steamworks;
 
-namespace nfm_world
+namespace NFMWorld
 {
     public static class DevConsoleCommands
     {

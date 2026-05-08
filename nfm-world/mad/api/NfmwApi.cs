@@ -3,9 +3,9 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
-using nfm_world_library;
+using NFMWorldLibrary;
 
-namespace nfm_world.api;
+namespace NFMWorld.Api;
 
 public class NfmwApi
 {

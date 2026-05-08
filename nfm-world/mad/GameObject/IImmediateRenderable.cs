@@ -1,6 +1,4 @@
-﻿using nfm_world.camera;
-
-namespace nfm_world;
+﻿namespace NFMWorld;
 
 public interface IImmediateRenderable
 {
@@ -8,5 +6,5 @@ public interface IImmediateRenderable
     {
     }
 
-    void Render(Camera camera, Lighting? lighting);
+    void Render(Camera.Camera camera, Lighting? lighting);
 }

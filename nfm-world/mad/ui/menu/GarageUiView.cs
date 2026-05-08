@@ -1,7 +1,6 @@
-using nfm_world.ui.yoga;
-using nfm_world.ui.yoga.xaml;
+using NFMWorld.UI.Yoga;
 
-namespace nfm_world.ui.menu;
+namespace NFMWorld.UI.Menu;
 
 public partial class GarageUiView : View
 {

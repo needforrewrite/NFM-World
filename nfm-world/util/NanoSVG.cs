@@ -4,12 +4,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Buffers;
-using nfm_world.driverinterface;
+using NFMWorld.DriverInterface;
 using NvgSharp;
-using static NanoSVG.NSVGpaintType;
-using static NanoSVG.NSVGlineJoin;
-using static NanoSVG.NSVGlineCap;
-using static NanoSVG.NSVGflags;
+using static NFMWorld.Util.NSVGpaintType;
+using static NFMWorld.Util.NSVGlineJoin;
+using static NFMWorld.Util.NSVGlineCap;
+using static NFMWorld.Util.NSVGflags;
 
 // ReSharper disable InconsistentNaming
 
@@ -46,7 +46,7 @@ using static NanoSVG.NSVGflags;
  *
  */
 
-namespace NanoSVG;
+namespace NFMWorld.Util;
 
 public enum NSVGpaintType
 {

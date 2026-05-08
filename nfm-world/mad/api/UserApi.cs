@@ -1,7 +1,7 @@
 using System.Net;
-using nfm_world.account.oauth2;
+using NFMWorld.Account.OAuth2;
 
-namespace nfm_world.api;
+namespace NFMWorld.Api;
 
 using ApiRes = (System.Net.HttpStatusCode, ApiResponse?);
 

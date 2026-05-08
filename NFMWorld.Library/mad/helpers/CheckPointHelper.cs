@@ -1,8 +1,8 @@
-﻿using nfm_world_library.mad.collision;
-using nfm_world_library.SoftFloat;
-using nfm_world_library.util;
+﻿using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad.Collision;
+using NFMWorldLibrary.Util;
 
-namespace nfm_world_library.mad.helpers;
+namespace NFMWorldLibrary.Mad.Helpers;
 
 public class CheckPointHelper
 {

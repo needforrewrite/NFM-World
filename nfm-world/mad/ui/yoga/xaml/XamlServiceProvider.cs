@@ -1,6 +1,6 @@
 using Avalonia.Markup.Xaml;
 
-namespace nfm_world.ui.yoga.xaml;
+namespace NFMWorld.UI.Yoga.Xaml;
 
 /// <summary>
 /// Simple service provider implementation for XAML runtime.

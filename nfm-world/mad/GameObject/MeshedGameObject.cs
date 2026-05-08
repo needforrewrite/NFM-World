@@ -1,7 +1,7 @@
-﻿using nfm_world_library.mad;
-using nfm_world_library.SoftFloat;
+﻿using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class MeshedGameObject(Mesh mesh) : GameObject
 {

@@ -1,7 +1,7 @@
 using System.ComponentModel;
-using nfm_world.ui.yoga.xaml;
+using NFMWorld.UI.Yoga.Xaml;
 
-namespace nfm_world.util;
+namespace NFMWorld.Util;
 
 [TypeConverter(typeof(FontTypeConverter))]
 public readonly record struct Font(FontFamily FontFamily, FontStyle Style, float Size);

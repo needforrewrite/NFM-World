@@ -1,7 +1,7 @@
-﻿using nfm_world_library.mad.rad;
-using nfm_world_library.SoftFloat;
+﻿using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world_library.mad;
+namespace NFMWorldLibrary.Mad;
 
 public interface ICar : ITransform
 {

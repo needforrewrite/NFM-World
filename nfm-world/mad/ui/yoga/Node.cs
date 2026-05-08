@@ -1,16 +1,11 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 using Avalonia;
-using Avalonia.Metadata;
-using Maxine.Extensions;
-using nfm_world.ui.yoga.xaml;
 using Yoga;
 
-namespace nfm_world.ui.yoga;
+namespace NFMWorld.UI.Yoga;
 
 // ReSharper disable InconsistentNaming
 
@@ -1948,7 +1943,7 @@ public class Node : IDisposable, INamed
 
         RescaleRecursive();
         NodeInternal.CalculateLayout(availableSize, YGDirection.YGDirectionLTR);
-        RenderRecursive(origin ?? Vector2.Zero);
+        RenderRecursive(origin ?? Microsoft.Xna.Framework.Vector2.Zero);
     }
 
     /// <summary>

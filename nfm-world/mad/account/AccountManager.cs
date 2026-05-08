@@ -1,7 +1,7 @@
-using nfm_world.account.oauth2;
-using nfm_world.api;
+using NFMWorld.Account.OAuth2;
+using NFMWorld.Api;
 
-namespace nfm_world.account;
+namespace NFMWorld.Account;
 
 public class AccountManager
 {

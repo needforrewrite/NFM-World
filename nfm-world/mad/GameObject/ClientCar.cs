@@ -1,11 +1,10 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.SoftFloat;
-using nfm_world.camera;
-using nfm_world.sfx;
+using NFMWorld.Sfx;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Rad;
 
-namespace nfm_world;
+namespace NFMWorld;
 
 public class ClientCar : MeshedGameObject, ICar, IDisposable
 {
@@ -171,7 +170,7 @@ public class ClientCar : MeshedGameObject, ICar, IDisposable
         }
     }
 
-    public override void Render(Camera camera, Lighting? lighting)
+    public override void Render(Camera.Camera camera, Lighting? lighting)
     {
         base.Render(camera, lighting);
         

@@ -1,8 +1,8 @@
 using System.Text.Json.Serialization;
 using MessagePack;
-using nfm_world_library.SoftFloat;
+using NFMWorldLibrary.FixedMath;
 
-namespace nfm_world_library.mad;
+namespace NFMWorldLibrary.Mad;
 
 [MessagePackObject]
 public record struct CarStats

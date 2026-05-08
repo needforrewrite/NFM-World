@@ -1,6 +1,6 @@
 using Maxine.Extensions;
 
-namespace nfm_world_library.mad;
+namespace NFMWorldLibrary.Mad;
 
 public class Control
 {

@@ -1,9 +1,8 @@
 ﻿using System.Runtime.InteropServices;
 using MessagePack;
-using nfm_world_library.mad;
-using nfm_world.files.demo;
+using NFMWorldLibrary.Mad.Files.Demo;
 
-namespace nfm_world.multiplayer;
+namespace NFMWorldLibrary.Mad.Multiplayer;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct PlayerState

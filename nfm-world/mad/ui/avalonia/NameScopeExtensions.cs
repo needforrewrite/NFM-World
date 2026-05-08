@@ -1,5 +1,5 @@
-﻿using nfm_world.ui.avalonia;
-using nfm_world.ui.yoga;
+﻿using NFMWorld.UI.Avalonia;
+using NFMWorld.UI.Yoga;
 
 // ReSharper disable once CheckNamespace
 namespace Avalonia.Controls;

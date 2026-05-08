@@ -1,11 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Concurrent;
 using Maxine.Extensions;
-using nfm_world_library;
 using Steamworks;
 using Steamworks.Data;
 
-namespace nfm_world.multiplayer;
+namespace NFMWorldLibrary.Mad.Multiplayer;
 
 public class SteamMultiplayerServerTransport : BaseMultiplayerServerTransport, ISocketManager
 {

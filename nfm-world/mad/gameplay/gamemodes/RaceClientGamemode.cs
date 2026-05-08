@@ -1,11 +1,11 @@
-﻿using nfm_world_library.backend.gamemodes;
-using nfm_world.driverinterface;
-using nfm_world.sfx;
-using nfm_world.ui.hud;
-using nfm_world.ui.yoga;
-using nfm_world.util;
+﻿using NFMWorld.DriverInterface;
+using NFMWorld.Sfx;
+using NFMWorld.UI.Hud;
+using NFMWorld.UI.Yoga;
+using NFMWorld.Util;
+using NFMWorldLibrary.Backend.Gamemodes;
 
-namespace nfm_world.gameplay.gamemodes;
+namespace NFMWorld.Gameplay.Gamemodes;
 
 public class RaceClientGamemode(BaseGamemodeParameters gamemodeParameters, BaseRacePhase raceValues)
     : RaceGamemode(gamemodeParameters, raceValues), IClientGamemode

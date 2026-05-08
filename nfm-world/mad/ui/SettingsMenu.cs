@@ -1,14 +1,14 @@
 using System.Globalization;
 using System.Numerics;
 using Hexa.NET.ImGui;
-using nfm_world_library;
-using nfm_world_library.mad;
-using nfm_world.camera;
-using nfm_world.driverinterface;
-using nfm_world.util;
+using NFMWorld.Camera;
+using NFMWorld.DriverInterface;
+using NFMWorld.Util;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
 using SDL3;
 
-namespace nfm_world.ui;
+namespace NFMWorld.UI;
 
 /// <summary>
 /// Settings menu with tabs, similar to Half-Life 1 style

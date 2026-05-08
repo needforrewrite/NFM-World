@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public class GameThreadContext : SynchronizationContext
 {

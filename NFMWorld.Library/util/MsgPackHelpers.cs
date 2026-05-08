@@ -4,13 +4,13 @@ using MessagePack;
 using MessagePack.Formatters;
 using MessagePack.Resolvers;
 using Microsoft.Xna.Framework;
-using nfm_world_library.mad;
-using nfm_world_library.mad.rad;
-using nfm_world_library.SoftFloat;
-using nfm_world_library.util;
-using nfm_world.files.demo;
-using nfm_world.multiplayer;
-using nfm_world.multiplayer.packets;
+using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Mad.Files.Demo;
+using NFMWorldLibrary.Mad.Multiplayer;
+using NFMWorldLibrary.Mad.Multiplayer.packets;
+using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Util;
 
 [assembly: MessagePackAssumedFormattable(typeof(PlayerState))]
 [assembly: MessagePackAssumedFormattable(typeof(Vector2))]
@@ -35,7 +35,7 @@ using nfm_world.multiplayer.packets;
 [assembly: MessagePackKnownFormatter(typeof(UnlimitedArrayFormatter<PiecePlacement>))]
 [assembly: MessagePackKnownFormatter(typeof(UnlimitedArrayFormatter<Rad3dBoxDef>))]
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public static class MsgPackHelpers
 {

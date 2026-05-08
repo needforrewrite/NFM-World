@@ -1,6 +1,6 @@
-﻿using nfm_world.files;
+﻿using NFMWorldLibrary.Mad.Files;
 
-namespace nfm_world_library.backend.gamemodes;
+namespace NFMWorldLibrary.Backend.Gamemodes;
 
 public class TimeTrialSimulationGamemode(BaseGamemodeParameters gamemodeParameters, IRaceValues raceValues, SavedTimeTrial timeTrial)
     : TimeTrialGamemode(gamemodeParameters, raceValues)

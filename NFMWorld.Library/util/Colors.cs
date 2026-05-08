@@ -1,4 +1,4 @@
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
 public class Colors
 {

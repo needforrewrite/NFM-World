@@ -1,6 +1,6 @@
-﻿using nfm_world.util;
+﻿using NFMWorld.Util;
 
-namespace nfm_world.gameplay;
+namespace NFMWorld.Gameplay;
 
 public abstract class BasePhase
 {

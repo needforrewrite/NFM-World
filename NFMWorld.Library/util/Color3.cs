@@ -2,14 +2,14 @@
 using System.Text.Json.Serialization;
 using Maxine.Extensions.Mathematics;
 
-namespace nfm_world_library.util;
+namespace NFMWorldLibrary.Util;
 
-public record struct Color3(short R, short G, short B)
+public record struct Color3(
+    [property: JsonPropertyName("r")] short R,
+    [property: JsonPropertyName("g")] short G,
+    [property: JsonPropertyName("b")] short B
+)
 {
-    [JsonPropertyName("r")] public short R { readonly get; set; } = R;
-    [JsonPropertyName("g")] public short G { readonly get; set; } = G;
-    [JsonPropertyName("b")] public short B { readonly get; set; } = B;
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Vector3(Color3 c) => new(c.R / 255f, c.G / 255f, c.B / 255f);
 
@@ -155,7 +155,7 @@ public record struct Color3(short R, short G, short B)
         );
     }
     
-    public static implicit operator Microsoft.Xna.Framework.Vector4(Color3 color3)
+    public static implicit operator Vector4(Color3 color3)
         => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f, 1.0f);
     public static implicit operator System.Numerics.Vector4(Color3 color3)
         => new(color3.R / 255.0f, color3.G / 255.0f, color3.B / 255.0f, 1.0f);

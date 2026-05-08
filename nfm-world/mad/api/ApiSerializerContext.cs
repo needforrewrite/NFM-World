@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using nfm_world.account.oauth2;
+using NFMWorld.Account.OAuth2;
 
-namespace nfm_world.api;
+namespace NFMWorld.Api;
 
 [JsonSourceGenerationOptions(WriteIndented = false, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ApiResponse))]
