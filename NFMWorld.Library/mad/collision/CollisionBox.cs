@@ -1,6 +1,6 @@
 ﻿using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad.Collision;
+namespace NFMWorldLibrary.Collision;
 
 public readonly struct CollisionBox(
     f64Vector3 rad,

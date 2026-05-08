@@ -1,5 +1,5 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
 

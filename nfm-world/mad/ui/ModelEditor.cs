@@ -8,7 +8,7 @@ using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld.UI;
 
@@ -2345,9 +2345,9 @@ public class ModelEditorPhase : BasePhase
         GameSparker.ExitEditor();
     }
     
-    public override void RenderAfterSkia()
+    public override void Render3DOverlays()
     {
-        base.RenderAfterSkia();
+        base.Render3DOverlays();
         
         var tab = ActiveTab;
         if (!_isOpen || tab == null || tab.Object == null) return;

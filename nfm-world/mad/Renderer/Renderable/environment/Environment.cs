@@ -2,7 +2,7 @@
 using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld;

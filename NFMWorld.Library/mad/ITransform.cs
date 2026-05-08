@@ -1,6 +1,6 @@
 ﻿using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad;
+namespace NFMWorldLibrary;
 
 public interface ITransform
 {

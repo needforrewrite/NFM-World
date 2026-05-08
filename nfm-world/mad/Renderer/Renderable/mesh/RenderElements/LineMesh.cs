@@ -3,13 +3,13 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
 
 public class LineMesh : IInstancedRenderElement, IDisposable
 {
-    private readonly LineEffect _material = new(Program._lineShader);
+    private readonly LineEffect _material = new(WorldGame._lineShader);
     private readonly Mesh _supermesh;
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _lineVertexBuffer;

@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Maxine.Extensions.Mathematics;
 using NFMWorld.LuaSourceGenerataor;
+using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Mad;
 using NFMWorldLibrary.Util;

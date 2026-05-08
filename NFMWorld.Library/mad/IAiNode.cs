@@ -1,4 +1,4 @@
-﻿namespace NFMWorldLibrary.Mad;
+﻿namespace NFMWorldLibrary;
 
 public interface IAiNode : ITransform
 {

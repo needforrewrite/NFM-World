@@ -2,7 +2,7 @@
 using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld;
@@ -157,7 +157,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
         };
         lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);
 
-        _material = new LineEffect(Program._lineShader);
+        _material = new LineEffect(WorldGame._lineShader);
 
         #endregion
     }

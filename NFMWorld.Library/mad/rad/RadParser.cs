@@ -1,7 +1,7 @@
 ﻿using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
 
-namespace NFMWorldLibrary.Mad.Rad;
+namespace NFMWorldLibrary.Rad;
 
 public class RadParser
 {

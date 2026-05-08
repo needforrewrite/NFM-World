@@ -1,7 +1,7 @@
 ﻿using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
-namespace NFMWorldLibrary.Mad.Collision;
+namespace NFMWorldLibrary.Collision;
 
 // A struct for this would be ideal, but it's a very large object so it would cause enormous stack allocations
 public class CollisionBoxRef : IQuadObject

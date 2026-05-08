@@ -65,7 +65,7 @@ public abstract class BasePhase
     {
     }
 
-    public virtual void RenderAfterSkia()
+    public virtual void Render3DOverlays()
     {
     }
 }

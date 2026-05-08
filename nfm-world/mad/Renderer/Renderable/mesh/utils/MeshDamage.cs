@@ -1,5 +1,6 @@
-﻿using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+﻿using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 using Random = NFMWorldLibrary.Util.Random;
 

@@ -2,13 +2,13 @@
 using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
 
 public class Submesh : IInstancedRenderElement, IDisposable
 {
-    private readonly PolyEffect _material = new(Program._polyShader);
+    private readonly PolyEffect _material = new(WorldGame._polyShader);
     public readonly PolyType PolyType;
     
     private readonly VertexBuffer _vertexBuffer;

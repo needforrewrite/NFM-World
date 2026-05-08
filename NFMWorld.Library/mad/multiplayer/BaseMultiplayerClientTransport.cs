@@ -1,10 +1,10 @@
 ﻿using System.Collections.Concurrent;
 using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Buffers;
-using NFMWorldLibrary.Mad.Multiplayer.packets.c2s;
-using NFMWorldLibrary.Mad.Multiplayer.packets.s2c;
+using NFMWorldLibrary.Multiplayer.packets.c2s;
+using NFMWorldLibrary.Multiplayer.packets.s2c;
 
-namespace NFMWorldLibrary.Mad.Multiplayer;
+namespace NFMWorldLibrary.Multiplayer;
 
 public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTransport
 {

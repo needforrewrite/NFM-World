@@ -1,8 +1,8 @@
 ﻿using System.Runtime.InteropServices;
+using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Collision;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Backend;

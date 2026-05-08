@@ -9,7 +9,7 @@ using NFMWorld.UI;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 using Path = System.IO.Path;
 
@@ -17,7 +17,7 @@ namespace NFMWorld;
 
 public class GameSparker
 {
-    public static Program _game;
+    public static WorldGame _game;
     public static GraphicsDevice _graphicsDevice;
     public static readonly string version = GetVersionString();
     public static AccountManager AccountManager = new AccountManager();
@@ -156,7 +156,7 @@ public class GameSparker
         
         return stages;
     }
-    public static void Load(Program game)
+    public static void Load(WorldGame game)
     {
         _game = game;
         _graphicsDevice = game.GraphicsDevice;

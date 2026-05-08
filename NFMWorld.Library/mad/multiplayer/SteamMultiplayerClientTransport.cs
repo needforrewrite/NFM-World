@@ -2,7 +2,7 @@
 using Steamworks;
 using Steamworks.Data;
 
-namespace NFMWorldLibrary.Mad.Multiplayer;
+namespace NFMWorldLibrary.Multiplayer;
 
 public class SteamMultiplayerClientTransport : BaseMultiplayerClientTransport, IConnectionManager
 {

@@ -1,4 +1,4 @@
-﻿namespace NFMWorldLibrary.Mad.Multiplayer;
+﻿namespace NFMWorldLibrary.Multiplayer;
 
 public class ENetMultiplayer
 {

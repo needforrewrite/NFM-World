@@ -3,9 +3,11 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Mad;
 using NFMWorldLibrary.Mad.Multiplayer;
-using NFMWorldLibrary.Mad.Multiplayer.packets.c2s;
 using NFMWorldLibrary.Mad.Multiplayer.packets.s2c;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Multiplayer.packets.c2s;
+using NFMWorldLibrary.Multiplayer.packets.s2c;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld.Gameplay;
 

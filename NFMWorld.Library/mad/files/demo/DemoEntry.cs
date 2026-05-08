@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using Maxine.Extensions;
 using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad.Files.Demo;
+namespace NFMWorldLibrary.Files.Demo;
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public struct DemoEntry

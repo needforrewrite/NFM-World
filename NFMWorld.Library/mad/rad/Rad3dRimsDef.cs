@@ -1,7 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using MessagePack;
 
-namespace NFMWorldLibrary.Mad.Rad;
+namespace NFMWorldLibrary.Rad;
 
 [MessagePackObject]
 public readonly record struct Rad3dRimsDef(

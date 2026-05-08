@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
 
-namespace NFMWorldLibrary.Mad;
+namespace NFMWorldLibrary;
 
 public partial class Lua
 {

@@ -37,7 +37,7 @@ public class Ground : Transform, IImmediateRenderable
         _vertexBuffer.SetDataEXT(data);
         _triangleCount = data.Length / 3;
 
-        _material = Program._groundShader;
+        _material = WorldGame._groundShader;
     }
     
     ~Ground()

@@ -1,7 +1,7 @@
 ﻿using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
 
-namespace NFMWorldLibrary.Mad.Helpers;
+namespace NFMWorldLibrary.Helpers;
 
 public class FixHoopHelper
 {

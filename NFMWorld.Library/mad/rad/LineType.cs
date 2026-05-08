@@ -1,4 +1,4 @@
-﻿namespace NFMWorldLibrary.Mad.Rad;
+﻿namespace NFMWorldLibrary.Rad;
 
 public enum LineType
 {

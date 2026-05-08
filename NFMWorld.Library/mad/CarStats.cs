@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using MessagePack;
 using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad;
+namespace NFMWorldLibrary;
 
 [MessagePackObject]
 public record struct CarStats

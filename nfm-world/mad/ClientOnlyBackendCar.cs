@@ -1,6 +1,7 @@
-﻿using NFMWorldLibrary.FixedMath;
+﻿using NFMWorldLibrary;
+using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
 

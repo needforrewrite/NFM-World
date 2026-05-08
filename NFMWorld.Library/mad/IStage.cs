@@ -1,7 +1,7 @@
-﻿using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Mad.Collision;
+﻿using NFMWorldLibrary.Collision;
+using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad;
+namespace NFMWorldLibrary;
 
 public interface IStage
 {

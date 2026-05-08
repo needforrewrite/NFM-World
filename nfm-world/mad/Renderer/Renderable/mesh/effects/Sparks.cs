@@ -42,7 +42,7 @@ public class Sparks : IDisposable
         _car = car;
         _graphicsDevice = graphicsDevice;
 
-        _material = new LineEffect(Program._lineShader);
+        _material = new LineEffect(WorldGame._lineShader);
 
         _sprkat = _car.Wheels.FirstOrDefault().Sparkat;
 

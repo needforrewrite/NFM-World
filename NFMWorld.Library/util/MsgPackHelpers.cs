@@ -4,12 +4,15 @@ using MessagePack;
 using MessagePack.Formatters;
 using MessagePack.Resolvers;
 using Microsoft.Xna.Framework;
+using NFMWorldLibrary;
+using NFMWorldLibrary.Files.Demo;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Files.Demo;
 using NFMWorldLibrary.Mad.Multiplayer;
 using NFMWorldLibrary.Mad.Multiplayer.packets;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Multiplayer.packets;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
 [assembly: MessagePackAssumedFormattable(typeof(PlayerState))]

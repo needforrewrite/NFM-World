@@ -2,7 +2,7 @@
 using MessagePack;
 using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad.Rad;
+namespace NFMWorldLibrary.Rad;
 
 [MessagePackObject]
 public readonly record struct Rad3dBoxDef(

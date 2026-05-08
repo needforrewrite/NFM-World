@@ -2,7 +2,7 @@
 using System.Collections.Concurrent;
 using ENet;
 
-namespace NFMWorldLibrary.Mad.Multiplayer;
+namespace NFMWorldLibrary.Multiplayer;
 
 public class ENetMultiplayerServerTransport : BaseMultiplayerServerTransport
 {

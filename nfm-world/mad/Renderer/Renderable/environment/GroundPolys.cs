@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
 
@@ -64,7 +64,7 @@ public class GroundPolys : Transform, IImmediateRenderable
         _triangleCount = indices.Count / 3;
         _vertexCount = data.Count;
 
-        _material = Program._groundShader;
+        _material = WorldGame._groundShader;
     }
     
     ~GroundPolys()

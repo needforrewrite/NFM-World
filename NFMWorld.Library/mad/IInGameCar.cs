@@ -2,7 +2,7 @@
 using NFMWorldLibrary.Backend.AI;
 using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad;
+namespace NFMWorldLibrary;
 
 public interface IInGameCar : ICar
 {

@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace NFMWorldLibrary.Mad.Files.Demo;
+namespace NFMWorldLibrary.Files.Demo;
 
 [MessagePackObject]
 public class Demo

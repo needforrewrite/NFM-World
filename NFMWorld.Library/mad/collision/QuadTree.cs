@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad.Collision;
+namespace NFMWorldLibrary.Collision;
 
 /// <summary>
 /// Represents a rectangular boundary for quadtree nodes

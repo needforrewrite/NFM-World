@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework.Graphics;
+using NFMWorldLibrary;
 using NFMWorldLibrary.Mad;
 
 namespace NFMWorld;
@@ -43,10 +44,10 @@ public class Scene
 
         if (useShadowMapping)
         {
-            for (var cascade = 0; cascade < Math.Min(_lightCameras.Length, Program.shadowRenderTargets.Length); cascade++)
+            for (var cascade = 0; cascade < Math.Min(_lightCameras.Length, WorldGame.shadowRenderTargets.Length); cascade++)
             {
                 // Set our render target to our floating point render target
-                _graphicsDevice.SetRenderTarget(Program.shadowRenderTargets[cascade]);
+                _graphicsDevice.SetRenderTarget(WorldGame.shadowRenderTargets[cascade]);
 
                 // Clear the render target to white or all 1's
                 // We set the clear to white since that represents the 
@@ -227,7 +228,7 @@ public class Scene
     
     private void RenderInternal(bool isCreateShadowMap = false, int numCascade = -1)
     {
-        var lighting = new Lighting(_lightCameras, Program.shadowRenderTargets, isCreateShadowMap, numCascade);
+        var lighting = new Lighting(_lightCameras, WorldGame.shadowRenderTargets, isCreateShadowMap, numCascade);
 
         _renderDataCache.Clear();
         foreach (var obj in Objects)

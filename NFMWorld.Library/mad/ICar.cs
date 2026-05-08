@@ -1,7 +1,7 @@
 ﻿using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
-namespace NFMWorldLibrary.Mad;
+namespace NFMWorldLibrary;
 
 public interface ICar : ITransform
 {

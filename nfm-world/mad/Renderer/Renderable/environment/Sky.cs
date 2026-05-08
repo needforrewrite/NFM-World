@@ -61,7 +61,7 @@ public class Sky : Transform, IImmediateRenderable
         vertexBuffer.SetDataEXT(data);
         _vertexBuffer = vertexBuffer;
 
-        _material = Program._skyShader;
+        _material = WorldGame._skyShader;
         
         _triangleCount = data.Count / 3;
         return;

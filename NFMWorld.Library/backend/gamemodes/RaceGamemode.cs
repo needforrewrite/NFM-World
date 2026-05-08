@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using Maxine.Extensions;
 using NFMWorldLibrary.Backend.AI;
+using NFMWorldLibrary.Helpers;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Helpers;
 
 namespace NFMWorldLibrary.Backend.Gamemodes;
 

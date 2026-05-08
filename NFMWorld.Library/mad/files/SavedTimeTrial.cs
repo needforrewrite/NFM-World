@@ -1,10 +1,10 @@
 using System.IO.Compression;
 using MessagePack;
-using NFMWorldLibrary.Mad.Files.Demo;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Files.Demo;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
-namespace NFMWorldLibrary.Mad.Files;
+namespace NFMWorldLibrary.Files;
 
 [MessagePackObject(AllowPrivate = true)]
 public partial class SavedTimeTrial

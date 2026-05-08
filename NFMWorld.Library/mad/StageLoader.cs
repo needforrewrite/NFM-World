@@ -1,10 +1,10 @@
 ﻿using System.Runtime.CompilerServices;
 using MessagePack;
 using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 
-namespace NFMWorldLibrary.Mad;
+namespace NFMWorldLibrary;
 
 [MessagePackObject]
 public readonly record struct PiecePlacement(

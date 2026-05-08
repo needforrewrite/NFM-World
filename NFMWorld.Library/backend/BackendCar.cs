@@ -1,7 +1,7 @@
 ﻿using NFMWorldLibrary.Backend.AI;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorldLibrary.Backend;
 

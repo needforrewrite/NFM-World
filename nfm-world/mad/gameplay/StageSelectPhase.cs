@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Camera;
 using NFMWorld.DriverInterface;
 using NFMWorld.Util;
+using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Mad;
 using NFMWorldLibrary.Util;

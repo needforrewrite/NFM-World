@@ -1,7 +1,7 @@
-﻿using NFMWorldLibrary.Mad.Multiplayer.packets.c2s;
-using NFMWorldLibrary.Mad.Multiplayer.packets.s2c;
+﻿using NFMWorldLibrary.Multiplayer.packets.c2s;
+using NFMWorldLibrary.Multiplayer.packets.s2c;
 
-namespace NFMWorldLibrary.Mad.Multiplayer;
+namespace NFMWorldLibrary.Multiplayer;
 
 public interface IMultiplayerServerTransport
 {

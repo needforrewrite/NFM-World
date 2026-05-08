@@ -1,4 +1,4 @@
-﻿using NFMWorldLibrary.Mad.Helpers;
+﻿using NFMWorldLibrary.Helpers;
 
 namespace NFMWorldLibrary.Backend.Gamemodes;
 

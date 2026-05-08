@@ -1,4 +1,5 @@
-﻿using NFMWorldLibrary.Mad;
+﻿using NFMWorldLibrary;
+using NFMWorldLibrary.Mad;
 
 namespace NFMWorld;
 

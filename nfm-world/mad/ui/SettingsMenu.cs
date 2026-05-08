@@ -13,7 +13,7 @@ namespace NFMWorld.UI;
 /// <summary>
 /// Settings menu with tabs, similar to Half-Life 1 style
 /// </summary>
-public class SettingsMenu(Program game)
+public class SettingsMenu(WorldGame game)
 {
     private bool _isOpen;
     private int _selectedTab = 0;

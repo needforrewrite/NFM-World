@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Rad;
 
 // This duplicates some code from CollisionObject, no workaround
 namespace NFMWorld;

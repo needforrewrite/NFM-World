@@ -1,6 +1,6 @@
 using MessagePack;
 
-namespace NFMWorldLibrary.Mad.Files;
+namespace NFMWorldLibrary.Files;
 
 [MessagePackObject]
 public class Splits

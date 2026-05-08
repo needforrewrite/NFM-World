@@ -5,7 +5,8 @@ using NFMWorld.UI;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Mad.Multiplayer;
-using NFMWorldLibrary.Mad.Rad;
+using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Rad;
 
 namespace NFMWorld.Gameplay;
 

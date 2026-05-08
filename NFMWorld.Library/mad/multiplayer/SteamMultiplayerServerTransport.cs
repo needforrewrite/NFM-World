@@ -4,7 +4,7 @@ using Maxine.Extensions;
 using Steamworks;
 using Steamworks.Data;
 
-namespace NFMWorldLibrary.Mad.Multiplayer;
+namespace NFMWorldLibrary.Multiplayer;
 
 public class SteamMultiplayerServerTransport : BaseMultiplayerServerTransport, ISocketManager
 {

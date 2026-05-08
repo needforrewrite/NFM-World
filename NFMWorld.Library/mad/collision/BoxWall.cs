@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad.Collision;
+namespace NFMWorldLibrary.Collision;
 
 public readonly struct BoxWall(
     f64Vector3 rad,

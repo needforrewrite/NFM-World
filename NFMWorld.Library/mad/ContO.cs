@@ -1,7 +1,7 @@
 ﻿using System.Runtime.CompilerServices;
 using NFMWorldLibrary.FixedMath;
 
-namespace NFMWorldLibrary.Mad;
+namespace NFMWorldLibrary;
 
 // temp conto for nfmm compatibility
 public readonly struct ContO
