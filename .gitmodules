@@ -28,4 +28,4 @@
 	branch = master
 [submodule "MoonWorks"]
 	path = MoonWorks
-	url = https://github.com/MoonsideGames/MoonWorks
+	url = https://github.com/uwx/MoonWorks
