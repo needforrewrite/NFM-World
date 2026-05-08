@@ -204,12 +204,14 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
 
         _material.Glow?.SetValue(false);
         
+        GameSparker._graphicsDevice.RasterizerState = RasterizerState.CullNone;
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();
     
             GameSparker._graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, lineVertexCount, 0, lineTriangleCount, 1);
         }
+        GameSparker._graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
     }
 
     private void ReleaseUnmanagedResources()

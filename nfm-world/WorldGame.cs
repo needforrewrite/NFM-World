@@ -1,11 +1,17 @@
 ﻿using System.Diagnostics;
+using System.Reflection;
 using Hexa.NET.ImGui;
 using ManagedBass;
+using Maxine.Extensions.Collections.SpanLinq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.ImGuiNet;
+using NFMWorld.UI;
+using NFMWorld.UI.Hud;
+using NFMWorld.UI.Yoga;
+using NFMWorld.UI.Yoga.Xaml;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
 using Keys = NFMWorld.Util.Keys;
@@ -571,6 +577,8 @@ public class WorldGame : Game
 
     public static void Main(string[] args)
     {
+        SettingsMenu.LoadFnaRenderer();
+        
         var fnaLogger = Logging.LoggerFactory.CreateLogger("FNA");
         FNALoggerEXT.LogError += (message) =>
         {

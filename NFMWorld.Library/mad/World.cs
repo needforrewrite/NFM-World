@@ -6,7 +6,7 @@ public static class World
     /// Adds extra collision radius and damage to compensate for lag.
     /// </summary>
     public static bool UseMultiplayerCollisionModifiers = true;
-    public static float OutlineThickness = 0.002f;
+    public static float OutlineThickness = 1f;
     public static bool IsHyperglidingEnabled = true;
     public static int MountainSeed;
     public static float MountainCoverage;

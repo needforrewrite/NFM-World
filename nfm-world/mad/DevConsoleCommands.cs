@@ -100,8 +100,8 @@ public static class DevConsoleCommands
                     return;
                 }
 
-                Program.DebugUiClass = args[0];
-                Program.DebugUiRoot = null;
+                WorldGame.DebugUiClass = args[0];
+                WorldGame.DebugUiRoot = null;
             });
             console.RegisterArgumentAutocompleter("debugui", (args, position) =>
 #pragma warning disable IL2026 // Never run during AOT

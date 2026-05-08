@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using NFMWorld.Camera;
 using NFMWorld.DriverInterface;
@@ -47,17 +48,22 @@ public class SettingsMenu(WorldGame game)
     private int _selectedBindingIndex = -1;
 
     // Video settings
-    private int _selectedRenderer = 1;
-    private readonly string[] _renderers = { "OpenGL", "SDL_GPU", "D3D11"};
+    private string _selectedRenderer = "Auto";
+    private static readonly string[] Renderers = false switch
+    {
+        _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => ["Auto", "Metal", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"],
+        _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => ["Auto", "D3D11", "D3D12", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "Metal", "OpenGL ES 3.0"],
+        _ => ["Auto", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"]
+    };
     private int _selectedResolution = 2;
-    private readonly string[] _resolutions = { "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440" };
+    private static readonly string[] Resolutions = ["640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440", "3840 x 2160"];
     private int _selectedDisplayMode = 1;
-    private readonly string[] _displayModes = { "Fullscreen", "Windowed", "Borderless" };
+    private static readonly string[] DisplayModes = ["Fullscreen", "Windowed", "Borderless"];
     private bool _vsync = true;
     private int _fpsLimit = 63;
     private float _brightness = 0.5f;
     private float _gamma = 0.5f;
-    private float _lineWidth = 0.002f;
+    private float _lineWidth = 1;
 
     // Audio settings
     private float _masterVolume = 1.0f;
@@ -104,7 +110,7 @@ public class SettingsMenu(WorldGame game)
         ImGui.SetNextWindowPos(center, ImGuiCond.Appearing, new Vector2(0.5f, 0.5f));
         ImGui.SetNextWindowSize(new Vector2(570, 390), ImGuiCond.Appearing);
 
-        ImGuiWindowFlags flags = ImGuiWindowFlags.NoCollapse;
+        var flags = ImGuiWindowFlags.NoCollapse;
 
         if (ImGui.Begin("Options", ref _isOpen, flags))
         {
@@ -113,8 +119,8 @@ public class SettingsMenu(WorldGame game)
             ImGui.Spacing();
 
             // Calculate height for scrollable content area (leave room for bottom buttons)
-            float bottomButtonsHeight = 60f; // Height for separator + buttons + padding
-            float availableHeight = ImGui.GetContentRegionAvail().Y - bottomButtonsHeight;
+            var bottomButtonsHeight = 60f; // Height for separator + buttons + padding
+            var availableHeight = ImGui.GetContentRegionAvail().Y - bottomButtonsHeight;
 
             // Scrollable content area
             if (ImGui.BeginChild("SettingsContent", new Vector2(0, availableHeight)))
@@ -142,7 +148,7 @@ public class SettingsMenu(WorldGame game)
     {
         if (ImGui.BeginTabBar("SettingsTabs", ImGuiTabBarFlags.None))
         {
-            for (int i = 0; i < _tabNames.Length; i++)
+            for (var i = 0; i < _tabNames.Length; i++)
             {
                 if (ImGui.BeginTabItem(_tabNames[i]))
                 {
@@ -227,19 +233,21 @@ public class SettingsMenu(WorldGame game)
         ImGui.Spacing();
 
         ImGui.Text("Renderer");
-        ImGui.Combo("##Renderer", ref _selectedRenderer, _renderers, _renderers.Length);
+        var renderer = Renderers.IndexOf(_selectedRenderer);
+        ImGui.Combo("##Renderer", ref renderer, Renderers, Renderers.Length);
+        _selectedRenderer = Renderers[renderer];
         
         ImGui.Text("Resolution");
-        ImGui.Combo("##Resolution", ref _selectedResolution, _resolutions, _resolutions.Length);
+        ImGui.Combo("##Resolution", ref _selectedResolution, Resolutions, Resolutions.Length);
         
         ImGui.Text("Display Mode");
-        ImGui.Combo("##DisplayMode", ref _selectedDisplayMode, _displayModes, _displayModes.Length);
+        ImGui.Combo("##DisplayMode", ref _selectedDisplayMode, DisplayModes, DisplayModes.Length);
         
         ImGui.Spacing();
         ImGui.Checkbox("Wait for vertical sync", ref _vsync);
         
         ImGui.Text("FPS Limit");
-        float sliderWidth = ImGui.GetContentRegionAvail().X;
+        var sliderWidth = ImGui.GetContentRegionAvail().X;
         ImGui.SetNextItemWidth(sliderWidth);
         ImGui.SliderInt("##FPSLimit", ref _fpsLimit, 0, 240, "%d FPS (0 = Unlimited)");
         
@@ -247,7 +255,7 @@ public class SettingsMenu(WorldGame game)
         ImGui.Text("Brightness");
         ImGui.SetNextItemWidth(sliderWidth);
         ImGui.SliderFloat("##Brightness", ref _brightness, 0.0f, 1.0f, "%.2f");
-        float startX = ImGui.GetCursorPosX();
+        var startX = ImGui.GetCursorPosX();
         ImGui.TextDisabled("Dark");
         ImGui.SameLine();
         ImGui.SetCursorPosX(startX + sliderWidth - ImGui.CalcTextSize("Light").X);
@@ -264,7 +272,7 @@ public class SettingsMenu(WorldGame game)
         ImGui.Spacing();
         ImGui.Text("Outline Width");
         ImGui.SetNextItemWidth(sliderWidth);
-        ImGui.SliderFloat("##LineWidth", ref _lineWidth, 0.001f, 0.005f, "%.4f");
+        ImGui.SliderFloat("##LineWidth", ref _lineWidth, 0.5f, 4f, "%.1f");
         // ImGui.TextColored(new Vector4(1.0f, 0.8f, 0.4f, 1.0f), 
         //     "Note: changing some video options will cause the game to exit and restart.");
     }
@@ -313,15 +321,15 @@ public class SettingsMenu(WorldGame game)
         ImGui.Columns(2, "KeyBindings", true);
         ImGui.SetColumnWidth(0, 200);
         
-        for (int i = 0; i < bindings.Length; i++)
+        for (var i = 0; i < bindings.Length; i++)
         {
             var (action, propName, key) = bindings[i];
             
             ImGui.Text(action);
             ImGui.NextColumn();
             
-            bool isCapturing = _capturingAction == propName;
-            string buttonLabel = isCapturing ? "Press any key..." : key.ToString();
+            var isCapturing = _capturingAction == propName;
+            var buttonLabel = isCapturing ? "Press any key..." : key.ToString();
             
             if (isCapturing)
                 ImGui.PushStyleColor(ImGuiCol.Button, RGB(128, 77, 3, 0.8f));
@@ -373,9 +381,9 @@ public class SettingsMenu(WorldGame game)
 
     private void DrawBottomButtons()
     {
-        float buttonWidth = 100f;
-        float spacing = 10f;
-        float totalWidth = buttonWidth * 3 + spacing * 2;
+        var buttonWidth = 100f;
+        var spacing = 10f;
+        var totalWidth = buttonWidth * 3 + spacing * 2;
         
         ImGui.SetCursorPosX((ImGui.GetWindowWidth() - totalWidth) * 0.5f);
 
@@ -454,7 +462,7 @@ public class SettingsMenu(WorldGame game)
         FollowCamera.FollowYOffset = _followY;
         FollowCamera.FollowZOffset = _followZ;
 
-        bool graphicsChanged = false;
+        var graphicsChanged = false;
         requireRestart = false;
         if (game._graphics.SynchronizeWithVerticalRetrace != _vsync)
         {
@@ -462,9 +470,8 @@ public class SettingsMenu(WorldGame game)
             graphicsChanged = true;
         }
         
-        if (_renderers[_selectedRenderer] != SDL.SDL_GetHint("FNA3D_FORCE_DRIVER"))
+        if (_selectedRenderer != SDL.SDL_GetHint("FNA3D_FORCE_DRIVER"))
         {
-            SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", _renderers[_selectedRenderer]); // TODO this only ever gets executed too late to do anything.
             requireRestart = true;
         }
 
@@ -490,10 +497,10 @@ public class SettingsMenu(WorldGame game)
     {
         try
         {
-            string configPath = Path.Combine("data", "cfg", "config.cfg");
+            var configPath = Path.Combine("data", "cfg", "config.cfg");
             Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
             
-            using (StreamWriter cfgWriter = new StreamWriter(configPath))
+            using (var cfgWriter = new StreamWriter(configPath))
             {
                 cfgWriter.WriteLine("// NFM-World Configuration File");
                 cfgWriter.WriteLine("// Generated: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -501,14 +508,14 @@ public class SettingsMenu(WorldGame game)
                 
                 // Video settings
                 cfgWriter.WriteLine("// Video Settings");
-                cfgWriter.WriteLine($"video_renderer {_selectedRenderer}");
+                cfgWriter.WriteLine($"video_renderer2 {_selectedRenderer}");
                 cfgWriter.WriteLine($"video_resolution {_selectedResolution}");
                 cfgWriter.WriteLine($"video_displaymode {_selectedDisplayMode}");
                 cfgWriter.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
                 cfgWriter.WriteLine($"video_fps {_fpsLimit}");
                 cfgWriter.WriteLine($"video_brightness {_brightness.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"video_gamma {_gamma.ToString("F2", CultureInfo.InvariantCulture)}");
-                cfgWriter.WriteLine($"video_linewidth {_lineWidth.ToString("F4", CultureInfo.InvariantCulture)}");
+                cfgWriter.WriteLine($"video_linewidth2 {_lineWidth.ToString("F4", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine();
                 
                 // Audio settings
@@ -556,41 +563,124 @@ public class SettingsMenu(WorldGame game)
             Logging.Error($"Error saving config: {ex.Message}");
         }
     }
+
+    public static void LoadFnaRenderer()
+    {
+        var configPath = Path.Combine("data", "cfg", "config.cfg");
+
+        string? selectedRenderer = null;
+        if (File.Exists(configPath))
+        {
+            foreach (var line in File.ReadLines(configPath))
+            {
+                var trimmed = line.Trim();
+                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
+                    continue;
+
+                var parts = trimmed.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length != 2)
+                    continue;
+
+                var key = parts[0];
+                var value = parts[1];
+
+                try
+                {
+                    switch (key)
+                    {
+                        // Video settings
+                        case "video_renderer2":
+                            selectedRenderer = value;
+                            break;
+                    }
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+        }
+
+        if (selectedRenderer != null && Renderers.Contains(selectedRenderer))
+        {
+            switch (selectedRenderer)
+            {
+                case "D3D11" or "D3D12" or "Vulkan":
+                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer}");
+                    SDL2.SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", selectedRenderer);
+                    SDL3.SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", selectedRenderer);
+                    break;
+                case "OpenGL 2.1":
+                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer}");
+                    SDL2.SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+                    SDL3.SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+                    break;
+                case "OpenGL 4.6":
+                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer} (Core Profile)");
+                    SDL2.SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+                    SDL2.SDL.SDL_SetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE", "1");
+                    SDL3.SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+                    SDL3.SDL.SDL_SetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE", "1");
+                    break;
+                case "OpenGL ES 3.0":
+                    Logging.Info($"Overriding FNA3D renderer to {selectedRenderer} (ES3)");
+                    SDL2.SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+                    SDL2.SDL.SDL_SetHint("FNA3D_OPENGL_FORCE_ES3", "1");
+                    SDL3.SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", "OpenGL");
+                    SDL3.SDL.SDL_SetHint("FNA3D_OPENGL_FORCE_ES3", "1");
+                    break;
+            }
+        }
+    }
+
+    private static string GetFna3DRenderer()
+    {
+        var driver = SDL3.SDL.SDL_GetHint("FNA3D_FORCE_DRIVER") ?? SDL2.SDL.SDL_GetHint("FNA3D_FORCE_DRIVER");
+
+        return driver switch
+        {
+            "D3D11" or "D3D12" or "Vulkan" => driver,
+            "OpenGL" when SDL2.SDL.SDL_GetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE") == "1" || SDL3.SDL.SDL_GetHint("FNA3D_OPENGL_FORCE_CORE_PROFILE") == "1" => "OpenGL 4.6",
+            "OpenGL" when SDL2.SDL.SDL_GetHint("FNA3D_OPENGL_FORCE_ES3") == "1" || SDL3.SDL.SDL_GetHint("FNA3D_OPENGL_FORCE_ES3") == "1" => "OpenGL ES 3.0",
+            "OpenGL" => "OpenGL 2.1",
+            _ => "Auto"
+        };
+    }
     
     public void LoadConfig()
     {
+        _selectedRenderer = GetFna3DRenderer();
+        
         try
         {
-            string configPath = Path.Combine("data", "cfg", "config.cfg");
+            var configPath = Path.Combine("data", "cfg", "config.cfg");
             
-            if (!System.IO.File.Exists(configPath))
+            if (!File.Exists(configPath))
             {
                 Logging.Warning("No config file found, using defaults.");
                 return;
             }
-            
-            string[] lines = System.IO.File.ReadAllLines(configPath);
-            
-            foreach (string line in lines)
+
+            foreach (var line in File.ReadLines(configPath))
             {
-                string trimmed = line.Trim();
+                var trimmed = line.Trim();
                 if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
                     continue;
                 
-                string[] parts = trimmed.Split(' ', 2);
+                var parts = trimmed.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length != 2)
                     continue;
                 
-                string key = parts[0];
-                string value = parts[1];
+                var key = parts[0];
+                var value = parts[1];
                 
                 try
                 {
                     switch (key)
                     {
                         // Video settings
-                        case "video_renderer":
-                            _selectedRenderer = int.Parse(value);
+                        case "video_renderer2":
+                            _selectedRenderer = value;
                             break;
                         case "video_resolution":
                             _selectedResolution = int.Parse(value);
@@ -610,7 +700,7 @@ public class SettingsMenu(WorldGame game)
                         case "video_gamma":
                             _gamma = float.Parse(value, CultureInfo.InvariantCulture);
                             break;
-                        case "video_linewidth":
+                        case "video_linewidth2":
                             _lineWidth = float.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         

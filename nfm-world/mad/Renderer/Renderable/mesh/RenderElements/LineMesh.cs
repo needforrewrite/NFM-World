@@ -87,7 +87,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
     {
         _graphicsDevice.SetVertexBuffers(_lineVertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
         _graphicsDevice.Indices = _lineIndexBuffer;
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
 
         // If a parameter is null that means the HLSL compiler optimized it out.
         _material.SnapColor?.SetValue((Vector3)World.Snap);
@@ -106,6 +106,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
 
         _material.View?.SetValue(camera.ViewMatrix);
         _material.Projection?.SetValue(camera.ProjectionMatrix);
+        _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         _material.CameraPosition?.SetValue(camera.Position);
 
         _material.CurrentTechnique = _material.Techniques["Basic"];
@@ -114,6 +115,8 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         _material.Darken?.SetValue(_supermesh.Darken);
         _material.RandomFloat?.SetValue(URandom.Single());
         _material.Alpha?.SetValue(1.0f);
+
+        _material.Resolution?.SetValue(new Vector2(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height));
 
         lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
         
@@ -129,24 +132,24 @@ public class LineMesh : IInstancedRenderElement, IDisposable
 
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public readonly record struct LineMeshVertexAttribute(
-        Vector3 Position,
+        Vector3 PositionA,
+        Vector3 PositionB,
+        float Side,
         Vector3 Normal,
         Vector3 Centroid,
         Color Color,
-        float DecalOffset,
-        Vector3 Right,
-        Vector3 Up
+        float DecalOffset
     )
     {
         /// <inheritdoc cref="P:IVertexType.VertexDeclaration" />
-        public static readonly VertexDeclaration VertexDeclaration = new(
-            new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),
-            new VertexElement(12, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),
-            new VertexElement(24, VertexElementFormat.Vector3, VertexElementUsage.Position, 1),
-            new VertexElement(36, VertexElementFormat.Color, VertexElementUsage.Color, 0),
-            new VertexElement(40, VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0),
-            new VertexElement(44, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 1),
-            new VertexElement(56, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 2)
+        public static readonly VertexDeclaration VertexDeclaration = VertexPacker.Pack(
+            new VertexPacker.Element(VertexElementFormat.Vector3, VertexElementUsage.Position, 0), // PositionA
+            new VertexPacker.Element(VertexElementFormat.Vector3, VertexElementUsage.Position, 1), // PositionB
+            new VertexPacker.Element(VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0), // Side
+            new VertexPacker.Element(VertexElementFormat.Vector3, VertexElementUsage.Normal, 0), // Normal
+            new VertexPacker.Element(VertexElementFormat.Vector3, VertexElementUsage.Position, 2), // Centroid
+            new VertexPacker.Element(VertexElementFormat.Color, VertexElementUsage.Color, 0), // Color
+            new VertexPacker.Element(VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 1) // DecalOffset
         );
     }
 

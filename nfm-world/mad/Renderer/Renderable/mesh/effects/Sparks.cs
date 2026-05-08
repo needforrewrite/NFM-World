@@ -278,8 +278,10 @@ public class Sparks : IDisposable
         _material.RandomFloat?.SetValue(URandom.Single());
 
         _material.Glow?.SetValue(false);
+        
+        _material.Resolution?.SetValue(new Vector2(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height));
 
-        _graphicsDevice.RasterizerState = RasterizerState.CullClockwise;
+        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
         foreach (var pass in _material.CurrentTechnique.Passes)
         {
             pass.Apply();

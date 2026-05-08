@@ -29,6 +29,7 @@ public class LineEffect(Effect effect)
     public EffectParameter? Glow { get; } = effect.Parameters["Glow"];
     public EffectParameter? ChargedBlinkAmount { get; } = effect.Parameters["ChargedBlinkAmount"];
     public EffectParameter? HalfThickness { get; } = effect.Parameters["HalfThickness"];
+    public EffectParameter? Resolution { get; } = effect.Parameters["Resolution"];
 
     /// <inheritdoc cref="Effect.Parameters"/>
     public EffectParameterCollection Parameters => effect.Parameters;

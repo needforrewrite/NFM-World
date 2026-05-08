@@ -4,11 +4,17 @@ namespace NFMWorld;
 
 public class LineMeshHelpers
 {
-    public const int VerticesPerLine = 8;
-    public const int IndicesPerLine = 36;
+    public const int VerticesPerLine = 4;
+    public const int IndicesPerLine = 6;
     
-    // vertices must contain 8 elements
-    // indices must contain 36 elements
+    // vertices must contain 4 elements
+    // indices must contain 6 elements
+    //
+    // Side encoding (shader decodes with abs/sign):
+    //   +1 = endpoint A, offset +1
+    //   -1 = endpoint A, offset -1
+    //   +2 = endpoint B, offset +1
+    //   -2 = endpoint B, offset -1
     public static void CreateLineMesh(
         Vector3 p0,
         Vector3 p1,
@@ -29,42 +35,15 @@ public class LineMeshHelpers
             Logging.Error($"Degenerate line!!!!\n{System.Environment.StackTrace}");
         }
         
-        // Choose an initial perpendicular vector that's not parallel to lineDir
-        var perpendicular = Math.Abs(lineDir.Y) > 0.99f ? Vector3.UnitX : Vector3.UnitY;
-
-        var right = Vector3.Normalize(Vector3.Cross(lineDir, perpendicular));
-        var up = Vector3.Normalize(Vector3.Cross(right, lineDir));
-        var v0 = new LineMesh.LineMeshVertexAttribute(p0, normal, centroid, color, decalOffset, -right, -up);
-        var v1 = new LineMesh.LineMeshVertexAttribute(p0, normal, centroid, color, decalOffset, right, -up);
-        var v2 = new LineMesh.LineMeshVertexAttribute(p0, normal, centroid, color, decalOffset, right, up);
-        var v3 = new LineMesh.LineMeshVertexAttribute(p0, normal, centroid, color, decalOffset, -right, up);
-        var v4 = new LineMesh.LineMeshVertexAttribute(p1, normal, centroid, color, decalOffset, -right, -up);
-        var v5 = new LineMesh.LineMeshVertexAttribute(p1, normal, centroid, color, decalOffset, right, -up);
-        var v6 = new LineMesh.LineMeshVertexAttribute(p1, normal, centroid, color, decalOffset, right, up);
-        var v7 = new LineMesh.LineMeshVertexAttribute(p1, normal, centroid, color, decalOffset, -right, up);
-        outVerts[0] = v0;
-        outVerts[1] = v1;
-        outVerts[2] = v2;
-        outVerts[3] = v3;
-        outVerts[4] = v4;
-        outVerts[5] = v5;
-        outVerts[6] = v6;
-        outVerts[7] = v7;
-        // Two triangles per quad face
+        outVerts[0] = new LineMesh.LineMeshVertexAttribute(p0, p1, -1f, normal, centroid, color, decalOffset);
+        outVerts[1] = new LineMesh.LineMeshVertexAttribute(p0, p1,  1f, normal, centroid, color, decalOffset);
+        outVerts[2] = new LineMesh.LineMeshVertexAttribute(p0, p1, -2f, normal, centroid, color, decalOffset);
+        outVerts[3] = new LineMesh.LineMeshVertexAttribute(p0, p1,  2f, normal, centroid, color, decalOffset);
+        // One quad (two triangles)
         ReadOnlySpan<int> indices =
         [
-            baseIndex, baseIndex + 1, baseIndex + 2,
-            baseIndex, baseIndex + 2, baseIndex + 3,
-            baseIndex + 4, baseIndex + 6, baseIndex + 5,
-            baseIndex + 4, baseIndex + 7, baseIndex + 6,
-            baseIndex + 3, baseIndex + 2, baseIndex + 6,
-            baseIndex + 3, baseIndex + 6, baseIndex + 7,
-            baseIndex, baseIndex + 5, baseIndex + 1,
-            baseIndex, baseIndex + 4, baseIndex + 5,
-            baseIndex + 1, baseIndex + 5, baseIndex + 6,
-            baseIndex + 1, baseIndex + 6, baseIndex + 2,
-            baseIndex + 4, baseIndex + 0, baseIndex + 3,
-            baseIndex + 4, baseIndex + 3, baseIndex + 7
+            baseIndex, baseIndex + 1, baseIndex + 3,
+            baseIndex, baseIndex + 3, baseIndex + 2
         ];
         indices.CopyTo(outIndices);
     }

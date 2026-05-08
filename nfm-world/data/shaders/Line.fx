@@ -33,16 +33,17 @@ float Darken; // set below 1.0f to adjust brightness
 float ChargedBlinkAmount;
 
 float HalfThickness;
+float2 Resolution;
 
 struct VertexShaderInput
 {
-	float3 Position : POSITION0;
+	float3 PositionA : POSITION0;
+	float3 PositionB : POSITION1;
+	float Side : TEXCOORD0; // -1 or 1
 	float3 Normal : NORMAL0;
 	float3 Color : COLOR0;
-	float3 Centroid : POSITION1;
-	float DecalOffset : TEXCOORD0;
-	float3 Right : TEXCOORD1;
-	float3 Up : TEXCOORD2;
+	float3 Centroid : POSITION2;
+	float DecalOffset : TEXCOORD1;
 };
 
 struct VertexShaderOutput
@@ -68,9 +69,9 @@ VertexShaderOutput MainVS(
 
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
-    float distanceToCamera = mul(mul(mul(float4(input.Position, 1), world), View), Projection).z;
-
-    float3 position = input.Position + input.Right * HalfThickness * distanceToCamera + input.Up * HalfThickness * distanceToCamera;
+    // Decode Side: abs > 1.5 means endpoint B, sign gives offset direction
+    float3 position = (abs(input.Side) > 1.5) ? input.PositionB : input.PositionA;
+    float sideSign = sign(input.Side);
 
     VS_DecalOffset(position, input.Normal, input.DecalOffset);
 
@@ -79,11 +80,25 @@ VertexShaderOutput MainVS(
         VS_Expand(position, input.Centroid, RandomFloat);
     }
 
-    // Save the vertices postion in world space (for shadow mapping)
+    // Save the vertices position in world space (for shadow mapping)
     output.WorldPos = mul(float4(position, 1), world);
     output.GetsShadowed = getsShadowed;
 
     float4 viewPos = mul(output.WorldPos, View);
+
+    // Transform both endpoints to clip space for screen-space line direction
+    float4 clipA = mul(mul(float4(input.PositionA, 1), world), ViewProj);
+    float4 clipB = mul(mul(float4(input.PositionB, 1), world), ViewProj);
+
+    float2 screenA = Resolution * clipA.xy / clipA.w;
+    float2 screenB = Resolution * clipB.xy / clipB.w;
+
+    float2 dir = normalize(screenB - screenA);
+    float2 normal = float2(-dir.y, dir.x);
+
+    // Screen-space offset for line thickness
+    float4 clipPos = mul(viewPos, Projection);
+    float2 offset = normal * HalfThickness * sideSign / Resolution * 2.0;
 
 	float3 color = input.Color;
 
@@ -93,7 +108,10 @@ VertexShaderOutput MainVS(
         color = BaseColor;
     }
 
-    output.Position = mul(viewPos, Projection);
+    output.Position = clipPos + float4(offset * clipPos.w, 0, 0);
+
+    // Nudge outlines toward the camera so they render on top of the geometry they outline
+    output.Position.z -= 0.00005 * output.Position.w;
 
     if (Darken < 1.0f)
     {
