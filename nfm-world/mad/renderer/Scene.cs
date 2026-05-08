@@ -94,16 +94,19 @@ public class Scene
 
         // ── Main pass ───────────────────────────────────────────────
         {
-            var skyCol = World.Sky.Snap(World.Snap);
+            Vector3 col = World.Sky.Snap(World.Snap);
+            for (var i = 1; i < 20; ++i) {
+                col = new Vector3(0.991f, 0.991f, 0.998f) * col;
+            }
             var mainColor = new ColorTargetInfo
             {
                 Texture = backbuffer,
                 LoadOp = clearRenderBuffer ? LoadOp.Clear : LoadOp.Load,
                 StoreOp = StoreOp.Store,
                 ClearColor = new MoonWorks.Graphics.Color(
-                    (byte)Math.Clamp((int)skyCol.R, 0, 255),
-                    (byte)Math.Clamp((int)skyCol.G, 0, 255),
-                    (byte)Math.Clamp((int)skyCol.B, 0, 255)
+                    (byte)Math.Clamp((int)(col.X * 255), 0, 255),
+                    (byte)Math.Clamp((int)(col.Y * 255), 0, 255),
+                    (byte)Math.Clamp((int)(col.Z * 255), 0, 255)
                 )
             };
             var mainDepthInfo = new DepthStencilTargetInfo
