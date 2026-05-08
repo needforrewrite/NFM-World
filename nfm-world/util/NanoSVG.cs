@@ -1,21 +1,16 @@
-﻿using System;
-using System.Buffers;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Buffers;
-using Microsoft.Xna.Framework;
 using nfm_world.driverinterface;
 using NvgSharp;
 using static NanoSVG.NSVGpaintType;
-using static NanoSVG.NSVGspreadType;
 using static NanoSVG.NSVGlineJoin;
 using static NanoSVG.NSVGlineCap;
-using static NanoSVG.NSVGfillRule;
 using static NanoSVG.NSVGflags;
-using static NanoSVG.NSVGpaintOrder;
+
 // ReSharper disable InconsistentNaming
 
 /* https://github.com/flibitijibibo/SVG4FNA
@@ -336,7 +331,7 @@ public static unsafe class NanoSVG
 		InlineArray6<float> dst,
 		NSVGgradient._xform_e__FixedBuffer src)
 	{
-		var transform = new Transform
+		var transform = new NvgSharp.Transform
 		{
 			T1 = src[0],
 			T2 = src[1],
@@ -356,7 +351,7 @@ public static unsafe class NanoSVG
 
 	private static void nvgTransformPoint(out float dstx, out float dsty, InlineArray6<float> xform, float srcx, float srcy)
 	{
-		var transform = new Transform
+		var transform = new NvgSharp.Transform
 		{
 			T1 = xform[0],
 			T2 = xform[1],

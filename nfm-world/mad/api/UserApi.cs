@@ -1,7 +1,8 @@
-namespace nfm_world.mad.api;
-
 using System.Net;
-using nfm_world.mad.account.oauth2;
+using nfm_world.account.oauth2;
+
+namespace nfm_world.api;
+
 using ApiRes = (System.Net.HttpStatusCode, ApiResponse?);
 
 public static class UserApi
@@ -15,7 +16,7 @@ public static class UserApi
             Password = password
         };
 
-        return await NfmwApi.PostAsync(route, body, ApiSerializerContext.Default.LocalAccountRequestParams, ApiSerializerContext.Default.ApiResponse);
+        return await NfmwApi.PostAsync<LocalAccountRequestParams, ApiResponse>(route, body, ApiSerializerContext.Default.LocalAccountRequestParams, ApiSerializerContext.Default.ApiResponse);
     }
 
     public static async Task<(HttpStatusCode, LogInApiResponse?)> LocalLogIn(string username, string password)
@@ -27,7 +28,7 @@ public static class UserApi
             Password = password
         };
 
-        return await NfmwApi.PostAsync(route, body, ApiSerializerContext.Default.LocalAccountRequestParams, ApiSerializerContext.Default.LogInApiResponse);
+        return await NfmwApi.PostAsync<LocalAccountRequestParams, LogInApiResponse>(route, body, ApiSerializerContext.Default.LocalAccountRequestParams, ApiSerializerContext.Default.LogInApiResponse);
     }
 
     public static async Task<(HttpStatusCode, LogInApiResponse?)> CreateDiscordOauth2Account(string tempToken, string username)
@@ -39,7 +40,7 @@ public static class UserApi
             Username = username
         };
 
-        return await NfmwApi.PostAsync(route, body, ApiSerializerContext.Default.Oauth2CreateAccountRequestParams, ApiSerializerContext.Default.LogInApiResponse);
+        return await NfmwApi.PostAsync<Oauth2CreateAccountRequestParams, LogInApiResponse>(route, body, ApiSerializerContext.Default.Oauth2CreateAccountRequestParams, ApiSerializerContext.Default.LogInApiResponse);
     }
 
     public static async Task<(HttpStatusCode, Oauth2LogInApiResponse?)> DiscordOauth2LogIn(string oauth2Code, string redirectUri)
@@ -51,6 +52,6 @@ public static class UserApi
             Code = oauth2Code
         };
 
-        return await NfmwApi.PostAsync(route, body, ApiSerializerContext.Default.Oauth2LogInRequestParams, ApiSerializerContext.Default.Oauth2LogInApiResponse);
+        return await NfmwApi.PostAsync<Oauth2LogInRequestParams, Oauth2LogInApiResponse>(route, body, ApiSerializerContext.Default.Oauth2LogInRequestParams, ApiSerializerContext.Default.Oauth2LogInApiResponse);
     }
 }

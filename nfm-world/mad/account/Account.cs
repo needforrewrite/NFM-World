@@ -1,4 +1,4 @@
-namespace nfm_world.mad.account;
+namespace nfm_world.account;
 
 public class Account
 {

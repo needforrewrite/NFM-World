@@ -1,6 +1,9 @@
-namespace nfm_world.mad.api;
+using System.Text.Json.Serialization;
+
+namespace nfm_world.api;
 
 public class ApiResponse
 {
-    public string status { get; set; }
+    [JsonPropertyName("status")]
+    public required string Status { get; set; }
 }

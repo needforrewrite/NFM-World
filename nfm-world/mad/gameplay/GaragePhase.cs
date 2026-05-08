@@ -7,7 +7,6 @@ using nfm_world_library.mad.rad;
 using nfm_world_library.util;
 using nfm_world.camera;
 using nfm_world.driverinterface;
-using nfm_world.stage;
 using nfm_world.ui.menu;
 using nfm_world.util;
 

@@ -89,11 +89,11 @@
 
     <!-- XAML files to compile -->
     <ItemGroup>
-        <AvaloniaXaml Include="mad\ui\hud\CentralTextView.xaml"/>
-        <AvaloniaXaml Include="mad\ui\hud\LapTimerSplitsView.xaml"/>
-        <AvaloniaXaml Include="mad\ui\hud\PowerDamageBars.xaml"/>
-        <AvaloniaXaml Include="mad\ui\hud\TTLapTimerSplitsView.xaml"/>
-        <AvaloniaXaml Include="mad\ui\menu\GarageUiView.xaml"/>
+        <AvaloniaXaml Include="mad\UI\Hud\CentralTextView.xaml" />
+        <AvaloniaXaml Include="mad\UI\Hud\LapTimerSplitsView.xaml" />
+        <AvaloniaXaml Include="mad\UI\Hud\PowerDamageBars.xaml" />
+        <AvaloniaXaml Include="mad\UI\Hud\TTLapTimerSplitsView.xaml" />
+        <AvaloniaXaml Include="mad\UI\Menu\GarageUiView.xaml" />
     </ItemGroup>
 
     <!-- https://platform.uno/blog/using-msbuild-items-and-properties-in-c-9-source-generators/ -->
@@ -243,6 +243,11 @@
         <Compile Update="mad\ui\menu\GarageUiView.cs">
             <DependentUpon>GarageUiView.xaml</DependentUpon>
         </Compile>
+    </ItemGroup>
+
+
+    <ItemGroup>
+      <Folder Include="mad\Renderer\Renderable\" />
     </ItemGroup>
 
     <Target Name="CopyShadersOnPublish" AfterTargets="Publish">

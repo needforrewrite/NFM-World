@@ -1,12 +1,11 @@
-using nfm_world_library;
-
-namespace nfm_world.mad.api;
-
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using nfm_world_library;
+
+namespace nfm_world.api;
 
 public class NfmwApi
 {

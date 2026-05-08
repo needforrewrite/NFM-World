@@ -6,12 +6,10 @@ using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
 using nfm_world_library.SoftFloat;
 using nfm_world.camera;
+using nfm_world.environment;
 using nfm_world.gameplay;
-using nfm_world.mesh;
-using nfm_world.mesh.environment;
-using nfm_world.stage;
 using nfm_world.util;
-using Environment = nfm_world.mesh.environment.Environment;
+using Environment = nfm_world.environment.Environment;
 
 namespace nfm_world.ui;
 

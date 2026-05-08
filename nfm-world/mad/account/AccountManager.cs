@@ -1,8 +1,7 @@
-using System.Net;
-using nfm_world.mad.account.oauth2;
-using nfm_world.mad.api;
+using nfm_world.account.oauth2;
+using nfm_world.api;
 
-namespace nfm_world.mad.account;
+namespace nfm_world.account;
 
 public class AccountManager
 {
@@ -30,7 +29,7 @@ public class AccountManager
     {
         var res = await UserApi.CreateLocalAccount(username, password);
         
-        return new CreateLocalAccountResult(res.Item2?.status ?? "Unknown Status", res.Item1);
+        return new CreateLocalAccountResult(res.Item2?.Status ?? "Unknown Status", res.Item1);
     }
 
     /// <summary>
@@ -52,7 +51,7 @@ public class AccountManager
     public async Task<LocalLogInResult> LogInToLocalAccount(string username, string password)
     {
         var res = await UserApi.LocalLogIn(username, password);
-        var inner_res = new LocalLogInResult(res.Item2?.status ?? "Unknown Status", res.Item1);
+        var inner_res = new LocalLogInResult(res.Item2?.Status ?? "Unknown Status", res.Item1);
 
         if(!inner_res.Success)
         {
@@ -93,7 +92,7 @@ public class AccountManager
     public async Task<Oauth2LogInResult> DiscordOauth2AttemptLogIn(string code, string redirectUri)
     {
         var res = await UserApi.DiscordOauth2LogIn(code, redirectUri);
-        var inner_res = new Oauth2LogInResult(res.Item2?.status ?? "Unknown Status", res.Item1);
+        var inner_res = new Oauth2LogInResult(res.Item2?.Status ?? "Unknown Status", res.Item1);
 
         if(!inner_res.Success)
         {
@@ -121,7 +120,7 @@ public class AccountManager
     {
         // When we create an account via oauth, we automatically log in
         var res = await UserApi.CreateDiscordOauth2Account(tempToken, username);
-        var inner_res = new Oauth2CreateAccountResult(res.Item2?.status ?? "Unknown Status", res.Item1);
+        var inner_res = new Oauth2CreateAccountResult(res.Item2?.Status ?? "Unknown Status", res.Item1);
 
         if(!inner_res.Success)
         {
