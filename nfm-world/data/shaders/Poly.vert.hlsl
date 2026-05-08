@@ -40,6 +40,7 @@ struct VSOutput
     float4 Color        : COLOR0;
     float4 WorldPos     : ATTRIBUTE(2);
     float  GetsShadowed : ATTRIBUTE(3);
+    float3 WorldNormal  : ATTRIBUTE(4);
 };
 
 VSOutput main(VSInput input)
@@ -62,6 +63,7 @@ VSOutput main(VSInput input)
 
     output.WorldPos = mul(input.World, float4(position, 1));
     output.GetsShadowed = getsShadowed ? 1.0 : 0.0;
+    output.WorldNormal = normalize(mul(input.World, float4(input.Normal, 0)).xyz);
 
     float4 viewPos = mul(View, output.WorldPos);
 

@@ -198,26 +198,20 @@ void applyShadowingSingle(
 void PS_ApplyShadowing(
     inout float3 diffuse,
     in float4 worldPos,
+    in float3 worldNormal,
     in ShadowParams shadow,
     in Texture2D shadowMap0, in SamplerState shadowSampler0,
     in Texture2D shadowMap1, in SamplerState shadowSampler1,
     in Texture2D shadowMap2, in SamplerState shadowSampler2)
 {
-    // Reconstruct the face normal from world-position screen-space derivatives.
-    // This gives us the geometric surface orientation without needing the
-    // vertex normal (which isn't available in the fragment shader).
-    float3 dpdx = ddx(worldPos.xyz);
-    float3 dpdy = ddy(worldPos.xyz);
-    float3 faceNormal = normalize(cross(dpdx, dpdy));
-
     // How much does this surface face the light?
     // LightDirection points TOWARD the light (e.g. (0,1,0) = light above).
     // A dot product near 0 means the surface is parallel to the light rays
     // — these are the surfaces that flicker. Skip shadowing for them.
-    float NdotL = abs(dot(faceNormal, shadow.LightDirection));
+    float NdotL = abs(dot(normalize(worldNormal), shadow.LightDirection));
 
     // Threshold below which we consider the surface too parallel to shadow reliably.
-    // 0.1 ≈ surfaces within ~84° of the light direction are excluded.
+    // 0.05 ≈ surfaces within ~87° of the light direction are excluded.
     if (NdotL < 0.05)
     {
         return; // No shadow — surface is parallel to the light

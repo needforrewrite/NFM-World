@@ -28,7 +28,11 @@ float4 main(PSInput input) : SV_TARGET
 {
     float3 diffuse = input.Color.xyz;
 
-    PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1), Shadow,
+    // Mountains have no vertex normal — reconstruct from world-pos derivatives.
+    // This is fine for mountains since they are regular polygon geometry.
+    float3 faceNormal = normalize(cross(ddx(input.WorldPos.xyz), ddy(input.WorldPos.xyz)));
+
+    PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1), faceNormal, Shadow,
         ShadowMap0, ShadowMapSampler0,
         ShadowMap1, ShadowMapSampler1,
         ShadowMap2, ShadowMapSampler2);

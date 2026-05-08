@@ -32,7 +32,7 @@ float4 main(PSInput input) : SV_TARGET
 
     VS_ApplyFog(diffuse, input.Position1.z, Fog.Color, Fog.Distance, Fog.Density);
 
-    PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1), Shadow,
+    PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1), float3(0, 1, 0), Shadow,
         ShadowMap0, ShadowMapSampler0,
         ShadowMap1, ShadowMapSampler1,
         ShadowMap2, ShadowMapSampler2);

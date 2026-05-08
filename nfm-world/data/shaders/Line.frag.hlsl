@@ -23,6 +23,7 @@ struct PSInput
     float4 Color        : COLOR0;
     float4 WorldPos     : ATTRIBUTE(2);
     float  GetsShadowed : ATTRIBUTE(3);
+    float3 WorldNormal  : ATTRIBUTE(4);
 };
 
 float4 main(PSInput input) : SV_TARGET
@@ -32,7 +33,7 @@ float4 main(PSInput input) : SV_TARGET
     if (input.GetsShadowed > 0.0)
     {
         float3 diffuseRGB = diffuse.xyz;
-        PS_ApplyShadowing(diffuseRGB, input.WorldPos, Shadow,
+        PS_ApplyShadowing(diffuseRGB, input.WorldPos, input.WorldNormal, Shadow,
             ShadowMap0, ShadowMapSampler0,
             ShadowMap1, ShadowMapSampler1,
             ShadowMap2, ShadowMapSampler2);
