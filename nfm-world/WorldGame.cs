@@ -234,6 +234,8 @@ public class WorldGame : MoonWorks.Game
             _ => "Unknown"
         };
 
+        Logging.Info($"Renderer is {Renderer}, config is {SettingsMenu.GetRendererFromConfig()}");
+
         ResourceUploader = new ResourceUploader(GraphicsDevice);
 
         MainWindow.RegisterSizeChangeCallback((w, h) =>
