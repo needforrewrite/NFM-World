@@ -4,38 +4,54 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/Facepunch.Steamworks/">
+    <Project Path="Facepunch.Steamworks/Facepunch.Steamworks/Facepunch.Steamworks.Posix.csproj" />
+    <Project Path="Facepunch.Steamworks/Facepunch.Steamworks/Facepunch.Steamworks.Win64.csproj" />
+  </Folder>
+  <Folder Name="/FNA/">
+    <Project Path="FNA.Math/FNA.Math.csproj" />
+    <Project Path="FNA/FNA.Core.csproj" />
+  </Folder>
+  <Folder Name="/FontStashSharp/">
+    <Project Path="FontStashSharp.Base/src/FontStashSharp.Base/FontStashSharp.Base.csproj" />
+    <Project Path="FontStashSharp.Base/src/FontStashSharp.Rasterizers.StbTrueTypeSharp/FontStashSharp.Rasterizers.StbTrueTypeSharp.csproj" />
+    <Project Path="FontStashSharp/src/XNA/FontStashSharp.FNA.Core.csproj" />
+  </Folder>
+  <Folder Name="/HoleyDiver/">
+    <Project Path="HoleyDiver.UnitTest/HoleyDiver.UnitTest.csproj" />
+    <Project Path="HoleyDiver/HoleyDiver.csproj" />
+  </Folder>
+  <Folder Name="/ImGui/">
+    <Project Path="MonoGame.ImGuiNet/MonoGame.ImGuiNet/Monogame.ImGuiNet.csproj" />
+  </Folder>
+  <Folder Name="/Maxine.Extensions/">
+    <Project Path="Maxine.Extensions/Maxine.Extensions.Mathematics.Tests/Maxine.Extensions.Mathematics.Tests.csproj" />
+    <Project Path="Maxine.Extensions/Maxine.Extensions.Mathematics/Maxine.Extensions.Mathematics.csproj" />
+    <Project Path="Maxine.Extensions/Maxine.Extensions.MessagePack/Maxine.Extensions.MessagePack.csproj" />
+    <Project Path="Maxine.Extensions/Maxine.Extensions/Maxine.Extensions.csproj" />
+    <Project Path="Maxine.Extensions/Maxine.VFS/Maxine.VFS.csproj" />
+    <Project Path="Maxine.Extensions/RayTech.RayLog.MEL/RayTech.RayLog.MEL.csproj">
+      <BuildType Solution="*|x64" Project="?" />
+      <BuildType Solution="*|x86" Project="?" />
+      <Platform Solution="*|x64" Project="?" />
+      <Platform Solution="*|x86" Project="?" />
+      <Build Solution="*|x64" Project="false" />
+      <Build Solution="*|x86" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/NvgSharp/">
+    <Project Path="NvgSharp/src/NvgSharp.Text/NvgSharp.Text.FNA.Core.csproj" />
+    <Project Path="NvgSharp/src/XNA/NvgSharp.FNA.Core.csproj" />
+  </Folder>
+  <Folder Name="/XamlX/">
+    <Project Path="XamlX/src/XamlX.IL.Cecil/XamlX.IL.Cecil.csproj" />
+    <Project Path="XamlX/src/XamlX/XamlX.csproj" />
+  </Folder>
   <Project Path="Avalonia.Generators/Avalonia.Generators.csproj" />
-  <Project Path="Facepunch.Steamworks/Facepunch.Steamworks/Facepunch.Steamworks.Posix.csproj" />
-  <Project Path="Facepunch.Steamworks/Facepunch.Steamworks/Facepunch.Steamworks.Win64.csproj" />
-  <Project Path="FNA.Math/FNA.Math.csproj" />
-  <Project Path="FNA/FNA.Core.csproj" />
-  <Project Path="FontStashSharp.Base/src/FontStashSharp.Base/FontStashSharp.Base.csproj" />
-  <Project Path="FontStashSharp.Base/src/FontStashSharp.Rasterizers.StbTrueTypeSharp/FontStashSharp.Rasterizers.StbTrueTypeSharp.csproj" />
-  <Project Path="FontStashSharp/src/XNA/FontStashSharp.FNA.Core.csproj" />
-  <Project Path="HoleyDiver.UnitTest/HoleyDiver.UnitTest.csproj" />
-  <Project Path="HoleyDiver/HoleyDiver.csproj" />
-  <Project Path="Maxine.Extensions/Maxine.Extensions.Mathematics.Tests/Maxine.Extensions.Mathematics.Tests.csproj" />
-  <Project Path="Maxine.Extensions/Maxine.Extensions.Mathematics/Maxine.Extensions.Mathematics.csproj" />
-  <Project Path="Maxine.Extensions/Maxine.Extensions.MessagePack/Maxine.Extensions.MessagePack.csproj" />
-  <Project Path="Maxine.Extensions/Maxine.Extensions/Maxine.Extensions.csproj" />
-  <Project Path="Maxine.Extensions/Maxine.VFS/Maxine.VFS.csproj" />
-  <Project Path="Maxine.Extensions/RayTech.RayLog.MEL/RayTech.RayLog.MEL.csproj">
-    <BuildType Solution="*|x64" Project="?" />
-    <BuildType Solution="*|x86" Project="?" />
-    <Platform Solution="*|x64" Project="?" />
-    <Platform Solution="*|x86" Project="?" />
-    <Build Solution="*|x64" Project="false" />
-    <Build Solution="*|x86" Project="false" />
-  </Project>
-  <Project Path="MonoGame.ImGuiNet/MonoGame.ImGuiNet/Monogame.ImGuiNet.csproj" />
   <Project Path="nfm-world/NFMWorld.csproj" />
   <Project Path="NFMW.GenerateSinCosTable/NFMW.GenerateSinCosTable.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />
   <Project Path="NFMWorld.RustBindGen/NFMWorld.RustBindGen.csproj" />
   <Project Path="NFMWorld.XamlX.BuildTask/NFMWorld.XamlX.BuildTask.csproj" />
   <Project Path="NFMWorld.XamlX.Core/NFMWorld.XamlX.Core.csproj" />
-  <Project Path="NvgSharp/src/NvgSharp.Text/NvgSharp.Text.FNA.Core.csproj" />
-  <Project Path="NvgSharp/src/XNA/NvgSharp.FNA.Core.csproj" />
-  <Project Path="XamlX/src/XamlX.IL.Cecil/XamlX.IL.Cecil.csproj" />
-  <Project Path="XamlX/src/XamlX/XamlX.csproj" />
 </Solution>
