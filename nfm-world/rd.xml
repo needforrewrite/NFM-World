@@ -9,22 +9,22 @@
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
     <Application>
         <Assembly Name="NFMWorld">
-            <Type Name="nfm_world.ui.hud.CentralTextView">
+            <Type Name="NFMWorld.UI.Hud.CentralTextView">
                 <Method Name="Populate" Dynamic="Required" />
                 <Method Name="Build" Dynamic="Required" />
                 <Method Name="InitializeComponent" Dynamic="Required" />
             </Type>
-            <Type Name="nfm_world.ui.hud.LapTimerSplitsView">
+            <Type Name="NFMWorld.UI.Hud.LapTimerSplitsView">
                 <Method Name="Populate" Dynamic="Required" />
                 <Method Name="Build" Dynamic="Required" />
                 <Method Name="InitializeComponent" Dynamic="Required" />
             </Type>
-            <Type Name="nfm_world.ui.hud.PowerDamageBars">
+            <Type Name="NFMWorld.UI.Hud.PowerDamageBars">
                 <Method Name="Populate" Dynamic="Required" />
                 <Method Name="Build" Dynamic="Required" />
                 <Method Name="InitializeComponent" Dynamic="Required" />
             </Type>
-            <Type Name="nfm_world.ui.hud.TTLapTimerSplitsView">
+            <Type Name="NFMWorld.UI.Hud.TTLapTimerSplitsView">
                 <Method Name="Populate" Dynamic="Required" />
                 <Method Name="Build" Dynamic="Required" />
                 <Method Name="InitializeComponent" Dynamic="Required" />

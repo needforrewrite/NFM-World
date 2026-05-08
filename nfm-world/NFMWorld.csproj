@@ -64,6 +64,9 @@
                           ReferenceOutputAssembly="false"
                           OutputItemType="Analyzer"
         />
+    </ItemGroup>
+
+    <ItemGroup>
         <ProjectReference Include="..\XamlX\src\XamlX\XamlX.csproj"/>
     </ItemGroup>
 
@@ -89,11 +92,11 @@
 
     <!-- XAML files to compile -->
     <ItemGroup>
-        <AvaloniaXaml Include="mad\UI\Hud\CentralTextView.xaml" />
-        <AvaloniaXaml Include="mad\UI\Hud\LapTimerSplitsView.xaml" />
-        <AvaloniaXaml Include="mad\UI\Hud\PowerDamageBars.xaml" />
-        <AvaloniaXaml Include="mad\UI\Hud\TTLapTimerSplitsView.xaml" />
-        <AvaloniaXaml Include="mad\UI\Menu\GarageUiView.xaml" />
+        <AvaloniaXaml Include="Mad\UI\Hud\CentralTextView.xaml" />
+        <AvaloniaXaml Include="Mad\UI\Hud\LapTimerSplitsView.xaml" />
+        <AvaloniaXaml Include="Mad\UI\Hud\PowerDamageBars.xaml" />
+        <AvaloniaXaml Include="Mad\UI\Hud\TTLapTimerSplitsView.xaml" />
+        <AvaloniaXaml Include="Mad\UI\Menu\GarageUiView.xaml" />
     </ItemGroup>
 
     <!-- https://platform.uno/blog/using-msbuild-items-and-properties-in-c-9-source-generators/ -->
@@ -228,26 +231,26 @@
 
 
     <ItemGroup>
-        <Compile Update="mad\ui\hud\CentralTextView.cs">
+        <Compile Update="Mad\UI\Hud\CentralTextView.cs">
             <DependentUpon>CentralTextView.xaml</DependentUpon>
         </Compile>
-        <Compile Update="mad\ui\hud\LapTimerSplitsView.cs">
+        <Compile Update="Mad\UI\Hud\LapTimerSplitsView.cs">
             <DependentUpon>LapTimerSplitsView.xaml</DependentUpon>
         </Compile>
-        <Compile Update="mad\ui\hud\PowerDamageBars.cs">
+        <Compile Update="Mad\UI\Hud\PowerDamageBars.cs">
             <DependentUpon>PowerDamageBars.xaml</DependentUpon>
         </Compile>
-        <Compile Update="mad\ui\hud\TTLapTimerSplitsView.cs">
+        <Compile Update="Mad\UI\Hud\TTLapTimerSplitsView.cs">
             <DependentUpon>TTLapTimerSplitsView.xaml</DependentUpon>
         </Compile>
-        <Compile Update="mad\ui\menu\GarageUiView.cs">
+        <Compile Update="Mad\UI\Menu\GarageUiView.cs">
             <DependentUpon>GarageUiView.xaml</DependentUpon>
         </Compile>
     </ItemGroup>
 
 
     <ItemGroup>
-      <Folder Include="mad\Renderer\Renderable\" />
+      <Folder Include="Mad\Renderer\Renderable\" />
     </ItemGroup>
 
     <Target Name="CopyShadersOnPublish" AfterTargets="Publish">

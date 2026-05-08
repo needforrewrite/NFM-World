@@ -6,9 +6,9 @@ namespace Avalonia.Generators.Common;
 internal static class ResolverExtensions
 {
     public static bool IsAvaloniaStyledElement(this IXamlType clrType) =>
-        Inherits(clrType, "nfm_world.ui.yoga.Node");
+        Inherits(clrType, "NFMWorld.UI.Yoga.Node");
     public static bool IsAvaloniaWindow(this IXamlType clrType) =>
-        Inherits(clrType, "nfm_world.ui.yoga.Window");
+        Inherits(clrType, "NFMWorld.UI.Yoga.Window");
 
     private static bool Inherits(IXamlType clrType, string metadataName)
     {

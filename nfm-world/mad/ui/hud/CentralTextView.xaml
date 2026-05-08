@@ -3,16 +3,16 @@
 <yoga:View
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:yoga="clr-namespace:NFMWorld.UI.Yoga"
-    x:Class="nfm_world.ui.hud.CentralTextView"
-      Name="CentralText"
-      AlignItems="Center"
-      FlexDirection="Column">
+    x:Class="NFMWorld.UI.Hud.CentralTextView"
+    Name="CentralText"
+    AlignItems="Center"
+    FlexDirection="Column">
 
     <yoga:Box AlignItems="Center" Flex="1">
         <yoga:TextRun Name="CenterText"
-                 Color="black"
-                 Font="bold 1px Adventure"
-                 Display="None" />
+                      Color="black"
+                      Font="bold 1px Adventure"
+                      Display="None" />
     </yoga:Box>
 
     <yoga:Node Flex="1" />

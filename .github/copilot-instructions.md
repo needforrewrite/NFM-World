@@ -62,7 +62,7 @@ The project uses a custom XAML runtime built on XamlX (IL weaving) with Avalonia
    <Node xmlns="clr-namespace:nfm_world.ui.yoga"
          xmlns:elements="clr-namespace:nfm_world.ui.elements"
          xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-         x:Class="nfm_world.ui.hud.MyView"
+         x:Class="NFMWorld.UI.Hud.MyView"
          FlexDirection="Column"
          AlignItems="FlexStart"
          Gap="10"
@@ -77,7 +77,7 @@ The project uses a custom XAML runtime built on XamlX (IL weaving) with Avalonia
    ```csharp
    using nfm_world.ui.yoga;
 
-   namespace nfm_world.ui.hud;
+   namespace NFMWorld.UI.Hud;
 
    public partial class MyView : Node  // or View
    {
@@ -174,10 +174,19 @@ public PowerDamageBars()
 When adding new XAML views, you must update [nfm-world/rd.xml](nfm-world/rd.xml) to preserve the generated `Populate` methods for Native AOT compilation:
 
 ```xml
-<Type Name="nfm_world.ui.hud.MyView" Dynamic="Required All">
+<Type Name="NFMWorld.UI.Hud.MyView" Dynamic="Required All">
   <Method Name="Populate" Dynamic="Required" />
 </Type>
 ```
 
-Without this, `dotnet publish` with AOT will fail with "Could not find Method(s) [NFMWorld]nfm_world.ui.hud.MyView.Populate specified by a Runtime Directive"
+Without this, `dotnet publish` with AOT will fail with "Could not find Method(s) [NFMWorld]NFMWorld.UI.Hud.MyView.Populate specified by a Runtime Directive"
 
+### Namespace Dependencies
+
+When updating the namespaces for Yoga types, make sure to update Avalonia.Generators:
+```cs
+    public static bool IsAvaloniaStyledElement(this IXamlType clrType) =>
+        Inherits(clrType, "NFMWorld.UI.Yoga.Node");
+    public static bool IsAvaloniaWindow(this IXamlType clrType) =>
+        Inherits(clrType, "NFMWorld.UI.Yoga.Window");
+```
