@@ -29,3 +29,4 @@
 [submodule "MoonWorks"]
 	path = MoonWorks
 	url = https://github.com/uwx/MoonWorks
+	branch = main
