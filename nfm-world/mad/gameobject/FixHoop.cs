@@ -207,7 +207,7 @@ public class FixHoop : StageObjectGameObject
             PrepareLine(i);
         }
             
-        WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _vertices, true);
-        WorldGame.ResourceUploader.SetBufferData(_indexBuffer, 0, _indices, true);
+        WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _vertices);
+        WorldGame.ResourceUploader.SetBufferData(_indexBuffer, 0, _indices);
     }
 }

@@ -261,7 +261,7 @@ public class ImGuiRenderer : IDisposable
 		var bytesPerPixel = textureData.Format == ImTextureFormat.Rgba32 ? 4 : 1;
 		var dataSize = (uint)(textureData.Width * textureData.Height * bytesPerPixel);
 
-		_uploader.SetTextureData(texture, new Span<byte>(textureData.Pixels, (int)dataSize), false);
+		_uploader.SetTextureData(texture, new Span<byte>(textureData.Pixels, (int)dataSize));
 	}
 
 	private void DestroyManagedTexture(ImTextureDataPtr textureData)
@@ -404,7 +404,7 @@ public class ImGuiRenderer : IDisposable
 		// Two loops are required here because the result of MapBufferData is invalid after another call to
 		// MapBufferData.
 
-		var vtxSpan = _uploader.MapBufferData<ImGuiVertex>(_vertexBuffer, 0, (uint)drawData->TotalVtxCount, true);
+		var vtxSpan = _uploader.MapBufferData<ImGuiVertex>(_vertexBuffer, 0, (uint)drawData->TotalVtxCount);
 
 		int vtxOffset = 0;
 		for (var n = 0; n < drawData->CmdListsCount; n++)
@@ -415,7 +415,7 @@ public class ImGuiRenderer : IDisposable
 			vtxOffset += cmdList->VtxBuffer.Size;
 		}
 		
-		var idxSpan = _uploader.MapBufferData<ushort>(_indexBuffer, 0, (uint)drawData->TotalIdxCount, true);
+		var idxSpan = _uploader.MapBufferData<ushort>(_indexBuffer, 0, (uint)drawData->TotalIdxCount);
 		
 		int idxOffset = 0;
 		for (var n = 0; n < drawData->CmdListsCount; n++)

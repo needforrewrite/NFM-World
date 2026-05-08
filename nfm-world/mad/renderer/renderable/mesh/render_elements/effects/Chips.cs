@@ -147,7 +147,7 @@ public class Chips : IDisposable
             {
                 var vtxCount = (uint)(_triangleCount * 3);
                 
-                WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _triangles.AsSpan(0, (int)vtxCount), true);
+                WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _triangles.AsSpan(0, (int)vtxCount));
             }
 
             _tick = 0;

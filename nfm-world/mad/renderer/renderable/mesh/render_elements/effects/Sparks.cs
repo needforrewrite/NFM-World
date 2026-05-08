@@ -259,8 +259,8 @@ public class Sparks : IDisposable
 
             if (_vertexCount > 0 && _triangleCount > 0)
             {
-                WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _lineVertices.AsSpan(0, _vertexCount), true);
-                WorldGame.ResourceUploader.SetBufferData(_indexBuffer, 0, _lineIndices.AsSpan(0, _triangleCount * 3), true);
+                WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _lineVertices.AsSpan(0, _vertexCount));
+                WorldGame.ResourceUploader.SetBufferData(_indexBuffer, 0, _lineIndices.AsSpan(0, _triangleCount * 3));
             }
 
             Sprk = 0;

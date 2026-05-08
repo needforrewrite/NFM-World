@@ -254,7 +254,7 @@ public class Scene
                     }
                     else
                     {
-                        data = WorldGame.ResourceUploader.MapBufferData<InstanceData>(cachedRenderData.GpuBuffer, 0, (uint)instances.Count, true);
+                        data = WorldGame.ResourceUploader.MapBufferData<InstanceData>(cachedRenderData.GpuBuffer, 0, (uint)instances.Count);
                     }
                     
                     // Fill transfer buffer

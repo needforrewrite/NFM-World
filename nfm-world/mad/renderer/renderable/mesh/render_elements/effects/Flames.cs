@@ -289,7 +289,7 @@ public class Flames : IDisposable
 
                     if (_vtxCountForRender != 0)
                     {
-                        WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _triangles.AsSpan(0, (int)_vtxCountForRender), true);
+                        WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _triangles.AsSpan(0, (int)_vtxCountForRender));
                     }
                 }
 

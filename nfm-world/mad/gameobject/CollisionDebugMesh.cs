@@ -183,7 +183,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
         
         if (!GameSparker.devRenderTrackers) return;
         
-        WorldGame.ResourceUploader.SetBufferData(_lineInstanceBuffer, 0, new[] { new InstanceData(MatrixWorld) }, true);
+        WorldGame.ResourceUploader.SetBufferData(_lineInstanceBuffer, 0, new[] { new InstanceData(MatrixWorld) });
 
         var cmd = RenderState.Cmd;
         var pass = RenderState.Pass;

@@ -108,8 +108,8 @@ public class Dust : IDisposable
 
             if (_vertexCount != 0 && _indexCount != 0)
             {
-                WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _verts, true);
-                WorldGame.ResourceUploader.SetBufferData(_indexBuffer, 0, _indices, true);
+                WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _verts);
+                WorldGame.ResourceUploader.SetBufferData(_indexBuffer, 0, _indices);
             }
 
             _tick = 0;
