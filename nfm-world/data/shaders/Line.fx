@@ -111,7 +111,7 @@ VertexShaderOutput MainVS(
     output.Position = clipPos + float4(offset * clipPos.w, 0, 0);
 
     // Nudge outlines toward the camera so they render on top of the geometry they outline
-    output.Position.z -= 0.00005 * output.Position.w;
+    output.Position.z -= 0.1;
 
     if (Darken < 1.0f)
     {
