@@ -239,7 +239,7 @@ public class WorldGame : Game
         TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / Physics.TargetTps);
         _graphics.PreferredBackBufferWidth = 1280;
         _graphics.PreferredBackBufferHeight = 720;
-        _graphics.PreferMultiSampling = false;
+        _graphics.PreferMultiSampling = true;
 
         // IBackend.Backend = new DummyBackend();
         Window.AllowUserResizing = true;
@@ -306,6 +306,8 @@ public class WorldGame : Game
         oldMouseState = Mouse.GetState();
         
         _nvg = new NanoVGRenderer(GraphicsDevice);
+        
+        GraphicsDevice.PresentationParameters.MultiSampleCount = 8;
         
         base.Initialize();
     }
