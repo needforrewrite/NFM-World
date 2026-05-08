@@ -26,21 +26,19 @@ public class FixHoop : StageObjectGameObject
         _graphicsDevice = mesh.GraphicsDevice;
         _fixhoopEffect = new BasicEffect(_graphicsDevice)
         {
+            Name = "FixHoop Electricity Effect",
             LightingEnabled = false,
             TextureEnabled = false,
             VertexColorEnabled = true
         };
+
+        MakeElectrifiedMesh();
     }
 
     public bool IsSpecial { get; set; }
 
     private void RenderFixHoop(Camera.Camera camera)
     {
-        for (var i = 0; i < 4; i++)
-        {
-            PrepareLine(i);
-        }
-
         _fixhoopEffect.World = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
                                Matrix.CreateTranslation((Vector3)Position);
         _fixhoopEffect.View = camera.ViewMatrix;
@@ -188,6 +186,8 @@ public class FixHoop : StageObjectGameObject
 
     private fix64 _rotAccumulator = 0;
 
+    private int _tick;
+
     public override void GameTick(IStage? stage = null)
     {
         base.GameTick(stage);
@@ -198,5 +198,20 @@ public class FixHoop : StageObjectGameObject
             _rotAccumulator -= 360;
         }
         Rotation = Rotation with { Xy = f64AngleSingle.FromDegrees(Rotation.Xy.Degrees + _rotAccumulator) };
+        
+        if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
+        {
+            MakeElectrifiedMesh();
+
+            _tick = 0;
+        }
+    }
+
+    private void MakeElectrifiedMesh()
+    {
+        for (var i = 0; i < 4; i++)
+        {
+            PrepareLine(i);
+        }
     }
 }
