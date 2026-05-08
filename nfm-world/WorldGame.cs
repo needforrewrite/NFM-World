@@ -519,21 +519,6 @@ public class WorldGame : MoonWorks.Game
             MainDepthTexture
         );
 
-        // Clear render pass. This gets rid of the garbage from the backbuffer.
-        // If we know there's not gonna be anything in the backbuffer, we should get rid of this later.
-        {
-            var colorTarget = new ColorTargetInfo
-            {
-                Texture = backbuffer,
-                LoadOp = LoadOp.Clear,
-                StoreOp = StoreOp.Store,
-                ClearColor = new MoonWorks.Graphics.Color(100, 149, 237) // CornflowerBlue
-            };
-
-            var renderPass = renderCmd.BeginRenderPass(colorTarget);
-            renderCmd.EndRenderPass(renderPass);
-        }
-
         // 3D rendering (GameSparker.Render / CurrentPhase.Render)
         // Scene.Render() will create shadow + main render passes within this cmd.
         {
@@ -603,7 +588,6 @@ public class WorldGame : MoonWorks.Game
 
         ResourceUploader.Upload();
         GraphicsDevice.Submit(renderCmd);
-        
         
         _lastFrameTime = (int)t.ElapsedMilliseconds;
     }

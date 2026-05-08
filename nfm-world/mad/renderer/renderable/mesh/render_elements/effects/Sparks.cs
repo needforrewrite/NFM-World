@@ -36,7 +36,6 @@ public class Sparks : IDisposable
     private int _vertexCount;
     private int _triangleCount;
     private int _sparkCount;
-    private bool _needsUpload;
     private readonly GpuBuffer _vertexBuffer;
     private readonly GpuBuffer _indexBuffer;
     private readonly GpuBuffer _instanceBuffer;
@@ -110,162 +109,164 @@ public class Sparks : IDisposable
         Rcz = scz;
     }
 
+    private int _tick;
+
     public void GameTick()
     {
-        _vertexCount = 0;
-        _triangleCount = 0;
-        if (Sprk != 0)
+        if (++_tick == Physics
+                .OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
         {
-            var i = (int) (Math.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz) / 10.0);
-            if (i > 5)
+            _vertexCount = 0;
+            _triangleCount = 0;
+
+            if (Sprk != 0)
             {
-                if (i > 33)
+                var i = (int)(Math.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz) / 10.0);
+                if (i > 5)
                 {
-                    i = 33;
-                }
-                var i241 = 0;
-                for (var i242 = 0; i242 < 100; i242++)
-                {
-                    if (_rtg[i242] == 0)
+                    if (i > 33)
                     {
-                        _rtg[i242] = 1;
-                        i241++;
-                        _sparkCount++;
+                        i = 33;
                     }
-                    if (i241 == i)
+
+                    var i241 = 0;
+                    for (var i242 = 0; i242 < 100; i242++)
                     {
-                        break;
+                        if (_rtg[i242] == 0)
+                        {
+                            _rtg[i242] = 1;
+                            i241++;
+                            _sparkCount++;
+                        }
+
+                        if (i241 == i)
+                        {
+                            break;
+                        }
                     }
                 }
             }
-        }
-        
-        if (_sparkCount == 0)
-        {
-            // Fast exit if no sparks are active
-            return;
-        }
 
-        Span<LineMesh.LineMeshVertexAttribute> verts = stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
-        Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
-
-        for (var i = 0; i < 100; i++)
-        {
-            if (_rtg[i] != 0)
+            if (_sparkCount == 0)
             {
-                if (_rtg[i] == 1)
+                // Fast exit if no sparks are active
+                return;
+            }
+
+            Span<LineMesh.LineMeshVertexAttribute> verts =
+                stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
+            Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
+
+            for (var i = 0; i < 100; i++)
+            {
+                if (_rtg[i] != 0)
                 {
-                    if (Sprk < 5)
+                    if (_rtg[i] == 1)
                     {
-                        _rx[i] = Srx + 3 - (URandom.Single() * 6.7F);
-                        _ry[i] = Sry + 3 - (URandom.Single() * 6.7F);
-                        _rz[i] = Srz + 3 - (URandom.Single() * 6.7F);
+                        if (Sprk < 5)
+                        {
+                            _rx[i] = Srx + 3 - (URandom.Single() * 6.7F);
+                            _ry[i] = Sry + 3 - (URandom.Single() * 6.7F);
+                            _rz[i] = Srz + 3 - (URandom.Single() * 6.7F);
+                        }
+                        else
+                        {
+                            _rx[i] = Srx + 10 - (URandom.Single() * 20.0F);
+                            _ry[i] = Sry - (URandom.Single() * 4.0F);
+                            _rz[i] = Srz + 10 - (URandom.Single() * 20.0F);
+                        }
+
+                        var i243 = MathF.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz);
+                        if (float.IsNaN(i243) || float.IsInfinity(i243)) i243 = 1.0F;
+                        i243 = Math.Clamp(i243, 1, 100); // prevent division by zero
+
+                        var f = 0.2F + 0.4F * URandom.Single();
+                        var f244 = URandom.Single() * URandom.Single() * URandom.Single();
+                        var f245 = 1.0F;
+                        if (URandom.Boolean())
+                        {
+                            if (URandom.Boolean())
+                            {
+                                f245 *= -1.0F;
+                            }
+
+                            _vrx[i] = -((Rcx + i243 * (1.0F - Rcx / i243) * f244 * f245) * f);
+                        }
+
+                        if (URandom.Boolean())
+                        {
+                            if (URandom.Boolean())
+                            {
+                                f245 *= -1.0F;
+                            }
+
+                            if (Sprk == 5)
+                            {
+                                f245 = 1.0F;
+                            }
+
+                            _vry[i] = -((Rcy + i243 * (1.0F - Rcy / i243) * f244 * f245) * f);
+                        }
+
+                        if (URandom.Boolean())
+                        {
+                            if (URandom.Boolean())
+                            {
+                                f245 *= -1.0F;
+                            }
+
+                            _vrz[i] = -((Rcz + i243 * (1.0F - Rcz / i243) * f244 * f245) * f);
+                        }
+                    }
+
+                    _rx[i] = (_rx[i] + _vrx[i]);
+                    _ry[i] = (_ry[i] + _vry[i]);
+                    _rz[i] = (_rz[i] + _vrz[i]);
+                    var start = new Vector3(_rx[i], _ry[i], _rz[i]);
+                    var end = new Vector3(_rx[i] + _vrx[i], _ry[i] + _vry[i], _rz[i] + _vrz[i]);
+                    var color = new Color3(255, (short)(197 - 30 * _rtg[i]), 0);
+                    // TODO apply fog to color
+
+                    // draw line
+                    LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, default, default, color, 0f, verts, inds);
+                    for (var v = 0; v < LineMeshHelpers.VerticesPerLine; v++)
+                    {
+                        _lineVertices[_vertexCount + v] = verts[v];
+                    }
+
+                    for (var t = 0; t < LineMeshHelpers.IndicesPerLine; t++)
+                    {
+                        _lineIndices[_triangleCount * 3 + t] = _vertexCount + inds[t];
+                    }
+
+                    _vertexCount += LineMeshHelpers.VerticesPerLine;
+                    _triangleCount += LineMeshHelpers.IndicesPerLine / 3;
+
+                    _vrx[i] *= 0.8F;
+                    _vry[i] *= 0.8F;
+                    _vrz[i] *= 0.8F;
+                    if (_rtg[i] == 9)
+                    {
+                        _rtg[i] = 0;
+                        _sparkCount--;
                     }
                     else
                     {
-                        _rx[i] = Srx + 10 - (URandom.Single() * 20.0F);
-                        _ry[i] = Sry - (URandom.Single() * 4.0F);
-                        _rz[i] = Srz + 10 - (URandom.Single() * 20.0F);
+                        _rtg[i]++;
                     }
-                    var i243 = MathF.Sqrt(Rcx * Rcx + Rcy * Rcy + Rcz * Rcz);
-                    if (float.IsNaN(i243) || float.IsInfinity(i243)) i243 = 1.0F;
-                    i243 = Math.Clamp(i243, 1, 100); // prevent division by zero
-
-                    var f = 0.2F + 0.4F * URandom.Single();
-                    var f244 = URandom.Single() * URandom.Single() * URandom.Single();
-                    var f245 = 1.0F;
-                    if (URandom.Boolean())
-                    {
-                        if (URandom.Boolean())
-                        {
-                            f245 *= -1.0F;
-                        }
-                        _vrx[i] = -((Rcx + i243 * (1.0F - Rcx / i243) * f244 * f245) * f);
-                    }
-                    if (URandom.Boolean())
-                    {
-                        if (URandom.Boolean())
-                        {
-                            f245 *= -1.0F;
-                        }
-                        if (Sprk == 5)
-                        {
-                            f245 = 1.0F;
-                        }
-                        _vry[i] = -((Rcy + i243 * (1.0F - Rcy / i243) * f244 * f245) * f);
-                    }
-                    if (URandom.Boolean())
-                    {
-                        if (URandom.Boolean())
-                        {
-                            f245 *= -1.0F;
-                        }
-                        _vrz[i] = -((Rcz + i243 * (1.0F - Rcz / i243) * f244 * f245) * f);
-                    }
-                }
-                _rx[i] = (_rx[i] + _vrx[i]);
-                _ry[i] = (_ry[i] + _vry[i]);
-                _rz[i] = (_rz[i] + _vrz[i]);
-                var start = new Vector3(_rx[i], _ry[i], _rz[i]);
-                var end = new Vector3(_rx[i] + _vrx[i], _ry[i] + _vry[i], _rz[i] + _vrz[i]);
-                var color = new Color3(255, (short)(197 - 30 * _rtg[i]), 0);
-                // TODO apply fog to color
-                
-                // draw line
-                LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, default, default, color, 0f, verts, inds);
-                for (var v = 0; v < LineMeshHelpers.VerticesPerLine; v++)
-                {
-                    _lineVertices[_vertexCount + v] = verts[v];
-                }
-                for (var t = 0; t < LineMeshHelpers.IndicesPerLine; t++)
-                {
-                    _lineIndices[_triangleCount * 3 + t] = _vertexCount + inds[t];
-                }
-                _vertexCount += LineMeshHelpers.VerticesPerLine;
-                _triangleCount += LineMeshHelpers.IndicesPerLine / 3;
-                
-                _vrx[i] *= 0.8F;
-                _vry[i] *= 0.8F;
-                _vrz[i] *= 0.8F;
-                if (_rtg[i] == 9)
-                {
-                    _rtg[i] = 0;
-                    _sparkCount--;
-                }
-                else
-                {
-                    _rtg[i]++;
                 }
             }
+
+            if (_vertexCount > 0 && _triangleCount > 0)
+            {
+                WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _lineVertices.AsSpan(0, _vertexCount), true);
+                WorldGame.ResourceUploader.SetBufferData(_indexBuffer, 0, _lineIndices.AsSpan(0, _triangleCount * 3), true);
+            }
+
+            Sprk = 0;
+
+            _tick = 0;
         }
-
-        if (_vertexCount > 0 && _triangleCount > 0)
-        {
-            _needsUpload = true;
-        }
-        Sprk = 0;
-    }
-
-    public void UploadBuffers(CopyPass copyPass)
-    {
-        if (!_needsUpload || _vertexCount == 0 || _triangleCount == 0) return;
-        _needsUpload = false;
-
-        using var vtxTransfer = TransferBuffer.Create<LineMesh.LineMeshVertexAttribute>(
-            _graphicsDevice, TransferBufferUsage.Upload, (uint)_vertexCount);
-        var vtxSpan = vtxTransfer.Map<LineMesh.LineMeshVertexAttribute>(false);
-        _lineVertices.AsSpan(0, _vertexCount).CopyTo(vtxSpan);
-        vtxTransfer.Unmap();
-
-        var idxCount = (uint)(_triangleCount * 3);
-        using var idxTransfer = TransferBuffer.Create<int>(
-            _graphicsDevice, TransferBufferUsage.Upload, idxCount);
-        var idxSpan = idxTransfer.Map<int>(false);
-        _lineIndices.AsSpan(0, (int)idxCount).CopyTo(idxSpan);
-        idxTransfer.Unmap();
-
-        copyPass.UploadToBuffer<LineMesh.LineMeshVertexAttribute>(vtxTransfer, _vertexBuffer, 0, 0, (uint)_vertexCount, true);
-        copyPass.UploadToBuffer<int>(idxTransfer, _indexBuffer, 0, 0, idxCount, true);
     }
 
     public void Render(Camera camera)

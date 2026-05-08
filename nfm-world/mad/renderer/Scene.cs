@@ -57,16 +57,8 @@ public class Scene
             }
         }
 
-        // Upload instance data that changed via CopyPass
-        var copyPass = cmd.BeginCopyPass();
-        _renderDataCache.PrepareAndUpload(copyPass);
-
-        // Gather and flush all per-frame buffer uploads in one CopyPass
-        foreach (var obj in Objects)
-        {
-            obj.UploadBuffers(copyPass);
-        }
-        cmd.EndCopyPass(copyPass);
+        // Upload changed instance data
+        _renderDataCache.PrepareAndUpload();
 
         // ── Shadow map passes ───────────────────────────────────────
         if (useShadowMapping)
@@ -145,14 +137,11 @@ public class Scene
             public List<RenderData> RenderData = renderData;
             public List<RenderData> OldRenderData = [];
             public GpuBuffer? GpuBuffer = null;
-            public TransferBuffer? TransferBuffer = null;
             public int BufferCapacity = 0;
             public int HashCode = 0;
-            public bool NeedsUpload = false;
         }
 
         private SortedDictionary<int, Dictionary<IInstancedRenderElement, CachedRenderData>> _cache = new();
-        private List<CachedRenderData> _entriesToUpload = new();
 
         ~RenderDataCache()
         {
@@ -160,7 +149,6 @@ public class Scene
             foreach (var (_, data) in innerCache)
             {
                 data.GpuBuffer?.Dispose();
-                data.TransferBuffer?.Dispose();
             }
         }
 
@@ -209,7 +197,6 @@ public class Scene
                     if (innerCache.TryGetValue(element, out var data))
                     {
                         data.GpuBuffer?.Dispose();
-                        data.TransferBuffer?.Dispose();
                         innerCache.Remove(element);
                     }
                 }
@@ -236,12 +223,10 @@ public class Scene
 
         /// <summary>
         /// Prepare instance data for upload: check for changes, create/resize GPU buffers,
-        /// map and fill transfer buffers, then upload all changed data via a single CopyPass.
+        /// map and fill transfer buffers, then upload via ResourceUploader.
         /// </summary>
-        public void PrepareAndUpload(CopyPass copyPass)
+        public void PrepareAndUpload()
         {
-            _entriesToUpload.Clear();
-
             foreach (var (renderOrder, innerCache) in _cache)
             foreach (var (renderElement, cachedRenderData) in innerCache)
             {
@@ -260,46 +245,28 @@ public class Scene
                         oldHashCode))
                 {
                     // Resize buffers if needed
+                    Span<InstanceData> data;
                     if (cachedRenderData.GpuBuffer == null || cachedRenderData.BufferCapacity < instances.Count)
                     {
                         cachedRenderData.GpuBuffer?.Dispose();
-                        cachedRenderData.TransferBuffer?.Dispose();
                         cachedRenderData.BufferCapacity = instances.Count;
-                        cachedRenderData.GpuBuffer = GpuBuffer.Create<InstanceData>(
-                            graphicsDevice, BufferUsageFlags.Vertex, (uint)instances.Count);
-                        cachedRenderData.TransferBuffer = TransferBuffer.Create<InstanceData>(
-                            graphicsDevice, TransferBufferUsage.Upload, (uint)instances.Count);
+                        cachedRenderData.GpuBuffer = WorldGame.ResourceUploader.CreateBufferAndMap((uint)instances.Count, BufferUsageFlags.Vertex, out data);
                     }
-
+                    else
+                    {
+                        data = WorldGame.ResourceUploader.MapBufferData<InstanceData>(cachedRenderData.GpuBuffer, 0, (uint)instances.Count, true);
+                    }
+                    
                     // Fill transfer buffer
-                    var span = cachedRenderData.TransferBuffer.Map<InstanceData>(false);
                     for (var i = 0; i < instances.Count; i++)
                     {
-                        span[i] = instances[i].ToInstanceData();
+                        data[i] = instances[i].ToInstanceData();
                     }
-                    cachedRenderData.TransferBuffer.Unmap();
 
-                    cachedRenderData.NeedsUpload = true;
                     cachedRenderData.HashCode = currentHashCode;
                     
                     CollectionsMarshal.SetCount(oldInstances, instances.Count);
                     CollectionsMarshal.AsSpan(instances).CopyTo(CollectionsMarshal.AsSpan(oldInstances));
-
-                    _entriesToUpload.Add(cachedRenderData);
-                }
-            }
-
-            // Upload all changed instance data in one CopyPass
-            if (_entriesToUpload.Count > 0)
-            {
-                foreach (var entry in _entriesToUpload)
-                {
-                    copyPass.UploadToBuffer<InstanceData>(
-                        entry.TransferBuffer,
-                        entry.GpuBuffer,
-                        0, 0, (uint)entry.RenderData.Count,
-                        true);
-                    entry.NeedsUpload = false;
                 }
             }
         }

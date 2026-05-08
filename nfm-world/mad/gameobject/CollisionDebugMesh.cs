@@ -177,27 +177,16 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
         Dispose(false);
     }
 
-    public override void UploadBuffers(CopyPass copyPass)
-    {
-        base.UploadBuffers(copyPass);
-        if (!GameSparker.devRenderTrackers) return;
-
-        var device = GameSparker._graphicsDevice;
-        using var instTransfer = TransferBuffer.Create<InstanceData>(device, TransferBufferUsage.Upload, 1);
-        var instSpan = instTransfer.Map<InstanceData>(false);
-        instSpan[0] = new InstanceData(MatrixWorld);
-        instTransfer.Unmap();
-
-        copyPass.UploadToBuffer<InstanceData>(instTransfer, _lineInstanceBuffer, 0, 0, 1, true);
-    }
-
     public override void Render(Camera camera, Lighting? lighting)
     {
         if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
+        
+        if (!GameSparker.devRenderTrackers) return;
+        
+        WorldGame.ResourceUploader.SetBufferData(_lineInstanceBuffer, 0, new[] { new InstanceData(MatrixWorld) }, true);
 
         var cmd = RenderState.Cmd;
         var pass = RenderState.Pass;
-        if (cmd == null || pass == null) return;
 
         var fog = new FogParams
         {

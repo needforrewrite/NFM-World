@@ -33,17 +33,14 @@ public class FixHoop : StageObjectGameObject
         _graphicsDevice = mesh.GraphicsDevice;
         _vertexBuffer = GpuBuffer.Create<VertexPositionColor>(_graphicsDevice, BufferUsageFlags.Vertex, VertCount);
         _indexBuffer = GpuBuffer.Create<ushort>(_graphicsDevice, BufferUsageFlags.Index, IdxCount);
+
+        MakeElectrifiedMesh();
     }
 
     public bool IsSpecial { get; set; }
 
     private void RenderFixHoop(Camera camera)
     {
-        for (var i = 0; i < 4; i++)
-        {
-            PrepareLine(i);
-        }
-
         // Build WVP matrix
         var world = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
                     Matrix.CreateTranslation((Vector3)Position);
@@ -51,7 +48,6 @@ public class FixHoop : StageObjectGameObject
 
         var cmd = RenderState.Cmd;
         var pass = RenderState.Pass;
-        if (cmd == null || pass == null) return;
 
         cmd.PushVertexUniformData(new BasicEffectVertexUniforms { WorldViewProjection = wvp });
 
@@ -60,25 +56,6 @@ public class FixHoop : StageObjectGameObject
         pass.BindIndexBuffer(new BufferBinding(_indexBuffer, 0), IndexElementSize.Sixteen);
         pass.DrawIndexedPrimitives(IdxCount, 1, 0, 0, 0);
     }
-
-    public override void UploadBuffers(CopyPass copyPass)
-    {
-        base.UploadBuffers(copyPass);
-
-        using var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(_graphicsDevice, TransferBufferUsage.Upload, VertCount);
-        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
-        _vertices.AsSpan().CopyTo(vtxSpan);
-        vtxTransfer.Unmap();
-
-        using var idxTransfer = TransferBuffer.Create<ushort>(_graphicsDevice, TransferBufferUsage.Upload, IdxCount);
-        var idxSpan = idxTransfer.Map<ushort>(false);
-        _indices.AsSpan().CopyTo(idxSpan);
-        idxTransfer.Unmap();
-
-        copyPass.UploadToBuffer<VertexPositionColor>(vtxTransfer, _vertexBuffer, 0, 0, VertCount, true);
-        copyPass.UploadToBuffer<ushort>(idxTransfer, _indexBuffer, 0, 0, IdxCount, true);
-    }
-
     private void PrepareLine(int idx)
     {
         Span<int> x = stackalloc int[8];
@@ -202,6 +179,8 @@ public class FixHoop : StageObjectGameObject
 
     private fix64 _rotAccumulator = 0;
 
+    private int _tick;
+
     public override void GameTick(IStage? stage = null)
     {
         base.GameTick(stage);
@@ -212,5 +191,23 @@ public class FixHoop : StageObjectGameObject
             _rotAccumulator -= 360;
         }
         Rotation = Rotation with { Xy = f64AngleSingle.FromDegrees(Rotation.Xy.Degrees + _rotAccumulator) };
+
+        if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
+        {
+            MakeElectrifiedMesh();
+
+            _tick = 0;
+        }
+    }
+
+    private void MakeElectrifiedMesh()
+    {
+        for (var i = 0; i < 4; i++)
+        {
+            PrepareLine(i);
+        }
+            
+        WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _vertices, true);
+        WorldGame.ResourceUploader.SetBufferData(_indexBuffer, 0, _indices, true);
     }
 }

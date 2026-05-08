@@ -94,7 +94,6 @@ public class GroundPolys : Transform, IImmediateRenderable
 
         var cmd = RenderState.Cmd;
         var pass = RenderState.Pass;
-        if (cmd == null || pass == null) return;
 
         var fog = new FogParams
         {

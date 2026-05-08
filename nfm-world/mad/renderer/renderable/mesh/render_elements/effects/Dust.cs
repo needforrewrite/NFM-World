@@ -89,16 +89,30 @@ public class Dust : IDisposable
         }
     }
 
+    private int _tick;
+
     public void GameTick(IStage? stage)
     {
         _vertexCount = 0;
         _indexCount = 0;
-        for (var dust = 0; dust < 20; dust++)
+
+        if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
         {
-            if (Stg[dust] != 0)
+            for (var dust = 0; dust < 20; dust++)
             {
-                TickDust(stage, dust);
+                if (Stg[dust] != 0)
+                {
+                    TickDust(stage, dust);
+                }
             }
+
+            if (_vertexCount != 0 && _indexCount != 0)
+            {
+                WorldGame.ResourceUploader.SetBufferData(_vertexBuffer, 0, _verts, true);
+                WorldGame.ResourceUploader.SetBufferData(_indexBuffer, 0, _indices, true);
+            }
+
+            _tick = 0;
         }
     }
 
@@ -303,26 +317,6 @@ public class Dust : IDisposable
         {
             Stg[dust]++;
         }
-    }
-
-    public void UploadBuffers(CopyPass copyPass)
-    {
-        if (_vertexCount == 0 || _indexCount == 0) return;
-
-        using var vtxTransfer = TransferBuffer.Create<VertexPositionColor>(
-            _graphicsDevice, TransferBufferUsage.Upload, (uint)_vertexCount);
-        var vtxSpan = vtxTransfer.Map<VertexPositionColor>(false);
-        _verts.AsSpan(0, _vertexCount).CopyTo(vtxSpan);
-        vtxTransfer.Unmap();
-
-        using var idxTransfer = TransferBuffer.Create<int>(
-            _graphicsDevice, TransferBufferUsage.Upload, (uint)_indexCount);
-        var idxSpan = idxTransfer.Map<int>(false);
-        _indices.AsSpan(0, _indexCount).CopyTo(idxSpan);
-        idxTransfer.Unmap();
-
-        copyPass.UploadToBuffer<VertexPositionColor>(vtxTransfer, _vertexBuffer, 0, 0, (uint)_vertexCount, true);
-        copyPass.UploadToBuffer<int>(idxTransfer, _indexBuffer, 0, 0, (uint)_indexCount, true);
     }
 
     public void Render(Camera camera)
