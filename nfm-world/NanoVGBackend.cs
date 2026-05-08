@@ -34,6 +34,16 @@ public class NanoVGRenderer
         IBackend.Backend = _backend;
     }
 
+    /// <summary>
+    /// Ensures the depth-stencil texture exists at the given size and returns it.
+    /// Must be called before Render() to provide the depth-stencil attachment for the render pass.
+    /// </summary>
+    public Texture EnsureDepthStencilTexture(uint width, uint height)
+    {
+        _renderer.EnsureDepthStencilTexture(width, height);
+        return _renderer.DepthStencilTexture;
+    }
+
     public void Render(GpuCommandBuffer commandBuffer, RenderPass renderPass, uint viewportWidth, uint viewportHeight)
     {
         _renderer.SetRenderContext(commandBuffer, renderPass, viewportWidth, viewportHeight);
