@@ -78,7 +78,7 @@ public static class Logging
         if (General.IsEnabled(LogLevel.Information))
         {
             handler.GetTemplateAndArguments(out var template, out var arguments);
-            General.LogTrace(template, arguments);
+            General.LogInformation(template, arguments);
         }
     }
     public static void Warning([InterpolatedStringHandlerArgument] ref StructuredLoggingWarningInterpolatedStringHandler handler)
@@ -86,7 +86,7 @@ public static class Logging
         if (General.IsEnabled(LogLevel.Warning))
         {
             handler.GetTemplateAndArguments(out var template, out var arguments);
-            General.LogTrace(template, arguments);
+            General.LogWarning(template, arguments);
         }
     }
     public static void Error([InterpolatedStringHandlerArgument] ref StructuredLoggingErrorInterpolatedStringHandler handler)
@@ -94,7 +94,7 @@ public static class Logging
         if (General.IsEnabled(LogLevel.Error))
         {
             handler.GetTemplateAndArguments(out var template, out var arguments);
-            General.LogTrace(template, arguments);
+            General.LogError(template, arguments);
         }
     }
     public static void Debug([InterpolatedStringHandlerArgument] ref StructuredLoggingDebugInterpolatedStringHandler handler)
@@ -102,7 +102,7 @@ public static class Logging
         if (General.IsEnabled(LogLevel.Debug))
         {
             handler.GetTemplateAndArguments(out var template, out var arguments);
-            General.LogTrace(template, arguments);
+            General.LogDebug(template, arguments);
         }
     }
     
