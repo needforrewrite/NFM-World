@@ -558,12 +558,11 @@ public class WorldGame : Game
         
         _nvg.Render();
 
-        GameSparker.CurrentPhase.Render3DOverlays();
+        GameSparker.Render3DOverlays();
         
         // // Render ImGui
         _imguiRenderer.BeginLayout(gameTime);
         GameSparker.RenderImgui();
-        GameSparker.CurrentPhase.RenderImgui();
         _imguiRenderer.EndLayout();
         
         base.Draw(gameTime);

@@ -247,11 +247,17 @@ public class GameSparker
     {
     }
 
+    public static void Render3DOverlays()
+    {
+        CurrentPhase.Render3DOverlays();
+    }
+
     public static void RenderImgui()
     {
         devConsole.Render();
         MessageWindow.Render();
         SettingsMenu.Render();
+        CurrentPhase.RenderImgui();
     }
 
     public static void WindowSizeChanged(int width, int height)
