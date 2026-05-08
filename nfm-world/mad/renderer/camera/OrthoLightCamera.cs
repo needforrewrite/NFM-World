@@ -2,33 +2,34 @@
 
 public class OrthoLightCamera : OrthoCamera
 {
+    /// <summary>
+    /// Shadow map resolution used for texel snapping. Must match the actual
+    /// shadow render target size (see WorldGame.LoadShadowTargets).
+    /// </summary>
+    private const int ShadowMapSize = 2048;
+
     public override void OnBeforeRender()
     {
         ProjectionMatrix = Matrix.CreateOrthographic(Width, Height, Near, Far);
         ViewMatrix = Matrix.CreateLookAt(Position, LookAt, Up);
-        
-        // Calculate world units per texel
-        float shadowMapSize = 2048f;
-        float texelSize = Width / shadowMapSize;
 
-        // Get light's world position in light view space
-        Matrix lightView = ViewMatrix;
-        Vector3 shadowOrigin = Vector3.Transform(Vector3.Zero, lightView);
+        // Snap the light camera to shadow map texel boundaries to prevent
+        // shadow "swimming" / shimmer when the main camera moves.
+        // For an orthographic projection, each texel covers a fixed world-space size.
+        float texelSizeX = (float)Width / ShadowMapSize;
+        float texelSizeY = (float)Height / ShadowMapSize;
 
-        // Snap to texel grid in light view space
-        shadowOrigin.X = MathF.Round(shadowOrigin.X / texelSize) * texelSize;
-        shadowOrigin.Y = MathF.Round(shadowOrigin.Y / texelSize) * texelSize;
+        // Transform the origin into light view space to find the current sub-texel offset
+        Vector3 originInView = Vector3.Transform(Vector3.Zero, ViewMatrix);
 
-        // Calculate rounding offset
-        Vector3 roundOffset = shadowOrigin - Vector3.Transform(Vector3.Zero, lightView);
+        // Round to texel boundaries
+        float snappedX = MathF.Floor(originInView.X / texelSizeX) * texelSizeX;
+        float snappedY = MathF.Floor(originInView.Y / texelSizeY) * texelSizeY;
+        float offsetX = snappedX - originInView.X;
+        float offsetY = snappedY - originInView.Y;
 
-        // Apply offset by adjusting the view matrix translation
-        var viewMatrix = ViewMatrix;
-        viewMatrix.M41 += roundOffset.X;
-        viewMatrix.M42 += roundOffset.Y;
-        viewMatrix.M43 += roundOffset.Z;
-        ViewMatrix = viewMatrix;
-
+        // Apply the rounding as a translation in view space (before projection)
+        ViewMatrix = ViewMatrix * Matrix.CreateTranslation(offsetX, offsetY, 0);
         ViewProjectionMatrix = ViewMatrix * ProjectionMatrix;
     }
 }

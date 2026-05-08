@@ -37,7 +37,7 @@ public struct ShadowParams
     public Matrix LightViewProj1;   // offset  64
     public Matrix LightViewProj2;   // offset 128
     public float  DepthBias;        // offset 192
-    private Vector3 _shadowPad;     // offset 196 — pad to 208
+    public Vector3 LightDirection;   // offset 196 — light dir for parallel-surface check
 }
 
 // ─── Poly shader uniforms ───────────────────────────────────────────────────

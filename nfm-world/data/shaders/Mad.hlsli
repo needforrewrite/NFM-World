@@ -26,7 +26,7 @@ struct ShadowParams
     float4x4 LightViewProj1;   // offset  64 (64 bytes)
     float4x4 LightViewProj2;   // offset 128 (64 bytes)
     float    DepthBias;         // offset 192 (4 bytes)
-    float3   _shadowPad;        // offset 196 (12 bytes) — completes row
+    float3   LightDirection;    // offset 196 (12 bytes) — completes row
 };                              // total: 208 bytes (13 × float4)
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -173,7 +173,15 @@ void applyShadowingSingle(
         lightingPosition.z > 0.0)
     {
         float shadowdepth = shadowMap.Sample(shadowSampler, shadowTexCoord).r;
-        float ourdepth = (lightingPosition.z / lightingPosition.w) - depthBias;
+        float ourdepth = lightingPosition.z / lightingPosition.w;
+
+        // Slope-scaled bias from light-space depth derivatives
+        float dzdx = ddx(ourdepth);
+        float dzdy = ddy(ourdepth);
+        float slopeFactor = sqrt(dzdx * dzdx + dzdy * dzdy);
+        float bias = depthBias + clamp(slopeFactor * 2.0, 0.0, 0.05);
+
+        ourdepth -= bias;
 
         if (shadowdepth < ourdepth)
         {
@@ -195,6 +203,26 @@ void PS_ApplyShadowing(
     in Texture2D shadowMap1, in SamplerState shadowSampler1,
     in Texture2D shadowMap2, in SamplerState shadowSampler2)
 {
+    // Reconstruct the face normal from world-position screen-space derivatives.
+    // This gives us the geometric surface orientation without needing the
+    // vertex normal (which isn't available in the fragment shader).
+    float3 dpdx = ddx(worldPos.xyz);
+    float3 dpdy = ddy(worldPos.xyz);
+    float3 faceNormal = normalize(cross(dpdx, dpdy));
+
+    // How much does this surface face the light?
+    // LightDirection points TOWARD the light (e.g. (0,1,0) = light above).
+    // A dot product near 0 means the surface is parallel to the light rays
+    // — these are the surfaces that flicker. Skip shadowing for them.
+    float NdotL = abs(dot(faceNormal, shadow.LightDirection));
+
+    // Threshold below which we consider the surface too parallel to shadow reliably.
+    // 0.1 ≈ surfaces within ~84° of the light direction are excluded.
+    if (NdotL < 0.05)
+    {
+        return; // No shadow — surface is parallel to the light
+    }
+
     bool isInLight0 = false;
     applyShadowingSingle(diffuse, worldPos, shadow.LightViewProj0, shadowMap0, shadowSampler0, shadow.DepthBias, isInLight0);
 

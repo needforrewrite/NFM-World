@@ -149,7 +149,9 @@ sampler ShadowMapSampler2 = sampler_state
     AddressU = Clamp;
     AddressV = Clamp;
 };
-float DepthBias = 0.25f;
+float ShadowBiasMin = 0.0005f;
+float ShadowBiasMax = 0.005f;
+float3 ShadowLightDirection;
 
 void applyShadowingSingle(
     inout float3 diffuse,
@@ -175,10 +177,19 @@ void applyShadowingSingle(
         // Get the current depth stored in the shadow map
         float shadowdepth = tex2D(shadowMapSampler, shadowTexCoord).r;
 
-        // Calculate the current pixel depth
-        // The bias is used to prevent floating point errors that occur when
-        // the pixel of the occluder is being drawn
-        float ourdepth = (lightingPosition.z / lightingPosition.w) - DepthBias;
+        // Calculate the current pixel depth with slope-scaled bias.
+        // Surfaces nearly parallel to light rays need much more bias to
+        // avoid self-shadowing (shadow acne), especially with two-sided geometry.
+        float ourdepth = lightingPosition.z / lightingPosition.w;
+
+        // Compute slope-scaled bias from screen-space depth derivatives
+        float2 texelSize = float2(1.0 / 2048.0, 1.0 / 2048.0);
+        float dzdx = ddx(ourdepth);
+        float dzdy = ddy(ourdepth);
+        float slopeBias = sqrt(dzdx * dzdx + dzdy * dzdy);
+        float bias = ShadowBiasMin + clamp(slopeBias, 0.0, ShadowBiasMax);
+
+        ourdepth -= bias;
 
         // Check to see if this pixel is in front or behind the value in the shadow map
         if (shadowdepth < ourdepth)
@@ -198,6 +209,18 @@ void PS_ApplyShadowing(
     in float4 worldPos
 )
 {
+    // Reconstruct face normal from world-position screen-space derivatives
+    float3 dpdx = ddx(worldPos.xyz);
+    float3 dpdy = ddy(worldPos.xyz);
+    float3 faceNormal = normalize(cross(dpdx, dpdy));
+
+    // Skip shadowing for surfaces parallel to the light direction
+    float NdotL = abs(dot(faceNormal, ShadowLightDirection));
+    if (NdotL < 0.1)
+    {
+        return;
+    }
+
     bool isInLight0 = false;
     applyShadowingSingle(diffuse, worldPos, LightViewProj0, ShadowMapSampler0, isInLight0);
 

@@ -1,6 +1,7 @@
 using nfm_world.compat;
 using MoonWorks.Graphics;
 using nfm_world.camera;
+using nfm_world_library.mad;
 
 namespace nfm_world;
 
@@ -30,7 +31,11 @@ public class Lighting
     /// </summary>
     public ShadowParams ToShadowParams(float depthBias = 0.00005f)
     {
-        var sp = new ShadowParams { DepthBias = depthBias };
+        var sp = new ShadowParams
+        {
+            DepthBias = depthBias,
+            LightDirection = World.LightDirection
+        };
         if (LightCameras.Length > 0) sp.LightViewProj0 = LightCameras[0].ViewProjectionMatrix;
         if (LightCameras.Length > 1) sp.LightViewProj1 = LightCameras[1].ViewProjectionMatrix;
         if (LightCameras.Length > 2) sp.LightViewProj2 = LightCameras[2].ViewProjectionMatrix;
