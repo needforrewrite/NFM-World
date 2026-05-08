@@ -562,6 +562,9 @@ public class WorldGame : MoonWorks.Game
         {
             // Begin overlay render pass for 2D (NVG + ImGui).
             // Use LoadOp.Load to preserve any 3D content already rendered to backbuffer.
+            // Include depth-stencil for NVG stencil fill operations.
+            var overlayDepthStencil = _nvg.EnsureDepthStencilTexture(MainWindow.Width, MainWindow.Height);
+
             var colorTarget = new ColorTargetInfo
             {
                 Texture = backbuffer,
@@ -569,19 +572,43 @@ public class WorldGame : MoonWorks.Game
                 StoreOp = StoreOp.Store,
             };
 
-            var renderPass = renderCmd.BeginRenderPass(colorTarget);
+            var depthStencilTarget = new DepthStencilTargetInfo
+            {
+                Texture = overlayDepthStencil,
+                LoadOp = LoadOp.Clear,
+                StoreOp = StoreOp.DontCare,
+                StencilLoadOp = LoadOp.Clear,
+                StencilStoreOp = StoreOp.DontCare,
+                ClearDepth = 1.0f,
+                ClearStencil = 0
+            };
+
+            var renderPass = renderCmd.BeginRenderPass(depthStencilTarget, colorTarget);
 
             // NVG flush into this render pass
             _nvg.Render(renderCmd, renderPass, MainWindow.Width, MainWindow.Height);
 
             GameSparker.Render3DOverlays();
+            
+            renderCmd.EndRenderPass(renderPass);
+        }
+
+        {
+            var colorTarget = new ColorTargetInfo
+            {
+                Texture = backbuffer,
+                LoadOp = LoadOp.Load,
+                StoreOp = StoreOp.Store,
+            };
+            
+            var renderPass = renderCmd.BeginRenderPass(colorTarget);
 
             // ImGui render
             float deltaTime = (float)(1.0 / 60.0); // TODO: track actual delta
             _imguiRenderer.BeginLayout(deltaTime, Inputs, MainWindow.Width, MainWindow.Height);
             GameSparker.RenderImgui();
             _imguiRenderer.EndLayout(renderCmd, renderPass);
-
+            
             renderCmd.EndRenderPass(renderPass);
         }
 
