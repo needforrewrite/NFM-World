@@ -7,7 +7,6 @@ public class Ground : Transform, IImmediateRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;
-    private readonly Effect _material;
     private readonly int _triangleCount;
 
     public override IReadOnlyList<ITransform> ChildTransforms => [];
@@ -35,8 +34,6 @@ public class Ground : Transform, IImmediateRenderable
         };
         _vertexBuffer.SetDataEXT(data);
         _triangleCount = data.Length / 3;
-
-        _material = WorldGame._groundShader;
     }
     
     ~Ground()
@@ -50,17 +47,17 @@ public class Ground : Transform, IImmediateRenderable
 
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        _material.Parameters["WorldView"]?.SetValue(camera.ViewMatrix);
-        _material.Parameters["WorldViewProj"]?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
+        Effects.Ground.Parameters["WorldView"]?.SetValue(camera.ViewMatrix);
+        Effects.Ground.Parameters["WorldViewProj"]?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         
-        _material.Parameters["DepthBias"]?.SetValue(0.00005f);
-        _material.Parameters["FogColor"]?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
-        _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
+        Effects.Ground.Parameters["DepthBias"]?.SetValue(0.00005f);
+        Effects.Ground.Parameters["FogColor"]?.SetValue((Vector3)World.Fog.Snap(World.Snap));
+        Effects.Ground.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
+        Effects.Ground.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
         
-        lighting?.SetShadowMapParameters(_material);
+        lighting?.SetShadowMapParameters(Effects.Ground);
         
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        foreach (var pass in Effects.Ground.CurrentTechnique.Passes)
         {
             pass.Apply();
     

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 
@@ -7,7 +6,6 @@ namespace NFMWorld;
 
 public class Submesh : IInstancedRenderElement, IDisposable
 {
-    private readonly PolyEffect _material = new(WorldGame._polyShader);
     public readonly PolyType PolyType;
     
     private readonly VertexBuffer _vertexBuffer;
@@ -57,44 +55,44 @@ public class Submesh : IInstancedRenderElement, IDisposable
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
         
         // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.SnapColor?.SetValue((Vector3)World.Snap);
-        _material.IsFullbright?.SetValue((PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn));
-        _material.UseBaseColor?.SetValue(PolyType is PolyType.Glass);
-        _material.BaseColor?.SetValue((Vector3)World.Sky);
-        _material.LightDirection?.SetValue(World.LightDirection);
-        _material.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.FogDistance?.SetValue(World.FadeFrom);
-        _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
-        _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00005f);
-        _material.Alpha?.SetValue(PolyType is PolyType.Glass ? 0.7f : 1f);
+        Effects.Poly.SnapColor?.SetValue((Vector3)World.Snap);
+        Effects.Poly.IsFullbright?.SetValue((PolyType is PolyType.BrakeLight or PolyType.Light or PolyType.ReverseLight && World.LightsOn));
+        Effects.Poly.UseBaseColor?.SetValue(PolyType is PolyType.Glass);
+        Effects.Poly.BaseColor?.SetValue((Vector3)World.Sky);
+        Effects.Poly.LightDirection?.SetValue(World.LightDirection);
+        Effects.Poly.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
+        Effects.Poly.FogDistance?.SetValue(World.FadeFrom);
+        Effects.Poly.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
+        Effects.Poly.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
+        Effects.Poly.DepthBias?.SetValue(0.00005f);
+        Effects.Poly.Alpha?.SetValue(PolyType is PolyType.Glass ? 0.7f : 1f);
 
         _graphicsDevice.BlendState = BlendState.NonPremultiplied;
 
         if (lighting?.IsCreateShadowMap == true)
         {
-            _material.View?.SetValue(lighting.CascadeLightCamera.ViewMatrix);
-            _material.Projection?.SetValue(lighting.CascadeLightCamera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position);
-            _material.ViewProj?.SetValue(lighting.CascadeLightCamera.ViewMatrix * lighting.CascadeLightCamera.ProjectionMatrix);
+            Effects.Poly.View?.SetValue(lighting.CascadeLightCamera.ViewMatrix);
+            Effects.Poly.Projection?.SetValue(lighting.CascadeLightCamera.ProjectionMatrix);
+            Effects.Poly.CameraPosition?.SetValue(lighting.CascadeLightCamera.Position);
+            Effects.Poly.ViewProj?.SetValue(lighting.CascadeLightCamera.ViewMatrix * lighting.CascadeLightCamera.ProjectionMatrix);
         }
         else
         {
-            _material.View?.SetValue(camera.ViewMatrix);
-            _material.Projection?.SetValue(camera.ProjectionMatrix);
-            _material.CameraPosition?.SetValue(camera.Position);
-            _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
+            Effects.Poly.View?.SetValue(camera.ViewMatrix);
+            Effects.Poly.Projection?.SetValue(camera.ProjectionMatrix);
+            Effects.Poly.CameraPosition?.SetValue(camera.Position);
+            Effects.Poly.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         }
 
-        _material.CurrentTechnique = lighting?.IsCreateShadowMap == true ? _material.Techniques["CreateShadowMap"] : _material.Techniques["Basic"];
+        Effects.Poly.CurrentTechnique = lighting?.IsCreateShadowMap == true ? Effects.Poly.Techniques["CreateShadowMap"] : Effects.Poly.Techniques["Basic"];
         
-        lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
+        lighting?.SetShadowMapParameters(Effects.Poly.UnderlyingEffect);
 
-        _material.Expand?.SetValue(_supermesh.Expand);
-        _material.Darken?.SetValue(_supermesh.Darken);
-        _material.RandomFloat?.SetValue(URandom.Single());
+        Effects.Poly.Expand?.SetValue(_supermesh.Expand);
+        Effects.Poly.Darken?.SetValue(_supermesh.Darken);
+        Effects.Poly.RandomFloat?.SetValue(URandom.Single());
         
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        foreach (var pass in Effects.Poly.CurrentTechnique.Passes)
         {
             pass.Apply();
     

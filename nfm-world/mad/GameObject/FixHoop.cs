@@ -15,21 +15,12 @@ public class FixHoop : StageObjectGameObject
     private readonly int[] _edr = new int[CntLines];
     private readonly int[] _elc = new int[CntLines];
 
-    private BasicEffect _fixhoopEffect;
-
     private VertexPositionColor[] _vertices = new VertexPositionColor[8*CntLines];
     private short[] _indices = new short[18*CntLines];
 
     public FixHoop(Mesh mesh, StageObject obj) : base(mesh, obj)
     {
         _graphicsDevice = mesh.GraphicsDevice;
-        _fixhoopEffect = new BasicEffect(_graphicsDevice)
-        {
-            Name = "FixHoop Electricity Effect",
-            LightingEnabled = false,
-            TextureEnabled = false,
-            VertexColorEnabled = true
-        };
 
         MakeElectrifiedMesh();
     }
@@ -38,13 +29,13 @@ public class FixHoop : StageObjectGameObject
 
     private void RenderFixHoop(Camera.Camera camera)
     {
-        _fixhoopEffect.World = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
+        Effects.FixHoop.World = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
                                Matrix.CreateTranslation((Vector3)Position);
-        _fixhoopEffect.View = camera.ViewMatrix;
-        _fixhoopEffect.Projection = camera.ProjectionMatrix;
+        Effects.FixHoop.View = camera.ViewMatrix;
+        Effects.FixHoop.Projection = camera.ProjectionMatrix;
         
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        foreach (var pass in _fixhoopEffect.CurrentTechnique.Passes)
+        foreach (var pass in Effects.FixHoop.CurrentTechnique.Passes)
         {
             pass.Apply();
 

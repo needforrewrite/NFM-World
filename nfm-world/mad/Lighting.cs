@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace NFMWorld;
 
@@ -6,7 +7,9 @@ public class Lighting
 {
     public Camera.Camera[] LightCameras;
     public RenderTarget2D[] ShadowMaps;
-    public bool IsCreateShadowMap;
+    
+    [MemberNotNullWhen(true, nameof(CascadeLightCamera))]
+    public bool IsCreateShadowMap { get; }
     public int NumCascade;
 
     public Lighting(Camera.Camera[] lightCameras, RenderTarget2D[] shadowMaps, bool isCreateShadowMap = false, int numCascade = -1)
@@ -18,6 +21,10 @@ public class Lighting
         if (numCascade != -1)
         {
             CascadeLightCamera = LightCameras[numCascade];
+        }
+        else if (isCreateShadowMap)
+        {
+            throw new InvalidOperationException($"{nameof(numCascade)} must be set if {nameof(isCreateShadowMap)} is set to true");
         }
     }
 

@@ -4,7 +4,7 @@ using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorld;
 
-public class Dust : IDisposable
+public class Dust
 {
     private readonly ClientCar _car;
     private readonly GraphicsDevice _graphicsDevice;
@@ -25,19 +25,11 @@ public class Dust : IDisposable
     private int _vertexCount;
     private int[] _indices = new int[20 * 8 * 3];
     private int _indexCount;
-    private readonly BasicEffect _effect;
 
     public Dust(ClientCar car, GraphicsDevice graphicsDevice)
     {
         _car = car;
         _graphicsDevice = graphicsDevice;
-
-        _effect = new BasicEffect(graphicsDevice)
-        {
-            LightingEnabled = false,
-            TextureEnabled = false,
-            VertexColorEnabled = true
-        };
     }
     
     public void AddDust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
@@ -310,14 +302,14 @@ public class Dust : IDisposable
             return;
         }
         
-        _effect.World = Matrix.Identity;
-        _effect.View = camera.ViewMatrix;
-        _effect.Projection = camera.ProjectionMatrix;
+        Effects.Dust.World = Matrix.Identity;
+        Effects.Dust.View = camera.ViewMatrix;
+        Effects.Dust.Projection = camera.ProjectionMatrix;
         
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
         _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
         _graphicsDevice.BlendState = BlendState.NonPremultiplied;
-        foreach (var pass in _effect.CurrentTechnique.Passes)
+        foreach (var pass in Effects.Dust.CurrentTechnique.Passes)
         {
             pass.Apply();
 
@@ -335,26 +327,5 @@ public class Dust : IDisposable
         _graphicsDevice.DepthStencilState = DepthStencilState.Default;
         _graphicsDevice.BlendState = BlendState.Opaque;
         _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
-    }
-
-    private void ReleaseUnmanagedResources()
-    {
-        _effect.Dispose();
-    }
-
-    private void Dispose(bool disposing)
-    {
-        ReleaseUnmanagedResources();
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    ~Dust()
-    {
-        Dispose(false);
     }
 }

@@ -25,12 +25,6 @@ namespace NFMWorld;
 public class WorldGame : Game
 {
     public GraphicsDeviceManager _graphics;
-    public static SpriteBatch _spriteBatch { get; private set; }
-    public static Effect _polyShader { get; private set; }
-    public static Effect _lineShader { get; private set; }
-    public static Effect _skyShader { get; private set; }
-    public static Effect _groundShader { get; private set; }
-    public static Effect _mountainsShader { get; private set; }
     public static RenderTarget2D[] shadowRenderTargets { get; private set; }
     private ImGuiRenderer _imguiRenderer;
     public static ImGuiRenderer ImguiRenderer { get; private set; }
@@ -310,6 +304,8 @@ public class WorldGame : Game
         GraphicsDevice.PresentationParameters.MultiSampleCount = 8;
         
         base.Initialize();
+
+        Effects.Initialize(GraphicsDevice);
     }
 
     protected override void Dispose(bool disposing)
@@ -328,12 +324,6 @@ public class WorldGame : Game
 
     protected override void LoadContent()
     {
-        _polyShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Poly.fxb"));
-        _lineShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Line.fxb"));
-        _skyShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Sky.fxb"));
-        _groundShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Ground.fxb"));
-        _mountainsShader = new Effect(GraphicsDevice, VFS.ReadAllBytes("./data/shaders/Mountains.fxb"));
-        
         GameSparker.Load(this);
 
         // Create floating point render target
@@ -355,7 +345,7 @@ public class WorldGame : Game
         for (int i = 0; i < NumCascades; i++)
         {
             GraphicsDevice.SetRenderTarget(shadowRenderTargets[i]);
-            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Microsoft.Xna.Framework.Color.White, 1.0f, 0);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.White, 1.0f, 0);
             GraphicsDevice.SetRenderTarget(null);
         }
         

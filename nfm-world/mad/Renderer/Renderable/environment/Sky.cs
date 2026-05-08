@@ -7,7 +7,6 @@ public class Sky : Transform, IImmediateRenderable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;
-    private readonly Effect _material;
     private readonly int _triangleCount;
     
     public override IReadOnlyList<ITransform> ChildTransforms => [];
@@ -60,8 +59,6 @@ public class Sky : Transform, IImmediateRenderable
         vertexBuffer.SetDataEXT(data);
         _vertexBuffer = vertexBuffer;
 
-        _material = WorldGame._skyShader;
-        
         _triangleCount = data.Count / 3;
         return;
 
@@ -104,8 +101,8 @@ public class Sky : Transform, IImmediateRenderable
         
         var viewMatrix = Matrix.CreateFromQuaternion(combinedRotation);
         
-        _material.Parameters["WorldViewProj"]?.SetValue(viewMatrix * camera.ProjectionMatrix);
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        Effects.Sky.Parameters["WorldViewProj"]?.SetValue(viewMatrix * camera.ProjectionMatrix);
+        foreach (var pass in Effects.Sky.CurrentTechnique.Passes)
         {
             pass.Apply();
     

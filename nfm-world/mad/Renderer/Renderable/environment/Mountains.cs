@@ -9,7 +9,6 @@ public class Mountains : Transform, IImmediateRenderable
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _vertexBuffer;
     private readonly IndexBuffer _indexBuffer;
-    private readonly Effect _material;
     private readonly int _triangleCount;
     private readonly int _vertexCount;
 
@@ -62,8 +61,6 @@ public class Mountains : Transform, IImmediateRenderable
         _indexBuffer.SetDataEXT(indices);
         _triangleCount = indices.Count / 3;
         _vertexCount = data.Count;
-
-        _material = WorldGame._mountainsShader;
     }
 
     ~Mountains()
@@ -79,16 +76,16 @@ public class Mountains : Transform, IImmediateRenderable
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.Indices = _indexBuffer;
         _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        _material.Parameters["WorldView"]?.SetValue(camera.ViewMatrix);
-        _material.Parameters["WorldViewProj"]?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
+        Effects.Mountains.Parameters["WorldView"]?.SetValue(camera.ViewMatrix);
+        Effects.Mountains.Parameters["WorldViewProj"]?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
         
-        _material.Parameters["DepthBias"]?.SetValue(0.00005f);
-        _material.Parameters["FogColor"]?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
-        _material.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
+        Effects.Mountains.Parameters["DepthBias"]?.SetValue(0.00005f);
+        Effects.Mountains.Parameters["FogColor"]?.SetValue((Vector3)World.Fog.Snap(World.Snap));
+        Effects.Mountains.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
+        Effects.Mountains.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
 
-        lighting?.SetShadowMapParameters(_material);
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        lighting?.SetShadowMapParameters(Effects.Mountains);
+        foreach (var pass in Effects.Mountains.CurrentTechnique.Passes)
         {
             pass.Apply();
     

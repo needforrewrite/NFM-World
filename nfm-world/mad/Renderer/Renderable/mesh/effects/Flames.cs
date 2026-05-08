@@ -3,7 +3,7 @@ using NFMWorldLibrary;
 
 namespace NFMWorld;
 
-public class Flames : IDisposable
+public class Flames
 {
     private int _embos;
     private readonly ClientCar _car;
@@ -11,7 +11,6 @@ public class Flames : IDisposable
     private int[] _pa, _pb;
 
     private VertexPositionColor[] _triangles;
-    private readonly BasicEffect _flameEffect;
 
     private int _tick;
 
@@ -22,12 +21,6 @@ public class Flames : IDisposable
         _pa = new int[car.Mesh.Polys.Length];
         _pb = new int[car.Mesh.Polys.Length];
         
-        _flameEffect = new BasicEffect(graphicsDevice)
-        {
-            LightingEnabled = false,
-            TextureEnabled = false,
-            VertexColorEnabled = true
-        };
         _triangles = new VertexPositionColor[9 * car.Mesh.Polys.Length];
     }
 
@@ -291,12 +284,12 @@ public class Flames : IDisposable
             }
             
             
-            _flameEffect.World = _car.MatrixWorld;
-            _flameEffect.View = camera.ViewMatrix;
-            _flameEffect.Projection = camera.ProjectionMatrix;
+            Effects.Flame.World = _car.MatrixWorld;
+            Effects.Flame.View = camera.ViewMatrix;
+            Effects.Flame.Projection = camera.ProjectionMatrix;
         
             _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-            foreach (var pass in _flameEffect.CurrentTechnique.Passes)
+            foreach (var pass in Effects.Flame.CurrentTechnique.Passes)
             {
                 pass.Apply();
 
@@ -310,26 +303,5 @@ public class Flames : IDisposable
             }
             _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
         }
-    }
-
-    private void ReleaseUnmanagedResources()
-    {
-        _flameEffect.Dispose();
-    }
-
-    private void Dispose(bool disposing)
-    {
-        ReleaseUnmanagedResources();
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    ~Flames()
-    {
-        Dispose(false);
     }
 }

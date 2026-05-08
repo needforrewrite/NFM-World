@@ -1,6 +1,5 @@
 ﻿using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 
@@ -8,7 +7,6 @@ namespace NFMWorld;
 
 public class LineMesh : IInstancedRenderElement, IDisposable
 {
-    private readonly LineEffect _material = new(WorldGame._lineShader);
     private readonly Mesh _supermesh;
     private readonly GraphicsDevice _graphicsDevice;
     private readonly VertexBuffer _lineVertexBuffer;
@@ -90,39 +88,39 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
 
         // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.SnapColor?.SetValue((Vector3)World.Snap);
-        _material.IsFullbright?.SetValue(false);
-        _material.UseBaseColor?.SetValue(false);
-        _material.BaseColor?.SetValue(new Vector3(0, 0, 0));
-        _material.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
-        _material.HalfThickness?.SetValue(World.OutlineThickness);
+        Effects.Line.SnapColor?.SetValue((Vector3)World.Snap);
+        Effects.Line.IsFullbright?.SetValue(false);
+        Effects.Line.UseBaseColor?.SetValue(false);
+        Effects.Line.BaseColor?.SetValue(new Vector3(0, 0, 0));
+        Effects.Line.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
+        Effects.Line.HalfThickness?.SetValue(World.OutlineThickness);
 
-        _material.LightDirection?.SetValue(World.LightDirection);
-        _material.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.FogDistance?.SetValue(World.FadeFrom);
-        _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
-        _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00005f);
+        Effects.Line.LightDirection?.SetValue(World.LightDirection);
+        Effects.Line.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
+        Effects.Line.FogDistance?.SetValue(World.FadeFrom);
+        Effects.Line.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
+        Effects.Line.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
+        Effects.Line.DepthBias?.SetValue(0.00005f);
 
-        _material.View?.SetValue(camera.ViewMatrix);
-        _material.Projection?.SetValue(camera.ProjectionMatrix);
-        _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        _material.CameraPosition?.SetValue(camera.Position);
+        Effects.Line.View?.SetValue(camera.ViewMatrix);
+        Effects.Line.Projection?.SetValue(camera.ProjectionMatrix);
+        Effects.Line.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
+        Effects.Line.CameraPosition?.SetValue(camera.Position);
 
-        _material.CurrentTechnique = _material.Techniques["Basic"];
+        Effects.Line.CurrentTechnique = Effects.Line.Techniques["Basic"];
 
-        _material.Expand?.SetValue(_supermesh.Expand);
-        _material.Darken?.SetValue(_supermesh.Darken);
-        _material.RandomFloat?.SetValue(URandom.Single());
-        _material.Alpha?.SetValue(1.0f);
+        Effects.Line.Expand?.SetValue(_supermesh.Expand);
+        Effects.Line.Darken?.SetValue(_supermesh.Darken);
+        Effects.Line.RandomFloat?.SetValue(URandom.Single());
+        Effects.Line.Alpha?.SetValue(1.0f);
 
-        _material.Resolution?.SetValue(new Vector2(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height));
+        Effects.Line.Resolution?.SetValue(new Vector2(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height));
 
-        lighting?.SetShadowMapParameters(_material.UnderlyingEffect);
+        lighting?.SetShadowMapParameters(Effects.Line.UnderlyingEffect);
         
         _graphicsDevice.BlendState = BlendState.NonPremultiplied;
 
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        foreach (var pass in Effects.Line.CurrentTechnique.Passes)
         {
             pass.Apply();
 

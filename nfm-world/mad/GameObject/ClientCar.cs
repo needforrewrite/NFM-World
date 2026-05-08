@@ -207,9 +207,6 @@ public class ClientCar : MeshedGameObject, ICar, IDisposable
         ReleaseUnmanagedResources();
         if (disposing)
         {
-            Flames.Dispose();
-            Dust.Dispose();
-            Chips.Dispose();
             Sparks.Dispose();
         }
     }

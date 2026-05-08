@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
 
@@ -30,7 +29,6 @@ public class Sparks : IDisposable
     private int[] _lineIndices = new int[100 * LineMeshHelpers.IndicesPerLine];
     private int _vertexCount;
     private int _triangleCount;
-    private readonly LineEffect _material;
     private int _sparkCount;
     private readonly DynamicVertexBuffer _vertexBuffer;
     private readonly DynamicIndexBuffer _indexBuffer;
@@ -40,8 +38,6 @@ public class Sparks : IDisposable
     {
         _car = car;
         _graphicsDevice = graphicsDevice;
-
-        _material = new LineEffect(WorldGame._lineShader);
 
         _sprkat = _car.Wheels.FirstOrDefault().Sparkat;
 
@@ -250,39 +246,39 @@ public class Sparks : IDisposable
         _graphicsDevice.Indices = _indexBuffer;
 
         // If a parameter is null that means the HLSL compiler optimized it out.
-        _material.SnapColor?.SetValue((Vector3)new Color3(100, 100, 100));
-        _material.IsFullbright?.SetValue(true);
-        _material.UseBaseColor?.SetValue(false);
-        _material.BaseColor?.SetValue(new Vector3(0, 0, 0));
-        _material.ChargedBlinkAmount?.SetValue(0.0f);
-        _material.HalfThickness?.SetValue(World.OutlineThickness);
+        Effects.Line.SnapColor?.SetValue((Vector3)new Color3(100, 100, 100));
+        Effects.Line.IsFullbright?.SetValue(true);
+        Effects.Line.UseBaseColor?.SetValue(false);
+        Effects.Line.BaseColor?.SetValue(new Vector3(0, 0, 0));
+        Effects.Line.ChargedBlinkAmount?.SetValue(0.0f);
+        Effects.Line.HalfThickness?.SetValue(World.OutlineThickness);
 
-        _material.LightDirection?.SetValue(World.LightDirection);
-        _material.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        _material.FogDistance?.SetValue(World.FadeFrom);
-        _material.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
-        _material.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        _material.DepthBias?.SetValue(0.00005f);
-        _material.GetsShadowed?.SetValue(false);
-        _material.Alpha?.SetValue(1f);
+        Effects.Line.LightDirection?.SetValue(World.LightDirection);
+        Effects.Line.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
+        Effects.Line.FogDistance?.SetValue(World.FadeFrom);
+        Effects.Line.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
+        Effects.Line.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
+        Effects.Line.DepthBias?.SetValue(0.00005f);
+        Effects.Line.GetsShadowed?.SetValue(false);
+        Effects.Line.Alpha?.SetValue(1f);
 
-        _material.View?.SetValue(camera.ViewMatrix);
-        _material.Projection?.SetValue(camera.ProjectionMatrix);
-        _material.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        _material.CameraPosition?.SetValue(camera.Position);
+        Effects.Line.View?.SetValue(camera.ViewMatrix);
+        Effects.Line.Projection?.SetValue(camera.ProjectionMatrix);
+        Effects.Line.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
+        Effects.Line.CameraPosition?.SetValue(camera.Position);
 
-        _material.CurrentTechnique = _material.Techniques["Basic"];
+        Effects.Line.CurrentTechnique = Effects.Line.Techniques["Basic"];
 
-        _material.Expand?.SetValue(false);
-        _material.Darken?.SetValue(1.0f);
-        _material.RandomFloat?.SetValue(URandom.Single());
+        Effects.Line.Expand?.SetValue(false);
+        Effects.Line.Darken?.SetValue(1.0f);
+        Effects.Line.RandomFloat?.SetValue(URandom.Single());
 
-        _material.Glow?.SetValue(false);
+        Effects.Line.Glow?.SetValue(false);
         
-        _material.Resolution?.SetValue(new Vector2(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height));
+        Effects.Line.Resolution?.SetValue(new Vector2(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height));
 
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        foreach (var pass in _material.CurrentTechnique.Passes)
+        foreach (var pass in Effects.Line.CurrentTechnique.Passes)
         {
             pass.Apply();
 

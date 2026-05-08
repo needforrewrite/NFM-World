@@ -3,7 +3,7 @@ using NFMWorldLibrary;
 
 namespace NFMWorld;
 
-public class Chips : IDisposable
+public class Chips
 {
     private struct Chip
     {
@@ -21,7 +21,6 @@ public class Chips : IDisposable
     private readonly GraphicsDevice _graphicsDevice;
     
     private Chip[] _chips;
-    private readonly BasicEffect _effect;
     private readonly VertexPositionColor[] _triangles;
     private int _triangleCount;
 
@@ -31,12 +30,6 @@ public class Chips : IDisposable
         _graphicsDevice = graphicsDevice;
         _chips = new Chip[_car.Mesh.Polys.Length];
         
-        _effect = new BasicEffect(graphicsDevice)
-        {
-            LightingEnabled = false,
-            TextureEnabled = false,
-            VertexColorEnabled = true
-        };
         _triangles = new VertexPositionColor[3 * _car.Mesh.Polys.Length];
     }
 
@@ -142,12 +135,12 @@ public class Chips : IDisposable
     {
         if (_triangleCount == 0) return;
 
-        _effect.World = _car.MatrixWorld;
-        _effect.View = camera.ViewMatrix;
-        _effect.Projection = camera.ProjectionMatrix;
+        Effects.Chip.World = _car.MatrixWorld;
+        Effects.Chip.View = camera.ViewMatrix;
+        Effects.Chip.Projection = camera.ProjectionMatrix;
         
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        foreach (var pass in _effect.CurrentTechnique.Passes)
+        foreach (var pass in Effects.Chip.CurrentTechnique.Passes)
         {
             pass.Apply();
 
@@ -175,26 +168,5 @@ public class Chips : IDisposable
             _chips[i].State = 1;
             _chips[i].Ctmag = 2f;
         }
-    }
-
-    private void ReleaseUnmanagedResources()
-    {
-        _effect.Dispose();
-    }
-
-    private void Dispose(bool disposing)
-    {
-        ReleaseUnmanagedResources();
-    }
-
-    public void Dispose()
-    {
-        Dispose(true);
-        GC.SuppressFinalize(this);
-    }
-
-    ~Chips()
-    {
-        Dispose(false);
     }
 }
