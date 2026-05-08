@@ -1,6 +1,7 @@
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
+using System.Numerics;
 using Hexa.NET.ImGui;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using MoonWorks.Graphics;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
@@ -147,7 +148,7 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
         foreach (var player in _players)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, player.Color);
-            ImGui.Text($"• {player.Name}");
+            ImGui.Text($"ï¿½ {player.Name}");
             ImGui.PopStyleColor();
             
             ImGui.Indent(20);

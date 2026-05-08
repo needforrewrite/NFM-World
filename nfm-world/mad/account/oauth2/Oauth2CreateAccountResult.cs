@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace nfm_world.mad.account.oauth2;
+namespace nfm_world.account.oauth2;
 
 public class Oauth2CreateAccountResult(string message, HttpStatusCode code) : RequestResult(message, code)
 {

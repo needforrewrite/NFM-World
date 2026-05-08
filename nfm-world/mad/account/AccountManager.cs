@@ -1,8 +1,7 @@
-using System.Net;
-using nfm_world.mad.account.oauth2;
-using nfm_world.mad.api;
+using nfm_world.account.oauth2;
+using nfm_world.api;
 
-namespace nfm_world.mad.account;
+namespace nfm_world.account;
 
 public class AccountManager
 {

@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using nfm_world.util;
+﻿using nfm_world.util;
 
 namespace nfm_world;
 
@@ -8,26 +7,22 @@ public class FPSCounter
     private static double frames = 0;
     private static double updates = 0;
     private static double elapsed = 0;
-    private static double last = 0;
-    private static double now = 0;
     private static double msgFrequency = 0.05f;
     private static string msg;
+    private static System.Diagnostics.Stopwatch _stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
     /// <summary>
     /// The msgFrequency here is the reporting time to update the message.
     /// </summary>
-    public static void Update(GameTime gameTime)
+    public static void Update(TimeSpan delta)
     {
-        now = gameTime.TotalGameTime.TotalSeconds;
-        elapsed = now - last;
+        elapsed = _stopwatch.Elapsed.TotalSeconds;
         if (elapsed > msgFrequency)
         {
             msg = $"Fps: {frames / elapsed:0.00}\nElapsed time: {elapsed:0.00}\nUpdates: {updates}\nFrames: {frames}";
-            //Console.WriteLine(msg);
-            elapsed = 0;
+            _stopwatch.Restart();
             frames = 0;
             updates = 0;
-            last = now;
         }
         updates++;
     }

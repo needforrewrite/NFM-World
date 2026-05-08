@@ -1,27 +1,19 @@
-﻿using Microsoft.Xna.Framework;
-
-namespace nfm_world;
+﻿namespace nfm_world;
 
 public class TimeStep(float targetDeltaTime)
 {
-    private double? currentTime;
     private double accumulator = 0.0;
 
     // Returns the amount of times to tick game logic this frame.
-    public int Update(GameTime gameTime)
+    public int Update(TimeSpan delta)
     {
-        double newTime = gameTime.TotalGameTime.TotalSeconds;
-        double frameTime = currentTime != null ? newTime - currentTime.Value : targetDeltaTime;
-        currentTime = newTime;
-
-        accumulator += frameTime;
+        accumulator += delta.TotalSeconds;
 
         var updateCount = 0;
         while (accumulator >= targetDeltaTime)
         {
             updateCount++;
             accumulator -= targetDeltaTime;
-            // t += dt;
         }
 
         return updateCount;

@@ -1,5 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
-using nfm_world.mesh;
+using MoonWorks.Graphics;
+using nfm_world.renderable.mesh;
 
 namespace nfm_world;
 

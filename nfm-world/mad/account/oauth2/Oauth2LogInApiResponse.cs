@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
+using nfm_world.api;
 
-namespace nfm_world.mad.account.oauth2;
+namespace nfm_world.account.oauth2;
 
 public class Oauth2LogInApiResponse : LogInApiResponse
 {

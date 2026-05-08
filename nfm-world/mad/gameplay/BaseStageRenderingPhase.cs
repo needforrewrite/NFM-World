@@ -1,12 +1,19 @@
-using Microsoft.Xna.Framework.Graphics;
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
+using DepthStencilState = nfm_world.compat.DepthStencilState;
+using RasterizerState = nfm_world.compat.RasterizerState;
+using BlendState = nfm_world.compat.BlendState;
+using SamplerState = nfm_world.compat.SamplerState;
+using nfm_world.compat;
+using MoonWorks.Graphics;
 using nfm_world_library;
 using nfm_world_library.backend;
 using nfm_world_library.mad;
 using nfm_world_library.util;
 using nfm_world.camera;
 using nfm_world.driverinterface;
-using nfm_world.stage;
+using nfm_world.gameobject;
 using nfm_world.util;
+using Keys = nfm_world.util.Keys;
 
 namespace nfm_world.gameplay;
 
@@ -144,9 +151,9 @@ public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : B
         {
             // DISPLAY SHADOW MAP
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullCounterClockwise);
-            _spriteBatch.Draw(Program.shadowRenderTargets[0], new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Microsoft.Xna.Framework.Color.White);
-            _spriteBatch.Draw(Program.shadowRenderTargets[1], new Microsoft.Xna.Framework.Rectangle(0, 128, 128, 128), Microsoft.Xna.Framework.Color.White);
-            _spriteBatch.Draw(Program.shadowRenderTargets[2], new Microsoft.Xna.Framework.Rectangle(0, 256, 128, 128), Microsoft.Xna.Framework.Color.White);
+            _spriteBatch.Draw(WorldGame.shadowRenderTargets[0], new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Microsoft.Xna.Framework.Color.White);
+            _spriteBatch.Draw(WorldGame.shadowRenderTargets[1], new Microsoft.Xna.Framework.Rectangle(0, 128, 128, 128), Microsoft.Xna.Framework.Color.White);
+            _spriteBatch.Draw(WorldGame.shadowRenderTargets[2], new Microsoft.Xna.Framework.Rectangle(0, 256, 128, 128), Microsoft.Xna.Framework.Color.White);
             _spriteBatch.End();
         }
 

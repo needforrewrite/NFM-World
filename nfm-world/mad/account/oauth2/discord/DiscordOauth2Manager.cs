@@ -1,12 +1,10 @@
+using System.Buffers;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
-using System.Buffers;
 
-namespace nfm_world.mad.account.oauth2.discord;
+namespace nfm_world.account.oauth2.discord;
 
 /// <summary>
 /// Manager to help process Discord Oauth2 account management.

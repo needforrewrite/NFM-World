@@ -1,5 +1,6 @@
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
 using Hexa.NET.ImGui;
-using Microsoft.Xna.Framework.Graphics;
+using MoonWorks.Graphics;
 using nfm_world_library;
 using nfm_world_library.backend;
 using nfm_world_library.mad;
@@ -7,7 +8,7 @@ using nfm_world_library.mad.rad;
 using nfm_world_library.util;
 using nfm_world.camera;
 using nfm_world.driverinterface;
-using nfm_world.stage;
+using nfm_world.gameobject;
 using nfm_world.ui.menu;
 using nfm_world.util;
 

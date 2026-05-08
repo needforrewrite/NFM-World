@@ -1,17 +1,24 @@
+using GraphicsDevice = nfm_world.compat.GraphicsDeviceCompat;
+using DepthStencilState = nfm_world.compat.DepthStencilState;
+using RasterizerState = nfm_world.compat.RasterizerState;
+using BlendState = nfm_world.compat.BlendState;
+using SamplerState = nfm_world.compat.SamplerState;
+using VertexElementFormat = nfm_world.compat.VertexElementFormat;
+using nfm_world.compat;
 using System.Text;
 using Hexa.NET.ImGui;
 using Microsoft.Extensions.Logging;
-using Microsoft.Xna.Framework.Graphics;
+using MoonWorks.Graphics;
 using nfm_world_library;
 using nfm_world_library.mad;
 using nfm_world_library.mad.rad;
 using nfm_world_library.SoftFloat;
 using nfm_world.camera;
 using nfm_world.gameplay;
-using nfm_world.mesh;
-using nfm_world.stage;
 using nfm_world.util;
 using Maxine.Extensions.Mathematics;
+using nfm_world.gameobject;
+using Keys = nfm_world.util.Keys;
 
 namespace nfm_world.ui;
 
@@ -463,9 +470,9 @@ public class ModelEditorPhase : BasePhase
         if (imguiWantsKeyboard) return;
         if (!_isOpen) return;
         
-        var keyboardState = Microsoft.Xna.Framework.Input.Keyboard.GetState();
-        bool isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || 
-                             keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift);
+        var keyboardState = Keyboard.GetState();
+        bool isShiftPressed = keyboardState.IsKeyDown(nfm_world.compat.Keys.LeftShift) || 
+                             keyboardState.IsKeyDown(nfm_world.compat.Keys.RightShift);
         
         switch (key)
         {
@@ -634,14 +641,14 @@ public class ModelEditorPhase : BasePhase
         if (tab != null)
         {
             // Check which button was pressed
-            var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
-            _isLeftButtonDown = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            var mouseState = Mouse.GetState();
+            _isLeftButtonDown = mouseState.LeftButton == ButtonState.Pressed;
+            _isRightButtonDown = mouseState.RightButton == ButtonState.Pressed;
             
             // Check shift state
-            var keyboardState = Microsoft.Xna.Framework.Input.Keyboard.GetState();
-            _isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || 
-                             keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift);
+            var keyboardState = Keyboard.GetState();
+            _isShiftPressed = keyboardState.IsKeyDown(nfm_world.compat.Keys.LeftShift) || 
+                             keyboardState.IsKeyDown(nfm_world.compat.Keys.RightShift);
             
             // Start dragging for camera control with left or right mouse button
             if (_isLeftButtonDown || _isRightButtonDown)
@@ -694,9 +701,9 @@ public class ModelEditorPhase : BasePhase
             tab.IsDragging = false;
             
             // Update button states
-            var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
-            _isLeftButtonDown = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
+            var mouseState = Mouse.GetState();
+            _isLeftButtonDown = mouseState.LeftButton == ButtonState.Pressed;
+            _isRightButtonDown = mouseState.RightButton == ButtonState.Pressed;
             
             // Process click for polygon/collision selection only if it was a simple click, not a drag
             if (wasClick && !imguiWantsMouse && tab.Object != null)
@@ -2348,9 +2355,9 @@ public class ModelEditorPhase : BasePhase
         GameSparker.ExitEditor();
     }
     
-    public override void RenderAfterSkia()
+    public override void Render3DOverlays()
     {
-        base.RenderAfterSkia();
+        base.Render3DOverlays();
         
         var tab = ActiveTab;
         if (!_isOpen || tab == null || tab.Object == null) return;

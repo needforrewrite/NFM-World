@@ -1,8 +1,8 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using MoonWorks.Graphics;
 using nfm_world_library.mad.rad;
 using nfm_world_library.SoftFloat;
 using nfm_world.camera;
-using nfm_world.mesh;
+using nfm_world.gameobject;
 
 // This duplicates some code from CollisionObject, no workaround
 namespace nfm_world;

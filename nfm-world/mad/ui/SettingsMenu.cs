@@ -13,12 +13,12 @@ namespace nfm_world.ui;
 /// <summary>
 /// Settings menu with tabs, similar to Half-Life 1 style
 /// </summary>
-public class SettingsMenu(Program game)
+public class SettingsMenu(WorldGame game)
 {
     private bool _isOpen;
     private int _selectedTab = 0;
     
-    private readonly string[] _tabNames = { "Keyboard", "Video", "Audio", "Game" };
+    private readonly string[] _tabNames = ["Keyboard", "Video", "Audio", "Game"];
 
     // Keyboard bindings
     public class KeyBindings
@@ -48,12 +48,12 @@ public class SettingsMenu(Program game)
     private int _selectedBindingIndex = -1;
 
     // Video settings
-    private int _selectedRenderer = 1;
-    private readonly string[] _renderers = { "OpenGL", "SDL_GPU", "D3D11"};
+    private int _selectedRenderer = 3; // 0-2 = old FNA renderers. 3-6 = new SDL_GPU renderers
+    private static readonly string[] Renderers = ["Auto", "D3D12", "Vulkan", "Metal"];
     private int _selectedResolution = 2;
-    private readonly string[] _resolutions = { "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440" };
+    private static readonly string[] Resolutions = ["800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440"];
     private int _selectedDisplayMode = 1;
-    private readonly string[] _displayModes = { "Fullscreen", "Windowed", "Borderless" };
+    private static readonly string[] DisplayModes = ["Fullscreen", "Windowed", "Borderless"];
     private bool _vsync = true;
     private int _fpsLimit = 63;
     private float _brightness = 0.5f;
@@ -77,7 +77,7 @@ public class SettingsMenu(Program game)
 
     public bool IsOpen => _isOpen;
 
-    Vector4 RGB(int r, int g, int b, float a = 1.0f) => new Vector4(r / 255f, g / 255f, b / 255f, a);
+    private static Vector4 RGB(int r, int g, int b, float a = 1.0f) => new(r / 255f, g / 255f, b / 255f, a);
 
     public void Open()
     {
@@ -228,13 +228,15 @@ public class SettingsMenu(Program game)
         ImGui.Spacing();
 
         ImGui.Text("Renderer");
-        ImGui.Combo("##Renderer", ref _selectedRenderer, _renderers, _renderers.Length);
+        var selectedRenderer = _selectedRenderer - 3;
+        ImGui.Combo("##Renderer", ref selectedRenderer, Renderers, Renderers.Length);
+        _selectedRenderer = selectedRenderer + 3; // Adjust back to match enum values
         
         ImGui.Text("Resolution");
-        ImGui.Combo("##Resolution", ref _selectedResolution, _resolutions, _resolutions.Length);
+        ImGui.Combo("##Resolution", ref _selectedResolution, Resolutions, Resolutions.Length);
         
         ImGui.Text("Display Mode");
-        ImGui.Combo("##DisplayMode", ref _selectedDisplayMode, _displayModes, _displayModes.Length);
+        ImGui.Combo("##DisplayMode", ref _selectedDisplayMode, DisplayModes, DisplayModes.Length);
         
         ImGui.Spacing();
         ImGui.Checkbox("Wait for vertical sync", ref _vsync);
@@ -460,12 +462,12 @@ public class SettingsMenu(Program game)
         if (game._graphics.SynchronizeWithVerticalRetrace != _vsync)
         {
             game._graphics.SynchronizeWithVerticalRetrace = _vsync;
+            game.SetVSync(_vsync);
             graphicsChanged = true;
         }
         
-        if (_renderers[_selectedRenderer] != SDL.SDL_GetHint("FNA3D_FORCE_DRIVER"))
+        if (Renderers[_selectedRenderer - 3] != game.Renderer)
         {
-            SDL.SDL_SetHint("FNA3D_FORCE_DRIVER", _renderers[_selectedRenderer]); // TODO this only ever gets executed too late to do anything.
             requireRestart = true;
         }
 
@@ -557,6 +559,46 @@ public class SettingsMenu(Program game)
             Logging.Error($"Error saving config: {ex.Message}");
         }
     }
+
+    private static string? _cachedConfigRenderer;
+    public static string? GetRendererFromConfig()
+    {
+        return _cachedConfigRenderer ??= GetRendererImpl();
+
+        static string? GetRendererImpl()
+        {
+            string configPath = Path.Combine("data", "cfg", "config.cfg");
+            
+            if (!File.Exists(configPath))
+            {
+                Logging.Info("No config file found, using default renderer.");
+                return null;
+            }
+
+            foreach (var line in File.ReadLines(configPath))
+            {
+                string trimmed = line.Trim();
+                if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
+                    continue;
+                
+                string[] parts = trimmed.Split(' ', 2);
+                if (parts.Length != 2)
+                    continue;
+                
+                string key = parts[0];
+                string value = parts[1];
+
+                if (key == "video_renderer")
+                {
+                    var selectedRenderer = int.Parse(value);
+                    if (selectedRenderer >= 3)
+                        return Renderers[selectedRenderer - 3];
+                }
+            }
+
+            return null;
+        }
+    }
     
     public void LoadConfig()
     {
@@ -564,13 +606,13 @@ public class SettingsMenu(Program game)
         {
             string configPath = Path.Combine("data", "cfg", "config.cfg");
             
-            if (!System.IO.File.Exists(configPath))
+            if (!File.Exists(configPath))
             {
                 Logging.Warning("No config file found, using defaults.");
                 return;
             }
             
-            string[] lines = System.IO.File.ReadAllLines(configPath);
+            var lines = File.ReadLines(configPath);
             
             foreach (string line in lines)
             {
@@ -591,7 +633,9 @@ public class SettingsMenu(Program game)
                     {
                         // Video settings
                         case "video_renderer":
-                            _selectedRenderer = int.Parse(value);
+                            var selectedRenderer = int.Parse(value);
+                            if (selectedRenderer >= 3)
+                                _selectedRenderer = selectedRenderer;
                             break;
                         case "video_resolution":
                             _selectedResolution = int.Parse(value);

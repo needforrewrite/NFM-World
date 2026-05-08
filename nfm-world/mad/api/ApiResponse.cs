@@ -1,4 +1,4 @@
-namespace nfm_world.mad.api;
+namespace nfm_world.api;
 
 public class ApiResponse
 {
