@@ -7,11 +7,8 @@ using Microsoft.Xna.Framework;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Files.Demo;
 using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Multiplayer;
-using NFMWorldLibrary.Mad.Multiplayer.packets;
 using NFMWorldLibrary.Multiplayer;
-using NFMWorldLibrary.Multiplayer.packets;
+using NFMWorldLibrary.Multiplayer.Packets;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 

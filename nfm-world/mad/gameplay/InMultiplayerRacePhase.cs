@@ -4,14 +4,11 @@ using NFMWorld.Gameplay.Gamemodes;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend.Gamemodes;
-using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Multiplayer;
-using NFMWorldLibrary.Mad.Multiplayer.packets.s2c;
 using NFMWorldLibrary.Multiplayer;
-using NFMWorldLibrary.Multiplayer.packets.c2s;
-using NFMWorldLibrary.Multiplayer.packets.s2c;
+using NFMWorldLibrary.Multiplayer.Packets.C2S;
+using NFMWorldLibrary.Multiplayer.Packets.S2C;
 using NFMWorldLibrary.Util;
-using S2C_PlayerState = NFMWorldLibrary.Multiplayer.packets.s2c.S2C_PlayerState;
+using S2C_PlayerState = NFMWorldLibrary.Multiplayer.Packets.S2C.S2C_PlayerState;
 
 namespace NFMWorld.Gameplay;
 

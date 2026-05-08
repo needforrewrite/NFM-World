@@ -1,6 +1,4 @@
-﻿using NFMWorldLibrary.Mad;
-
-namespace NFMWorldLibrary.Backend.AI;
+﻿namespace NFMWorldLibrary.Backend.AI;
 
 /// <summary>
 /// Base AI class for gamemode-specific AI implementations.

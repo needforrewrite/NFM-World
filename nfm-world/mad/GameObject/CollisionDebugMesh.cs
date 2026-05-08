@@ -1,7 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Shaders;
 using NFMWorldLibrary;
-using NFMWorldLibrary.Mad;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 

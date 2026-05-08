@@ -6,8 +6,6 @@ using Maxine.VFS;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Files;
-using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Files;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 

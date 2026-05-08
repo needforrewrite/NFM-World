@@ -1,12 +1,9 @@
 using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
-using NFMWorldLibrary.Mad;
-using NFMWorldLibrary.Mad.Multiplayer;
-using NFMWorldLibrary.Mad.Multiplayer.packets.s2c;
 using NFMWorldLibrary.Multiplayer;
-using NFMWorldLibrary.Multiplayer.packets.c2s;
-using NFMWorldLibrary.Multiplayer.packets.s2c;
+using NFMWorldLibrary.Multiplayer.Packets.C2S;
+using NFMWorldLibrary.Multiplayer.Packets.S2C;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorld.Gameplay;

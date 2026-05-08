@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.HighPerformance;
 using CommunityToolkit.HighPerformance.Buffers;
-using NFMWorldLibrary.Multiplayer.packets.c2s;
-using NFMWorldLibrary.Multiplayer.packets.s2c;
+using NFMWorldLibrary.Multiplayer.Packets.C2S;
+using NFMWorldLibrary.Multiplayer.Packets.S2C;
 
 namespace NFMWorldLibrary.Multiplayer;
 

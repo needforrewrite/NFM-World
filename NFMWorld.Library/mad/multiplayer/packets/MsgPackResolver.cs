@@ -1,6 +1,6 @@
 ﻿using MessagePack;
 
-namespace NFMWorldLibrary.Multiplayer.packets;
+namespace NFMWorldLibrary.Multiplayer.Packets;
 
 [GeneratedMessagePackResolver]
 internal partial class MsgPackResolver;

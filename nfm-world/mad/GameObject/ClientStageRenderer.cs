@@ -1,7 +1,6 @@
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
-using NFMWorldLibrary.Mad;
 using NFMWorldLibrary.Util;
 using Environment = NFMWorld.Environment;
 

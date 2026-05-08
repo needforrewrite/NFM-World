@@ -1,6 +1,6 @@
 ﻿using MessagePack;
 
-namespace NFMWorldLibrary.Multiplayer.packets.s2c;
+namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 
 [MessagePackObject(AllowPrivate = true)]
 public partial struct S2C_PlayerState : IPacketServerToClient<S2C_PlayerState>

@@ -5,7 +5,6 @@ using NFMWorld.DriverInterface;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
-using NFMWorldLibrary.Mad;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Gameplay;

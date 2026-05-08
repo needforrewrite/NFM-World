@@ -1,6 +1,5 @@
 ﻿using NFMWorldLibrary;
 using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Mad;
 
 namespace NFMWorld;
 

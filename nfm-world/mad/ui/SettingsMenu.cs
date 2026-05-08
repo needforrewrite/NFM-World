@@ -5,7 +5,6 @@ using NFMWorld.Camera;
 using NFMWorld.DriverInterface;
 using NFMWorld.Util;
 using NFMWorldLibrary;
-using NFMWorldLibrary.Mad;
 using SDL3;
 
 namespace NFMWorld.UI;

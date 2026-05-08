@@ -6,7 +6,6 @@ using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Mad;
 using NFMWorldLibrary.Rad;
 using Environment = NFMWorld.Environment;
 

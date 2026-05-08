@@ -3,7 +3,6 @@ using System.Collections;
 using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
-using NFMWorldLibrary.Mad;
 
 namespace NFMWorld;
 

@@ -1,6 +1,6 @@
 ﻿using NFMWorldLibrary.Util;
 
-namespace NFMWorldLibrary.Multiplayer.packets.c2s;
+namespace NFMWorldLibrary.Multiplayer.Packets.C2S;
 
 public interface IPacketClientToServer : IPacket;
 

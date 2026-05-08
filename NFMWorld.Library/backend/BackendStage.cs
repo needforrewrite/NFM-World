@@ -1,7 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Mad;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 

@@ -31,7 +31,6 @@
   <Project Path="nfm-world/NFMWorld.csproj" />
   <Project Path="NFMW.GenerateSinCosTable/NFMW.GenerateSinCosTable.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />
-  <Project Path="NFMWorld.LuaSourceGenerataor/NFMWorld.LuaSourceGenerataor.csproj" />
   <Project Path="NFMWorld.RustBindGen/NFMWorld.RustBindGen.csproj" />
   <Project Path="NFMWorld.XamlX.BuildTask/NFMWorld.XamlX.BuildTask.csproj" />
   <Project Path="NFMWorld.XamlX.Core/NFMWorld.XamlX.Core.csproj" />

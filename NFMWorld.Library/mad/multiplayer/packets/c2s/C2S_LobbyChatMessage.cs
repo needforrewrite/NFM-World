@@ -1,6 +1,6 @@
 ﻿using MessagePack;
 
-namespace NFMWorldLibrary.Multiplayer.packets.c2s;
+namespace NFMWorldLibrary.Multiplayer.Packets.C2S;
 
 [MessagePackObject]
 public struct C2S_LobbyChatMessage : IPacketClientToServer<C2S_LobbyChatMessage>

@@ -8,7 +8,6 @@ using NFMWorld.Sfx;
 using NFMWorld.UI;
 using NFMWorld.Util;
 using NFMWorldLibrary;
-using NFMWorldLibrary.Mad;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 using Path = System.IO.Path;
