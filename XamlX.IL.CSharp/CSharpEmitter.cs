@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Avalonia.Generators.Common;
 using XamlX.IL;
 using XamlX.TypeSystem;
 using SreOpCode = System.Reflection.Emit.OpCode;
@@ -35,7 +36,7 @@ class CSharpEmitter : IXamlILEmitter
     {
         TypeSystem = typeSystem;
         _method = method;
-        LocalsPool = new XamlLocalsPool(t => DefineLocal(t));
+        LocalsPool = new XamlLocalsPool(DefineLocal);
     }
 
     /// <summary>
@@ -53,7 +54,7 @@ class CSharpEmitter : IXamlILEmitter
 
     private void Emit(string statement) => _statements.Add(statement);
 
-    private string FormatType(IXamlType type) => CSharpFormatting.FormatType(type);
+    private static string FormatType(IXamlType type) => CSharpFormatting.FormatType(type);
 
     #region IXamlILEmitter Implementation
 
@@ -82,7 +83,7 @@ class CSharpEmitter : IXamlILEmitter
         {
             var val = Pop();
             var temp = AllocTemp();
-            _tempLocals.Add(new CSharpLocal(temp, -1, val.Type ?? TypeSystem.GetType("System.Object")));
+            _tempLocals.Add(new CSharpLocal(temp, -1, val.Type ?? TypeSystem.GetType("System.Object, System.Private.CoreLib")));
             Emit($"{temp} = {val.Expression};");
             Push(temp, val.Type);
             Push(temp, val.Type);
@@ -614,7 +615,7 @@ class CSharpEmitter : IXamlILEmitter
             if (!IsSimpleExpression(expr.Expression))
             {
                 var temp = AllocTemp();
-                var tempType = expr.Type ?? TypeSystem.GetType("System.Object");
+                var tempType = expr.Type ?? TypeSystem.GetType("System.Object, System.Private.CoreLib");
                 _tempLocals.Add(new CSharpLocal(temp, -1, tempType));
                 Emit($"{temp} = {expr.Expression};");
                 newExprs.Add(new CSharpExpression(temp, expr.Type));
@@ -638,7 +639,7 @@ class CSharpEmitter : IXamlILEmitter
     /// <summary>
     /// Formats a falsiness check for Brfalse: branches when value is null/false/0.
     /// </summary>
-    private string FormatFalsinessCheck(CSharpExpression val)
+    private static string FormatFalsinessCheck(CSharpExpression val)
     {
         if (val.Type != null)
         {
@@ -654,14 +655,14 @@ class CSharpEmitter : IXamlILEmitter
     /// <summary>
     /// Formats a truthiness check for Brtrue: branches when value is non-null/true/non-zero.
     /// </summary>
-    private string FormatTruthinessCheck(CSharpExpression val)
+    private static string FormatTruthinessCheck(CSharpExpression val)
     {
         if (val.Type != null)
         {
             var fn = val.Type.FullName;
             if (fn == "System.Boolean")
                 return val.Expression;
-            if (fn == "System.Int32" || fn == "System.Int64" || fn == "System.Byte" || fn == "System.Int16")
+            if (fn is "System.Int32" or "System.Int64" or "System.Byte" or "System.Int16")
                 return $"{val.Expression} != 0";
             if (val.Type.IsValueType && fn != "System.IntPtr" && fn != "System.UIntPtr")
                 return $"{val.Expression} != 0";
@@ -672,18 +673,16 @@ class CSharpEmitter : IXamlILEmitter
     /// <summary>
     /// Generates the local variable declarations for the start of the method body.
     /// </summary>
-    public string GenerateLocalDeclarations()
+    public void AppendLocalDeclarations(IndentedStringBuilder sb)
     {
-        var sb = new StringBuilder();
         foreach (var local in _locals)
         {
-            sb.AppendLine($"    {FormatType(local.Type)} {local.Name} = default;");
+            sb.AppendLine($"{FormatType(local.Type)} {local.Name} = default;");
         }
         foreach (var temp in _tempLocals)
         {
-            sb.AppendLine($"    {FormatType(temp.Type)} {temp.Name} = default;");
+            sb.AppendLine($"{FormatType(temp.Type)} {temp.Name} = default;");
         }
-        return sb.ToString();
     }
 
     #endregion

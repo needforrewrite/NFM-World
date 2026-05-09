@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Avalonia.Generators.Common;
 using Avalonia.Generators.NameGenerator;
 using Microsoft.CodeAnalysis;
 using XamlX;
@@ -45,7 +46,7 @@ internal sealed class XamlCSharpCompiler
         {
             // Find the XamlHotReload.Register method for runtime support
             var registerMethod = assembly
-                .FindType("nfm_world.ui.yoga.xaml.XamlHotReload")
+                .FindType("NFMWorld.UI.Yoga.Xaml.XamlHotReload")
                 ?.FindMethod(method => method.Name == "Register");
             
             if (registerMethod == null)
@@ -95,9 +96,9 @@ internal sealed class XamlCSharpCompiler
     /// </summary>
     /// <param name="xamlSource">The raw XAML source text.</param>
     /// <param name="filePath">The file path for diagnostics and base URI.</param>
-    /// <param name="indent">The indentation to use for the generated members.</param>
+    /// <param name="indentCount">The indentation to use for the generated members.</param>
     /// <returns>Generated C# member declarations, or null if compilation fails.</returns>
-    public string CompileView(string xamlSource, string filePath, string xClassName, out IReadOnlyList<DiagnosticDescriptor> diagnostics, string indent = "        ")
+    public string CompileView(string xamlSource, string filePath, string xClassName, out IReadOnlyList<DiagnosticDescriptor> diagnostics, byte indentCount = 2)
     {
         var doc = XDocumentXamlParser.Parse(xamlSource, new Dictionary<string, string>
         {
@@ -140,18 +141,18 @@ internal sealed class XamlCSharpCompiler
             fileSource: new SourceGenFileSource(filePath, xamlSource));
 
         // Extract just the member declarations
-        var sb = new StringBuilder();
+        var sb = new IndentedStringBuilder(indent: indentCount);
         if (_didNotFindRegisterMethod)
         {
             diagnostics = [NameGeneratorDiagnostics.XamlHotReloadNotFound];
-            sb.Append($"{indent}// Warning: XamlHotReload.Register method not found. Hot reload support will be disabled.\n");
+            sb.Append($"// Warning: XamlHotReload.Register method not found. Hot reload support will be disabled.\n");
         }
         else
         {
             diagnostics = [];
         }
         
-        typeBuilder.GenerateMembers(sb, indent);
+        typeBuilder.GenerateMembers(sb);
         return sb.ToString();
     }
 
