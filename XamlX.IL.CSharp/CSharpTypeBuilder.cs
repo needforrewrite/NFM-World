@@ -110,7 +110,7 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
         for (var i = 0; i < argsList.Count; i++)
             argNames[i] = $"arg{i}";
 
-        var methodCtx = new CSharpMethodContext(returnType, isStatic, false, argNames);
+        var methodCtx = new CSharpMethodContext(returnType, isStatic, false, argNames, argsList.ToArray());
         var emitter = new CSharpEmitter(_typeSystem, methodCtx);
         var method = new CSharpMethodBuilder(this, returnType, argsList, name, visibility, isStatic, isInterfaceImpl, argNames, emitter, overrideMethod);
         _methods.Add(method);
@@ -130,7 +130,7 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
         for (var i = 0; i < args.Length; i++)
             argNames[i] = $"arg{i}";
 
-        var methodCtx = new CSharpMethodContext(null, isStatic, true, argNames);
+        var methodCtx = new CSharpMethodContext(null, isStatic, true, argNames, args);
         var emitter = new CSharpEmitter(_typeSystem, methodCtx);
         var ctor = new CSharpConstructorBuilder(this, isStatic, args, argNames, emitter);
         _constructors.Add(ctor);
@@ -713,10 +713,16 @@ internal class ConstructedCSharpType : IXamlType
     private readonly CSharpTypeBuilder _definition;
     private readonly IReadOnlyList<IXamlType> _typeArguments;
 
+    public IReadOnlyList<IXamlConstructor> Constructors { get; }
+
     public ConstructedCSharpType(CSharpTypeBuilder definition, IReadOnlyList<IXamlType> typeArguments)
     {
         _definition = definition;
         _typeArguments = typeArguments;
+        // Wrap constructors so they report this constructed type as DeclaringType
+        Constructors = definition.Constructors
+            .Select(c => (IXamlConstructor)new ConstructedCtorWrapper(this, c))
+            .ToList();
     }
 
     public object Id { get; } = Guid.NewGuid();
@@ -739,7 +745,6 @@ internal class ConstructedCSharpType : IXamlType
     public IReadOnlyList<IXamlEventInfo> Events => _definition.Events;
     public IReadOnlyList<IXamlField> Fields => _definition.Fields;
     public IReadOnlyList<IXamlMethod> Methods => _definition.Methods;
-    public IReadOnlyList<IXamlConstructor> Constructors => _definition.Constructors;
     public IReadOnlyList<IXamlCustomAttribute> CustomAttributes => _definition.CustomAttributes;
     public IReadOnlyList<IXamlType> GenericArguments => _typeArguments;
     public IXamlType? GenericTypeDefinition => _definition;
@@ -766,6 +771,25 @@ internal class ConstructedCSharpType : IXamlType
                    _typeArguments.Zip(c._typeArguments, (a, b) => a.Equals(b)).All(x => x);
         return false;
     }
+}
+
+internal class ConstructedCtorWrapper : IXamlConstructor
+{
+    private readonly IXamlConstructor _inner;
+
+    public ConstructedCtorWrapper(IXamlType declaringType, IXamlConstructor inner)
+    {
+        DeclaringType = declaringType;
+        _inner = inner;
+    }
+
+    public IXamlType DeclaringType { get; }
+    public string Name => _inner.Name;
+    public bool IsPublic => _inner.IsPublic;
+    public bool IsStatic => _inner.IsStatic;
+    public IReadOnlyList<IXamlType> Parameters => _inner.Parameters;
+    public IXamlParameterInfo GetParameterInfo(int index) => _inner.GetParameterInfo(index);
+    public bool Equals(IXamlConstructor? other) => _inner.Equals(other is ConstructedCtorWrapper w ? w._inner : other);
 }
 
 #endregion

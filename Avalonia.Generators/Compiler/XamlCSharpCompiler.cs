@@ -74,7 +74,8 @@ internal sealed class XamlCSharpCompiler
         _compiler.Transformers.Add(new RemoveXamlDirectivesTransformer());
 
         // Add emitter for SkipXamlAstNode (used when transforms fail but error is handled)
-        _compiler.Emitters.Add(new SkipNodeEmitter());
+        // Must be first so it's checked before ValueWithManipulationsEmitter
+        _compiler.Emitters.Insert(0, new SkipNodeEmitter());
 
         // Generate context type eagerly (shared across all views)
         var contextBuilder = new CSharpTypeBuilder(typeSystem, "__XamlRuntime__", "XamlContext",
@@ -96,7 +97,7 @@ internal sealed class XamlCSharpCompiler
     /// <param name="filePath">The file path for diagnostics and base URI.</param>
     /// <param name="indent">The indentation to use for the generated members.</param>
     /// <returns>Generated C# member declarations, or null if compilation fails.</returns>
-    public string CompileView(string xamlSource, string filePath, out IReadOnlyList<DiagnosticDescriptor> diagnostics, string indent = "        ")
+    public string CompileView(string xamlSource, string filePath, string xClassName, out IReadOnlyList<DiagnosticDescriptor> diagnostics, string indent = "        ")
     {
         var doc = XDocumentXamlParser.Parse(xamlSource, new Dictionary<string, string>
         {
@@ -110,13 +111,19 @@ internal sealed class XamlCSharpCompiler
         var rootGrp = (XamlValueWithManipulationNode)doc.Root;
         var rootType = rootGrp.Type.GetClrType();
 
+        // Use the x:Class name for the type builder so self-references
+        // (XamlNamespaceInfo, Populate, Build) use the correct class name.
+        var lastDot = xClassName.LastIndexOf('.');
+        var classNamespace = lastDot >= 0 ? xClassName.Substring(0, lastDot) : "";
+        var className = lastDot >= 0 ? xClassName.Substring(lastDot + 1) : xClassName;
+
         // Create a CSharpTypeBuilder as the container for generated methods.
         // This is a "virtual" type builder - it collects the Populate/Build methods
         // and nested types, then we extract just the members.
         var typeBuilder = new CSharpTypeBuilder(
             _typeSystem,
-            rootType.Namespace ?? "",
-            rootType.Name,
+            classNamespace,
+            className,
             null,
             XamlVisibility.Public
         );
@@ -235,15 +242,7 @@ internal class SkipNodeEmitter : IXamlAstNodeEmitter<IXamlILEmitter, XamlILNodeE
     public XamlILNodeEmitResult? Emit(IXamlAstNode node, XamlEmitContext<IXamlILEmitter, XamlILNodeEmitResult> context, IXamlILEmitter codeGen)
     {
         if (node is ISkipXamlAstNode)
-        {
-            // If the node is also a value node, push null on the stack
-            if (node is IXamlAstValueNode)
-            {
-                codeGen.Emit(System.Reflection.Emit.OpCodes.Ldnull);
-                return XamlILNodeEmitResult.Type(0, context.Configuration.WellKnownTypes.Object);
-            }
             return XamlILNodeEmitResult.Void(0);
-        }
         return null;
     }
 }

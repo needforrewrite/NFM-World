@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using XamlX.IL;
 using XamlX.TypeSystem;
@@ -21,6 +22,7 @@ class CSharpEmitter : IXamlILEmitter
     private readonly List<string> _statements = new();
     private readonly Stack<CSharpExpression> _evalStack = new();
     private readonly List<CSharpLocal> _locals = new();
+    private readonly List<CSharpLocal> _tempLocals = new();
     private readonly Dictionary<CSharpLabel, string> _labelNames = new();
     private int _labelCounter;
     private int _localCounter;
@@ -63,6 +65,12 @@ class CSharpEmitter : IXamlILEmitter
             if (_method.ReturnType != null && _method.ReturnType.FullName != "System.Void")
             {
                 var val = PopExpr();
+                // Convert int literals to bool when return type is bool
+                if (_method.ReturnType.FullName == "System.Boolean")
+                {
+                    if (val == "0") val = "false";
+                    else if (val == "1") val = "true";
+                }
                 Emit($"return {val};");
             }
             else
@@ -74,7 +82,8 @@ class CSharpEmitter : IXamlILEmitter
         {
             var val = Pop();
             var temp = AllocTemp();
-            Emit($"var {temp} = {val.Expression};");
+            _tempLocals.Add(new CSharpLocal(temp, -1, val.Type ?? TypeSystem.GetType("System.Object")));
+            Emit($"{temp} = {val.Expression};");
             Push(temp, val.Type);
             Push(temp, val.Type);
         }
@@ -101,14 +110,14 @@ class CSharpEmitter : IXamlILEmitter
         else if (code == SreOpCodes.Ldc_I4_7) Push("7");
         else if (code == SreOpCodes.Ldc_I4_8) Push("8");
         else if (code == SreOpCodes.Ldc_I4_M1) Push("-1");
-        else if (code == SreOpCodes.Ldarg_0) Push(_method.GetArgName(0));
-        else if (code == SreOpCodes.Ldarg_1) Push(_method.GetArgName(1));
-        else if (code == SreOpCodes.Ldarg_2) Push(_method.GetArgName(2));
-        else if (code == SreOpCodes.Ldarg_3) Push(_method.GetArgName(3));
-        else if (code == SreOpCodes.Ldloc_0) Push(GetLocalName(0));
-        else if (code == SreOpCodes.Ldloc_1) Push(GetLocalName(1));
-        else if (code == SreOpCodes.Ldloc_2) Push(GetLocalName(2));
-        else if (code == SreOpCodes.Ldloc_3) Push(GetLocalName(3));
+        else if (code == SreOpCodes.Ldarg_0) Push(_method.GetArgName(0), _method.GetArgType(0));
+        else if (code == SreOpCodes.Ldarg_1) Push(_method.GetArgName(1), _method.GetArgType(1));
+        else if (code == SreOpCodes.Ldarg_2) Push(_method.GetArgName(2), _method.GetArgType(2));
+        else if (code == SreOpCodes.Ldarg_3) Push(_method.GetArgName(3), _method.GetArgType(3));
+        else if (code == SreOpCodes.Ldloc_0) Push(GetLocalName(0), GetLocalType(0));
+        else if (code == SreOpCodes.Ldloc_1) Push(GetLocalName(1), GetLocalType(1));
+        else if (code == SreOpCodes.Ldloc_2) Push(GetLocalName(2), GetLocalType(2));
+        else if (code == SreOpCodes.Ldloc_3) Push(GetLocalName(3), GetLocalType(3));
         else if (code == SreOpCodes.Stloc_0) Emit($"{GetLocalName(0)} = {PopExpr()};");
         else if (code == SreOpCodes.Stloc_1) Emit($"{GetLocalName(1)} = {PopExpr()};");
         else if (code == SreOpCodes.Stloc_2) Emit($"{GetLocalName(2)} = {PopExpr()};");
@@ -168,6 +177,8 @@ class CSharpEmitter : IXamlILEmitter
         {
             var value = PopExpr();
             var obj = PopExpr();
+            if (field.FieldType.IsEnum)
+                value = $"(({FormatType(field.FieldType)}){value})";
             Emit($"{obj}.{field.Name} = {value};");
         }
         else if (code == SreOpCodes.Stsfld)
@@ -249,7 +260,7 @@ class CSharpEmitter : IXamlILEmitter
         if (code == SreOpCodes.Ldc_I4 || code == SreOpCodes.Ldc_I4_S)
             Push(arg.ToString());
         else if (code == SreOpCodes.Ldarg || code == SreOpCodes.Ldarg_S)
-            Push(_method.GetArgName(arg));
+            Push(_method.GetArgName(arg), _method.GetArgType(arg));
         else if (code == SreOpCodes.Ldloc || code == SreOpCodes.Ldloc_S)
             Push(GetLocalName(arg));
         else if (code == SreOpCodes.Stloc || code == SreOpCodes.Stloc_S)
@@ -280,7 +291,7 @@ class CSharpEmitter : IXamlILEmitter
     public IXamlILEmitter Emit(SreOpCode code, byte arg)
     {
         if (code == SreOpCodes.Ldarg_S)
-            Push(_method.GetArgName(arg));
+            Push(_method.GetArgName(arg), _method.GetArgType(arg));
         else
             Emit($"// TODO: Unhandled byte opcode: {code.Name} {arg}");
         return this;
@@ -319,7 +330,9 @@ class CSharpEmitter : IXamlILEmitter
         else if (code == SreOpCodes.Newarr)
         {
             var length = PopExpr();
-            Push($"new {typeName}[{length}]");
+            IXamlType? arrayType = null;
+            try { arrayType = type.MakeArrayType(1); } catch { }
+            Push($"new {typeName}[{length}]", arrayType);
         }
         else if (code == SreOpCodes.Ldtoken)
         {
@@ -497,8 +510,20 @@ class CSharpEmitter : IXamlILEmitter
         {
             var obj = PopExpr();
 
-            // Convert property accessor calls to C# property syntax
-            if (method.Name.StartsWith("get_") && args.Length == 0)
+            // Convert property/indexer accessor calls to C# syntax
+            if (method.Name == "get_Item" && args.Length >= 1)
+            {
+                // Indexer: obj[args]
+                call = $"{obj}[{string.Join(", ", args)}]";
+            }
+            else if (method.Name == "set_Item" && args.Length >= 2)
+            {
+                // Indexer setter: obj[args[0..n-1]] = args[n]
+                var indexArgs = string.Join(", ", args.Take(args.Length - 1));
+                Emit($"{obj}[{indexArgs}] = {args[args.Length - 1]};");
+                return;
+            }
+            else if (method.Name.StartsWith("get_") && args.Length == 0)
             {
                 var propName = method.Name.Substring(4);
                 call = $"{obj}.{propName}";
@@ -506,7 +531,11 @@ class CSharpEmitter : IXamlILEmitter
             else if (method.Name.StartsWith("set_") && args.Length == 1)
             {
                 var propName = method.Name.Substring(4);
-                Emit($"{obj}.{propName} = {args[0]};");
+                var val = args[0];
+                // Cast int literal to enum type if needed
+                if (method.Parameters[0].IsEnum)
+                    val = $"(({FormatType(method.Parameters[0])}){val})";
+                Emit($"{obj}.{propName} = {val};");
                 return;
             }
             else
@@ -532,6 +561,13 @@ class CSharpEmitter : IXamlILEmitter
         return $"__local_{index}";
     }
 
+    private IXamlType? GetLocalType(int index)
+    {
+        if (index < _locals.Count)
+            return _locals[index].Type;
+        return null;
+    }
+
     private string AllocTemp() => $"__tmp_{_tempCounter++}";
 
     private void FlushStack()
@@ -548,7 +584,9 @@ class CSharpEmitter : IXamlILEmitter
             if (!IsSimpleExpression(expr.Expression))
             {
                 var temp = AllocTemp();
-                Emit($"var {temp} = {expr.Expression};");
+                var tempType = expr.Type ?? TypeSystem.GetType("System.Object");
+                _tempLocals.Add(new CSharpLocal(temp, -1, tempType));
+                Emit($"{temp} = {expr.Expression};");
                 newExprs.Add(new CSharpExpression(temp, expr.Type));
             }
             else
@@ -611,6 +649,10 @@ class CSharpEmitter : IXamlILEmitter
         {
             sb.AppendLine($"    {FormatType(local.Type)} {local.Name} = default;");
         }
+        foreach (var temp in _tempLocals)
+        {
+            sb.AppendLine($"    {FormatType(temp.Type)} {temp.Name} = default;");
+        }
         return sb.ToString();
     }
 
@@ -662,13 +704,17 @@ class CSharpMethodContext
     public bool IsStatic { get; }
     public bool IsConstructor { get; }
     private readonly string[] _argNames;
+    private readonly IXamlType[] _argTypes;
+    private readonly IXamlType? _declaringType;
 
-    public CSharpMethodContext(IXamlType? returnType, bool isStatic, bool isConstructor, string[] argNames)
+    public CSharpMethodContext(IXamlType? returnType, bool isStatic, bool isConstructor, string[] argNames, IXamlType[] argTypes, IXamlType? declaringType = null)
     {
         ReturnType = returnType;
         IsStatic = isStatic;
         IsConstructor = isConstructor;
         _argNames = argNames;
+        _argTypes = argTypes;
+        _declaringType = declaringType;
     }
 
     public string GetArgName(int index)
@@ -679,5 +725,15 @@ class CSharpMethodContext
         if (adjustedIndex >= 0 && adjustedIndex < _argNames.Length)
             return _argNames[adjustedIndex];
         return $"__arg_{index}";
+    }
+
+    public IXamlType? GetArgType(int index)
+    {
+        if (!IsStatic && index == 0)
+            return _declaringType;
+        var adjustedIndex = IsStatic ? index : index - 1;
+        if (adjustedIndex >= 0 && adjustedIndex < _argTypes.Length)
+            return _argTypes[adjustedIndex];
+        return null;
     }
 }

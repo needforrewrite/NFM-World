@@ -258,7 +258,7 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
                         {
                             try
                             {
-                                compiledXamlSource = csharpCompiler.CompileView(classInfo.XamlSource, classInfo.FilePath, out var xamlDiagnostics);
+                                compiledXamlSource = csharpCompiler.CompileView(classInfo.XamlSource, classInfo.FilePath, xmlView.FullName, out var xamlDiagnostics);
                                 foreach (var diag in xamlDiagnostics)
                                 {
                                     diagnostics.Add(new(diag, new(classInfo.FilePath, default), new([xmlView.FullName])));
@@ -322,7 +322,11 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
         
 #if AVA_DEBUG
         context.RegisterPostInitializationOutput(
-            static context => context.AddSource($"logs.g.cs", SourceText.From(string.Join("\n", Logs), Encoding.UTF8))
+            static context =>
+            {
+                var logContent = string.Join("\n", Logs.Select(l => "// " + l.Replace("\n", "\n// ")));
+                context.AddSource("logs.g.cs", SourceText.From(logContent, Encoding.UTF8));
+            }
         );
 #endif
     }
