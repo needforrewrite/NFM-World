@@ -80,21 +80,6 @@
         <ProjectReference Include="..\XamlX\src\XamlX\XamlX.csproj"/>
     </ItemGroup>
 
-    <!-- XAML compilation for Yoga UI -->
-    <PropertyGroup>
-        <NFMWorldXamlXTasksDir Condition="'$(NFMWorldXamlXTasksDir)' == '' AND Exists('$(MSBuildThisFileDirectory)..\NFMWorld.XamlX.BuildTask\bin\$(Configuration)\net10.0\NFMWorld.XamlX.BuildTask.dll')">$(MSBuildThisFileDirectory)..\NFMWorld.XamlX.BuildTask\bin\$(Configuration)\net10.0\</NFMWorldXamlXTasksDir>
-        <NFMWorldXamlXTasksDir Condition="'$(NFMWorldXamlXTasksDir)' == '' AND Exists('$(MSBuildThisFileDirectory)bin\$(Configuration)\net10.0\NFMWorld.XamlX.BuildTask.dll')">$(MSBuildThisFileDirectory)..\bin\$(Configuration)\net10.0\</NFMWorldXamlXTasksDir>
-        <NFMWorldXamlXTasksDir Condition="'$(NFMWorldXamlXTasksDir)' == '' AND Exists('$(MSBuildThisFileDirectory)bin\Debug\net10.0\NFMWorld.XamlX.BuildTask.dll')">$(MSBuildThisFileDirectory)..\bin\Debug\net10.0\</NFMWorldXamlXTasksDir>
-        <NFMWorldXamlXTasksDir Condition="'$(NFMWorldXamlXTasksDir)' == '' AND Exists('$(MSBuildThisFileDirectory)bin\Release\net10.0\NFMWorld.XamlX.BuildTask.dll')">$(MSBuildThisFileDirectory)..\bin\Release\net10.0\</NFMWorldXamlXTasksDir>
-
-        <!-- Fallback for CI and people who are too lazy to build the task first -->
-        <NFMWorldXamlXTasksDir Condition="'$(NFMWorldXamlXTasksDir)' == '' AND Exists('$(MSBuildThisFileDirectory)..\NFMWorld.XamlX.BuildTask\prebuilt\NFMWorld.XamlX.BuildTask.dll')">$(MSBuildThisFileDirectory)..\NFMWorld.XamlX.BuildTask\prebuilt\</NFMWorldXamlXTasksDir>
-    </PropertyGroup>
-
-    <!-- Import the XAML build targets (only if the task is built) -->
-    <Import Project="..\NFMWorld.XamlX.BuildTask\build\NFMWorld.XamlX.BuildTask.targets"
-            Condition="Exists('..\NFMWorld.XamlX.BuildTask\build\NFMWorld.XamlX.BuildTask.targets')"/>
-
     <!-- XAML files to compile -->
     <ItemGroup>
         <AvaloniaXaml Include="Mad\UI\Hud\CentralTextView.xaml" />
