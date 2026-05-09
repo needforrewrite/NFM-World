@@ -563,7 +563,23 @@ class CSharpEmitter : IXamlILEmitter
 
         if (method.IsStatic)
         {
-            call = $"{FormatType(method.DeclaringType)}.{method.Name}({string.Join(", ", args)})";
+            var typeName = FormatType(method.DeclaringType);
+            // Convert static property accessor calls to C# syntax
+            if (method.Name.StartsWith("get_") && args.Length == 0)
+            {
+                var propName = method.Name.Substring(4);
+                call = $"{typeName}.{propName}";
+            }
+            else if (method.Name.StartsWith("set_") && args.Length == 1)
+            {
+                var propName = method.Name.Substring(4);
+                Emit($"{typeName}.{propName} = {args[0]};");
+                return;
+            }
+            else
+            {
+                call = $"{typeName}.{method.Name}({string.Join(", ", args)})";
+            }
         }
         else
         {
