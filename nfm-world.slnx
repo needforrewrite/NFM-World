@@ -44,14 +44,14 @@
     <Project Path="NvgSharp/src/XNA/NvgSharp.FNA.Core.csproj" />
   </Folder>
   <Folder Name="/XamlX/">
-    <Project Path="XamlX.IL.CSharp/XamlX.IL.CSharp.csproj" />
-    <Project Path="XamlX/src/XamlX.IL.Cecil/XamlX.IL.Cecil.csproj" />
-    <Project Path="XamlX/src/XamlX/XamlX.csproj" />
+    <Project Path="WorldXaml/Avalonia.Generators/Avalonia.Generators.csproj" />
+    <Project Path="WorldXaml/NFMWorld.XamlX.Core/NFMWorld.XamlX.Core.csproj" />
+    <Project Path="WorldXaml/XamlX.IL.CSharp/XamlX.IL.CSharp.csproj" />
+    <Project Path="WorldXaml/XamlX/src/XamlX.IL.Cecil/XamlX.IL.Cecil.csproj" />
+    <Project Path="WorldXaml/XamlX/src/XamlX/XamlX.csproj" />
   </Folder>
-  <Project Path="Avalonia.Generators/Avalonia.Generators.csproj" />
   <Project Path="nfm-world/NFMWorld.csproj" />
   <Project Path="NFMW.GenerateSinCosTable/NFMW.GenerateSinCosTable.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />
   <Project Path="NFMWorld.RustBindGen/NFMWorld.RustBindGen.csproj" />
-  <Project Path="NFMWorld.XamlX.Core/NFMWorld.XamlX.Core.csproj" />
 </Solution>
