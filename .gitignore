@@ -30,3 +30,5 @@ replay_pid*
 *.user
 
 /publish
+
+nfm-world/Generated
