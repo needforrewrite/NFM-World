@@ -1,11 +1,10 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using Avalonia.Metadata;
+﻿using Avalonia.Metadata;
 using NFMWorld.UI.Yoga.Xaml;
 
 // Assembly-level XAML namespace mappings
-[assembly: XmlnsDefinition("clr-namespace:nfm_world.ui.yoga", "nfm_world.ui.yoga")]
-[assembly: XmlnsDefinition("clr-namespace:nfm_world.ui.elements", "nfm_world.ui.elements")]
-[assembly: XmlnsDefinition("clr-namespace:nfm_world.ui.yoga.xaml", "nfm_world.ui.yoga.xaml")]
+[assembly: XmlnsDefinition("clr-namespace:NFMWorld.UI.Yoga", "NFMWorld.UI.Yoga")]
+[assembly: XmlnsDefinition("clr-namespace:NFMWorld.UI.Elements", "NFMWorld.UI.Elements")]
+[assembly: XmlnsDefinition("clr-namespace:NFMWorld.UI.Yoga.Xaml", "NFMWorld.UI.Yoga.Xaml")]
 [assembly: XmlnsDefinition("clr-namespace:System;assembly=mscorlib", "System")]
 
 // ReSharper disable once CheckNamespace
