@@ -226,7 +226,7 @@ XamlX and XamlX.IL.CSharp are **source-included** (not ProjectReference) into Av
 
 ### Key classes
 
-- **CSharpEmitter** — Virtual eval stack (`_evalStack`) of `CSharpExpression(expr, type?)`. Translates IL opcodes to C# statements. Tracks arg/local types for correct branching. Pre-declares temp variables (`_tempLocals`) for Dup to survive goto boundaries.
+- **CSharpEmitter** — Virtual eval stack (`_evalStack`) of `CSharpExpression(expr, type?)`. Translates IL opcodes to C# statements. Tracks arg/local types for correct branching. Pre-declares temp variables (`_tempLocals`) for Dup to survive goto boundaries. Uses `_labelStackSnapshots` dict for branch-aware stack reconciliation.
 - **CSharpTypeBuilder** — Generates C# class source. Has nested types: `ConstructedCSharpType` (MakeGenericType result), `ConstructedCtorWrapper` (ctor with constructed declaring type), `CSharpGenericParameterType`.
 - **CSharpFormatting** — Handles `global::` prefixing, primitive aliases, array types, nested types, generic parameter names.
 
@@ -247,6 +247,8 @@ XamlX and XamlX.IL.CSharp are **source-included** (not ProjectReference) into Av
 7. **SkipNodeEmitter** — Handles error-recovery `ISkipXamlAstNode` nodes. Must `Pop()` + return `Void(1)` to consume the stack item that `ManipulationGroupEmitter` Dup'd for this child.
 
 8. **Generated file double-inclusion** — `EmitCompilerGeneratedFiles=true` writes `.g.cs` to `Generated/`. The csproj must have `<Compile Remove="Generated/**" />` to prevent the implicit glob from double-compiling them alongside the in-memory source gen output.
+
+9. **Branch stack divergence** — Conditional branches (`Brfalse`/`Brtrue`) flush the eval stack to temps then save a snapshot via `SaveStackSnapshot`. Unconditional `Br` also flushes+saves and then **clears** the eval stack (dead code after goto). At `MarkLabel`, reconcile assignments are emitted **before** the label so `goto` skips them — only the fall-through path executes them. If the target label already has a snapshot (from a prior branch), `SaveStackSnapshot` emits assignments from the current stack's temps into the canonical snapshot's temps instead of overwriting.
 
 ### Debugging generated output
 

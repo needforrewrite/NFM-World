@@ -25,6 +25,7 @@ class CSharpEmitter : IXamlILEmitter
     private readonly List<CSharpLocal> _locals = new();
     private readonly List<CSharpLocal> _tempLocals = new();
     private readonly Dictionary<CSharpLabel, string> _labelNames = new();
+    private readonly Dictionary<string, List<CSharpExpression>> _labelStackSnapshots = new();
     private int _labelCounter;
     private int _localCounter;
     private int _tempCounter;
@@ -410,7 +411,38 @@ class CSharpEmitter : IXamlILEmitter
     public IXamlILEmitter MarkLabel(IXamlLabel label)
     {
         var csl = (CSharpLabel)label;
-        Emit($"{csl.Name}:;");
+
+        // Reconcile the eval stack with the snapshot saved when a branch targeted this label.
+        // Emit reconcile assignments BEFORE the label so that goto skips them —
+        // only the fall-through path executes these assignments.
+        if (_labelStackSnapshots.TryGetValue(csl.Name, out var snapshot))
+        {
+            var current = new List<CSharpExpression>();
+            while (_evalStack.Count > 0)
+                current.Add(_evalStack.Pop());
+            current.Reverse();
+
+            // Assign fall-through values to the canonical snapshot temps
+            for (int i = 0; i < snapshot.Count && i < current.Count; i++)
+            {
+                if (snapshot[i].Expression != current[i].Expression)
+                    Emit($"{snapshot[i].Expression} = {current[i].Expression};");
+            }
+
+            // Emit the label after the reconcile assignments
+            Emit($"{csl.Name}:;");
+
+            // Restore the snapshot as the canonical eval stack
+            _evalStack.Clear();
+            foreach (var expr in snapshot)
+                _evalStack.Push(expr);
+            _labelStackSnapshots.Remove(csl.Name);
+        }
+        else
+        {
+            Emit($"{csl.Name}:;");
+        }
+
         return this;
     }
 
@@ -421,16 +453,24 @@ class CSharpEmitter : IXamlILEmitter
         if (code == SreOpCodes.Br || code == SreOpCodes.Br_S)
         {
             FlushStack();
+            SaveStackSnapshot(csl.Name);
             Emit($"goto {csl.Name};");
+            // Code after an unconditional goto is dead; clear the eval stack
+            // so MarkLabel for subsequent labels starts with a clean state.
+            _evalStack.Clear();
         }
         else if (code == SreOpCodes.Brfalse || code == SreOpCodes.Brfalse_S)
         {
             var val = Pop();
+            FlushStack();
+            SaveStackSnapshot(csl.Name);
             Emit($"if ({FormatFalsinessCheck(val)}) goto {csl.Name};");
         }
         else if (code == SreOpCodes.Brtrue || code == SreOpCodes.Brtrue_S)
         {
             var val = Pop();
+            FlushStack();
+            SaveStackSnapshot(csl.Name);
             Emit($"if ({FormatTruthinessCheck(val)}) goto {csl.Name};");
         }
         else if (code == SreOpCodes.Beq || code == SreOpCodes.Beq_S)
@@ -601,33 +641,47 @@ class CSharpEmitter : IXamlILEmitter
 
     private string AllocTemp() => $"__tmp_{_tempCounter++}";
 
+    private void SaveStackSnapshot(string labelName)
+    {
+        // Save a copy of the current eval stack so it can be restored/reconciled at MarkLabel.
+        // If a snapshot already exists (from a different branch path), reconcile: emit assignments
+        // so this path writes its values into the canonical temps from the first snapshot.
+        var currentStack = new List<CSharpExpression>(_evalStack.Reverse());
+
+        if (_labelStackSnapshots.TryGetValue(labelName, out var existing))
+        {
+            // Both paths must converge on the same temp variables.
+            // Assign this path's values to the canonical temps from the first snapshot.
+            for (int i = 0; i < existing.Count && i < currentStack.Count; i++)
+            {
+                if (existing[i].Expression != currentStack[i].Expression)
+                    Emit($"{existing[i].Expression} = {currentStack[i].Expression};");
+            }
+            // Keep the existing snapshot as canonical
+        }
+        else
+        {
+            _labelStackSnapshots[labelName] = currentStack;
+        }
+    }
+
     private void FlushStack()
     {
-        // Assign any pending stack values to temps to preserve ordering across gotos
+        // Assign any pending stack values to temps to preserve ordering across gotos.
+        // All values are saved to temps to ensure consistent stack state across branches.
         var pending = new List<CSharpExpression>();
         while (_evalStack.Count > 0)
             pending.Add(_evalStack.Pop());
 
         pending.Reverse();
-        var newExprs = new List<CSharpExpression>();
         foreach (var expr in pending)
         {
-            if (!IsSimpleExpression(expr.Expression))
-            {
-                var temp = AllocTemp();
-                var tempType = expr.Type ?? TypeSystem.GetType("System.Object, System.Private.CoreLib");
-                _tempLocals.Add(new CSharpLocal(temp, -1, tempType));
-                Emit($"{temp} = {expr.Expression};");
-                newExprs.Add(new CSharpExpression(temp, expr.Type));
-            }
-            else
-            {
-                newExprs.Add(expr);
-            }
+            var temp = AllocTemp();
+            var tempType = expr.Type ?? TypeSystem.GetType("System.Object, System.Private.CoreLib");
+            _tempLocals.Add(new CSharpLocal(temp, -1, tempType));
+            Emit($"{temp} = {expr.Expression};");
+            _evalStack.Push(new CSharpExpression(temp, expr.Type));
         }
-
-        foreach (var expr in newExprs)
-            _evalStack.Push(expr);
     }
 
     private static bool IsSimpleExpression(string expr)
