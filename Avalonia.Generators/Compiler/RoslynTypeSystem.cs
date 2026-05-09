@@ -99,7 +99,9 @@ internal class RoslynAttribute : IXamlCustomAttribute
 
     public List<object?> Parameters =>
         _data.ConstructorArguments
-            .Select(argument => argument.Value)
+            .Select(argument => argument.Kind == TypedConstantKind.Type && argument.Value is INamedTypeSymbol nts
+                ? (object?)new RoslynType(nts, _assembly)
+                : argument.Value)
             .ToList();
 
     public Dictionary<string, object?> Properties =>
