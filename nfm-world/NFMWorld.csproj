@@ -99,14 +99,14 @@
     <!-- windows builds -->
     <Target Name="CopyCustomContentWindows" AfterTargets="AfterBuild" Condition="'$(OS)' == 'Windows_NT'">
         <ItemGroup>
-            <DllFiles Include="skiadriver/*.dll"/>
+            <DllFiles Include="SkiaDriver/*.dll"/>
         </ItemGroup>
         <Copy SourceFiles="@(DllFiles)" DestinationFolder="$(OutDir)"/>
     </Target>
 
     <Target Name="CopyCustomContentWindows_Publish" AfterTargets="Publish" Condition="'$(OS)' == 'Windows_NT'">
         <ItemGroup>
-            <DllFiles Include="skiadriver/*.dll"/>
+            <DllFiles Include="SkiaDriver/*.dll"/>
         </ItemGroup>
         <Copy SourceFiles="@(DllFiles)" DestinationFolder="$(PublishDir)"/>
     </Target>
@@ -114,16 +114,16 @@
     <!-- linux builds -->
     <Target Name="CopyCustomContentLinux" AfterTargets="AfterBuild" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
         <ItemGroup>
-            <SoFiles Include="skiadriver/*.so"/>
-            <SoFiles Include="skiadriver/*.so.0"/>
+            <SoFiles Include="SkiaDriver/*.so"/>
+            <SoFiles Include="SkiaDriver/*.so.0"/>
         </ItemGroup>
         <Copy SourceFiles="@(SoFiles)" DestinationFolder="$(OutDir)"/>
     </Target>
 
     <Target Name="CopyCustomContentLinux_Publish" AfterTargets="Publish" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
         <ItemGroup>
-            <SoFiles Include="skiadriver/*.so"/>
-            <SoFiles Include="skiadriver/*.so.0"/>
+            <SoFiles Include="SkiaDriver/*.so"/>
+            <SoFiles Include="SkiaDriver/*.so.0"/>
         </ItemGroup>
         <Copy SourceFiles="@(SoFiles)" DestinationFolder="$(PublishDir)"/>
     </Target>
@@ -131,14 +131,14 @@
     <!-- mac builds -->
     <Target Name="CopyCustomContentLinux" AfterTargets="AfterBuild" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
         <ItemGroup>
-            <DylibFiles Include="skiadriver/*.dylib"/>
+            <DylibFiles Include="SkiaDriver/*.dylib"/>
         </ItemGroup>
         <Copy SourceFiles="@(DylibFiles)" DestinationFolder="$(OutDir)"/>
     </Target>
 
     <Target Name="CopyCustomContentLinux_Publish" AfterTargets="Publish" Condition="$([MSBuild]::IsOSPlatform('OSX'))">
         <ItemGroup>
-            <DylibFiles Include="skiadriver/*.dylib"/>
+            <DylibFiles Include="SkiaDriver/*.dylib"/>
         </ItemGroup>
         <Copy SourceFiles="@(DylibFiles)" DestinationFolder="$(PublishDir)"/>
     </Target>
