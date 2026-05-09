@@ -12,8 +12,8 @@
     <AssemblyVersion>1.0.0.0</AssemblyVersion>
     <TieredCompilation>false</TieredCompilation>
     <OptimizationPreference>Speed</OptimizationPreference>
-        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
   <ItemGroup>
         <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->
@@ -94,11 +94,6 @@
     <!-- Import the XAML build targets (only if the task is built) -->
     <Import Project="..\NFMWorld.XamlX.BuildTask\build\NFMWorld.XamlX.BuildTask.targets"
             Condition="Exists('..\NFMWorld.XamlX.BuildTask\build\NFMWorld.XamlX.BuildTask.targets')"/>
-
-    <!-- rd.xml file for runtime directive preservation -->
-    <ItemGroup>
-        <RdXmlFile Include="rd.xml"/>
-    </ItemGroup>
 
     <!-- XAML files to compile -->
     <ItemGroup>
