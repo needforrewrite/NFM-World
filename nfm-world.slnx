@@ -45,7 +45,7 @@
   </Folder>
   <Folder Name="/XamlX/">
     <Project Path="WorldXaml/Avalonia.Generators/Avalonia.Generators.csproj" />
-    <Project Path="WorldXaml/NFMWorld.XamlX.Core/NFMWorld.XamlX.Core.csproj" />
+    <Project Path="WorldXaml/WorldXaml.Core/WorldXaml.Core.csproj" />
     <Project Path="WorldXaml/XamlX.IL.CSharp/XamlX.IL.CSharp.csproj" />
     <Project Path="WorldXaml/XamlX/src/XamlX.IL.Cecil/XamlX.IL.Cecil.csproj" />
     <Project Path="WorldXaml/XamlX/src/XamlX/XamlX.csproj" />

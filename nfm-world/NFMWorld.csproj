@@ -62,7 +62,7 @@
         <ProjectReference Include="..\Maxine.Extensions\RayTech.RayLog.MEL\RayTech.RayLog.MEL.csproj" />
         <ProjectReference Include="..\MonoGame.ImGuiNet\MonoGame.ImGuiNet\Monogame.ImGuiNet.csproj"/>
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
-        <ProjectReference Include="..\WorldXaml\NFMWorld.XamlX.Core\NFMWorld.XamlX.Core.csproj"/>
+        <ProjectReference Include="..\WorldXaml\WorldXaml.Core\WorldXaml.Core.csproj" />
         <ProjectReference Include="..\NvgSharp\src\NvgSharp.Text\NvgSharp.Text.FNA.Core.csproj"/>
         <ProjectReference Include="..\NvgSharp\src\XNA\NvgSharp.FNA.Core.csproj"/>
         <ProjectReference Include="..\XamlX\src\XamlX.Runtime\XamlX.Runtime.csproj"/>
