@@ -20,8 +20,8 @@
         <Compile Remove="Generated/**" />
   </ItemGroup>
   <PropertyGroup>
-      <AvaloniaNameGeneratorBehavior>WithXamlXCompilation</AvaloniaNameGeneratorBehavior>
-      <NfmWorldAvaloniaNameGeneratorIsHotReloadingEnabled>true</NfmWorldAvaloniaNameGeneratorIsHotReloadingEnabled>
+      <WorldXamlGeneratorBehavior>WithXamlXCompilation</WorldXamlGeneratorBehavior>
+      <WorldXamlGeneratorIsHotReloadingEnabled>true</WorldXamlGeneratorIsHotReloadingEnabled>
   </PropertyGroup>
 <!--
     <PropertyGroup Condition="'$(Configuration)' != 'Debug'">
@@ -66,15 +66,11 @@
         <ProjectReference Include="..\NvgSharp\src\NvgSharp.Text\NvgSharp.Text.FNA.Core.csproj"/>
         <ProjectReference Include="..\NvgSharp\src\XNA\NvgSharp.FNA.Core.csproj"/>
         <ProjectReference Include="..\XamlX\src\XamlX.Runtime\XamlX.Runtime.csproj"/>
-        <!-- Reference Avalonia.Generators for XAML source generation -->
-        <ProjectReference Include="..\WorldXaml\Avalonia.Generators\Avalonia.Generators.csproj"
-                          PrivateAssets="all"
-                          ReferenceOutputAssembly="false"
-                          OutputItemType="Analyzer"
-        />
+        <!-- Reference WorldXaml.Generator for XAML source generation -->
+        <ProjectReference Include="..\WorldXaml\WorldXaml.Generator\WorldXaml.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>
 
-    <Import Project="../WorldXaml/Avalonia.Generators/Avalonia.Generators.props" />
+    <Import Project="../WorldXaml/WorldXaml.Generator/WorldXaml.Generator.props" />
 
     <ItemGroup>
         <ProjectReference Include="..\XamlX\src\XamlX\XamlX.csproj"/>
