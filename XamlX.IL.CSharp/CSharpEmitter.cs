@@ -166,7 +166,16 @@ class CSharpEmitter : IXamlILEmitter
 
         if (code == SreOpCodes.Ldfld)
         {
-            var obj = PopExpr();
+            var objPop = Pop();
+            var obj = objPop.Expression;
+            if (objPop.Type != null && !objPop.Type.Equals(field.DeclaringType))
+            {
+                bool needsCast;
+                try { needsCast = !field.DeclaringType.IsAssignableFrom(objPop.Type); }
+                catch { needsCast = true; }
+                if (needsCast)
+                    obj = $"(({FormatType(field.DeclaringType)}){obj})";
+            }
             Push($"{obj}.{field.Name}", field.FieldType);
         }
         else if (code == SreOpCodes.Ldsfld)
@@ -176,7 +185,16 @@ class CSharpEmitter : IXamlILEmitter
         else if (code == SreOpCodes.Stfld)
         {
             var value = PopExpr();
-            var obj = PopExpr();
+            var objPop = Pop();
+            var obj = objPop.Expression;
+            if (objPop.Type != null && !objPop.Type.Equals(field.DeclaringType))
+            {
+                bool needsCast;
+                try { needsCast = !field.DeclaringType.IsAssignableFrom(objPop.Type); }
+                catch { needsCast = true; }
+                if (needsCast)
+                    obj = $"(({FormatType(field.DeclaringType)}){obj})";
+            }
             if (field.FieldType.IsEnum)
                 value = $"(({FormatType(field.FieldType)}){value})";
             Emit($"{obj}.{field.Name} = {value};");
@@ -508,7 +526,19 @@ class CSharpEmitter : IXamlILEmitter
         }
         else
         {
-            var obj = PopExpr();
+            var objPop = Pop();
+            var obj = objPop.Expression;
+            var objType = objPop.Type;
+
+            // Cast object to method's declaring type if the tracked type doesn't have the method
+            if (objType != null && !objType.Equals(method.DeclaringType))
+            {
+                bool needsCast;
+                try { needsCast = !method.DeclaringType.IsAssignableFrom(objType); }
+                catch { needsCast = true; }
+                if (needsCast)
+                    obj = $"(({FormatType(method.DeclaringType)}){obj})";
+            }
 
             // Convert property/indexer accessor calls to C# syntax
             if (method.Name == "get_Item" && args.Length >= 1)

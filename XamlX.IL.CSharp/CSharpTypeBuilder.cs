@@ -79,7 +79,9 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
     public IReadOnlyList<IXamlType> GenericParameters => _genericParamTypes;
     public bool IsFunctionPointer => false;
 
-    public bool IsAssignableFrom(IXamlType type) => type.Equals(this) || type.GetAllInterfaces().Any(i => i.Equals(this));
+    public bool IsAssignableFrom(IXamlType type) => type.Equals(this)
+        || type.GetAllInterfaces().Any(i => i.Equals(this))
+        || (type is ConstructedCSharpType ct && ct.GenericTypeDefinition == this);
     public IXamlType MakeGenericType(IReadOnlyList<IXamlType> typeArguments) => new ConstructedCSharpType(this, typeArguments);
     public IXamlType MakeArrayType(int dimensions) => throw new NotSupportedException();
     public IXamlType GetEnumUnderlyingType() => throw new NotSupportedException();
@@ -110,7 +112,7 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
         for (var i = 0; i < argsList.Count; i++)
             argNames[i] = $"arg{i}";
 
-        var methodCtx = new CSharpMethodContext(returnType, isStatic, false, argNames, argsList.ToArray());
+        var methodCtx = new CSharpMethodContext(returnType, isStatic, false, argNames, argsList.ToArray(), this);
         var emitter = new CSharpEmitter(_typeSystem, methodCtx);
         var method = new CSharpMethodBuilder(this, returnType, argsList, name, visibility, isStatic, isInterfaceImpl, argNames, emitter, overrideMethod);
         _methods.Add(method);
@@ -130,7 +132,7 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
         for (var i = 0; i < args.Length; i++)
             argNames[i] = $"arg{i}";
 
-        var methodCtx = new CSharpMethodContext(null, isStatic, true, argNames, args);
+        var methodCtx = new CSharpMethodContext(null, isStatic, true, argNames, args, this);
         var emitter = new CSharpEmitter(_typeSystem, methodCtx);
         var ctor = new CSharpConstructorBuilder(this, isStatic, args, argNames, emitter);
         _constructors.Add(ctor);

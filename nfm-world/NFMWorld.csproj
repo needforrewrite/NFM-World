@@ -14,6 +14,12 @@
     <OptimizationPreference>Speed</OptimizationPreference>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+  <ItemGroup>
+        <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->
+        <Compile Remove="Generated/**" />
+  </ItemGroup>
+  <PropertyGroup>
       <AvaloniaNameGeneratorBehavior>WithXamlXCompilation</AvaloniaNameGeneratorBehavior>
       <NfmWorldAvaloniaNameGeneratorIsHotReloadingEnabled>true</NfmWorldAvaloniaNameGeneratorIsHotReloadingEnabled>
   </PropertyGroup>

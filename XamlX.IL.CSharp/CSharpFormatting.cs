@@ -37,8 +37,12 @@ internal static class CSharpFormatting
         if (type.IsArray && type.ArrayElementType != null)
             return FormatType(type.ArrayElementType) + "[]";
 
-        if (type is CSharpTypeBuilder)
-            return type.FullName;
+        if (type is CSharpTypeBuilder csBuilder)
+        {
+            if (csBuilder.GenericParameters.Count > 0)
+                return csBuilder.FullName + "<" + string.Join(", ", csBuilder.GenericParameters.Select(p => p.Name)) + ">";
+            return csBuilder.FullName;
+        }
 
         // Constructed generic CSharpTypeBuilder (e.g. Context<SomeNode>)
         if (type is ConstructedCSharpType constructed)

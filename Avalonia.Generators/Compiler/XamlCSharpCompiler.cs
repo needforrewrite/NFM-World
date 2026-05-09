@@ -242,7 +242,12 @@ internal class SkipNodeEmitter : IXamlAstNodeEmitter<IXamlILEmitter, XamlILNodeE
     public XamlILNodeEmitResult? Emit(IXamlAstNode node, XamlEmitContext<IXamlILEmitter, XamlILNodeEmitResult> context, IXamlILEmitter codeGen)
     {
         if (node is ISkipXamlAstNode)
-            return XamlILNodeEmitResult.Void(0);
+        {
+            // Pop the item that ManipulationGroup Dup'd for this child.
+            // Each MG child is expected to consume exactly 1 item from the stack.
+            codeGen.Pop();
+            return XamlILNodeEmitResult.Void(1);
+        }
         return null;
     }
 }
