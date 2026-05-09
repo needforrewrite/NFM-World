@@ -190,3 +190,78 @@ When updating the namespaces for Yoga types, make sure to update Avalonia.Genera
     public static bool IsAvaloniaWindow(this IXamlType clrType) =>
         Inherits(clrType, "NFMWorld.UI.Yoga.Window");
 ```
+
+---
+
+## XamlX C# Code Generator (Source Generator Backend)
+
+The project has a source-generator backend that compiles XAML to C# at build time (instead of IL weaving). It lives across two projects, source-included into the Roslyn analyzer DLL.
+
+### Architecture
+
+```
+Avalonia.Generators/          — Roslyn incremental source generator (netstandard2.0)
+  Compiler/
+    RoslynTypeSystem.cs       — IXamlTypeSystem wrapping Roslyn ISymbol API
+    XamlCSharpCompiler.cs     — Wraps XamlILCompiler for XAML→C# compilation
+  NameGenerator/
+    AvaloniaNameIncrementalGenerator.cs — Main source gen entry point & pipeline
+    XamlXCodeGenerator.cs     — Generates partial class with InitializeComponent + compiled members
+
+XamlX.IL.CSharp/              — C# emission backend (source-included into Avalonia.Generators)
+  CSharpEmitter.cs            — Translates IL opcodes → C# statements via virtual eval stack
+  CSharpTypeBuilder.cs        — IXamlTypeBuilder collecting type/method/field defs → C# source
+  CSharpFormatting.cs         — Type name formatting (global:: prefix, generics, primitives)
+```
+
+XamlX and XamlX.IL.CSharp are **source-included** (not ProjectReference) into Avalonia.Generators via `<Compile Include="..\XamlX\..." />` with `XAMLX_INTERNAL` define for internal visibility.
+
+### Pipeline flow
+
+1. `AvaloniaNameIncrementalGenerator` parses XAML into `parsedXamlClasses`
+2. Creates `XamlCSharpCompiler` (wrapping `XamlILCompiler` + `CSharpTypeBuilder`)
+3. Each view: `CompileView(xamlSource, filePath, xClassName)` → compiled C# members
+4. `XamlXCodeGenerator` embeds compiled members into a partial class with `InitializeComponent()` calling `Populate(null, this)`
+5. Shared `__XamlContext.g.cs` is emitted once via `ContextSource`
+
+### Key classes
+
+- **CSharpEmitter** — Virtual eval stack (`_evalStack`) of `CSharpExpression(expr, type?)`. Translates IL opcodes to C# statements. Tracks arg/local types for correct branching. Pre-declares temp variables (`_tempLocals`) for Dup to survive goto boundaries.
+- **CSharpTypeBuilder** — Generates C# class source. Has nested types: `ConstructedCSharpType` (MakeGenericType result), `ConstructedCtorWrapper` (ctor with constructed declaring type), `CSharpGenericParameterType`.
+- **CSharpFormatting** — Handles `global::` prefixing, primitive aliases, array types, nested types, generic parameter names.
+
+### Common pitfalls when modifying the emitter
+
+1. **Eval stack type tracking** — Every `Push()` should include the type when known. Methods that `Pop()` and operate on the value must check `.Type` to emit correct casts. Missing types cause `object` temps from Dup and wrong code downstream.
+
+2. **Dup scoping** — `Dup` creates temp variables (`__tmp_N`). These must be pre-declared at method scope (in `_tempLocals`) because they may be referenced across goto labels. Never use `var` for Dup temps inside conditional blocks.
+
+3. **IL→C# property/indexer conversion** — `get_X()` → `.X`, `set_X(val)` → `.X = val`, `get_Item(i)` → `[i]`, `set_Item(i, val)` → `[i] = val`. This happens in `EmitMethodCall`. Explicit interface implementations use full `Interface.Method` naming.
+
+4. **Enum casts** — XamlX compiles enum values as `int` literals. Property setters and Stfld must wrap with `((EnumType)value)` when the target type `.IsEnum`.
+
+5. **Instance method/field casts** — When the eval stack's tracked type doesn't match the method's `DeclaringType`, emit `((DeclaringType)obj)`. Use `IsAssignableFrom` to avoid unnecessary casts.
+
+6. **Generic types** — `CSharpTypeBuilder.IsAssignableFrom` must handle `ConstructedCSharpType` (e.g., `Context<View>` is assignable to `Context<TTarget>` definition). `FormatType` must include generic parameters for `CSharpTypeBuilder` types.
+
+7. **SkipNodeEmitter** — Handles error-recovery `ISkipXamlAstNode` nodes. Must `Pop()` + return `Void(1)` to consume the stack item that `ManipulationGroupEmitter` Dup'd for this child.
+
+8. **Generated file double-inclusion** — `EmitCompilerGeneratedFiles=true` writes `.g.cs` to `Generated/`. The csproj must have `<Compile Remove="Generated/**" />` to prevent the implicit glob from double-compiling them alongside the in-memory source gen output.
+
+### Debugging generated output
+
+- Set `EmitCompilerGeneratedFiles=true` in the csproj (already set)
+- Generated files appear in `nfm-world/Generated/Avalonia.Generators/.../*.g.cs`
+- `__XamlContext.g.cs` — shared context type (should appear once, not duplicated)
+- `__AvaloniaLogs.g.cs` — diagnostic log output from the source generator
+- Per-view files: `Namespace.ClassName.g.cs`
+- To iterate: `Remove-Item -Recurse nfm-world/Generated; dotnet build nfm-world/NFMWorld.csproj`
+
+### XamlX IL stack semantics (for emitter work)
+
+The XamlX compiler uses IL stack conventions:
+- **ValueWithManipulationsEmitter**: emits value (Newobj), then Dup + emit manipulation, leaving one copy
+- **ManipulationGroupEmitter**: Dup before each non-final child, each child consumes 1 via its emitter
+- **ObjectInitializationNodeEmitter**: optionally Dup for BeginInit/EndInit, pushes/pops parent stack
+- **PropertyAssignmentEmitter**: consumes 1 (the parent object), emits property value + setter call
+- The CSharpEmitter must faithfully track these stack operations via its `_evalStack`
