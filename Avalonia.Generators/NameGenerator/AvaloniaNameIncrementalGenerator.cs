@@ -41,7 +41,7 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
 #if AVA_DEBUG
         if (!Debugger.IsAttached) 
         { 
-            Debugger.Launch(); 
+            //Debugger.Launch(); 
         }
 #endif
         
@@ -147,28 +147,57 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
                     resolvedXmlView = null;
                 }
 
-                return new XmlClassInfo(file.Path, resolvedXmlView, diagnosticFactory);
+                return new XmlClassInfo(file.Path, xaml, resolvedXmlView, diagnosticFactory);
             })
             .Where(request => request is not null)
             .WithTrackingName(TrackingNames.ParsedXamlClasses);
-
+        
         // IMPORTANT: we shouldn't cache CompilationProvider as a whole,
         // But we also should keep in mind that CompilationProvider can frequently re-trigger generator.
-        var compiler = context.CompilationProvider
-            .Select(static (compilation, _) =>
-            {
-                var roslynTypeSystem = new RoslynTypeSystem(compilation);
-                return MiniCompiler.CreateRoslyn(roslynTypeSystem, MiniCompiler.AvaloniaXmlnsDefinitionAttribute);
-            })
+        var roslynTypeSystem = context.CompilationProvider
+            .Select(static (compilation, _) => new RoslynTypeSystem(compilation))
+            .WithTrackingName(TrackingNames.RoslynTypeSystem);
+
+        var compiler = roslynTypeSystem
+            .Select(static (roslynTypeSystem, _) => MiniCompiler.CreateRoslyn(roslynTypeSystem, MiniCompiler.AvaloniaXmlnsDefinitionAttribute))
             .WithTrackingName(TrackingNames.XamlTypeSystem);
 
+        // Create C# XAML compiler for full XAML-to-C# compilation (WithXamlXCompilation behavior).
+        var csharpCompiler = roslynTypeSystem
+            .Combine(options)
+            .Select(static (pair, _) =>
+            {
+                var (roslynTypeSystem, options) = pair;
+                
+                try
+                {
+                    return new XamlCSharpCompiler(roslynTypeSystem, options.NfmWorldAvaloniaNameGeneratorIsHotReloadingEnabled);
+                }
+                catch (Exception ex)
+                {
+                    Print($"Failed to create {nameof(XamlCSharpCompiler)}: {ex}");
+                    
+                    return null;
+                }
+            })
+            .WithTrackingName(TrackingNames.XamlCSharpCompiler);
+        
+        // Generate the shared XamlContext type (used by all compiled XAML views).
+        context.RegisterSourceOutput(csharpCompiler, static (ctx, compiler) =>
+        {
+            if (compiler != null)
+                ctx.AddSource("__XamlContext.g.cs", compiler.ContextSource);
+            ctx.AddSource($"logs2.g.cs", SourceText.From(string.Join("\n", Logs), Encoding.UTF8));
+        });
+        
         // Note: this step will be re-executed on any C# file changes.
         // As much as possible heavy tasks should be moved outside of this step, like XAML parsing.
         var resolvedNames = parsedXamlClasses
             .Combine(compiler)
+            .Combine(csharpCompiler)
             .Select(static (pair, ct) =>
             {
-                var (classInfo, compiler) = pair;
+                var ((classInfo, compiler), csharpCompiler) = pair;
                 var hasDevToolsReference = compiler.TypeSystem.FindAssembly("Avalonia.Diagnostics") is not null;
                 var nameResolver = new XamlXNameResolver();
 
@@ -179,6 +208,7 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
                 }
 
                 ResolvedView? view = null;
+                string? compiledXamlSource = null;
                 if (classInfo?.XmlView is { } xmlView)
                 {
                     var type = compiler.TypeSystem.FindType(xmlView.FullName);
@@ -199,7 +229,7 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
                                 var clrType = compiler.ResolveXamlType(xmlName.XmlType);
                                 if (!clrType.IsAvaloniaStyledElement())
                                 {
-                                    Print("Skipping name resolution for non-StyledElement type: " + clrType.GetFqn());
+                                    Print($"Skipping name resolution for non-StyledElement type: {clrType.GetFqn()}");
                                     continue;
                                 }
 
@@ -208,22 +238,40 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
                             }
                             catch (XmlException ex)
                             {
-                                Print("Caught XmlException during name resolution: " + ex.Message);
+                                Print($"Caught XmlException during name resolution: {ex.Message}");
                                 diagnostics.Add(new(NameGeneratorDiagnostics.NamedElementFailed,
                                     new(classInfo.FilePath, GetLinePositionSpan(ex)), new([xmlName.Name, ex.Message])));
                             }
                             catch (Exception ex)
                             {
-                                Print("Caught general Exception during name resolution: " + ex.ToString());
+                                Print($"Caught general Exception during name resolution: {ex}");
                                 diagnostics.Add(GetInternalErrorDiagnostic(new(classInfo.FilePath, default), ex));
                             }
                         }
 
                         view = new ResolvedView(xmlView, type.IsAvaloniaWindow(), new(resolvedNames));
+
+                        // Compile XAML to C# for WithXamlXCompilation behavior
+                        if (csharpCompiler != null && classInfo.XamlSource != null)
+                        {
+                            try
+                            {
+                                compiledXamlSource = csharpCompiler.CompileView(classInfo.XamlSource, classInfo.FilePath, out var xamlDiagnostics);
+                                foreach (var diag in xamlDiagnostics)
+                                {
+                                    diagnostics.Add(new(diag, new(classInfo.FilePath, default), new([xmlView.FullName])));
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Print($"Caught general Exception during XAML compilation: {ex}");
+                                diagnostics.Add(GetInternalXamlErrorDiagnostic(new(classInfo.FilePath, default), ex));
+                            }
+                        }
                     }
                 }
 
-                return new ResolvedClassInfo(view, hasDevToolsReference, new(diagnostics));
+                return new ResolvedClassInfo(view, hasDevToolsReference, new(diagnostics), compiledXamlSource);
             })
             .WithTrackingName(TrackingNames.ResolvedNamesProvider);
 
@@ -245,6 +293,10 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
                     Behavior.InitializeComponent => new InitializeComponentCodeGenerator(
                         options.AvaloniaNameGeneratorAttachDevTools && info.CanAttachDevTools && view.IsWindow,
                         options.AvaloniaNameGeneratorClassFieldModifier),
+                    Behavior.WithXamlXCompilation => new XamlXCodeGenerator(
+                        options.AvaloniaNameGeneratorAttachDevTools && info.CanAttachDevTools && view.IsWindow,
+                        options.AvaloniaNameGeneratorClassFieldModifier,
+                        info.CompiledXamlSource),
                     _ => throw new ArgumentOutOfRangeException()
                 };
                 var fileName = options.AvaloniaNameGeneratorViewFileNamingStrategy switch
@@ -264,6 +316,8 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
                 Print("Generating file: " + fileName);
                 context.AddSource(fileName, generatedPartialClass);
             }
+
+            context.AddSource($"logs1-{Guid.NewGuid()}.g.cs", SourceText.From(string.Join("\n", Logs), Encoding.UTF8));
         });
         
 #if AVA_DEBUG
@@ -275,6 +329,9 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
 
     private static DiagnosticFactory GetInternalErrorDiagnostic(FileLinePositionSpan location, Exception ex) =>
         new(NameGeneratorDiagnostics.InternalError, location, new([ex.ToString().Replace('\n', '*').Replace('\r', '*')]));
+
+    private static DiagnosticFactory GetInternalXamlErrorDiagnostic(FileLinePositionSpan location, Exception ex) =>
+        new(NameGeneratorDiagnostics.InternalErrorCompilingXaml, location, new([ex.ToString().Replace('\n', '*').Replace('\r', '*')]));
 
     /// <summary>
     /// Fallback in case XAML parsing fails. Extracts just the class name and namespace of the root element.
@@ -305,13 +362,15 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
 
     internal record XmlClassInfo(
         string FilePath,
+        string? XamlSource,
         ResolvedXmlView? XmlView,
         DiagnosticFactory? Diagnostic);
 
     internal record ResolvedClassInfo(
         ResolvedView? View,
         bool CanAttachDevTools,
-        EquatableList<DiagnosticFactory> Diagnostics);
+        EquatableList<DiagnosticFactory> Diagnostics,
+        string? CompiledXamlSource);
 
     /// <summary>
     /// Avoid holding references to <see cref="Diagnostic"/> because it can hold references to <see cref="ISymbol"/>, <see cref="SyntaxTree"/>, etc.

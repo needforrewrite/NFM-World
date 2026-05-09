@@ -45,8 +45,17 @@ internal class RoslynTypeSystem : IXamlTypeSystem
         _assemblies
             .Select(assemblyInstance => assemblyInstance.FindType(name))
             .FirstOrDefault(type => type != null);
+
+    internal static IXamlType WrapType(ITypeSymbol symbol, RoslynAssembly assembly)
+    {
+        if (symbol is IArrayTypeSymbol arrayType)
+            return new RoslynArrayType(arrayType, assembly);
+        if (symbol is INamedTypeSymbol namedType)
+            return new RoslynType(namedType, assembly);
+        return XamlPseudoType.Unknown;
+    }
 }
-    
+
 internal class RoslynAssembly : IXamlAssembly
 {
     private readonly IAssemblySymbol _symbol;
@@ -98,14 +107,15 @@ internal class RoslynAttribute : IXamlCustomAttribute
             pair => pair.Key,
             pair => pair.Value.Value);
 }
-    
+
 internal class RoslynType : IXamlType
 {
-    private static readonly SymbolDisplayFormat SymbolDisplayFormat = new SymbolDisplayFormat(
+    private static readonly SymbolDisplayFormat NamespaceFormat = new SymbolDisplayFormat(
+        typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
+
+    private static readonly SymbolDisplayFormat MetadataNameFormat = new SymbolDisplayFormat(
         typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
-        genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters |
-                         SymbolDisplayGenericsOptions.IncludeTypeConstraints |
-                         SymbolDisplayGenericsOptions.IncludeVariance);
+        genericsOptions: SymbolDisplayGenericsOptions.None);
 
     private readonly RoslynAssembly _assembly;
     private readonly INamedTypeSymbol _symbol;
@@ -117,16 +127,36 @@ internal class RoslynType : IXamlType
     }
 
     public bool Equals(IXamlType other) =>
-        other is RoslynType roslynType && 
+        other is RoslynType roslynType &&
         SymbolEqualityComparer.Default.Equals(_symbol, roslynType._symbol);
 
-    public object Id => _symbol;
-        
-    public string Name => _symbol.Name;
+    public override int GetHashCode() => SymbolEqualityComparer.Default.GetHashCode(_symbol);
 
-    public string Namespace => _symbol.ContainingNamespace.ToDisplayString(SymbolDisplayFormat);
+    public object Id => SymbolEqualityComparer.Default.GetHashCode(_symbol);
 
-    public string FullName => $"{Namespace}.{Name}";
+    public string Name => _symbol.MetadataName;
+
+    public string? Namespace
+    {
+        get
+        {
+            var ns = _symbol.ContainingNamespace;
+            return ns is { IsGlobalNamespace: false } ? ns.ToDisplayString() : null;
+        }
+    }
+
+    public string FullName
+    {
+        get
+        {
+            if (_symbol.ContainingType != null)
+            {
+                var declaring = new RoslynType(_symbol.ContainingType, _assembly);
+                return declaring.FullName + "+" + _symbol.MetadataName;
+            }
+            return Namespace != null ? $"{Namespace}.{_symbol.MetadataName}" : _symbol.MetadataName;
+        }
+    }
 
     public IXamlAssembly Assembly => _assembly;
 
@@ -139,60 +169,226 @@ internal class RoslynType : IXamlType
 
     public IReadOnlyList<IXamlProperty> Properties =>
         _symbol.GetMembers()
-            .Where(member => member.Kind == SymbolKind.Property)
             .OfType<IPropertySymbol>()
-            .Select(property => new RoslynProperty(property, _assembly))
+            .Where(p => !p.IsIndexer)
+            .Select(property => (IXamlProperty)new RoslynProperty(property, _assembly))
             .ToList();
 
-    public IReadOnlyList<IXamlEventInfo> Events => [];
-        
-    public IReadOnlyList<IXamlField> Fields => [];
-        
-    public IReadOnlyList<IXamlMethod> Methods => [];
+    public IReadOnlyList<IXamlEventInfo> Events =>
+        _symbol.GetMembers()
+            .OfType<IEventSymbol>()
+            .Select(e => (IXamlEventInfo)new RoslynEvent(e, _assembly))
+            .ToList();
+
+    public IReadOnlyList<IXamlField> Fields =>
+        _symbol.GetMembers()
+            .OfType<IFieldSymbol>()
+            .Select(f => (IXamlField)new RoslynField(f, _assembly))
+            .ToList();
+
+    public IReadOnlyList<IXamlMethod> Methods =>
+        _symbol.GetMembers()
+            .OfType<IMethodSymbol>()
+            .Where(m => m.MethodKind is MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation)
+            .Select(m => (IXamlMethod)new RoslynMethod(m, _assembly))
+            .ToList();
 
     public IReadOnlyList<IXamlConstructor> Constructors =>
-        _symbol.Constructors
-            .Select(method => new RoslynConstructor(method, _assembly))
+        _symbol.InstanceConstructors
+            .Select(method => (IXamlConstructor)new RoslynConstructor(method, _assembly))
             .ToList();
 
-    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes => [];
+    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes =>
+        _symbol.GetAttributes()
+            .Where(a => a.AttributeClass != null)
+            .Select(a => (IXamlCustomAttribute)new RoslynAttribute(a, _assembly))
+            .ToList();
 
-    public IReadOnlyList<IXamlType> GenericArguments { get; private set; } = new List<IXamlType>();
+    public IReadOnlyList<IXamlType> GenericArguments =>
+        _symbol.TypeArguments
+            .Select(ta => RoslynTypeSystem.WrapType(ta, _assembly))
+            .ToList();
 
-    public bool IsAssignableFrom(IXamlType type) => type == this;
+    public bool IsAssignableFrom(IXamlType type)
+    {
+        if (Equals(type))
+            return true;
+        if (type is not RoslynType rt)
+            return false;
+        var conversion = CSharpCompilation.Create("dummy").ClassifyCommonConversion(rt._symbol, _symbol);
+        if (conversion.IsImplicit || conversion.IsIdentity)
+            return true;
+        // Fallback: walk hierarchy
+        if (!_symbol.IsValueType)
+        {
+            for (var bt = rt._symbol.BaseType; bt != null; bt = bt.BaseType)
+            {
+                if (SymbolEqualityComparer.Default.Equals(bt, _symbol))
+                    return true;
+            }
+            foreach (var iface in rt._symbol.AllInterfaces)
+            {
+                if (SymbolEqualityComparer.Default.Equals(iface, _symbol))
+                    return true;
+            }
+        }
+        return false;
+    }
 
     public IXamlType MakeGenericType(IReadOnlyList<IXamlType> typeArguments)
     {
-        GenericArguments = typeArguments;
-        return this;
+        if (_symbol.TypeParameters.Length == 0 || typeArguments.Count != _symbol.TypeParameters.Length)
+            return this;
+        var roslynArgs = typeArguments.Select(ta =>
+        {
+            if (ta is RoslynType rt) return rt._symbol;
+            if (ta is RoslynArrayType rat) return rat.Symbol;
+            return (ITypeSymbol)_symbol.TypeParameters[0]; // fallback
+        }).ToArray();
+        var constructed = _symbol.OriginalDefinition.Construct(roslynArgs);
+        return new RoslynType(constructed, _assembly);
     }
 
-    public IXamlType GenericTypeDefinition => this;
-        
+    public IXamlType? GenericTypeDefinition =>
+        _symbol.IsGenericType && !SymbolEqualityComparer.Default.Equals(_symbol, _symbol.OriginalDefinition)
+            ? new RoslynType(_symbol.OriginalDefinition, _assembly)
+            : null;
+
     public bool IsArray => false;
 
     public IXamlType? ArrayElementType => null;
-        
-    public IXamlType MakeArrayType(int dimensions) => throw new NotSupportedException();
 
-    public IXamlType? BaseType => _symbol.BaseType is { } baseType ? new RoslynType(baseType, _assembly) : null;
+    public IXamlType MakeArrayType(int dimensions) => XamlPseudoType.Unknown;
 
-    public bool IsValueType => false;
+    public IXamlType? BaseType =>
+        _symbol.BaseType is { } baseType ? new RoslynType(baseType, _assembly) : null;
 
-    public bool IsEnum => false;
+    public bool IsValueType => _symbol.IsValueType;
+
+    public bool IsEnum => _symbol.TypeKind == TypeKind.Enum;
 
     public IReadOnlyList<IXamlType> Interfaces =>
         _symbol.AllInterfaces
-            .Select(abstraction => new RoslynType(abstraction, _assembly))
+            .Select(i => (IXamlType)new RoslynType(i, _assembly))
             .ToList();
 
-    public bool IsInterface => _symbol.IsAbstract;
-        
-    public IXamlType GetEnumUnderlyingType() => throw new NotSupportedException();
+    public bool IsInterface => _symbol.TypeKind == TypeKind.Interface;
 
-    public IReadOnlyList<IXamlType> GenericParameters => [];
+    public IXamlType GetEnumUnderlyingType()
+    {
+        if (_symbol.EnumUnderlyingType is { } ut)
+            return new RoslynType(ut, _assembly);
+        throw new InvalidOperationException($"Type {FullName} is not an enum.");
+    }
 
+    public IReadOnlyList<IXamlType> GenericParameters =>
+        _symbol.TypeParameters
+            .Select(tp => (IXamlType)new RoslynTypeParameter(tp, _assembly))
+            .ToList();
+
+    public bool IsFunctionPointer => _symbol.TypeKind == TypeKind.FunctionPointer;
+
+    internal INamedTypeSymbol Symbol => _symbol;
+}
+
+internal class RoslynArrayType : IXamlType
+{
+    private readonly IArrayTypeSymbol _symbol;
+    private readonly RoslynAssembly _assembly;
+
+    public RoslynArrayType(IArrayTypeSymbol symbol, RoslynAssembly assembly)
+    {
+        _symbol = symbol;
+        _assembly = assembly;
+    }
+
+    public bool Equals(IXamlType other) =>
+        other is RoslynArrayType rat &&
+        SymbolEqualityComparer.Default.Equals(_symbol, rat._symbol);
+
+    public override int GetHashCode() => SymbolEqualityComparer.Default.GetHashCode(_symbol);
+
+    public object Id => SymbolEqualityComparer.Default.GetHashCode(_symbol);
+    public string Name => _symbol.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
+    public string? Namespace => null;
+    public string FullName => RoslynTypeSystem.WrapType(_symbol.ElementType, _assembly).FullName + "[]";
+    public bool IsPublic => true;
+    public bool IsNestedPrivate => false;
+    public IXamlAssembly? Assembly => _assembly;
+    public IReadOnlyList<IXamlProperty> Properties => Array.Empty<IXamlProperty>();
+    public IReadOnlyList<IXamlEventInfo> Events => Array.Empty<IXamlEventInfo>();
+    public IReadOnlyList<IXamlField> Fields => Array.Empty<IXamlField>();
+    public IReadOnlyList<IXamlMethod> Methods => Array.Empty<IXamlMethod>();
+    public IReadOnlyList<IXamlConstructor> Constructors => Array.Empty<IXamlConstructor>();
+    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes => Array.Empty<IXamlCustomAttribute>();
+    public IReadOnlyList<IXamlType> GenericArguments => Array.Empty<IXamlType>();
+    public bool IsAssignableFrom(IXamlType type) => Equals(type);
+    public IXamlType MakeGenericType(IReadOnlyList<IXamlType> typeArguments) => throw new NotSupportedException();
+    public IXamlType? GenericTypeDefinition => null;
+    public bool IsArray => true;
+    public IXamlType? ArrayElementType => RoslynTypeSystem.WrapType(_symbol.ElementType, _assembly);
+    public IXamlType MakeArrayType(int dimensions) => throw new NotSupportedException();
+    public IXamlType? BaseType => null;
+    public IXamlType? DeclaringType => null;
+    public bool IsValueType => false;
+    public bool IsEnum => false;
+    public IReadOnlyList<IXamlType> Interfaces => Array.Empty<IXamlType>();
+    public bool IsInterface => false;
+    public IXamlType GetEnumUnderlyingType() => throw new InvalidOperationException();
+    public IReadOnlyList<IXamlType> GenericParameters => Array.Empty<IXamlType>();
     public bool IsFunctionPointer => false;
+
+    internal IArrayTypeSymbol Symbol => _symbol;
+}
+
+internal class RoslynTypeParameter : IXamlType
+{
+    private readonly ITypeParameterSymbol _symbol;
+    private readonly RoslynAssembly _assembly;
+
+    public RoslynTypeParameter(ITypeParameterSymbol symbol, RoslynAssembly assembly)
+    {
+        _symbol = symbol;
+        _assembly = assembly;
+    }
+
+    public bool Equals(IXamlType other) =>
+        other is RoslynTypeParameter rtp &&
+        SymbolEqualityComparer.Default.Equals(_symbol, rtp._symbol);
+
+    public override int GetHashCode() => SymbolEqualityComparer.Default.GetHashCode(_symbol);
+
+    public object Id => SymbolEqualityComparer.Default.GetHashCode(_symbol);
+    public string Name => _symbol.Name;
+    public string? Namespace => null;
+    public string FullName => _symbol.Name;
+    public bool IsPublic => true;
+    public bool IsNestedPrivate => false;
+    public IXamlAssembly? Assembly => _assembly;
+    public IReadOnlyList<IXamlProperty> Properties => Array.Empty<IXamlProperty>();
+    public IReadOnlyList<IXamlEventInfo> Events => Array.Empty<IXamlEventInfo>();
+    public IReadOnlyList<IXamlField> Fields => Array.Empty<IXamlField>();
+    public IReadOnlyList<IXamlMethod> Methods => Array.Empty<IXamlMethod>();
+    public IReadOnlyList<IXamlConstructor> Constructors => Array.Empty<IXamlConstructor>();
+    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes => Array.Empty<IXamlCustomAttribute>();
+    public IReadOnlyList<IXamlType> GenericArguments => Array.Empty<IXamlType>();
+    public bool IsAssignableFrom(IXamlType type) => Equals(type);
+    public IXamlType MakeGenericType(IReadOnlyList<IXamlType> typeArguments) => throw new NotSupportedException();
+    public IXamlType? GenericTypeDefinition => null;
+    public bool IsArray => false;
+    public IXamlType? ArrayElementType => null;
+    public IXamlType MakeArrayType(int dimensions) => throw new NotSupportedException();
+    public IXamlType? BaseType => null;
+    public IXamlType? DeclaringType => null;
+    public bool IsValueType => _symbol.HasValueTypeConstraint;
+    public bool IsEnum => false;
+    public IReadOnlyList<IXamlType> Interfaces => Array.Empty<IXamlType>();
+    public bool IsInterface => false;
+    public IXamlType GetEnumUnderlyingType() => throw new InvalidOperationException();
+    public IReadOnlyList<IXamlType> GenericParameters => Array.Empty<IXamlType>();
+    public bool IsFunctionPointer => false;
+
+    internal ITypeParameterSymbol Symbol => _symbol;
 }
 
 internal class RoslynConstructor : IXamlConstructor
@@ -210,16 +406,16 @@ internal class RoslynConstructor : IXamlConstructor
         other is RoslynConstructor roslynConstructor &&
         SymbolEqualityComparer.Default.Equals(_symbol, roslynConstructor._symbol);
 
-    public bool IsPublic => true;
-        
-    public bool IsStatic => false;
+    public bool IsPublic => _symbol.DeclaredAccessibility == Accessibility.Public;
+
+    public bool IsStatic => _symbol.IsStatic;
 
     public IReadOnlyList<IXamlType> Parameters =>
         _symbol.Parameters
-            .Select(parameter => new RoslynParameter(_assembly, parameter).ParameterType)
+            .Select(p => RoslynTypeSystem.WrapType(p.Type, _assembly))
             .ToList();
 
-    public string Name => _symbol.Name;
+    public string Name => _symbol.MetadataName;
 
     public IXamlType DeclaringType => new RoslynType(_symbol.ContainingType, _assembly);
 
@@ -245,18 +441,73 @@ internal class RoslynProperty : IXamlProperty
 
     public IXamlType DeclaringType => new RoslynType(_symbol.ContainingType, _assembly);
 
-    public IXamlType PropertyType =>
-        _symbol.Type is INamedTypeSymbol namedTypeSymbol
-            ? new RoslynType(namedTypeSymbol, _assembly)
-            : XamlPseudoType.Unknown;
+    public IXamlType PropertyType => RoslynTypeSystem.WrapType(_symbol.Type, _assembly);
 
     public IXamlMethod? Getter => _symbol.GetMethod == null ? null : new RoslynMethod(_symbol.GetMethod, _assembly);
-        
+
     public IXamlMethod? Setter => _symbol.SetMethod == null ? null : new RoslynMethod(_symbol.SetMethod, _assembly);
 
-    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes => [];
+    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes =>
+        _symbol.GetAttributes()
+            .Where(a => a.AttributeClass != null)
+            .Select(a => (IXamlCustomAttribute)new RoslynAttribute(a, _assembly))
+            .ToList();
 
-    public IReadOnlyList<IXamlType> IndexerParameters => [];
+    public IReadOnlyList<IXamlType> IndexerParameters =>
+        _symbol.Parameters
+            .Select(p => RoslynTypeSystem.WrapType(p.Type, _assembly))
+            .ToList();
+}
+
+internal class RoslynField : IXamlField
+{
+    private readonly IFieldSymbol _symbol;
+    private readonly RoslynAssembly _assembly;
+
+    public RoslynField(IFieldSymbol symbol, RoslynAssembly assembly)
+    {
+        _symbol = symbol;
+        _assembly = assembly;
+    }
+
+    public bool Equals(IXamlField other) =>
+        other is RoslynField rf &&
+        SymbolEqualityComparer.Default.Equals(_symbol, rf._symbol);
+
+    public string Name => _symbol.Name;
+    public IXamlType DeclaringType => new RoslynType(_symbol.ContainingType, _assembly);
+    public IXamlType FieldType => RoslynTypeSystem.WrapType(_symbol.Type, _assembly);
+    public bool IsPublic => _symbol.DeclaredAccessibility == Accessibility.Public;
+    public bool IsStatic => _symbol.IsStatic;
+    public bool IsLiteral => _symbol.HasConstantValue;
+
+    public object GetLiteralValue() => _symbol.ConstantValue!;
+
+    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes =>
+        _symbol.GetAttributes()
+            .Where(a => a.AttributeClass != null)
+            .Select(a => (IXamlCustomAttribute)new RoslynAttribute(a, _assembly))
+            .ToList();
+}
+
+internal class RoslynEvent : IXamlEventInfo
+{
+    private readonly IEventSymbol _symbol;
+    private readonly RoslynAssembly _assembly;
+
+    public RoslynEvent(IEventSymbol symbol, RoslynAssembly assembly)
+    {
+        _symbol = symbol;
+        _assembly = assembly;
+    }
+
+    public bool Equals(IXamlEventInfo other) =>
+        other is RoslynEvent re &&
+        SymbolEqualityComparer.Default.Equals(_symbol, re._symbol);
+
+    public string Name => _symbol.Name;
+    public IXamlType DeclaringType => new RoslynType(_symbol.ContainingType, _assembly);
+    public IXamlMethod? Add => _symbol.AddMethod != null ? new RoslynMethod(_symbol.AddMethod, _assembly) : null;
 }
 
 internal class RoslynParameter : IXamlParameterInfo
@@ -271,8 +522,13 @@ internal class RoslynParameter : IXamlParameterInfo
     }
 
     public string Name => _symbol.Name;
-    public IXamlType ParameterType => new RoslynType((INamedTypeSymbol)_symbol.Type, _assembly);
-    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes => Array.Empty<IXamlCustomAttribute>();
+    public IXamlType ParameterType => RoslynTypeSystem.WrapType(_symbol.Type, _assembly);
+
+    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes =>
+        _symbol.GetAttributes()
+            .Where(a => a.AttributeClass != null)
+            .Select(a => (IXamlCustomAttribute)new RoslynAttribute(a, _assembly))
+            .ToList();
 }
 
 internal class RoslynMethod : IXamlMethod
@@ -298,28 +554,52 @@ internal class RoslynMethod : IXamlMethod
 
     public bool IsFamily => _symbol.DeclaredAccessibility == Accessibility.Protected;
 
-    public bool IsStatic => false;
-    public bool ContainsGenericParameters => _symbol.TypeParameters.Any();
+    public bool IsStatic => _symbol.IsStatic;
+
+    public bool ContainsGenericParameters => _symbol.TypeParameters.Length > 0 && !_symbol.TypeArguments.All(ta => ta is INamedTypeSymbol);
+
     public bool IsGenericMethod => _symbol.IsGenericMethod;
+
     public bool IsGenericMethodDefinition => _symbol.IsDefinition && _symbol.IsGenericMethod;
 
-    public IReadOnlyList<IXamlType> GenericParameters => throw new NotImplementedException();
+    public IReadOnlyList<IXamlType> GenericParameters =>
+        _symbol.TypeParameters
+            .Select(tp => (IXamlType)new RoslynTypeParameter(tp, _assembly))
+            .ToList();
 
-    public IReadOnlyList<IXamlType> GenericArguments => _symbol.TypeArguments
-        .Select(ga => new RoslynType((INamedTypeSymbol)ga, _assembly))
-        .ToArray();
+    public IReadOnlyList<IXamlType> GenericArguments =>
+        _symbol.TypeArguments
+            .Select(ta => RoslynTypeSystem.WrapType(ta, _assembly))
+            .ToList();
 
-    public IXamlType ReturnType => new RoslynType((INamedTypeSymbol) _symbol.ReturnType, _assembly);
+    public IXamlType ReturnType => RoslynTypeSystem.WrapType(_symbol.ReturnType, _assembly);
 
     public IReadOnlyList<IXamlType> Parameters =>
-        _symbol.Parameters.Select(parameter => new RoslynParameter(_assembly, parameter).ParameterType)
+        _symbol.Parameters
+            .Select(p => RoslynTypeSystem.WrapType(p.Type, _assembly))
             .ToList();
 
     public IXamlType DeclaringType => new RoslynType(_symbol.ContainingType, _assembly);
 
-    public IXamlMethod MakeGenericMethod(IReadOnlyList<IXamlType> typeArguments) => throw new NotSupportedException();
+    public IXamlMethod MakeGenericMethod(IReadOnlyList<IXamlType> typeArguments)
+    {
+        var roslynArgs = typeArguments.Select(ta =>
+        {
+            if (ta is RoslynType rt) return (ITypeSymbol)rt.Symbol;
+            if (ta is RoslynArrayType rat) return (ITypeSymbol)rat.Symbol;
+            if (ta is RoslynTypeParameter rtp) return (ITypeSymbol)rtp.Symbol;
+            throw new InvalidOperationException($"Cannot convert {ta.GetType().Name} to Roslyn type symbol.");
+        }).ToArray();
+        return new RoslynMethod(_symbol.Construct(roslynArgs), _assembly);
+    }
 
-    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes => [];
+    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes =>
+        _symbol.GetAttributes()
+            .Where(a => a.AttributeClass != null)
+            .Select(a => (IXamlCustomAttribute)new RoslynAttribute(a, _assembly))
+            .ToList();
 
     public IXamlParameterInfo GetParameterInfo(int index) => new RoslynParameter(_assembly, _symbol.Parameters[index]);
+
+    internal IMethodSymbol Symbol => _symbol;
 }

@@ -16,6 +16,7 @@ internal enum BuildProperties
     AvaloniaNameGeneratorFilterByNamespace = 4,
     AvaloniaNameGeneratorViewFileNamingStrategy = 5,
     AvaloniaNameGeneratorAttachDevTools = 6,
+    NfmWorldAvaloniaNameGeneratorIsHotReloadingEnabled = 7,
     // TODO add other generators properties here.
 }
 
@@ -30,7 +31,7 @@ internal record GeneratorOptions
         AvaloniaNameGeneratorBehavior = GetEnumProperty(
             options,
             BuildProperties.AvaloniaNameGeneratorBehavior,
-            Behavior.InitializeComponent);
+            Behavior.WithXamlXCompilation);
         AvaloniaNameGeneratorClassFieldModifier = GetEnumProperty(
             options,
             BuildProperties.AvaloniaNameGeneratorDefaultFieldModifier,
@@ -51,6 +52,10 @@ internal record GeneratorOptions
             options,
             BuildProperties.AvaloniaNameGeneratorAttachDevTools,
             true);
+        NfmWorldAvaloniaNameGeneratorIsHotReloadingEnabled = GetBoolProperty(
+            options,
+            BuildProperties.NfmWorldAvaloniaNameGeneratorIsHotReloadingEnabled,
+            true);
     }
 
     public bool AvaloniaNameGeneratorIsEnabled { get; }
@@ -66,6 +71,8 @@ internal record GeneratorOptions
     public IGlobPattern AvaloniaNameGeneratorFilterByNamespace { get; }
 
     public bool AvaloniaNameGeneratorAttachDevTools { get; }
+
+    public bool NfmWorldAvaloniaNameGeneratorIsHotReloadingEnabled { get; }
 
     private static string[] GetStringArrayProperty(AnalyzerConfigOptions options, BuildProperties name, string defaultValue)
     {

@@ -2,12 +2,13 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <IncludeBuildOutput>false</IncludeBuildOutput>
-    <DefineConstants>$(DefineConstants);XAMLX_INTERNAL</DefineConstants>
+    <DefineConstants>$(DefineConstants);XAMLX_INTERNAL;AVA_DEBUG</DefineConstants>
     <DebugType>embedded</DebugType>
     <IsPackable>true</IsPackable>
     <IncludeSymbols>false</IncludeSymbols>
     <Nullable>enable</Nullable>
     <XamlXSourcePath>../XamlX/src/XamlX</XamlXSourcePath>
+    <XamlXCSharpSourcePath>../XamlX.IL.CSharp</XamlXCSharpSourcePath>
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
@@ -19,6 +20,12 @@
     <Compile Include="$(XamlXSourcePath)/**/*.cs"
              Exclude="$(XamlXSourcePath)/obj/**/*.cs;$(XamlXSourcePath)/IL/SreTypeSystem.cs"
              LinkBase="Compiler/XamlX" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(XamlXCSharpSourcePath)/**/*.cs"
+             Exclude="$(XamlXCSharpSourcePath)/obj/**/*.cs;$(XamlXCSharpSourcePath)/CSharpCodeTypeSystem.cs"
+             LinkBase="Compiler/XamlX.IL.CSharp" />
   </ItemGroup>
 
   <ItemGroup>
@@ -54,5 +61,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all"/>
   </ItemGroup>
+
+
 
 </Project>

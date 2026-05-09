@@ -44,6 +44,7 @@
     <Project Path="NvgSharp/src/XNA/NvgSharp.FNA.Core.csproj" />
   </Folder>
   <Folder Name="/XamlX/">
+    <Project Path="XamlX.IL.CSharp/XamlX.IL.CSharp.csproj" />
     <Project Path="XamlX/src/XamlX.IL.Cecil/XamlX.IL.Cecil.csproj" />
     <Project Path="XamlX/src/XamlX/XamlX.csproj" />
   </Folder>
