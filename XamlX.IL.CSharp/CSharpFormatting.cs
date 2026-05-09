@@ -40,6 +40,14 @@ internal static class CSharpFormatting
         if (type is CSharpTypeBuilder)
             return type.FullName;
 
+        // Constructed generic CSharpTypeBuilder (e.g. Context<SomeNode>)
+        if (type is ConstructedCSharpType constructed)
+        {
+            var defName = ((IXamlType)constructed.GenericTypeDefinition!).FullName;
+            var genericArgs = string.Join(", ", constructed.GenericArguments.Select(FormatType));
+            return $"{defName}<{genericArgs}>";
+        }
+
         // Generic parameter types (like TTarget) - no global:: prefix
         if (type is CSharpGenericParameterType)
             return type.Name;

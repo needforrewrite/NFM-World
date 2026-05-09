@@ -189,7 +189,9 @@ internal class RoslynType : IXamlType
     public IReadOnlyList<IXamlMethod> Methods =>
         _symbol.GetMembers()
             .OfType<IMethodSymbol>()
-            .Where(m => m.MethodKind is MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation)
+            .Where(m => m.MethodKind is MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation
+                or MethodKind.PropertyGet or MethodKind.PropertySet
+                or MethodKind.EventAdd or MethodKind.EventRemove)
             .Select(m => (IXamlMethod)new RoslynMethod(m, _assembly))
             .ToList();
 
@@ -258,7 +260,7 @@ internal class RoslynType : IXamlType
 
     public IXamlType? ArrayElementType => null;
 
-    public IXamlType MakeArrayType(int dimensions) => XamlPseudoType.Unknown;
+    public IXamlType MakeArrayType(int dimensions) => new SyntheticArrayType(this);
 
     public IXamlType? BaseType =>
         _symbol.BaseType is { } baseType ? new RoslynType(baseType, _assembly) : null;
@@ -389,6 +391,55 @@ internal class RoslynTypeParameter : IXamlType
     public bool IsFunctionPointer => false;
 
     internal ITypeParameterSymbol Symbol => _symbol;
+}
+
+/// <summary>
+/// A synthetic array type created by MakeArrayType when we don't have
+/// access to the Roslyn compilation to create a proper IArrayTypeSymbol.
+/// </summary>
+internal class SyntheticArrayType : IXamlType
+{
+    private readonly IXamlType _elementType;
+
+    public SyntheticArrayType(IXamlType elementType)
+    {
+        _elementType = elementType;
+    }
+
+    public bool Equals(IXamlType other) =>
+        other is SyntheticArrayType sat && _elementType.Equals(sat._elementType);
+
+    public override int GetHashCode() => _elementType.GetHashCode() ^ 0x1234;
+
+    public object Id => ("ArrayOf", _elementType.Id);
+    public string Name => _elementType.Name + "[]";
+    public string? Namespace => _elementType.Namespace;
+    public string FullName => _elementType.FullName + "[]";
+    public bool IsPublic => true;
+    public bool IsNestedPrivate => false;
+    public IXamlAssembly? Assembly => _elementType.Assembly;
+    public IReadOnlyList<IXamlProperty> Properties => Array.Empty<IXamlProperty>();
+    public IReadOnlyList<IXamlEventInfo> Events => Array.Empty<IXamlEventInfo>();
+    public IReadOnlyList<IXamlField> Fields => Array.Empty<IXamlField>();
+    public IReadOnlyList<IXamlMethod> Methods => Array.Empty<IXamlMethod>();
+    public IReadOnlyList<IXamlConstructor> Constructors => Array.Empty<IXamlConstructor>();
+    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes => Array.Empty<IXamlCustomAttribute>();
+    public IReadOnlyList<IXamlType> GenericArguments => Array.Empty<IXamlType>();
+    public bool IsAssignableFrom(IXamlType type) => Equals(type);
+    public IXamlType MakeGenericType(IReadOnlyList<IXamlType> typeArguments) => throw new NotSupportedException();
+    public IXamlType? GenericTypeDefinition => null;
+    public bool IsArray => true;
+    public IXamlType? ArrayElementType => _elementType;
+    public IXamlType MakeArrayType(int dimensions) => throw new NotSupportedException();
+    public IXamlType? BaseType => null;
+    public IXamlType? DeclaringType => null;
+    public bool IsValueType => false;
+    public bool IsEnum => false;
+    public IReadOnlyList<IXamlType> Interfaces => Array.Empty<IXamlType>();
+    public bool IsInterface => false;
+    public IXamlType GetEnumUnderlyingType() => throw new InvalidOperationException();
+    public IReadOnlyList<IXamlType> GenericParameters => Array.Empty<IXamlType>();
+    public bool IsFunctionPointer => false;
 }
 
 internal class RoslynConstructor : IXamlConstructor

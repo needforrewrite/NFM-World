@@ -393,13 +393,13 @@ class CSharpEmitter : IXamlILEmitter
         }
         else if (code == SreOpCodes.Brfalse || code == SreOpCodes.Brfalse_S)
         {
-            var val = PopExpr();
-            Emit($"if (!({val} is true or not (null or 0))) goto {csl.Name};");
+            var val = Pop();
+            Emit($"if ({FormatFalsinessCheck(val)}) goto {csl.Name};");
         }
         else if (code == SreOpCodes.Brtrue || code == SreOpCodes.Brtrue_S)
         {
-            var val = PopExpr();
-            Emit($"if ({val} is true or not (null or 0)) goto {csl.Name};");
+            var val = Pop();
+            Emit($"if ({FormatTruthinessCheck(val)}) goto {csl.Name};");
         }
         else if (code == SreOpCodes.Beq || code == SreOpCodes.Beq_S)
         {
@@ -479,8 +479,6 @@ class CSharpEmitter : IXamlILEmitter
             args[i] = PopExpr();
 
         // Special case: Type.GetTypeFromHandle(typeof(X)) → typeof(X)
-        // In IL, Ldtoken pushes RuntimeTypeHandle and GetTypeFromHandle converts to Type.
-        // Our Ldtoken already produces typeof(X) which is a Type, so skip the conversion.
         if (method.IsStatic && method.Name == "GetTypeFromHandle" &&
             method.DeclaringType.FullName == "System.Type" &&
             args.Length == 1 && args[0].StartsWith("typeof("))
@@ -498,7 +496,23 @@ class CSharpEmitter : IXamlILEmitter
         else
         {
             var obj = PopExpr();
-            call = $"{obj}.{method.Name}({string.Join(", ", args)})";
+
+            // Convert property accessor calls to C# property syntax
+            if (method.Name.StartsWith("get_") && args.Length == 0)
+            {
+                var propName = method.Name.Substring(4);
+                call = $"{obj}.{propName}";
+            }
+            else if (method.Name.StartsWith("set_") && args.Length == 1)
+            {
+                var propName = method.Name.Substring(4);
+                Emit($"{obj}.{propName} = {args[0]};");
+                return;
+            }
+            else
+            {
+                call = $"{obj}.{method.Name}({string.Join(", ", args)})";
+            }
         }
 
         if (method.ReturnType.FullName == "System.Void")
@@ -551,6 +565,40 @@ class CSharpEmitter : IXamlILEmitter
     {
         return expr == "null" || expr == "default" || expr == "this"
                || (expr.Length <= 20 && !expr.Contains('(') && !expr.Contains('['));
+    }
+
+    /// <summary>
+    /// Formats a falsiness check for Brfalse: branches when value is null/false/0.
+    /// </summary>
+    private string FormatFalsinessCheck(CSharpExpression val)
+    {
+        if (val.Type != null)
+        {
+            var fn = val.Type.FullName;
+            if (fn == "System.Boolean")
+                return $"!{val.Expression}";
+            if (val.Type.IsValueType && fn != "System.IntPtr" && fn != "System.UIntPtr")
+                return $"{val.Expression} == 0";
+        }
+        return $"{val.Expression} == null";
+    }
+
+    /// <summary>
+    /// Formats a truthiness check for Brtrue: branches when value is non-null/true/non-zero.
+    /// </summary>
+    private string FormatTruthinessCheck(CSharpExpression val)
+    {
+        if (val.Type != null)
+        {
+            var fn = val.Type.FullName;
+            if (fn == "System.Boolean")
+                return val.Expression;
+            if (fn == "System.Int32" || fn == "System.Int64" || fn == "System.Byte" || fn == "System.Int16")
+                return $"{val.Expression} != 0";
+            if (val.Type.IsValueType && fn != "System.IntPtr" && fn != "System.UIntPtr")
+                return $"{val.Expression} != 0";
+        }
+        return $"{val.Expression} != null";
     }
 
     /// <summary>

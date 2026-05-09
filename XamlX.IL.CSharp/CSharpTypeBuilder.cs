@@ -80,7 +80,7 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
     public bool IsFunctionPointer => false;
 
     public bool IsAssignableFrom(IXamlType type) => type.Equals(this) || type.GetAllInterfaces().Any(i => i.Equals(this));
-    public IXamlType MakeGenericType(IReadOnlyList<IXamlType> typeArguments) => throw new NotSupportedException();
+    public IXamlType MakeGenericType(IReadOnlyList<IXamlType> typeArguments) => new ConstructedCSharpType(this, typeArguments);
     public IXamlType MakeArrayType(int dimensions) => throw new NotSupportedException();
     public IXamlType GetEnumUnderlyingType() => throw new NotSupportedException();
     public bool Equals(IXamlType? other) => ReferenceEquals(this, other);
@@ -112,7 +112,7 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
 
         var methodCtx = new CSharpMethodContext(returnType, isStatic, false, argNames);
         var emitter = new CSharpEmitter(_typeSystem, methodCtx);
-        var method = new CSharpMethodBuilder(this, returnType, argsList, name, visibility, isStatic, isInterfaceImpl, argNames, emitter);
+        var method = new CSharpMethodBuilder(this, returnType, argsList, name, visibility, isStatic, isInterfaceImpl, argNames, emitter, overrideMethod);
         _methods.Add(method);
         return method;
     }
@@ -206,9 +206,17 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
             sb.AppendLine();
         }
 
-        // Methods
+        // Methods - skip methods that are already emitted as property getters/setters
+        var propMethods = new HashSet<object>();
+        foreach (var prop in _properties)
+        {
+            if (prop.Getter is CSharpMethodBuilder gm2) propMethods.Add(gm2);
+            if (prop.Setter is CSharpMethodBuilder sm2) propMethods.Add(sm2);
+        }
         foreach (var method in _methods)
         {
+            if (propMethods.Contains(method))
+                continue;
             GenerateMethod(sb, method, indent);
             sb.AppendLine();
         }
@@ -300,9 +308,17 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
             sb.AppendLine();
         }
 
-        // Methods
+        // Methods - skip methods that are already emitted as property getters/setters
+        var propertyMethods = new HashSet<object>();
+        foreach (var prop in _properties)
+        {
+            if (prop.Getter is CSharpMethodBuilder gm) propertyMethods.Add(gm);
+            if (prop.Setter is CSharpMethodBuilder sm) propertyMethods.Add(sm);
+        }
         foreach (var method in _methods)
         {
+            if (propertyMethods.Contains(method))
+                continue;
             GenerateMethod(sb, method, innerIndent);
             sb.AppendLine();
         }
@@ -342,18 +358,23 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
 
     private void GenerateMethod(StringBuilder sb, CSharpMethodBuilder method, string indent)
     {
-        var vis = method.MethodVisibility switch
+        var isExplicitImpl = method.Name.Contains('.');
+        var vis = isExplicitImpl ? "" : method.MethodVisibility switch
         {
-            XamlVisibility.Public => "public",
-            XamlVisibility.Assembly => "internal",
-            XamlVisibility.Private => "private",
-            _ => "private"
+            XamlVisibility.Public => "public ",
+            XamlVisibility.Assembly => "internal ",
+            XamlVisibility.Private => "private ",
+            _ => "private "
         };
         var staticMod = method.IsStatic ? "static " : "";
         var retType = CSharpFormatting.FormatType(method.ReturnType);
         var args = string.Join(", ", method.Parameters.Select((p, i) => $"{CSharpFormatting.FormatType(p)} {method.ArgNames[i]}"));
 
-        sb.AppendLine($"{indent}{vis} {staticMod}{retType} {method.Name}({args})");
+        // For explicit interface implementations, format the interface part properly
+        // to handle generic interfaces (replace backtick metadata names with C# generic syntax)
+        var methodName = FormatMethodName(method);
+
+        sb.AppendLine($"{indent}{vis}{staticMod}{retType} {methodName}({args})");
         sb.AppendLine($"{indent}{{");
 
         var bodyIndent = indent + "    ";
@@ -364,13 +385,146 @@ class CSharpTypeBuilder : IXamlTypeBuilder<IXamlILEmitter>
         sb.AppendLine($"{indent}}}");
     }
 
+    /// <summary>
+    /// Formats a method name, converting explicit interface implementation names
+    /// from metadata format (using backtick) to C# generic syntax.
+    /// </summary>
+    private static string FormatMethodName(CSharpMethodBuilder method)
+    {
+        if (!method.Name.Contains('.'))
+            return method.Name;
+
+        // Explicit interface implementation: use the override method's declaring type to get proper formatting
+        if (method.OverrideMethod?.DeclaringType is { } interfaceType)
+        {
+            var lastDot = method.Name.LastIndexOf('.');
+            var simpleName = method.Name.Substring(lastDot + 1);
+            var formattedInterface = CSharpFormatting.FormatType(interfaceType);
+            // Remove "global::" prefix since explicit implementations don't use it
+            if (formattedInterface.StartsWith("global::"))
+                formattedInterface = formattedInterface.Substring("global::".Length);
+            return $"{formattedInterface}.{simpleName}";
+        }
+
+        // Fallback: strip backtick arity from the name (loses generic args but at least compiles)
+        return StripBacktickArity(method.Name);
+    }
+
+    /// <summary>
+    /// Formats a property name, handling explicit interface implementation names.
+    /// </summary>
+    private static string FormatPropertyName(CSharpPropertyInfo prop)
+    {
+        if (!prop.Name.Contains('.'))
+            return prop.Name;
+
+        // Try to get the interface type from the getter or setter's override method
+        var overrideMethod = (prop.Getter as CSharpMethodBuilder)?.OverrideMethod
+                          ?? (prop.Setter as CSharpMethodBuilder)?.OverrideMethod;
+        if (overrideMethod?.DeclaringType is { } interfaceType)
+        {
+            var lastDot = prop.Name.LastIndexOf('.');
+            var simpleName = prop.Name.Substring(lastDot + 1);
+            var formattedInterface = CSharpFormatting.FormatType(interfaceType);
+            if (formattedInterface.StartsWith("global::"))
+                formattedInterface = formattedInterface.Substring("global::".Length);
+            return $"{formattedInterface}.{simpleName}";
+        }
+
+        return StripBacktickArity(prop.Name);
+    }
+
+    private static string StripBacktickArity(string name)
+    {
+        // Remove backtick+digits patterns like `1, `2 etc.
+        var result = new StringBuilder();
+        for (var i = 0; i < name.Length; i++)
+        {
+            if (name[i] == '`')
+            {
+                // Skip backtick and following digits
+                i++;
+                while (i < name.Length && char.IsDigit(name[i]))
+                    i++;
+                i--; // Will be incremented by for loop
+            }
+            else
+            {
+                result.Append(name[i]);
+            }
+        }
+        return result.ToString();
+    }
+
     private void GenerateProperty(StringBuilder sb, CSharpPropertyInfo prop, string indent)
     {
         var typeName = CSharpFormatting.FormatType(prop.PropertyType);
-        sb.Append($"{indent}public {typeName} {prop.Name} {{ ");
-        if (prop.Getter != null) sb.Append("get; ");
-        if (prop.Setter != null) sb.Append("set; ");
-        sb.AppendLine("}");
+        var isExplicitImpl = prop.Name.Contains('.');
+        var vis = isExplicitImpl ? "" : "public ";
+        var propName = FormatPropertyName(prop);
+
+        // Check if getter/setter have method bodies (CSharpMethodBuilder with statements)
+        var getterMethod = prop.Getter as CSharpMethodBuilder;
+        var setterMethod = prop.Setter as CSharpMethodBuilder;
+        var hasGetterBody = getterMethod?.Emitter.Statements.Count > 0;
+        var hasSetterBody = setterMethod?.Emitter.Statements.Count > 0;
+
+        if (hasGetterBody || hasSetterBody)
+        {
+            sb.AppendLine($"{indent}{vis}{typeName} {propName}");
+            sb.AppendLine($"{indent}{{");
+            var bodyIndent = indent + "    ";
+            var stmtIndent = indent + "        ";
+
+            if (hasGetterBody)
+            {
+                sb.AppendLine($"{bodyIndent}get");
+                sb.AppendLine($"{bodyIndent}{{");
+                sb.Append(getterMethod!.Emitter.GenerateLocalDeclarations());
+                foreach (var stmt in getterMethod.Emitter.Statements)
+                    sb.AppendLine($"{stmtIndent}{stmt}");
+                sb.AppendLine($"{bodyIndent}}}");
+            }
+            else if (prop.Getter != null)
+            {
+                sb.AppendLine($"{bodyIndent}get;");
+            }
+
+            if (hasSetterBody)
+            {
+                sb.AppendLine($"{bodyIndent}set");
+                sb.AppendLine($"{bodyIndent}{{");
+                sb.Append(setterMethod!.Emitter.GenerateLocalDeclarations());
+                // In property setters, replace arg0 references with 'value'
+                foreach (var stmt in setterMethod.Emitter.Statements)
+                    sb.AppendLine($"{stmtIndent}{ReplaceSetterArg(stmt)}");
+                sb.AppendLine($"{bodyIndent}}}");
+            }
+            else if (prop.Setter != null)
+            {
+                sb.AppendLine($"{bodyIndent}set;");
+            }
+
+            sb.AppendLine($"{indent}}}");
+        }
+        else
+        {
+            sb.Append($"{indent}{vis}{typeName} {propName} {{ ");
+            if (prop.Getter != null) sb.Append("get; ");
+            if (prop.Setter != null) sb.Append("set; ");
+            sb.AppendLine("}");
+        }
+    }
+
+    /// <summary>
+    /// In a property setter body emitted from IL, the first parameter (arg0 for an instance method's
+    /// second arg) maps to the implicit 'value' parameter in C# property setters.
+    /// </summary>
+    private static string ReplaceSetterArg(string statement)
+    {
+        // The setter's CSharpMethodContext has argNames = ["arg0"], and for a non-static method,
+        // GetArgName(1) returns argNames[0] = "arg0". In C# property setters, this is 'value'.
+        return statement.Replace("arg0", "value");
     }
 
     #endregion
@@ -411,7 +565,8 @@ internal class CSharpMethodBuilder : IXamlMethodBuilder<IXamlILEmitter>
 
     public CSharpMethodBuilder(CSharpTypeBuilder declaringType, IXamlType returnType,
         List<IXamlType> parameters, string name, XamlVisibility visibility,
-        bool isStatic, bool isInterfaceImpl, string[] argNames, CSharpEmitter emitter)
+        bool isStatic, bool isInterfaceImpl, string[] argNames, CSharpEmitter emitter,
+        IXamlMethod? overrideMethod = null)
     {
         _declaringType = declaringType;
         ReturnType = returnType;
@@ -419,6 +574,8 @@ internal class CSharpMethodBuilder : IXamlMethodBuilder<IXamlILEmitter>
         Name = name;
         MethodVisibility = visibility;
         IsStatic = isStatic;
+        IsInterfaceImpl = isInterfaceImpl;
+        OverrideMethod = overrideMethod;
         ArgNames = argNames;
         Emitter = emitter;
     }
@@ -432,6 +589,8 @@ internal class CSharpMethodBuilder : IXamlMethodBuilder<IXamlILEmitter>
     public bool IsPrivate => MethodVisibility == XamlVisibility.Private;
     public bool IsFamily => false;
     public bool IsStatic { get; }
+    public bool IsInterfaceImpl { get; }
+    public IXamlMethod? OverrideMethod { get; }
     public bool ContainsGenericParameters => false;
     public bool IsGenericMethod => false;
     public bool IsGenericMethodDefinition => false;
@@ -543,6 +702,70 @@ internal class CSharpGenericParameterType : IXamlType
     public IXamlType MakeArrayType(int dimensions) => throw new NotSupportedException();
     public IXamlType GetEnumUnderlyingType() => throw new NotSupportedException();
     public bool Equals(IXamlType? other) => ReferenceEquals(this, other);
+}
+
+/// <summary>
+/// Represents a constructed generic type (e.g. Context&lt;SomeNode&gt;) created from a CSharpTypeBuilder
+/// generic definition. Forwards Fields/Methods/Constructors from the definition.
+/// </summary>
+internal class ConstructedCSharpType : IXamlType
+{
+    private readonly CSharpTypeBuilder _definition;
+    private readonly IReadOnlyList<IXamlType> _typeArguments;
+
+    public ConstructedCSharpType(CSharpTypeBuilder definition, IReadOnlyList<IXamlType> typeArguments)
+    {
+        _definition = definition;
+        _typeArguments = typeArguments;
+    }
+
+    public object Id { get; } = Guid.NewGuid();
+    public string Name => _definition.Name;
+    public string? Namespace => _definition.Namespace;
+
+    public string FullName
+    {
+        get
+        {
+            var baseName = ((IXamlType)_definition).FullName;
+            return baseName + "<" + string.Join(", ", _typeArguments.Select(t => t.FullName)) + ">";
+        }
+    }
+
+    public bool IsPublic => _definition.IsPublic;
+    public bool IsNestedPrivate => _definition.IsNestedPrivate;
+    public IXamlAssembly? Assembly => _definition.Assembly;
+    public IReadOnlyList<IXamlProperty> Properties => _definition.Properties;
+    public IReadOnlyList<IXamlEventInfo> Events => _definition.Events;
+    public IReadOnlyList<IXamlField> Fields => _definition.Fields;
+    public IReadOnlyList<IXamlMethod> Methods => _definition.Methods;
+    public IReadOnlyList<IXamlConstructor> Constructors => _definition.Constructors;
+    public IReadOnlyList<IXamlCustomAttribute> CustomAttributes => _definition.CustomAttributes;
+    public IReadOnlyList<IXamlType> GenericArguments => _typeArguments;
+    public IXamlType? GenericTypeDefinition => _definition;
+    public bool IsArray => false;
+    public IXamlType? ArrayElementType => null;
+    public IXamlType? BaseType => _definition.BaseType;
+    public IXamlType? DeclaringType => _definition.DeclaringType;
+    public bool IsValueType => false;
+    public bool IsEnum => false;
+    public IReadOnlyList<IXamlType> Interfaces => _definition.Interfaces;
+    public bool IsInterface => false;
+    public IReadOnlyList<IXamlType> GenericParameters => Array.Empty<IXamlType>();
+    public bool IsFunctionPointer => false;
+
+    public bool IsAssignableFrom(IXamlType type) => type.Equals(this) || _definition.IsAssignableFrom(type);
+    public IXamlType MakeGenericType(IReadOnlyList<IXamlType> typeArguments) => throw new NotSupportedException();
+    public IXamlType MakeArrayType(int dimensions) => throw new NotSupportedException();
+    public IXamlType GetEnumUnderlyingType() => throw new NotSupportedException();
+    public bool Equals(IXamlType? other)
+    {
+        if (other is ConstructedCSharpType c)
+            return ReferenceEquals(_definition, c._definition) &&
+                   _typeArguments.Count == c._typeArguments.Count &&
+                   _typeArguments.Zip(c._typeArguments, (a, b) => a.Equals(b)).All(x => x);
+        return false;
+    }
 }
 
 #endregion

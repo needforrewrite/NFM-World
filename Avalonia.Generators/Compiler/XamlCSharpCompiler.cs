@@ -73,6 +73,9 @@ internal sealed class XamlCSharpCompiler
         // Add directive removal transformer
         _compiler.Transformers.Add(new RemoveXamlDirectivesTransformer());
 
+        // Add emitter for SkipXamlAstNode (used when transforms fail but error is handled)
+        _compiler.Emitters.Add(new SkipNodeEmitter());
+
         // Generate context type eagerly (shared across all views)
         var contextBuilder = new CSharpTypeBuilder(typeSystem, "__XamlRuntime__", "XamlContext",
             typeSystem.GetType("System.Object"), XamlVisibility.Assembly);
@@ -224,5 +227,23 @@ internal class SourceGenFileSource : IFileSource
     {
         FilePath = filePath;
         FileContents = Encoding.UTF8.GetBytes(content);
+    }
+}
+
+internal class SkipNodeEmitter : IXamlAstNodeEmitter<IXamlILEmitter, XamlILNodeEmitResult>
+{
+    public XamlILNodeEmitResult? Emit(IXamlAstNode node, XamlEmitContext<IXamlILEmitter, XamlILNodeEmitResult> context, IXamlILEmitter codeGen)
+    {
+        if (node is ISkipXamlAstNode)
+        {
+            // If the node is also a value node, push null on the stack
+            if (node is IXamlAstValueNode)
+            {
+                codeGen.Emit(System.Reflection.Emit.OpCodes.Ldnull);
+                return XamlILNodeEmitResult.Type(0, context.Configuration.WellKnownTypes.Object);
+            }
+            return XamlILNodeEmitResult.Void(0);
+        }
+        return null;
     }
 }

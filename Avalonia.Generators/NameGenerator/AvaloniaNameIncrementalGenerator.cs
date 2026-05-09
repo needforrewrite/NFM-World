@@ -187,7 +187,9 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
         {
             if (compiler != null)
                 ctx.AddSource("__XamlContext.g.cs", compiler.ContextSource);
-            ctx.AddSource($"logs2.g.cs", SourceText.From(string.Join("\n", Logs), Encoding.UTF8));
+            
+            var logContent = string.Join("\n", Logs.Select(l => "// " + l.Replace("\n", "\n// ")));
+            ctx.AddSource("__AvaloniaLogs.g.cs", SourceText.From(logContent, Encoding.UTF8));
         });
         
         // Note: this step will be re-executed on any C# file changes.
@@ -316,8 +318,6 @@ public class AvaloniaNameIncrementalGenerator : IIncrementalGenerator
                 Print("Generating file: " + fileName);
                 context.AddSource(fileName, generatedPartialClass);
             }
-
-            context.AddSource($"logs1-{Guid.NewGuid()}.g.cs", SourceText.From(string.Join("\n", Logs), Encoding.UTF8));
         });
         
 #if AVA_DEBUG
