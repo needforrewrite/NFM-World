@@ -2,8 +2,9 @@
 using Avalonia.Metadata;
 using NFMWorld.DriverInterface;
 using NFMWorld.Util;
+using WorldXaml.UI.Yoga;
 
-namespace NFMWorld.UI.Yoga;
+namespace NFMWorld.UI;
 
 public class TextRun : Node
 {
@@ -52,7 +53,7 @@ public class TextRun : Node
     public TextHorizontalAlignment HorizontalAlignment { get; set; } = TextHorizontalAlignment.Left;
     public TextVerticalAlignment VerticalAlignment { get; set; } = TextVerticalAlignment.Top;
 
-    protected override void RenderContent(Vector2 position, Vector2 size)
+    protected override void RenderContent(System.Numerics.Vector2 position, System.Numerics.Vector2 size)
     {
         base.RenderContent(position, size);
 

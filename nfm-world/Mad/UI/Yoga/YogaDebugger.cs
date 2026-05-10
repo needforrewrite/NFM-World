@@ -1,8 +1,9 @@
 ﻿using Maxine.Extensions;
+using NFMWorld;
 using NFMWorld.DriverInterface;
 using NFMWorld.Util;
 
-namespace NFMWorld.UI.Yoga;
+namespace WorldXaml.UI.Yoga;
 
 public static class YogaDebugger
 {
@@ -38,7 +39,7 @@ public static class YogaDebugger
         // draw a tree of all elements and their layout info in the top-left corner,
         // with a gradient from red to yellow based on depth
         var maxDepth = 0;
-        foreach (var root in Node.__INTERNAL_YogaRootsThisFrame)
+        foreach (var root in NodeDebugger.YogaRootsThisFrame)
         {
             maxDepth = Math.Max(maxDepth, GetMaxDepth(root, 0));
             continue;
@@ -59,7 +60,7 @@ public static class YogaDebugger
         }
 
         var y = 24;
-        foreach (var root in Node.__INTERNAL_YogaRootsThisFrame)
+        foreach (var root in NodeDebugger.YogaRootsThisFrame)
         {
             DrawElementAndChildren(root, y, 0);
             y += 24 * (1 + (root is Box box ? GetChildCount(box) : 0));
@@ -114,7 +115,7 @@ public static class YogaDebugger
     {
         // draw an outline around every element with a gradient from red to yellow based on depth
         var maxDepth = 0;
-        foreach (var root in Node.__INTERNAL_YogaRootsThisFrame)
+        foreach (var root in NodeDebugger.YogaRootsThisFrame)
         {
             maxDepth = Math.Max(maxDepth, GetMaxDepth(root, 0));
             continue;
@@ -134,7 +135,7 @@ public static class YogaDebugger
             }
         }
         
-        foreach (var root in Node.__INTERNAL_YogaRootsThisFrame)
+        foreach (var root in NodeDebugger.YogaRootsThisFrame)
         {
             DrawNodeAndChildren(root, 0);
             continue;
@@ -171,7 +172,7 @@ public static class YogaDebugger
 
     private static void RenderPage1()
     {
-        var mouseOverNodeTree = Node.__INTERNAL_YogaRootsThisFrame
+        var mouseOverNodeTree = NodeDebugger.YogaRootsThisFrame
             .Select(FindMouseOverNodeTree)
             .MaxBy(n => n.Length);
         if (mouseOverNodeTree?.Length > 0)
@@ -189,7 +190,8 @@ public static class YogaDebugger
                 );
                 
                 G.SetFont(new Font(FontFamily.RobotoMono, FontStyle.Plain, 20));
-                var info = $"Node: {node.Name ?? ""}[{node.GetType().Name}] from {(node.__INTERNAL_CtorCallerFilePath != "" ? Path.GetRelativePath(slnDir, node.__INTERNAL_CtorCallerFilePath) : "")}:{node.__INTERNAL_CtorCallerMemberName}:{node.__INTERNAL_CtorCallerLineNumber}";
+                var debugInfo = NodeDebugger.GetDebugInfo(node);
+                var info = $"Node: {node.Name ?? ""}[{node.GetType().Name}] from {(debugInfo.CtorCallerFilePath != "" ? Path.GetRelativePath(slnDir, debugInfo.CtorCallerFilePath) : "")}:{debugInfo.CtorCallerMemberName}:{debugInfo.CtorCallerLineNumber}";
                 var prefix = new string(' ', i * 2);
                 
                 G.SetColor(Color.White);

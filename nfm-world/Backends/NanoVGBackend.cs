@@ -152,10 +152,13 @@ internal class NanoVGBackend(NvgContext context) : IBackend
             _context.Stroke();
         }
 
-        public void SetAlpha(float f)
+        public float Alpha
         {
-            _paint.InnerColor.A = (byte)(255 * f);
-            _paint.OuterColor.A = (byte)(255 * f);
+            set
+            {
+                _paint.InnerColor.A = (byte)(255 * value);
+                _paint.OuterColor.A = (byte)(255 * value);
+            }
         }
 
         public void DrawImage(IImage image, int x, int y)

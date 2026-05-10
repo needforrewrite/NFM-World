@@ -4,7 +4,7 @@ using Font = NFMWorld.Util.Font;
 using FontFamily = NFMWorld.Util.FontFamily;
 using FontStyle = NFMWorld.Util.FontStyle;
 
-namespace NFMWorld.UI.Yoga.Xaml;
+namespace WorldXaml.UI.Yoga.Xaml;
 
 /// <summary>
 /// Type converter for Font - parses "FontFamily,Flags,Size" format.

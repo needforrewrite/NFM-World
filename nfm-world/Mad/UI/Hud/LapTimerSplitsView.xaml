@@ -2,7 +2,8 @@
 
 <yoga:View
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:yoga="clr-namespace:NFMWorld.UI.Yoga"
+    xmlns:yoga="clr-namespace:WorldXaml.UI.Yoga;assembly=WorldXaml.UI.Yoga"
+    xmlns:ui="clr-namespace:NFMWorld.UI"
     x:Class="NFMWorld.UI.Hud.LapTimerSplitsView"
     FlexDirection="Column"
     AlignItems="FlexStart"
@@ -14,22 +15,22 @@
     <yoga:Box Name="LapDisplay"
               FlexDirection="Row">
 
-        <yoga:TextRun Name="LapIcon"
+        <ui:TextRun Name="LapIcon"
                       Font="bold 24px Adventure"
                       Color="white"
                       StrokeColor="black"
                       Flex="1"
                       MarginRight="5">
             Lap:
-        </yoga:TextRun>
+        </ui:TextRun>
 
-        <yoga:TextBlock Name="LapText"
+        <ui:TextBlock Name="LapText"
                         Font="bold 24px DroidSans"
                         Color="white"
                         StrokeColor="black"
                         Flex="1">
             1/3
-        </yoga:TextBlock>
+        </ui:TextBlock>
     </yoga:Box>
 
 </yoga:View>

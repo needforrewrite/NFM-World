@@ -3,8 +3,6 @@ using Monogame.ImGuiNet;
 using NFMWorld.DriverInterface;
 using NFMWorld.SkiaDriver;
 using NFMWorld.UI.Hud;
-using NFMWorld.UI.Yoga;
-using NFMWorld.UI.Yoga.Xaml;
 using Font = NFMWorld.Util.Font;
 
 namespace NFMWorld;
@@ -72,8 +70,9 @@ public class DummyBackend : IBackend
         {
         }
 
-        public void SetAlpha(float f)
+        public float Alpha
         {
+            set { }
         }
 
         public void DrawImage(IImage image, int x, int y)

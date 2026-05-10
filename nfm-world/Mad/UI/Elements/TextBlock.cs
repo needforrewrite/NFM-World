@@ -1,8 +1,9 @@
 ﻿using Avalonia.Metadata;
 using NFMWorld.DriverInterface;
 using NFMWorld.Util;
+using WorldXaml.UI.Yoga;
 
-namespace NFMWorld.UI.Yoga;
+namespace NFMWorld.UI;
 
 public class TextBlock : Node
 {
@@ -62,7 +63,7 @@ public class TextBlock : Node
         _invalidated = true;
     }
 
-    protected override void RenderContent(Vector2 position, Vector2 size)
+    protected override void RenderContent(System.Numerics.Vector2 position, System.Numerics.Vector2 size)
     {
         base.RenderContent(position, size);
 

@@ -2,7 +2,8 @@
 
 <yoga:View
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:yoga="clr-namespace:NFMWorld.UI.Yoga"
+    xmlns:yoga="clr-namespace:WorldXaml.UI.Yoga;assembly=WorldXaml.UI.Yoga"
+    xmlns:ui="clr-namespace:NFMWorld.UI"
     x:Class="NFMWorld.UI.Hud.TTLapTimerSplitsView"
     Name="LapTimerSplits"
     FlexDirection="Column"
@@ -12,43 +13,43 @@
     Padding="10">
 
     <yoga:Box Name="LapDisplay" FlexDirection="Row">
-        <yoga:TextRun Name="LapIcon"
+        <ui:TextRun Name="LapIcon"
                       Font="bold 24px Adventure"
                       Color="white"
                       StrokeColor="black"
                       Flex="1"
                       MarginRight="5">
             Lap:
-        </yoga:TextRun>
-        <yoga:TextRun Name="LapText"
+        </ui:TextRun>
+        <ui:TextRun Name="LapText"
                       StrokeColor="black"
                       Color="white"
                       Font="bold 24px DroidSans"
                       Flex="1">
             1/3
-        </yoga:TextRun>
+        </ui:TextRun>
     </yoga:Box>
 
     <yoga:Box Name="TimeDisplay" FlexDirection="Row">
-        <yoga:TextRun Name="TimeIcon"
+        <ui:TextRun Name="TimeIcon"
                       Font="bold 24px Adventure"
                       Color="white"
                       StrokeColor="black"
                       Flex="1"
                       MarginRight="5">
             Time:
-        </yoga:TextRun>
-        <yoga:TextRun Name="TimeText"
+        </ui:TextRun>
+        <ui:TextRun Name="TimeText"
                       StrokeColor="black"
                       Color="white"
                       Font="bold 24px DroidSans"
                       Flex="1">
             0:00.000
-        </yoga:TextRun>
+        </ui:TextRun>
     </yoga:Box>
 
     <yoga:Box>
-        <yoga:TextRun Name="LapTimeText"
+        <ui:TextRun Name="LapTimeText"
                       StrokeColor="black"
                       Color="white"
                       Font="bold 24px DroidSans"
@@ -56,7 +57,7 @@
     </yoga:Box>
 
     <yoga:Box>
-        <yoga:TextRun Name="CheckpointSplitsText"
+        <ui:TextRun Name="CheckpointSplitsText"
                       StrokeColor="black"
                       Color="white"
                       Font="bold 24px DroidSans"
@@ -64,7 +65,7 @@
     </yoga:Box>
 
     <yoga:Box>
-        <yoga:TextRun Name="LapSplitsText"
+        <ui:TextRun Name="LapSplitsText"
                       StrokeColor="black"
                       Color="white"
                       Font="bold 24px DroidSans"

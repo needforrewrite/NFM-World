@@ -1,6 +1,6 @@
 ﻿using NFMWorld.DriverInterface;
 
-namespace NFMWorld.UI.Yoga;
+namespace NFMWorld.UI;
 
 public class StaticImage(string path)
 {
@@ -8,6 +8,6 @@ public class StaticImage(string path)
 
     public IImage ProvideValue(IServiceProvider serviceProvider)
     {
-        return IBackend.Backend.LoadCachedImage(Path);
+        return NFMWorld.DriverInterface.IBackend.Backend.LoadCachedImage(Path);
     }
 }

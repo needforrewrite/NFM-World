@@ -1,4 +1,4 @@
-namespace NFMWorld.UI.Yoga;
+namespace NFMWorld.UI;
 
 public class MeasureBar : Image
 {
@@ -8,7 +8,7 @@ public class MeasureBar : Image
     /// </summary>
     public float FillAmount { get; set; } = 0f;
 
-    protected override void RenderContent(Vector2 position, Vector2 size)
+    protected override void RenderContent(System.Numerics.Vector2 position, System.Numerics.Vector2 size)
     {
         base.RenderContent(position, size);
         G.SetColor(Color);

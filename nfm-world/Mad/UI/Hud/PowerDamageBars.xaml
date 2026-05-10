@@ -2,7 +2,8 @@
 
 <yoga:Box
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:yoga="clr-namespace:NFMWorld.UI.Yoga"
+    xmlns:yoga="clr-namespace:WorldXaml.UI.Yoga;assembly=WorldXaml.UI.Yoga"
+    xmlns:ui="clr-namespace:NFMWorld.UI"
     x:Class="NFMWorld.UI.Hud.PowerDamageBars"
     Top="0"
     Padding="10"
@@ -10,15 +11,15 @@
     Gap="10"
     AlignItems="FlexEnd">
 
-    <yoga:MeasureBar
+    <ui:MeasureBar
         Name="DamageBar"
         FillAmount="0"
-        ImageData="{yoga:StaticImage data/images/damage.gif}"
+        ImageData="{ui:StaticImage data/images/damage.gif}"
         Scale="1.2" />
 
-    <yoga:MeasureBar
+    <ui:MeasureBar
         Name="PowerBar"
         FillAmount="0.98"
-        ImageData="{yoga:StaticImage data/images/power.gif}"
+        ImageData="{ui:StaticImage data/images/power.gif}"
         Scale="1.2" />
 </yoga:Box>

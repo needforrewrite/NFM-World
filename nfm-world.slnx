@@ -46,6 +46,8 @@
   <Folder Name="/XamlX/">
     <Project Path="WorldXaml/WorldXaml.Core/WorldXaml.Core.csproj" />
     <Project Path="WorldXaml/WorldXaml.Generator/WorldXaml.Generator.csproj" />
+    <Project Path="WorldXaml/WorldXaml.UI.Base/WorldXaml.UI.Base.csproj" />
+    <Project Path="WorldXaml/WorldXaml.UI.Yoga/WorldXaml.UI.Yoga.csproj" />
     <Project Path="WorldXaml/XamlX.IL.CSharp/XamlX.IL.CSharp.csproj" />
     <Project Path="WorldXaml/XamlX/src/XamlX.IL.Cecil/XamlX.IL.Cecil.csproj" />
     <Project Path="WorldXaml/XamlX/src/XamlX/XamlX.csproj" />

@@ -1,6 +1,7 @@
 using NFMWorld.DriverInterface;
+using WorldXaml.UI.Yoga;
 
-namespace NFMWorld.UI.Yoga;
+namespace NFMWorld.UI;
 
 public class Image : Node
 {
@@ -38,7 +39,7 @@ public class Image : Node
         }
     } = 1f;
 
-    protected override void RenderContent(Vector2 position, Vector2 size)
+    protected override void RenderContent(System.Numerics.Vector2 position, System.Numerics.Vector2 size)
     {
         if(ImageData != null)
         {

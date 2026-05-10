@@ -1,6 +1,7 @@
 ﻿using NFMWorld.Util;
+using WorldXaml.UI.Yoga;
 
-namespace NFMWorld.UI.Yoga;
+namespace NFMWorld.UI;
 
 public class GarageDynamicStatBar : Node
 {
@@ -96,7 +97,7 @@ public class GarageDynamicStatBar : Node
         }
     }
 
-    protected override void RenderContent(Vector2 position, Vector2 size)
+    protected override void RenderContent(System.Numerics.Vector2 position, System.Numerics.Vector2 size)
     {
         var x = (int)position.X;
         var y = (int)position.Y;

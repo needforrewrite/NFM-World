@@ -65,7 +65,8 @@
         <ProjectReference Include="..\WorldXaml\WorldXaml.Core\WorldXaml.Core.csproj" />
         <ProjectReference Include="..\NvgSharp\src\NvgSharp.Text\NvgSharp.Text.FNA.Core.csproj"/>
         <ProjectReference Include="..\NvgSharp\src\XNA\NvgSharp.FNA.Core.csproj"/>
-        <ProjectReference Include="..\XamlX\src\XamlX.Runtime\XamlX.Runtime.csproj"/>
+        <ProjectReference Include="..\WorldXaml\WorldXaml.UI.Yoga\WorldXaml.UI.Yoga.csproj" />
+        <ProjectReference Include="..\WorldXaml\XamlX\src\XamlX.Runtime\XamlX.Runtime.csproj"/>
         <!-- Reference WorldXaml.Generator for XAML source generation -->
         <ProjectReference Include="..\WorldXaml\WorldXaml.Generator\WorldXaml.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>
@@ -73,7 +74,7 @@
     <Import Project="../WorldXaml/WorldXaml.Generator/WorldXaml.Generator.props" />
 
     <ItemGroup>
-        <ProjectReference Include="..\XamlX\src\XamlX\XamlX.csproj"/>
+        <ProjectReference Include="..\WorldXaml\XamlX\src\XamlX\XamlX.csproj"/>
     </ItemGroup>
 
     <!-- XAML files to compile -->
@@ -237,6 +238,7 @@
 
     <ItemGroup>
       <Folder Include="Mad\Renderer\Renderable\" />
+      <Folder Include="Mad\UI\Avalonia\" />
     </ItemGroup>
 
     <Target Name="CopyShadersOnPublish" AfterTargets="Publish">

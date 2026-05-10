@@ -2,7 +2,8 @@
 
 <yoga:View
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:yoga="clr-namespace:NFMWorld.UI.Yoga"
+    xmlns:yoga="clr-namespace:WorldXaml.UI.Yoga;assembly=WorldXaml.UI.Yoga"
+    xmlns:ui="clr-namespace:NFMWorld.UI"
     x:Class="NFMWorld.UI.Menu.GarageUiView"
     Name="LapTimerSplits"
     FlexDirection="Column"
@@ -13,18 +14,18 @@
     Margin="50">
 
     <yoga:Box FlexDirection="Row" Gap="25" MarginBottom="25">
-        <yoga:GarageDynamicStatBar Name="Bar0" StatName="Top Speed" />
-        <yoga:GarageDynamicStatBar Name="Bar1" StatName="Acceleration" />
-        <yoga:GarageDynamicStatBar Name="Bar2" StatName="Handling" />
+        <ui:GarageDynamicStatBar Name="Bar0" StatName="Top Speed" />
+        <ui:GarageDynamicStatBar Name="Bar1" StatName="Acceleration" />
+        <ui:GarageDynamicStatBar Name="Bar2" StatName="Handling" />
     </yoga:Box>
     <yoga:Box FlexDirection="Row" Gap="25" MarginBottom="25">
-        <yoga:GarageDynamicStatBar Name="Bar3" StatName="Power Save" />
-        <yoga:GarageDynamicStatBar Name="Bar4" StatName="Strength" />
-        <yoga:GarageDynamicStatBar Name="Bar5" StatName="Max Health" />
+        <ui:GarageDynamicStatBar Name="Bar3" StatName="Power Save" />
+        <ui:GarageDynamicStatBar Name="Bar4" StatName="Strength" />
+        <ui:GarageDynamicStatBar Name="Bar5" StatName="Max Health" />
     </yoga:Box>
     <yoga:Box FlexDirection="Row" Gap="25" MarginBottom="25">
-        <yoga:GarageDynamicStatBar Name="Bar6" StatName="Stunting" />
-        <yoga:GarageDynamicStatBar Name="Bar7" StatName="Hypergliding" />
-        <yoga:GarageDynamicStatBar Name="Bar8" StatName="AB'ing" />
+        <ui:GarageDynamicStatBar Name="Bar6" StatName="Stunting" />
+        <ui:GarageDynamicStatBar Name="Bar7" StatName="Hypergliding" />
+        <ui:GarageDynamicStatBar Name="Bar8" StatName="AB'ing" />
     </yoga:Box>
 </yoga:View>

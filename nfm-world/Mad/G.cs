@@ -25,7 +25,7 @@ public static class G
 
     public static void DrawLine(int x1, int y1, int x2, int y2) => Graphics.DrawLine(x1, y1, x2, y2);
 
-    public static void SetAlpha(float f) => Graphics.SetAlpha(f);
+    public static void SetAlpha(float f) => Graphics.Alpha = f;
 
     public static void DrawImage(IImage? image, int x, int y)
     {
