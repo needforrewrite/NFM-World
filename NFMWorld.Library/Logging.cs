@@ -11,7 +11,7 @@ namespace NFMWorldLibrary;
 
 public static class Logging
 {
-    public const string SentryDsn = "https://baadef1bd7ebd872a30c292477d45ed6@sentry.puppykitty.racing/1";
+    public const string SentryDsn = "https://576c8b7adc0c43208ec65b059d436085@glitchtip.puppykitty.racing/2";
 
     public static string Release { get; } = AppDomain.CurrentDomain.GetAssemblies()
         .FirstOrDefault(ass => ass.FullName?.StartsWith("NFMWorld,") == true)
