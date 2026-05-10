@@ -69,8 +69,6 @@ public class SettingsMenu(WorldGame game)
     private int _shadowResolution = 2; // 2048x
     private static readonly string[] ShadowResolutions = ["512", "1024", "2048", "4096", "8192"]; // must be powers of 2 starting at 2^9
     private int _fpsLimit = 63;
-    private float _brightness = 0.5f;
-    private float _gamma = 0.5f;
     private float _lineWidth = 1;
 
     // Audio settings
@@ -286,24 +284,6 @@ public class SettingsMenu(WorldGame game)
         
         ImGui.Text("Shadow Resolution");
         ImGui.Combo("##ShadowResolution", ref _shadowResolution, ShadowResolutions, ShadowResolutions.Length);
-
-        ImGui.Spacing();
-        ImGui.Text("Brightness");
-        ImGui.SetNextItemWidth(sliderWidth);
-        ImGui.SliderFloat("##Brightness", ref _brightness, 0.0f, 1.0f, "%.2f");
-        var startX = ImGui.GetCursorPosX();
-        ImGui.TextDisabled("Dark");
-        ImGui.SameLine();
-        ImGui.SetCursorPosX(startX + sliderWidth - ImGui.CalcTextSize("Light").X);
-        ImGui.TextDisabled("Light");
-        
-        ImGui.Text("Gamma");
-        ImGui.SetNextItemWidth(sliderWidth);
-        ImGui.SliderFloat("##Gamma", ref _gamma, 0.0f, 1.0f, "%.2f");
-        ImGui.TextDisabled("Low");
-        ImGui.SameLine();
-        ImGui.SetCursorPosX(startX + sliderWidth - ImGui.CalcTextSize("High").X);
-        ImGui.TextDisabled("High");
 
         ImGui.Spacing();
         ImGui.Text("Outline Width");
@@ -580,7 +560,7 @@ public class SettingsMenu(WorldGame game)
             WorldGame.ShadowResolution = (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9));
             game.RebuildCascades();
         }
-
+        
         if (Renderers[_selectedRenderer] != GetFna3DRenderer())
         {
             requireRestart = true;
@@ -625,8 +605,6 @@ public class SettingsMenu(WorldGame game)
                 cfgWriter.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
                 cfgWriter.WriteLine($"video_antialias {_antialias}");
                 cfgWriter.WriteLine($"video_fps {_fpsLimit}");
-                cfgWriter.WriteLine($"video_brightness {_brightness.ToString("F2", CultureInfo.InvariantCulture)}");
-                cfgWriter.WriteLine($"video_gamma {_gamma.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"video_linewidth2 {_lineWidth.ToString("F4", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"video_shadow_cascade {_shadowCascadeLevel}");
                 cfgWriter.WriteLine($"video_shadow_res {_shadowResolution}");
@@ -810,12 +788,6 @@ public class SettingsMenu(WorldGame game)
                             break;
                         case "video_fps":
                             _fpsLimit = int.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_brightness":
-                            _brightness = float.Parse(value, CultureInfo.InvariantCulture);
-                            break;
-                        case "video_gamma":
-                            _gamma = float.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "video_linewidth2":
                             _lineWidth = float.Parse(value, CultureInfo.InvariantCulture);
