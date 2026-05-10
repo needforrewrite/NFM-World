@@ -336,6 +336,10 @@ public class WorldGame : Game
                 shadowRenderTarget?.Dispose();
             }
             _imguiRenderer.Dispose();
+
+#if USE_BASS
+            Bass.Free();
+#endif
         }
     }
 
@@ -602,15 +606,15 @@ public class WorldGame : Game
         SettingsMenu.LoadFnaRenderer();
         
         var fnaLogger = Logging.LoggerFactory.CreateLogger("FNA");
-        FNALoggerEXT.LogError += (message) =>
+        FNALoggerEXT.LogError = (message) =>
         {
             fnaLogger.LogError(message);
         };
-        FNALoggerEXT.LogInfo += (message) =>
+        FNALoggerEXT.LogInfo = (message) =>
         {
             fnaLogger.LogInformation(message);
         };
-        FNALoggerEXT.LogWarn += (message) =>
+        FNALoggerEXT.LogWarn = (message) =>
         {
             fnaLogger.LogWarning(message);
         };
