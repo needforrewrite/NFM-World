@@ -224,6 +224,20 @@ public class WorldGame : Game
     {
         GameThreadContext.Install();
         
+        WorldXaml.UI.Base.Logging.LogMessage = (level, message) =>
+        {
+            if (level == WorldXaml.UI.Base.LogLevel.Info)
+                Logging.Info($"[WorldXaml] {message}");
+            else if (level == WorldXaml.UI.Base.LogLevel.Warning)
+                Logging.Warning($"[WorldXaml] {message}");
+            else if (level == WorldXaml.UI.Base.LogLevel.Error)
+                Logging.Error($"[WorldXaml] {message}");
+            else if (level == WorldXaml.UI.Base.LogLevel.Debug)
+                Logging.Debug($"[WorldXaml] {message}");
+            else
+                throw new ArgumentOutOfRangeException(nameof(level), level, null);
+        };
+        
         _graphics = new GraphicsDeviceManager(this);
         _graphics.GraphicsProfile = GraphicsProfile.Reach;
         Content.RootDirectory = "Content";
