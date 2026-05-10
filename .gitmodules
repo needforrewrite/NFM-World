@@ -25,3 +25,6 @@
 [submodule "WorldXaml"]
 	path = WorldXaml
 	url = https://github.com/uwx/WorldXaml
+[submodule "Maxine.RustBindGen"]
+	path = Maxine.RustBindGen
+	url = https://github.com/uwx/Maxine.RustBindGen

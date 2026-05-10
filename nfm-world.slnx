@@ -38,6 +38,7 @@
       <Build Solution="*|x64" Project="false" />
       <Build Solution="*|x86" Project="false" />
     </Project>
+    <Project Path="Maxine.RustBindGen/Maxine.RustBindGen.csproj" />
   </Folder>
   <Folder Name="/NvgSharp/">
     <Project Path="NvgSharp/src/NvgSharp.Text/NvgSharp.Text.FNA.Core.csproj" />

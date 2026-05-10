@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="..\Maxine.RustBindGen\Maxine.RustBindGen.csproj" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
         <RdXmlFile Include="rd.xml" />
     </ItemGroup>
