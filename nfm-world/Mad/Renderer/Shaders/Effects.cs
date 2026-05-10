@@ -68,22 +68,4 @@ public static class Effects
             VertexColorEnabled = true
         };
     }
-
-    public static void ResetShadowMaps()
-    {
-        ResetEffect(Poly.UnderlyingEffect);
-        ResetEffect(Line.UnderlyingEffect);
-        ResetEffect(Sky);
-        ResetEffect(Ground);
-        ResetEffect(Mountains);
-
-        return;
-
-        static void ResetEffect(Effect effect)
-        {
-            effect.Parameters["ShadowMap0"]?.SetValue((Texture?)null);
-            effect.Parameters["ShadowMap1"]?.SetValue((Texture?)null);
-            effect.Parameters["ShadowMap2"]?.SetValue((Texture?)null);
-        }
-    }
 }

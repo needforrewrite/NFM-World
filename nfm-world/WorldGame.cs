@@ -457,8 +457,6 @@ public class WorldGame : Game
 
     public void RebuildCascades()
     {
-        Effects.ResetShadowMaps();
-        
         foreach (var shadowRenderTarget in shadowRenderTargets)
         {
             shadowRenderTarget?.Dispose();
