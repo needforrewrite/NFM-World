@@ -6,8 +6,21 @@ public interface IBackend : IXamlGraphicsBackend
 {
     public new static IBackend Backend
     {
-        get;
-        set;
+        get
+        {
+            return field ?? ThrowNotInitialized();
+
+            IBackend ThrowNotInitialized()
+            {
+                throw new InvalidOperationException(
+                    $"{nameof(IBackend)}.{nameof(Backend)} needs to be set before it can be used.");
+            }
+        }
+        set
+        {
+            field = value;
+            IXamlGraphicsBackend.Backend = value;
+        }
     }
 
     float IXamlGraphicsBackend.Scale => Scale;
