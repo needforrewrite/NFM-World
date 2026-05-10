@@ -223,19 +223,22 @@ public class WorldGame : Game
     private WorldGame()
     {
         GameThreadContext.Install();
-        
+
+        var xamlLogger = Logging.LoggerFactory.CreateLogger("WorldXaml");
         WorldXaml.UI.Base.Logging.LogMessage = (level, message) =>
         {
+#pragma warning disable CA2254
             if (level == WorldXaml.UI.Base.LogLevel.Info)
-                Logging.Info($"[WorldXaml] {message}");
+                xamlLogger.LogInformation(message);
             else if (level == WorldXaml.UI.Base.LogLevel.Warning)
-                Logging.Warning($"[WorldXaml] {message}");
+                xamlLogger.LogWarning(message);
             else if (level == WorldXaml.UI.Base.LogLevel.Error)
-                Logging.Error($"[WorldXaml] {message}");
+                xamlLogger.LogError(message);
             else if (level == WorldXaml.UI.Base.LogLevel.Debug)
-                Logging.Debug($"[WorldXaml] {message}");
+                xamlLogger.LogDebug(message);
             else
                 throw new ArgumentOutOfRangeException(nameof(level), level, null);
+#pragma warning restore CA2254
         };
         
         _graphics = new GraphicsDeviceManager(this);
