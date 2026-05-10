@@ -1,6 +1,5 @@
 using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Camera;
 using NFMWorld.Gameplay;
 using NFMWorld.Util;
 using NFMWorldLibrary;

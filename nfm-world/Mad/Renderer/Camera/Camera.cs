@@ -1,4 +1,4 @@
-﻿namespace NFMWorld.Camera;
+﻿namespace NFMWorld;
 
 public abstract class Camera
 {

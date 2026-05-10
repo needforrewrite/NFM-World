@@ -9,12 +9,12 @@ namespace NFMWorld;
 public class Scene
 {
     private readonly GraphicsDevice _graphicsDevice;
-    private readonly Camera.Camera _camera;
-    private readonly Camera.Camera[] _lightCameras;
+    private readonly Camera _camera;
+    private readonly Camera[] _lightCameras;
     public readonly List<GameObject> Objects;
     private readonly RenderDataCache _renderDataCache;
 
-    public Scene(GraphicsDevice graphicsDevice, IEnumerable<GameObject> objects, Camera.Camera camera, Camera.Camera[] lightCameras)
+    public Scene(GraphicsDevice graphicsDevice, IEnumerable<GameObject> objects, Camera camera, Camera[] lightCameras)
     {
         _graphicsDevice = graphicsDevice;
         _camera = camera;
@@ -40,10 +40,11 @@ public class Scene
         _graphicsDevice.DepthStencilState = DepthStencilState.Default;
 
         // CREATE SHADOW MAP
+        var totalCascades = Math.Min(_lightCameras.Length, WorldGame.NumCascades);
 
         if (useShadowMapping)
         {
-            for (var cascade = 0; cascade < Math.Min(_lightCameras.Length, WorldGame.shadowRenderTargets.Length); cascade++)
+            for (var cascade = 0; cascade < totalCascades; cascade++)
             {
                 // Set our render target to our floating point render target
                 _graphicsDevice.SetRenderTarget(WorldGame.shadowRenderTargets[cascade]);
@@ -51,9 +52,9 @@ public class Scene
                 // Clear the render target to white or all 1's
                 // We set the clear to white since that represents the 
                 // furthest the object could be away
-                _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.White);
+                _graphicsDevice.Clear(Color.White);
 
-                RenderInternal(true, cascade);
+                RenderInternal(true, cascade, totalCascades);
             }
             
             _graphicsDevice.SetRenderTarget(null);
@@ -62,12 +63,12 @@ public class Scene
         // DRAW WITH SHADOW MAP
         
         if (clearRenderBuffer)
-            _graphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
+            _graphicsDevice.Clear(Color.CornflowerBlue);
 
         for (var i = 0; i < 16; i++)
             _graphicsDevice.SamplerStates[i] = SamplerState.PointClamp;
 
-        RenderInternal();
+        RenderInternal(totalCascades: totalCascades);
 
     }
     
@@ -225,9 +226,9 @@ public class Scene
         }
     }
     
-    private void RenderInternal(bool isCreateShadowMap = false, int numCascade = -1)
+    private void RenderInternal(bool isCreateShadowMap = false, int numCascade = -1, int totalCascades = 3)
     {
-        var lighting = new Lighting(_lightCameras, WorldGame.shadowRenderTargets, isCreateShadowMap, numCascade);
+        var lighting = new Lighting(_lightCameras, WorldGame.shadowRenderTargets, isCreateShadowMap, numCascade, totalCascades);
 
         _renderDataCache.Clear();
         foreach (var obj in Objects)

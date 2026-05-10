@@ -26,7 +26,7 @@ namespace NFMWorld;
 public class WorldGame : Game
 {
     public GraphicsDeviceManager _graphics;
-    public static RenderTarget2D[] shadowRenderTargets { get; private set; }
+    public static RenderTarget2D?[] shadowRenderTargets { get; } = new RenderTarget2D[3];
     private ImGuiRenderer _imguiRenderer;
     public static ImGuiRenderer ImguiRenderer { get; private set; }
 
@@ -37,7 +37,8 @@ public class WorldGame : Game
     private MouseState oldMouseState;
     private NanoVGRenderer _nvg;
     private TimeStep _tickTimeStep = new((1000f / Physics.TargetTps) / 1000f);
-    public const int NumCascades = 3;
+    public static int NumCascades = 3;
+    public static int ShadowResolution = 2048;
 
     private static bool loaded;
     private const int FrameDelay = (int) (1000 / 21.3f);
@@ -322,8 +323,6 @@ public class WorldGame : Game
         GraphicsDevice.PresentationParameters.MultiSampleCount = 8;
         
         base.Initialize();
-
-        Effects.Initialize(GraphicsDevice);
     }
 
     protected override void Dispose(bool disposing)
@@ -334,7 +333,7 @@ public class WorldGame : Game
         {
             foreach (var shadowRenderTarget in shadowRenderTargets)
             {
-                shadowRenderTarget.Dispose();
+                shadowRenderTarget?.Dispose();
             }
             _imguiRenderer.Dispose();
         }
@@ -344,30 +343,13 @@ public class WorldGame : Game
     {
         GameSparker.Load(this);
 
-        // Create floating point render target
-        shadowRenderTargets = new RenderTarget2D[3];
-        for (int i = NumCascades - 1; i >= 0; i--)
-        {
-            shadowRenderTargets[i] = new RenderTarget2D(
-                GraphicsDevice,
-                2048,
-                2048,
-                false,
-                SurfaceFormat.Single,
-                DepthFormat.Depth24,
-                0,
-                RenderTargetUsage.DiscardContents);
-        }
-        
-        // Clear all render targets AFTER creating them all
-        for (int i = 0; i < NumCascades; i++)
-        {
-            GraphicsDevice.SetRenderTarget(shadowRenderTargets[i]);
-            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.White, 1.0f, 0);
-            GraphicsDevice.SetRenderTarget(null);
-        }
-        
         _imguiRenderer.RebuildFontAtlas();
+
+        Effects.Initialize(GraphicsDevice);
+        
+        RebuildCascades();
+        
+        GameSparker.SettingsMenu.LoadConfig();
 
         #region Imgui
         
@@ -471,6 +453,38 @@ public class WorldGame : Game
         return;
 
         static System.Numerics.Vector4 RGB(int r, int g, int b, float a = 1.0f) => new(r / 255f, g / 255f, b / 255f, a);
+    }
+
+    public void RebuildCascades()
+    {
+        Effects.ResetShadowMaps();
+        
+        foreach (var shadowRenderTarget in shadowRenderTargets)
+        {
+            shadowRenderTarget?.Dispose();
+        }
+        
+        // Create floating point render target
+        for (int i = NumCascades - 1; i >= 0; i--)
+        {
+            shadowRenderTargets[i] = new RenderTarget2D(
+                GraphicsDevice,
+                ShadowResolution,
+                ShadowResolution,
+                false,
+                SurfaceFormat.Single,
+                DepthFormat.Depth24,
+                0,
+                RenderTargetUsage.DiscardContents);
+        }
+        
+        // Clear all render targets AFTER creating them all
+        for (int i = 0; i < NumCascades; i++)
+        {
+            GraphicsDevice.SetRenderTarget(shadowRenderTargets[i]);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.White, 1.0f, 0);
+            GraphicsDevice.SetRenderTarget(null);
+        }
     }
 
     private void UpdateInput()

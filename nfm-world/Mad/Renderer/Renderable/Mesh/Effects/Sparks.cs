@@ -238,7 +238,7 @@ public class Sparks : IDisposable
         Sprk = 0;
     }
 
-    public void Render(Camera.Camera camera)
+    public void Render(Camera camera)
     {
         if (_vertexCount == 0 || _triangleCount == 0) return;
         

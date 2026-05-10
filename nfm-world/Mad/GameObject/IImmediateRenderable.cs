@@ -6,5 +6,5 @@ public interface IImmediateRenderable
     {
     }
 
-    void Render(Camera.Camera camera, Lighting? lighting);
+    void Render(Camera camera, Lighting? lighting);
 }

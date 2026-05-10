@@ -88,7 +88,7 @@ public class Flames
         }
     }
 
-    public void Render(Camera.Camera camera)
+    public void Render(Camera camera)
     {
         if (_embos >= 16)
         {

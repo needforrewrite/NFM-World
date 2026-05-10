@@ -23,6 +23,7 @@ public class PolyEffect(Effect effect)
     public EffectParameter? FogDensity { get; } = effect.Parameters["FogDensity"];
     public EffectParameter? EnvironmentLight { get; } = effect.Parameters["EnvironmentLight"];
     public EffectParameter? DepthBias { get; } = effect.Parameters["DepthBias"];
+    public EffectParameter? NumCascades { get; } = effect.Parameters["NumCascades"];
 
     public EffectParameter? GetsShadowed { get; } = effect.Parameters["GetsShadowed"];
     public EffectParameter? Alpha { get; } = effect.Parameters["Alpha"];

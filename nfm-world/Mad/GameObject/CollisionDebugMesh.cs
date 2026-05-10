@@ -162,7 +162,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable
         Dispose(false);
     }
 
-    public override void Render(Camera.Camera camera, Lighting? lighting)
+    public override void Render(Camera camera, Lighting? lighting)
     {
         if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
         lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);

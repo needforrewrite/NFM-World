@@ -4,7 +4,6 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Camera;
 using NFMWorld.DriverInterface;
 using NFMWorld.Util;
 using NFMWorldLibrary;
@@ -65,6 +64,10 @@ public class SettingsMenu(WorldGame game)
     private bool _vsync = true;
     private static readonly string[] AntialiasModes = ["Off", "MSAA 1x", "MSAA 2x", "MSAA 4x", "MSAA 8x"]; // must be powers of 2
     private int _antialias = 4; // 8x
+    private int _shadowCascadeLevel = 3;
+    private static readonly string[] ShadowCascadeLevels = ["Off", "Close", "Far", "Further"];
+    private int _shadowResolution = 2; // 2048x
+    private static readonly string[] ShadowResolutions = ["512", "1024", "2048", "4096", "8192"]; // must be powers of 2 starting at 2^9
     private int _fpsLimit = 63;
     private float _brightness = 0.5f;
     private float _gamma = 0.5f;
@@ -277,6 +280,12 @@ public class SettingsMenu(WorldGame game)
         
         ImGui.Text("Antialiasing");
         ImGui.Combo("##Antialiasing", ref _antialias, AntialiasModes, AntialiasModes.Length);
+
+        ImGui.Text("Shadow Distance");
+        ImGui.Combo("##ShadowCascadeLevel", ref _shadowCascadeLevel, ShadowCascadeLevels, ShadowCascadeLevels.Length);
+        
+        ImGui.Text("Shadow Resolution");
+        ImGui.Combo("##ShadowResolution", ref _shadowResolution, ShadowResolutions, ShadowResolutions.Length);
 
         ImGui.Spacing();
         ImGui.Text("Brightness");
@@ -565,6 +574,13 @@ public class SettingsMenu(WorldGame game)
             graphicsChanged = true;
         }
 
+        if (WorldGame.NumCascades != _shadowCascadeLevel || WorldGame.ShadowResolution != (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9)))
+        {
+            WorldGame.NumCascades = _shadowCascadeLevel;
+            WorldGame.ShadowResolution = (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9));
+            game.RebuildCascades();
+        }
+
         if (Renderers[_selectedRenderer] != GetFna3DRenderer())
         {
             requireRestart = true;
@@ -612,6 +628,8 @@ public class SettingsMenu(WorldGame game)
                 cfgWriter.WriteLine($"video_brightness {_brightness.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"video_gamma {_gamma.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"video_linewidth2 {_lineWidth.ToString("F4", CultureInfo.InvariantCulture)}");
+                cfgWriter.WriteLine($"video_shadow_cascade {_shadowCascadeLevel}");
+                cfgWriter.WriteLine($"video_shadow_res {_shadowResolution}");
                 cfgWriter.WriteLine();
                 
                 // Audio settings
@@ -782,16 +800,16 @@ public class SettingsMenu(WorldGame game)
                             _selectedResolution = Resolutions.IndexOf(value) is var res and > -1 ? res : _selectedResolution;
                             break;
                         case "video_displaymode":
-                            _selectedDisplayMode = int.Parse(value);
+                            _selectedDisplayMode = int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "video_vsync":
                             _vsync = int.Parse(value) != 0;
                             break;
                         case "video_antialias":
-                            _antialias = int.Parse(value);
+                            _antialias = int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "video_fps":
-                            _fpsLimit = int.Parse(value);
+                            _fpsLimit = int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "video_brightness":
                             _brightness = float.Parse(value, CultureInfo.InvariantCulture);
@@ -801,6 +819,12 @@ public class SettingsMenu(WorldGame game)
                             break;
                         case "video_linewidth2":
                             _lineWidth = float.Parse(value, CultureInfo.InvariantCulture);
+                            break;
+                        case "video_shadow_cascade":
+                            _shadowCascadeLevel = int.Parse(value, CultureInfo.InvariantCulture);
+                            break;
+                        case "video_shadow_res":
+                            _shadowResolution = int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         
                         // Audio settings
@@ -825,60 +849,60 @@ public class SettingsMenu(WorldGame game)
                             _fov = float.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "camera_follow_y":
-                            _followY = int.Parse(value);
+                            _followY = int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "camera_follow_z":
-                            _followZ = int.Parse(value);
+                            _followZ = int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         
                         // Key bindings
                         case "key_accelerate":
-                            Bindings.Accelerate = (Keys)int.Parse(value);
+                            Bindings.Accelerate = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_ab":
-                            Bindings.AerialBounce = (Keys)int.Parse(value);
+                            Bindings.AerialBounce = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_smoothturn":
-                            Bindings.AerialStrafe = (Keys)int.Parse(value);
+                            Bindings.AerialStrafe = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_brake":
-                            Bindings.Brake = (Keys)int.Parse(value);
+                            Bindings.Brake = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_turnleft":
-                            Bindings.TurnLeft = (Keys)int.Parse(value);
+                            Bindings.TurnLeft = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_turnright":
-                            Bindings.TurnRight = (Keys)int.Parse(value);
+                            Bindings.TurnRight = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_handbrake":
-                            Bindings.Handbrake = (Keys)int.Parse(value);
+                            Bindings.Handbrake = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_lookback":
-                            Bindings.LookBack = (Keys)int.Parse(value);
+                            Bindings.LookBack = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_lookleft":
-                            Bindings.LookLeft = (Keys)int.Parse(value);
+                            Bindings.LookLeft = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_lookright":
-                            Bindings.LookRight = (Keys)int.Parse(value);
+                            Bindings.LookRight = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_togglemusic":
-                            Bindings.ToggleMusic = (Keys)int.Parse(value);
+                            Bindings.ToggleMusic = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_togglesfx":
-                            Bindings.ToggleSFX = (Keys)int.Parse(value);
+                            Bindings.ToggleSFX = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_togglearrace":
-                            Bindings.ToggleArrace = (Keys)int.Parse(value);
+                            Bindings.ToggleArrace = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_console":
-                            Bindings.ToggleDevConsole = (Keys)int.Parse(value);
+                            Bindings.ToggleDevConsole = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_toggleradar":
-                            Bindings.ToggleRadar = (Keys)int.Parse(value);
+                            Bindings.ToggleRadar = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                         case "key_cycleview":
-                            Bindings.CycleView = (Keys)int.Parse(value);
+                            Bindings.CycleView = (Keys)int.Parse(value, CultureInfo.InvariantCulture);
                             break;
                     }
                 }

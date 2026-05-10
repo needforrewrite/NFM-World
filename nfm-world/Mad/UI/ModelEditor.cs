@@ -2,7 +2,6 @@ using System.Text;
 using Hexa.NET.ImGui;
 using Maxine.Extensions.Mathematics;
 using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Camera;
 using NFMWorld.Gameplay;
 using NFMWorld.Util;
 using NFMWorldLibrary;

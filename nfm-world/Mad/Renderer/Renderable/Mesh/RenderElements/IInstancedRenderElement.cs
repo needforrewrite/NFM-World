@@ -4,5 +4,5 @@ namespace NFMWorld;
 
 public interface IInstancedRenderElement
 {
-    void Render(Camera.Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount);
+    void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount);
 }

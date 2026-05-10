@@ -195,7 +195,7 @@ public class Mesh : IDisposable
 	    );
     }
 
-    public virtual void Render(Camera.Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)
+    public virtual void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)
     {
     }
 

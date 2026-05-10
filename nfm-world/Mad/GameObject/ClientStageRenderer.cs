@@ -204,7 +204,7 @@ public class ClientStageRenderer : GameObject
         ground = new Ground(graphicsDevice);
     }
 
-    public override void Render(Camera.Camera camera, Lighting? lighting)
+    public override void Render(Camera camera, Lighting? lighting)
     {
         sky?.Render(camera, lighting);
         ground?.Render(camera, lighting);

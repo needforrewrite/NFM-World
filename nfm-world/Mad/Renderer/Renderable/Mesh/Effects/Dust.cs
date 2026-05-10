@@ -295,7 +295,7 @@ public class Dust
         }
     }
 
-    public void Render(Camera.Camera camera)
+    public void Render(Camera camera)
     {
         if (_vertexCount == 0 || _indexCount == 0)
         {

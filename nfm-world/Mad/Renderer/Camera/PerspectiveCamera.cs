@@ -1,6 +1,6 @@
 ﻿using Maxine.Extensions.Mathematics;
 
-namespace NFMWorld.Camera;
+namespace NFMWorld;
 
 public class PerspectiveCamera : Camera
 {

@@ -1,6 +1,4 @@
-﻿using NFMWorld.Camera;
-
-namespace NFMWorld;
+﻿namespace NFMWorld;
 
 public class CameraSettings
 {

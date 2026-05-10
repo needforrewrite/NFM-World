@@ -81,7 +81,7 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         Dispose(false);
     }
 
-    public void Render(Camera.Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
+    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
     {
         _graphicsDevice.SetVertexBuffers(_lineVertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
         _graphicsDevice.Indices = _lineIndexBuffer;

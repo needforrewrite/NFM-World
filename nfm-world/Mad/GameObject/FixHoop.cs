@@ -27,7 +27,7 @@ public class FixHoop : StageObjectGameObject
 
     public bool IsSpecial { get; set; }
 
-    private void RenderFixHoop(Camera.Camera camera)
+    private void RenderFixHoop(Camera camera)
     {
         Effects.FixHoop.World = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
                                Matrix.CreateTranslation((Vector3)Position);
@@ -165,7 +165,7 @@ public class FixHoop : StageObjectGameObject
         }
     }
 
-    public override void Render(Camera.Camera camera, Lighting? lighting)
+    public override void Render(Camera camera, Lighting? lighting)
     {
         base.Render(camera, lighting);
         if (lighting?.IsCreateShadowMap != true)

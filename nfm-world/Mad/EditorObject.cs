@@ -37,7 +37,7 @@ public class EditorObject : ClientCar
         }
     }
 
-    public override void Render(Camera.Camera camera, Lighting? lighting)
+    public override void Render(Camera camera, Lighting? lighting)
     {
         base.Render(camera, lighting);
         _collisionDebugMesh?.Render(camera, lighting);

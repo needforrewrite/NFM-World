@@ -5,18 +5,27 @@ namespace NFMWorld;
 
 public class Lighting
 {
-    public Camera.Camera[] LightCameras;
-    public RenderTarget2D[] ShadowMaps;
+    public Camera[] LightCameras;
+    public RenderTarget2D?[] ShadowMaps;
     
     [MemberNotNullWhen(true, nameof(CascadeLightCamera))]
     public bool IsCreateShadowMap { get; }
     public int NumCascade;
 
-    public Lighting(Camera.Camera[] lightCameras, RenderTarget2D[] shadowMaps, bool isCreateShadowMap = false, int numCascade = -1)
+    public int TotalCascades;
+
+    public Lighting(
+        Camera[] lightCameras,
+        RenderTarget2D?[] shadowMaps,
+        bool isCreateShadowMap = false,
+        int numCascade = -1,
+        int totalCascades = 3
+    )
     {
         LightCameras = lightCameras;
         ShadowMaps = shadowMaps;
         IsCreateShadowMap = isCreateShadowMap;
+        TotalCascades = totalCascades;
         NumCascade = numCascade;
         if (numCascade != -1)
         {
@@ -28,7 +37,7 @@ public class Lighting
         }
     }
 
-    public Camera.Camera? CascadeLightCamera;
+    public Camera? CascadeLightCamera;
 
     public void SetShadowMapParameters(Effect effect)
     {
@@ -49,20 +58,37 @@ public class Lighting
 
         if (!IsCreateShadowMap)
         {
-            if (ShadowMaps.Length > 0)
+            if (TotalCascades > 0)
             {
                 effect.Parameters["ShadowMap0"]?.SetValue(ShadowMaps[0]);
-            }
 
-            if (ShadowMaps.Length > 1)
-            {
-                effect.Parameters["ShadowMap1"]?.SetValue(ShadowMaps[1]);
+                if (TotalCascades > 1)
+                {
+                    effect.Parameters["ShadowMap1"]?.SetValue(ShadowMaps[1]);
+                    
+                    if (TotalCascades > 2)
+                    {
+                        effect.Parameters["ShadowMap2"]?.SetValue(ShadowMaps[2]);
+                    }
+                    else
+                    {
+                        effect.Parameters["ShadowMap2"]?.SetValue((Texture?)null);
+                    }
+                }
+                else
+                {
+                    effect.Parameters["ShadowMap1"]?.SetValue((Texture?)null);
+                    effect.Parameters["ShadowMap2"]?.SetValue((Texture?)null);
+                }
             }
-
-            if (ShadowMaps.Length > 2)
+            else
             {
-                effect.Parameters["ShadowMap2"]?.SetValue(ShadowMaps[2]);
+                effect.Parameters["ShadowMap0"]?.SetValue((Texture?)null);
+                effect.Parameters["ShadowMap1"]?.SetValue((Texture?)null);
+                effect.Parameters["ShadowMap2"]?.SetValue((Texture?)null);
             }
         }
+        
+        effect.Parameters["NumCascades"]?.SetValue(TotalCascades);
     }
 }

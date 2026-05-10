@@ -69,7 +69,7 @@ public class Mountains : Transform, IImmediateRenderable
         _indexBuffer.Dispose();
     }
 
-    public void Render(Camera.Camera camera, Lighting? lighting = null)
+    public void Render(Camera camera, Lighting? lighting = null)
     {
         if (lighting?.IsCreateShadowMap == true) return;
 

@@ -72,7 +72,7 @@ public class Sky : Transform, IImmediateRenderable
         _vertexBuffer.Dispose();
     }
     
-    public void Render(Camera.Camera camera, Lighting? lighting = null)
+    public void Render(Camera camera, Lighting? lighting = null)
     {
         if (lighting?.IsCreateShadowMap == true) return;
 

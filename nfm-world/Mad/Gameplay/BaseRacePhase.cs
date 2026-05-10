@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
-using NFMWorld.Camera;
 using NFMWorld.UI;
 using NFMWorld.Util;
 using NFMWorldLibrary;

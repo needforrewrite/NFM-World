@@ -131,7 +131,7 @@ public class Chips
         }
     }
 
-    public void Render(Camera.Camera camera)
+    public void Render(Camera camera)
     {
         if (_triangleCount == 0) return;
 

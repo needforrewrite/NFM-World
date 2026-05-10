@@ -1,7 +1,7 @@
 ﻿using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
 
-namespace NFMWorld.Camera;
+namespace NFMWorld;
 
 public class FollowCamera
 {

@@ -150,6 +150,7 @@ sampler ShadowMapSampler2 = sampler_state
     AddressV = Clamp;
 };
 float DepthBias = 0.25f;
+float NumCascades = 3;
 
 void applyShadowingSingle(
     inout float3 diffuse,
@@ -198,18 +199,21 @@ void PS_ApplyShadowing(
     in float4 worldPos
 )
 {
-    bool isInLight0 = false;
-    applyShadowingSingle(diffuse, worldPos, LightViewProj0, ShadowMapSampler0, isInLight0);
-
-    if (isInLight0 == false)
+    if (NumCascades > 0)
     {
-        bool isInLight1 = false;
-        applyShadowingSingle(diffuse, worldPos, LightViewProj1, ShadowMapSampler1, isInLight1);
-
-        if (isInLight1 == false)
+        bool isInLight0 = false;
+        applyShadowingSingle(diffuse, worldPos, LightViewProj0, ShadowMapSampler0, isInLight0);
+    
+        if (isInLight0 == false && NumCascades > 1)
         {
-            bool isInLight2 = false;
-            applyShadowingSingle(diffuse, worldPos, LightViewProj2, ShadowMapSampler2, isInLight2);
+            bool isInLight1 = false;
+            applyShadowingSingle(diffuse, worldPos, LightViewProj1, ShadowMapSampler1, isInLight1);
+    
+            if (isInLight1 == false && NumCascades > 2)
+            {
+                bool isInLight2 = false;
+                applyShadowingSingle(diffuse, worldPos, LightViewProj2, ShadowMapSampler2, isInLight2);
+            }
         }
     }
 }
