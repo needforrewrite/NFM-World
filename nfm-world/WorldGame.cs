@@ -603,6 +603,12 @@ public class WorldGame : Game
 
     public static void Main(string[] args)
     {
+        // TODO figure out why SDL ProcessExit doesn't work properly
+        AppDomain.CurrentDomain.ProcessExit += static (sender, args) =>
+        {
+            Process.GetCurrentProcess().Kill();
+        };
+
         SettingsMenu.LoadFnaRenderer();
         
         var fnaLogger = Logging.LoggerFactory.CreateLogger("FNA");
@@ -619,12 +625,6 @@ public class WorldGame : Game
             fnaLogger.LogWarning(message);
         };
         
-        // TODO figure out why SDL ProcessExit doesn't work properly
-        AppDomain.CurrentDomain.ProcessExit += static (sender, args) =>
-        {
-            Process.GetCurrentProcess().Kill();
-        };
-
 #if DEBUG
         if (args.IndexOf("-debugui", StringComparer.OrdinalIgnoreCase) is var index and >= 0)
         {
