@@ -1,11 +1,14 @@
+using System.Collections;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
+using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Camera;
 using NFMWorld.DriverInterface;
 using NFMWorld.Util;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Util;
 using SDL3;
 
 namespace NFMWorld.UI;
@@ -48,18 +51,20 @@ public class SettingsMenu(WorldGame game)
     private int _selectedBindingIndex = -1;
 
     // Video settings
-    private string _selectedRenderer = "Auto";
     private static readonly string[] Renderers = false switch
     {
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => ["Auto", "Metal", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"],
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => ["Auto", "D3D11", "D3D12", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "Metal", "OpenGL ES 3.0"],
         _ => ["Auto", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"]
     };
-    private int _selectedResolution = 2;
-    private static readonly string[] Resolutions = ["640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440", "3840 x 2160"];
-    private int _selectedDisplayMode = 1;
+    private int _selectedRenderer = 0;
+    private static readonly string[] Resolutions = GetSupportedResolutions();
+    private int _selectedResolution = Resolutions.FindIndex(e => e == "1280 x 720");
     private static readonly string[] DisplayModes = ["Fullscreen", "Windowed", "Borderless"];
+    private int _selectedDisplayMode = 1;
     private bool _vsync = true;
+    private static readonly string[] AntialiasModes = ["Off", "MSAA 1x", "MSAA 2x", "MSAA 4x", "MSAA 8x"]; // must be powers of 2
+    private int _antialias = 4; // 8x
     private int _fpsLimit = 63;
     private float _brightness = 0.5f;
     private float _gamma = 0.5f;
@@ -83,6 +88,27 @@ public class SettingsMenu(WorldGame game)
     public bool IsOpen => _isOpen;
 
     Vector4 RGB(int r, int g, int b, float a = 1.0f) => new Vector4(r / 255f, g / 255f, b / 255f, a);
+
+    private static string[] GetSupportedResolutions()
+    {
+        // Everybody should be able to use these
+        SortedSet<string> resolutions = new(Comparer<string>.Create((a, b) => {
+            var aParts = a.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
+            var bParts = b.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
+            var aPixels = aParts[0] * aParts[1];
+            var bPixels = bParts[0] * bParts[1];
+            return aPixels.CompareTo(bPixels);
+        }))
+        { 
+            "640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440",
+            "3840 x 2160"
+        };
+        foreach (var displayMode in GraphicsAdapter.DefaultAdapter.SupportedDisplayModes)
+        {
+            resolutions.Add($"{displayMode.Width} x {displayMode.Height}");
+        }
+        return resolutions.ToArray();
+    }
 
     public void Open()
     {
@@ -233,9 +259,7 @@ public class SettingsMenu(WorldGame game)
         ImGui.Spacing();
 
         ImGui.Text("Renderer");
-        var renderer = Renderers.IndexOf(_selectedRenderer);
-        ImGui.Combo("##Renderer", ref renderer, Renderers, Renderers.Length);
-        _selectedRenderer = Renderers[renderer];
+        ImGui.Combo("##Renderer", ref _selectedRenderer, Renderers, Renderers.Length);
         
         ImGui.Text("Resolution");
         ImGui.Combo("##Resolution", ref _selectedResolution, Resolutions, Resolutions.Length);
@@ -251,6 +275,9 @@ public class SettingsMenu(WorldGame game)
         ImGui.SetNextItemWidth(sliderWidth);
         ImGui.SliderInt("##FPSLimit", ref _fpsLimit, 0, 240, "%d FPS (0 = Unlimited)");
         
+        ImGui.Text("Antialiasing");
+        ImGui.Combo("##Antialiasing", ref _antialias, AntialiasModes, AntialiasModes.Length);
+
         ImGui.Spacing();
         ImGui.Text("Brightness");
         ImGui.SetNextItemWidth(sliderWidth);
@@ -469,8 +496,76 @@ public class SettingsMenu(WorldGame game)
             game._graphics.SynchronizeWithVerticalRetrace = _vsync;
             graphicsChanged = true;
         }
+
+        if (_antialias > 0)
+        {
+            if (!game._graphics.PreferMultiSampling)
+            {
+                game._graphics.PreferMultiSampling = true;
+                graphicsChanged = true;
+            }
+            
+            var msaaCount = (int) MathF.Round(MathF.Pow(2, _antialias - 1));
+
+            if (game._graphics.GraphicsDevice.PresentationParameters.MultiSampleCount != msaaCount)
+            {
+                game._graphics.GraphicsDevice.PresentationParameters.MultiSampleCount = msaaCount;
+                graphicsChanged = true;
+            }
+        }
         
-        if (_selectedRenderer != SDL.SDL_GetHint("FNA3D_FORCE_DRIVER"))
+        if (_selectedDisplayMode == 0) // fullscreen
+        {
+            if (!game._graphics.IsFullScreen)
+            {
+                game._graphics.IsFullScreen = true;
+                graphicsChanged = true;
+            }
+
+            if (game.Window.IsBorderlessEXT)
+            {
+                game.Window.IsBorderlessEXT = false;
+                graphicsChanged = true;
+            }
+        }
+        else if (_selectedDisplayMode == 1) // windowed
+        {
+            if (game._graphics.IsFullScreen)
+            {
+                game._graphics.IsFullScreen = false;
+                graphicsChanged = true;
+            }
+
+            if (game.Window.IsBorderlessEXT) {
+                game.Window.IsBorderlessEXT = false;
+                graphicsChanged = true;
+            }
+        }
+        else // borderless
+        {
+            if (game._graphics.IsFullScreen)
+            {
+                game._graphics.IsFullScreen = false;
+                graphicsChanged = true;
+            }
+
+            if (!game.Window.IsBorderlessEXT)
+            {
+                game.Window.IsBorderlessEXT = true;
+                graphicsChanged = true;
+            }
+        }
+        
+        var widthHeight = Resolutions[_selectedResolution].Split('x', StringSplitOptions.TrimEntries);
+        var (width, height) = (int.Parse(widthHeight[0]), int.Parse(widthHeight[1]));
+        if (game._graphics.PreferredBackBufferWidth != width || game._graphics.PreferredBackBufferHeight != height)
+        {
+            game._graphics.PreferredBackBufferWidth = width;
+            game._graphics.PreferredBackBufferHeight = height;
+            graphicsChanged = true;
+        }
+
+        if (Renderers[_selectedRenderer] != GetFna3DRenderer())
         {
             requireRestart = true;
         }
@@ -508,10 +603,11 @@ public class SettingsMenu(WorldGame game)
                 
                 // Video settings
                 cfgWriter.WriteLine("// Video Settings");
-                cfgWriter.WriteLine($"video_renderer2 {_selectedRenderer}");
-                cfgWriter.WriteLine($"video_resolution {_selectedResolution}");
+                cfgWriter.WriteLine($"video_renderer2 {Renderers[_selectedRenderer]}");
+                cfgWriter.WriteLine($"video_resolution3 {Resolutions[_selectedResolution]}");
                 cfgWriter.WriteLine($"video_displaymode {_selectedDisplayMode}");
                 cfgWriter.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
+                cfgWriter.WriteLine($"video_antialias {_antialias}");
                 cfgWriter.WriteLine($"video_fps {_fpsLimit}");
                 cfgWriter.WriteLine($"video_brightness {_brightness.ToString("F2", CultureInfo.InvariantCulture)}");
                 cfgWriter.WriteLine($"video_gamma {_gamma.ToString("F2", CultureInfo.InvariantCulture)}");
@@ -649,7 +745,7 @@ public class SettingsMenu(WorldGame game)
     
     public void LoadConfig()
     {
-        _selectedRenderer = GetFna3DRenderer();
+        _selectedRenderer = Renderers.IndexOf(GetFna3DRenderer());
         
         try
         {
@@ -680,16 +776,19 @@ public class SettingsMenu(WorldGame game)
                     {
                         // Video settings
                         case "video_renderer2":
-                            _selectedRenderer = value;
+                            _selectedRenderer = Renderers.IndexOf(value) is var rend and > -1 ? rend : _selectedRenderer;
                             break;
-                        case "video_resolution":
-                            _selectedResolution = int.Parse(value);
+                        case "video_resolution3":
+                            _selectedResolution = Resolutions.IndexOf(value) is var res and > -1 ? res : _selectedResolution;
                             break;
                         case "video_displaymode":
                             _selectedDisplayMode = int.Parse(value);
                             break;
                         case "video_vsync":
                             _vsync = int.Parse(value) != 0;
+                            break;
+                        case "video_antialias":
+                            _antialias = int.Parse(value);
                             break;
                         case "video_fps":
                             _fpsLimit = int.Parse(value);
