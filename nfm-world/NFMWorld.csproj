@@ -238,7 +238,6 @@
 
     <ItemGroup>
       <Folder Include="Mad\Renderer\Renderable\" />
-      <Folder Include="Mad\UI\Avalonia\" />
     </ItemGroup>
 
     <Target Name="CopyShadersOnPublish" AfterTargets="Publish">
