@@ -401,7 +401,7 @@ public class StageEditorPhase : BasePhase
         
         foreach (var part in BackendGameSparker.user_stage_parts)
         {
-            _availableParts.Add((part.FileName, part));
+            _availableParts.TryAdd(part);
         }
     }
     
