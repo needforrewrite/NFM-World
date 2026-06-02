@@ -70,9 +70,9 @@ public class Sparks : IDisposable
     {
         if (type != 1)
         {
-            Srx = (wheelx - _sprkat * UMath.SinUnsafe((float)_car.Rotation.Xz.Degrees));
-            Sry = (wheely - wheelGround - _sprkat * UMath.CosUnsafe((float)_car.Rotation.Zy.Degrees) * UMath.CosUnsafe((float)_car.Rotation.Xy.Degrees));
-            Srz = (wheelz + _sprkat * UMath.CosUnsafe((float)_car.Rotation.Xz.Degrees));
+            Srx = (wheelx - _sprkat * UMath.SinUnsafe((float)_car.EulerAngles.Xz.Degrees));
+            Sry = (wheely - wheelGround - _sprkat * UMath.CosUnsafe((float)_car.EulerAngles.Zy.Degrees) * UMath.CosUnsafe((float)_car.EulerAngles.Xy.Degrees));
+            Srz = (wheelz + _sprkat * UMath.CosUnsafe((float)_car.EulerAngles.Xz.Degrees));
             Sprk = 1;
         }
         else

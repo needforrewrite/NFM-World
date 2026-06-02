@@ -26,7 +26,7 @@ public class EditorObject : ClientCar
     public EditorObject(GraphicsDevice graphicsDevice, Rad3d rad, f64Vector3 position, f64Euler rotation) : this(graphicsDevice, rad)
     {
         Position = position;
-        Rotation = rotation;
+        EulerAngles = rotation;
     }
 
     public override IEnumerable<RenderData> GetRenderData(Lighting? lighting)

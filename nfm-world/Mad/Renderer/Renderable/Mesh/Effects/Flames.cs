@@ -105,7 +105,7 @@ public class Flames
                 var i45 = 1;
                 var i46 = 1;
                 int i47;
-                for (i47 = (int)Math.Abs((float)_car.Rotation.Zy.Degrees); i47 > 270; i47 -= 360)
+                for (i47 = (int)Math.Abs((float)_car.EulerAngles.Zy.Degrees); i47 > 270; i47 -= 360)
                 {
                 }
                 i47 = Math.Abs(i47);
@@ -114,7 +114,7 @@ public class Flames
                     i45 = -1;
                 }
                 int i48;
-                for (i48 = (int)Math.Abs((float)_car.Rotation.Xy.Degrees); i48 > 270; i48 -= 360)
+                for (i48 = (int)Math.Abs((float)_car.EulerAngles.Xy.Degrees); i48 > 270; i48 -= 360)
                 {
                 }
                 i48 = Math.Abs(i48);

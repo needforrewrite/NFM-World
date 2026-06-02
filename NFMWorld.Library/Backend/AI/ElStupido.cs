@@ -123,7 +123,7 @@ public class ElStupido(BaseGamemode gamemode, IRaceValues racePhase) : BaseAi
                 FrameTrace.AddMessage($"Car stuck! Speed: {mad.Speed}, initiating avoidance");
                 
                 // Check which direction to turn by sampling points to the left and right
-                var currentHeading = car.Rotation.Yaw.Degrees;
+                var currentHeading = car.EulerAngles.Yaw.Degrees;
                 var leftAngle = currentHeading - 90;
                 var rightAngle = currentHeading + 90;
                 
@@ -412,7 +412,7 @@ public class ElStupido(BaseGamemode gamemode, IRaceValues racePhase) : BaseAi
         u.Right = false;
         u.Handb = false;
 
-        var myxz = car.Rotation.Yaw.Degrees;
+        var myxz = car.EulerAngles.Yaw.Degrees;
         if (u.Zyinv) {
             myxz += 180; // Adjust if car is inverted
         }

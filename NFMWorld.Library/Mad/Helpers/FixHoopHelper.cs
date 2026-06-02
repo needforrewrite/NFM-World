@@ -13,7 +13,7 @@ public class FixHoopHelper
         for (var i = 0; i < currentStage.fixHoops.Count; i++)
         {
             var fixhoop = currentStage.fixHoops[i];
-            if (fixhoop.Rotation.Xz.Degrees == 0)
+            if (fixhoop.EulerAngles.Xz.Degrees == 0)
             {
                 if (fix64.Abs(car.Position.Z - fixhoop.Position.Z) < 200 &&
                     UMath.Py(

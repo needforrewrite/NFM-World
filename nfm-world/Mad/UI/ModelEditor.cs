@@ -741,11 +741,11 @@ public class ModelEditorPhase : BasePhase
         
         // Set up the model's transform exactly as RenderModel does
         var originalPosition = tab.Object.Position;
-        var originalRotation = tab.Object.Rotation;
+        var originalRotation = tab.Object.EulerAngles;
         
         // Keep model at origin - ModelPosition is only for camera orbit center
         tab.Object.Position = f64Vector3.Zero;
-        tab.Object.Rotation = new f64Euler(
+        tab.Object.EulerAngles = new f64Euler(
             f64AngleSingle.FromDegrees(tab.ModelRotation.Y),  // Yaw
             f64AngleSingle.FromDegrees(-tab.ModelRotation.X), // Pitch (negated)
             f64AngleSingle.FromDegrees(tab.ModelRotation.Z)   // Roll
@@ -756,7 +756,7 @@ public class ModelEditorPhase : BasePhase
         
         // Restore transform
         tab.Object.Position = originalPosition;
-        tab.Object.Rotation = originalRotation;
+        tab.Object.EulerAngles = originalRotation;
         
         // Set up camera exactly as RenderModel does
         // Use GameSparker.camera's actual Width/Height (not viewport, which might differ)
@@ -2359,13 +2359,13 @@ public class ModelEditorPhase : BasePhase
         
         // Store original transform
         var originalPosition = tab.Object.Position;
-        var originalRotation = tab.Object.Rotation;
+        var originalRotation = tab.Object.EulerAngles;
         
         // Keep the model at the origin - don't apply ModelPosition
         // ModelPosition is used only for camera orbit center, not mesh position
         tab.Object.Position = f64Vector3.Zero;
         // Euler constructor is (yaw, pitch, roll)
-        tab.Object.Rotation = new f64Euler(
+        tab.Object.EulerAngles = new f64Euler(
             f64AngleSingle.FromDegrees(tab.ModelRotation.Y),  // Yaw (Y-axis rotation)
             f64AngleSingle.FromDegrees(-tab.ModelRotation.X), // Pitch (X-axis rotation, negated for correct direction)
             f64AngleSingle.FromDegrees(tab.ModelRotation.Z)   // Roll (Z-axis rotation)
@@ -2385,13 +2385,13 @@ public class ModelEditorPhase : BasePhase
 
             // Store original state
             var originalRefPosition = referenceCar.Position;
-            var originalRefRotation = referenceCar.Rotation;
+            var originalRefRotation = referenceCar.EulerAngles;
             var previousBlendState = _graphicsDevice.BlendState;
             var previousDepthState = _graphicsDevice.DepthStencilState;
 
             // Position reference car at same location as main model
             referenceCar.Position = tab.ModelPosition;
-            referenceCar.Rotation = new f64Euler(
+            referenceCar.EulerAngles = new f64Euler(
                 f64AngleSingle.FromDegrees(tab.ModelRotation.Y),
                 f64AngleSingle.FromDegrees(-tab.ModelRotation.X),
                 f64AngleSingle.FromDegrees(tab.ModelRotation.Z)
@@ -2419,7 +2419,7 @@ public class ModelEditorPhase : BasePhase
             _graphicsDevice.BlendState = previousBlendState;
             _graphicsDevice.DepthStencilState = previousDepthState;
             referenceCar.Position = originalRefPosition;
-            referenceCar.Rotation = originalRefRotation;
+            referenceCar.EulerAngles = originalRefRotation;
         }
         
         // Render selected polygon overlay with transparency
@@ -2438,7 +2438,7 @@ public class ModelEditorPhase : BasePhase
         
         // Restore original transform
         tab.Object.Position = originalPosition;
-        tab.Object.Rotation = originalRotation;
+        tab.Object.EulerAngles = originalRotation;
     }
     
     private void RenderSelectionOverlay(ModelEditorTab tab)
@@ -2464,7 +2464,7 @@ public class ModelEditorPhase : BasePhase
 
         // Match the main model's transform
         overlayMesh.Position = tab.Object.Position;
-        overlayMesh.Rotation = tab.Object.Rotation;
+        overlayMesh.EulerAngles = tab.Object.EulerAngles;
         
         // Save current blend state
         var oldBlendState = GameSparker._graphicsDevice.BlendState;
@@ -2505,7 +2505,7 @@ public class ModelEditorPhase : BasePhase
         
         // Match the main model's transform
         highlightMesh.Position = tab.Object.Position;
-        highlightMesh.Rotation = tab.Object.Rotation;
+        highlightMesh.EulerAngles = tab.Object.EulerAngles;
         
         // Render with highlighting
         var oldDevRenderTrackers = GameSparker.devRenderTrackers;

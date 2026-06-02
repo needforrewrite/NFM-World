@@ -94,7 +94,8 @@ public class MadSfx
             if (/*(fase == 0 || fase == 7001) && starcnt < 35 && cntwis != 8 && !mutes*/true)
             {
                 bool bool1 = control.Up && mad.Speed > (fix64)0.0F || control.Down && mad.Speed < (fix64)10.0F;
-                bool bool257 = mad.Skid == 1 && control.Handb || fix64.Abs(mad.Scz[0] - (mad.Scz[1] + mad.Scz[0] + mad.Scz[2] + mad.Scz[3]) / (fix64)4.0F) > (fix64)1.0F || fix64.Abs(mad.Scx[0] - (mad.Scx[1] + mad.Scx[0] + mad.Scx[2] + mad.Scx[3]) / (fix64)4.0F) > (fix64)1.0F;
+                bool bool257 = false;
+                // bool bool257 = mad.Skid == 1 && control.Handb || fix64.Abs(mad.Scz[0] - (mad.Scz[1] + mad.Scz[0] + mad.Scz[2] + mad.Scz[3]) / (fix64)4.0F) > (fix64)1.0F || fix64.Abs(mad.Scx[0] - (mad.Scx[1] + mad.Scx[0] + mad.Scx[2] + mad.Scx[3]) / (fix64)4.0F) > (fix64)1.0F;
                 bool bool258 = false;
                 if (control.Up && mad.Speed < (fix64)10.0F)
                 {
@@ -104,7 +105,7 @@ public class MadSfx
                 }
                 if (bool1 && mad.Mtouch)
                 {
-                    if (!mad.BadLanding)
+                    if (!mad.Capsized)
                     {
                         if (!bool257)
                         {

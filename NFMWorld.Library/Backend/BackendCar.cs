@@ -58,7 +58,7 @@ public class BackendCar : BackendGameObject, IInGameCar
         Control = new Control();
         
         Position = new f64Vector3(x, World.Ground - GroundAt, z);
-        Rotation = f64Euler.Identity;
+        EulerAngles = f64Euler.Identity;
     }
 
     public void Drive(IStage stage)
@@ -79,7 +79,7 @@ public class BackendCar : BackendGameObject, IInGameCar
     {
         Mad.Reseto(Mad.Im, this);
         Position = new f64Vector3(fix64.Zero, World.Ground - GroundAt, fix64.Zero);
-        Rotation = f64Euler.Identity;
+        EulerAngles = f64Euler.Identity;
     }
 
     public void AddDust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt,

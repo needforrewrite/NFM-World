@@ -76,15 +76,16 @@ public class CheckPointHelper
         var nextCheckpoint = currentStage.checkpoints[car.currentCheckpoint];
         f64Vector3 carPos = car.Position;
         var mad = car.Mad;
-        f64Vector3 velocity = new f64Vector3(
-            mad.Scx[0] + mad.Scx[1] + mad.Scx[2] + mad.Scx[3],
-            mad.Scy[0] + mad.Scy[1] + mad.Scy[2] + mad.Scy[3],
-            mad.Scz[0] + mad.Scz[1] + mad.Scz[2] + mad.Scz[3]) / 4;
+        f64Vector3 velocity = f64Vector3.Zero;
+        // f64Vector3 velocity = new f64Vector3(
+        //     mad.Scx[0] + mad.Scx[1] + mad.Scx[2] + mad.Scx[3],
+        //     mad.Scy[0] + mad.Scy[1] + mad.Scy[2] + mad.Scy[3],
+        //     mad.Scz[0] + mad.Scz[1] + mad.Scz[2] + mad.Scz[3]) / 4;
         f64Vector3 zDir = new f64Vector3(0, 0, 1);
         f64Vector3 rad = new f64Vector3(700, 450,
-            60 + fix64.Abs(f64Vector3.Dot(velocity, zDir.RotateXz(nextCheckpoint.Rotation.Xz.Degrees))));
+            60 + fix64.Abs(f64Vector3.Dot(velocity, zDir.RotateXz(nextCheckpoint.EulerAngles.Xz.Degrees))));
         f64Vector3 trackersPosition = new f64Vector3(0, -350, 0);
-        var box = new CollisionBox(rad, trackersPosition, nextCheckpoint.Rotation.Xz.Degrees, nextCheckpoint.Position);
+        var box = new CollisionBox(rad, trackersPosition, nextCheckpoint.EulerAngles.Xz.Degrees, nextCheckpoint.Position);
 
         if (box.ResolveCollision(carPos) is not null)
         {

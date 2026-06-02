@@ -81,7 +81,7 @@ public class ClientCarCollection(GraphicsDevice graphicsDevice, IReadOnlyCollect
             clientCar.GameTick(stage);
             
             clientCar.Position = car.Position;
-            clientCar.Rotation = car.Rotation;
+            clientCar.EulerAngles = car.EulerAngles;
         }
 
         RemoveExcessCars();

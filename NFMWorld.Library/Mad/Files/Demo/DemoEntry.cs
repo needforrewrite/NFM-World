@@ -56,15 +56,15 @@ public struct DemoEntry
         entry.CarPosition.X = car.Position.X;
         entry.CarPosition.Y = car.Position.Y;
         entry.CarPosition.Z = car.Position.Z;
-        entry.CarRotation.Xz = car.Rotation.Xz.Degrees;
-        entry.CarRotation.Pxy = car.Mad.Pxy;
-        entry.CarRotation.Pzy = car.Mad.Pzy;
-        for (var i = 0; i < 4; i++)
-        {
-            entry.WheelVelocities.Scx[i] = car.Mad.Scx[i];
-            entry.WheelVelocities.Scy[i] = car.Mad.Scy[i];
-            entry.WheelVelocities.Scz[i] = car.Mad.Scz[i];
-        }
+        entry.CarRotation.Xz = car.EulerAngles.Xz.Degrees;
+        // entry.CarRotation.Pxy = car.Mad.Pxy;
+        // entry.CarRotation.Pzy = car.Mad.Pzy;
+        // for (var i = 0; i < 4; i++)
+        // {
+        //     entry.WheelVelocities.Scx[i] = car.Mad.Scx[i];
+        //     entry.WheelVelocities.Scy[i] = car.Mad.Scy[i];
+        //     entry.WheelVelocities.Scz[i] = car.Mad.Scz[i];
+        // }
         entry.Power = car.Mad.Power;
         entry.Damage = car.Mad.Hitmag;
         entry.AngularVelocities.Ucomp = car.Mad.Ucomp;
@@ -79,7 +79,7 @@ public struct DemoEntry
         entry.StuntState.Travzy = car.Mad.Travzy;
         entry.TheBitFlags.Surfer = car.Mad.Surfer;
         entry.Powerup = car.Mad.Powerup;
-        entry.TheBitFlags.BadLanding = car.Mad.BadLanding;
+        entry.TheBitFlags.BadLanding = car.Mad.Capsized;
         entry.TheBitFlags.Wasted = car.Mad.Wasted;
         entry.Speed = car.Mad.Speed;
         entry.TheBitFlags.Mtouch = car.Mad.Mtouch;
@@ -92,7 +92,7 @@ public struct DemoEntry
         entry.TheBitFlags.Pushed = car.Mad.Pushed;
         entry.TheBitFlags.Newcar = car.Mad.Newcar;
         entry.XzReadings.Mxz = car.Mad.Mxz;
-        entry.XzReadings.Txz = car.Mad.Txz;
+        entry.XzReadings.Txz = car.Mad.LastYaw;
 
         return entry;
     }
@@ -109,17 +109,17 @@ public struct DemoEntry
         car.Position = pos;
 
         f64Euler rotation = new(f64AngleSingle.FromDegrees(CarRotation.Xz), f64AngleSingle.FromDegrees(CarRotation.Pxy), f64AngleSingle.FromDegrees(CarRotation.Pzy));
-        car.Rotation = rotation;
+        car.EulerAngles = rotation;
 
-        car.Mad.Pxy = CarRotation.Pxy;
-        car.Mad.Pzy = CarRotation.Pzy;
-
-        for (int i = 0; i < 4; i++)
-        {
-            car.Mad.Scx[i] = WheelVelocities.Scx[i];
-            car.Mad.Scy[i] = WheelVelocities.Scy[i];
-            car.Mad.Scz[i] = WheelVelocities.Scz[i];
-        }
+        // car.Mad.Pxy = CarRotation.Pxy;
+        // car.Mad.Pzy = CarRotation.Pzy;
+        //
+        // for (int i = 0; i < 4; i++)
+        // {
+        //     car.Mad.Scx[i] = WheelVelocities.Scx[i];
+        //     car.Mad.Scy[i] = WheelVelocities.Scy[i];
+        //     car.Mad.Scz[i] = WheelVelocities.Scz[i];
+        // }
 
         car.Mad.Power = Power;
         car.Mad.Hitmag = Damage;
@@ -135,7 +135,7 @@ public struct DemoEntry
         car.Mad.Surfer = TheBitFlags.Surfer;
 
         car.Mad.Powerup = Powerup;
-        car.Mad.BadLanding = TheBitFlags.BadLanding;
+        car.Mad.Capsized = TheBitFlags.BadLanding;
         car.Mad.Wasted = TheBitFlags.Wasted;
         car.Mad.Speed = Speed;
         car.Mad.Pushed = TheBitFlags.Pushed;
@@ -151,6 +151,6 @@ public struct DemoEntry
         car.Mad.Pr = TheBitFlags.Pr;
 
         car.Mad.Mxz = XzReadings.Mxz;
-        car.Mad.Txz = XzReadings.Txz;
+        car.Mad.LastYaw = XzReadings.Txz;
     }
 }

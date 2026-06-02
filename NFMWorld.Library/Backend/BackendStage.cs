@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.Runtime.InteropServices;
+using FixedMathSharp;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
@@ -226,7 +227,7 @@ public class BackendStage : IStage
             x = transform.Position.X;
             y = transform.Position.Y;
             z = transform.Position.Z;
-            xz = transform.Rotation.Xz.Degrees;
+            xz = transform.EulerAngles.Xz.Degrees;
         }
         
         foreach (var box in mesh.Boxes)
@@ -287,7 +288,17 @@ public class WallCollision : ITransform, ICollidable
 {
     public IReadOnlyList<ITransform> ChildTransforms => [];
     public f64Vector3 Position { get; set; }
-    public f64Euler Rotation { get; set; }
+    public FixedQuaternion Rotation { get; set; }
+
+    public f64Euler EulerAngles
+    {
+        get
+        {
+            var euler = Rotation.ToEulerAngles();
+            return new f64Euler(f64AngleSingle.FromDegrees(euler.Y), f64AngleSingle.FromDegrees(euler.X), f64AngleSingle.FromDegrees(euler.Z));
+        }
+        set => Rotation = FixedQuaternion.FromEulerAnglesInDegrees(value.Yaw.Degrees, value.Pitch.Degrees, value.Roll.Degrees);
+    }
     public ITransform? Parent => null;
     public Rad3dBoxDef[] Boxes { get; }
     public int MaxRadius { get; }
@@ -318,7 +329,7 @@ public class StageObject(Rad3d rad) : ITransform, IAiNode, ICollidable
     public Rad3d Rad { get; } = rad;
     public IReadOnlyList<ITransform> ChildTransforms => [];
     public f64Vector3 Position { get; set; }
-    public f64Euler Rotation { get; set; }
+    public FixedQuaternion Rotation { get; set; }
     public ITransform? Parent { get; set; }
     public AiNodeKind Kind { get; set; } = AiNodeKind.Auto;
     public bool IsSpecial { get; set; }
@@ -326,13 +337,23 @@ public class StageObject(Rad3d rad) : ITransform, IAiNode, ICollidable
     public int MaxRadius { get; } = rad.MaxRadius;
     public string FileName => Rad.FileName;
 
+    public f64Euler EulerAngles
+    {
+        get
+        {
+            var euler = Rotation.ToEulerAngles();
+            return new f64Euler(f64AngleSingle.FromDegrees(euler.Y), f64AngleSingle.FromDegrees(euler.X), f64AngleSingle.FromDegrees(euler.Z));
+        }
+        set => Rotation = FixedQuaternion.FromEulerAnglesInDegrees(value.Yaw.Degrees, value.Pitch.Degrees, value.Roll.Degrees);
+    }
+
     public SrcRad3dCollisionMesh? CollisionMesh { get; set; } = rad.CollisionMesh;
     public SrcRad3dCollisionHull? CollisionHull { get; set; } = rad.CollisionHull;
 
     public StageObject(Rad3d rad, f64Vector3 position, f64Euler rotation, PiecePlacement originalPlacement) : this(rad)
     {
         Position = position;
-        Rotation = rotation;
+        EulerAngles = rotation;
         OriginalPlacement = originalPlacement;
     }
 

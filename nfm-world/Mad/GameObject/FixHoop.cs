@@ -29,7 +29,7 @@ public class FixHoop : StageObjectGameObject
 
     private void RenderFixHoop(Camera camera)
     {
-        Effects.FixHoop.World = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
+        Effects.FixHoop.World = Matrix.CreateRotationY((float)EulerAngles.Xz.Radians) *
                                Matrix.CreateTranslation((Vector3)Position);
         Effects.FixHoop.View = camera.ViewMatrix;
         Effects.FixHoop.Projection = camera.ProjectionMatrix;
@@ -187,7 +187,7 @@ public class FixHoop : StageObjectGameObject
         {
             _rotAccumulator -= 360;
         }
-        Rotation = Rotation with { Xy = f64AngleSingle.FromDegrees(Rotation.Xy.Degrees + _rotAccumulator) };
+        EulerAngles = EulerAngles with { Xy = f64AngleSingle.FromDegrees(EulerAngles.Xy.Degrees + _rotAccumulator) };
         
         if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
         {

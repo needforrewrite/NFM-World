@@ -7,7 +7,7 @@ public class StageObjectGameObject : MeshedGameObject
 {
     private readonly StageObject _obj;
 
-    public StageObjectGameObject(Mesh mesh, StageObject obj) : base(mesh, obj.Position, obj.Rotation)
+    public StageObjectGameObject(Mesh mesh, StageObject obj) : base(mesh, obj.Position, obj.EulerAngles)
     {
         _obj = obj;
         Children = [new CollisionDebugMesh(obj.Boxes)
@@ -20,6 +20,6 @@ public class StageObjectGameObject : MeshedGameObject
     {
         base.GameTick(stage);
         Position = _obj.Position;
-        Rotation = _obj.Rotation;
+        EulerAngles = _obj.EulerAngles;
     }
 }

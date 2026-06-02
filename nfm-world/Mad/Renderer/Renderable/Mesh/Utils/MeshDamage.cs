@@ -42,10 +42,10 @@ public static class MeshDamage
                         ) < stat.Clrad)
                     {
                         breakFactor = damageFactor / 20.0f * Random.Single();
-                        car.Mesh.Polys[i].Points[j].Z -= (breakFactor * UMath.SinUnsafe((float)car.Rotation.Xz.Degrees) *
-                                                     UMath.CosUnsafe((float)car.Rotation.Zy.Degrees)); // z
-                        car.Mesh.Polys[i].Points[j].X += (breakFactor * UMath.CosUnsafe((float)car.Rotation.Xz.Degrees) *
-                                                     UMath.CosUnsafe((float)car.Rotation.Xy.Degrees)); // x
+                        car.Mesh.Polys[i].Points[j].Z -= (breakFactor * UMath.SinUnsafe((float)car.EulerAngles.Xz.Degrees) *
+                                                     UMath.CosUnsafe((float)car.EulerAngles.Zy.Degrees)); // z
+                        car.Mesh.Polys[i].Points[j].X += (breakFactor * UMath.CosUnsafe((float)car.EulerAngles.Xz.Degrees) *
+                                                     UMath.CosUnsafe((float)car.EulerAngles.Xy.Degrees)); // x
                     }
                 }
 
@@ -131,8 +131,8 @@ public static class MeshDamage
 
             var flipZy = 0;
             var flipXy = 0;
-            var zy = car.Rotation.Zy.Degrees;
-            var xy = car.Rotation.Xy.Degrees;
+            var zy = car.EulerAngles.Zy.Degrees;
+            var xy = car.EulerAngles.Xy.Degrees;
             for ( /**/; zy < 360; zy += 360)
             {
             }
@@ -324,10 +324,10 @@ public static class MeshDamage
                         ) < stat.Clrad)
                     {
                         breakFactor = damageFactor / 20.0f * Random.Single();
-                        car.Mesh.Polys[i].Points[j].Z += breakFactor * UMath.CosUnsafe((float)car.Rotation.Xz.Degrees) *
-                                                     UMath.CosUnsafe((float)car.Rotation.Zy.Degrees); // z
-                        car.Mesh.Polys[i].Points[j].X += breakFactor * UMath.SinUnsafe((float)car.Rotation.Xz.Degrees) *
-                                                     UMath.CosUnsafe((float)car.Rotation.Xy.Degrees); // x
+                        car.Mesh.Polys[i].Points[j].Z += breakFactor * UMath.CosUnsafe((float)car.EulerAngles.Xz.Degrees) *
+                                                     UMath.CosUnsafe((float)car.EulerAngles.Zy.Degrees); // z
+                        car.Mesh.Polys[i].Points[j].X += breakFactor * UMath.SinUnsafe((float)car.EulerAngles.Xz.Degrees) *
+                                                     UMath.CosUnsafe((float)car.EulerAngles.Xy.Degrees); // x
                     }
                 }
 
