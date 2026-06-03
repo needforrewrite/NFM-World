@@ -12,12 +12,8 @@ public interface ITransform
 
     f64Euler EulerAngles
     {
-        get
-        {
-            var euler = Rotation.ToEulerAngles();
-            return new f64Euler(f64AngleSingle.FromDegrees(euler.Y), f64AngleSingle.FromDegrees(euler.X), f64AngleSingle.FromDegrees(euler.Z));
-        }
-        set => Rotation = FixedQuaternion.FromEulerAnglesInDegrees(value.Yaw.Degrees, value.Pitch.Degrees, value.Roll.Degrees);
+        get => Rotation.ToEuler();
+        set => Rotation = FixedQuaternion.FromEuler(value);
     }
 
     f64Vector3 PositionWithoutInterpolation { set => Position = value; }
