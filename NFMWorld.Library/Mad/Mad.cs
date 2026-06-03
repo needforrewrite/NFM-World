@@ -159,6 +159,7 @@ public class Mad
         Stat = stat;
         Im = im;
         IsClientPlayer = isClientPlayer;
+        CarRotation = FixedQuaternion.Identity;
     }
 
     public void SetStat(CarStats stat)
@@ -1381,7 +1382,7 @@ public class Mad
 
         conto.X = centerPos.X + offset.X;
         conto.Z = centerPos.Z + offset.Z;
-        conto.Y = centerPos.Y + offset.Y;
+        conto.Y = centerPos.Y + offset.Y;   
 
         if (fix64.Abs(Speed) > 10 || !Mtouch)
         {
