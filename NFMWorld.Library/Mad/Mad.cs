@@ -480,14 +480,17 @@ public class Mad
         var localUp = CarRotation * Up;
         var localForward = CarRotation * Forward;
         var localRight = CarRotation * Right;
-        Capsized = localUp.Y < 0;
+        Capsized = localUp.Y > 0; // Up=(0,-1,0) so localUp.Y=-1 when upright; Y>0 means the roof faces ground = capsized
 
+        FrameTrace.AddMessage($"CarRotation: {CarRotation:0.00}, CapSized: {Capsized}");
+        FrameTrace.AddMessage($"localUp: {localUp:0.00}, localForward: {localForward:0.00}, localRight: {localRight:0.00}");
+        
         // maxine: this controls hypergliding. to fix hypergliding, set to 0, then update wheelGround to prevent
         // car getting stuck in the ground
         // we multiply it by tickrate because the effect caused by hypergliding is applied every tick
         fix64 bottomy = GetBottomY(this, conto);
 
-        control.Zyinv = false;
+        control.Zyinv = Capsized;
         //
 
         fix64 airx = 0;
@@ -564,6 +567,8 @@ public class Mad
 
             Loop = 2;
         } //
+        
+        FrameTrace.AddMessage($"Loop: {Loop}");
 
         if (!Wasted)
         {
@@ -874,16 +879,9 @@ public class Mad
             f20 = 20;
         }
 
-        conto.Wzy -= (f20 * _tickRate); // maxine: remove int cast. i dont think it belongs here
-        // commented out in phys physics
-        //        if (conto.Wzy < -30)
-        //        {
-        //            conto.Wzy += 30;
-        //        }
-        //        if (conto.Wzy > 30)
-        //        {
-        //            conto.Wzy -= 30;
-        //        }
+        conto.Wzy -= (f20 * _tickRate);
+        conto.Wzy %= 360;
+
         if (control.Right)
         {
             conto.Wxz -= ((fix64)Stat.Turn * _tickRate);
@@ -950,6 +948,8 @@ public class Mad
         {
             i21 = -i21;
         }
+
+        FrameTrace.AddMessage($"Wtouch: {Wtouch}, Gtouch: {Gtouch}, i21: {i21}, conto.Wxz: {conto.Wxz}");
 
         if (Wtouch)
         {
@@ -1270,7 +1270,7 @@ public class Mad
             fix64 sczavg = sczsum * fix64.Quarter;
             fix64 scxz = fix64.Hypot(sczavg, scxavg);
 
-            Mxz = (int)(UMath.dAtan2(-scxsum, sczsum));
+            Mxz = fix64.Atan2(-scxsum, sczsum);
 
             if (Skid == 2)
             {
@@ -1308,6 +1308,7 @@ public class Mad
                 nGroundedWheels++;
                 Wtouch = true;
                 Gtouch = true;
+                Mtouch = true;
                 if (!wasMtouch && Wheels[w].Velocity.Y != 7)
                 {
                     var v = Wheels[w].Velocity.Y / (fix64)(333.33F);
@@ -1378,8 +1379,9 @@ public class Mad
         
         offset += new f64Vector3(airx, 0, airz);
 
-        conto.X = (int)(centerPos.X + offset.X);
-        conto.Z = (int)(centerPos.Z + offset.Z);
+        conto.X = centerPos.X + offset.X;
+        conto.Z = centerPos.Z + offset.Z;
+        conto.Y = centerPos.Y + offset.Y;
 
         if (fix64.Abs(Speed) > 10 || !Mtouch)
         {
