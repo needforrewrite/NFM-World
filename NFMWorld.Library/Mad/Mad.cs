@@ -53,6 +53,9 @@ public class Mad
     public bool _colidim;
     public readonly int[,] _crank = new int[4, 4];
     public readonly int[,] _lcrank = new int[4, 4];
+    /// <summary>
+    /// In degrees
+    /// </summary>
     public fix64 Cxz;
     public int _dcnt;
     public fix64 Dcomp;
@@ -71,6 +74,9 @@ public class Mad
     public sbyte Loop;
     public fix64 _lxz;
     public bool Mtouch;
+    /// <summary>
+    /// In degrees
+    /// </summary>
     public fix64 Mxz;
     public int _nbsq;
     public bool Newcar;
@@ -102,6 +108,9 @@ public class Mad
     public fix64 Travxz;
     public fix64 Travzy;
     public int Trcnt;
+    /// <summary>
+    /// In radians
+    /// </summary>
     public fix64 LastYaw;
     public fix64 Ucomp;
     public bool Wtouch;
@@ -1273,13 +1282,13 @@ public class Mad
             fix64 sczavg = sczsum * fix64.Quarter;
             fix64 scxz = fix64.Hypot(sczavg, scxavg);
 
-            Mxz = fix64.Atan2(-scxsum, sczsum);
+            Mxz = fix64.Atan2(-scxsum, sczsum) * fix64.RadToDeg;
 
             if (Skid == 2)
             {
                 if (!Capsized)
                 {
-                    Speed = scxz * fix64.Cos(Mxz + yaw);
+                    Speed = scxz * UMath.Cos(Mxz + yaw * fix64.RadToDeg);
                 }
 
                 Skid = 0;
