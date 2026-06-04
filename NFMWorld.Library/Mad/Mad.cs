@@ -444,38 +444,45 @@ public class Mad
 
     public event EventHandler Distruct;
 
-    // public void bounceRebound(int wi, ContO conto, DeterministicRandom random)
-    // {
-    //     // part 1: the closer we are to 90/-90 in Pxy or Pzy, the bigger the bounce
-    //     fix64 rebound = (fix64.Abs(UMath.Sin(Pxy)) + fix64.Abs(UMath.Sin(Pzy))) / (fix64)3;
-    //     fix64 maxAngleRebound = (fix64)(0.4F); // capping at 0.4 doesn't do much, max is two thirds
-    //     rebound = fix64.Min(rebound, maxAngleRebound);
-    //
-    //     // part 2: the bigger the bounce stat, the bigger the bounce
-    //     rebound += Stat.Bounce;
-    //     fix64 minRebound = (fix64)(1.1F);
-    //     rebound = fix64.Max(rebound, minRebound);
-    //
-    //     // Regy(wi, fix64.Abs(Wheels[wi].Velocity.Y * rebound), conto, random);
-    //     // if scy is > 0 then we are going down, apply the rebound bounce
-    //     if (Wheels[wi].Velocity.Y > 0)
-    //         // we are subtracting scy * f_51 from scy
-    //         // so, for example, if f_51 is 1.1 (which is the minimum bounce)
-    //         // the result will be = scy - (1.1 * scy)
-    //         // which is just 0.1 * scy
-    //         // this also means the bigger the scy, the bigger the rebound
-    //         // this means, unless the bounce stat is too high
-    //         // f_51 will be below 2
-    //         // which means the result will be some
-    //         // c * scy
-    //         // where c is below 1, leading to exponential decay in rebounds
-    //
-    //         // I decided to rewrite this to the form which I think is most readable
-    //         // but all three are equivalent
-    //         // Scy[wi] -= fix64.Abs(Scy[wi] * rebound);
-    //         // Scy[wi] -= Scy[wi] * rebound; // don't need the abs, both are always positive
-    //         Wheels[wi].Velocity.Y = (fix64)(-1) * Wheels[wi].Velocity.Y * (rebound - fix64.One);
-    // }
+    public void bounceRebound(int wi, ContO conto, DeterministicRandom random)
+    {
+        // part 1: the closer we are to 90/-90 in Pxy or Pzy, the bigger the bounce
+        // Sin(roll)  = how far the local right axis has tilted off horizontal
+        fix64 sinRoll  = (CarRotation * Right).Y;
+
+        // Sin(pitch) = how far the local forward axis has tilted off horizontal  
+        fix64 sinPitch = (CarRotation * Forward).Y;
+
+        fix64 rebound = (fix64.Abs(sinRoll) + fix64.Abs(sinPitch)) / (fix64)3;
+
+        fix64 maxAngleRebound = (fix64)(0.4F); // capping at 0.4 doesn't do much, max is two thirds
+        rebound = fix64.Min(rebound, maxAngleRebound);
+    
+        // part 2: the bigger the bounce stat, the bigger the bounce
+        rebound += Stat.Bounce;
+        fix64 minRebound = (fix64)(1.1F);
+        rebound = fix64.Max(rebound, minRebound);
+    
+        // Regy(wi, fix64.Abs(Wheels[wi].Velocity.Y * rebound), conto, random);
+        // if scy is > 0 then we are going down, apply the rebound bounce
+        if (Wheels[wi].Velocity.Y > 0)
+            // we are subtracting scy * f_51 from scy
+            // so, for example, if f_51 is 1.1 (which is the minimum bounce)
+            // the result will be = scy - (1.1 * scy)
+            // which is just 0.1 * scy
+            // this also means the bigger the scy, the bigger the rebound
+            // this means, unless the bounce stat is too high
+            // f_51 will be below 2
+            // which means the result will be some
+            // c * scy
+            // where c is below 1, leading to exponential decay in rebounds
+    
+            // I decided to rewrite this to the form which I think is most readable
+            // but all three are equivalent
+            // Scy[wi] -= fix64.Abs(Scy[wi] * rebound);
+            // Scy[wi] -= Scy[wi] * rebound; // don't need the abs, both are always positive
+            Wheels[wi].Velocity.Y = (fix64)(-1) * Wheels[wi].Velocity.Y * (rebound - fix64.One);
+    }
 
     public void Drive(Control control, ContO conto, IStage stage)
     {
@@ -1352,8 +1359,7 @@ public class Mad
         }
 
         // OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
-        // PhyTrackPieceCollision(stage, control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
-        var hitVertical = false;
+        PhyTrackPieceCollision(stage, control, conto, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out var hitVertical, isWheelGrounded, random);
         
         // sparks and scrapes
         for (var i79 = 0; i79 < 4; i79++)
@@ -1417,7 +1423,7 @@ public class Mad
 
             // LookRotation(forward, -terrainNormal) produces the correct rotation in Y-down:
             // right = Cross(-terrainNormal, forward) → (+X on flat ground when facing +Z)
-            CarRotation = FixedQuaternion.Slerp(CarRotation, FixedQuaternion.LookRotation(terrainForward, -terrainNormal), fix64.Half * _tickRate);
+            CarRotation = FixedQuaternion.LookRotation(terrainForward, -terrainNormal);
         }
 
         if (fix64.Abs(Speed) > 10 || !Mtouch)
@@ -2002,304 +2008,309 @@ public class Mad
 
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
-    // private void PhyTrackPieceCollision(
-    //     IStage stage, Control control, ContO conto,
-    //     Span<fix64> wheelx, Span<fix64> wheely, Span<fix64> wheelz,
-    //     fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nGroundedWheels, bool wasMtouch,
-    //     int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, DeterministicRandom random)
-    // {
-    //     hitVertical = false;
-    //
-    //     var isWheelTouchingPiece = new InlineArray4<bool>(); // nwheels
-    //
-    //     int touching = 0; //Phy-addons: Fix sliding on floating pieces
-    //     int nWheelsRoadRamp = 0;
-    //     int nWheelsDirtRamp = 0;
-    //     for (int k = 0; k < 4; k++)
-    //     {
-    //         var position = new f64Vector3(wheelx[k], wheely[k] - wheelGround, wheelz[k]);
-    //         var velocity = new f64Vector3(Scx[k], Scy[k], Scz[k]);
-    //         
-    //         if (!isWheelTouchingPiece[k])
-    //         {
-    //             Logging.Info("start wheel");
-    //             foreach (var collidable in stage.RetrievePointCollidables(wheelx[k], wheelz[k]))
-    //             {
-    //                 if (collidable.TryGetValue(out ShapeMesh boxMesh))
-    //                 {
-    //                     var collisionMesh = boxMesh.CollisionMesh;
-    //
-    //                     // Transform wheel into object-local space (1 transform per mesh, not 3 per triangle)
-    //                     var localPosition = (position - boxMesh.GameObjectPosition).RotateXz(-boxMesh.GameObjectXz);
-    //                     var localVelocity = velocity.RotateXz(-boxMesh.GameObjectXz);
-    //
-    //                     for (var i = 0; i < collisionMesh.Indices.Length; i += 3)
-    //                     {
-    //                         // Vertices are already in object-local space — no transform needed
-    //                         var p0 = collisionMesh.Vertices[collisionMesh.Indices[i]];
-    //                         var p1 = collisionMesh.Vertices[collisionMesh.Indices[i + 1]];
-    //                         var p2 = collisionMesh.Vertices[collisionMesh.Indices[i + 2]];
-    //                         
-    //                         if (!TriangleMesh.PointInTriangleAABB(collisionMesh.Aabb[i / 3], localPosition)) continue;
-    //
-    //                         var edge1 = p1 - p0;
-    //                         var edge2 = p2 - p0;
-    //                         var normal = f64Vector3.Cross(edge1, edge2);
-    //                         // Compute length via float to avoid fix64 overflow on large triangles
-    //                         var floatLength = normal.LengthNoOverflow();
-    //                         if (floatLength < (fix64)1e-3f) continue; // degenerate triangle
-    //                         var normalizedNormal = new f64Vector3(normal.X / floatLength, normal.Y / floatLength, normal.Z / floatLength);
-    //                         var groundness = -normal.Y / floatLength;
-    //                         var toPoint = localPosition - p0;
-    //                         var triangleData = new TriangleMesh.TriangleData(edge1, edge2, normalizedNormal, groundness, toPoint);
-    //
-    //                         if (k == 0)
-    //                         {
-    //                             // Find closest triangle center to wheel in XZ (local space)
-    //                             var center = (p0 + p1 + p2) / (fix64)3;
-    //                             var dxz = fix64.Sqrt((center.X - localPosition.X) * (center.X - localPosition.X) + (center.Z - localPosition.Z) * (center.Z - localPosition.Z));
-    //                             if ((float)dxz < 500 && groundness > (fix64)0.3f)
-    //                             {
-    //                                 var inTri = TriangleMesh.DebugPointInTriangle(edge1, edge2, toPoint);
-    //                                 var surfaceY = fix64.Abs(normalizedNormal.Y) > (fix64)1e-6
-    //                                     ? p0.Y - (normalizedNormal.X * (localPosition.X - p0.X) + normalizedNormal.Z * (localPosition.Z - p0.Z)) / normalizedNormal.Y
-    //                                     : 999;
-    //                                 Logging.Info($"TRI[{i/3}] p0=({(float)p0.X:F0},{(float)p0.Y:F0},{(float)p0.Z:F0}) inTri={inTri} surfY={(float)surfaceY:F0} localWheel=({(float)localPosition.X:F0},{(float)localPosition.Y:F0},{(float)localPosition.Z:F0})");
-    //                             }
-    //                         }
-    //                         
-    //                         // Ground/ramp triangle: snap wheel Y to surface (local space, then convert back)
-    //                         if (triangleData.IsGround)
-    //                         {
-    //                             if (TriangleMesh.ResolveGround(p0, p1, p2, localPosition, triangleData) is { } groundHit)
-    //                             {
-    //                                 Logging.Info(triangleData.IsGround
-    //                                     ? $"ground triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2}, groundness {(float)groundness:F2})"
-    //                                     : $"wall triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2})");
-    //
-    //                                 touching |= 1 << k;
-    //                                 ++nGroundedWheels;
-    //                                 Wtouch = true;
-    //                                 Gtouch = true;
-    //
-    //                                 // Lift: reduce downward velocity proportional to ramp penetration depth
-    //                                 // Matches BoxRamp's Scy[k] -= zTmp / liftDivider logic
-    //                                 var zTmp = localPosition.Y - groundHit.newY;
-    //                                 // if (zTmp > 0 && zTmp < 200)
-    //                                 {
-    //                                     var rampAngleDeg = fix64.Acos(fix64.Clamp(triangleData.Groundness, -1, 1)) * fix64.RadToDeg;
-    //                                     var liftDivider = 1 + (50 - fix64.Abs(rampAngleDeg)) / (fix64)30;
-    //                                     if (liftDivider < 4) liftDivider = 4;
-    //                                     Logging.Info($"ramp lift: {zTmp} liftDivider: {liftDivider:F2} total: {zTmp / liftDivider:F2}");
-    //                                     Scy[k] -= zTmp / liftDivider;
-    //                                 }
-    //
-    //                                 if (!wasMtouch && Scy[k] != 7 /* * checkpoints.gravity */ * _tickRate)
-    //                                 {
-    //                                     fix64 dustMag = Scy[k] / (fix64)(333.33F);
-    //                                     if (dustMag > (fix64)(0.3F))
-    //                                         dustMag = (fix64)(0.3F);
-    //                                     if (surfaceType == 0)
-    //                                         dustMag += (fix64)1.1f;
-    //                                     else
-    //                                         dustMag += (fix64)1.2f;
-    //                                     conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k],
-    //                                         dustMag * Stat.Simag, 0, Capsized && Mtouch, (int)wheelGround);
-    //                                 }
-    //
-    //                                 // newY is in local space; RotateXz doesn't affect Y, so just add object Y
-    //                                 wheely[k] = groundHit.newY + boxMesh.GameObjectPosition.Y + wheelGround;
-    //                                 // TODO: this makes going up mesh ramps janky. but we ideally want to allow bouncing on mesh collisions, so we need a better solution 
-    //                                 // bounceRebound(k, conto, random);
-    //                                 isWheelTouchingPiece[k] = true;
-    //                                 // break; this makes it possible to phase through walls when on top of a raised mesh ground, but prevents being snapped out the side of a ramp, as long as the ground collision happens first
-    //                             }
-    //                         }
-    //                         else
-    //                         {
-    //                             // Wall triangle: horizontal push-back (in local space, then rotate back)
-    //                             if (TriangleMesh.ResolveWall(p0, p1, p2, localPosition, localVelocity, triangleData) is { } wallHit)
-    //                             {
-    //                                 Logging.Info(triangleData.IsGround
-    //                                     ? $"ground triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2}, groundness {(float)groundness:F2})"
-    //                                     : $"wall triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2})");
-    //
-    //                                 // Rotate local-space push/impact back to world space
-    //                                 var worldDelta = wallHit.positionDelta.RotateXz(boxMesh.GameObjectXz);
-    //                                 var worldImpact = wallHit.impactComponent.RotateXz(boxMesh.GameObjectXz);
-    //
-    //                                 for (int w = 0; w < 4; w++)
-    //                                 {
-    //                                     wheelx[w] += worldDelta.X;
-    //                                     wheelz[w] += worldDelta.Z;
-    //                                 }
-    //
-    //                                 _crank[0, k]++;
-    //                                 if (_crank[0, k] > 1)
-    //                                 {
-    //                                     conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0,
-    //                                         (int)wheelGround);
-    //                                     SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-    //                                 }
-    //
-    //                                 var reboundVelocityDelta = worldImpact * (-GetReboundMul(wasMtouch));
-    //                                 Regz(k, reboundVelocityDelta.Length() * 1, conto, random);
-    //                                 Scx[k] += reboundVelocityDelta.X;
-    //                                 Scz[k] += reboundVelocityDelta.Z;
-    //
-    //                                 hitVertical = true;
-    //                                 isWheelTouchingPiece[k] = true;
-    //                                 // break; this makes it possible to phase through walls when on top of a raised mesh ground, but prevents being snapped out the side of a ramp, as long as the ground collision happens first
-    //                             }
-    //                         }
-    //                     }
-    //                 }
-    //                 else if (collidable.TryGetValue(out ShapeHull boxHull))
-    //                 {
-    //                     // TODO later
-    //                 }
-    //                 else if (collidable.TryGetValue(out ShapeRoad boxRoad))
-    //                 {
-    //                     if (boxRoad.ResolveCollision(position) is { } collision)
-    //                     {
-    //                         touching |= 1 << k;
-    //                         ++nGroundedWheels;
-    //                         Wtouch = true;
-    //                         Gtouch = true;
-    //
-    //                         if (!wasMtouch && Scy[k] != 7 /* * checkpoints.gravity */ * _tickRate)
-    //                         {
-    //                             fix64 dustMag = Scy[k] / (fix64)(333.33F);
-    //                             if (dustMag > (fix64)(0.3F))
-    //                                 dustMag = (fix64)(0.3F);
-    //                             if (surfaceType == 0)
-    //                                 dustMag += (fix64)1.1f;
-    //                             else
-    //                                 dustMag += (fix64)1.2f;
-    //                             conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], dustMag * Stat.Simag, 0, Capsized && Mtouch, (int)wheelGround);
-    //                         }
-    //                         wheely[k] = collision.newY + wheelGround; // snap wheel to the surface
-    //                         
-    //                         // sparks and scrape
-    //                         if (Capsized && collidable.Skid is 0 or 1)
-    //                         {
-    //                             conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
-    //                             //if (Im == /*this.xt.im*/ 0)
-    //                             SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-    //                         }
-    //
-    //                         bounceRebound(k, conto, random);
-    //                         isWheelTouchingPiece[k] = true;
-    //                         break;
-    //                     }
-    //                 }
-    //                 else if (collidable.TryGetValue(out ShapeWall boxWall))
-    //                 {
-    //                     if (boxWall.ResolveCollision(position, velocity) is { } collision)
-    //                     {
-    //                         for (int w = 0; w < 4; w++) {
-    //                             wheelx[w] += collision.positionDelta.X;
-    //                             wheely[w] += collision.positionDelta.Y;
-    //                             wheelz[w] += collision.positionDelta.Z;
-    //                         }
-    //                         
-    //                         // sparks and scrapes
-    //                         if (collidable.Skid != 2)
-    //                             _crank[0, k]++;
-    //                         if (collidable.Skid == 5 && random.NextFixed6401() > fix64.Half)
-    //                             _crank[0, k]++;
-    //                         if (_crank[0, k] > 1)
-    //                         {
-    //                             conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
-    //                             //if (Im == /*this.xt.im*/ 0)
-    //                             SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-    //                         }
-    //
-    //                         // z rebound CHK5
-    //                         f64Vector3 reboundVelocityDelta = collision.impactComponent * (-GetReboundMul(wasMtouch));
-    //                         Regz(k, reboundVelocityDelta.Length() * collidable.Damage, conto, random);
-    //                         Scx[k] += reboundVelocityDelta.X;
-    //                         Scy[k] += reboundVelocityDelta.Y;
-    //                         Scz[k] += reboundVelocityDelta.Z;
-    //
-    //                         Skid = 2;
-    //                         hitVertical = true;
-    //                         isWheelTouchingPiece[k] = true;
-    //                         if (!collidable.NotWall) {
-    //                             control.Wall = 9999;
-    //                         }
-    //                         break;
-    //                     }
-    //                 }
-    //                 else if (collidable.TryGetValue(out ShapeRamp boxRamp))
-    //                 {
-    //                     if (boxRamp.ResolveCollision(position) is { } collision)
-    //                     {
-    //                         var liftDivider = 1 + (50 - fix64.Abs(boxRamp.TrackersZy)) / (fix64)30;
-    //                         if (liftDivider < 1)
-    //                             liftDivider = 1;
-    //                         if (collision.zTmp > 0 && collision.zTmp < 200) {
-    //                             Logging.Info($"ramp lift: {collision.zTmp} liftDivider: {liftDivider:F2} total: {collision.zTmp / liftDivider}");
-    //                             Scy[k] -= collision.zTmp / liftDivider;
-    //                         }
-    //
-    //                         if (collision.zTmp > -30)
-    //                         {
-    //                             if (collidable.Skid == 2)
-    //                                 nWheelsDirtRamp++;
-    //                             else
-    //                                 nWheelsRoadRamp++;
-    //                             
-    //                             Wtouch = true;
-    //                             Gtouch = false;
-    //
-    //                             // sparks and scrape
-    //                             if (Capsized && (collidable.Skid == 0 || collidable.Skid == 1))
-    //                             {
-    //                                 conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
-    //                                 //if (Im == /*this.xt.im*/ 0)
-    //                                 SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
-    //                             }
-    //
-    //                             if (!wasMtouch && surfaceType != 0)
-    //                             {
-    //                                 fix64 dustMag = (fix64)1.4F;
-    //                                 conto.Dust(k, wheelx[k], wheely[k], wheelz[k], (int)Scx[k], (int)Scz[k], dustMag * Stat.Simag, 0, Capsized && Mtouch, (int)wheelGround);
-    //                             }
-    //                         }
-    //                         
-    //                         wheelx[k] = collision.newPosition.X;
-    //                         wheely[k] = collision.newPosition.Y + wheelGround;
-    //                         wheelz[k] = collision.newPosition.Z;
-    //                         isWheelTouchingPiece[k] = true;
-    //                         break;
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-    //
-    // private fix64 GetReboundMul(bool wasMtouch)
-    // {
-    //     var reboundMul = fix64.Abs(UMath.Cos(Pxy)) + fix64.Abs(UMath.Cos(Pzy));
-    //     reboundMul /= 4;
-    //     if (reboundMul > (fix64)0.3F)
-    //         reboundMul = (fix64)0.3F;
-    //     if (wasMtouch)
-    //         reboundMul = 0;
-    //     reboundMul += Stat.Bounce - (fix64)0.2f;
-    //     if (reboundMul < (fix64)1.1f)
-    //         reboundMul = (fix64)1.1F;
-    //     return reboundMul;
-    // }
-    //
-    // private int Regx(int i, fix64 f, ContO conto, DeterministicRandom random)
-    // {
-    //     conto.DamageX(Stat, i, f);
-    //
-    //     var i110 = 0;
-    //     var abool = true;
+    private void PhyTrackPieceCollision(
+        IStage stage, Control control, ContO conto,
+        fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nGroundedWheels, bool wasMtouch,
+        int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, DeterministicRandom random)
+    {
+        hitVertical = false;
+    
+        var isWheelTouchingPiece = new InlineArray4<bool>(); // nwheels
+    
+        int touching = 0; //Phy-addons: Fix sliding on floating pieces
+        int nWheelsRoadRamp = 0;
+        int nWheelsDirtRamp = 0;
+        for (int k = 0; k < 4; k++)
+        {
+            var position = Wheels[k].Position - new f64Vector3(0, wheelGround, 0);
+            var velocity = Wheels[k].Velocity;
+            
+            if (!isWheelTouchingPiece[k])
+            {
+                Logging.Info("start wheel");
+                foreach (var collidable in stage.RetrievePointCollidables(Wheels[k].Position.X, Wheels[k].Position.Z))
+                {
+                    if (collidable.TryGetValue(out ShapeMesh boxMesh))
+                    {
+                        var collisionMesh = boxMesh.CollisionMesh;
+    
+                        // Transform wheel into object-local space (1 transform per mesh, not 3 per triangle)
+                        var localPosition = (position - boxMesh.GameObjectPosition).RotateXz(-boxMesh.GameObjectXz);
+                        var localVelocity = velocity.RotateXz(-boxMesh.GameObjectXz);
+    
+                        for (var i = 0; i < collisionMesh.Indices.Length; i += 3)
+                        {
+                            // Vertices are already in object-local space — no transform needed
+                            var p0 = collisionMesh.Vertices[collisionMesh.Indices[i]];
+                            var p1 = collisionMesh.Vertices[collisionMesh.Indices[i + 1]];
+                            var p2 = collisionMesh.Vertices[collisionMesh.Indices[i + 2]];
+                            
+                            if (!TriangleMesh.PointInTriangleAABB(collisionMesh.Aabb[i / 3], localPosition)) continue;
+    
+                            var edge1 = p1 - p0;
+                            var edge2 = p2 - p0;
+                            var normal = f64Vector3.Cross(edge1, edge2);
+                            // Compute length via float to avoid fix64 overflow on large triangles
+                            var floatLength = normal.LengthNoOverflow();
+                            if (floatLength < (fix64)1e-3f) continue; // degenerate triangle
+                            var normalizedNormal = new f64Vector3(normal.X / floatLength, normal.Y / floatLength, normal.Z / floatLength);
+                            var groundness = -normal.Y / floatLength;
+                            var toPoint = localPosition - p0;
+                            var triangleData = new TriangleMesh.TriangleData(edge1, edge2, normalizedNormal, groundness, toPoint);
+    
+                            if (k == 0)
+                            {
+                                // Find closest triangle center to wheel in XZ (local space)
+                                var center = (p0 + p1 + p2) / (fix64)3;
+                                var dxz = fix64.Sqrt((center.X - localPosition.X) * (center.X - localPosition.X) + (center.Z - localPosition.Z) * (center.Z - localPosition.Z));
+                                if ((float)dxz < 500 && groundness > (fix64)0.3f)
+                                {
+                                    var inTri = TriangleMesh.DebugPointInTriangle(edge1, edge2, toPoint);
+                                    var surfaceY = fix64.Abs(normalizedNormal.Y) > (fix64)1e-6
+                                        ? p0.Y - (normalizedNormal.X * (localPosition.X - p0.X) + normalizedNormal.Z * (localPosition.Z - p0.Z)) / normalizedNormal.Y
+                                        : 999;
+                                    Logging.Info($"TRI[{i/3}] p0=({(float)p0.X:F0},{(float)p0.Y:F0},{(float)p0.Z:F0}) inTri={inTri} surfY={(float)surfaceY:F0} localWheel=({(float)localPosition.X:F0},{(float)localPosition.Y:F0},{(float)localPosition.Z:F0})");
+                                }
+                            }
+                            
+                            // Ground/ramp triangle: snap wheel Y to surface (local space, then convert back)
+                            if (triangleData.IsGround)
+                            {
+                                if (TriangleMesh.ResolveGround(p0, p1, p2, localPosition, triangleData) is { } groundHit)
+                                {
+                                    Logging.Info(triangleData.IsGround
+                                        ? $"ground triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2}, groundness {(float)groundness:F2})"
+                                        : $"wall triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2})");
+    
+                                    touching |= 1 << k;
+                                    ++nGroundedWheels;
+                                    Wtouch = true;
+                                    Gtouch = true;
+    
+                                    // Lift: reduce downward velocity proportional to ramp penetration depth
+                                    // Matches BoxRamp's Scy[k] -= zTmp / liftDivider logic
+                                    var zTmp = localPosition.Y - groundHit.newY;
+                                    // if (zTmp > 0 && zTmp < 200)
+                                    {
+                                        var rampAngleDeg = fix64.Acos(fix64.Clamp(triangleData.Groundness, -1, 1)) * fix64.RadToDeg;
+                                        var liftDivider = 1 + (50 - fix64.Abs(rampAngleDeg)) / (fix64)30;
+                                        if (liftDivider < 4) liftDivider = 4;
+                                        Logging.Info($"ramp lift: {zTmp} liftDivider: {liftDivider:F2} total: {zTmp / liftDivider:F2}");
+                                        Wheels[k].Position.Y -= zTmp / liftDivider;
+                                    }
+    
+                                    if (!wasMtouch && Wheels[k].Position.Y != 7 /* * checkpoints.gravity */ * _tickRate)
+                                    {
+                                        fix64 dustMag = Wheels[k].Position.Y / (fix64)(333.33F);
+                                        if (dustMag > (fix64)(0.3F))
+                                            dustMag = (fix64)(0.3F);
+                                        if (surfaceType == 0)
+                                            dustMag += (fix64)1.1f;
+                                        else
+                                            dustMag += (fix64)1.2f;
+                                        conto.Dust(k, Wheels[k].Position.X, Wheels[k].Position.Y, Wheels[k].Position.Z, (int)Wheels[k].Velocity.X, (int)Wheels[k].Velocity.Z,
+                                            dustMag * Stat.Simag, 0, Capsized && Mtouch, (int)wheelGround);
+                                    }
+    
+                                    // newY is in local space; RotateXz doesn't affect Y, so just add object Y
+                                    Wheels[k].Position.Y = groundHit.newY + boxMesh.GameObjectPosition.Y + wheelGround;
+                                    // TODO: this makes going up mesh ramps janky. but we ideally want to allow bouncing on mesh collisions, so we need a better solution 
+                                    // bounceRebound(k, conto, random);
+                                    isWheelTouchingPiece[k] = true;
+                                    // break; this makes it possible to phase through walls when on top of a raised mesh ground, but prevents being snapped out the side of a ramp, as long as the ground collision happens first
+                                }
+                            }
+                            else
+                            {
+                                // Wall triangle: horizontal push-back (in local space, then rotate back)
+                                if (TriangleMesh.ResolveWall(p0, p1, p2, localPosition, localVelocity, triangleData) is { } wallHit)
+                                {
+                                    Logging.Info(triangleData.IsGround
+                                        ? $"ground triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2}, groundness {(float)groundness:F2})"
+                                        : $"wall triangle (normal {(float)normalizedNormal.X:F2}, {(float)normalizedNormal.Y:F2}, {(float)normalizedNormal.Z:F2})");
+    
+                                    // Rotate local-space push/impact back to world space
+                                    var worldDelta = wallHit.positionDelta.RotateXz(boxMesh.GameObjectXz);
+                                    var worldImpact = wallHit.impactComponent.RotateXz(boxMesh.GameObjectXz);
+    
+                                    for (int w = 0; w < 4; w++)
+                                    {
+                                        Wheels[w].Position.X += worldDelta.X;
+                                        Wheels[w].Position.Z += worldDelta.Z;
+                                    }
+    
+                                    _crank[0, k]++;
+                                    if (_crank[0, k] > 1)
+                                    {
+                                        conto.Spark(Wheels[k].Position.X, Wheels[k].Position.Y, Wheels[k].Position.Z, Wheels[k].Velocity.X, Wheels[k].Velocity.Y, Wheels[k].Velocity.Z, 0,
+                                            (int)wheelGround);
+                                        SfxPlayScrape(this, ((int)Wheels[k].Velocity.X, (int)Wheels[k].Velocity.Y, (int)Wheels[k].Velocity.Z));
+                                    }
+    
+                                    var reboundVelocityDelta = worldImpact * (-GetReboundMul(wasMtouch));
+                                    Regz(k, reboundVelocityDelta.Length() * 1, conto, random);
+                                    Wheels[k].Velocity.X += reboundVelocityDelta.X;
+                                    Wheels[k].Velocity.Z += reboundVelocityDelta.Z;
+    
+                                    hitVertical = true;
+                                    isWheelTouchingPiece[k] = true;
+                                    // break; this makes it possible to phase through walls when on top of a raised mesh ground, but prevents being snapped out the side of a ramp, as long as the ground collision happens first
+                                }
+                            }
+                        }
+                    }
+                    else if (collidable.TryGetValue(out ShapeHull boxHull))
+                    {
+                        // TODO later
+                    }
+                    else if (collidable.TryGetValue(out ShapeRoad boxRoad))
+                    {
+                        if (boxRoad.ResolveCollision(position) is { } collision)
+                        {
+                            touching |= 1 << k;
+                            ++nGroundedWheels;
+                            Wtouch = true;
+                            Gtouch = true;
+    
+                            if (!wasMtouch && Wheels[k].Velocity.Y != 7 /* * checkpoints.gravity */ * _tickRate)
+                            {
+                                fix64 dustMag = Wheels[k].Velocity.Y / (fix64)(333.33F);
+                                if (dustMag > (fix64)(0.3F))
+                                    dustMag = (fix64)(0.3F);
+                                if (surfaceType == 0)
+                                    dustMag += (fix64)1.1f;
+                                else
+                                    dustMag += (fix64)1.2f;
+                                conto.Dust(k, Wheels[k].Position.X, Wheels[k].Position.X, Wheels[k].Position.Z, (int)Wheels[k].Velocity.X, (int)Wheels[k].Velocity.Z, dustMag * Stat.Simag, 0, Capsized && Mtouch, (int)wheelGround);
+                            }
+                            Wheels[k].Position.Y = collision.newY + wheelGround; // snap wheel to the surface
+                            
+                            // sparks and scrape
+                            if (Capsized && collidable.Skid is 0 or 1)
+                            {
+                                conto.Spark(Wheels[k].Position.X, Wheels[k].Position.Y, Wheels[k].Position.Z, Wheels[k].Velocity.X, Wheels[k].Velocity.Y, Wheels[k].Velocity.Z, 1, (int)wheelGround);
+                                //if (Im == /*this.xt.im*/ 0)
+                                SfxPlayGscrape(this, ((int)Wheels[k].Velocity.X, (int)Wheels[k].Velocity.Y, (int)Wheels[k].Velocity.Z));
+                            }
+    
+                            bounceRebound(k, conto, random);
+                            isWheelTouchingPiece[k] = true;
+                            break;
+                        }
+                    }
+                    else if (collidable.TryGetValue(out ShapeWall boxWall))
+                    {
+                        if (boxWall.ResolveCollision(position, velocity) is { } collision)
+                        {
+                            for (int w = 0; w < 4; w++) {
+                                Wheels[w].Position.X += collision.positionDelta.X;
+                                Wheels[w].Position.Y += collision.positionDelta.Y;
+                                Wheels[w].Position.Z += collision.positionDelta.Z;
+                            }
+                            
+                            // sparks and scrapes
+                            if (collidable.Skid != 2)
+                                _crank[0, k]++;
+                            if (collidable.Skid == 5 && random.NextFixed6401() > fix64.Half)
+                                _crank[0, k]++;
+                            if (_crank[0, k] > 1)
+                            {
+                                conto.Spark(Wheels[k].Position.X, Wheels[k].Position.Y, Wheels[k].Position.Z, Wheels[k].Velocity.X, Wheels[k].Velocity.Y, Wheels[k].Velocity.Z, 0, (int)wheelGround);
+                                //if (Im == /*this.xt.im*/ 0)
+                                SfxPlayScrape(this, ((int)Wheels[k].Velocity.X, (int)Wheels[k].Velocity.Y, (int)Wheels[k].Velocity.Z));
+                            }
+    
+                            // z rebound CHK5
+                            f64Vector3 reboundVelocityDelta = collision.impactComponent * (-GetReboundMul(wasMtouch));
+                            Regz(k, reboundVelocityDelta.Length() * collidable.Damage, conto, random);
+                            Wheels[k].Velocity.X += reboundVelocityDelta.X;
+                            Wheels[k].Velocity.Y += reboundVelocityDelta.Y;
+                            Wheels[k].Velocity.Z += reboundVelocityDelta.Z;
+    
+                            Skid = 2;
+                            hitVertical = true;
+                            isWheelTouchingPiece[k] = true;
+                            if (!collidable.NotWall) {
+                                control.Wall = 9999;
+                            }
+                            break;
+                        }
+                    }
+                    else if (collidable.TryGetValue(out ShapeRamp boxRamp))
+                    {
+                        if (boxRamp.ResolveCollision(position) is { } collision)
+                        {
+                            var liftDivider = 1 + (50 - fix64.Abs(boxRamp.TrackersZy)) / (fix64)30;
+                            if (liftDivider < 1)
+                                liftDivider = 1;
+                            if (collision.zTmp > 0 && collision.zTmp < 200) {
+                                Logging.Info($"ramp lift: {collision.zTmp} liftDivider: {liftDivider:F2} total: {collision.zTmp / liftDivider}");
+                                Wheels[k].Velocity.Y -= collision.zTmp / liftDivider;
+                            }
+    
+                            if (collision.zTmp > -30)
+                            {
+                                if (collidable.Skid == 2)
+                                    nWheelsDirtRamp++;
+                                else
+                                    nWheelsRoadRamp++;
+                                
+                                Wtouch = true;
+                                Gtouch = false;
+    
+                                // sparks and scrape
+                                if (Capsized && (collidable.Skid == 0 || collidable.Skid == 1))
+                                {
+                                    conto.Spark(Wheels[k].Position.X, Wheels[k].Position.Y, Wheels[k].Position.Z, Wheels[k].Velocity.X, Wheels[k].Velocity.Y, Wheels[k].Velocity.Z, 1, (int)wheelGround);
+                                    //if (Im == /*this.xt.im*/ 0)
+                                    SfxPlayGscrape(this, ((int)Wheels[k].Velocity.X, (int)Wheels[k].Velocity.Y, (int)Wheels[k].Velocity.Z));
+                                }
+    
+                                if (!wasMtouch && surfaceType != 0)
+                                {
+                                    fix64 dustMag = (fix64)1.4F;
+                                    conto.Dust(k, Wheels[k].Position.X, Wheels[k].Position.Y, Wheels[k].Position.Z, (int)Wheels[k].Velocity.Y, (int)Wheels[k].Velocity.Z, dustMag * Stat.Simag, 0, Capsized && Mtouch, (int)wheelGround);
+                                }
+                            }
+                            
+                            Wheels[k].Position.X = collision.newPosition.X;
+                            Wheels[k].Position.Y = collision.newPosition.Y + wheelGround;
+                            Wheels[k].Position.Z = collision.newPosition.Z;
+                            isWheelTouchingPiece[k] = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    private fix64 GetReboundMul(bool wasMtouch)
+    {
+        // Sin(roll)  = how far the local right axis has tilted off horizontal
+        fix64 sinRoll  = (fix64)(CarRotation * Right).Y;
+
+        // Sin(pitch) = how far the local forward axis has tilted off horizontal  
+        fix64 sinPitch = (fix64)(CarRotation * Forward).Y;
+        
+        var reboundMul = (fix64.Abs(sinRoll) + fix64.Abs(sinPitch));
+        reboundMul /= 4;
+        if (reboundMul > (fix64)0.3F)
+            reboundMul = (fix64)0.3F;
+        if (wasMtouch)
+            reboundMul = 0;
+        reboundMul += Stat.Bounce - (fix64)0.2f;
+        if (reboundMul < (fix64)1.1f)
+            reboundMul = (fix64)1.1F;
+        return reboundMul;
+    }
+    
+    private int Regx(int i, fix64 f, ContO conto, DeterministicRandom random)
+    {
+        conto.DamageX(Stat, i, f);
+    
+        var i110 = 0;
+        var abool = true;
     //     /*if (XTGraphics.Multion == 1 && XTGraphics.Im != Im)
     //     {
     //         abool = false;
@@ -2344,13 +2355,13 @@ public class Mad
     //             }
     //         }
     //     }
-    //     return i110;
-    // }
-    //
-    // private int Regy(int i, fix64 f, ContO conto, DeterministicRandom random)
-    // {
-    //     conto.DamageY(Stat, i, f, Mtouch, _nbsq, Squash);
-    //     var i97 = 0;
+        return i110;
+    }
+    
+    private int Regy(int i, fix64 f, ContO conto, DeterministicRandom random)
+    {
+        conto.DamageY(Stat, i, f, Mtouch, _nbsq, Squash);
+        var i97 = 0;
     //     var abool = true;
     //     /*if (XTGraphics.Multion == 1 && XTGraphics.Im != Im)
     //     {
@@ -2457,14 +2468,14 @@ public class Mad
     //             }
     //         }
     //     }
-    //     return i97;
-    // }
-    //
-    // private int Regz(int i, fix64 f, ContO conto, DeterministicRandom random)
-    // {
-    //     conto.DamageZ(Stat, i, f);
-    //     var i114 = 0;
-    //     var abool = true;
+    return i97;
+    }
+    
+    private int Regz(int i, fix64 f, ContO conto, DeterministicRandom random)
+    {
+    conto.DamageZ(Stat, i, f);
+    var i114 = 0;
+    var abool = true;
     //     /*if (XTGraphics.Multion == 1 && XTGraphics.Im != Im)
     //     {
     //         abool = false;
@@ -2510,8 +2521,8 @@ public class Mad
     //             }
     //         }
     //     }
-    //     return i114;
-    // }
+    return i114;
+    }
 
     public void Reseto(int i, ContO conto)
     {
