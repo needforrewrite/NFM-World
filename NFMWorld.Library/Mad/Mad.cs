@@ -1102,10 +1102,10 @@ public class Mad
             // Jacher: 1/_tickrate for traction; Txz is set on previous tick so we need to scale
             var traction = Stat.Grip;
 
-            traction -= fix64.Abs(LastYaw - yaw) * (_oneOverTickRate) * Speed / 250;
+            traction -= fix64.Abs(LastYaw - yaw) * fix64.RadToDeg * (_oneOverTickRate) * Speed / 250;
             if (control.Handb)
             {
-                traction -= fix64.Abs(LastYaw - yaw) * (_oneOverTickRate) * 4;
+                traction -= fix64.Abs(LastYaw - yaw) * fix64.RadToDeg * (_oneOverTickRate) * 4;
             }
 
             if (traction < Stat.Grip)
@@ -1131,6 +1131,8 @@ public class Mad
             {
                 traction *= (fix64)0.55f;
             }
+            
+            FrameTrace.AddMessage($"Speed: {Speed:0.00}, Traction: {traction:0.00}, SurfaceType: {surfaceType}");
 
             var velocity = localForward * Speed;
             if (Capsized || Wasted || Halted)
@@ -1277,7 +1279,7 @@ public class Mad
             {
                 if (!Capsized)
                 {
-                    Speed = scxz * UMath.Cos(Mxz - yaw);
+                    Speed = scxz * fix64.Cos(Mxz + yaw);
                 }
 
                 Skid = 0;
