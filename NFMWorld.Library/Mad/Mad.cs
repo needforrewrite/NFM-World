@@ -1393,7 +1393,32 @@ public class Mad
 
         conto.X = centerPos.X + offset.X;
         conto.Z = centerPos.Z + offset.Z;
-        conto.Y = centerPos.Y + offset.Y;   
+        conto.Y = centerPos.Y + offset.Y;
+
+        // Fit CarRotation to the terrain plane defined by grounded wheel positions.
+        // Uses a three-point plane through wheels 0-2; sign is corrected against the
+        // car's current up direction so the normal always points away from the surface.
+        // if (nGroundedWheels >= 3)
+        {
+            var terrainNormal = f64Vector3.Cross(
+                Wheels[1].Position - Wheels[0].Position,
+                Wheels[2].Position - Wheels[0].Position
+            ).Normal;
+
+            // Ensure it faces the same half-space as localUp
+            if (f64Vector3.Dot(terrainNormal, localUp) < fix64.Zero)
+                terrainNormal = -terrainNormal;
+
+            // Project localForward onto the terrain plane to preserve yaw
+            var terrainForwardVec = localForward - terrainNormal * f64Vector3.Dot(localForward, terrainNormal);
+            var terrainForward = terrainForwardVec.SqrMagnitude > (fix64)0.001f
+                ? terrainForwardVec.Normal
+                : localForward;
+
+            // LookRotation(forward, -terrainNormal) produces the correct rotation in Y-down:
+            // right = Cross(-terrainNormal, forward) → (+X on flat ground when facing +Z)
+            CarRotation = FixedQuaternion.Slerp(CarRotation, FixedQuaternion.LookRotation(terrainForward, -terrainNormal), fix64.Half * _tickRate);
+        }
 
         if (fix64.Abs(Speed) > 10 || !Mtouch)
         {
