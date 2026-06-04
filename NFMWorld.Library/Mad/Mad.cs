@@ -2087,6 +2087,7 @@ public class Mad
                                     ++nGroundedWheels;
                                     Wtouch = true;
                                     Gtouch = true;
+                                    Mtouch = true;
     
                                     // Lift: reduce downward velocity proportional to ramp penetration depth
                                     // Matches BoxRamp's Scy[k] -= zTmp / liftDivider logic
@@ -2172,6 +2173,7 @@ public class Mad
                             ++nGroundedWheels;
                             Wtouch = true;
                             Gtouch = true;
+                            Mtouch = true;
     
                             if (!wasMtouch && Wheels[k].Velocity.Y != 7 /* * checkpoints.gravity */ * _tickRate)
                             {
@@ -2258,6 +2260,7 @@ public class Mad
                                 
                                 Wtouch = true;
                                 Gtouch = false;
+                                Mtouch = true;
     
                                 // sparks and scrape
                                 if (Capsized && (collidable.Skid == 0 || collidable.Skid == 1))
