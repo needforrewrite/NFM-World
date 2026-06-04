@@ -1415,11 +1415,12 @@ public class Mad
             if (f64Vector3.Dot(terrainNormal, localUp) < fix64.Zero)
                 terrainNormal = -terrainNormal;
 
-            // Project localForward onto the terrain plane to preserve yaw
-            var terrainForwardVec = localForward - terrainNormal * f64Vector3.Dot(localForward, terrainNormal);
+            // Project the post-yaw-delta forward onto the terrain plane to preserve steering
+            var currentForward = CarRotation * Forward;
+            var terrainForwardVec = currentForward - terrainNormal * f64Vector3.Dot(currentForward, terrainNormal);
             var terrainForward = terrainForwardVec.SqrMagnitude > (fix64)0.001f
                 ? terrainForwardVec.Normal
-                : localForward;
+                : currentForward;
 
             // LookRotation(forward, -terrainNormal) produces the correct rotation in Y-down:
             // right = Cross(-terrainNormal, forward) → (+X on flat ground when facing +Z)
