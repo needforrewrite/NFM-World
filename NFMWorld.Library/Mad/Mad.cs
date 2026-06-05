@@ -639,7 +639,7 @@ public class Mad
                     }
 
                     // Use the cached flat heading — localForward flips sign mid-loop
-                    airx = -Stat.Airc * _loopGlideDir.X * _tickRate;
+                    airx = Stat.Airc * _loopGlideDir.X * _tickRate;
                     airz = Stat.Airc * _loopGlideDir.Z * _tickRate;
                 }
                 else if (Ucomp != 0 && Ucomp > -2)
