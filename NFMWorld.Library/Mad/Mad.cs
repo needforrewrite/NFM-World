@@ -1175,7 +1175,8 @@ public class Mad
             
             FrameTrace.AddMessage($"Speed: {Speed:0.00}, Traction: {traction:0.00}, SurfaceType: {surfaceType}");
 
-            var velocity = localForward * Speed;
+            var flatFwd = new f64Vector3(localForward.X, fix64.Zero, localForward.Z).Normal;
+            var velocity = flatFwd * Speed;
             if (Capsized || Wasted || Halted)
             {
                 velocity = f64Vector3.Zero;
