@@ -1406,14 +1406,21 @@ public class Mad
         py = prevContoY - conto.Y; // negative when falling (Y-down: new Y > old Y)
 
         // Fit CarRotation to the terrain plane defined by grounded wheel positions.
-        // Uses a three-point plane through wheels 0-2; sign is corrected against the
+        // Uses the average of two three-point planes; sign is corrected against the
         // car's current up direction so the normal always points away from the surface.
         // if (nGroundedWheels >= 3)
         {
-            var terrainNormal = f64Vector3.Cross(
+            var terrainNormal1 = f64Vector3.Cross(
                 Wheels[1].Position - Wheels[0].Position,
                 Wheels[2].Position - Wheels[0].Position
             ).Normal;
+
+            var terrainNormal2 = f64Vector3.Cross(
+                Wheels[3].Position - Wheels[1].Position,
+                Wheels[2].Position - Wheels[1].Position
+            ).Normal;
+
+            var terrainNormal = (terrainNormal1 + terrainNormal2).Normal;
 
             // Ensure it faces the same half-space as localUp
             if (f64Vector3.Dot(terrainNormal, localUp) < fix64.Zero)
