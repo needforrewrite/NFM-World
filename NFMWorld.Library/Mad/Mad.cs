@@ -1425,6 +1425,31 @@ public class Mad
             // LookRotation(forward, -terrainNormal) produces the correct rotation in Y-down:
             // right = Cross(-terrainNormal, forward) → (+X on flat ground when facing +Z)
             CarRotation = FixedQuaternion.LookRotation(terrainForward, -terrainNormal);
+
+            // DS-addons: Bad landing hotfix — equivalent of original Pzy/Pxy snap.
+            // Only apply on nearly-flat ground (|terrainNormal.Y| > cos(20°) ≈ 0.94).
+            // On ramps the terrain fit is already doing the right thing; snapping there
+            // would fight the slope and cause jitter.
+            if (nGroundedWheels == 4 && fix64.Abs(terrainNormal.Y) > (fix64)0.94f)
+            {
+                var snapUp = CarRotation * Up;
+                var snapFwd = CarRotation * Forward;
+                bool isUpsideDown = snapUp.Y > fix64.Zero; // localUp.Y > 0 → roof faces ground
+
+                FrameTrace.AddMessage($"snapUp: {snapUp}, isUpsideDown: {isUpsideDown}");
+
+                var flatFwd = new f64Vector3(snapFwd.X, fix64.Zero, snapFwd.Z);
+                if (flatFwd.SqrMagnitude > (fix64)0.001f)
+                    flatFwd = flatFwd.Normal;
+
+                var rightSideUp = FixedQuaternion.LookRotation(flatFwd, new f64Vector3(fix64.Zero, fix64.One, fix64.Zero));
+                CarRotation = isUpsideDown
+                    ? FixedQuaternion.AngleAxis(180, flatFwd) * rightSideUp
+                    : rightSideUp;
+                conto.Rotation = CarRotation;
+
+                Mtouch = true;
+            }
         }
 
         if (fix64.Abs(Speed) > 10 || !Mtouch)
@@ -1937,9 +1962,8 @@ public class Mad
                     {
                         Speed = 0;
                         conto.Y += Stat.Flipy;
-                        // TODO flip the car over...
-                        // Pxy += 180;
-                        // conto.Xy += 180;
+                        CarRotation = FixedQuaternion.AngleAxis(180, CarRotation * Forward) * CarRotation;
+                        conto.Rotation = CarRotation; // also snap the visual angle
                         Capcnt = 0;
                     }
                 }
