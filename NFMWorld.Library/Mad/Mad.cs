@@ -1383,7 +1383,7 @@ public class Mad
                 isWheelGrounded[w] = true;
                 wheelContactNormal[w] = Up; // flat ground: normal is always world-up
 
-                // bounceRebound(w, conto, random);
+                bounceRebound(w, conto, random);
             }
         }
 
@@ -1457,7 +1457,7 @@ public class Mad
                 }
             }
 
-            if (contactCount >= 3)
+            if (contactCount >= 3 || contactCount == 0)
             {
 	            var terrainNormal1 = f64Vector3.Cross(
 	                Wheels[1].Position - Wheels[0].Position,
@@ -1496,7 +1496,9 @@ public class Mad
 
                 FrameTrace.AddMessage($"avgNormal: {avgNormal:0.00}, contactCount: {contactCount}");
 
-                var corrAxis = f64Vector3.Cross(carUp, avgNormal);
+                var targetDir = carUp.Y <= fix64.Zero ? avgNormal : -avgNormal;
+
+                var corrAxis = f64Vector3.Cross(carUp, targetDir);
                 if (corrAxis.SqrMagnitude > (fix64)0.001f)
                     CarRotation = FixedQuaternion.AngleAxis((fix64)5 * _tickRate, corrAxis.Normal) * CarRotation;
             }
