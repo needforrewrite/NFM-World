@@ -1407,19 +1407,19 @@ public class Mad
         conto.Y = centerPos.Y + offset.Y;
         py = prevContoY - conto.Y; // negative when falling (Y-down: new Y > old Y)
 
-        // Contact-normal averaging: gather the actual surface normals recorded during
-        // wheel collision resolution and average them to orient the car.
+        // Surface orientation from contact normals.
         //
-        // Unlike the old plane-fit (which computed a normal from wheel position differences),
-        // each contact normal comes directly from the collision resolver and is geometrically
-        // correct regardless of car orientation or contact count. This means:
-        //   • 1 wheel on a ramp already gives the exact ramp normal
-        //   • A sideways car on flat ground gets (0,-1,0) → snaps upright immediately
-        //   • Mixed surfaces (front on ramp, rear on flat) blend to the average slope
+        // Each wheelContactNormal[k] is the actual surface normal from the collision resolver —
+        // geometrically correct for every surface type (flat ground, mesh, road, ShapeRamp).
         //
-        // We always snap via LookRotation — no gradual-correction branch needed, because the
-        // normal is always right. The only additional case is an upright-snap on perfectly
-        // flat ground to remove residual tilt from bad landings (the old Pzy/Pxy hotfix).
+        // Strategy:
+        //   ≥3 contacts → 
+        //      Fit CarRotation to the terrain plane defined by grounded wheel positions.
+        //      Uses a three-point plane through wheels 0-2; sign is corrected against the
+        //      car's current up direction so the normal always points away from the surface.
+        //   1-2 contacts →
+        //      Average the contact normals and apply a small corrective rotation toward
+        //      that average.
         {
             var sumNormal = f64Vector3.Zero;
             int contactCount = 0;
@@ -1432,25 +1432,41 @@ public class Mad
                 }
             }
 
-            if (contactCount > 0 && sumNormal.SqrMagnitude > (fix64)0.001f)
+            if (contactCount >= 3)
             {
-                var avgNormal = sumNormal.Normal; // in Y-down: points in -Y direction for flat ground
+                var terrainNormal = f64Vector3.Cross(
+                    Wheels[1].Position - Wheels[0].Position,
+                    Wheels[2].Position - Wheels[0].Position
+                ).Normal;
+
+                // Ensure it faces the same half-space as localUp
+                if (f64Vector3.Dot(terrainNormal, localUp) < fix64.Zero)
+                    terrainNormal = -terrainNormal;
+
+                // Project the post-yaw-delta forward onto the terrain plane to preserve steering
                 var currentForward = CarRotation * Forward;
-                var projFwd = currentForward - avgNormal * f64Vector3.Dot(currentForward, avgNormal);
-                var terrainForward = projFwd.SqrMagnitude > (fix64)0.001f ? projFwd.Normal : currentForward;
+                var terrainForwardVec = currentForward - terrainNormal * f64Vector3.Dot(currentForward, terrainNormal);
+                var terrainForward = terrainForwardVec.SqrMagnitude > (fix64)0.001f
+                    ? terrainForwardVec.Normal
+                    : currentForward;
 
-                // Snap car to match surface: LookRotation(forward, -avgNormal) makes carUp = avgNormal
-                CarRotation = FixedQuaternion.LookRotation(terrainForward, -avgNormal);
+                // LookRotation(forward, -terrainNormal) produces the correct rotation in Y-down:
+                // right = Cross(-terrainNormal, forward) → (+X on flat ground when facing +Z)
+                CarRotation = FixedQuaternion.LookRotation(terrainForward, -terrainNormal);
+                
+                FrameTrace.AddMessage($"terrainNormal: {terrainNormal:0.00}, terrainForward: {terrainForward:0.00}, CarRotation: {CarRotation:0.00}, nGroundedWheels: {nGroundedWheels}, Mtouch: {Mtouch}");
 
-                FrameTrace.AddMessage($"avgNormal: {avgNormal:0.00}, contactCount: {contactCount}");
-
-                // On perfectly flat ground with all 4 wheels: additional upright snap to
-                // eliminate any remaining roll/pitch from a bad landing angle.
-                if (contactCount == 4 && fix64.Abs(avgNormal.Y) > (fix64)0.94f)
+                // DS-addons: Bad landing hotfix — equivalent of original Pzy/Pxy snap.
+                // Only apply on nearly-flat ground (|terrainNormal.Y| > cos(20°) ≈ 0.94).
+                // On ramps the terrain fit is already doing the right thing; snapping there
+                // would fight the slope and cause jitter.
+                if (nGroundedWheels == 4 && fix64.Abs(terrainNormal.Y) > (fix64)0.94f)
                 {
-                    var snapFwd = CarRotation * Forward;
                     var snapUp = CarRotation * Up;
-                    bool isUpsideDown = snapUp.Y > fix64.Zero; // Y-down: roof-up means capsized
+                    var snapFwd = CarRotation * Forward;
+                    bool isUpsideDown = snapUp.Y > fix64.Zero; // localUp.Y > 0 → roof faces ground
+
+                    FrameTrace.AddMessage($"snapUp: {snapUp:0.00}, isUpsideDown: {isUpsideDown}");
 
                     var flatFwd = new f64Vector3(snapFwd.X, fix64.Zero, snapFwd.Z);
                     if (flatFwd.SqrMagnitude > (fix64)0.001f)
@@ -1461,8 +1477,20 @@ public class Mad
                         ? FixedQuaternion.AngleAxis(180, flatFwd) * rightSideUp
                         : rightSideUp;
                     conto.Rotation = CarRotation;
+
                     Mtouch = true;
                 }
+            }
+            else if (contactCount > 0 && sumNormal.SqrMagnitude > (fix64)0.001f)
+            {
+                var avgNormal = sumNormal.Normal; // Y-down: (0,-1,0) for flat ground
+                var carUp = CarRotation * Up;
+
+                FrameTrace.AddMessage($"avgNormal: {avgNormal:0.00}, contactCount: {contactCount}");
+
+                var corrAxis = f64Vector3.Cross(carUp, avgNormal);
+                if (corrAxis.SqrMagnitude > (fix64)0.001f)
+                    CarRotation = FixedQuaternion.AngleAxis((fix64)5 * _tickRate, corrAxis.Normal) * CarRotation;
             }
         }
 
