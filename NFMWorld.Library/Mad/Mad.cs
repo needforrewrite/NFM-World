@@ -1434,10 +1434,18 @@ public class Mad
 
             if (contactCount >= 3)
             {
-                var terrainNormal = f64Vector3.Cross(
-                    Wheels[1].Position - Wheels[0].Position,
-                    Wheels[2].Position - Wheels[0].Position
-                ).Normal;
+	            var terrainNormal1 = f64Vector3.Cross(
+	                Wheels[1].Position - Wheels[0].Position,
+	                Wheels[2].Position - Wheels[0].Position
+	            ).Normal;
+
+	            var terrainNormal2 = f64Vector3.Cross(
+	                Wheels[3].Position - Wheels[1].Position,
+	                Wheels[2].Position - Wheels[1].Position
+	            ).Normal;
+
+	            var terrainNormal = (terrainNormal1 + terrainNormal2).Normal;
+
 
                 // Ensure it faces the same half-space as localUp
                 if (f64Vector3.Dot(terrainNormal, localUp) < fix64.Zero)
