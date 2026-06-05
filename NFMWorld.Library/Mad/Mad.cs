@@ -1488,31 +1488,6 @@ public class Mad
                 CarRotation = FixedQuaternion.LookRotation(terrainForward, -terrainNormal);
                 
                 FrameTrace.AddMessage($"terrainNormal: {terrainNormal:0.00}, terrainForward: {terrainForward:0.00}, CarRotation: {CarRotation:0.00}, nGroundedWheels: {nGroundedWheels}, Mtouch: {Mtouch}");
-
-                // DS-addons: Bad landing hotfix — equivalent of original Pzy/Pxy snap.
-                // Only apply on nearly-flat ground (|terrainNormal.Y| > cos(20°) ≈ 0.94).
-                // On ramps the terrain fit is already doing the right thing; snapping there
-                // would fight the slope and cause jitter.
-                if (nGroundedWheels == 4 && fix64.Abs(terrainNormal.Y) > (fix64)0.94f)
-                {
-                    var snapUp = CarRotation * Up;
-                    var snapFwd = CarRotation * Forward;
-                    bool isUpsideDown = snapUp.Y > fix64.Zero; // localUp.Y > 0 → roof faces ground
-
-                    FrameTrace.AddMessage($"snapUp: {snapUp:0.00}, isUpsideDown: {isUpsideDown}");
-
-                    var flatFwd = new f64Vector3(snapFwd.X, fix64.Zero, snapFwd.Z);
-                    if (flatFwd.SqrMagnitude > (fix64)0.001f)
-                        flatFwd = flatFwd.Normal;
-
-                    var rightSideUp = FixedQuaternion.LookRotation(flatFwd, new f64Vector3(fix64.Zero, fix64.One, fix64.Zero));
-                    CarRotation = isUpsideDown
-                        ? FixedQuaternion.AngleAxis(180, flatFwd) * rightSideUp
-                        : rightSideUp;
-                    conto.Rotation = CarRotation;
-
-                    Mtouch = true;
-                }
             }
             else if (contactCount > 0 && sumNormal.SqrMagnitude > (fix64)0.001f)
             {
