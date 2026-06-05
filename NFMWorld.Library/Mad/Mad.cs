@@ -1315,7 +1315,8 @@ public class Mad
         }
 
         var nGroundedWheels = 0;
-        Span<bool> isWheelGrounded = stackalloc bool[4];
+        var nWheelsOnSurface = 0;
+        var isWheelGrounded = new InlineArray4<bool>();
         fix64 groundY = 250 + wheelGround;
         fix64 wheelYThreshold = (fix64)5f;
         fix64 f48 = 0;
@@ -1325,6 +1326,7 @@ public class Mad
             if (Wheels[w].Position.Y > (groundY - (fix64)5))
             {
                 nGroundedWheels++;
+                nWheelsOnSurface++;
                 Wtouch = true;
                 Gtouch = true;
                 Mtouch = true;
@@ -1359,7 +1361,7 @@ public class Mad
         }
 
         // OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
-        PhyTrackPieceCollision(stage, control, conto, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out var hitVertical, isWheelGrounded, random);
+        PhyTrackPieceCollision(stage, control, conto, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, ref nWheelsOnSurface, wasMtouch, surfaceType, out var hitVertical, isWheelGrounded, random);
         
         // sparks and scrapes
         for (var i79 = 0; i79 < 4; i79++)
@@ -1397,9 +1399,11 @@ public class Mad
         
         offset += new f64Vector3(airx, 0, airz);
 
+        var prevContoY = conto.Y;
         conto.X = centerPos.X + offset.X;
         conto.Z = centerPos.Z + offset.Z;
         conto.Y = centerPos.Y + offset.Y;
+        py = prevContoY - conto.Y; // negative when falling (Y-down: new Y > old Y)
 
         // Fit CarRotation to the terrain plane defined by grounded wheel positions.
         // Uses a three-point plane through wheels 0-2; sign is corrected against the
@@ -1425,6 +1429,8 @@ public class Mad
             // LookRotation(forward, -terrainNormal) produces the correct rotation in Y-down:
             // right = Cross(-terrainNormal, forward) → (+X on flat ground when facing +Z)
             CarRotation = FixedQuaternion.LookRotation(terrainForward, -terrainNormal);
+            
+            FrameTrace.AddMessage($"terrainNormal: {terrainNormal:0.00}, terrainForward: {terrainForward:0.00}, CarRotation: {CarRotation:0.00}, nGroundedWheels: {nGroundedWheels}, Mtouch: {Mtouch}");
 
             // DS-addons: Bad landing hotfix — equivalent of original Pzy/Pxy snap.
             // Only apply on nearly-flat ground (|terrainNormal.Y| > cos(20°) ≈ 0.94).
@@ -1436,7 +1442,7 @@ public class Mad
                 var snapFwd = CarRotation * Forward;
                 bool isUpsideDown = snapUp.Y > fix64.Zero; // localUp.Y > 0 → roof faces ground
 
-                FrameTrace.AddMessage($"snapUp: {snapUp}, isUpsideDown: {isUpsideDown}");
+                FrameTrace.AddMessage($"snapUp: {snapUp:0.00}, isUpsideDown: {isUpsideDown}");
 
                 var flatFwd = new f64Vector3(snapFwd.X, fix64.Zero, snapFwd.Z);
                 if (flatFwd.SqrMagnitude > (fix64)0.001f)
@@ -1449,6 +1455,37 @@ public class Mad
                 conto.Rotation = CarRotation;
 
                 Mtouch = true;
+            }
+        }
+
+        // Air stabilization — equivalent of original Pzy/Pxy stabilization.
+        // When in the air and falling (py < 0), gradually rotate toward the nearest
+        // stable orientation: right-side-up or upside-down.
+        // Rate: 1 * _tickRate deg/tick (original i_81/i_83 = ±1 when ratio ≥ 1,
+        // which is always the case for a rigid-body wheel layout).
+        if (!Mtouch && py < fix64.Zero)
+        {
+            var carUp = CarRotation * Up;
+            // Nearest stable: right-side-up (carUp.Y ≤ 0) or upside-down (carUp.Y > 0)
+            var targetUp = carUp.Y <= fix64.Zero ? Up : -Up;
+            var corrAxis = f64Vector3.Cross(carUp, targetUp);
+            if (corrAxis.SqrMagnitude > (fix64)0.001f)
+                CarRotation = FixedQuaternion.AngleAxis(_tickRate, corrAxis.Normal) * CarRotation;
+        }
+
+        // Sideways-landing correction: if 1-2 wheels are touching a surface (car partially
+        // grounded but sideways), push CarRotation toward the nearest stable flat orientation.
+        // Stronger than the air stabilization so it wins against a surface contact.
+        if (nWheelsOnSurface > 0 && nWheelsOnSurface < 3)
+        {
+            var carUp = CarRotation * Up;
+            // |carUp.Y| < cos(45°) ≈ 0.707 means the car is more than 45° sideways
+            if (fix64.Abs(carUp.Y) < (fix64)0.707f)
+            {
+                var targetUp = carUp.Y <= fix64.Zero ? Up : -Up;
+                var corrAxis = f64Vector3.Cross(carUp, targetUp);
+                if (corrAxis.SqrMagnitude > (fix64)0.001f)
+                    CarRotation = FixedQuaternion.AngleAxis((fix64)50 * _tickRate, corrAxis.Normal) * CarRotation;
             }
         }
 
@@ -2035,8 +2072,8 @@ public class Mad
     // output: hitVertical when colliding against a wall
     private void PhyTrackPieceCollision(
         IStage stage, Control control, ContO conto,
-        fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nGroundedWheels, bool wasMtouch,
-        int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, DeterministicRandom random)
+        fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nGroundedWheels, ref int nWheelsOnSurface,
+        bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, DeterministicRandom random)
     {
         hitVertical = false;
     
@@ -2109,6 +2146,7 @@ public class Mad
     
                                     touching |= 1 << k;
                                     ++nGroundedWheels;
+                                    ++nWheelsOnSurface;
                                     Wtouch = true;
                                     Gtouch = true;
                                     Mtouch = true;
@@ -2195,6 +2233,7 @@ public class Mad
                         {
                             touching |= 1 << k;
                             ++nGroundedWheels;
+                            ++nWheelsOnSurface;
                             Wtouch = true;
                             Gtouch = true;
                             Mtouch = true;
@@ -2274,6 +2313,8 @@ public class Mad
                                 Logging.Info($"ramp lift: {collision.zTmp} liftDivider: {liftDivider:F2} total: {collision.zTmp / liftDivider}");
                                 Wheels[k].Velocity.Y -= collision.zTmp / liftDivider;
                             }
+                            
+                            ++nWheelsOnSurface;
     
                             if (collision.zTmp > -30)
                             {
