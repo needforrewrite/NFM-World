@@ -118,6 +118,12 @@ public class Mad
 
     public FixedQuaternion CarRotation;
 
+    /// <summary>
+    /// Flat (XZ) forward unit vector captured at the start of a Loop=2 glide.
+    /// Kept constant for the entire loop so glide direction doesn't reverse mid-flip.
+    /// </summary>
+    public f64Vector3 _loopGlideDir;
+
     internal bool IsClientPlayer;
     internal fix64 py = 0;
 
@@ -582,6 +588,24 @@ public class Mad
                 Wheels[w].Velocity.Y = avgVerticalVelocity;
             }
 
+            // Cache the flat (XZ) heading at loop-start so the glide direction is
+            // fixed for the whole flip. localForward changes sign mid-loop (when the
+            // car is pitched past 90°), which would reverse airx/airz in the new code.
+            // The original kept this stable by using conto.Xz (yaw-only angle).
+            var flatFwd = new f64Vector3(localForward.X, fix64.Zero, localForward.Z);
+            if (flatFwd.SqrMagnitude > (fix64)0.001f)
+                _loopGlideDir = flatFwd.Normal;
+            else
+            {
+                // Car is pitched near-vertical: use localRight (which stays horizontal
+                // during a forward pitch loop) to derive the heading.
+                // flatRight perp to Y → rotate 90° around world-Y (in Y-down: fwd = Cross(right, Up))
+                var flatRight = new f64Vector3(localRight.X, fix64.Zero, localRight.Z);
+                if (flatRight.SqrMagnitude > (fix64)0.001f)
+                    _loopGlideDir = f64Vector3.Cross(flatRight.Normal, Up).Normal;
+                // else: keep whatever was cached last tick (degenerate, shouldn't happen)
+            }
+
             Loop = 2;
         } //
         
@@ -614,11 +638,9 @@ public class Mad
                         Ucomp += fix64.Half * Stat.Airs * _tickRate; //
                     }
 
-                    // Forward direction projected onto XZ plane (world-space yaw direction)
-                    var zneg = f64Vector3.Dot(localUp, Up) >= 0 ? 1 : -1;
-
-                    airx = -Stat.Airc * localForward.X * zneg * _tickRate;
-                    airz = Stat.Airc * localForward.Z * zneg * _tickRate;
+                    // Use the cached flat heading — localForward flips sign mid-loop
+                    airx = -Stat.Airc * _loopGlideDir.X * _tickRate;
+                    airz = Stat.Airc * _loopGlideDir.Z * _tickRate;
                 }
                 else if (Ucomp != 0 && Ucomp > -2)
                 {
@@ -667,8 +689,10 @@ public class Mad
                         Lcomp += 2 * Stat.Airs * _tickRate; //
                     }
 
-                    airx = -Stat.Airc * localRight.X * _tickRate;
-                    airz = -Stat.Airc * localRight.Z * _tickRate;
+                    // Flat right derived from cached heading: Cross(glideDir, Up)
+                    var glideRight = f64Vector3.Cross(_loopGlideDir, Up);
+                    airx = -Stat.Airc * glideRight.X * _tickRate;
+                    airz = -Stat.Airc * glideRight.Z * _tickRate;
                 }
                 else if (Lcomp > 0)
                 {
@@ -687,8 +711,9 @@ public class Mad
                         Rcomp += 2 * Stat.Airs * _tickRate;
                     }
 
-                    airx = Stat.Airc * localRight.X * _tickRate;
-                    airz = Stat.Airc * localRight.Z * _tickRate;
+                    var glideRight2 = f64Vector3.Cross(_loopGlideDir, Up);
+                    airx = Stat.Airc * glideRight2.X * _tickRate;
+                    airz = Stat.Airc * glideRight2.Z * _tickRate;
                 }
                 else if (Rcomp > 0) //
                 {
@@ -1399,7 +1424,7 @@ public class Mad
             offset += bottomy * localUp;
         }
         
-        offset += new f64Vector3(airx, 0, airz);
+        offset += new f64Vector3(airx, airy, airz);
 
         var prevContoY = conto.Y;
         conto.X = centerPos.X + offset.X;
