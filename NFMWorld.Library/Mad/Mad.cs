@@ -118,12 +118,6 @@ public class Mad
 
     public FixedQuaternion CarRotation;
 
-    /// <summary>
-    /// Flat (XZ) forward unit vector captured at the start of a Loop=2 glide.
-    /// Kept constant for the entire loop so glide direction doesn't reverse mid-flip.
-    /// </summary>
-    public f64Vector3 _loopGlideDir;
-
     internal bool IsClientPlayer;
     internal fix64 py = 0;
 
@@ -588,24 +582,6 @@ public class Mad
                 Wheels[w].Velocity.Y = avgVerticalVelocity;
             }
 
-            // Cache the flat (XZ) heading at loop-start so the glide direction is
-            // fixed for the whole flip. localForward changes sign mid-loop (when the
-            // car is pitched past 90°), which would reverse airx/airz in the new code.
-            // The original kept this stable by using conto.Xz (yaw-only angle).
-            var flatFwd = new f64Vector3(localForward.X, fix64.Zero, localForward.Z);
-            if (flatFwd.SqrMagnitude > (fix64)0.001f)
-                _loopGlideDir = flatFwd.Normal;
-            else
-            {
-                // Car is pitched near-vertical: use localRight (which stays horizontal
-                // during a forward pitch loop) to derive the heading.
-                // flatRight perp to Y → rotate 90° around world-Y (in Y-down: fwd = Cross(right, Up))
-                var flatRight = new f64Vector3(localRight.X, fix64.Zero, localRight.Z);
-                if (flatRight.SqrMagnitude > (fix64)0.001f)
-                    _loopGlideDir = f64Vector3.Cross(flatRight.Normal, Up).Normal;
-                // else: keep whatever was cached last tick (degenerate, shouldn't happen)
-            }
-
             Loop = 2;
         } //
         
@@ -638,9 +614,11 @@ public class Mad
                         Ucomp += fix64.Half * Stat.Airs * _tickRate; //
                     }
 
-                    // Use the cached flat heading — localForward flips sign mid-loop
-                    airx = -Stat.Airc * _loopGlideDir.X * _tickRate;
-                    airz = Stat.Airc * _loopGlideDir.Z * _tickRate;
+                    // Forward direction projected onto XZ plane (world-space yaw direction)
+                    var zneg = f64Vector3.Dot(localUp, Up) >= 0 ? 1 : -1;
+
+                    airx = -Stat.Airc * localForward.X * zneg * _tickRate;
+                    airz = Stat.Airc * localForward.Z * zneg * _tickRate;
                 }
                 else if (Ucomp != 0 && Ucomp > -2)
                 {
@@ -689,10 +667,8 @@ public class Mad
                         Lcomp += 2 * Stat.Airs * _tickRate; //
                     }
 
-                    // Flat right derived from cached heading: Cross(glideDir, Up)
-                    var glideRight = f64Vector3.Cross(_loopGlideDir, Up);
-                    airx = -Stat.Airc * glideRight.X * _tickRate;
-                    airz = -Stat.Airc * glideRight.Z * _tickRate;
+                    airx = -Stat.Airc * localRight.X * _tickRate;
+                    airz = -Stat.Airc * localRight.Z * _tickRate;
                 }
                 else if (Lcomp > 0)
                 {
@@ -711,9 +687,8 @@ public class Mad
                         Rcomp += 2 * Stat.Airs * _tickRate;
                     }
 
-                    var glideRight2 = f64Vector3.Cross(_loopGlideDir, Up);
-                    airx = Stat.Airc * glideRight2.X * _tickRate;
-                    airz = Stat.Airc * glideRight2.Z * _tickRate;
+                    airx = Stat.Airc * localRight.X * _tickRate;
+                    airz = Stat.Airc * localRight.Z * _tickRate;
                 }
                 else if (Rcomp > 0) //
                 {
@@ -1342,6 +1317,7 @@ public class Mad
         var nGroundedWheels = 0;
         var nWheelsOnSurface = 0;
         var isWheelGrounded = new InlineArray4<bool>();
+        var wheelContactNormal = new InlineArray4<f64Vector3>();
         fix64 groundY = 250 + wheelGround;
         fix64 wheelYThreshold = (fix64)5f;
         fix64 f48 = 0;
@@ -1380,13 +1356,14 @@ public class Mad
                 Wheels[w].Position.Y = groundY;
                 f48 += Wheels[w].Position.Y - groundY;
                 isWheelGrounded[w] = true;
+                wheelContactNormal[w] = Up; // flat ground: normal is always world-up
 
                 // bounceRebound(w, conto, random);
             }
         }
 
         // OmarTrackPieceCollision(control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, random);
-        PhyTrackPieceCollision(stage, control, conto, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, ref nWheelsOnSurface, wasMtouch, surfaceType, out var hitVertical, isWheelGrounded, random);
+        PhyTrackPieceCollision(stage, control, conto, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, ref nWheelsOnSurface, wasMtouch, surfaceType, out var hitVertical, isWheelGrounded, wheelContactNormal, random);
         
         // sparks and scrapes
         for (var i79 = 0; i79 < 4; i79++)
@@ -1422,7 +1399,7 @@ public class Mad
             offset += bottomy * localUp;
         }
         
-        offset += new f64Vector3(airx, airy, airz);
+        offset += new f64Vector3(airx, 0, airz);
 
         var prevContoY = conto.Y;
         conto.X = centerPos.X + offset.X;
@@ -1430,95 +1407,74 @@ public class Mad
         conto.Y = centerPos.Y + offset.Y;
         py = prevContoY - conto.Y; // negative when falling (Y-down: new Y > old Y)
 
-        // Fit CarRotation to the terrain plane defined by grounded wheel positions.
-        // Uses the average of two three-point planes; sign is corrected against the
-        // car's current up direction so the normal always points away from the surface.
-        // if (nGroundedWheels >= 3)
+        // Contact-normal averaging: gather the actual surface normals recorded during
+        // wheel collision resolution and average them to orient the car.
+        //
+        // Unlike the old plane-fit (which computed a normal from wheel position differences),
+        // each contact normal comes directly from the collision resolver and is geometrically
+        // correct regardless of car orientation or contact count. This means:
+        //   • 1 wheel on a ramp already gives the exact ramp normal
+        //   • A sideways car on flat ground gets (0,-1,0) → snaps upright immediately
+        //   • Mixed surfaces (front on ramp, rear on flat) blend to the average slope
+        //
+        // We always snap via LookRotation — no gradual-correction branch needed, because the
+        // normal is always right. The only additional case is an upright-snap on perfectly
+        // flat ground to remove residual tilt from bad landings (the old Pzy/Pxy hotfix).
         {
-            var terrainNormal1 = f64Vector3.Cross(
-                Wheels[1].Position - Wheels[0].Position,
-                Wheels[2].Position - Wheels[0].Position
-            ).Normal;
-
-            var terrainNormal2 = f64Vector3.Cross(
-                Wheels[3].Position - Wheels[1].Position,
-                Wheels[2].Position - Wheels[1].Position
-            ).Normal;
-
-            var terrainNormal = (terrainNormal1 + terrainNormal2).Normal;
-
-            // Ensure it faces the same half-space as localUp
-            if (f64Vector3.Dot(terrainNormal, localUp) < fix64.Zero)
-                terrainNormal = -terrainNormal;
-
-            // Project the post-yaw-delta forward onto the terrain plane to preserve steering
-            var currentForward = CarRotation * Forward;
-            var terrainForwardVec = currentForward - terrainNormal * f64Vector3.Dot(currentForward, terrainNormal);
-            var terrainForward = terrainForwardVec.SqrMagnitude > (fix64)0.001f
-                ? terrainForwardVec.Normal
-                : currentForward;
-
-            // LookRotation(forward, -terrainNormal) produces the correct rotation in Y-down:
-            // right = Cross(-terrainNormal, forward) → (+X on flat ground when facing +Z)
-            CarRotation = FixedQuaternion.LookRotation(terrainForward, -terrainNormal);
-            
-            FrameTrace.AddMessage($"terrainNormal: {terrainNormal:0.00}, terrainForward: {terrainForward:0.00}, CarRotation: {CarRotation:0.00}, nGroundedWheels: {nGroundedWheels}, Mtouch: {Mtouch}");
-
-            // DS-addons: Bad landing hotfix — equivalent of original Pzy/Pxy snap.
-            // Only apply on nearly-flat ground (|terrainNormal.Y| > cos(20°) ≈ 0.94).
-            // On ramps the terrain fit is already doing the right thing; snapping there
-            // would fight the slope and cause jitter.
-            if (nGroundedWheels == 4 && fix64.Abs(terrainNormal.Y) > (fix64)0.94f)
+            var sumNormal = f64Vector3.Zero;
+            int contactCount = 0;
+            for (int k = 0; k < 4; k++)
             {
-                var snapUp = CarRotation * Up;
-                var snapFwd = CarRotation * Forward;
-                bool isUpsideDown = snapUp.Y > fix64.Zero; // localUp.Y > 0 → roof faces ground
+                if (isWheelGrounded[k])
+                {
+                    sumNormal += wheelContactNormal[k];
+                    contactCount++;
+                }
+            }
 
-                FrameTrace.AddMessage($"snapUp: {snapUp:0.00}, isUpsideDown: {isUpsideDown}");
+            if (contactCount > 0 && sumNormal.SqrMagnitude > (fix64)0.001f)
+            {
+                var avgNormal = sumNormal.Normal; // in Y-down: points in -Y direction for flat ground
+                var currentForward = CarRotation * Forward;
+                var projFwd = currentForward - avgNormal * f64Vector3.Dot(currentForward, avgNormal);
+                var terrainForward = projFwd.SqrMagnitude > (fix64)0.001f ? projFwd.Normal : currentForward;
 
-                var flatFwd = new f64Vector3(snapFwd.X, fix64.Zero, snapFwd.Z);
-                if (flatFwd.SqrMagnitude > (fix64)0.001f)
-                    flatFwd = flatFwd.Normal;
+                // Snap car to match surface: LookRotation(forward, -avgNormal) makes carUp = avgNormal
+                CarRotation = FixedQuaternion.LookRotation(terrainForward, -avgNormal);
 
-                var rightSideUp = FixedQuaternion.LookRotation(flatFwd, new f64Vector3(fix64.Zero, fix64.One, fix64.Zero));
-                CarRotation = isUpsideDown
-                    ? FixedQuaternion.AngleAxis(180, flatFwd) * rightSideUp
-                    : rightSideUp;
-                conto.Rotation = CarRotation;
+                FrameTrace.AddMessage($"avgNormal: {avgNormal:0.00}, contactCount: {contactCount}");
 
-                Mtouch = true;
+                // On perfectly flat ground with all 4 wheels: additional upright snap to
+                // eliminate any remaining roll/pitch from a bad landing angle.
+                if (contactCount == 4 && fix64.Abs(avgNormal.Y) > (fix64)0.94f)
+                {
+                    var snapFwd = CarRotation * Forward;
+                    var snapUp = CarRotation * Up;
+                    bool isUpsideDown = snapUp.Y > fix64.Zero; // Y-down: roof-up means capsized
+
+                    var flatFwd = new f64Vector3(snapFwd.X, fix64.Zero, snapFwd.Z);
+                    if (flatFwd.SqrMagnitude > (fix64)0.001f)
+                        flatFwd = flatFwd.Normal;
+
+                    var rightSideUp = FixedQuaternion.LookRotation(flatFwd, new f64Vector3(fix64.Zero, fix64.One, fix64.Zero));
+                    CarRotation = isUpsideDown
+                        ? FixedQuaternion.AngleAxis(180, flatFwd) * rightSideUp
+                        : rightSideUp;
+                    conto.Rotation = CarRotation;
+                    Mtouch = true;
+                }
             }
         }
 
-        // Air stabilization — equivalent of original Pzy/Pxy stabilization.
-        // When in the air and falling (py < 0), gradually rotate toward the nearest
-        // stable orientation: right-side-up or upside-down.
-        // Rate: 1 * _tickRate deg/tick (original i_81/i_83 = ±1 when ratio ≥ 1,
-        // which is always the case for a rigid-body wheel layout).
+        // Air stabilization: when fully airborne and falling (py < 0), gradually rotate
+        // toward the nearest stable orientation (right-side-up or upside-down).
         if (!Mtouch && py < fix64.Zero)
         {
             var carUp = CarRotation * Up;
-            // Nearest stable: right-side-up (carUp.Y ≤ 0) or upside-down (carUp.Y > 0)
             var targetUp = carUp.Y <= fix64.Zero ? Up : -Up;
             var corrAxis = f64Vector3.Cross(carUp, targetUp);
             if (corrAxis.SqrMagnitude > (fix64)0.001f)
                 CarRotation = FixedQuaternion.AngleAxis(_tickRate, corrAxis.Normal) * CarRotation;
-        }
-
-        // Sideways-landing correction: if 1-2 wheels are touching a surface (car partially
-        // grounded but sideways), push CarRotation toward the nearest stable flat orientation.
-        // Stronger than the air stabilization so it wins against a surface contact.
-        if (nWheelsOnSurface > 0 && nWheelsOnSurface < 3)
-        {
-            var carUp = CarRotation * Up;
-            // |carUp.Y| < cos(45°) ≈ 0.707 means the car is more than 45° sideways
-            if (fix64.Abs(carUp.Y) < (fix64)0.707f)
-            {
-                var targetUp = carUp.Y <= fix64.Zero ? Up : -Up;
-                var corrAxis = f64Vector3.Cross(carUp, targetUp);
-                if (corrAxis.SqrMagnitude > (fix64)0.001f)
-                    CarRotation = FixedQuaternion.AngleAxis((fix64)50 * _tickRate, corrAxis.Normal) * CarRotation;
-            }
         }
 
         if (fix64.Abs(Speed) > 10 || !Mtouch)
@@ -2105,7 +2061,7 @@ public class Mad
     private void PhyTrackPieceCollision(
         IStage stage, Control control, ContO conto,
         fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nGroundedWheels, ref int nWheelsOnSurface,
-        bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, DeterministicRandom random)
+        bool wasMtouch, int surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, Span<f64Vector3> wheelContactNormal, DeterministicRandom random)
     {
         hitVertical = false;
     
@@ -2179,6 +2135,10 @@ public class Mad
                                     touching |= 1 << k;
                                     ++nGroundedWheels;
                                     ++nWheelsOnSurface;
+                                    isWheelGrounded[k] = true;
+                                    // normalizedNormal is in object-local XZ space; RotateXz brings it to world space.
+                                    // groundness > 0 ⟹ normalizedNormal.Y < 0, which is the -Y (up) direction in Y-down. ✓
+                                    wheelContactNormal[k] = normalizedNormal.RotateXz(boxMesh.GameObjectXz);
                                     Wtouch = true;
                                     Gtouch = true;
                                     Mtouch = true;
@@ -2266,10 +2226,12 @@ public class Mad
                             touching |= 1 << k;
                             ++nGroundedWheels;
                             ++nWheelsOnSurface;
+                            isWheelGrounded[k] = true;
+                            wheelContactNormal[k] = Up; // ShapeRoad is always flat
                             Wtouch = true;
                             Gtouch = true;
                             Mtouch = true;
-    
+
                             if (!wasMtouch && Wheels[k].Velocity.Y != 7 /* * checkpoints.gravity */ * _tickRate)
                             {
                                 fix64 dustMag = Wheels[k].Velocity.Y / (fix64)(333.33F);
@@ -2347,7 +2309,16 @@ public class Mad
                             }
                             
                             ++nWheelsOnSurface;
-    
+                            isWheelGrounded[k] = true;
+                            // Ramp surface normal in world space.
+                            // In the ramp's zy-rotated local frame the surface is Z=0 and the car
+                            // sits at Z>0, so the surface-up direction is (0,0,-1) in that frame.
+                            // Undo the ZY tilt then the XZ object rotations to reach world space.
+                            wheelContactNormal[k] = new f64Vector3(fix64.Zero, fix64.Zero, (fix64)(-1))
+                                .RotateZy(-(boxRamp.TrackersZy + 90))
+                                .RotateXz(boxRamp.TrackersXz)
+                                .RotateXz(boxRamp.GameObjectXz);
+
                             if (collision.zTmp > -30)
                             {
                                 if (collidable.Skid == 2)
