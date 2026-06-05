@@ -1438,10 +1438,8 @@ public class Mad
         // geometrically correct for every surface type (flat ground, mesh, road, ShapeRamp).
         //
         // Strategy:
-        //   ≥3 contacts → 
+        //   0/≥3 contacts → 
         //      Fit CarRotation to the terrain plane defined by grounded wheel positions.
-        //      Uses a three-point plane through wheels 0-2; sign is corrected against the
-        //      car's current up direction so the normal always points away from the surface.
         //   1-2 contacts →
         //      Average the contact normals and apply a small corrective rotation toward
         //      that average.
@@ -1470,7 +1468,6 @@ public class Mad
 	            ).Normal;
 
 	            var terrainNormal = (terrainNormal1 + terrainNormal2).Normal;
-
 
                 // Ensure it faces the same half-space as localUp
                 if (f64Vector3.Dot(terrainNormal, localUp) < fix64.Zero)
@@ -2190,7 +2187,7 @@ public class Mad
                                         var liftDivider = 1 + (50 - fix64.Abs(rampAngleDeg)) / (fix64)30;
                                         if (liftDivider < 4) liftDivider = 4;
                                         Logging.Info($"ramp lift: {zTmp} liftDivider: {liftDivider:F2} total: {zTmp / liftDivider:F2}");
-                                        Wheels[k].Position.Y -= zTmp / liftDivider;
+                                        Wheels[k].Velocity.Y -= zTmp / liftDivider;
                                     }
     
                                     if (!wasMtouch && Wheels[k].Position.Y != 7 /* * checkpoints.gravity */ * _tickRate)
