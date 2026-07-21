@@ -10,6 +10,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\NFMWorld.Multiplayer.Base\NFMWorld.Multiplayer.Base.csproj" />
+      <ProjectReference Include="..\NFMWorld.Server.SharedMemory\NFMWorld.Server.SharedMemory.csproj" />
     </ItemGroup>
 
 </Project>

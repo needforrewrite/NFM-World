@@ -1,9 +1,10 @@
 import { MemoryPackWriter } from "./MemoryPackWriter";
 import { MemoryPackReader } from "./MemoryPackReader";
+import { Collection } from "./Collection";
 
 export class CarStatsData {
     name: string;
-    collection: string;
+    collection: Collection;
     topSpeed: number;
     acceleration: number;
     handling: number;
@@ -16,7 +17,7 @@ export class CarStatsData {
 
     constructor() {
         this.name = "";
-        this.collection = "";
+        this.collection = 0;
         this.topSpeed = 0;
         this.acceleration = 0;
         this.handling = 0;
@@ -43,7 +44,7 @@ export class CarStatsData {
 
         writer.writeObjectHeader(11);
         writer.writeString(value.name);
-        writer.writeString(value.collection);
+        writer.writeInt32(value.collection);
         writer.writeFloat64(value.topSpeed);
         writer.writeFloat64(value.acceleration);
         writer.writeFloat64(value.handling);
@@ -79,7 +80,7 @@ export class CarStatsData {
         const value = new CarStatsData();
         if (count == 11) {
             value.name = reader.readString()!;
-            value.collection = reader.readString()!;
+            value.collection = reader.readInt32()!;
             value.topSpeed = reader.readFloat64()!;
             value.acceleration = reader.readFloat64()!;
             value.handling = reader.readFloat64()!;
@@ -97,7 +98,7 @@ export class CarStatsData {
         else {
             if (count == 0) return value;
             value.name = reader.readString()!; if (count == 1) return value;
-            value.collection = reader.readString()!; if (count == 2) return value;
+            value.collection = reader.readInt32()!; if (count == 2) return value;
             value.topSpeed = reader.readFloat64()!; if (count == 3) return value;
             value.acceleration = reader.readFloat64()!; if (count == 4) return value;
             value.handling = reader.readFloat64()!; if (count == 5) return value;

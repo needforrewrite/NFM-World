@@ -3,27 +3,28 @@ using NFMWorld.DriverInterface;
 
 namespace NFMWorldLibrary.Backend.Gamemodes;
 
-public class FootballGamemode(BaseGamemodeParameters gamemodeParameters, IGamemodeData gamemodeData)
+/// <summary>
+/// Client-side football (soccer) gamemode. No server-side logic —
+/// purely physics-driven with a ball entity.
+/// </summary>
+public class FootballGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData)
     : BaseGamemode(gamemodeParameters, gamemodeData)
 {
-    public override event EventHandler<byte[]>? RaceFinished;
-
     private int _newTick = 0;
 
-    public override void Enter()
+    public override void Begin()
     {
-        foreach (var (idx, player) in players.WithIndex())
+        foreach (var (idx, player) in Players.WithIndex())
         {
-            carsInRace[idx] = new BackendCar(player, idx, 500, 0);
+            CarsInRace[idx] = new BackendCar(player, idx, 500, 0);
         }
-        carsInRace[players.Count] = new BackendCar(BackendGameSparker.GetCar("football/BALL").Rad!, 1, 0, 0, false);
+        CarsInRace[Players.Count] = new BackendCar(BackendGameSparker.GetCar("football/BALL").Rad!, 1, 0, 0, false);
 
         Reset();
     }
 
-    public override void Exit()
+    public override void End()
     {
-        
     }
 
     public override void Reset()
@@ -33,41 +34,31 @@ public class FootballGamemode(BaseGamemodeParameters gamemodeParameters, IGamemo
 
     public override void GameTick()
     {
-        FrameTrace.AddMessage($"contox: {carsInRace[0].Position.X:0.00}, contoz: {carsInRace[0].Position.Z:0.00}, contoy: {carsInRace[0].Position.Y:0.00}");
-
-        // Inter-car collision is run at the original tickrate (21.4TPS) to emulate original physics behavior
-        // We round this up to 3 ticks per 63TPS tick.
-
-
-        //All footballers have no powerloss.
+        FrameTrace.AddMessage($"contox: {CarsInRace[0].Position.X:0.00}, contoz: {CarsInRace[0].Position.Z:0.00}, contoy: {CarsInRace[0].Position.Y:0.00}");
 
         if (++_newTick == Physics.OriginalTicksPerNewTick)
         {
-            for (int i = 0; i < carsInRace.Count; i++)
-            for (int j = 0; j < carsInRace.Count; j++)
+            for (int i = 0; i < CarsInRace.Count; i++)
+            for (int j = 0; j < CarsInRace.Count; j++)
             {
                 if (i != j)
                 {
-                    carsInRace[i].Collide(carsInRace[j]);
+                    CarsInRace[i].Collide(CarsInRace[j]);
                 }
             }
 
             _newTick = 0;
         }
 
-        foreach (var car in carsInRace)
+        foreach (var car in CarsInRace)
         {
             car.Drive(gamemodeData.CurrentStage);
         }
     }
 
-    #region Client
-
     public override void KeyPressed(Key key, in Keys keys)
     {
         base.KeyPressed(key, keys);
-        
-        // Handle key presses specific to Time Trial mode
         if (key == Key.R)
         {
             Reset();
@@ -77,13 +68,10 @@ public class FootballGamemode(BaseGamemodeParameters gamemodeParameters, IGamemo
     public override void KeyReleased(Key key, in Keys keys)
     {
         base.KeyReleased(key, keys);
-        // Handle key releases specific to Time Trial mode
     }
 
     public override void Render()
     {
         base.Render();
     }
-
-    #endregion
 }

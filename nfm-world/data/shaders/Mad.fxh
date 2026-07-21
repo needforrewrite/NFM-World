@@ -87,13 +87,14 @@ void VS_Snap(
     color = min(color, float3(1.0, 1.0, 1.0));
 }
 
-void VS_ApplyPolygonDiffuse(
-    inout float3 color,
+// Returns the geometric diffuse factor in [0..1]. Returns 0 when the camera is
+// on the opposite side of the face from the light (a "max shadow" situation),
+// otherwise the angle-based term abs(dot(n, L)).
+float ComputePolygonDiffuse(
     in float3 CentroidWorld,
     in float3 NormalWorld,
     in float3 LightDirection,
-    in float3 CameraPosition,
-    in float2 EnvironmentLight
+    in float3 CameraPosition
 )
 {
     float3 c = CentroidWorld;
@@ -104,7 +105,30 @@ void VS_ApplyPolygonDiffuse(
     {
         diff = abs(dot(n, LightDirection));
     }
+    return diff;
+}
+
+// Applies a diffuse factor to color exactly once (ambient + directional term).
+void ApplyDiffuseFactor(
+    inout float3 color,
+    in float diff,
+    in float2 EnvironmentLight
+)
+{
     color = (EnvironmentLight.x + EnvironmentLight.y * diff) * color;
+}
+
+void VS_ApplyPolygonDiffuse(
+    inout float3 color,
+    in float3 CentroidWorld,
+    in float3 NormalWorld,
+    in float3 LightDirection,
+    in float3 CameraPosition,
+    in float2 EnvironmentLight
+)
+{
+    float diff = ComputePolygonDiffuse(CentroidWorld, NormalWorld, LightDirection, CameraPosition);
+    ApplyDiffuseFactor(color, diff, EnvironmentLight);
 }
 
 void VS_ApplyFog(
@@ -155,18 +179,28 @@ sampler ShadowMapSampler2 = sampler_state
     AddressU = Clamp;
     AddressV = Clamp;
 };
-float DepthBias = 0.25f;
+// Shadow-map depth bias, in normalized shadow-map depth (range [0..1]).
+//   Too small -> shadow acne (shimmering self-shadow on lit faces).
+//   Too large -> peter-panning (shadow detaches / slides off its caster).
+// Lowered from 0.25, which was ~1/4 of the whole depth range and made shadows
+// detached and inaccurate. Tune in the 0.0005 .. 0.003 range; raise only until
+// acne disappears, no further.
+// NOTE: if DepthBias is also set from host/C# code, that value overrides this
+// default — lower it there too.
+float DepthBias = 0.0005f;
 float NumCascades = 3;
 float3 LightDirection;
 
 void applyShadowingSingle(
-    inout float3 diffuse,
     in float4 worldPos,
     in float4x4 lightViewProj,
     in sampler shadowMapSampler,
-    out bool isInLight
+    out bool isInLight,
+    out bool isShadowed
 )
 {
+    isShadowed = false;
+
     // Find the position of this pixel in light space
     float4 lightingPosition = mul(worldPos, lightViewProj);
 
@@ -192,15 +226,15 @@ void applyShadowingSingle(
         float dzdx = ddx(ourdepth);
         float dzdy = ddy(ourdepth);
         float slopeFactor = sqrt(dzdx * dzdx + dzdy * dzdy);
-        float bias = DepthBias + clamp(slopeFactor * 2.0, 0.0, 0.05); // bias min, max
+        float bias = DepthBias + clamp(slopeFactor * 1.0, 0.0, 0.01); // slope-scaled add-on (0 .. 0.01)
 
         ourdepth -= bias;
 
         // Check to see if this pixel is in front or behind the value in the shadow map
         if (shadowdepth < ourdepth)
         {
-            // Shadow the pixel by lowering the intensity
-            diffuse = diffuse * float3(0.5, 0.5, 0.5);
+            // This pixel is occluded from the light
+            isShadowed = true;
         }
 
         isInLight = true;
@@ -209,8 +243,7 @@ void applyShadowingSingle(
     }
 }
 
-void PS_ApplyShadowing(
-    inout float3 diffuse,
+bool PS_IsShadowed(
     in float4 worldPos,
     in float3 faceNormal
 )
@@ -222,25 +255,47 @@ void PS_ApplyShadowing(
         // A dot product near 0 means the surface is parallel to the light rays
         // — these are the surfaces that flicker. Skip shadowing for them.
         float NdotL = abs(dot(faceNormal, LightDirection));
-    
+
         // Threshold below which we consider the surface too parallel to shadow reliably.
         // 0.1 ≈ surfaces within ~84° of the light direction are excluded.
         if (NdotL >= 0.05)
         {
             bool isInLight0 = false;
-            applyShadowingSingle(diffuse, worldPos, LightViewProj0, ShadowMapSampler0, isInLight0);
-        
-            if (isInLight0 == false && NumCascades > 1)
+            bool isShadowed0 = false;
+            applyShadowingSingle(worldPos, LightViewProj0, ShadowMapSampler0, isInLight0, isShadowed0);
+            if (isInLight0) return isShadowed0;
+
+            if (NumCascades > 1)
             {
                 bool isInLight1 = false;
-                applyShadowingSingle(diffuse, worldPos, LightViewProj1, ShadowMapSampler1, isInLight1);
-        
-                if (isInLight1 == false && NumCascades > 2)
+                bool isShadowed1 = false;
+                applyShadowingSingle(worldPos, LightViewProj1, ShadowMapSampler1, isInLight1, isShadowed1);
+                if (isInLight1) return isShadowed1;
+
+                if (NumCascades > 2)
                 {
                     bool isInLight2 = false;
-                    applyShadowingSingle(diffuse, worldPos, LightViewProj2, ShadowMapSampler2, isInLight2);
+                    bool isShadowed2 = false;
+                    applyShadowingSingle(worldPos, LightViewProj2, ShadowMapSampler2, isInLight2, isShadowed2);
+                    if (isInLight2) return isShadowed2;
                 }
             }
         }
+    }
+
+    return false;
+}
+
+// Legacy path for fullbright shaders (terrain) with no diffuse term: darken
+// the color once where the pixel is shadowed. Used by Ground.fx / Mountains.fx.
+void PS_ApplyShadowing(
+    inout float3 diffuse,
+    in float4 worldPos,
+    in float3 faceNormal
+)
+{
+    if (PS_IsShadowed(worldPos, faceNormal))
+    {
+        diffuse = diffuse * float3(0.5, 0.5, 0.5);
     }
 }

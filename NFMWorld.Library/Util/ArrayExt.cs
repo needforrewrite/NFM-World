@@ -2,7 +2,7 @@ namespace NFMWorldLibrary.Util;
 
 public static class ArrayExt
 {
-    private static readonly System.Random Rng = new();
+    private static readonly System.Random Rng = System.Random.Shared;
 
     public static T[] CloneArray<T>(this T[] arr)
     {
@@ -44,17 +44,6 @@ public static class ArrayExt
             }
         }
         return arr;
-    }
-
-    public static void Sort<T>(T[] arr)
-    {
-//TODO
-        Array.Sort(arr);
-    }
-
-    public static void Sort<T>(T[] arr, int from, int to)
-    {
-        Array.Sort(arr, from, to);
     }
 
     public static List<T> Shuffle<T>(this List<T> list)

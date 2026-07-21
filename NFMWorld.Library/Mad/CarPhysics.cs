@@ -120,11 +120,11 @@ public class CarPhysics
     internal int Mtcount = 0;
     internal fix64 py = 0;
 
-    public event EventHandler<(float f, int i)> SfxPlayCrash;
-    public event EventHandler<(SurfaceType i, float f)> SfxPlaySkid;
-    public event EventHandler<(int i, int i2, int i3)> SfxPlayScrape;
-    public event EventHandler<(int i, int i2, int i3)> SfxPlayGscrape;
-    public event EventHandler<float> PowerUp;
+    public event EventHandler<(float f, int i)>? SfxPlayCrash;
+    public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
+    public event EventHandler<(int i, int i2, int i3)>? SfxPlayScrape;
+    public event EventHandler<(int i, int i2, int i3)>? SfxPlayGscrape;
+    public event EventHandler<float>? PowerUp;
 
     private static f64Vector3 Up => new(0, -1, 0);
     private static f64Vector3 Forward => new(0, 0, 1);
@@ -426,7 +426,7 @@ public class CarPhysics
         return bottomy;
     }
 
-    public event EventHandler Distruct;
+    public event EventHandler? Distruct;
 
     public void bounceRebound(int wi, ContO conto, DeterministicRandom random)
     {
@@ -1283,7 +1283,7 @@ public class CarPhysics
                                 f42 * Stat.Simag, (int)_tilt, BadLanding && Mtouch, wheelGround);
                             if (IsClientPlayer && !BadLanding)
                             {
-                                SfxPlaySkid(this, (surfaceType, (float)fix64.Sqrt(Scx[j] * Scx[j] + Scz[j] * Scz[j])));
+                                SfxPlaySkid?.Invoke(this, (surfaceType, (float)fix64.Sqrt(Scx[j] * Scx[j] + Scz[j] * Scz[j])));
                                 //XTPart2.Skidf(Im, i32,
                                 //    (fix64) Math.Sqrt(Scx[i41] * Scx[i41] + Scz[i41] * Scz[i41]));
                             }
@@ -1797,9 +1797,6 @@ public class CarPhysics
                 //Record.Dest[Im] = 300;
             }
         }
-        var i89 = 0;
-        var i90 = 0;
-        var i91 = 0;
         /*for (var i92 = 0; i92 < CheckPoints.N; i92++)
         {
             if (CheckPoints.Typ[i92] > 0)
@@ -2424,7 +2421,7 @@ public class CarPhysics
 
                                         if (IsClientPlayer)
                                         {
-                                            SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
+                                            SfxPlayScrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                                         }
                                     }
 
@@ -2475,7 +2472,7 @@ public class CarPhysics
                                 //if (Im == /*this.xt.im*/ 0)
                                 if (IsClientPlayer)
                                 {
-                                    SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
+                                    SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                                 }
                             }
 
@@ -2504,7 +2501,7 @@ public class CarPhysics
                                 conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 0, (int)wheelGround);
                                 if (IsClientPlayer)
                                 {
-                                    SfxPlayScrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
+                                    SfxPlayScrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                                 }
                             }
 
@@ -2562,7 +2559,7 @@ public class CarPhysics
                                     conto.Spark(wheelx[k], wheely[k], wheelz[k], Scx[k], Scy[k], Scz[k], 1, (int)wheelGround);
                                     if (IsClientPlayer)
                                     {
-                                        SfxPlayGscrape(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
+                                        SfxPlayGscrape?.Invoke(this, ((int)Scx[k], (int)Scy[k], (int)Scz[k]));
                                     }
                                 }
 
@@ -2632,7 +2629,7 @@ public class CarPhysics
             Shakedam = (int)((fix64.Abs(f) + Shakedam) * fix64.Half);
             if (IsClientPlayer || _collidingWithClientPlayer)
             {
-                SfxPlayCrash(this, ((int)f, 0));
+                SfxPlayCrash?.Invoke(this, ((int)f, 0));
                 //XTGraphics.Acrash(Im, f, 0);
             }
             for (var i111 = 0; i111 < 40; i111++)
@@ -2713,7 +2710,7 @@ public class CarPhysics
             
             if (IsClientPlayer || _collidingWithClientPlayer)
             {
-                SfxPlayCrash(this, ((int)f, i99 * i98));
+                SfxPlayCrash?.Invoke(this, ((int)f, i99 * i98));
                 //XTGraphics.Acrash(Im, f, i99 * i98);
             }
             if (i99 * i98 == 0 || Mtouch)
@@ -2798,7 +2795,7 @@ public class CarPhysics
             
             if (IsClientPlayer || _collidingWithClientPlayer)
             {
-                SfxPlayCrash(this, ((int)f, 0));
+                SfxPlayCrash?.Invoke(this, ((int)f, 0));
                 //XTGraphics.Acrash(Im, f, 0);
             }
             for (var i115 = 0; i115 < 40; i115++)

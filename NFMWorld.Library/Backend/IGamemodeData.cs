@@ -11,7 +11,7 @@ public interface IGamemodeData
 {
     ObservableUnlimitedArray<IInGameCar> CarsInRace { get; }
     BackendStage CurrentStage { get; }
-    RaceState raceState { get; }
+    RaceState RaceState { get; }
 
     [ClientOnly]
     IClientCallbacks ClientCallbacks { get; }

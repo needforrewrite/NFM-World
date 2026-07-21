@@ -1,11 +1,12 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using MemoryPack;
+using NFMWorldLibrary;
 
 namespace NFMWorld.UI.Cef;
 
 /// <summary>
-/// Bridge for GaragePhase — car stat display and car selection.
+/// Bridge for GaragePhase — car stat display, car selection, collection switching, and search.
 /// </summary>
 public sealed class GarageBridge() : PhaseBridge("garage")
 {
@@ -22,6 +23,25 @@ public sealed class GarageBridge() : PhaseBridge("garage")
                 {
                     CarSelected?.Invoke(col.GetString() ?? "", car.GetString() ?? "");
                 }
+                break;
+            case "selectCollection":
+                if (args is { } b && b.TryGetProperty("collection", out var selCol))
+                {
+                    CollectionSelected?.Invoke(selCol.GetString() ?? "");
+                }
+                break;
+            case "cycleCar":
+                if (args is { } c && c.TryGetProperty("direction", out var dir))
+                {
+                    var direction = dir.GetString() ?? "";
+                    CycleCarRequested?.Invoke(direction == "right" ? 1 : -1);
+                }
+                break;
+            case "confirm":
+                ConfirmSelection?.Invoke();
+                break;
+            case "cancel":
+                CancelSelection?.Invoke();
                 break;
             case "back":
                 BackRequested?.Invoke();
@@ -42,10 +62,22 @@ public sealed class GarageBridge() : PhaseBridge("garage")
     /// </summary>
     public void PushCollections(CarCollectionData[] collections)
     {
-        PushMemoryPack("collections", collections);
+        PushMemoryPack("collections", new CarCollectionsData { Collections = collections });
+    }
+
+    /// <summary>
+    /// Push the currently active collection to JS.
+    /// </summary>
+    public void PushCurrentCollection(Collection collection)
+    {
+        PushMemoryPack("currentCollection", new CurrentCollectionData { Id = collection });
     }
 
     public event Action<string, string>? CarSelected;
+    public event Action<string>? CollectionSelected;
+    public event Action<int>? CycleCarRequested;
+    public event Action? ConfirmSelection;
+    public event Action? CancelSelection;
     public event Action? BackRequested;
 }
 
@@ -57,7 +89,7 @@ public sealed class GarageBridge() : PhaseBridge("garage")
 public sealed partial class CarStatsData
 {
     public string Name { get; set; } = "";
-    public string Collection { get; set; } = "";
+    public Collection Collection { get; set; } = Collection.User;
     public double TopSpeed { get; set; }
     public double Acceleration { get; set; }
     public double Handling { get; set; }
@@ -86,6 +118,14 @@ public sealed partial class CarCollectionsData
 [GenerateTypeScript]
 public sealed partial class CarCollectionData
 {
+    public Collection Id { get; set; } = Collection.User;
     public string Name { get; set; } = "";
     public CarStatsData[] Cars { get; set; } = [];
+}
+
+[MemoryPackable]
+[GenerateTypeScript]
+public sealed partial class CurrentCollectionData
+{
+    public required Collection Id { get; set; }
 }

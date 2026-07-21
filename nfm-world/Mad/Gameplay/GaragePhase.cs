@@ -1,4 +1,3 @@
-using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
@@ -33,37 +32,14 @@ public class GaragePhase : BaseStageRenderingPhase
 
     private readonly GarageBridge _bridge = new();
 
-    private int _statsBarBaseX = 120;
-    private int _statsBarBaseY = 200;
-    private int _statsBarXGap = 130;
-    private int _statsBarYGap = 75;
-    private UnlimitedArray<string> _collections = [];
-    private string _searchQuery = "";
-    private int _autocompleteIndex = 0;
-    private bool _inAutocomplete = false;
-    private Rad3d[] _autocompleteMatches = [];
-    private bool _openSearchPopup = false;
-    private int _searchKbFocus = 0;
-    private readonly string? _stageName;
-    private bool _loadedStageMusic = false;
+    private bool _pushedCollections = false;
 
-    private PerspectiveCamera _camera = new();
-
-    /// <summary>
-    /// Creates a GaragePhase that loads the specified stage as background.
-    /// </summary>
-    public GaragePhase(GraphicsDevice graphicsDevice) : base(graphicsDevice)
+    public GaragePhase(GraphicsDevice graphicsDevice, string? stageName = null) : base(graphicsDevice, stageName ?? GameSparker.GetAvailableStages().Shuffle().First())
     {
         InitBridge();
     }
 
-    public GaragePhase(GraphicsDevice graphicsDevice, string? stageName) : this(graphicsDevice)
-    {
-        _stageName = stageName;
-        InitBridge();
-    }
-
-    public GaragePhase(GraphicsDevice graphicsDevice, Rad3d currentCar) : this(graphicsDevice)
+    public GaragePhase(GraphicsDevice graphicsDevice, Rad3d currentCar, string? stageName = null) : this(graphicsDevice, stageName)
     {
         _selectedCarIdx = _cars.FindIndex(c =>
         {
@@ -73,11 +49,6 @@ public class GaragePhase : BaseStageRenderingPhase
 
         if (_selectedCarIdx == -1) _selectedCarIdx = 0;
 
-        foreach (var dir in Directory.GetDirectories("data/models"))
-        {
-            _collections.Add(dir);
-        }
-
         InitBridge();
     }
 
@@ -86,52 +57,66 @@ public class GaragePhase : BaseStageRenderingPhase
     /// </summary>
     private void InitBridge()
     {
-        if (CefBridge != null) return; // already wired
-
         CefBridge = _bridge;
+
+        // Car selected from CEF — search ALL collections, switch if needed.
         _bridge.CarSelected += (collection, carName) =>
         {
-            var idx = _cars.ToList().FindIndex(c => c.Stats.Name == carName);
-            if (idx >= 0)
+            if (Enum.TryParse<Collection>(collection, out var col)
+                && BackendGameSparker.cars.TryGetValue(col, out var cars))
             {
-                _selectedCarIdx = idx;
-                SetupCurrentCar();
+                var idx = cars.ToList().FindIndex(c => c.Stats.Name == carName);
+                if (idx >= 0)
+                {
+                    _currentCollection = col;
+                    _cars = cars;
+                    _selectedCarIdx = idx;
+                    SetupCurrentCar();
+                    _bridge.PushCurrentCollection(_currentCollection);
+                }
             }
         };
+
+        // Collection switched from CEF.
+        _bridge.CollectionSelected += collectionName =>
+        {
+            if (Enum.TryParse<Collection>(collectionName, out var col)
+                && BackendGameSparker.cars.TryGetValue(col, out var cars))
+            {
+                _cars = cars;
+                _selectedCarIdx = 0;
+                _currentCollection = col;
+                SetupCurrentCar();
+                _bridge.PushCurrentCollection(_currentCollection);
+            }
+        };
+
+        // Car cycling from CEF keyboard.
+        _bridge.CycleCarRequested += direction =>
+        {
+            if (direction > 0)
+                CycleCarRight();
+            else
+                CycleCarLeft();
+        };
+
+        // Confirm selection (Enter key in CEF).
+        _bridge.ConfirmSelection += SelectedCar;
+
+        // Cancel selection (Escape key in CEF).
+        _bridge.CancelSelection += SelectionCancelled;
+
         _bridge.BackRequested += SelectionCancelled;
     }
 
     private void SetupCurrentCar()
     {
-        if (_stageName != null)
-        {
-            LoadStage(_stageName, loadMusic: false);
-        }
-        else
-        {
-            var stages = VFS.EnumerateFiles("data/stages", "*.txt", SearchOption.AllDirectories).ToArray();
-            string stagePath = "";
-            while (string.IsNullOrEmpty(stagePath) || stagePath.Contains("rar2"))
-            {
-                stagePath = stages[(int)(URandom.Double() * stages.Length)];
-            }
-            stagePath = stagePath.Replace("data/stages/", "").Replace(".txt", "");
-            
-            LoadStage(stagePath, false);
-        }
-
         _backendCar = new BackendCar(_cars[_selectedCarIdx], 0, 0, 0, true);
         CarsInRace[0] = _backendCar;
 
         Camera.LookAt = new Vector3(0, 250, 400);
         Camera.Position = new Vector3(-750, 50, 750);
         FovOverride = 53;
-
-        if (!_loadedStageMusic)
-        {
-            LoadStageMusic(true);
-            _loadedStageMusic = true;
-        }
 
         // create and position stat bars
         float switsLevel = (_backendCar.Stats.Swits[2] - 220) / 90f;
@@ -155,7 +140,7 @@ public class GaragePhase : BaseStageRenderingPhase
         _bridge.PushCurrentCar(new CarStatsData
         {
             Name = _cars[_selectedCarIdx].Stats.Name,
-            Collection = _currentCollection.ToString(),
+            Collection = _currentCollection,
             TopSpeed = switsLevel,
             Acceleration = accel,
             Handling = (float)_backendCar.Stats.Dishandle,
@@ -166,206 +151,58 @@ public class GaragePhase : BaseStageRenderingPhase
             Hypergliding = hglide,
             Abing = ab,
         });
+
+        // Push current collection so JS can highlight the active one.
+        _bridge.PushCurrentCollection(_currentCollection);
     }
 
-
-
-    public override void GameTick()
+    /// <summary>
+    /// Push all available car collections (lightweight — only Name/Collection populated)
+    /// to the CEF garage page. Called once on Enter.
+    /// </summary>
+    private void PushAllCollections()
     {
-        base.GameTick();
-        // CEF handles UI rendering; no Reactor mount needed
-    }
-
-    public override void Render(float alpha)
-    {
-        base.Render(alpha);
-        // CEF handles UI rendering; no LayoutAndRender needed
-    }
-
-    public override void RenderImgui()
-    {
-        base.RenderImgui();
-
-        _inAutocomplete = false;
-
-        if (ImGui.BeginMainMenuBar())
-        {
-            if (ImGui.BeginMenu("Collection"))
+        var data = BackendGameSparker.cars
+            .Where(kv => kv.Value.Count > 0)
+            .Select(kv => new CarCollectionData
             {
-                foreach (Collection key in BackendGameSparker.cars.Keys)
-                {
-                    if (BackendGameSparker.cars[key].Count > 0 && ImGui.MenuItem(key.ToString()))
+                Id = kv.Key,
+                Name = kv.Key.ToString(),
+                Cars = kv.Value
+                    .Select(c => new CarStatsData
                     {
-                        GoToCollection(key);
-                    }
-                }
+                        Name = c.Stats.Name,
+                        Collection = kv.Key,
+                    })
+                    .ToArray(),
+            })
+            .ToArray();
 
-                ImGui.EndMenu();
-            }
-
-            if (ImGui.BeginMenu("Search", !_openSearchPopup))
-            {
-                _searchKbFocus++;
-                if (HandleSearch())
-                {
-                    ImGui.CloseCurrentPopup();
-                }
-
-
-                ImGui.EndMenu();
-            }
-            else
-            {
-                if (!_openSearchPopup) _searchKbFocus = 0;
-            }
-
-            ImGui.EndMainMenuBar();
-        }
-
-        if (_openSearchPopup)
-        {
-            ImGui.SetNextWindowSize(new Vector2(0, 0));
-
-            bool open = _openSearchPopup;
-
-            if (ImGui.Begin("Search", ref open, ImGuiWindowFlags.NoResize))
-            {
-                _searchKbFocus++;
-                if (HandleSearch())
-                {
-                    _openSearchPopup = false;
-                    open = false;
-                    ImGui.CloseCurrentPopup();
-                }
-                ;
-
-                ImGui.End();
-            }
-
-            _openSearchPopup = open;
-            if (!_openSearchPopup)
-            {
-                _searchQuery = "";
-            }
-        }
-
-        G.SetFont(new Font(FontFamily.DroidSans, FontStyle.Bold, 48));
-        G.SetColor(new Color(0, 0, 0));
-        G.DrawStringStrokeAligned(_cars[_selectedCarIdx].Stats.Name, 0, 60, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, TextHorizontalAlignment.Center);
-        G.SetColor(new Color(255, 255, 255));
-        G.DrawStringAligned(_cars[_selectedCarIdx].Stats.Name, 0, 60, GraphicsDevice.Viewport.Width, GraphicsDevice.Viewport.Height, TextHorizontalAlignment.Center);
-
-        DrawCarStats();
-    }
-
-    private bool HandleSearch()
-    {
-        if (ImGui.InputText($"Search {_currentCollection}", ref _searchQuery, 256, ImGuiInputTextFlags.EscapeClearsAll | ImGuiInputTextFlags.EnterReturnsTrue))
-        {
-            if (_autocompleteMatches.Length > 0)
-            {
-                _selectedCarIdx = _cars.ToList().FindIndex(c => c.Stats.Name == _autocompleteMatches[_autocompleteIndex].Stats.Name);
-                SetupCurrentCar();
-                _searchQuery = "";
-                return true;
-            }
-        }
-
-        if (_searchKbFocus == 1)
-        {
-            ImGui.SetKeyboardFocusHere(-1);
-        }
-
-        if (string.IsNullOrEmpty(_searchQuery))
-        {
-            _autocompleteMatches = _cars.ToArray();
-        }
-        else
-        {
-            _autocompleteMatches = _cars.ToList().FindAll(x => x.Stats.Name.ToLower().StartsWith(_searchQuery.ToLower())).ToArray();
-        }
-        string[] _autocompleteMatchedNames = _autocompleteMatches.Select(x => x.Stats.Name).ToArray();
-
-
-        if (_autocompleteMatches.Length > 0)
-        {
-            _inAutocomplete = true;
-            if (ImGui.ListBox("##AutocompleteEntries", ref _autocompleteIndex, _autocompleteMatchedNames, _autocompleteMatches.Length, _autocompleteMatches.Length))
-            {
-                _selectedCarIdx = _cars.ToList().FindIndex(c => c.Stats.Name == _autocompleteMatches[_autocompleteIndex].Stats.Name);
-                SetupCurrentCar();
-                _searchQuery = "";
-                return true;
-            }
-            ;
-        }
-
-        return false;
-    }
-
-    private void DrawCarStats()
-    {
-        // Stats are rendered by the CEF garage page
+        _bridge.PushCollections(data);
+        _pushedCollections = true;
     }
 
     public override void Enter()
     {
         base.Enter();
         SetupCurrentCar();
-    }
 
-    public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
-    {
-        if (key == Key.Down && _inAutocomplete)
+        // Push all car collections to CEF on first enter.
+        if (!_pushedCollections)
         {
-            _autocompleteIndex++;
-            if (_autocompleteIndex >= _autocompleteMatches.Length)
-            {
-                _autocompleteIndex = 0;
-            }
-        }
-        else if (key == Key.Up && _inAutocomplete)
-        {
-            _autocompleteIndex--;
-            if (_autocompleteIndex < 0)
-            {
-                _autocompleteIndex = _autocompleteMatches.Length - 1;
-            }
-        }
-
-        if (imguiWantsKeyboard || _inAutocomplete) return;
-
-        if (key == Key.Right)
-        {
-            CycleCarRight();
-        }
-        else if (key == Key.Left)
-        {
-            CycleCarLeft();
-        }
-        else if (key == Key.Enter)
-        {
-            SelectedCar();
-        }
-        else if (key == Key.Escape)
-        {
-            SelectionCancelled();
-        }
-        else if (key == Key.S)
-        {
-            _openSearchPopup = true;
+            PushAllCollections();
         }
     }
 
     private void SelectedCar()
     {
-        if (CarSelected == null) throw new ArgumentNullException("Attempted to invoke CarSelected, but it was null.");
+        if (CarSelected == null) throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelected, but it was null.");
         CarSelected.Invoke(this, _backendCar!.Rad);
     }
 
     private void SelectionCancelled()
     {
-        if (CarSelectionCancelled == null) throw new ArgumentNullException("Attempted to invoke CarSelectionCancelled, but it was null.");
+        if (CarSelectionCancelled == null) throw new ArgumentNullException(nameof(CarSelected), "Attempted to invoke CarSelectionCancelled, but it was null.");
         CarSelectionCancelled.Invoke(this, EventArgs.Empty);
     }
 
@@ -380,14 +217,6 @@ public class GaragePhase : BaseStageRenderingPhase
     {
         _selectedCarIdx -= 1;
         if (_selectedCarIdx < 0) _selectedCarIdx = _cars.Count - 1;
-        SetupCurrentCar();
-    }
-
-    private void GoToCollection(Collection collection)
-    {
-        _cars = BackendGameSparker.cars[collection];
-        _selectedCarIdx = 0;
-        _currentCollection = collection;
         SetupCurrentCar();
     }
 

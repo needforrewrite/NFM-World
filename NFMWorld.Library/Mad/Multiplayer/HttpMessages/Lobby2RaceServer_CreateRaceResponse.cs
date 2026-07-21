@@ -1,8 +1,12 @@
 ﻿using MemoryPack;
-using NFMWorldLibrary.Multiplayer.Packets.S2C;
 
 namespace NFMWorldLibrary.Multiplayer.HttpMessages;
 
+/// <summary>
+/// Response from Game Master to Lobby after creating a race.
+/// The Lobby already knows the GM's game address from SRV resolution;
+/// only the per-player join tokens need to be returned.
+/// </summary>
 [MemoryPackable]
 public partial struct Lobby2RaceServer_CreateRaceResponse
 {

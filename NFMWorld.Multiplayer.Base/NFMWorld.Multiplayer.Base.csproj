@@ -15,7 +15,6 @@
     <ItemGroup>
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj"/>
         <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
-        <ProjectReference Include="..\websocket-sharp\websocket-sharp\websocket-sharp.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(OS)' == 'Windows_NT'">

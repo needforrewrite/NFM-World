@@ -7,7 +7,6 @@ namespace NFMWorldLibrary.Multiplayer;
 public class SteamMultiplayerClientTransport : BaseMultiplayerClientTransport, IConnectionManager
 {
     private readonly ConnectionManager _client;
-    public ClientState State { get; private set; } = ClientState.Connecting;
     private bool _isRunning = true;
     private readonly Thread _receiveThread;
 

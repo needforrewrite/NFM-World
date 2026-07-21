@@ -52,7 +52,10 @@ struct VertexShaderOutput
 	float4 Color : COLOR0;
     float4 WorldPos : TEXCOORD2;
     float GetsShadowed : TEXCOORD3;
-    float3 Normal : TEXCOORD4;
+    float3 NormalWorld : TEXCOORD4;   // world-space face normal
+    float3 CentroidWorld : TEXCOORD5; // world-space centroid
+    float Lit : TEXCOORD6;            // 1 = apply diffuse/snap, 0 = fullbright/glow
+    float Diffuse : TEXCOORD7;        // pre-computed in VS, consumed in PS
 };
 
 VertexShaderOutput MainVS(
@@ -130,22 +133,43 @@ VertexShaderOutput MainVS(
         color = min(color, float3(1.0, 1.0, 1.0));
     }
 
-	// Apply diffuse lighting
-	if (IsFullbright == false && isFullbright == false && glow == false)
+    // Geometric diffuse is computed here (VS, per-face). Snap, charged-blink
+    // and fog are applied per-pixel (see MainPS) so the geometric diffuse and
+    // the shadow map fold into one darkening pass.
+    output.NormalWorld = normalize(mul(float4(input.Normal, 0), world).xyz);
+    output.CentroidWorld = mul(float4(input.Centroid, 1), world).xyz;
+    output.Lit = (IsFullbright == false && isFullbright == false && glow == false) ? 1.0f : 0.0f;
+    output.Diffuse = ComputePolygonDiffuse(output.CentroidWorld, output.NormalWorld, LightDirection, CameraPosition);
+
+    // Ship the UNLIT color; diffuse application + snap + fog happen in PS.
+    output.Color = float4(color, min(alphaOverride, Alpha));
+
+	return output;
+}
+
+float4 MainPS(VertexShaderOutput input) : SV_TARGET
+{
+    float3 color = input.Color.rgb;
+    float  alpha = input.Color.a;
+
+    if (input.Lit > 0.0)
     {
-        VS_ApplyPolygonDiffuse(
-            color,
-            mul(float4(input.Centroid, 1), world).xyz,
-            normalize(mul(float4(input.Normal, 0), world).xyz),
-            LightDirection,
-            CameraPosition,
-            EnvironmentLight
-        );
+        // Pre-computed in vertex shader (per-face value, same for all pixels).
+        float diff = input.Diffuse;
 
-        // Apply snap
+        // Shadow map: if occluded, force the SAME factor to its minimum.
+        // This is what stops pixels being shadowed twice.
+        if (input.GetsShadowed > 0.0 && PS_IsShadowed(input.WorldPos, input.NormalWorld))
+        {
+            diff = 0.0;
+        }
+
+        // Apply the combined diffuse exactly once, then snap.
+        ApplyDiffuseFactor(color, diff, EnvironmentLight);
         VS_Snap(color, SnapColor);
-	}
+    }
 
+    // Charged line blink overrides the color (matches original ordering).
     if (ChargedBlinkAmount > 0.0f)
     {
         color.r = (25.5 * ChargedBlinkAmount) / 255.0;
@@ -153,29 +177,12 @@ VertexShaderOutput MainVS(
         color.b = 1.0;
     }
 
-    VS_ApplyFog(color, viewPos.xyz, FogColor, FogDistance, FogDensity);
-
+    // Fog was applied last in the original vertex shader (always).
+    float3 viewPos = mul(input.WorldPos, View).xyz;
+    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
     VS_ColorCorrect(color);
 
-    output.Color = float4(color, min(alphaOverride, Alpha));
-
-    output.Normal = input.Normal;
-
-	return output;
-}
-
-float4 MainPS(VertexShaderOutput input) : SV_TARGET
-{
-    float4 diffuse = input.Color;
-
-    if (input.GetsShadowed > 0.0)
-    {
-        float3 diffuseRGB = diffuse.xyz;
-        PS_ApplyShadowing(diffuseRGB, input.WorldPos, input.Normal);
-        diffuse = float4(diffuseRGB, diffuse.w);
-    }
-
-	return diffuse;
+	return float4(color, alpha);
 }
 
 technique Basic

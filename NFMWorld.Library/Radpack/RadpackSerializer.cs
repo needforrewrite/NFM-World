@@ -107,13 +107,13 @@ public partial class RadpackMetadata
 [MemoryPackable(GenerateType.VersionTolerant)]
 public partial class RadpackTrack : RadpackAsset
 {
-    [MemoryPackOrder(1)] public StageLoader Stage;
+    [MemoryPackOrder(1)] public required StageLoader Stage;
 }
 
 [MemoryPackable(GenerateType.VersionTolerant)]
 public partial class RadpackRad3d : RadpackAsset
 {
-    [MemoryPackOrder(1)] public Rad3d Rad;
+    [MemoryPackOrder(1)] public required Rad3d Rad;
 }
 
 [MemoryPackable(GenerateType.VersionTolerant)]
@@ -121,7 +121,7 @@ public partial class RadpackTexture : RadpackAsset
 {
     [BrotliFormatter(CompressionLevel.Optimal)]
     [MemoryPackOrder(1)]
-    public byte[] RawData;
+    public required byte[] RawData;
 
     [MemoryPackOrder(2)]
     public RadTextureFormat TextureFormat;

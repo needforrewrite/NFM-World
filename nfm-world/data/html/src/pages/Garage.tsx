@@ -1,26 +1,72 @@
-import { useState, useEffect } from "preact/hooks";
+import { useState, useEffect, useRef } from "preact/hooks";
 import { callNfmw, onNfmwEvent } from "@shared/bridge";
 import { GlassCard, StatBar } from "@shared/components/GlassCard";
 import { CarStatsData } from "@shared/memorypack/CarStatsData";
 import { CarCollectionsData } from "@shared/memorypack/CarCollectionsData";
+import { CurrentCollectionData } from "@shared/memorypack/CurrentCollectionData";
 
 // ── Garage ───────────────────────────────────────────────────────
-// Functional Preact component: car selection + stat display.
+// Functional Preact component: car selection + stat display + search + collection switching.
 
 export function Garage() {
   const [currentCar, setCurrentCar] = useState<CarStatsData | null>(null);
   const [collections, setCollections] = useState<CarCollectionsData | null>(null);
+  const [currentCollection, setCurrentCollection] = useState<CurrentCollectionData | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const u1 = onNfmwEvent<CarStatsData | null>("garage:currentCar", setCurrentCar, CarStatsData.deserialize.bind(CarStatsData));
     const u2 = onNfmwEvent<CarCollectionsData | null>("garage:collections", setCollections, CarCollectionsData.deserialize.bind(CarCollectionsData));
-    return () => { u1(); u2(); };
+    const u3 = onNfmwEvent<CurrentCollectionData | null>("garage:currentCollection", setCurrentCollection, CurrentCollectionData.deserialize.bind(CurrentCollectionData));
+    return () => { u1(); u2(); u3(); };
+  }, []);
+
+  // ── Keyboard shortcuts ──────────────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept keys when search input is focused.
+      if (document.activeElement === searchInputRef.current) return;
+
+      switch (e.key) {
+        case "ArrowLeft":
+          callNfmw("cycleCar", { direction: "left" });
+          break;
+        case "ArrowRight":
+          callNfmw("cycleCar", { direction: "right" });
+          break;
+        case "Enter":
+          callNfmw("confirm");
+          break;
+        case "Escape":
+          callNfmw("cancel");
+          break;
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const handleBack = () => callNfmw("back");
   const handleSelectCar = (collection: string, carName: string) => {
     callNfmw("selectCar", { collection, carName });
   };
+  const handleSelectCollection = (collection: string) => {
+    callNfmw("selectCollection", { collection });
+  };
+
+  // ── Client-side search filter ──────────────────────────────
+  const query = searchQuery.toLowerCase().trim();
+  const filteredCollections = !query
+    ? collections?.collections
+    : collections?.collections?.map((col) => {
+        if (!col) return null;
+        const filteredCars = col.cars?.filter((car) =>
+          car != null && car.name.toLowerCase().includes(query)
+        );
+        if (!filteredCars || filteredCars.length === 0) return null;
+        return { ...col, cars: filteredCars };
+      }).filter(Boolean);
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", animation: "nfmw-fadeIn 0.3s ease-out" }}>
@@ -34,6 +80,38 @@ export function Garage() {
           Garage
         </div>
 
+        {/* ── Search input ─────────────────────────────────── */}
+        <input
+          ref={searchInputRef}
+          type="text"
+          placeholder="Search cars..."
+          value={searchQuery}
+          onInput={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+          onKeyDown={(e) => {
+            // Enter in search input selects first match.
+            if (e.key === "Enter" && filteredCollections && filteredCollections.length > 0) {
+              const firstCol = filteredCollections[0];
+              if (firstCol && firstCol.cars && firstCol.cars.length > 0 && firstCol.cars[0]) {
+                handleSelectCar(firstCol.name, firstCol.cars[0].name);
+                setSearchQuery("");
+                (e.target as HTMLInputElement).blur();
+              }
+            }
+            // Escape clears search.
+            if (e.key === "Escape") {
+              setSearchQuery("");
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+          style={{
+            width: "100%", padding: "10px 14px", fontSize: "14px",
+            color: "#fff", background: "rgba(255,255,255,0.08)",
+            border: "1px solid rgba(255,255,255,0.12)", borderRadius: "8px",
+            outline: "none",
+          }}
+        />
+
+        {/* ── Current car stats ─────────────────────────────── */}
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.3)", fontSize: "18px", letterSpacing: "2px" }}>
             {currentCar ? (
               <div style={{ width: "280px", padding: "24px" }}>
@@ -55,10 +133,21 @@ export function Garage() {
             )}
         </div>
 
-        {collections?.collections?.map((col) => (
+        {/* ── Collection & car list ─────────────────────────── */}
+        {filteredCollections?.map((col) => (
           col != null &&
             <div key={col.name}>
-              <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.4)", marginBottom: "6px", letterSpacing: "1px", textTransform: "uppercase" }}>
+              <div
+                onClick={() => handleSelectCollection(col.name)}
+                style={{
+                  fontSize: "12px", marginBottom: "6px", letterSpacing: "1px", textTransform: "uppercase",
+                  cursor: "pointer", padding: "4px 8px", borderRadius: "4px",
+                  color: currentCollection?.id === col.id ? "#4fc3f7" : "rgba(255,255,255,0.4)",
+                  background: currentCollection?.id === col.id ? "rgba(79,195,247,0.08)" : "transparent",
+                  borderLeft: currentCollection?.id === col.id ? "2px solid #4fc3f7" : "2px solid transparent",
+                  transition: "color 0.15s ease, background 0.15s ease",
+                }}
+              >
                 {col.name}
               </div>
               {col.cars?.map((car) => (
@@ -80,6 +169,13 @@ export function Garage() {
               ))}
             </div>
         ))}
+
+        {/* ── No results ────────────────────────────────────── */}
+        {query && filteredCollections?.length === 0 && (
+          <div style={{ color: "rgba(255,255,255,0.3)", fontSize: "14px", textAlign: "center", padding: "24px" }}>
+            No cars match "{searchQuery}"
+          </div>
+        )}
 
         <button
           onClick={handleBack}

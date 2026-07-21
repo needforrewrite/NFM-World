@@ -1,0 +1,17 @@
+﻿global using Vector3 = System.Numerics.Vector3;
+global using Int3 = Maxine.Extensions.Mathematics.Int3;
+global using Color3 = NFMWorldLibrary.Util.Color3;
+global using Quaternion = System.Numerics.Quaternion;
+global using Matrix = System.Numerics.Matrix4x4;
+global using AngleSingle = Maxine.Extensions.Mathematics.AngleSingle;
+global using Vector2 = System.Numerics.Vector2;
+global using URandom = NFMWorldLibrary.Util.Random;
+global using LuaNET.LuaJIT;
+global using static LuaNET.LuaJIT.Lua;
+global using Color = Microsoft.Xna.Framework.Color;
+global using RectangleF = Maxine.Extensions.Mathematics.RectangleF;
+global using static NFMWorldLibrary.TheVFS;
+global using fix64 = FixedMathSharp.Fixed64;
+global using f64Vector3 = FixedMathSharp.Vector3d;
+global using Union = MessagePack.UnionAttribute;
+global using static NFMWorld.DriverInterface.DriverInterface.TheGraphics;

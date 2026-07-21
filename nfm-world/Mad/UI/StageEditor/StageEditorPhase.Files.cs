@@ -186,8 +186,8 @@ public partial class StageEditorPhase
                 var pos = piece.Position;
                 var rot = piece.Rotation;
                 string pieceId;
-                int numericId = -1;
 #if WRITE_NFMM_PIECES_AS_STRING
+                int numericId = -1;
                 if (piece.Name.StartsWith("nfmm/"))
                 {
                     var baseName = piece.Name.Substring(5);

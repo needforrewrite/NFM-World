@@ -1,146 +1,121 @@
-﻿using System.Collections;
+﻿using System.Buffers;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
 using System.Net;
-using ENet;
-using WebSocketSharp;
-using WebSocketSharp.Server;
-using ErrorEventArgs = WebSocketSharp.ErrorEventArgs;
+using System.Net.WebSockets;
 
 namespace NFMWorldLibrary.Multiplayer;
 
+/// <summary>
+/// WebSocket server transport using System.Net.HttpListener + System.Net.WebSockets.
+/// No external dependencies.
+/// </summary>
 public class WebSocketMultiplayerServerTransport : BaseMultiplayerServerTransport
 {
-    private uint _lastId = 0;
-    
-    private readonly ConcurrentDictionary<uint, WebSocketSession> _connectedClients = [];
-    private readonly WebSocketServer _server;
-    private readonly ConcurrentQueue<(uint Peer, Packet Packet)> _sendPacketQueue = [];
+    private readonly ConcurrentDictionary<uint, WsClient> _clients = new();
+    private uint _nextId;
+    private CancellationTokenSource? _cts;
 
-    public override IReadOnlyCollection<uint> Connections { get; }
-    
+    public override IReadOnlyCollection<uint> Connections => (IReadOnlyCollection<uint>)_clients.Keys;
+
     public override event EventHandler<uint>? ClientConnecting;
     public override event EventHandler<uint>? ClientConnected;
     public override event EventHandler<uint>? ClientDisconnected;
-    
-    private class ConnectionsList(WebSocketMultiplayerServerTransport parent) : IReadOnlyCollection<uint>
+
+    public override void Start()
     {
-        public IEnumerator<uint> GetEnumerator()
-        {
-            foreach (var client in parent._connectedClients)
-            {
-                yield return client.Key;
-            }
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        public int Count => parent._connectedClients.Count;
-    }
-    
-    private class WebSocketSession : WebSocketBehavior
-    {
-        private uint? _id;
-        public uint ClientId
-        {
-            get
-            {
-                CheckTransport();
-                return _id ??= Transport._lastId++;
-            }
-        }
-
-        public WebSocketMultiplayerServerTransport? Transport { get; set; }
-
-        [MemberNotNull(nameof(Transport))]
-        private void CheckTransport()
-        {
-            if (Transport == null) throw new InvalidOperationException();
-        }
-
-        protected override void OnOpen()
-        {
-            CheckTransport();
-            base.OnOpen();
-            Logging.Info($"Client connected - ID: {ID}, IP: {UserEndPoint}");
-            Transport.Connected(this);
-        }
-
-        protected override void OnClose(CloseEventArgs e)
-        {
-            CheckTransport();
-            base.OnClose(e);
-            Logging.Info($"Client disconnected - ID: {ID}, IP: {UserEndPoint}");
-            Transport.Disconnected(this);
-        }
-
-        protected override void OnError(ErrorEventArgs e)
-        {
-            CheckTransport();
-            base.OnError(e);
-            Logging.Error($"WebSocket error for client {ID} ({UserEndPoint}): {e.Message}", exception: e.Exception);
-        }
-
-        protected override void OnMessage(MessageEventArgs e)
-        {
-            CheckTransport();
-            base.OnMessage(e);
-
-            Logging.Info($"Packet received from - ID: {ID}, IP: {UserEndPoint}, Data length: {e.RawData.Length}");
-            var messageData = e.RawData;
-            Transport.ReceivePacket(ClientId, messageData);
-        }
-
-        public void SendData(byte[] data)
-        {
-            Send(data);
-        }
+        _cts = new CancellationTokenSource();
     }
 
-    private void Disconnected(WebSocketSession session)
+    public override void Stop()
     {
-        ClientDisconnected?.Invoke(this, session.ClientId);
-        _connectedClients.TryRemove(session.ClientId, out _);
+        _cts?.Cancel();
     }
 
-    private void Connected(WebSocketSession session)
+    public async Task AcceptWebSocketRequest(HttpListenerContext ctx, CancellationToken ct)
     {
-        ClientConnecting?.Invoke(this, session.ClientId);
-        ClientConnected?.Invoke(this, session.ClientId);
-        _connectedClients.TryAdd(session.ClientId, session);
-    }
-
-    public WebSocketMultiplayerServerTransport(IPAddress? ipAddress = null, ushort port = 80)
-    {
-        Connections = new ConnectionsList(this);
+        using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(ct, _cts?.Token ?? CancellationToken.None);
         
-        _server = new WebSocketServer(ipAddress ?? IPAddress.Parse("127.0.0.1"), port);
-        _server.AddWebSocketService<WebSocketSession>("/game", behavior => behavior.Transport = this);
-        _server.KeepClean = true;
+        HttpListenerWebSocketContext? wsCtx = null;
+        try
+        {
+            wsCtx = await ctx.AcceptWebSocketAsync(null);
+        }
+        catch (Exception ex)
+        {
+            Logging.Error($"Failed to accept WebSocket connection from {ctx.Request.RemoteEndPoint}", exception: ex);
+            return;
+        }
+
+        var id = Interlocked.Increment(ref _nextId);
+        var client = new WsClient(id, wsCtx.WebSocket);
+        _clients.TryAdd(id, client);
+
+        Logging.Info($"WS client connected - ID: {id}, IP: {ctx.Request.RemoteEndPoint}");
+        ClientConnecting?.Invoke(this, id);
+        ClientConnected?.Invoke(this, id);
+
+        try
+        {
+            await ReceiveLoop(client, tokenSource.Token);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Logging.Error($"WS client {id} disconnected due to exception", exception: ex);
+        }
+
+        _clients.TryRemove(id, out _);
+        Logging.Info($"WS client disconnected - ID: {id}");
+        ClientDisconnected?.Invoke(this, id);
+    }
+
+    private async Task ReceiveLoop(WsClient client, CancellationToken ct)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(4096);
+        using var ms = new MemoryStream();
+
+        while (client.Socket.State == WebSocketState.Open && !ct.IsCancellationRequested)
+        {
+            var result = await client.Socket.ReceiveAsync(buffer, ct);
+            if (result.MessageType == WebSocketMessageType.Close) break;
+
+            ms.Write(buffer, 0, result.Count);
+            if (result.EndOfMessage)
+            {
+                ReceivePacket(client.Id, ms.ToArray());
+                ms.SetLength(0);
+            }
+        }
     }
 
     public override void SendRawPacketToClients(ReadOnlySpan<uint> clientIndices, ReadOnlySpan<byte> span, bool reliable)
     {
         var data = span.ToArray();
-        foreach (var clientIndex in clientIndices)
+        foreach (var id in clientIndices)
         {
-            if (_connectedClients.TryGetValue(clientIndex, out var session))
-            {
-                session.SendData(data);
-            }
+            if (_clients.TryGetValue(id, out var client))
+                _ = client.SendAsync(data);
         }
     }
 
-    public override void Stop()
+    private sealed class WsClient(uint id, WebSocket socket)
     {
-        _server.Stop();
-    }
+        public readonly uint Id = id;
+        public readonly WebSocket Socket = socket;
 
-    public override void Start()
-    {
-        _server.Start();
+        public async Task SendAsync(byte[] data)
+        {
+            try
+            {
+                if (Socket.State == WebSocketState.Open)
+                    await Socket.SendAsync(data, WebSocketMessageType.Binary, true, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Logging.Warning($"Failed to send data to WS client {Id}", exception: ex);
+            }
+        }
     }
 }

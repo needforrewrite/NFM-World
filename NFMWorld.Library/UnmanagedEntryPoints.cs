@@ -228,7 +228,7 @@ public static class UnmanagedEntryPoints
                 ? BackendGamemodeData.Create(Encoding.UTF8.GetString(args->StageName), stageData)
                 : BackendGamemodeData.Create(Encoding.UTF8.GetString(args->StageName));
 
-            var gamemode = new TimeTrialSimulationGamemode(new BaseGamemodeParameters()
+            var gamemode = new TimeTrialSimulationGamemode(new GamemodeParameters()
             {
                 Players =
                 [

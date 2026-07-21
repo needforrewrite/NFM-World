@@ -5,6 +5,7 @@ using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
+using NFMWorld.UI.Cef;
 using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
@@ -14,13 +15,14 @@ using NFMWorld.Sentry;
 namespace NFMWorld.UI;
 
 /// <summary>
-/// Settings menu with tabs, similar to Half-Life 1 style
+/// Settings menu with tabs, similar to Half-Life 1 style.
+/// Also serves as the static settings backend used by SettingsHandler for CEF-based settings.
 /// </summary>
 public class SettingsMenu(WorldGame game)
 {
     private bool _isOpen;
     private int _selectedTab = 0;
-    
+
     private readonly string[] _tabNames = { "Keyboard", "Video", "Audio", "Game" };
 
     // Keyboard bindings
@@ -50,51 +52,55 @@ public class SettingsMenu(WorldGame game)
     private string? _capturingAction = null;
     private int _selectedBindingIndex = -1;
 
-    // Video settings
-    private static readonly string[] Renderers = false switch
+    // Video settings (static — shared between ImGui and CEF bridge)
+    public static readonly string[] Renderers = false switch
     {
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.OSX) => ["Auto", "Metal", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"],
         _ when RuntimeInformation.IsOSPlatform(OSPlatform.Windows) => ["Auto", "D3D11", "D3D12", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "Metal", "OpenGL ES 3.0"],
         _ => ["Auto", "Vulkan", "OpenGL 2.1", "OpenGL 4.6", "OpenGL ES 3.0"]
     };
-    private int _selectedRenderer = 0;
-    private static readonly string[] Resolutions = GetSupportedResolutions();
-    private int _selectedResolution = Resolutions.FindIndex(e => e == "1280 x 720");
-    private static readonly string[] DisplayModes = ["Fullscreen", "Windowed", "Borderless"];
-    private int _selectedDisplayMode = 1;
-    private bool _vsync = true;
-    private static readonly string[] AntialiasModes = ["Off", "MSAA 1x", "MSAA 2x", "MSAA 4x", "MSAA 8x"]; // must be powers of 2
-    private int _antialias = 4; // 8x
-    private int _shadowCascadeLevel = 3;
-    private static readonly string[] ShadowCascadeLevels = ["Off", "Close", "Far", "Further"];
-    private int _shadowResolution = 2; // 2048x
-    private static readonly string[] ShadowResolutions = ["512", "1024", "2048", "4096", "8192"]; // must be powers of 2 starting at 2^9
-    private int _fpsLimit = 63;
-    private float _lineWidth = 1;
-    private bool _lowLatency = false;
-    private static readonly string[] RenderDistanceNames = ["Tiny", "Short", "Medium", "Far", "Very Far", "Unlimited"];
+    private static int _selectedRenderer = 0;
+    private static string[] _resolutions = GetSupportedResolutions();
+    public static string[] Resolutions => _resolutions;
+    private static int _selectedResolution = Array.FindIndex(_resolutions, e => e == "1280 x 720");
+    public static readonly string[] DisplayModes = ["Fullscreen", "Windowed", "Borderless"];
+    private static int _selectedDisplayMode = 1;
+    private static bool _vsync = true;
+    public static readonly string[] AntialiasModes = ["Off", "MSAA 1x", "MSAA 2x", "MSAA 4x", "MSAA 8x"]; // must be powers of 2
+    private static int _antialias = 4; // 8x
+    private static int _shadowCascadeLevel = 3;
+    public static readonly string[] ShadowCascadeLevelNames = ["Off", "Close", "Far", "Further"];
+    private static int _shadowResolution = 2; // 2048x
+    public static readonly string[] ShadowResolutionNames = ["512", "1024", "2048", "4096", "8192"]; // must be powers of 2 starting at 2^9
+    private static int _fpsLimit = 63;
+    private static float _lineWidth = 1;
+    private static bool _lowLatency = false;
+    public static readonly string[] RenderDistanceNames = ["Tiny", "Short", "Medium", "Far", "Very Far", "Unlimited"];
     private static readonly float[] RenderDistances = [22500, 45000, 90000, 180000, 360000, int.MaxValue];
-    private int _renderDistance = 5; // default to max distance
+    private static int _renderDistance = 5; // default to max distance
 
-    // Audio settings
-    private float _masterVolume = 1.0f;
-    private float _musicVolume = 0.8f;
-    private float _effectsVolume = 0.9f;
-    private bool _muteAll = false;
-    private bool _remasteredMusic = false;
+    // Audio settings (static)
+    private static float _masterVolume = 1.0f;
+    private static float _musicVolume = 0.8f;
+    private static float _effectsVolume = 0.9f;
+    private static bool _muteAll = false;
+    private static bool _remasteredMusic = false;
 
-    // Game settings (Camera)
-    private float _fov = 90.0f;
-    private int _followY = 0;
-    private int _followZ = 0;
-    private bool _smoothFov;
+    // Game settings — Camera (static)
+    private static float _fov = PerspectiveCamera.DefaultFov;
+    private static int _followY = 0;
+    private static int _followZ = 0;
+    private static bool _smoothFov;
 
     // Keyboard settings
     private string _settingMessage = "";
 
+    /// <summary>Fired when the resolutions list changes (window resize, fullscreen toggle).</summary>
+    public static event Action? ResolutionsChanged;
+
     public bool IsOpen => _isOpen;
 
-    Vector4 RGB(int r, int g, int b, float a = 1.0f) => new Vector4(r / 255f, g / 255f, b / 255f, a);
+    private static Vector4 RGB(int r, int g, int b, float a = 1.0f) => new Vector4(r / 255f, g / 255f, b / 255f, a);
 
     private static string[] GetSupportedResolutions()
     {
@@ -106,7 +112,7 @@ public class SettingsMenu(WorldGame game)
             var bPixels = bParts[0] * bParts[1];
             return aPixels.CompareTo(bPixels);
         }))
-        { 
+        {
             "640 x 480", "800 x 600", "1024 x 768", "1280 x 720", "1280 x 1024", "1920 x 1080", "2560 x 1440",
             "3840 x 2160"
         };
@@ -117,10 +123,42 @@ public class SettingsMenu(WorldGame game)
         return resolutions.ToArray();
     }
 
+    /// <summary>
+    /// Register a new resolution and select it. Called automatically when the
+    /// window is resized or fullscreen is toggled. Adds the resolution to the
+    /// list if it doesn't already exist.
+    /// </summary>
+    public static void RegisterResolution(int width, int height)
+    {
+        var res = $"{width} x {height}";
+
+        // Already exists — just select it
+        var idx = Array.IndexOf(_resolutions, res);
+        if (idx >= 0)
+        {
+            _selectedResolution = idx;
+            return;
+        }
+
+        // Add and sort by total pixels
+        var list = new List<string>(_resolutions) { res };
+        list.Sort((a, b) =>
+        {
+            var aParts = a.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
+            var bParts = b.Split('x', StringSplitOptions.TrimEntries).Select(int.Parse).ToArray();
+            var aPixels = aParts[0] * aParts[1];
+            var bPixels = bParts[0] * bParts[1];
+            return aPixels.CompareTo(bPixels);
+        });
+        _resolutions = list.ToArray();
+        _selectedResolution = Array.IndexOf(_resolutions, res);
+        ResolutionsChanged?.Invoke();
+    }
+
     public void Open()
     {
         _isOpen = true;
-        
+
         // Load current game settings
         _fov = CameraSettings.Fov;
         _followY = FollowCamera.FollowYOffset;
@@ -149,7 +187,7 @@ public class SettingsMenu(WorldGame game)
         if (ImGui.Begin("Options", ref _isOpen, flags))
         {
             DrawTabs();
-            
+
             ImGui.Spacing();
 
             // Calculate height for scrollable content area (leave room for bottom buttons)
@@ -207,10 +245,10 @@ public class SettingsMenu(WorldGame game)
 
         ImGui.Text("Master Volume");
         ImGui.SliderFloat("##MasterVolume", ref _masterVolume, 0.0f, 1.0f, "%.2f");
-        
+
         ImGui.Text("Music Volume");
         ImGui.SliderFloat("##MusicVolume", ref _musicVolume, 0.0f, 1.0f, "%.2f");
-        
+
         ImGui.Text("Effects Volume");
         ImGui.SliderFloat("##EffectsVolume", ref _effectsVolume, 0.0f, 1.0f, "%.2f");
     }
@@ -268,40 +306,40 @@ public class SettingsMenu(WorldGame game)
 
         ImGui.Text("Renderer");
         ImGui.Combo("##Renderer", ref _selectedRenderer, Renderers, Renderers.Length);
-        
+
         ImGui.Text("Resolution");
         ImGui.Combo("##Resolution", ref _selectedResolution, Resolutions, Resolutions.Length);
-        
+
         ImGui.Text("Display Mode");
         ImGui.Combo("##DisplayMode", ref _selectedDisplayMode, DisplayModes, DisplayModes.Length);
-        
+
         ImGui.Spacing();
         ImGui.Checkbox("Wait for vertical sync", ref _vsync);
-        
+
         ImGui.Text("FPS Limit");
         var sliderWidth = ImGui.GetContentRegionAvail().X;
         ImGui.SetNextItemWidth(sliderWidth);
         ImGui.SliderInt("##FPSLimit", ref _fpsLimit, 0, 240, "%d FPS (0 = Unlimited)");
-        
+
         ImGui.Text("Antialiasing");
         ImGui.Combo("##Antialiasing", ref _antialias, AntialiasModes, AntialiasModes.Length);
 
         ImGui.Text("Shadow Distance");
-        ImGui.Combo("##ShadowCascadeLevel", ref _shadowCascadeLevel, ShadowCascadeLevels, ShadowCascadeLevels.Length);
-        
+        ImGui.Combo("##ShadowCascadeLevel", ref _shadowCascadeLevel, ShadowCascadeLevelNames, ShadowCascadeLevelNames.Length);
+
         ImGui.Text("Shadow Resolution");
-        ImGui.Combo("##ShadowResolution", ref _shadowResolution, ShadowResolutions, ShadowResolutions.Length);
-        
+        ImGui.Combo("##ShadowResolution", ref _shadowResolution, ShadowResolutionNames, ShadowResolutionNames.Length);
+
         ImGui.Text("Render Distance");
         ImGui.Combo("##RenderDistance", ref _renderDistance, RenderDistanceNames, RenderDistanceNames.Length);
-        
+
         ImGui.Checkbox("Low Latency (Disable interpolation)", ref _lowLatency);
 
         ImGui.Spacing();
         ImGui.Text("Outline Width");
         ImGui.SetNextItemWidth(sliderWidth);
         ImGui.SliderFloat("##LineWidth", ref _lineWidth, 0.5f, 4f, "%.1f");
-        // ImGui.TextColored(new Vector4(1.0f, 0.8f, 0.4f, 1.0f), 
+        // ImGui.TextColored(new Vector4(1.0f, 0.8f, 0.4f, 1.0f),
         //     "Note: changing some video options will cause the game to exit and restart.");
     }
 
@@ -325,7 +363,7 @@ public class SettingsMenu(WorldGame game)
         ImGui.Spacing();
 
         // Draw key binding table
-        var bindings = new (string Action, string PropertyName, Key Key)[] 
+        var bindings = new (string Action, string PropertyName, Key Key)[]
         {
             ("Accelerate", "Accelerate", Bindings.Accelerate),
             ("Brake / Reverse", "Brake", Bindings.Brake),
@@ -348,32 +386,32 @@ public class SettingsMenu(WorldGame game)
 
         ImGui.Columns(2, "KeyBindings", true);
         ImGui.SetColumnWidth(0, 200);
-        
+
         for (var i = 0; i < bindings.Length; i++)
         {
             var (action, propName, key) = bindings[i];
-            
+
             ImGui.Text(action);
             ImGui.NextColumn();
-            
+
             var isCapturing = _capturingAction == propName;
             var buttonLabel = isCapturing ? "Press any key..." : key.ToString();
-            
+
             if (isCapturing)
                 ImGui.PushStyleColor(ImGuiCol.Button, RGB(128, 77, 3, 0.8f));
-            
+
             if (ImGui.Button($"{buttonLabel}##{propName}", new Vector2(-1, 0)))
             {
                 _capturingAction = propName;
                 _selectedBindingIndex = i;
             }
-            
+
             if (isCapturing)
                 ImGui.PopStyleColor();
-            
+
             ImGui.NextColumn();
         }
-        
+
         ImGui.Columns(1);
     }
 
@@ -381,21 +419,21 @@ public class SettingsMenu(WorldGame game)
     {
         ImGui.Text("Camera Settings");
         ImGui.Spacing();
-        
+
         ImGui.Text("Field of View");
-        ImGui.SliderFloat("##FOV", ref _fov, 70.0f, 120.0f, "%.1f°");
-        
+        ImGui.SliderFloat("##FOV", ref _fov, 58.7f, 120.0f, "%.1f°");
+
         ImGui.Spacing();
         ImGui.Checkbox("Smooth FOV Changes", ref _smoothFov);
-        
+
         ImGui.Spacing();
         ImGui.Text("Follow Y Offset");
         ImGui.SliderInt("##FollowY", ref _followY, -160, 500);
-        
+
         ImGui.Spacing();
         ImGui.Text("Follow Z Offset");
         ImGui.SliderInt("##FollowZ", ref _followZ, -500, 500);
-        
+
         ImGui.Spacing();
         if (ImGui.Button("Reset Camera Defaults", new Vector2(-1, 0)))
         {
@@ -416,7 +454,7 @@ public class SettingsMenu(WorldGame game)
         var buttonWidth = 100f;
         var spacing = 10f;
         var totalWidth = buttonWidth * 3 + spacing * 2;
-        
+
         ImGui.SetCursorPosX((ImGui.GetWindowWidth() - totalWidth) * 0.5f);
 
         if (ImGui.Button("OK", new Vector2(buttonWidth, 30)))
@@ -446,7 +484,7 @@ public class SettingsMenu(WorldGame game)
                 _settingMessage = "";
             }
             ImGui.Spacing();
-            ImGui.TextColored(new Vector4(1.0f, 0.7f, 0.2f, 1.0f), 
+            ImGui.TextColored(new Vector4(1.0f, 0.7f, 0.2f, 1.0f),
                 "Press any key to bind, or ESC to cancel...");
         }
 
@@ -460,18 +498,18 @@ public class SettingsMenu(WorldGame game)
 
     private void ApplySettingsAndSave()
     {
-        // Here you would actually apply the settings to the game
-        // For now, just show a confirmation message
         _settingMessage = "Settings applied successfully!";
-        
+
         ApplySettings(out var requireRestart);
 
         // Save config to file
         SaveConfig();
     }
 
-    private void ApplySettings(out bool requireRestart)
+    public static void ApplySettings(out bool requireRestart)
     {
+        var game = GameSparker.Game;
+
         // Apply audio settings
         if (_muteAll)
         {
@@ -513,7 +551,7 @@ public class SettingsMenu(WorldGame game)
                 game.Graphics.PreferMultiSampling = true;
                 graphicsChanged = true;
             }
-            
+
             var msaaCount = (int) MathF.Round(MathF.Pow(2, _antialias - 1));
 
             if (game.Graphics.GraphicsDevice.PresentationParameters.MultiSampleCount != msaaCount)
@@ -530,7 +568,7 @@ public class SettingsMenu(WorldGame game)
                 graphicsChanged = true;
             }
         }
-        
+
         if (_selectedDisplayMode == 0) // fullscreen
         {
             if (!game.Graphics.IsFullScreen)
@@ -572,7 +610,7 @@ public class SettingsMenu(WorldGame game)
                 graphicsChanged = true;
             }
         }
-        
+
         var widthHeight = Resolutions[_selectedResolution].Split('x', StringSplitOptions.TrimEntries);
         var (width, height) = (int.Parse(widthHeight[0]), int.Parse(widthHeight[1]));
         if (game.Graphics.PreferredBackBufferWidth != width || game.Graphics.PreferredBackBufferHeight != height)
@@ -588,7 +626,7 @@ public class SettingsMenu(WorldGame game)
             WorldGame.ShadowResolution = (int)MathF.Round(MathF.Pow(2, _shadowResolution + 9));
             game.RebuildCascades();
         }
-        
+
         if (Renderers[_selectedRenderer] != GetFna3DRenderer())
         {
             requireRestart = true;
@@ -612,72 +650,25 @@ public class SettingsMenu(WorldGame game)
         World.OutlineThickness = _lineWidth;
     }
 
-    private void SaveConfig()
+    /// <summary>
+    /// Saves config and returns whether a restart is required (e.g., renderer change).
+    /// Call from SettingsHandler when the user clicks OK or Apply.
+    /// </summary>
+    public static bool SaveConfigAndCheckRestart()
     {
+        ApplySettings(out var requireRestart);
+        SaveConfig();
+        return requireRestart;
+    }
+
+    public static void SaveConfig()
+    {
+        var content = SaveConfigToString();
         try
         {
             var configPath = Path.Combine("data", "cfg", "config.cfg");
             Directory.CreateDirectory(Path.GetDirectoryName(configPath)!);
-            
-            using (var cfgWriter = new StreamWriter(configPath))
-            {
-                cfgWriter.WriteLine("// NFM-World Configuration File");
-                cfgWriter.WriteLine("// Generated: " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                cfgWriter.WriteLine();
-                
-                // Video settings
-                cfgWriter.WriteLine("// Video Settings");
-                cfgWriter.WriteLine($"video_renderer2 {Renderers[_selectedRenderer]}");
-                cfgWriter.WriteLine($"video_resolution3 {Resolutions[_selectedResolution]}");
-                cfgWriter.WriteLine($"video_displaymode {_selectedDisplayMode}");
-                cfgWriter.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
-                cfgWriter.WriteLine($"video_antialias {_antialias}");
-                cfgWriter.WriteLine($"video_fps {_fpsLimit}");
-                cfgWriter.WriteLine($"video_linewidth2 {_lineWidth.ToString("F4", CultureInfo.InvariantCulture)}");
-                cfgWriter.WriteLine($"video_shadow_cascade {_shadowCascadeLevel}");
-                cfgWriter.WriteLine($"video_shadow_res {_shadowResolution}");
-                cfgWriter.WriteLine($"video_low_latency {(_lowLatency ? 1 : 0)}");
-                cfgWriter.WriteLine($"video_render_distance {_renderDistance}");
-                cfgWriter.WriteLine();
-                
-                // Audio settings
-                cfgWriter.WriteLine("// Audio Settings");
-                cfgWriter.WriteLine($"audio_mute {(_muteAll ? 1 : 0)}");
-                cfgWriter.WriteLine($"audio_master {_masterVolume.ToString("F2", CultureInfo.InvariantCulture)}");
-                cfgWriter.WriteLine($"audio_music {_musicVolume.ToString("F2", CultureInfo.InvariantCulture)}");
-                cfgWriter.WriteLine($"audio_effects {_effectsVolume.ToString("F2", CultureInfo.InvariantCulture)}");
-                cfgWriter.WriteLine($"audio_remaster {(_remasteredMusic ? 1 : 0)}");
-                cfgWriter.WriteLine();
-                
-                // Camera settings
-                cfgWriter.WriteLine("// Camera Settings");
-                cfgWriter.WriteLine($"camera_fov {_fov.ToString("F1", CultureInfo.InvariantCulture)}");
-                cfgWriter.WriteLine($"camera_follow_y {_followY}");
-                cfgWriter.WriteLine($"camera_follow_z {_followZ}");
-                cfgWriter.WriteLine($"camera_smooth_fov {(_smoothFov ? 1 : 0)}");
-                cfgWriter.WriteLine();
-                
-                // Key bindings
-                cfgWriter.WriteLine("// Key Bindings");
-                cfgWriter.WriteLine($"key_accelerate {(int)Bindings.Accelerate}");
-                cfgWriter.WriteLine($"key_ab {(int)Bindings.AerialBounce}");
-                cfgWriter.WriteLine($"key_smoothturn {(int)Bindings.AerialStrafe}");
-                cfgWriter.WriteLine($"key_brake {(int)Bindings.Brake}");
-                cfgWriter.WriteLine($"key_turnleft {(int)Bindings.TurnLeft}");
-                cfgWriter.WriteLine($"key_turnright {(int)Bindings.TurnRight}");
-                cfgWriter.WriteLine($"key_handbrake {(int)Bindings.Handbrake}");
-                cfgWriter.WriteLine($"key_lookback {(int)Bindings.LookBack}");
-                cfgWriter.WriteLine($"key_lookleft {(int)Bindings.LookLeft}");
-                cfgWriter.WriteLine($"key_lookright {(int)Bindings.LookRight}");
-                cfgWriter.WriteLine($"key_togglemusic {(int)Bindings.ToggleMusic}");
-                cfgWriter.WriteLine($"key_togglesfx {(int)Bindings.ToggleSFX}");
-                cfgWriter.WriteLine($"key_togglearrace {(int)Bindings.ToggleArrace}");
-                cfgWriter.WriteLine($"key_toggleradar {(int)Bindings.ToggleRadar}");
-                cfgWriter.WriteLine($"key_cycleview {(int)Bindings.CycleView}");
-                cfgWriter.WriteLine($"key_console {(int)Bindings.ToggleDevConsole}");
-                cfgWriter.WriteLine();
-            }
-            
+            File.WriteAllText(configPath, content);
             Logging.Debug($"Config saved to {configPath}");
         }
         catch (Exception ex)
@@ -685,6 +676,210 @@ public class SettingsMenu(WorldGame game)
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error saving config: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// Serialize current settings to the config.cfg format as a string.
+    /// Used to snapshot state before editing so Cancel can revert.
+    /// </summary>
+    public static string SaveConfigToString()
+    {
+        using var sw = new StringWriter();
+        sw.WriteLine("// NFM-World Configuration File");
+        sw.WriteLine();
+        sw.WriteLine("// Video Settings");
+        sw.WriteLine($"video_renderer2 {Renderers[_selectedRenderer]}");
+        sw.WriteLine($"video_resolution3 {Resolutions[_selectedResolution]}");
+        sw.WriteLine($"video_displaymode {_selectedDisplayMode}");
+        sw.WriteLine($"video_vsync {(_vsync ? 1 : 0)}");
+        sw.WriteLine($"video_antialias {_antialias}");
+        sw.WriteLine($"video_fps {_fpsLimit}");
+        sw.WriteLine($"video_linewidth2 {_lineWidth.ToString("F4", CultureInfo.InvariantCulture)}");
+        sw.WriteLine($"video_shadow_cascade {_shadowCascadeLevel}");
+        sw.WriteLine($"video_shadow_res {_shadowResolution}");
+        sw.WriteLine($"video_low_latency {(_lowLatency ? 1 : 0)}");
+        sw.WriteLine($"video_render_distance {_renderDistance}");
+        sw.WriteLine();
+        sw.WriteLine("// Audio Settings");
+        sw.WriteLine($"audio_mute {(_muteAll ? 1 : 0)}");
+        sw.WriteLine($"audio_master {_masterVolume.ToString("F2", CultureInfo.InvariantCulture)}");
+        sw.WriteLine($"audio_music {_musicVolume.ToString("F2", CultureInfo.InvariantCulture)}");
+        sw.WriteLine($"audio_effects {_effectsVolume.ToString("F2", CultureInfo.InvariantCulture)}");
+        sw.WriteLine($"audio_remaster {(_remasteredMusic ? 1 : 0)}");
+        sw.WriteLine();
+        sw.WriteLine("// Camera Settings");
+        sw.WriteLine($"camera_fov {_fov.ToString("F1", CultureInfo.InvariantCulture)}");
+        sw.WriteLine($"camera_follow_y {_followY}");
+        sw.WriteLine($"camera_follow_z {_followZ}");
+        sw.WriteLine($"camera_smooth_fov {(_smoothFov ? 1 : 0)}");
+        sw.WriteLine();
+        sw.WriteLine("// Key Bindings");
+        sw.WriteLine($"key_accelerate {(int)Bindings.Accelerate}");
+        sw.WriteLine($"key_ab {(int)Bindings.AerialBounce}");
+        sw.WriteLine($"key_smoothturn {(int)Bindings.AerialStrafe}");
+        sw.WriteLine($"key_brake {(int)Bindings.Brake}");
+        sw.WriteLine($"key_turnleft {(int)Bindings.TurnLeft}");
+        sw.WriteLine($"key_turnright {(int)Bindings.TurnRight}");
+        sw.WriteLine($"key_handbrake {(int)Bindings.Handbrake}");
+        sw.WriteLine($"key_lookback {(int)Bindings.LookBack}");
+        sw.WriteLine($"key_lookleft {(int)Bindings.LookLeft}");
+        sw.WriteLine($"key_lookright {(int)Bindings.LookRight}");
+        sw.WriteLine($"key_togglemusic {(int)Bindings.ToggleMusic}");
+        sw.WriteLine($"key_togglesfx {(int)Bindings.ToggleSFX}");
+        sw.WriteLine($"key_togglearrace {(int)Bindings.ToggleArrace}");
+        sw.WriteLine($"key_toggleradar {(int)Bindings.ToggleRadar}");
+        sw.WriteLine($"key_cycleview {(int)Bindings.CycleView}");
+        sw.WriteLine($"key_console {(int)Bindings.ToggleDevConsole}");
+        return sw.ToString();
+    }
+
+    /// <summary>
+    /// Restore settings from a previously-saved config string.
+    /// Used to revert changes when Cancel is clicked.
+    /// </summary>
+    public static void LoadConfigFromSnapshot(string configString)
+    {
+        using var sr = new StringReader(configString);
+        string? line;
+        while ((line = sr.ReadLine()) != null)
+        {
+            var trimmed = line.Trim();
+            if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
+                continue;
+
+            var parts = trimmed.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 2)
+                continue;
+
+            ParseConfigLine(parts[0], parts[1]);
+        }
+        ApplySettings(out _);
+    }
+
+    /// <summary>
+    /// Parse a single "key value" config line and update the corresponding static field.
+    /// </summary>
+    private static void ParseConfigLine(string key, string value)
+    {
+        try
+        {
+            switch (key)
+            {
+                // Video
+                case "video_renderer2":
+                    _selectedRenderer = Array.IndexOf(_resolutions, value) is var r and > -1 ? r : _selectedRenderer;
+                    break;
+                case "video_resolution3":
+                    _selectedResolution = Array.IndexOf(_resolutions, value) is var resIdx and > -1 ? resIdx : _selectedResolution;
+                    break;
+                case "video_displaymode":
+                    _selectedDisplayMode = int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "video_vsync":
+                    _vsync = int.Parse(value) != 0;
+                    break;
+                case "video_antialias":
+                    _antialias = int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "video_fps":
+                    _fpsLimit = int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "video_linewidth2":
+                    _lineWidth = float.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "video_shadow_cascade":
+                    _shadowCascadeLevel = int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "video_shadow_res":
+                    _shadowResolution = int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "video_low_latency":
+                    _lowLatency = int.Parse(value) != 0;
+                    break;
+                case "video_render_distance":
+                    _renderDistance = int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                // Audio
+                case "audio_mute":
+                    _muteAll = int.Parse(value) != 0;
+                    break;
+                case "audio_master":
+                    _masterVolume = float.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "audio_music":
+                    _musicVolume = float.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "audio_effects":
+                    _effectsVolume = float.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "audio_remaster":
+                    _remasteredMusic = int.Parse(value) != 0;
+                    break;
+                // Camera
+                case "camera_fov":
+                    _fov = float.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "camera_follow_y":
+                    _followY = int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "camera_follow_z":
+                    _followZ = int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "camera_smooth_fov":
+                    _smoothFov = int.Parse(value) != 0;
+                    break;
+                // Key bindings
+                case "key_accelerate":
+                    Bindings.Accelerate = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_ab":
+                    Bindings.AerialBounce = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_smoothturn":
+                    Bindings.AerialStrafe = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_brake":
+                    Bindings.Brake = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_turnleft":
+                    Bindings.TurnLeft = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_turnright":
+                    Bindings.TurnRight = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_handbrake":
+                    Bindings.Handbrake = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_lookback":
+                    Bindings.LookBack = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_lookleft":
+                    Bindings.LookLeft = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_lookright":
+                    Bindings.LookRight = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_togglemusic":
+                    Bindings.ToggleMusic = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_togglesfx":
+                    Bindings.ToggleSFX = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_togglearrace":
+                    Bindings.ToggleArrace = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_toggleradar":
+                    Bindings.ToggleRadar = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_cycleview":
+                    Bindings.CycleView = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+                case "key_console":
+                    Bindings.ToggleDevConsole = (Key)int.Parse(value, CultureInfo.InvariantCulture);
+                    break;
+            }
+        }
+        catch { /* skip malformed lines */ }
     }
 
     public static void LoadFnaRenderer()
@@ -763,15 +958,15 @@ public class SettingsMenu(WorldGame game)
             _ => "Auto"
         };
     }
-    
-    public void LoadConfig()
+
+    public static void LoadConfig()
     {
         _selectedRenderer = Renderers.IndexOf(GetFna3DRenderer());
-        
+
         try
         {
             var configPath = Path.Combine("data", "cfg", "config.cfg");
-            
+
             if (!File.Exists(configPath))
             {
                 Logging.Warning("No config file found, using defaults.");
@@ -783,14 +978,14 @@ public class SettingsMenu(WorldGame game)
                 var trimmed = line.Trim();
                 if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("//"))
                     continue;
-                
+
                 var parts = trimmed.Split(' ', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length != 2)
                     continue;
-                
+
                 var key = parts[0];
                 var value = parts[1];
-                
+
                 try
                 {
                     switch (key)
@@ -829,7 +1024,7 @@ public class SettingsMenu(WorldGame game)
                         case "video_render_distance":
                             _renderDistance = int.Parse(value, CultureInfo.InvariantCulture);
                             break;
-                        
+
                         // Audio settings
                         case "audio_mute":
                             _muteAll = int.Parse(value) != 0;
@@ -846,7 +1041,7 @@ public class SettingsMenu(WorldGame game)
                         case "audio_remaster":
                             _remasteredMusic = int.Parse(value) != 0;
                             break;
-                        
+
                         // Camera settings
                         case "camera_fov":
                             _fov = float.Parse(value, CultureInfo.InvariantCulture);
@@ -860,7 +1055,7 @@ public class SettingsMenu(WorldGame game)
                         case "camera_smooth_fov":
                             _smoothFov = int.Parse(value) != 0;
                             break;
-                        
+
                         // Key bindings
                         case "key_accelerate":
                             Bindings.Accelerate = (Key)int.Parse(value, CultureInfo.InvariantCulture);
@@ -918,10 +1113,10 @@ public class SettingsMenu(WorldGame game)
                     Logging.Error($"Error parsing config line '{line}': {ex.Message}");
                 }
             }
-            
+
             // Apply loaded settings immediately
             ApplySettings(out _);
-            
+
             Logging.Debug($"Config loaded from {configPath}");
         }
         catch (Exception ex)
@@ -929,5 +1124,191 @@ public class SettingsMenu(WorldGame game)
             SentrySdk.CaptureException(ex);
             Logging.Error($"Error loading config: {ex.Message}");
         }
+    }
+
+    // ── Static API for CEF SettingsHandler ──────────────────────────
+
+    /// <summary>
+    /// Snapshot of all current settings for serialization to JS.
+    /// </summary>
+    public static SettingsSnapshot GetCurrentSnapshot()
+    {
+        var bindingProps = typeof(KeyBindings).GetProperties();
+        var keyBindings = new KeyBindingData[bindingProps.Length];
+        for (var i = 0; i < bindingProps.Length; i++)
+        {
+            var prop = bindingProps[i];
+            keyBindings[i] = new KeyBindingData
+            {
+                Action = prop.Name,
+                DisplayName = prop.Name, // JS can localize
+                KeyCode = (int)(prop.GetValue(Bindings) as Key? ?? Key.None)
+            };
+        }
+
+        return new SettingsSnapshot
+        {
+            SelectedRenderer = _selectedRenderer,
+            SelectedResolution = _selectedResolution,
+            SelectedDisplayMode = _selectedDisplayMode,
+            Vsync = _vsync,
+            FpsLimit = _fpsLimit,
+            Antialias = _antialias,
+            ShadowCascadeLevel = _shadowCascadeLevel,
+            ShadowResolution = _shadowResolution,
+            RenderDistance = _renderDistance,
+            LowLatency = _lowLatency,
+            LineWidth = _lineWidth,
+            MasterVolume = _masterVolume,
+            MusicVolume = _musicVolume,
+            EffectsVolume = _effectsVolume,
+            MuteAll = _muteAll,
+            RemasteredMusic = _remasteredMusic,
+            Fov = _fov,
+            FollowY = _followY,
+            FollowZ = _followZ,
+            SmoothFov = _smoothFov,
+            KeyBindings = keyBindings
+        };
+    }
+
+    /// <summary>
+    /// Lists of valid choices for dropdowns, for the current OS platform.
+    /// </summary>
+    public static AvailableOptions GetAvailableOptions()
+    {
+        return new AvailableOptions
+        {
+            Renderers = Renderers,
+            Resolutions = Resolutions,
+            DisplayModes = DisplayModes,
+            AntialiasModes = AntialiasModes,
+            ShadowCascadeLevels = ShadowCascadeLevelNames,
+            ShadowResolutions = ShadowResolutionNames,
+            RenderDistanceNames = RenderDistanceNames
+        };
+    }
+
+    /// <summary>
+    /// Apply a single setting change from JS. Key is the setting name,
+    /// value is parsed from the JsonElement.
+    /// </summary>
+    public static void ApplySetting(string key, System.Text.Json.JsonElement args)
+    {
+        switch (key)
+        {
+            // Video
+            case "selectedRenderer":
+                if (args.TryGetProperty("value", out var v) && v.TryGetInt32(out var iv))
+                    _selectedRenderer = iv;
+                break;
+            case "selectedResolution":
+                if (args.TryGetProperty("value", out v) && v.TryGetInt32(out iv))
+                    _selectedResolution = iv;
+                break;
+            case "selectedDisplayMode":
+                if (args.TryGetProperty("value", out v) && v.TryGetInt32(out iv))
+                    _selectedDisplayMode = iv;
+                break;
+            case "vsync":
+                if (args.TryGetProperty("value", out v) && v.ValueKind == System.Text.Json.JsonValueKind.True || v.ValueKind == System.Text.Json.JsonValueKind.False)
+                    _vsync = v.GetBoolean();
+                break;
+            case "fpsLimit":
+                if (args.TryGetProperty("value", out v) && v.TryGetInt32(out iv))
+                    _fpsLimit = iv;
+                break;
+            case "antialias":
+                if (args.TryGetProperty("value", out v) && v.TryGetInt32(out iv))
+                    _antialias = iv;
+                break;
+            case "shadowCascadeLevel":
+                if (args.TryGetProperty("value", out v) && v.TryGetInt32(out iv))
+                    _shadowCascadeLevel = iv;
+                break;
+            case "shadowResolution":
+                if (args.TryGetProperty("value", out v) && v.TryGetInt32(out iv))
+                    _shadowResolution = iv;
+                break;
+            case "renderDistance":
+                if (args.TryGetProperty("value", out v) && v.TryGetInt32(out iv))
+                    _renderDistance = iv;
+                break;
+            case "lowLatency":
+                if (args.TryGetProperty("value", out v))
+                    _lowLatency = v.GetBoolean();
+                break;
+            case "lineWidth":
+                if (args.TryGetProperty("value", out v) && v.TryGetSingle(out var fv))
+                    _lineWidth = fv;
+                break;
+
+            // Audio
+            case "masterVolume":
+                if (args.TryGetProperty("value", out v) && v.TryGetSingle(out fv))
+                    _masterVolume = fv;
+                break;
+            case "musicVolume":
+                if (args.TryGetProperty("value", out v) && v.TryGetSingle(out fv))
+                    _musicVolume = fv;
+                break;
+            case "effectsVolume":
+                if (args.TryGetProperty("value", out v) && v.TryGetSingle(out fv))
+                    _effectsVolume = fv;
+                break;
+            case "muteAll":
+                if (args.TryGetProperty("value", out v))
+                    _muteAll = v.GetBoolean();
+                break;
+            case "remasteredMusic":
+                if (args.TryGetProperty("value", out v))
+                    _remasteredMusic = v.GetBoolean();
+                break;
+
+            // Camera
+            case "fov":
+                if (args.TryGetProperty("value", out v) && v.TryGetSingle(out fv))
+                    _fov = fv;
+                break;
+            case "followY":
+                if (args.TryGetProperty("value", out v) && v.TryGetInt32(out iv))
+                    _followY = iv;
+                break;
+            case "followZ":
+                if (args.TryGetProperty("value", out v) && v.TryGetInt32(out iv))
+                    _followZ = iv;
+                break;
+            case "smoothFov":
+                if (args.TryGetProperty("value", out v))
+                    _smoothFov = v.GetBoolean();
+                break;
+
+            // Key binding
+            case "keyBinding":
+                if (args.TryGetProperty("action", out var actionProp)
+                    && args.TryGetProperty("keyCode", out var codeProp)
+                    && codeProp.TryGetInt32(out var keyCode))
+                {
+                    var action = actionProp.GetString() ?? "";
+                    var prop = typeof(KeyBindings).GetProperty(action);
+                    prop?.SetValue(Bindings, (Key)keyCode);
+                }
+                break;
+        }
+
+        // Apply immediately for live preview
+        ApplySettings(out _);
+    }
+
+    /// <summary>
+    /// Reset camera settings to defaults.
+    /// </summary>
+    public static void ResetCameraDefaults()
+    {
+        _fov = 90.0f;
+        _smoothFov = true;
+        _followY = 0;
+        _followZ = 0;
+        ApplySettings(out _);
     }
 }

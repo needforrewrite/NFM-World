@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MemoryPack;
+using NFMWorld.DriverInterface;
 
 namespace NFMWorld.UI.Cef;
 
@@ -52,6 +53,53 @@ public abstract class PhaseBridge(string phaseId) : IDisposable
     /// </summary>
     public virtual bool EnableInput => true;
 
+    // ── Sub-handler support ─────────────────────────────────────
+    // Sub-handlers are composable message/key handlers (e.g., SettingsHandler)
+    // that live within a parent bridge. They are activated/deactivated in
+    // sync with the parent bridge's Register/Unregister lifecycle.
+
+    /// <summary>
+    /// Sub-handlers registered on this bridge. Checked before
+    /// <see cref="OnMessage"/> fallthrough on every incoming JS→C# message.
+    /// </summary>
+    protected readonly List<ISubHandler> SubHandlers = [];
+
+    /// <summary>
+    /// Add a sub-handler. If the bridge is already registered, the sub-handler
+    /// is activated immediately.
+    /// </summary>
+    protected void AddSubHandler(ISubHandler handler)
+    {
+        SubHandlers.Add(handler);
+        if (Renderer != null)
+            handler.OnActivated(Renderer);
+    }
+
+    /// <summary>
+    /// Remove a sub-handler. If the bridge is still registered, the sub-handler
+    /// is deactivated immediately.
+    /// </summary>
+    protected void RemoveSubHandler(ISubHandler handler)
+    {
+        if (SubHandlers.Remove(handler) && Renderer != null)
+            handler.OnDeactivated();
+    }
+
+    /// <summary>
+    /// Forward a key press to all sub-handlers. Returns <c>true</c> if any
+    /// sub-handler consumed the key (e.g., during key rebinding capture).
+    /// Call from the phase's <c>KeyPressed</c> override.
+    /// </summary>
+    public bool TryHandleKeyPress(Key key)
+    {
+        foreach (var handler in SubHandlers)
+        {
+            if (handler.TryHandleKeyPress(key))
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>
     /// Register this bridge with the given CefRenderer. Called from Phase.Enter().
     /// Navigates to <see cref="PageUrl"/> if non-null. Uses ExecuteJavaScript
@@ -68,6 +116,10 @@ public abstract class PhaseBridge(string phaseId) : IDisposable
         }
 
         OnRegistered();
+
+        // Activate all sub-handlers now that Renderer is available
+        foreach (var handler in SubHandlers)
+            handler.OnActivated(Renderer);
     }
 
     /// <summary>
@@ -75,6 +127,10 @@ public abstract class PhaseBridge(string phaseId) : IDisposable
     /// </summary>
     public void Unregister()
     {
+        // Deactivate sub-handlers before tearing down
+        foreach (var handler in SubHandlers)
+            handler.OnDeactivated();
+
         Renderer?.UnregisterMessageHandler(PhaseId);
 
         OnUnregistered();
@@ -156,6 +212,13 @@ public abstract class PhaseBridge(string phaseId) : IDisposable
                 // If parsing fails, pass null — the subclass can handle raw args
                 // via the raw string if needed (but most will use the typed path).
             }
+        }
+
+        // Try sub-handlers first; if any consumes the message, stop.
+        foreach (var handler in SubHandlers)
+        {
+            if (handler.TryHandleMessage(messageType, parsed))
+                return;
         }
 
         OnMessage(messageType, parsed);

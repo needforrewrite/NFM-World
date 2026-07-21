@@ -18,5 +18,14 @@ public partial struct MatchGameplayInfo()
     /// </summary>
     [MemoryPackOrder(1)] public required IDictionary<byte, PlayerInfo> Players { get; set; }
 
-    [MemoryPackOrder(2)] public required GameModes Gamemode { get; set; } = GameModes.Sandbox;
+    [MemoryPackOrder(2)] public required string Gamemode { get; set; } = DefaultGamemodes.Sandbox;
+}
+
+public static class DefaultGamemodes
+{
+    public const string Sandbox = "nfmm/sandbox";
+    public const string Wasting = "nfmm/wasting";
+    public const string Racing = "nfmm/racing";
+    public const string Both = "nfmm/both";
+    public const string Football = "nfmm/football";
 }

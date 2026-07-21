@@ -260,10 +260,6 @@ public partial class StageEditorPhase : BasePhase
     public static PerspectiveCamera perspectiveCamera = new();
     public static Camera activeCamera = perspectiveCamera;
     
-    // Drag and drop state
-    private int _draggedPartIndex = -1;
-    private bool _isDraggingFromLibrary = false;
-    
     // Placement mode: user selects a part from the library then clicks in the viewport to place it
     private int _pendingPlacementPartIndex = -1; // index into _availableParts; -1 = not in placement mode
     private f64Vector3 _pendingPlacementPos = f64Vector3.Zero;
@@ -290,7 +286,6 @@ public partial class StageEditorPhase : BasePhase
     // New stage dialog state
     private bool _showNewStageDialog = false;
     private string _newStageName = "";
-    private string _stageFileName = "";
     private int _newStageStartPartIndex = 0; // index into _newStageStartPartOptions
     private static readonly string[] _newStageStartPartOptions =
     {
@@ -341,7 +336,7 @@ public partial class StageEditorPhase : BasePhase
     
     // Parts library state
     private string _partsSearch = "";
-    private int _partsCategory = 0; // 0=All, 1=nfmm, 2=vendor, 3=user
+    private int _partsCategory = 0; // 0=All, 1=nfmm, 2=vendor, 3=user, 4=src
     
     // Swap piece mode
     private bool _isSwapMode = false;
@@ -448,6 +443,11 @@ public partial class StageEditorPhase : BasePhase
         }
         
         foreach (var part in BackendGameSparker.user_stage_parts)
+        {
+            _availableParts.TryAdd(part);
+        }
+        
+        foreach (var part in BackendGameSparker.src_stage_parts)
         {
             _availableParts.TryAdd(part);
         }

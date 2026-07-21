@@ -22,7 +22,7 @@ public readonly partial struct CompactIpAddress
     {
         if (address.Length == 4)
         {
-            _addressOrScopeId = MemoryMarshal.Read<uint>(address);
+            _addressOrScopeId = BinaryPrimitives.ReadUInt32BigEndian(address);
             _isv6 = false;
         }
         else if (address.Length == 16)

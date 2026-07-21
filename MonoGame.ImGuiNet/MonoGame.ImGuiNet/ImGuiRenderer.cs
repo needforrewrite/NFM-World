@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
 
+#nullable enable
+
 namespace MonoGame.ImGuiNet;
 
 internal class TextureInfo
@@ -21,15 +23,15 @@ public class ImGuiRenderer : IDisposable
     // Graphics
     private GraphicsDevice _graphicsDevice;
 
-    private BasicEffect _effect;
+    private BasicEffect? _effect;
     private RasterizerState _rasterizerState;
 
-    private byte[] _vertexData;
-    private VertexBuffer _vertexBuffer;
+    private byte[]? _vertexData;
+    private VertexBuffer? _vertexBuffer;
     private int _vertexBufferSize;
 
-    private byte[] _indexData;
-    private IndexBuffer _indexBuffer;
+    private byte[]? _indexData;
+    private IndexBuffer? _indexBuffer;
     private int _indexBufferSize;
 
     // Textures
@@ -38,7 +40,9 @@ public class ImGuiRenderer : IDisposable
 
     // Input
     private int _scrollWheelValue;
+#pragma warning disable CS0414 // Field is assigned but its value is never used
     private int _horizontalScrollWheelValue;
+#pragma warning restore CS0414
     private readonly float WHEEL_DELTA = 120;
     private Keys[] _allKeys = Enum.GetValues<Keys>();
 
@@ -103,7 +107,7 @@ public class ImGuiRenderer : IDisposable
 
     public virtual void UnbindTexture(ImTextureRef textureRef)
     {
-        if (_textures.TryGetValue(textureRef.TexID, out TextureInfo textureInfo))
+        if (_textures.TryGetValue(textureRef.TexID, out var textureInfo))
         {
             if (textureInfo.IsManaged)
                 textureInfo.Texture?.Dispose();
@@ -159,7 +163,7 @@ public class ImGuiRenderer : IDisposable
     private unsafe void UpdateTextureData(ImTextureDataPtr textureData)
     {
         IntPtr texId = textureData.GetTexID();
-        if (!_textures.TryGetValue(texId, out TextureInfo textureInfo) || textureInfo.Texture == null)
+        if (!_textures.TryGetValue(texId, out var textureInfo) || textureInfo.Texture == null)
             return;
 
         Texture2D texture = textureInfo.Texture;
@@ -186,7 +190,7 @@ public class ImGuiRenderer : IDisposable
     private void DestroyTexture(ImTextureDataPtr textureData)
     {
         IntPtr texId = textureData.GetTexID();
-        if (_textures.TryGetValue(texId, out TextureInfo textureInfo))
+        if (_textures.TryGetValue(texId, out var textureInfo))
         {
             if (textureInfo.IsManaged)
                 textureInfo.Texture?.Dispose();
@@ -210,7 +214,7 @@ public class ImGuiRenderer : IDisposable
 
     protected virtual Effect UpdateEffect(Texture2D texture)
     {
-        _effect = _effect ?? new BasicEffect(_graphicsDevice);
+        _effect ??= new BasicEffect(_graphicsDevice);
 
         var io = ImGui.GetIO();
         _effect.World = Matrix.Identity;
@@ -365,8 +369,8 @@ public class ImGuiRenderer : IDisposable
         for (int n = 0; n < drawData->CmdListsCount; n++)
         {
             ImDrawList* cmdList = drawData->CmdLists.Data[n];
-            fixed (void* vtxDst = &_vertexData[vtxOffset * DrawVertDeclaration.Size])
-            fixed (void* idxDst = &_indexData[idxOffset * sizeof(ushort)])
+            fixed (void* vtxDst = &_vertexData![vtxOffset * DrawVertDeclaration.Size])
+            fixed (void* idxDst = &_indexData![idxOffset * sizeof(ushort)])
             {
                 Buffer.MemoryCopy(cmdList->VtxBuffer.Data, vtxDst, _vertexData.Length, cmdList->VtxBuffer.Size * DrawVertDeclaration.Size);
                 Buffer.MemoryCopy(cmdList->IdxBuffer.Data, idxDst, _indexData.Length, cmdList->IdxBuffer.Size * sizeof(ushort));
@@ -375,8 +379,8 @@ public class ImGuiRenderer : IDisposable
             idxOffset += cmdList->IdxBuffer.Size;
         }
 
-        _vertexBuffer.SetData(_vertexData, 0, drawData->TotalVtxCount * DrawVertDeclaration.Size);
-        _indexBuffer.SetData(_indexData, 0, drawData->TotalIdxCount * sizeof(ushort));
+        _vertexBuffer!.SetData(_vertexData, 0, drawData->TotalVtxCount * DrawVertDeclaration.Size);
+        _indexBuffer!.SetData(_indexData, 0, drawData->TotalIdxCount * sizeof(ushort));
     }
 
     private unsafe void RenderCommandLists(ImDrawData* drawData)
@@ -394,7 +398,7 @@ public class ImGuiRenderer : IDisposable
                 if (drawCmd->ElemCount == 0) continue;
 
                 ImTextureID texId = drawCmd->TexRef.GetTexID();
-                if (!_textures.TryGetValue(texId, out TextureInfo textureInfo) || textureInfo.Texture == null)
+                if (!_textures.TryGetValue(texId, out var textureInfo) || textureInfo.Texture == null)
                     throw new InvalidOperationException($"Could not find a texture with id '{texId}', please check your bindings");
 
                 _graphicsDevice.ScissorRectangle = new Rectangle(
@@ -426,7 +430,7 @@ public class ImGuiRenderer : IDisposable
     public void Dispose()
     {
         _effect?.Dispose();
-        _rasterizerState?.Dispose();
+        _rasterizerState.Dispose();
         _vertexBuffer?.Dispose();
         _indexBuffer?.Dispose();
         foreach (var t in _textures.Values)

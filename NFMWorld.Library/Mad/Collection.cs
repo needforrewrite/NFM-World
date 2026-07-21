@@ -14,5 +14,7 @@ public enum Collection
     Elo,
     /// Local user-created cars
     User,
-    Football
+    Football,
+    /// Skyline
+    Skyline
 }

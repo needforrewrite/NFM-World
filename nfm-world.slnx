@@ -59,6 +59,7 @@
   </Folder>
   <Project Path="CefGlue.BrowserProcess/CefGlue.BrowserProcess.csproj" />
   <Project Path="LibTessDotNet/LibTessDotNet/LibTessDotNet.csproj" />
+  <Project Path="NAudio.Flac/NAudio.Flac/NAudio.Flac.csproj" />
   <Project Path="nfm-world/NFMWorld.csproj" />
   <Project Path="NFMW.GenerateSinCosTable/NFMW.GenerateSinCosTable.csproj" />
   <Project Path="NFMWorld.Api/NFMWorld.Api.csproj" />
@@ -66,19 +67,20 @@
   <Project Path="NFMWorld.ClientOnlyAnalyzer/NFMWorld.ClientOnlyAnalyzer.csproj" />
   <Project Path="NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj" />
   <Project Path="NFMWorld.DriverInterface/NFMWorld.DriverInterface.csproj" />
-  <Project Path="NFMWorld.Library.Test/NFMWorld.Library.Test.csproj" />
+  <Project Path="NFMWorld.GenerateHmacKey/NFMWorld.GenerateHmacKey.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />
   <Project Path="NFMWorld.Multiplayer.Base/NFMWorld.Multiplayer.Base.csproj" />
   <Project Path="NFMWorld.NativeLibs/NFMWorld.NativeLibs.csproj" />
   <Project Path="NFMWorld.OpcodeSourceGen/NFMWorld.OpcodeSourceGen.csproj" />
   <Project Path="NFMWorld.PhysicsFS/NFMWorld.PhysicsFS.csproj" />
   <Project Path="NFMWorld.RustBindGen/NFMWorld.RustBindGen.csproj" />
-  <Project Path="NFMWorld.Server.Game.Slave/NFMWorld.Server.Game.Slave.csproj" />
   <Project Path="NFMWorld.Server.Game/NFMWorld.Server.Game.csproj" />
   <Project Path="NFMWorld.Server.Lobby/NFMWorld.Server.Lobby.csproj" />
   <Project Path="NFMWorld.Sentry/NFMWorld.Sentry.csproj" />
+  <Project Path="NFMWorld.Server.SharedMemory/NFMWorld.Server.SharedMemory.csproj" />
   <Project Path="NFMWorld.ShaderSourceGen/NFMWorld.ShaderSourceGen.csproj" />
   <Project Path="Sokol/Sokol.csproj" />
+  <Project Path="SoundTouch.Net.NAudioSupport/SoundTouch.Net.NAudioSupport.csproj" />
   <Project Path="TestSvgPreprocess/TestSvgPreprocess.csproj" />
   <Project Path="websocket-sharp/websocket-sharp/websocket-sharp.csproj" />
 </Solution>

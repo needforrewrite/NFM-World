@@ -8,57 +8,9 @@ using NFMWorldLibrary.Multiplayer;
 
 namespace NFMWorld.Gameplay;
 
-public class InRacePhase(GraphicsDevice graphicsDevice, string playerCarName) : BaseRacePhase(graphicsDevice)
-{
-    public string playerCarName = playerCarName;
-
-    public GameModes gamemode
-    {
-        get;
-        set;
-    } = GameModes.Racing;
-
-    public void SetGamemode(GameModes mode)
-    {
-        gamemode = mode;
-        OverrideGamemode(ReloadGamemode());
-    }
-
-    protected override IGamemode ReloadGamemode()
-    {
-        return CreateGameMode(new BaseGamemodeParameters
-        {
-            Players =
-            [
-                new PlayerParameters
-                {
-                    CarName = playerCarName,
-                    Color = new Color3(255, 0, 0),
-                    PlayerName = "Player",
-                    IsBot = false,
-                    IsClientPlayer = true
-                },
-                new PlayerParameters()
-                {
-                    CarName = "nfmm/audir8",
-                    Color = new Color3(255, 0, 0),
-                    PlayerName = "Player2",
-                    IsBot = true,
-                    IsClientPlayer = false
-                }
-            ]
-        });
-    }
-
-    protected IGamemode CreateGameMode(BaseGamemodeParameters parameters)
-    {
-        return gamemode switch
-        {
-            GameModes.Sandbox => new SandboxGamemode(parameters, this),
-            GameModes.TimeTrial => new TimeTrialGamemode(parameters, this),
-            GameModes.Football => new FootballGamemode(parameters, this),
-            GameModes.Racing => new RaceGamemode(parameters, this),
-            _ => throw new ArgumentOutOfRangeException(nameof(gamemode), gamemode, null)
-        };
-    }
-}
+public class InRacePhase(
+    GraphicsDevice graphicsDevice,
+    string stageName,
+    BaseGamemodeFactory gamemode,
+    IReadOnlyList<PlayerParameters> players)
+    : BaseRacePhase(graphicsDevice, stageName, gamemode, players);

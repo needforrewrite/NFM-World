@@ -8,7 +8,7 @@ fadefrom(6000)
 
 soundtrack(nfm1,stage3.zipo)
 soundtrackfreqmul(0.94)
-soundtracktempomul(11.6)
+soundtracktempomul(1.6)
 
 name(Crazy Level)
 nlaps(1)

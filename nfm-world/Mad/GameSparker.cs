@@ -17,7 +17,7 @@ using NFMWorld.Sentry;
 
 namespace NFMWorld;
 
-public static class GameSparker
+public static partial class GameSparker
 {
     public static WorldGame Game = null!;
     public static GraphicsDevice GraphicsDevice = null!;
@@ -55,16 +55,50 @@ public static class GameSparker
 
     public static BasePhase CurrentPhase
     {
-        get;
-        private set;
-    } = null!;
+        get => Phases.Current;
+    }
 
+    /// <summary>
+    /// The phase stack manager. Handles navigation (Push, Pop, Replace)
+    /// and deferred disposal of popped phases.
+    /// </summary>
+    public static PhaseManager Phases { get; } = new();
+
+    /// <summary>
+    /// Replaces the current phase with a new one. The old phase is disposed
+    /// at end-of-frame via <see cref="PhaseManager.FlushDisposals"/>.
+    /// For navigation with back-support, use <see cref="PushPhase"/> instead.
+    /// </summary>
     public static void SetPhase(BasePhase phase)
     {
-        // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
-        CurrentPhase?.Exit();
-        CurrentPhase = phase;
-        CurrentPhase.Enter();
+        Phases.Replace(phase);
+    }
+
+    /// <summary>
+    /// Pushes a new phase onto the stack, keeping the current phase alive.
+    /// Use <see cref="PopPhase"/> to return to the previous phase.
+    /// </summary>
+    public static void PushPhase(BasePhase phase)
+    {
+        Phases.Push(phase);
+    }
+
+    /// <summary>
+    /// Pops the current phase and returns to the previous phase on the stack.
+    /// The popped phase is disposed at end-of-frame.
+    /// </summary>
+    public static void PopPhase()
+    {
+        Phases.Pop();
+    }
+
+    /// <summary>
+    /// Pops all phases above the root, returning to the root phase (typically MainMenu).
+    /// All intermediate phases are disposed at end-of-frame.
+    /// </summary>
+    public static void PopToRoot()
+    {
+        Phases.PopToRoot();
     }
 
     public static IRadicalMusic? CurrentMusic
@@ -145,11 +179,13 @@ public static class GameSparker
             
             for (int seg = 0; seg < Math.Min(aSegments.Length, bSegments.Length); seg++)
             {
-                var aParts = System.Text.RegularExpressions.Regex.Split(aSegments[seg], @"(\d+)")
-                    .Where(s => !string.IsNullOrEmpty(s)).ToArray();
-                var bParts = System.Text.RegularExpressions.Regex.Split(bSegments[seg], @"(\d+)")
-                    .Where(s => !string.IsNullOrEmpty(s)).ToArray();
-                
+                var aParts = DigitSplit.Split(aSegments[seg])
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .ToArray();
+                var bParts = DigitSplit.Split(bSegments[seg])
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .ToArray();
+
                 for (int i = 0; i < Math.Min(aParts.Length, bParts.Length); i++)
                 {
                     if (int.TryParse(aParts[i], out var aNum) && int.TryParse(bParts[i], out var bNum))
@@ -199,12 +235,10 @@ public static class GameSparker
 
         // init menu
         SettingsMenu = new SettingsMenu(game);
-        MainMenuPhase = new MainMenuPhase(GraphicsDevice);
-
         PhaseSharedState.SelectedStageName = "nfm2/16_4dv";
-        MainMenuPhase.LoadStage(PhaseSharedState.SelectedStageName);
-        
-        SetPhase(MainMenuPhase);
+        MainMenuPhase = new MainMenuPhase(GraphicsDevice, PhaseSharedState.SelectedStageName);
+
+        Phases.SetRoot(MainMenuPhase);
     }
     
     public static Mesh GetStagePartMesh(Rad3d stagePart)
@@ -264,5 +298,9 @@ public static class GameSparker
 
     public static void WindowSizeChanged(int width, int height)
     {
+        SettingsMenu.RegisterResolution(width, height);
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"(\d+)")]
+    private static partial System.Text.RegularExpressions.Regex DigitSplit { get; }
 }

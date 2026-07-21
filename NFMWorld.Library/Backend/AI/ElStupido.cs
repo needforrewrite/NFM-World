@@ -33,7 +33,6 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
     private Sequence? sequence;
     
     private int? targetFixRoadStartNode = null;
-    private bool bouncing;
     private int _targetNode;
     
     // Obstacle avoidance state
@@ -41,6 +40,8 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
     private fix64 _avoidanceAngle;
     private int _avoidanceTimer;
     private bool smallturn;
+
+    private bool bouncing;
     
     // if the next node is a sequence start node, we start a sequence and store sequenceStartNode and sequenceEndNode
     // then, we must traverse the nodes in the sequence in order, until we reach sequenceEndNode

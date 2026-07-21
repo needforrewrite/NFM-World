@@ -37,3 +37,12 @@
 [submodule "websocket-sharp"]
 	path = websocket-sharp
 	url = https://github.com/uwx/websocket-sharp
+[submodule "NFMWorld.Library/src/data"]
+	path = NFMWorld.Library/src/data
+	url = https://github.com/MerNeith-Heavy-Industries/SkylineRacingConceptNewEngineServerData
+[submodule "nfm-world/src/data"]
+	path = nfm-world/src/data
+	url = https://github.com/MerNeith-Heavy-Industries/SkylineRacingConceptNewEngineClientData
+[submodule "NAudio.Flac"]
+	path = NAudio.Flac
+	url = https://github.com/uwx/NAudio.Flac

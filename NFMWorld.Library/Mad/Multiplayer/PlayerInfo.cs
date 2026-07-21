@@ -8,12 +8,12 @@ namespace NFMWorldLibrary.Multiplayer;
 /// </summary>
 [StructLayout(LayoutKind.Sequential)]
 [MemoryPackable]
-public partial struct PlayerInfo()
+public partial struct PlayerInfo
 {
     /// <summary>
-    /// Unique player ID from the lobby's POV. 
+    /// Unique player ID. 
     /// </summary>
-    [MemoryPackOrder(0)] public required uint Id { get; set; }
+    [MemoryPackOrder(0)] public required Guid Id { get; set; }
     
     /// <summary>
     /// Player username. For instance, in chat.

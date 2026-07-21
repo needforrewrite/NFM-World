@@ -6,20 +6,41 @@ namespace NFMWorldLibrary.Backend.Gamemodes;
 
 public interface IGamemode
 {
-    public IReadOnlyList<PlayerParameters> players { get; }
-    public UnlimitedArray<IInGameCar> carsInRace { get; }
-    public BackendStage currentStage { get; }
+    public IReadOnlyList<PlayerParameters> Players { get; }
+    public UnlimitedArray<IInGameCar> CarsInRace { get; }
+    public BackendStage CurrentStage { get; }
     public int NumPlayers { get; }
-    
-    /// <summary>
-    /// Arguments: byte[] player standings indexed by player index
-    /// </summary>
-    public event EventHandler<byte[]>? RaceFinished;
 
-    public void Enter();
-    public void Exit();
+    public void Begin();
+    public void End();
     public void GameTick();
     public void Reset();
+
+    /// <summary>
+    /// Returns the race results if the race has finished, or null otherwise.
+    /// Fired by <see cref="BaseRacePhase.RaceFinished"/> when the race ends.
+    /// </summary>
+    public RaceResults? GetResults();
+
+    /// <summary>
+    /// Called by the host when <see cref="S2C_GameFinished"/> is received
+    /// with authoritative server results. Default is a no-op for singleplayer.
+    /// </summary>
+    public void SetServerResults(RaceResults results);
+
+    /// <summary>
+    /// Called when a <see cref="S2C_ServerEvent"/> is received from the server.
+    /// The payload is a MemoryPack-serialized gamemode-specific event.
+    /// Default is a no-op for singleplayer gamemodes.
+    /// </summary>
+    public void OnServerEvent(ReadOnlySpan<byte> payload);
+
+    /// <summary>
+    /// Called by the host to inject a callback for sending events to the server.
+    /// The payload should be a MemoryPack-serialized gamemode-specific event.
+    /// Default is a no-op for singleplayer gamemodes.
+    /// </summary>
+    public void SetEventSender(Action<ReadOnlyMemory<byte>> sendToServer);
 
     #region Client
 

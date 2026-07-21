@@ -9,14 +9,14 @@ using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Gameplay;
 
-public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : BasePhase
+public abstract class BaseStageRenderingPhase : BasePhase
 {
     protected int? FovOverride = null;
     public static bool DebugDisplay = false;
 
-    private readonly SpriteBatch _spriteBatch = new(graphicsDevice);
+    private readonly SpriteBatch _spriteBatch;
 
-    public readonly GraphicsDevice GraphicsDevice = graphicsDevice;
+    public readonly GraphicsDevice GraphicsDevice;
 
     public PerspectiveCamera Camera = new();
     public Camera[] LightCameras = [
@@ -28,6 +28,23 @@ public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : B
     public ClientStage CurrentStage = null!;
     public ObservableUnlimitedArray<IInGameCar> CarsInRace { get; protected set; } = [];
 
+    private IRadicalMusic? _stageMusic;
+    public string? StageName;
+    
+    // please don't pass null except for stage select
+    protected BaseStageRenderingPhase(GraphicsDevice graphicsDevice, string? stageName = null)
+    {
+        _spriteBatch = new SpriteBatch(graphicsDevice);
+        GraphicsDevice = graphicsDevice;
+        StageName = stageName;
+
+        // Stage loading happens once at construction time, not on every Enter().
+        // This prevents phases from resetting when an overlay (e.g., Settings) is
+        // pushed and popped over them.
+        if (StageName != null)
+            LoadStage(StageName);
+    }
+
     public override void Enter()
     {
         base.Enter();
@@ -35,12 +52,16 @@ public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : B
         Camera.Width = GameSparker.Game.GraphicsDevice.Viewport.Width;
         Camera.Height = GameSparker.Game.GraphicsDevice.Viewport.Height;
 
-        GameSparker.CurrentMusic = _stageMusic;
+        // Resume stage music that was paused by Exit().
+        if (_stageMusic != null)
+            GameSparker.CurrentMusic = _stageMusic;
     }
 
     public override void Exit()
     {
         base.Exit();
+        // Pause music while this phase is not displayed (buried in the stack).
+        // Music is resumed in Enter() and unloaded in Dispose().
         GameSparker.CurrentMusic = null;
     }
 
@@ -56,14 +77,9 @@ public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : B
         }
     }
 
-    private IRadicalMusic? _stageMusic;
-
-    /// <summary>
-    /// Loads a fresh stage. Each call creates a new <see cref="ClientStage"/> —
-    /// stages are no longer shared between phases.
-    /// </summary>
-    public virtual void LoadStage(string stageName, bool loadMusic = true, bool reloadIfLoaded = false)
+    protected virtual void LoadStage(string stageName, bool loadMusic = true, bool reloadIfLoaded = false)
     {
+        StageName = stageName;
         CurrentStage?.Dispose();
         CurrentStage = new ClientStage(GraphicsDevice, stageName, CarsInRace, Camera, LightCameras);
 
@@ -71,7 +87,7 @@ public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : B
             LoadStageMusic(reloadIfLoaded: reloadIfLoaded);
     }
 
-    public virtual void LoadStageMusic(bool reloadIfLoaded = false)
+    protected virtual void LoadStageMusic(bool reloadIfLoaded = false)
     {
         if ((reloadIfLoaded && GameSparker.CurrentMusic != null) || _stageMusic == null)
         {
@@ -79,14 +95,12 @@ public abstract class BaseStageRenderingPhase(GraphicsDevice graphicsDevice) : B
 
             bool useRemastered = GameSparker.UseRemasteredMusic && !string.IsNullOrEmpty(CurrentStage.RemasteredMusicPath);
             string path = useRemastered ? CurrentStage.RemasteredMusicPath : CurrentStage.MusicPath;
-            double tempoMul = !useRemastered ? CurrentStage.MusicTempoMul : 0d;
+            double tempoMul = !useRemastered ? CurrentStage.MusicTempoMul : 1d;
             double freqMul = !useRemastered ? CurrentStage.MusicFreqMul : 1d;
 
             _stageMusic = IBackend.Backend.LoadMusic($"./data/music/{path}", tempoMul);
             _stageMusic.SetFreqMultiplier(freqMul);
         }
-
-        GameSparker.CurrentMusic = _stageMusic;
     }
 
     public CarVisual GetCarVisual(int index)

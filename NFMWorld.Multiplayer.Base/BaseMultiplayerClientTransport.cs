@@ -41,6 +41,8 @@ public abstract class BaseMultiplayerClientTransport : IMultiplayerClientTranspo
 
     public void SendPacketToServer<T>(T packet, bool reliable = true) where T : IPacketClientToServer<T>
     {
+        Logging.Debug($"Sending packet to server: {packet.GetType().Name}");
+        
         using var arr = new ArrayPoolBufferWriter<byte>();
         arr.Write(packet.Opcode);
         packet.Write(arr);

@@ -7,6 +7,7 @@ public static class ClientServer
 {
     public static bool IsRunningOnClient { get; set; } = false;
 
+    [Obsolete("Use proper class split (PvpClientGamemode / IServerGamemode) instead of runtime gating.")]
     public static void RunIfOnClient(Action action)
     {
         if (IsRunningOnClient)
@@ -15,6 +16,7 @@ public static class ClientServer
         }
     }
 
+    [Obsolete("Use proper class split (PvpClientGamemode / IServerGamemode) instead of runtime gating.")]
     public static void RunIfOnClient<T>(Action<T> action, T parameter)
     {
         if (IsRunningOnClient)
@@ -22,7 +24,7 @@ public static class ClientServer
             action(parameter);
         }
     }
-    
+
     [DoesNotReturn]
     public static void AccidentallyCalledClientMethodOnServer([CallerMemberName] string? methodName = null)
     {

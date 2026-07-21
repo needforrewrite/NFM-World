@@ -16,6 +16,7 @@ public static class BackendGameSparker
     public static Dictionary<Collection, UnlimitedArray<Rad3d>> cars = new();
     public static UnlimitedArray<Rad3d> stage_parts = [];
     public static UnlimitedArray<Rad3d> vendor_stage_parts = [];
+    public static UnlimitedArray<Rad3d> src_stage_parts = [];
     public static UnlimitedArray<Rad3d> user_stage_parts = [];
     public static Dictionary<string, (int Index, Rad3d Rad)> dynamic_models = new();
     public static Rad3d error_mesh;
@@ -38,6 +39,222 @@ public static class BackendGameSparker
         "8sroad", "8soffroad"
     ];
 
+    public static readonly string[] srcStageParts =
+    [
+        "road",
+        "froad",
+        "twister2",
+        "twister1",
+        "turn",
+        "offroad",
+        "bumproad",
+        "offturn",
+        "nroad",
+        "nturn",
+        "roblend",
+        "noblend",
+        "rnblend",
+        "roadend",
+        "offroadend",
+        "hpground",
+        "ramp30",
+        "cramp35",
+        "dramp15",
+        "dhilo15",
+        "slide10",
+        "takeoff",
+        "sramp22",
+        "offbump",
+        "offramp",
+        "sofframp",
+        "halfpipe",
+        "spikes",
+        "rail",
+        "thewall",
+        "checkpoint",
+        "fixpoint",
+        "offcheckpoint",
+        "tjunction",
+        "xjunction",
+        "highwaystraight",
+        "highwayturn",
+        "sewer_dual_ramp",
+        "tollbooth1",
+        "tollbooth2",
+        "highwayescape",
+        "carrierjump",
+        "dockstraight",
+        "dockjump1",
+        "dockjump2",
+        "dockinside",
+        "dockoutside",
+        "canyonstraight",
+        "canyonroadend1",
+        "canyonbridge",
+        "canyonedgeinside",
+        "canyonedgeoutside",
+        "canyontop",
+        "canyoncheckpt",
+        "canyonntrance1",
+        "tunnelstraight",
+        "tunnelturn",
+        "buildingstraight",
+        "buildingoverpass",
+        "supeshop",
+        "turbo",
+        "understraight",
+        "underturn",
+        "underntrance",
+        "subwaystraight",
+        "subwaytrain",
+        "subwayturn",
+        "substation",
+        "subarea2",
+        "subarea3",
+        "subentrance",
+        "subarea1",
+        "subtrain",
+        "subtrain2",
+        "house0",
+        "house1",
+        "house2",
+        "condo1",
+        "condo2",
+        "skyscraper1",
+        "skyscraper2",
+        "skyscraper3",
+        "warehouse1",
+        "citywall1",
+        "chainfence",
+        "desertwall",
+        "desertwallturn",
+        "waterroute",
+        "sewerjump",
+        "tree",
+        "streetlamp",
+        "hatchback",
+        "sedan",
+        "sports",
+        "docksXhighway",
+        "super",
+        "dapigs",
+        "rdblkpigs",
+        "supapigs",
+        "Rdblkgate1",
+        "rdblkbarrier1",
+        "spikestrip",
+        "suspensionbridge",
+        "roofjump",
+        "urbanramp",
+        "urbanstraight",
+        "urbanX",
+        "canyonroadend2",
+        "large dumpstaa",
+        "urbanT",
+        "urbanTurn",
+        "urbanEnd",
+        "tunnelramp",
+        "grandstand",
+        "canyonntrance2",
+        "rocktotunnel",
+        "dirtWaterX",
+        "docksTurban",
+        "urbanlowramp",
+        "waterwall",
+        "canyonwall",
+        "classicwall",
+        "gpwall",
+        "forrestwall",
+        "advert1",
+        "UrbanXtunnel",
+        "highwayjump",
+        "sewerend",
+        "sewerturn",
+        "snowbridge",
+        "snowcheckpt",
+        "snowedgeinside",
+        "snowedgeoutside",
+        "snowntrance1",
+        "snowntrance2",
+        "snowroadend1",
+        "snowroadend2",
+        "snowstraight",
+        "snowtop",
+        "snow2highway",
+        "sideoff",
+        "bsideoff",
+        "uprise",
+        "riseroad",
+        "sroad",
+        "soffroad",
+        "tside",
+        "launchpad",
+        "thenet",
+        "speedramp",
+        "offhill",
+        "slider",
+        "uphill",
+        "roll1",
+        "roll2",
+        "roll3",
+        "roll4",
+        "roll5",
+        "roll6",
+        "opile1",
+        "opile2",
+        "aircheckpoint",
+        "tree1",
+        "tree2",
+        "tree3",
+        "tree4",
+        "tree5",
+        "tree6",
+        "tree7",
+        "tree8",
+        "cac1",
+        "cac2",
+        "cac3",
+        "8sroad",
+        "8soffroad",
+        "ufo",
+        "ai_node",
+        "base1",
+        "flag1",
+        "guideflag1",
+        "pedflag1",
+        "base2",
+        "flag2",
+        "guideflag2",
+        "pedflag2",
+        "dickwall",
+        "futbowlgoal",
+        "soccer",
+        "cash",
+        "krystal",
+        "perfboost",
+        "highwayxtunnel",
+        "highwayxurban",
+        "tunhwyrmp",
+        "deserthwy",
+        "canyonramp",
+        "desertxurban",
+        "docksXtunnel",
+        "docksXhighwayM",
+        "docksXtunnelM",
+        "GP_road",
+        "GP_race_start_light",
+        "GP_twister2",
+        "GP_twister1",
+        "GP_turn",
+        "GP_pit_exit_01",
+        "GP_pit_exit_02",
+        "GP_pitlane_s_01",
+        "GP_pitlane_s_02",
+        "GP_roadend",
+        "uni_start",
+        "fuelpumps",
+    ];
+
     private static bool _loaded;
 
     public static void Load(bool isHeadless = true)
@@ -58,16 +275,20 @@ public static class BackendGameSparker
         SentrySdk.CaptureMessage("Hello world", SentryLevel.Debug);
 
 #if !DEBUG
-                if (!isHeadless && !Debugger.IsAttached)
-                {
-                    CrashReportLibrary.Hook(Logging.SentryDsn, Logging.Release);
-                }
-        #endif
+        if (!isHeadless && !Debugger.IsAttached)
+        {
+            CrashReportLibrary.Hook(Logging.SentryDsn, Logging.Release);
+        }
+#endif
         
         VFS.MountDirectory(AppDomain.CurrentDomain.BaseDirectory);
         VFS.MountDirectory(Directory.GetCurrentDirectory());
         VFS.MountWriteDestination(Directory.GetCurrentDirectory());
         
+        // src dirs
+        VFS.MountDirectory(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "src"));
+        VFS.MountDirectory(Path.Combine(Directory.GetCurrentDirectory(), "src"));
+
         var modsFolder = Path.Combine(Directory.GetCurrentDirectory(), "mods");
         if (Directory.Exists(modsFolder))
             VFS.MountDirectory(modsFolder);
@@ -108,6 +329,13 @@ public static class BackendGameSparker
             result => cars[Collection.Football].Add(result)
         );
 
+        cars.Add(Collection.Skyline, []);
+        FileUtil.LoadFiles(
+            "./data/models/src/cars",
+            (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "src/" + fileName),
+            result => cars[Collection.Skyline].Add(result)
+        );
+
         FileUtil.LoadFiles(
             "./data/models/world/stage",
             (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "world/" + fileName),
@@ -118,6 +346,13 @@ public static class BackendGameSparker
             "./data/models/football/stage",
             (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "football/" + fileName),
             result => vendor_stage_parts.Add(result)
+        );
+        
+        FileUtil.LoadFiles(
+            "./data/models/src/stage",
+            srcStageParts,
+            (ais, fileName) => RadParser.ParseRad(Encoding.UTF8.GetString(ais), "src/" + fileName),
+            (id, result) => src_stage_parts[id] = result
         );
 
         cars.Add(Collection.User, []);
@@ -331,7 +566,7 @@ public static class BackendGameSparker
 
     public static (int Id, Rad3d? Rad) GetStagePart(string name)
     {
-        IReadOnlyList<Rad3d>[] arrays = [stage_parts, vendor_stage_parts, user_stage_parts];
+        IReadOnlyList<Rad3d>[] arrays = [stage_parts, vendor_stage_parts, user_stage_parts, src_stage_parts];
 
         var total = 0;
         foreach (var t in arrays)

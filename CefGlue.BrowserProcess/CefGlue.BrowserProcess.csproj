@@ -22,8 +22,22 @@
 
   <ItemGroup>
     <PackageReference Include="CefGlue.Common" Version="120.6099.211" />
-    <PackageReference Include="System.Runtime.Loader" Version="4.3.0" />
   </ItemGroup>
+
+  <Target Name="EnsureCefGlueMacRuntimeLibrariesInOutDir"
+          BeforeTargets="_CopyOutOfDateSourceItemsToOutputDirectory"
+          Condition="'$(RuntimeIdentifier)' == 'osx-x64' or '$(RuntimeIdentifier)' == 'osx-arm64'">
+    <ItemGroup>
+      <_CefMacRuntimeLibraries Include="@(CefRedistOSX64);@(CefRedistOSXARM64)"
+                               Condition="'%(Filename)%(Extension)' == 'libEGL.dylib' or '%(Filename)%(Extension)' == 'libGLESv2.dylib' or '%(Filename)%(Extension)' == 'libvk_swiftshader.dylib'" />
+      <_CefMacRuntimeLibrariesToCopy Include="@(_CefMacRuntimeLibraries)"
+                                     Condition="!Exists('$(OutDir)%(Filename)%(Extension)')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_CefMacRuntimeLibrariesToCopy)"
+          DestinationFolder="$(OutDir)"
+          SkipUnchangedFiles="true"
+          Condition="'@(_CefMacRuntimeLibrariesToCopy)' != ''" />
+  </Target>
 
 <!--  <Target Name="Editbin" AfterTargets="Compile" Condition="$(IsEditbinEnabled) == True And $(VcvarsFile) != '' And $([MSBuild]::IsOSPlatform('Windows'))">-->
 <!--    &lt;!&ndash;-->

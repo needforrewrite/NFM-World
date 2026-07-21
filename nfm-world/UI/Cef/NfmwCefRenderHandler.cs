@@ -16,10 +16,27 @@ internal sealed class NfmwCefRenderHandler(GraphicsDevice graphicsDevice) : CefR
     private int _textureHeight;
     private bool _needsFullUpload = true;
 
+    // Popup support (e.g., <select> dropdowns)
+    private Texture2D? _popupTexture;
+    private int _popupWidth;
+    private int _popupHeight;
+    private CefRectangle _popupRect;
+    private bool _popupVisible;
+
     // Pre-allocated buffer for copying dirty rect pixel data
     private byte[]? _copyBuffer;
 
     public Texture2D? BrowserTexture => _browserTexture;
+
+    /// <summary>The popup overlay texture (e.g., for &lt;select&gt; dropdowns).</summary>
+    public Texture2D? PopupTexture => _popupTexture;
+
+    /// <summary>Whether a CEF popup is currently visible.</summary>
+    public bool PopupVisible => _popupVisible;
+
+    /// <summary>Screen-space rectangle where the popup should be drawn.</summary>
+    public CefRectangle PopupRect => _popupRect;
+
     public int ViewWidth { get; private set; }
     public int ViewHeight { get; private set; }
 
@@ -53,12 +70,48 @@ internal sealed class NfmwCefRenderHandler(GraphicsDevice graphicsDevice) : CefR
         if (width <= 0 || height <= 0 || buffer == IntPtr.Zero)
             return;
 
-        EnsureTexture(width, height);
+        // Route popup paints to a separate texture
+        if (type == CefPaintElementType.Popup)
+        {
+            PaintPopup(dirtyRects, buffer, width, height);
+            return;
+        }
 
-        if (_browserTexture == null)
+        if (type != CefPaintElementType.View)
             return;
 
+        EnsureTexture(ref _browserTexture, ref _textureWidth, ref _textureHeight, width, height);
+        UploadToTexture(_browserTexture!, _textureWidth, dirtyRects, buffer, width, height);
+
+        OnBrowserPainted?.Invoke();
+    }
+
+    private void PaintPopup(CefRectangle[] dirtyRects, IntPtr buffer, int width, int height)
+    {
+        EnsureTexture(ref _popupTexture, ref _popupWidth, ref _popupHeight, width, height);
+        UploadToTexture(_popupTexture!, _popupWidth, dirtyRects, buffer, width, height);
+
+        OnBrowserPainted?.Invoke();
+    }
+
+    private void EnsureTexture(ref Texture2D? texture, ref int texWidth, ref int texHeight,
+        int width, int height)
+    {
+        if (texture == null || texWidth != width || texHeight != height)
+        {
+            texture?.Dispose();
+            texture = new Texture2D(graphicsDevice, width, height, false, SurfaceFormat.Color);
+            texWidth = width;
+            texHeight = height;
+            _needsFullUpload = true;
+        }
+    }
+
+    private void UploadToTexture(Texture2D texture, int texWidth,
+        CefRectangle[] dirtyRects, IntPtr buffer, int width, int height)
+    {
         var bytesPerPixel = 4; // BGRA
+
         var stride = width * bytesPerPixel;
 
         if (_needsFullUpload || dirtyRects.Length == 0)
@@ -73,7 +126,7 @@ internal sealed class NfmwCefRenderHandler(GraphicsDevice graphicsDevice) : CefR
                     Buffer.MemoryCopy(buffer.ToPointer(), dst, totalBytes, totalBytes);
                 }
             }
-            _browserTexture.SetData(_copyBuffer!);
+            texture.SetData(_copyBuffer!);
             _needsFullUpload = false;
         }
         else
@@ -112,20 +165,29 @@ internal sealed class NfmwCefRenderHandler(GraphicsDevice graphicsDevice) : CefR
                     }
                 }
 
-                _browserTexture.SetData(0, clampedRect, _copyBuffer!, 0, rectBytes);
+                texture.SetData(0, clampedRect, _copyBuffer!, 0, rectBytes);
             }
         }
-
-        OnBrowserPainted?.Invoke();
     }
 
     protected override void OnPopupShow(CefBrowser browser, bool show)
     {
-        // Popups not supported in this off-screen implementation
+        _popupVisible = show;
+        if (!show)
+        {
+            // Popup hidden — clear the popup texture
+            _popupTexture?.Dispose();
+            _popupTexture = null;
+            _popupWidth = 0;
+            _popupHeight = 0;
+        }
     }
 
     protected override void OnPopupSize(CefBrowser browser, CefRectangle rect)
     {
+        // Called before OnPaint(PET_POPUP). Records where the popup
+        // should be positioned on the main view.
+        _popupRect = rect;
     }
 
     protected override void OnScrollOffsetChanged(CefBrowser browser, double x, double y)
@@ -148,18 +210,6 @@ internal sealed class NfmwCefRenderHandler(GraphicsDevice graphicsDevice) : CefR
         return null!;
     }
 
-    private void EnsureTexture(int width, int height)
-    {
-        if (_browserTexture == null || _textureWidth != width || _textureHeight != height)
-        {
-            _browserTexture?.Dispose();
-            _browserTexture = new Texture2D(graphicsDevice, width, height, false, SurfaceFormat.Color);
-            _textureWidth = width;
-            _textureHeight = height;
-            _needsFullUpload = true;
-        }
-    }
-
     private void EnsureCopyBuffer(int size)
     {
         if (_copyBuffer == null || _copyBuffer.Length < size)
@@ -174,6 +224,13 @@ internal sealed class NfmwCefRenderHandler(GraphicsDevice graphicsDevice) : CefR
         _browserTexture = null;
         _textureWidth = 0;
         _textureHeight = 0;
+
+        _popupTexture?.Dispose();
+        _popupTexture = null;
+        _popupWidth = 0;
+        _popupHeight = 0;
+        _popupVisible = false;
+
         _needsFullUpload = true;
     }
 }

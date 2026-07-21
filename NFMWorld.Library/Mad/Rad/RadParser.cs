@@ -89,7 +89,6 @@ public partial class RadParser
         }
     }
     
-    private int _npoints = 0;
     private bool _stonecold;
     private bool _noOutline;
     private fix64 idiv = (fix64)1f, iwid = (fix64)1f, scaleX = (fix64)1f, scaleY = (fix64)1f, scaleZ = (fix64)1f;

@@ -7,8 +7,6 @@ namespace NFMWorld.Gameplay;
 
 public abstract class BasePhase : IDisposable
 {
-    public virtual bool IsSingleton => false;
-    
     /// <summary>
     /// Whether CEF input should be forwarded while this phase is active.
     /// Defaults to the bridge's preference (<see cref="PhaseBridge.EnableInput"/>)
@@ -102,6 +100,12 @@ public abstract class BasePhase : IDisposable
         {
             GameSparker.CefRenderer.SetInputEnabled(EnableCefInput);
         }
+
+        // Consume the current keyboard state to prevent key bleeding.
+        // When a phase transition is triggered by a key press (e.g., Enter on
+        // stage select → garage), the same physical key-down must not be
+        // forwarded to CEF as a new RawKeyDown for the incoming phase's page.
+        GameSparker.CefRenderer?.ConsumeKeyboardState();
     }
 
     /// <summary>
@@ -113,10 +117,8 @@ public abstract class BasePhase : IDisposable
         // Unregister the phase's CEF bridge
         CefBridge?.Unregister();
 
-        if (!IsSingleton)
-        {
-            Dispose();
-        }
+        // Disposal is now handled by PhaseManager.FlushDisposals() at end-of-frame.
+        // Phases on the stack are kept alive; popped phases are queued for deferred disposal.
     }
 
     /// <summary>

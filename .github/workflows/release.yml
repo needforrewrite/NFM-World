@@ -22,6 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+          token: ${{ secrets.SRC_TOKEN }}
 
       - name: Extract branch name
         id: branch
@@ -73,6 +74,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+          token: ${{ secrets.SRC_TOKEN }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -142,6 +144,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+          token: ${{ secrets.SRC_TOKEN }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -250,6 +253,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: 'recursive'
+          token: ${{ secrets.SRC_TOKEN }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
 
       - name: Install Command Line Tools for Xcode
         run: |
@@ -401,9 +410,11 @@ jobs:
         with:
           tag_name: ${{ needs.prepare.outputs.tag_name }}
           name: Build ${{ needs.prepare.outputs.branch_name }} - ${{ needs.prepare.outputs.short_sha }}
+          repository: MerNeith-Heavy-Industries/SkylineRacingConceptNewEnginePreReleases
           # prerelease: ${{ needs.prepare.outputs.is_master != 'true' }}
           files: |
             artifacts/*.zip
             artifacts/*.tar.gz
+          token: ${{ secrets.SRC_TOKEN }}
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+            GITHUB_TOKEN: ${{ secrets.SRC_TOKEN }}

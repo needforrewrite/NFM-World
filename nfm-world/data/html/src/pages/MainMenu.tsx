@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "preact/hooks";
 import { styled } from "goober";
 import { callNfmw, onNfmwEvent } from "../shared/bridge";
 import { AccountData } from "../shared/memorypack/AccountData";
+import { Settings } from "./Settings";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -82,6 +83,7 @@ const Footer = styled("div")`
 export function MainMenu() {
   const [account, setAccount] = useState<AccountData | null>(null);
   const [pageStack, setPageStack] = useState<MenuPage[]>([]);
+  const [currentView, setCurrentView] = useState<"menu" | "settings">("menu");
 
   useEffect(() => {
     return onNfmwEvent<AccountData | null>("main-menu:account", setAccount, AccountData.deserialize.bind(AccountData));
@@ -153,7 +155,7 @@ export function MainMenu() {
       { label: "PLAY", description: "Play public, private matches online or play singleplayer.", action: () => pushPage(buildPlayMenu()) },
       { label: "GARAGE", description: "Customize and inspect your vehicles in the garage.", action: () => callNfmw("navigate", { page: "garage" }) },
       { label: "WORKSHOP", description: "Build your own models and stages.", action: () => pushPage(buildWorkshopMenu()) },
-      { label: "SETTINGS", description: "Adjust game settings.", action: () => callNfmw("navigate", { page: "settings" }) },
+      { label: "SETTINGS", description: "Adjust game settings.", action: () => setCurrentView("settings") },
       { label: "CREDITS", description: "View game credits.", action: () => callNfmw("navigate", { page: "credits" }) },
       { label: "QUIT", description: "Exit the game.", action: () => callNfmw("navigate", { page: "quit" }) },
     ],
@@ -161,6 +163,11 @@ export function MainMenu() {
 
   const currentPage = pageStack.length > 0 ? pageStack[pageStack.length - 1] : mainPage;
   const showBack = pageStack.length > 0;
+
+  // ── Embedded Settings view ────────────────────────────────────
+  if (currentView === "settings") {
+    return <Settings onClose={() => setCurrentView("menu")} />;
+  }
 
   return (
     <Root>

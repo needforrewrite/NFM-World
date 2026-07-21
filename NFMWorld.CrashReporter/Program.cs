@@ -81,9 +81,9 @@ namespace NFMWorld.CrashReporter
 {
     internal class CrashReportResult
     {
-        public string UserName { get; set; }
-        public string Email { get; set; }
-        public string Description { get; set; }
+        public string UserName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Description { get; set; } = "";
         public bool Submitted { get; set; }
     }
 
@@ -299,7 +299,7 @@ namespace NFMWorld.CrashReporter
             var result = new CrashReportResult();
             
             // Determine which dialog tool is available
-            string dialogTool = await FindLinuxDialogTool();
+            string? dialogTool = await FindLinuxDialogTool();
             if (string.IsNullOrEmpty(dialogTool))
                 return result;
 
@@ -475,7 +475,7 @@ namespace NFMWorld.CrashReporter
         }
 
         // Main entry point
-        public static async Task<CrashReportResult> ShowDialog(string errorMessage, string errorDetails = null)
+        public static async Task<CrashReportResult> ShowDialog(string errorMessage, string? errorDetails = null)
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return await ShowWindowsDialog(errorMessage, errorDetails);

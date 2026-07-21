@@ -5,6 +5,7 @@
 using NFMWorld.UI.Cef;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend.Gamemodes;
+using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
 
@@ -14,16 +15,15 @@ namespace NFMWorld.Gameplay;
 
 public class MainMenuPhase : BaseStageRenderingPhase
 {
-    public override bool IsSingleton => true;
-
     private readonly MainMenuBridge _bridge = new();
 
-    public MainMenuPhase(GraphicsDevice graphicsDevice) : base(graphicsDevice)
+    public MainMenuPhase(GraphicsDevice graphicsDevice, string stageName) : base(graphicsDevice, stageName)
     {
         CefBridge = _bridge;
 
         _bridge.NavigateRequested += OnNavigateRequested;
         _bridge.LogoutRequested += OnLogoutClicked;
+        _bridge.SettingsRestartConfirmed += () => System.Environment.Exit(0);
 
         // Push initial account state if available
         var account = GameSparker.AccountManager.LoggedIn
@@ -58,7 +58,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 OnGarageClicked();
                 break;
             case "settings":
-                OnSettingsClicked();
+                // Settings is now an embedded component in the main menu UI —
+                // the frontend handles view switching directly without a phase push.
                 break;
             case "credits":
                 OnClickUnavailable();
@@ -80,10 +81,25 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnFreePlayClicked()
     {
-        var inRace = new InRacePhase(GraphicsDevice, "nfmm/radicalone");
-        
-        inRace.LoadStage("nfm2/15_dwm");
-        GameSparker.SetPhase(inRace);
+        var inRace = new InRacePhase(GraphicsDevice, "nfm2/9_majestic", new PvpGamemodeFactory(PvpConstraint.Both), [
+            new PlayerParameters
+            {
+                CarName = "nfmm/radicalone",
+                IsClientPlayer = true,
+                PlayerName = "MadPlayer",
+                Color = default,
+                IsBot = false
+            },
+            new PlayerParameters
+            {
+                CarName = "nfmm/audir8",
+                IsClientPlayer = true,
+                PlayerName = "ElStupido",
+                Color = default,
+                IsBot = true
+            }
+        ]);
+        GameSparker.PushPhase(inRace);
 
         Logging.Info("Game started!");
     }
@@ -106,21 +122,28 @@ public class MainMenuPhase : BaseStageRenderingPhase
             GaragePhase gp = new(GraphicsDevice, stageName);
             gp.CarSelected += (sender, car) =>
             {
-                var inRace = new InRacePhase(GraphicsDevice, car.FileName);
-                inRace.gamemode = GameModes.TimeTrial;
-                inRace.LoadStage(stageName);
-                GameSparker.SetPhase(inRace);
+                var inRace = new InRacePhase(GraphicsDevice, stageName, new TimeTrialGamemodeFactory(), [
+                    new PlayerParameters()
+                    {
+                        CarName = car.FileName,
+                        Color = default,
+                        IsBot = false,
+                        IsClientPlayer = true,
+                        PlayerName = "MadPlayer"
+                    }
+                ]);
+                GameSparker.PushPhase(inRace);
             };
 
             gp.CarSelectionCancelled += (sender, _) =>
             {
-                GameSparker.SetPhase(this);
+                GameSparker.PopPhase();
             };
 
-            GameSparker.SetPhase(gp);
+            GameSparker.PushPhase(gp);
         };
 
-        GameSparker.SetPhase(ssp);
+        GameSparker.PushPhase(ssp);
     }
 
     private void OnGarageClicked()
@@ -129,15 +152,15 @@ public class MainMenuPhase : BaseStageRenderingPhase
         
         gp.CarSelected += (sender, c) =>
         {
-            GameSparker.SetPhase(this);
+            GameSparker.PopPhase();
         };
 
         gp.CarSelectionCancelled += (sender, _) =>
         {
-            GameSparker.SetPhase(this);
+            GameSparker.PopPhase();
         };
 
-        GameSparker.SetPhase(gp);
+        GameSparker.PushPhase(gp);
     }
 
 
@@ -153,7 +176,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnSettingsClicked()
     {
-        GameSparker.SettingsMenu.Open();
+        // Settings is now embedded in the main menu UI via SettingsHandler sub-handler.
+        // The frontend MainMenu.tsx shows/hides the Settings component directly.
     }
 
     private void OnClickUnavailable()
@@ -182,14 +206,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);
 
-        if (imguiWantsKeyboard) return;
-
-        // Handle key capture for settings menu
-        if (GameSparker.SettingsMenu.IsOpen && GameSparker.SettingsMenu.IsCapturingKey())
-        {
-            GameSparker.SettingsMenu.HandleKeyCapture(key);
-        }
-        return;
+        // Forward to sub-handlers (e.g., SettingsHandler key capture during rebinding)
+        if (_bridge.TryHandleKeyPress(key))
+            return;
     }
 
     public override void RenderImgui()

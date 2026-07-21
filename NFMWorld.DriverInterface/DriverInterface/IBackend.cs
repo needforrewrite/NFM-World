@@ -18,7 +18,7 @@ public interface IBackend
     }
 
     [ClientOnly]
-    IRadicalMusic LoadMusic(string file, double tempomul);
+    IRadicalMusic LoadMusic(string file, double tempomul = 1);
     
     [ClientOnly]
     void StopAllSounds();

@@ -100,7 +100,7 @@ public partial struct CarFrame
         return entry;
     }
 
-    public void ApplyToCar(IInGameCar car)
+    public readonly void ApplyToCar(IInGameCar car)
     {
         car.Control.Up = TheBitFlags.Up;
         car.Control.Down = TheBitFlags.Down;

@@ -63,12 +63,14 @@ public class SteamMultiplayerServerTransport : BaseMultiplayerServerTransport, I
     public void OnConnected(Connection connection, ConnectionInfo info)
     {
         Logging.Info($"{info.Identity} has joined the game");
+        ClientConnected?.Invoke(this, connection.Id);
         _connectedClients.TryAdd(connection, connection);
     }
 
     public void OnDisconnected(Connection connection, ConnectionInfo info)
     {
         _connectedClients.TryRemove(connection, out _);
+        ClientDisconnected?.Invoke(this, connection.Id);
         Logging.Info($"{info.Identity} has left the game");
     }
     

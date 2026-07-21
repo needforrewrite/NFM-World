@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using Xilium.CefGlue;
 using Xilium.CefGlue.BrowserProcess.Handlers;
 
+#nullable enable
+
 namespace NFMWorld.UI.Cef;
 
 /// <summary>
@@ -179,7 +181,7 @@ internal sealed class NfmwV8Handler(string functionName) : CefV8Handler
             }
 
             var msgArgs = msg.Arguments;
-            msgArgs.SetSize(arguments.Length);
+            msgArgs!.SetSize(arguments.Length);
             for (var i = 0; i < arguments.Length; i++)
             {
                 if (arguments[i].IsString)

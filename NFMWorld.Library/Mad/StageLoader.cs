@@ -1,4 +1,4 @@
-﻿﻿﻿using System.Runtime.CompilerServices;
+﻿﻿﻿﻿﻿using System.Runtime.CompilerServices;
 using Maxine.Extensions.Collections;
 using MemoryPack;
 using NFMWorldLibrary.FixedMath;
@@ -81,11 +81,12 @@ public partial class StageLoader
 
     // soundtrackfreqmul(mul)
     [MemoryPackOrder(4)] public double musicFreqMul = 1.0d;
-    [MemoryPackOrder(5)] public double musicTempoMul = 0d;
+    [MemoryPackOrder(5)] public double musicTempoMul = 1.0d;
     [MemoryPackOrder(6)] public string Name = "hogan rewish";
     [MemoryPackOrder(7)] public int indexOffset = 10;
 
     private bool swapYandRot = false;
+    private bool srcStageLoading = false;
     private bool reverseChkY = false;
 
     // left
@@ -324,6 +325,12 @@ public partial class StageLoader
                 else if (line.StartsWith("modeloffset"))
                 {
                     indexOffset = Utility.GetInt("modeloffset", line, 0);
+                }
+                
+                else if (line.StartsWith("srcMode"))
+                {
+                    swapYandRot = true;
+                    srcStageLoading = true;
                 }
 
                 else if (line.StartsWith("swapRotY"))
@@ -723,7 +730,15 @@ public partial class StageLoader
         if (int.TryParse(setstring, out var setindex))
         {
             setindex -= indexOffset;
-            mesh = BackendGameSparker.stage_parts[setindex];
+            if (srcStageLoading)
+            {
+                mesh = BackendGameSparker.src_stage_parts[setindex];
+            }
+            else
+            {
+                mesh = BackendGameSparker.stage_parts[setindex];
+            }
+
             if (mesh == null!)
             {
                 SentrySdk.CaptureMessage($"Stage part '{setstring}' not found.");

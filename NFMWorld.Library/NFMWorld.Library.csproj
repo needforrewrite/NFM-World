@@ -21,12 +21,18 @@
     <ItemGroup>
         <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+        <PackageReference Include="ENet-CSharp" Version="2.4.8" />
         <PackageReference Include="Lua.NET" Version="6.0.1" />
         <PackageReference Include="LuzFaltex.Core.Collections" Version="0.1.0" />
-        <PackageReference Include="MessagePack" Version="3.1.4" />
-        <PackageReference Include="MessagePack.Experimental" Version="3.1.4" />
+        <PackageReference Include="MessagePack" Version="3.1.8" />
+        <PackageReference Include="MessagePack.Experimental" Version="3.1.8" />
         <PackageReference Include="Microsoft.Extensions.Logging" Version="11.0.0-preview.5.26302.115" />
         <None Include="data\**\*" CopyToOutputDirectory="Always" />
+        <None Remove="data\.git\**" CopyToOutputDirectory="Never" />
+        <None Remove="data\.git" CopyToOutputDirectory="Never" />
+        <None Include="src\**\*" CopyToOutputDirectory="Always" />
+        <None Remove="src\data\.git\**" CopyToOutputDirectory="Never" />
+        <None Remove="src\data\.git" CopyToOutputDirectory="Never" />
         <PackageReference Include="ZLogger" Version="2.5.10" />
         <ProjectReference Include="..\HoleyDiver\HoleyDiver.csproj" />
         <ProjectReference Include="..\MemoryPack\src\MemoryPack\MemoryPack.csproj" />

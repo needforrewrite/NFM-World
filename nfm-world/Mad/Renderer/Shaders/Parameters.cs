@@ -1,9 +1,19 @@
 ﻿using Maxine.Extensions.Mathematics;
 using Microsoft.Xna.Framework.Graphics;
+using NFMWorldLibrary;
 using Silk.NET.Maths;
 using Half = System.Half;
 
 namespace NFMWorld;
+
+file static class MatrixParameterGuard
+{
+    public static bool HasNaN(Matrix m) =>
+        float.IsNaN(m.M11) || float.IsNaN(m.M12) || float.IsNaN(m.M13) || float.IsNaN(m.M14) ||
+        float.IsNaN(m.M21) || float.IsNaN(m.M22) || float.IsNaN(m.M23) || float.IsNaN(m.M24) ||
+        float.IsNaN(m.M31) || float.IsNaN(m.M32) || float.IsNaN(m.M33) || float.IsNaN(m.M34) ||
+        float.IsNaN(m.M41) || float.IsNaN(m.M42) || float.IsNaN(m.M43) || float.IsNaN(m.M44);
+}
 
 public readonly struct FloatEffectParameter(EffectParameter? parameter)
 {
@@ -29,8 +39,33 @@ public readonly struct Float4EffectParameter(EffectParameter? parameter)
 }
 public readonly struct Float3x3EffectParameter(EffectParameter? parameter)
 {
-    public void SetValue(Matrix matrix) => parameter?.SetValue(matrix);
-    public void SetValueTranspose(Matrix matrix) => parameter?.SetValueTranspose(matrix);
+    public void SetValue(Matrix matrix)
+    {
+        if (parameter is null)
+            return;
+
+        if (MatrixParameterGuard.HasNaN(matrix))
+        {
+            Logging.Warning("Float3x3EffectParameter.SetValue: matrix contains NaN, skipping.");
+            return;
+        }
+
+        parameter.SetValue(matrix);
+    }
+
+    public void SetValueTranspose(Matrix matrix)
+    {
+        if (parameter is null)
+            return;
+
+        if (MatrixParameterGuard.HasNaN(matrix))
+        {
+            Logging.Warning("Float3x3EffectParameter.SetValueTranspose: matrix contains NaN, skipping.");
+            return;
+        }
+
+        parameter.SetValueTranspose(matrix);
+    }
     public void SetValue(ReadOnlySpan<float> value) => parameter?.SetValueEXT(value[..9]);
     public void SetValueTranspose(ReadOnlySpan<float> value) => parameter?.SetValueTranspose(new Matrix(
         value[0], value[3], value[6], 0,
@@ -40,8 +75,37 @@ public readonly struct Float3x3EffectParameter(EffectParameter? parameter)
 }
 public readonly struct Float4x4EffectParameter(EffectParameter? parameter)
 {
-    public void SetValue(Matrix matrix) => parameter?.SetValue(matrix);
-    public void SetValueTranspose(Matrix matrix) => parameter?.SetValueTranspose(matrix);
+    public void SetValue(Matrix matrix)
+    {
+        if (parameter is null)
+            return;
+
+        // Guard against NaN matrices — can happen on first frame if the camera
+        // hasn't been fully initialised yet (e.g. Width/Height both zero, or
+        // Position == LookAt causing CreateLookAt to normalise a zero vector).
+        if (MatrixParameterGuard.HasNaN(matrix))
+        {
+            Logging.Warning("Float4x4EffectParameter.SetValue: matrix contains NaN, skipping.");
+            return;
+        }
+
+        parameter.SetValue(matrix);
+    }
+
+    public void SetValueTranspose(Matrix matrix)
+    {
+        if (parameter is null)
+            return;
+
+        if (MatrixParameterGuard.HasNaN(matrix))
+        {
+            Logging.Warning("Float4x4EffectParameter.SetValueTranspose: matrix contains NaN, skipping.");
+            return;
+        }
+
+        parameter.SetValueTranspose(matrix);
+    }
+
     public void SetValue(ReadOnlySpan<float> value) => parameter?.SetValueEXT(value[..16]);
     public void SetValueTranspose(ReadOnlySpan<float> value) => parameter?.SetValueTranspose(new Matrix(
         value[0], value[4], value[8], value[12],

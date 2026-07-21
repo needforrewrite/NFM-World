@@ -42,7 +42,6 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
 
     // Rendering
     private SpriteBatch? _spriteBatch;
-    private bool _textureNeedsUpdate;
 
     // Input
     private int _scrollWheelValue;
@@ -74,14 +73,13 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
             ExternalMessagePump = false,
             NoSandbox = true,
             BackgroundColor = new CefColor(0, 0, 0, 0), // Transparent
-            RootCachePath = Path.Combine(Path.GetTempPath(), "NFMW_CefCache"),
+            RootCachePath = Path.Combine(Path.GetTempPath(), $"NFMW_CefCache_{System.Environment.ProcessId}"),
             LogSeverity = CefLogSeverity.Warning,
         };
 
         // 3. Create handlers
         _renderHandler = new NfmwCefRenderHandler(_graphicsDevice);
         _renderHandler.SetViewSize(browserWidth, browserHeight);
-        _renderHandler.OnBrowserPainted += () => _textureNeedsUpdate = true;
         _cefClient = new NfmwCefClient(_renderHandler, this);
 
         // 4. Initialize CEF
@@ -153,7 +151,22 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
         // Fix crash with youtube https://github.com/chromiumembedded/cef/issues/3643
         flags = (flags ?? []).Append(KeyValuePair.Create("disable-features", "FirstPartySets")).ToArray();
 
-        CustomScheme[] customSchemes = [];
+        var nfmwSchemeHandlerFactory = new NfmwSchemeHandlerFactory();
+
+        CustomScheme[] customSchemes =
+        [
+            new()
+            {
+                SchemeName = "nfmw",
+                DomainName = "",
+                IsStandard = true,
+                IsLocal = true,
+                IsSecure = true,
+                IsCorsEnabled = true,
+                IsFetchEnabled = true,
+                SchemeHandlerFactory = nfmwSchemeHandlerFactory,
+            },
+        ];
         CefRuntime.Initialize(new CefMainArgs([System.Environment.ProcessPath]), settings, new BrowserCefApp(customSchemes, flags), IntPtr.Zero);
 
         foreach (var scheme in customSchemes)
@@ -175,17 +188,28 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
     }
 
     /// <summary>
-    /// Draw the browser texture as a full-screen overlay. Call in Draw().
+    /// Draw the browser texture as a full-screen overlay, then composite
+    /// any active popup (e.g., &lt;select&gt; dropdown) on top.
+    /// Auto-resizes the browser to match the viewport if dimensions change.
+    /// Call in Draw().
     /// </summary>
     public void Render()
     {
         if (!_isInitialized || _renderHandler?.BrowserTexture == null)
             return;
 
+        // Auto-resize to match viewport so CSS layout and mouse
+        // coordinates are 1:1 with the game window.
+        var viewport = _graphicsDevice.Viewport;
+        if (_renderHandler.ViewWidth != viewport.Width
+            || _renderHandler.ViewHeight != viewport.Height)
+        {
+            Resize(viewport.Width, viewport.Height);
+        }
+
         _spriteBatch ??= new SpriteBatch(_graphicsDevice);
 
         var texture = _renderHandler.BrowserTexture;
-        var viewport = _graphicsDevice.Viewport;
 
         var oldBlend = _graphicsDevice.BlendState;
         var oldDepth = _graphicsDevice.DepthStencilState;
@@ -197,14 +221,24 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
 
         _spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend,
             SamplerState.LinearClamp, DepthStencilState.None, RasterizerState.CullCounterClockwise);
+
+        // Main browser texture — scaled to full viewport
         _spriteBatch.Draw(texture, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.White);
+
+        // Popup overlay (e.g., <select> dropdown)
+        if (_renderHandler.PopupVisible && _renderHandler.PopupTexture is { } popupTex)
+        {
+            var popupRect = _renderHandler.PopupRect;
+            _spriteBatch.Draw(popupTex,
+                new Rectangle(popupRect.X, popupRect.Y, popupRect.Width, popupRect.Height),
+                Color.White);
+        }
+
         _spriteBatch.End();
 
         _graphicsDevice.BlendState = oldBlend;
         _graphicsDevice.DepthStencilState = oldDepth;
         _graphicsDevice.RasterizerState = oldRaster;
-
-        _textureNeedsUpdate = false;
     }
 
     /// <summary>
@@ -229,6 +263,17 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
     public void SetInputEnabled(bool enabled)
     {
         _inputEnabled = enabled;
+    }
+
+    /// <summary>
+    /// Consume the current keyboard state so that keys currently held down
+    /// are not forwarded to CEF as new key-down events on the next frame.
+    /// Call this after a phase transition that was triggered by a key press,
+    /// to prevent key bleeding from one CEF page to the next.
+    /// </summary>
+    public void ConsumeKeyboardState()
+    {
+        _lastKeyboardState = Keyboard.GetState();
     }
 
     /// <summary>
@@ -286,15 +331,8 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
             return "http://localhost:5173/";
         }
 
-        // Production: load from built dist/
-        var indexPath = Path.Combine(AppContext.BaseDirectory, "data", "html", "dist", "index.html");
-
-        if (File.Exists(indexPath))
-        {
-            return new Uri(indexPath).AbsoluteUri;
-        }
-
-        return "about:blank";
+        // Production: load via custom nfmw:// scheme (served from data/html/dist/)
+        return "nfmw://app/index.html";
     }
 
     /// <summary>
@@ -372,16 +410,29 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
     private void ForwardMouseInput(MouseState mouse)
     {
         var host = _browserHost!;
+        var viewport = _graphicsDevice.Viewport;
+
+        // Scale mouse coordinates from screen space to CEF browser view space.
+        var scaleX = (float)_renderHandler!.ViewWidth / viewport.Width;
+        var scaleY = (float)_renderHandler.ViewHeight / viewport.Height;
+        var browserX = (int)(mouse.X * scaleX);
+        var browserY = (int)(mouse.Y * scaleY);
+        var lastBrowserX = (int)(_lastMouseState.X * scaleX);
+        var lastBrowserY = (int)(_lastMouseState.Y * scaleY);
+
+        // Build event flags from current button state so CEF knows
+        // which buttons are held — critical for drag tracking (sliders, etc.)
+        var flags = GetMouseFlags(mouse);
 
         // Mouse move
-        if (mouse.X != _lastMouseState.X || mouse.Y != _lastMouseState.Y)
+        if (browserX != lastBrowserX || browserY != lastBrowserY)
         {
-            var mouseEvent = new CefMouseEvent(mouse.X, mouse.Y, CefEventFlags.None);
+            var mouseEvent = new CefMouseEvent(browserX, browserY, flags);
             host.SendMouseMoveEvent(mouseEvent, false);
         }
 
         // Mouse buttons
-        var mouseEvt = new CefMouseEvent(mouse.X, mouse.Y, CefEventFlags.None);
+        var mouseEvt = new CefMouseEvent(browserX, browserY, flags);
         ProcessMouseButton(host, mouseEvt, mouse.LeftButton, _lastMouseState.LeftButton,
             CefMouseButtonType.Left);
         ProcessMouseButton(host, mouseEvt, mouse.RightButton, _lastMouseState.RightButton,
@@ -393,10 +444,19 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
         var scrollDelta = mouse.ScrollWheelValue - _scrollWheelValue;
         if (scrollDelta != 0)
         {
-            var wheelEvent = new CefMouseEvent(mouse.X, mouse.Y, CefEventFlags.None);
-            host.SendMouseWheelEvent(wheelEvent, 0, scrollDelta);
             _scrollWheelValue = mouse.ScrollWheelValue;
+            var wheelEvent = new CefMouseEvent(browserX, browserY, flags);
+            host.SendMouseWheelEvent(wheelEvent, 0, scrollDelta);
         }
+    }
+
+    private static CefEventFlags GetMouseFlags(MouseState mouse)
+    {
+        var flags = CefEventFlags.None;
+        if (mouse.LeftButton == ButtonState.Pressed)   flags |= CefEventFlags.LeftMouseButton;
+        if (mouse.RightButton == ButtonState.Pressed)  flags |= CefEventFlags.RightMouseButton;
+        if (mouse.MiddleButton == ButtonState.Pressed) flags |= CefEventFlags.MiddleMouseButton;
+        return flags;
     }
 
     private void ProcessMouseButton(CefBrowserHost host, CefMouseEvent mouseEvent,

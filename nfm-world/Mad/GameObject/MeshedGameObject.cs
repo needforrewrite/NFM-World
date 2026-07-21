@@ -45,12 +45,6 @@ public class MeshedGameObject(Mesh mesh) : GameObject
 
     public override void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
-        if (pass.IsShadow && !(CastsShadow || Position.Y < World.Ground))
-        {
-            base.SubmitDraws(queue, camera, lighting, pass);
-            return;
-        }
-
         var boundingSphere = new BoundingSphere(MatrixWorld.Translation, Mesh.MaxRadius);
         Mesh.SubmitRenderables(queue, lighting, Finish ?? false, boundingSphere, RenderBucket, MatrixWorld, GetsShadowed ?? true, AlphaOverride ?? 1.0f, Glow ?? false, Glow ?? false);
 
