@@ -125,7 +125,7 @@
          for Windows CEF runtime/locale files) and before the SDK's CopyFilesToOutputDirectory.
          Does NOT patch any NuGet package files.
     -->
-    <Target Name="RedirectCefAssetsToDataCef" AfterTargets="ResolveCEFAssets" BeforeTargets="CopyFilesToOutputDirectory">
+    <Target Name="RedirectCefAssetsToDataCef" AfterTargets="ResolveCEFAssets" BeforeTargets="CopyFilesToOutputDirectory;PrepareForPublish">
         <ItemGroup>
             <!-- (a) Windows runtime items: have NuGetPackageId from RuntimeTargetsCopyLocalItems.
                  Check None AND ReferenceCopyLocalPaths. The .NET SDK puts native runtime files
@@ -136,7 +136,7 @@
             <_CefByPackage Include="@(ReferenceCopyLocalPaths)"
                            Condition="$([System.String]::new('%(ReferenceCopyLocalPaths.NuGetPackageId)').StartsWith('chromiumembeddedframework.runtime.'))" />
 
-            <!-- (b) Linux / macOS redist items: Link contains CefGlueBrowserProcess -->
+            <!-- (b) Linux / macOS dylib-in-CefGlueBrowserProcess items: Link contains CefGlueBrowserProcess -->
             <_CefByBpDir Include="@(None)"
                          Condition="$([System.String]::new('%(None.Link)').Contains('CefGlueBrowserProcess'))" />
 
@@ -145,6 +145,14 @@
                             Condition="'%(None.Extension)' == '.pak'
                                        AND $([System.String]::new('%(None.Link)').Contains('runtimes'))
                                        AND $([System.String]::new('%(None.Link)').Contains('locales'))" />
+
+            <!-- (d) macOS / Linux redist items: identified by source path containing 'cef.redist.'
+                 (CefRedistOSX64 / CefRedistLinux64). These items lack NuGetPackageId and their
+                 Link does NOT contain CefGlueBrowserProcess. Contains('cef.redist.') is safe
+                 because the search term has no C# escape sequences. Also catches Linux redist
+                 items as a fallback. -->
+            <_CefRedist Include="@(None)"
+                        Condition="$([System.String]::new('%(FullPath)').Contains('cef.redist.'))" />
         </ItemGroup>
 
         <!-- Merge, deduplicating items caught by multiple filters -->
@@ -152,29 +160,31 @@
             <_CefAll Include="@(_CefByPackage)" />
             <_CefAll Include="@(_CefByBpDir)"   Exclude="@(_CefByPackage)" />
             <_CefAll Include="@(_CefWinLocales)" Exclude="@(_CefByPackage);@(_CefByBpDir)" />
+            <_CefAll Include="@(_CefRedist)"     Exclude="@(_CefByPackage);@(_CefByBpDir);@(_CefWinLocales)" />
         </ItemGroup>
 
         <!-- Split into three destination categories -->
         <ItemGroup>
-            <!-- Native shared libraries -&gt; output root (flat) -->
+            <!-- Native shared libraries -> output root (flat) -->
             <_CefNative Include="@(_CefAll)"
                         Condition="'%(_CefAll.Extension)' == '.dll'
                                    OR '%(_CefAll.Extension)' == '.so'
                                    OR '%(_CefAll.Extension)' == '.dylib'" />
 
-            <!-- Locale .pak files -&gt; data\cef\locales\ -->
+            <!-- Locale .pak files -> data\cef\locales\ -->
             <_CefLocales Include="@(_CefAll)"
                          Condition="'%(_CefAll.Extension)' == '.pak'
                                     AND $([System.String]::new('%(FullPath)').Contains('locales'))" />
 
-            <!-- Everything else (non-locale .pak, .dat, .bin, .json) -&gt; data\cef\ -->
+            <!-- Everything else (non-locale .pak, .dat, .bin, .json) -> data\cef\ -->
             <_CefResources Include="@(_CefAll)" Exclude="@(_CefNative);@(_CefLocales)" />
         </ItemGroup>
 
-        <!-- Remove originals from None and ReferenceCopyLocalPaths -->
+        <!-- Remove originals from None, ReferenceCopyLocalPaths, and ResolvedFileToPublish -->
         <ItemGroup>
             <None Remove="@(_CefAll)" />
             <ReferenceCopyLocalPaths Remove="@(_CefAll)" />
+            <ResolvedFileToPublish Remove="@(_CefAll)" />
         </ItemGroup>
 
         <!-- Re-add native libs to output root -->
@@ -212,17 +222,24 @@
     </Target>
 
     <!--
-         Post-copy cleanup: remove CEF duplicates from two locations:
-         1. runtimes\{rid}\native\ - .NET SDK native runtime copies
-         2. CefGlueBrowserProcess\    - CefGlue.Common.targets static copies (Linux/macOS)
+         Post-copy cleanup: remove CEF duplicates from three locations:
+         1. runtimes\{rid}\native\  - .NET SDK native runtime copies (Windows)
+         2. CefGlueBrowserProcess\     - CefGlue.Common.targets static copies (Linux/macOS)
+         3. Resources\                 - macOS CEF resource bundle
 
          Our RedirectCefAssetsToDataCef target prevents new copies to these locations,
-         but stale files from prior builds persist. This target deletes them.
+         but stale files from prior builds and publish may persist. This target deletes them.
+         Runs after both build and publish output copy steps.
     -->
-    <Target Name="CleanupCefDuplicates" AfterTargets="CopyFilesToOutputDirectory">
+    <Target Name="CleanupCefDuplicates" AfterTargets="CopyFilesToOutputDirectory;Publish">
         <PropertyGroup>
             <_CefCleanupRuntimes>$([System.IO.Path]::GetFullPath('$(OutDir)runtimes'))</_CefCleanupRuntimes>
             <_CefCleanupBp>$([System.IO.Path]::GetFullPath('$(OutDir)CefGlueBrowserProcess'))</_CefCleanupBp>
+            <_CefCleanupResources>$([System.IO.Path]::GetFullPath('$(OutDir)Resources'))</_CefCleanupResources>
+            <!-- Also clean publish output dir if publishing -->
+            <_CefCleanupRuntimesPub Condition="'$(PublishDir)' != ''">$([System.IO.Path]::GetFullPath('$(PublishDir)runtimes'))</_CefCleanupRuntimesPub>
+            <_CefCleanupBpPub Condition="'$(PublishDir)' != ''">$([System.IO.Path]::GetFullPath('$(PublishDir)CefGlueBrowserProcess'))</_CefCleanupBpPub>
+            <_CefCleanupResourcesPub Condition="'$(PublishDir)' != ''">$([System.IO.Path]::GetFullPath('$(PublishDir)Resources'))</_CefCleanupResourcesPub>
         </PropertyGroup>
         <!-- runtimes\ -->
         <ItemGroup>
@@ -240,6 +257,19 @@
             <_CefDupDll Include="$(_CefCleanupRuntimes)\**\d3dcompiler_47.*" />
         </ItemGroup>
         <Delete Files="@(_CefDupPak);@(_CefDupDat);@(_CefDupBin);@(_CefDupJson);@(_CefDupDll)" />
+        <!-- Build output root: stale CEF resource files that were placed here before
+             RedirectCefAssetsToDataCef was added, or that get copied by the SDK
+             pipeline before our target can intercept them. Native DLLs stay. -->
+        <ItemGroup>
+            <_CefRootPak Include="$(OutDir)chrome_100_percent.pak" />
+            <_CefRootPak Include="$(OutDir)chrome_200_percent.pak" />
+            <_CefRootPak Include="$(OutDir)resources.pak" />
+            <_CefRootDat Include="$(OutDir)icudtl.dat" />
+            <_CefRootBin Include="$(OutDir)snapshot_blob.bin" />
+            <_CefRootBin Include="$(OutDir)v8_context_snapshot.bin" />
+            <_CefRootJson Include="$(OutDir)vk_swiftshader_icd.json" />
+        </ItemGroup>
+        <Delete Files="@(_CefRootPak);@(_CefRootDat);@(_CefRootBin);@(_CefRootJson)" />
         <!-- CefGlueBrowserProcess\ -->
         <ItemGroup>
             <_CefBpPak Include="$(_CefCleanupBp)\**\*.pak" />
@@ -253,10 +283,74 @@
             <_CefBpDll Include="$(_CefCleanupBp)\**\libGLESv2.*" />
             <_CefBpDll Include="$(_CefCleanupBp)\**\vk_swiftshader.*" />
             <_CefBpDll Include="$(_CefCleanupBp)\**\vulkan-1.*" />
+            <_CefBpDll Include="$(_CefCleanupBp)\**\d3dcompiler_47.*" />
         </ItemGroup>
         <Delete Files="@(_CefBpPak);@(_CefBpDat);@(_CefBpBin);@(_CefBpJson);@(_CefBpDll)" />
-        <!-- Remove empty directories left behind -->
         <RemoveDir Directories="$(_CefCleanupBp)" Condition="Exists('$(_CefCleanupBp)')" />
+        <!-- Resources\ (macOS) -->
+        <ItemGroup>
+            <_CefResPak Include="$(_CefCleanupResources)\**\*.pak" />
+            <_CefResDat Include="$(_CefCleanupResources)\**\icudtl.dat" />
+            <_CefResBin Include="$(_CefCleanupResources)\**\snapshot_blob.bin" />
+            <_CefResBin Include="$(_CefCleanupResources)\**\v8_context_snapshot.bin" />
+            <_CefResJson Include="$(_CefCleanupResources)\**\vk_swiftshader_icd.json" />
+        </ItemGroup>
+        <Delete Files="@(_CefResPak);@(_CefResDat);@(_CefResBin);@(_CefResJson)" />
+        <RemoveDir Directories="$(_CefCleanupResources)" Condition="Exists('$(_CefCleanupResources)')" />
+        <!-- Publish dir: runtimes\ -->
+        <ItemGroup Condition="'$(PublishDir)' != ''">
+            <_CefPubPak Include="$(_CefCleanupRuntimesPub)\**\*.pak" />
+            <_CefPubDat Include="$(_CefCleanupRuntimesPub)\**\icudtl.dat" />
+            <_CefPubBin Include="$(_CefCleanupRuntimesPub)\**\snapshot_blob.bin" />
+            <_CefPubBin Include="$(_CefCleanupRuntimesPub)\**\v8_context_snapshot.bin" />
+            <_CefPubJson Include="$(_CefCleanupRuntimesPub)\**\vk_swiftshader_icd.json" />
+            <_CefPubDll Include="$(_CefCleanupRuntimesPub)\**\libcef.*" />
+            <_CefPubDll Include="$(_CefCleanupRuntimesPub)\**\chrome_elf.*" />
+            <_CefPubDll Include="$(_CefCleanupRuntimesPub)\**\libEGL.*" />
+            <_CefPubDll Include="$(_CefCleanupRuntimesPub)\**\libGLESv2.*" />
+            <_CefPubDll Include="$(_CefCleanupRuntimesPub)\**\vk_swiftshader.*" />
+            <_CefPubDll Include="$(_CefCleanupRuntimesPub)\**\vulkan-1.*" />
+            <_CefPubDll Include="$(_CefCleanupRuntimesPub)\**\d3dcompiler_47.*" />
+        </ItemGroup>
+        <Delete Files="@(_CefPubPak);@(_CefPubDat);@(_CefPubBin);@(_CefPubJson);@(_CefPubDll)" Condition="'$(PublishDir)' != ''" />
+        <!-- Publish dir root: CEF resources dumped directly in publish root by SDK pipeline -->
+        <ItemGroup Condition="'$(PublishDir)' != ''">
+            <_CefPubRootPak Include="$(PublishDir)chrome_100_percent.pak" />
+            <_CefPubRootPak Include="$(PublishDir)chrome_200_percent.pak" />
+            <_CefPubRootPak Include="$(PublishDir)resources.pak" />
+            <_CefPubRootDat Include="$(PublishDir)icudtl.dat" />
+            <_CefPubRootBin Include="$(PublishDir)snapshot_blob.bin" />
+            <_CefPubRootBin Include="$(PublishDir)v8_context_snapshot.bin" />
+            <_CefPubRootJson Include="$(PublishDir)vk_swiftshader_icd.json" />
+        </ItemGroup>
+        <Delete Files="@(_CefPubRootPak);@(_CefPubRootDat);@(_CefPubRootBin);@(_CefPubRootJson)" Condition="'$(PublishDir)' != ''" />
+        <!-- Publish dir: CefGlueBrowserProcess\ -->
+        <ItemGroup Condition="'$(PublishDir)' != ''">
+            <_CefPubBpPak Include="$(_CefCleanupBpPub)\**\*.pak" />
+            <_CefPubBpDat Include="$(_CefCleanupBpPub)\**\icudtl.dat" />
+            <_CefPubBpBin Include="$(_CefCleanupBpPub)\**\snapshot_blob.bin" />
+            <_CefPubBpBin Include="$(_CefCleanupBpPub)\**\v8_context_snapshot.bin" />
+            <_CefPubBpJson Include="$(_CefCleanupBpPub)\**\vk_swiftshader_icd.json" />
+            <_CefPubBpDll Include="$(_CefCleanupBpPub)\**\libcef.*" />
+            <_CefPubBpDll Include="$(_CefCleanupBpPub)\**\chrome_elf.*" />
+            <_CefPubBpDll Include="$(_CefCleanupBpPub)\**\libEGL.*" />
+            <_CefPubBpDll Include="$(_CefCleanupBpPub)\**\libGLESv2.*" />
+            <_CefPubBpDll Include="$(_CefCleanupBpPub)\**\vk_swiftshader.*" />
+            <_CefPubBpDll Include="$(_CefCleanupBpPub)\**\vulkan-1.*" />
+            <_CefPubBpDll Include="$(_CefCleanupBpPub)\**\d3dcompiler_47.*" />
+        </ItemGroup>
+        <Delete Files="@(_CefPubBpPak);@(_CefPubBpDat);@(_CefPubBpBin);@(_CefPubBpJson);@(_CefPubBpDll)" Condition="'$(PublishDir)' != ''" />
+        <RemoveDir Directories="$(_CefCleanupBpPub)" Condition="'$(PublishDir)' != '' and Exists('$(_CefCleanupBpPub)')" />
+        <!-- Publish dir: Resources\ (macOS) -->
+        <ItemGroup Condition="'$(PublishDir)' != ''">
+            <_CefPubResPak Include="$(_CefCleanupResourcesPub)\**\*.pak" />
+            <_CefPubResDat Include="$(_CefCleanupResourcesPub)\**\icudtl.dat" />
+            <_CefPubResBin Include="$(_CefCleanupResourcesPub)\**\snapshot_blob.bin" />
+            <_CefPubResBin Include="$(_CefCleanupResourcesPub)\**\v8_context_snapshot.bin" />
+            <_CefPubResJson Include="$(_CefCleanupResourcesPub)\**\vk_swiftshader_icd.json" />
+        </ItemGroup>
+        <Delete Files="@(_CefPubResPak);@(_CefPubResDat);@(_CefPubResBin);@(_CefPubResJson)" Condition="'$(PublishDir)' != ''" />
+        <RemoveDir Directories="$(_CefCleanupResourcesPub)" Condition="'$(PublishDir)' != '' and Exists('$(_CefCleanupResourcesPub)')" />
     </Target>
 
     <!-- XAML files to compile -->
