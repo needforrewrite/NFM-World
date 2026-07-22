@@ -119,6 +119,7 @@
          Redirect CEF NuGet assets to the correct output layout:
          - Native shared libs (.dll/.so/.dylib) -&gt; output root (alongside NFMWorld.BrowserProcess)
          - Resources (.pak/.dat/.bin/.json)    -&gt; data/cef/
+           and, on macOS, Resources/ (CEF's required bundle layout)
          - Locales (locale .pak files)          -&gt; data/cef/locales/
 
          Runs after CefGlue.Common.targets' ResolveCEFAssets (which creates None items
@@ -209,6 +210,18 @@
             </None>
         </ItemGroup>
 
+        <!-- macOS CEF resolves ICU and snapshot data through the application bundle's
+             canonical Resources directory even when ResourcesDirPath points elsewhere. -->
+        <ItemGroup Condition="'@(_CefResources)' != '' and ('$(CefGlueTargetPlatform)' == 'osx-x64' or '$(CefGlueTargetPlatform)' == 'osx-arm64')">
+            <None Include="@(_CefResources)">
+                <Link>Resources\%(_CefResources.FileName)%(_CefResources.Extension)</Link>
+                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+                <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+                <PublishState>Included</PublishState>
+                <Visible>false</Visible>
+            </None>
+        </ItemGroup>
+
         <!-- Re-add locales to data\cef\locales\ -->
         <ItemGroup Condition="'@(_CefLocales)' != ''">
             <None Include="@(_CefLocales)">
@@ -225,7 +238,7 @@
          Post-copy cleanup: remove CEF duplicates from three locations:
          1. runtimes\{rid}\native\  - .NET SDK native runtime copies (Windows)
          2. CefGlueBrowserProcess\     - CefGlue.Common.targets static copies (Linux/macOS)
-         3. Resources\                 - macOS CEF resource bundle
+         3. Resources\                 - stale non-macOS copies only
 
          Our RedirectCefAssetsToDataCef target prevents new copies to these locations,
          but stale files from prior builds and publish may persist. This target deletes them.
@@ -288,15 +301,15 @@
         <Delete Files="@(_CefBpPak);@(_CefBpDat);@(_CefBpBin);@(_CefBpJson);@(_CefBpDll)" />
         <RemoveDir Directories="$(_CefCleanupBp)" Condition="Exists('$(_CefCleanupBp)')" />
         <!-- Resources\ (macOS) -->
-        <ItemGroup>
+        <ItemGroup Condition="'$(CefGlueTargetPlatform)' != 'osx-x64' and '$(CefGlueTargetPlatform)' != 'osx-arm64'">
             <_CefResPak Include="$(_CefCleanupResources)\**\*.pak" />
             <_CefResDat Include="$(_CefCleanupResources)\**\icudtl.dat" />
             <_CefResBin Include="$(_CefCleanupResources)\**\snapshot_blob.bin" />
             <_CefResBin Include="$(_CefCleanupResources)\**\v8_context_snapshot.bin" />
             <_CefResJson Include="$(_CefCleanupResources)\**\vk_swiftshader_icd.json" />
         </ItemGroup>
-        <Delete Files="@(_CefResPak);@(_CefResDat);@(_CefResBin);@(_CefResJson)" />
-        <RemoveDir Directories="$(_CefCleanupResources)" Condition="Exists('$(_CefCleanupResources)')" />
+        <Delete Files="@(_CefResPak);@(_CefResDat);@(_CefResBin);@(_CefResJson)" Condition="'$(CefGlueTargetPlatform)' != 'osx-x64' and '$(CefGlueTargetPlatform)' != 'osx-arm64'" />
+        <RemoveDir Directories="$(_CefCleanupResources)" Condition="'$(CefGlueTargetPlatform)' != 'osx-x64' and '$(CefGlueTargetPlatform)' != 'osx-arm64' and Exists('$(_CefCleanupResources)')" />
         <!-- Publish dir: runtimes\ -->
         <ItemGroup Condition="'$(PublishDir)' != ''">
             <_CefPubPak Include="$(_CefCleanupRuntimesPub)\**\*.pak" />
@@ -342,15 +355,15 @@
         <Delete Files="@(_CefPubBpPak);@(_CefPubBpDat);@(_CefPubBpBin);@(_CefPubBpJson);@(_CefPubBpDll)" Condition="'$(PublishDir)' != ''" />
         <RemoveDir Directories="$(_CefCleanupBpPub)" Condition="'$(PublishDir)' != '' and Exists('$(_CefCleanupBpPub)')" />
         <!-- Publish dir: Resources\ (macOS) -->
-        <ItemGroup Condition="'$(PublishDir)' != ''">
+        <ItemGroup Condition="'$(PublishDir)' != '' and '$(CefGlueTargetPlatform)' != 'osx-x64' and '$(CefGlueTargetPlatform)' != 'osx-arm64'">
             <_CefPubResPak Include="$(_CefCleanupResourcesPub)\**\*.pak" />
             <_CefPubResDat Include="$(_CefCleanupResourcesPub)\**\icudtl.dat" />
             <_CefPubResBin Include="$(_CefCleanupResourcesPub)\**\snapshot_blob.bin" />
             <_CefPubResBin Include="$(_CefCleanupResourcesPub)\**\v8_context_snapshot.bin" />
             <_CefPubResJson Include="$(_CefCleanupResourcesPub)\**\vk_swiftshader_icd.json" />
         </ItemGroup>
-        <Delete Files="@(_CefPubResPak);@(_CefPubResDat);@(_CefPubResBin);@(_CefPubResJson)" Condition="'$(PublishDir)' != ''" />
-        <RemoveDir Directories="$(_CefCleanupResourcesPub)" Condition="'$(PublishDir)' != '' and Exists('$(_CefCleanupResourcesPub)')" />
+        <Delete Files="@(_CefPubResPak);@(_CefPubResDat);@(_CefPubResBin);@(_CefPubResJson)" Condition="'$(PublishDir)' != '' and '$(CefGlueTargetPlatform)' != 'osx-x64' and '$(CefGlueTargetPlatform)' != 'osx-arm64'" />
+        <RemoveDir Directories="$(_CefCleanupResourcesPub)" Condition="'$(PublishDir)' != '' and '$(CefGlueTargetPlatform)' != 'osx-x64' and '$(CefGlueTargetPlatform)' != 'osx-arm64' and Exists('$(_CefCleanupResourcesPub)')" />
     </Target>
 
     <!-- XAML files to compile -->
