@@ -28,6 +28,11 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <ApplicationIcon>Icon.ico</ApplicationIcon>
     </PropertyGroup>
+    <PropertyGroup>
+        <UseCefGlueArm64Package Condition="'$(RuntimeIdentifier)' != ''">$([System.String]::Copy('$(RuntimeIdentifier)').EndsWith('-arm64'))</UseCefGlueArm64Package>
+        <UseCefGlueArm64Package Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">true</UseCefGlueArm64Package>
+        <UseCefGlueArm64Package Condition="'$(UseCefGlueArm64Package)' == '' and '$(RuntimeIdentifier)' == '' and '$(Platform)' != 'x64'">$([System.String]::Copy('$(NETCoreSdkRuntimeIdentifier)').EndsWith('-arm64'))</UseCefGlueArm64Package>
+    </PropertyGroup>
     <ItemGroup>
         <None Remove="Icon.ico" />
         <None Remove="Icon.bmp" />
@@ -64,8 +69,8 @@
         <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
         <PackageReference Include="SoundTouch.Net" Version="2.3.2" />
         <PackageReference Include="System.Reactive" Version="7.0.0-rc.1" />
-        <PackageReference Include="CefGlue.Common" Version="120.6099.211" Condition="!$([MSBuild]::IsOSPlatform('OSX')) or ('$(RuntimeIdentifier)' != '' and '$(RuntimeIdentifier)' != 'osx-arm64')" />
-        <PackageReference Include="CefGlue.Common.ARM64" Version="120.6099.211" Condition="$([MSBuild]::IsOSPlatform('OSX')) and ('$(RuntimeIdentifier)' == '' or '$(RuntimeIdentifier)' == 'osx-arm64')" />
+        <PackageReference Include="CefGlue.Common" Version="120.6099.211" Condition="'$(UseCefGlueArm64Package)' != 'true'" />
+        <PackageReference Include="CefGlue.Common.ARM64" Version="120.6099.211" Condition="'$(UseCefGlueArm64Package)' == 'true'" />
         <PackageReference Include="Yoga-CS" Version="1.0.0" />
     </ItemGroup>
     <!--

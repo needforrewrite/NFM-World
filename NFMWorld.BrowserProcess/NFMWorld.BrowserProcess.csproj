@@ -16,9 +16,15 @@
     <None Remove="ObjectBinding\CefGlueGlobalScript.js" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <UseCefGlueArm64Package Condition="'$(RuntimeIdentifier)' != ''">$([System.String]::Copy('$(RuntimeIdentifier)').EndsWith('-arm64'))</UseCefGlueArm64Package>
+    <UseCefGlueArm64Package Condition="'$(RuntimeIdentifier)' == '' and '$(Platform)' == 'ARM64'">true</UseCefGlueArm64Package>
+    <UseCefGlueArm64Package Condition="'$(UseCefGlueArm64Package)' == '' and '$(RuntimeIdentifier)' == '' and '$(Platform)' != 'x64'">$([System.String]::Copy('$(NETCoreSdkRuntimeIdentifier)').EndsWith('-arm64'))</UseCefGlueArm64Package>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="CefGlue.Common" Version="120.6099.211" Condition="!$([MSBuild]::IsOSPlatform('OSX')) or ('$(RuntimeIdentifier)' != '' and '$(RuntimeIdentifier)' != 'osx-arm64')" />
-    <PackageReference Include="CefGlue.Common.ARM64" Version="120.6099.211" Condition="$([MSBuild]::IsOSPlatform('OSX')) and ('$(RuntimeIdentifier)' == '' or '$(RuntimeIdentifier)' == 'osx-arm64')" />
+    <PackageReference Include="CefGlue.Common" Version="120.6099.211" Condition="'$(UseCefGlueArm64Package)' != 'true'" />
+    <PackageReference Include="CefGlue.Common.ARM64" Version="120.6099.211" Condition="'$(UseCefGlueArm64Package)' == 'true'" />
   </ItemGroup>
 
   <!--
