@@ -17,7 +17,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CefGlue.Common" Version="120.6099.211" />
+    <PackageReference Include="CefGlue.Common" Version="120.6099.211" Condition="!$([MSBuild]::IsOSPlatform('OSX')) or ('$(RuntimeIdentifier)' != '' and '$(RuntimeIdentifier)' != 'osx-arm64')" />
+    <PackageReference Include="CefGlue.Common.ARM64" Version="120.6099.211" Condition="$([MSBuild]::IsOSPlatform('OSX')) and ('$(RuntimeIdentifier)' == '' or '$(RuntimeIdentifier)' == 'osx-arm64')" />
   </ItemGroup>
 
   <!--
@@ -31,10 +32,12 @@
 
   <Target Name="EnsureCefGlueMacRuntimeLibrariesInOutDir"
           BeforeTargets="_CopyOutOfDateSourceItemsToOutputDirectory"
-          Condition="'$(RuntimeIdentifier)' == 'osx-x64' or '$(RuntimeIdentifier)' == 'osx-arm64'">
+          Condition="'$(CefGlueTargetPlatform)' == 'osx-x64' or '$(CefGlueTargetPlatform)' == 'osx-arm64'">
     <ItemGroup>
-      <_CefMacRuntimeLibraries Include="@(CefRedistOSX64);@(CefRedistOSXARM64)"
-                               Condition="'%(Filename)%(Extension)' == 'libEGL.dylib' or '%(Filename)%(Extension)' == 'libGLESv2.dylib' or '%(Filename)%(Extension)' == 'libvk_swiftshader.dylib'" />
+      <_CefMacRuntimeLibraries Include="@(CefRedistOSX64)"
+                               Condition="'$(CefGlueTargetPlatform)' == 'osx-x64' and ('%(Filename)%(Extension)' == 'libEGL.dylib' or '%(Filename)%(Extension)' == 'libGLESv2.dylib' or '%(Filename)%(Extension)' == 'libvk_swiftshader.dylib')" />
+      <_CefMacRuntimeLibraries Include="@(CefRedistOSXARM64)"
+                               Condition="'$(CefGlueTargetPlatform)' == 'osx-arm64' and ('%(Filename)%(Extension)' == 'libEGL.dylib' or '%(Filename)%(Extension)' == 'libGLESv2.dylib' or '%(Filename)%(Extension)' == 'libvk_swiftshader.dylib')" />
       <_CefMacRuntimeLibrariesToCopy Include="@(_CefMacRuntimeLibraries)"
                                      Condition="!Exists('$(OutDir)%(Filename)%(Extension)')" />
     </ItemGroup>
