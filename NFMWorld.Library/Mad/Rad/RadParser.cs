@@ -25,7 +25,7 @@ public partial class RadParser
             {
                 throw new InvalidOperationException("PhyShot wheel must have radius=1234 and depth=5678 attributes");
             }
-            
+
             // for(int i = 0; i < this.n; ++i) {
             //     if (tr > 0) {
             //         if (pl.ox[i] == td) {
@@ -49,7 +49,7 @@ public partial class RadParser
             //     pl.oy[i] += wy;
             //     pl.oz[i] += wz;
             // }
-            
+
             return Polys
                 .Select(poly =>
                 {
@@ -58,7 +58,7 @@ public partial class RadParser
                         var x = point.X;
                         var y = point.Y;
                         var z = point.Z;
-                        
+
                         if (trueRadius > 0)
                         {
                             if (x == trueDepth) // LOOKS INCORRECT BECAUSE FLOAT COMPARISON BETWEEN DIV AND NON-DIV VALUE, BUT IS ACTUALLY CORRECT BECAUSE PHYSHOT WHEELS DO NOT SCALE BY DIV!!!!
@@ -69,7 +69,7 @@ public partial class RadParser
                             {
                                 x = x * (wheelHeight / (trueRadius * 0.77f));
                             }
-                            
+
                             y = y * (wheelHeight / (trueRadius * 0.77f));
                             z = z * (wheelHeight / (trueRadius * 0.77f));
 
@@ -88,11 +88,11 @@ public partial class RadParser
                 .ToArray();
         }
     }
-    
+
     private bool _stonecold;
     private bool _noOutline;
     private fix64 idiv = (fix64)1f, iwid = (fix64)1f, scaleX = (fix64)1f, scaleY = (fix64)1f, scaleZ = (fix64)1f;
-    
+
     private Dictionary<Color3, int> _colors = new();
     private CarStats _stats = new();
     private List<Rad3dWheelDef> _wheels = [];
@@ -111,7 +111,7 @@ public partial class RadParser
 
     // phy-addons wheel meshes (declared after the wheel, wheel has )c suffix)
     private UnlimitedArray<List<Rad3dPoly>?> _phyAddonsWheelMeshes = [];
-    
+
     // tracks which wheels have their own side-specific meshes (wheel(N) where N != -1).
     // these wheels do NOT need X-axis mirroring because the meshes are already modeled for their side.
     private HashSet<int> _wheelsWithSpecificPolys = [];
@@ -120,15 +120,15 @@ public partial class RadParser
 
     private Rad3dPoly _currentPoly;
     private bool _inPoly;
-    
+
     private List<f64Vector3> _meshCollisionVerts = [];
     private List<ushort> _meshCollisionIndices = [];
-    
+
     private List<f64Vector3> _hullVerts = [];
     private readonly string _fileName;
     private int? _phyAddonsWheelId;
     private bool _inPhyshotWheel;
-    
+
     // mapping of wheel mesh index to indices of wheels it applies to or -1 for all wheels
     private UnlimitedArray<int[]> _physhotWheelTargets = [];
 
@@ -137,7 +137,7 @@ public partial class RadParser
         _currentPolys = _mainCarPolys;
         _fileName = fileName;
     }
-    
+
     [GeneratedRegex("""<wheel(?: radius="(?<radius>\d+)")?(?: depth="(?<depth>\d+)")?(?: target="[\d,]+")?>""", RegexOptions.Compiled)]
     private static partial Regex PhyShotWheelDef { get; }
 
@@ -161,7 +161,7 @@ public partial class RadParser
                 throw new InvalidOperationException($"Error parsing line {lineNumber}: '{line.ToString()}'\n{ex.Message}", ex);
             }
         }
-        
+
         // reconcile phy-addons custom wheels
         for (var i = 0; i < parser._phyAddonsWheelMeshes.Count; i++)
         {
@@ -224,13 +224,13 @@ public partial class RadParser
 
         wheelXTranslation /= (fix64)4;
         wheelZTranslation /= (fix64)4;
-        
+
         // maxine: this code is incredibly crucial!
         // in theory we should be moving the car to the wheel center, because otherwise the car drifts off of its center
         // on every tick when rotated around, however doing this breaks hypergliding. as we want to retain vanilla
         // behavior at high tickrate, we instead move it by x/y/z * phyiscs_multiplier, which restores
         // behavior at vanilla tickrate speeds.
-        
+
         for (var i = 0; i < rad3d.Wheels.Length; i++)
         {
             var wheel = rad3d.Wheels[i];
@@ -336,7 +336,7 @@ public partial class RadParser
                 Rotates: rotates,
                 Width: width * idiv * iwid,
                 Height: height * idiv,
-                Polys: 
+                Polys:
                     // physhot custom wheels
                     TryGetTargetWheelMesh(_wheels.Count, out var wheelMesh)
                         ? wheelMesh.GetScaledPolys(wheelWidth: width * (float)idiv * (float)iwid, wheelHeight: height * (float)idiv, flipX: width < 0)
@@ -386,7 +386,7 @@ public partial class RadParser
                 Color: new Color3()
             ));
         }
-        
+
         // SRC extension
         else if (line.StartsWith("mv("))
         {
@@ -397,7 +397,7 @@ public partial class RadParser
                 vec.Z * idiv * scaleZ
             ));
         }
-        
+
         // SRC extension
         else if (line.StartsWith("mtri("))
         {
@@ -418,14 +418,14 @@ public partial class RadParser
                 vec.Z * idiv * scaleZ
             ));
         }
-        
+
         // NFMW extension
         else if (line.StartsWith("atp("))
         {
             var (x, (z, _)) = BracketParser.GetNumbers(line, stackalloc fix64[2]);
             _atp.Add(new Vector2((float)x, (float)z));
         }
-        
+
         // SRC extension
         else if (line.StartsWith("atline("))
         {
@@ -545,7 +545,7 @@ public partial class RadParser
             _noOutline = false;
             _phyAddonsWheelId = null;
         }
-        
+
         if (_inPoly)
         {
             if (line.StartsWith("c(g)")) // SRC extension
@@ -613,9 +613,9 @@ public partial class RadParser
                 var tri = BracketParser.GetNumbers(line, stackalloc uint[3]);
                 _tris.AddRange(tri);
             }
-            
+
             else if (line.StartsWith("noOutline")) _noOutline = true;
-            
+
             else if (line.StartsWith("wheel(")) // Phy-addons extension
             {
                 _phyAddonsWheelId = BracketParser.GetNumber<int>(line);

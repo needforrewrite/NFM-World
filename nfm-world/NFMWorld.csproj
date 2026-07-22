@@ -1,21 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>NFMWorld</RootNamespace>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>USE_BASS;USE_FAUDIO</DefineConstants>
-    <Version>0.0.0-dev</Version>
-    <InformationalVersion>NFM-World dev</InformationalVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <TieredCompilation>false</TieredCompilation>
-    <OptimizationPreference>Speed</OptimizationPreference>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
-  </PropertyGroup>
-  <ItemGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <RootNamespace>NFMWorld</RootNamespace>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <DefineConstants>USE_BASS;USE_FAUDIO</DefineConstants>
+        <Version>0.0.0-dev</Version>
+        <InformationalVersion>NFM-World dev</InformationalVersion>
+        <AssemblyVersion>1.0.0.0</AssemblyVersion>
+        <TieredCompilation>false</TieredCompilation>
+        <OptimizationPreference>Speed</OptimizationPreference>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+    </PropertyGroup>
+    <ItemGroup>
         <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->
         <Compile Remove="Generated/**" />
   </ItemGroup>
@@ -74,9 +74,9 @@
         <PackageReference Include="Yoga-CS" Version="1.0.0" />
     </ItemGroup>
     <!--
-      Prevent CefGlue.Common NuGet from copying its bundled self-contained browser process
-      (Xilium.CefGlue.BrowserProcess.exe + entire .NET runtime) to output/publish.
-      NFMWorld.BrowserProcess.exe already compiles all CefGlue.BrowserProcess source via ProjectReference.
+         Prevent CefGlue.Common NuGet from copying its bundled self-contained browser process
+         (Xilium.CefGlue.BrowserProcess.exe + entire .NET runtime) to output/publish.
+         NFMWorld.BrowserProcess.exe already compiles all CefGlue.BrowserProcess source via ProjectReference.
     -->
     <ItemGroup>
         <CefGlueBrowserProcessFiles Remove="@(CefGlueBrowserProcessFiles)" />
@@ -113,6 +113,150 @@
             <_CefMacRuntimeLibrariesToCopy Include="@(_CefMacRuntimeLibraries)" Condition="!Exists('$(OutDir)%(Filename)%(Extension)')" />
         </ItemGroup>
         <Copy SourceFiles="@(_CefMacRuntimeLibrariesToCopy)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="'@(_CefMacRuntimeLibrariesToCopy)' != ''" />
+    </Target>
+
+    <!--
+         Redirect CEF NuGet assets to the correct output layout:
+         - Native shared libs (.dll/.so/.dylib) -&gt; output root (alongside NFMWorld.BrowserProcess)
+         - Resources (.pak/.dat/.bin/.json)    -&gt; data/cef/
+         - Locales (locale .pak files)          -&gt; data/cef/locales/
+
+         Runs after CefGlue.Common.targets' ResolveCEFAssets (which creates None items
+         for Windows CEF runtime/locale files) and before the SDK's CopyFilesToOutputDirectory.
+         Does NOT patch any NuGet package files.
+    -->
+    <Target Name="RedirectCefAssetsToDataCef" AfterTargets="ResolveCEFAssets" BeforeTargets="CopyFilesToOutputDirectory">
+        <ItemGroup>
+            <!-- (a) Windows runtime items: have NuGetPackageId from RuntimeTargetsCopyLocalItems.
+                 Check None AND ReferenceCopyLocalPaths. The .NET SDK puts native runtime files
+                 in both: None items go to output root (via CefGlue.Common.targets), while
+                 ReferenceCopyLocalPaths items go to runtimes\{rid}\native\ (via SDK targets). -->
+            <_CefByPackage Include="@(None)"
+                           Condition="$([System.String]::new('%(None.NuGetPackageId)').StartsWith('chromiumembeddedframework.runtime.'))" />
+            <_CefByPackage Include="@(ReferenceCopyLocalPaths)"
+                           Condition="$([System.String]::new('%(ReferenceCopyLocalPaths.NuGetPackageId)').StartsWith('chromiumembeddedframework.runtime.'))" />
+
+            <!-- (b) Linux / macOS redist items: Link contains CefGlueBrowserProcess -->
+            <_CefByBpDir Include="@(None)"
+                         Condition="$([System.String]::new('%(None.Link)').Contains('CefGlueBrowserProcess'))" />
+
+            <!-- (c) Windows locale items: Link under runtimes\...\locales\, .pak extension, no NuGetPackageId -->
+            <_CefWinLocales Include="@(None)"
+                            Condition="'%(None.Extension)' == '.pak'
+                                       AND $([System.String]::new('%(None.Link)').Contains('runtimes'))
+                                       AND $([System.String]::new('%(None.Link)').Contains('locales'))" />
+        </ItemGroup>
+
+        <!-- Merge, deduplicating items caught by multiple filters -->
+        <ItemGroup>
+            <_CefAll Include="@(_CefByPackage)" />
+            <_CefAll Include="@(_CefByBpDir)"   Exclude="@(_CefByPackage)" />
+            <_CefAll Include="@(_CefWinLocales)" Exclude="@(_CefByPackage);@(_CefByBpDir)" />
+        </ItemGroup>
+
+        <!-- Split into three destination categories -->
+        <ItemGroup>
+            <!-- Native shared libraries -&gt; output root (flat) -->
+            <_CefNative Include="@(_CefAll)"
+                        Condition="'%(_CefAll.Extension)' == '.dll'
+                                   OR '%(_CefAll.Extension)' == '.so'
+                                   OR '%(_CefAll.Extension)' == '.dylib'" />
+
+            <!-- Locale .pak files -&gt; data\cef\locales\ -->
+            <_CefLocales Include="@(_CefAll)"
+                         Condition="'%(_CefAll.Extension)' == '.pak'
+                                    AND $([System.String]::new('%(FullPath)').Contains('locales'))" />
+
+            <!-- Everything else (non-locale .pak, .dat, .bin, .json) -&gt; data\cef\ -->
+            <_CefResources Include="@(_CefAll)" Exclude="@(_CefNative);@(_CefLocales)" />
+        </ItemGroup>
+
+        <!-- Remove originals from None and ReferenceCopyLocalPaths -->
+        <ItemGroup>
+            <None Remove="@(_CefAll)" />
+            <ReferenceCopyLocalPaths Remove="@(_CefAll)" />
+        </ItemGroup>
+
+        <!-- Re-add native libs to output root -->
+        <ItemGroup Condition="'@(_CefNative)' != ''">
+            <None Include="@(_CefNative)">
+                <Link>%(_CefNative.FileName)%(_CefNative.Extension)</Link>
+                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+                <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+                <PublishState>Included</PublishState>
+                <Visible>false</Visible>
+            </None>
+        </ItemGroup>
+
+        <!-- Re-add resources to data\cef\ -->
+        <ItemGroup Condition="'@(_CefResources)' != ''">
+            <None Include="@(_CefResources)">
+                <Link>data\cef\%(_CefResources.FileName)%(_CefResources.Extension)</Link>
+                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+                <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+                <PublishState>Included</PublishState>
+                <Visible>false</Visible>
+            </None>
+        </ItemGroup>
+
+        <!-- Re-add locales to data\cef\locales\ -->
+        <ItemGroup Condition="'@(_CefLocales)' != ''">
+            <None Include="@(_CefLocales)">
+                <Link>data\cef\locales\%(_CefLocales.FileName)%(_CefLocales.Extension)</Link>
+                <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+                <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+                <PublishState>Included</PublishState>
+                <Visible>false</Visible>
+            </None>
+        </ItemGroup>
+    </Target>
+
+    <!--
+         Post-copy cleanup: remove CEF duplicates from two locations:
+         1. runtimes\{rid}\native\ - .NET SDK native runtime copies
+         2. CefGlueBrowserProcess\    - CefGlue.Common.targets static copies (Linux/macOS)
+
+         Our RedirectCefAssetsToDataCef target prevents new copies to these locations,
+         but stale files from prior builds persist. This target deletes them.
+    -->
+    <Target Name="CleanupCefDuplicates" AfterTargets="CopyFilesToOutputDirectory">
+        <PropertyGroup>
+            <_CefCleanupRuntimes>$([System.IO.Path]::GetFullPath('$(OutDir)runtimes'))</_CefCleanupRuntimes>
+            <_CefCleanupBp>$([System.IO.Path]::GetFullPath('$(OutDir)CefGlueBrowserProcess'))</_CefCleanupBp>
+        </PropertyGroup>
+        <!-- runtimes\ -->
+        <ItemGroup>
+            <_CefDupPak Include="$(_CefCleanupRuntimes)\**\*.pak" />
+            <_CefDupDat Include="$(_CefCleanupRuntimes)\**\icudtl.dat" />
+            <_CefDupBin Include="$(_CefCleanupRuntimes)\**\snapshot_blob.bin" />
+            <_CefDupBin Include="$(_CefCleanupRuntimes)\**\v8_context_snapshot.bin" />
+            <_CefDupJson Include="$(_CefCleanupRuntimes)\**\vk_swiftshader_icd.json" />
+            <_CefDupDll Include="$(_CefCleanupRuntimes)\**\libcef.*" />
+            <_CefDupDll Include="$(_CefCleanupRuntimes)\**\chrome_elf.*" />
+            <_CefDupDll Include="$(_CefCleanupRuntimes)\**\libEGL.*" />
+            <_CefDupDll Include="$(_CefCleanupRuntimes)\**\libGLESv2.*" />
+            <_CefDupDll Include="$(_CefCleanupRuntimes)\**\vk_swiftshader.*" />
+            <_CefDupDll Include="$(_CefCleanupRuntimes)\**\vulkan-1.*" />
+            <_CefDupDll Include="$(_CefCleanupRuntimes)\**\d3dcompiler_47.*" />
+        </ItemGroup>
+        <Delete Files="@(_CefDupPak);@(_CefDupDat);@(_CefDupBin);@(_CefDupJson);@(_CefDupDll)" />
+        <!-- CefGlueBrowserProcess\ -->
+        <ItemGroup>
+            <_CefBpPak Include="$(_CefCleanupBp)\**\*.pak" />
+            <_CefBpDat Include="$(_CefCleanupBp)\**\icudtl.dat" />
+            <_CefBpBin Include="$(_CefCleanupBp)\**\snapshot_blob.bin" />
+            <_CefBpBin Include="$(_CefCleanupBp)\**\v8_context_snapshot.bin" />
+            <_CefBpJson Include="$(_CefCleanupBp)\**\vk_swiftshader_icd.json" />
+            <_CefBpDll Include="$(_CefCleanupBp)\**\libcef.*" />
+            <_CefBpDll Include="$(_CefCleanupBp)\**\chrome_elf.*" />
+            <_CefBpDll Include="$(_CefCleanupBp)\**\libEGL.*" />
+            <_CefBpDll Include="$(_CefCleanupBp)\**\libGLESv2.*" />
+            <_CefBpDll Include="$(_CefCleanupBp)\**\vk_swiftshader.*" />
+            <_CefBpDll Include="$(_CefCleanupBp)\**\vulkan-1.*" />
+        </ItemGroup>
+        <Delete Files="@(_CefBpPak);@(_CefBpDat);@(_CefBpBin);@(_CefBpJson);@(_CefBpDll)" />
+        <!-- Remove empty directories left behind -->
+        <RemoveDir Directories="$(_CefCleanupBp)" Condition="Exists('$(_CefCleanupBp)')" />
     </Target>
 
     <!-- XAML files to compile -->
@@ -154,9 +298,9 @@
 
     </PropertyGroup>
     <!-- Reference:
-        https://stackoverflow.com/questions/3433200/msbuild-how-do-i-create-and-use-a-task-to-convert-content-items-at-build-time
+         https://stackoverflow.com/questions/3433200/msbuild-how-do-i-create-and-use-a-task-to-convert-content-items-at-build-time
 
-        Handy reload solution: https://stackoverflow.com/a/24837585/165500
+         Handy reload solution: https://stackoverflow.com/a/24837585/165500
     -->
     <Target Name="BuildShaders" BeforeTargets="Compile" Inputs="@(CompileShader)" Outputs="@(CompileShader -> '$(OutputPath)%(RelativeDir)%(Filename).fxb' )">
 
@@ -171,7 +315,7 @@
         <Message Text="@(CompileShader -> '$(OutputPath)%(RelativeDir)%(Filename).fxb' )" Importance="High" />
 
         <!-- Add to the cleaning list, so we know how to do rebuilds:
-            (NOTE: FileWrites gets written out to obj directory at some point, possbily after CoreCompile)
+             (NOTE: FileWrites gets written out to obj directory at some point, possbily after CoreCompile)
         -->
         <ItemGroup>
             <FileWrites Include="@(CompileShader -> '$(OutputPath)%(RelativeDir)%(Filename).fxb' )" />
@@ -181,8 +325,8 @@
 
     <!-- Ensure that dependent projects are aware of generated shaders:
 
-        Reference: https://stackoverflow.com/questions/14322391/msbuild-to-copy-dynamically-generated-files-as-part-of-project-dependency
-        Also: https://stackoverflow.com/questions/44752139/how-to-make-msbuild-correctly-track-files-generated-with-an-external-tool-across
+         Reference: https://stackoverflow.com/questions/14322391/msbuild-to-copy-dynamically-generated-files-as-part-of-project-dependency
+         Also: https://stackoverflow.com/questions/44752139/how-to-make-msbuild-correctly-track-files-generated-with-an-external-tool-across
     -->
     <Target Name="IncludeShaders" BeforeTargets="GetCopyToOutputDirectoryItems">
         <ItemGroup>
@@ -233,8 +377,8 @@
 
 
     <ItemGroup>
-      <Folder Include="data\html\src\shared\memorypack\" />
-      <Folder Include="Mad\Renderer\Renderable\" />
+        <Folder Include="data\html\src\shared\memorypack\" />
+        <Folder Include="Mad\Renderer\Renderable\" />
     </ItemGroup>
 
 

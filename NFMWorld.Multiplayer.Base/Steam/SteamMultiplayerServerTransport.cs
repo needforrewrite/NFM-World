@@ -1,4 +1,4 @@
-﻿﻿using System.Collections;
+﻿﻿﻿using System.Collections;
 using System.Collections.Concurrent;
 using Maxine.Extensions;
 using Steamworks;
@@ -14,7 +14,7 @@ public class SteamMultiplayerServerTransport : BaseMultiplayerServerTransport, I
     private readonly ConcurrentDictionary<uint, Connection> _connectedClients = [];
 
     public override IReadOnlyCollection<uint> Connections { get; }
-    
+
     public override event EventHandler<uint>? ClientConnecting;
     public override event EventHandler<uint>? ClientConnected;
     public override event EventHandler<uint>? ClientDisconnected;
@@ -73,7 +73,7 @@ public class SteamMultiplayerServerTransport : BaseMultiplayerServerTransport, I
         ClientDisconnected?.Invoke(this, connection.Id);
         Logging.Info($"{info.Identity} has left the game");
     }
-    
+
     public unsafe void OnMessage(Connection connection, NetIdentity identity, IntPtr data, int size, long messageNum, long recvTime, int channel)
     {
         using var messageData = new UnmanagedMemoryManager<byte>((byte*)data, size);

@@ -16,7 +16,7 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
     private static int pyo(int x1, int x2, int z1, int z2) {
         return (((x1 - x2) * (x1 - x2)) + ((z1 - z2) * (z1 - z2)));
     }
-    
+
     /// <summary>
     /// Pythagorean distance squared calculation (fixed-point version).
     /// Used for fast distance comparisons without square root.
@@ -31,10 +31,10 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
     private fix64 pan = fix64.Zero;
     private fix64 difficulty = 1; // 0.0 (easy) to 1.0 (hard)
     private Sequence? sequence;
-    
+
     private int? targetFixRoadStartNode = null;
     private int _targetNode;
-    
+
     // Obstacle avoidance state
     private int _stuckCounter;
     private fix64 _avoidanceAngle;
@@ -42,7 +42,7 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
     private bool smallturn;
 
     private bool bouncing;
-    
+
     // if the next node is a sequence start node, we start a sequence and store sequenceStartNode and sequenceEndNode
     // then, we must traverse the nodes in the sequence in order, until we reach sequenceEndNode
     // if the target node is not the next sequence node in order, we drive back to the start of the sequence
@@ -66,11 +66,11 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
         // Initialize random number generator with deterministic seed based on car position
         var conto = new ContO(car);
         DeterministicRandom random = new((ulong)(conto.X.rawValue ^ conto.Y.rawValue ^ conto.Z.rawValue));
-        
+
         // Calculate rubberbanding factor
         // 1.0 = last place, 0.0 = first place
         var rubberbandingFactor = (fix64)position / (fix64)(racePhase.CarsInRace.Count - 1);
-        
+
         if (car.Wasted) return;
 
         bool grounded;
@@ -89,7 +89,7 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
         {
             // Check if we're stuck against a wall
             DetectAndAvoidObstacles(car, mad, racePhase.CurrentStage);
-            
+
             Steer(car, mad, u);
         }
     }
@@ -117,32 +117,32 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
         if (isStuck)
         {
             _stuckCounter++;
-            
+
             // If stuck for multiple frames, initiate avoidance
             if (_stuckCounter > 10) // Stuck for ~0.16 seconds at 60fps
             {
                 FrameTrace.AddMessage($"Car stuck! Speed: {carPhysics.Speed}, initiating avoidance");
-                
+
                 // Check which direction to turn by sampling points to the left and right
                 var currentHeading = car.Rotation.Yaw.Degrees;
                 var leftAngle = currentHeading - 90;
                 var rightAngle = currentHeading + 90;
-                
+
                 // Sample points at 45 degrees left and right
                 var sampleDistance = (fix64)500; // Distance to check ahead
-                
+
                 var leftX = car.Position.X + fix64.Sin(leftAngle * fix64.Pi / 180) * sampleDistance;
                 var leftZ = car.Position.Z + fix64.Cos(leftAngle * fix64.Pi / 180) * sampleDistance;
-                
+
                 var rightX = car.Position.X + fix64.Sin(rightAngle * fix64.Pi / 180) * sampleDistance;
                 var rightZ = car.Position.Z + fix64.Cos(rightAngle * fix64.Pi / 180) * sampleDistance;
-                
+
                 // Check if there are walls in those directions by checking node distances
                 var leftClearance = GetClearanceInDirection(car, leftX, leftZ, stage);
                 var rightClearance = GetClearanceInDirection(car, rightX, rightZ, stage);
-                
+
                 FrameTrace.AddMessage($"Left clearance: {leftClearance}, Right clearance: {rightClearance}");
-                
+
                 // Turn toward the more open direction
                 if (leftClearance > rightClearance)
                 {
@@ -152,7 +152,7 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
                 {
                     _avoidanceAngle = rightAngle;
                 }
-                
+
                 // Set avoidance timer (about 1 second)
                 _avoidanceTimer = 60;
                 _stuckCounter = 0;
@@ -173,7 +173,7 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
     {
         // Find closest node to the sample point
         fix64 minDistSq = fix64.MaxValue;
-        
+
         foreach (var node in stage.nodes)
         {
             var distSq = pyo(targetX, node.Position.X, targetZ, node.Position.Z);
@@ -182,7 +182,7 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
                 minDistSq = distSq;
             }
         }
-        
+
         // Return the distance to nearest node (higher = more open)
         return fix64.Sqrt(minDistSq);
     }
@@ -211,12 +211,12 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
         {
             targetNodeIndex = 0;
         }
-        
+
         // Check if we're close to any node ahead of _targetNode but before the next checkpoint
         // This allows the AI to naturally skip ahead when taking ramps or shortcuts
         var nextCheckpointIndex = car.CurrentCheckpoint;
         var nextCheckpointNodeIndex = racePhase.CurrentStage.nodes.IndexOf(racePhase.CurrentStage.checkpoints[nextCheckpointIndex]);
-        
+
         for (int i = targetNodeIndex + 1; i <= nextCheckpointNodeIndex; i++)
         {
             var nodeIndex = i;
@@ -224,10 +224,10 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
             {
                 nodeIndex -= racePhase.CurrentStage.nodes.Count;
             }
-            
+
             var node = racePhase.CurrentStage.nodes[nodeIndex];
             var distanceToNodeSq = pyo(car.Position.X, node.Position.X, car.Position.Z, node.Position.Z);
-            
+
             // If we're close to this node (within speed-based threshold), advance target to it
             if (distanceToNodeSq < (200 * carPhysics.Speed * carPhysics.Speed))
             {
@@ -237,7 +237,7 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
                 break;
             }
         }
-        
+
         var targetNode = racePhase.CurrentStage.nodes[targetNodeIndex];
         if (targetNode.Kind is not AiNodeKind.CheckPoint)
         {
@@ -271,7 +271,7 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
                 }
             }
         }
-        
+
         _targetNode = targetNodeIndex;
 
         if (sequence is not { } theSequence)

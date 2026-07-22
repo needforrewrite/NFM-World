@@ -17,12 +17,12 @@ public class ModelEditorTab
 {
     public string? ModelPath { get; set; }
     public EditorObject? Object { get; set; }
-    
+
     // Text editor state
     public string TextContent { get; set; } = "";
     public bool TextEditorDirty { get; set; } = false;
     public bool TextEditorExpanded { get; set; } = false;
-    
+
     // Camera/view controls
     public f64Vector3 ModelRotation { get; set; } = new f64Vector3(0, 0, 0);
     public f64Vector3 ModelPosition { get; set; } = new f64Vector3(0, 0, 0);
@@ -30,14 +30,14 @@ public class ModelEditorTab
     public Vector3 CameraPosition { get; set; } = new Vector3(0, 0, -800);
     public float CameraYaw { get; set; } = 0f;
     public float CameraPitch { get; set; } = -10f;
-    
+
     // Selection state
     public int SelectedPolygonIndex { get; set; } = -1;
-    
+
     // Wheel polygon selection
     public int SelectedWheelIndex { get; set; } = -1;
     public int SelectedWheelPolygonIndex { get; set; } = -1;
-    
+
     // Mouse drag state for camera control
     public bool IsDragging { get; set; } = false;
     public int DragStartX { get; set; } = 0;
@@ -45,11 +45,11 @@ public class ModelEditorTab
     public float DragStartCameraYaw { get; set; } = 0f;
     public float DragStartCameraPitch { get; set; } = 0f;
     public f64Vector3 DragStartModelPosition { get; set; } = f64Vector3.Zero;
-    
+
     // Text editor highlighting
     public int TextEditorSelectionStart { get; set; } = -1;
     public int TextEditorSelectionEnd { get; set; } = -1;
-    
+
     // Polygon editor window
     public bool ShowPolygonEditor { get; set; } = false;
     public string PolygonEditorContent { get; set; } = "";
@@ -57,21 +57,21 @@ public class ModelEditorTab
     public int PolygonEditorLastSelectedIndex { get; set; } = -1;
     public bool PolygonEditorIsWheel { get; set; } = false;
     public int PolygonEditorWheelIndex { get; set; } = -1;
-    
+
     // Reference car overlay for scaling
     public bool ShowReferenceOverlay { get; set; } = false;
     public int ReferenceCarIndex { get; set; } = 0;
     public float ReferenceOpacity { get; set; } = 0.5f;
-    
+
     // Model type (car or stage scenery)
     public enum ModelTypeEnum { Car, Stage }
     public ModelTypeEnum ModelType { get; set; } = ModelTypeEnum.Car;
-    
+
     // Collision editing (for stage scenery)
     public enum EditModeEnum { Polygon, Collision }
     public EditModeEnum EditMode { get; set; } = EditModeEnum.Polygon;
     public int SelectedCollisionIndex { get; set; } = -1;
-    
+
     public string GetDisplayName()
     {
         if (ModelPath == null) return "Untitled";
@@ -85,11 +85,11 @@ public class ModelEditorPhase : BasePhase
     private readonly GraphicsDevice _graphicsDevice;
     private bool _isOpen = false;
     private string[] _userModelNames = [];
-    
+
     // Tab management
     private List<ModelEditorTab> _tabs = new();
     private int _activeTabIndex = -1;
-    
+
     // UI state
     private bool _showNewModelDialog = false;
     private bool _showLoadDialog = false;
@@ -98,7 +98,7 @@ public class ModelEditorPhase : BasePhase
     private int _selectedReferenceModel = 0;
     private bool _importReference = false;
     private bool _openInNewTab = true;
-    
+
     // Control states (shared across all tabs)
     private bool _zoomIn = false;
     private bool _zoomOut = false;
@@ -112,19 +112,19 @@ public class ModelEditorPhase : BasePhase
     private bool _panDown = false;
     private bool _zoomInAlt = false;
     private bool _zoomOutAlt = false;
-    
+
     // Camera control speeds
     private const float ORBIT_SPEED = 2.0f;  // degrees per frame
     private static fix64 PAN_SPEED { get; } = 3;    // units per frame
     private const float ZOOM_SPEED = 10.0f;  // units per frame
-    
+
     // Mouse state (shared)
     private int _mouseX;
     private int _mouseY;
     private bool _isLeftButtonDown = false;
     private bool _isRightButtonDown = false;
     private bool _isShiftPressed = false;
-    
+
     // 3D
     public PerspectiveCamera camera = new();
     private Scene scene;
@@ -137,11 +137,11 @@ public class ModelEditorPhase : BasePhase
         overlayScene = new Scene(graphicsDevice, [], camera, []);
         RefreshUserModels();
     }
-    
+
     private void RefreshUserModels()
     {
         var modelList = new List<string>();
-        
+
         // Scan user car models
         var userCarsPath = "./data/models/user/cars";
         if (Directory.Exists(userCarsPath))
@@ -151,7 +151,7 @@ public class ModelEditorPhase : BasePhase
                 modelList.Add(Path.GetRelativePath("./data/models/user", file).Replace('\\', '/'));
             }
         }
-        
+
         // Scan user stage models
         var userStagePath = "./data/models/user/stage";
         if (Directory.Exists(userStagePath))
@@ -161,12 +161,12 @@ public class ModelEditorPhase : BasePhase
                 modelList.Add(Path.GetRelativePath("./data/models/user", file).Replace('\\', '/'));
             }
         }
-        
+
         _userModelNames = modelList.ToArray();
     }
-    
+
     public bool IsOpen => _isOpen;
-    
+
     private ModelEditorTab? ActiveTab => _activeTabIndex >= 0 && _activeTabIndex < _tabs.Count ? _tabs[_activeTabIndex] : null;
 
     public override void Enter()
@@ -174,15 +174,15 @@ public class ModelEditorPhase : BasePhase
         base.Enter();
 
         _isOpen = true;
-        
+
         World.ResetValues();
-        
+
         camera.Position = new Vector3(0, -800, -800);
         camera.LookAt = Vector3.Zero;
-        
+
         GameSparker.GraphicsDevice.BlendState = BlendState.Opaque;
         GameSparker.GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-        
+
         RefreshUserModels();
     }
 
@@ -194,24 +194,24 @@ public class ModelEditorPhase : BasePhase
         _tabs.Clear();
         _activeTabIndex = -1;
     }
-    
+
     private ModelEditorTab CreateNewTab()
     {
         var tab = new ModelEditorTab();
         ResetTabView(tab);
         return tab;
     }
-    
+
     private void CloseTab(int index)
     {
         if (index < 0 || index >= _tabs.Count) return;
-        
+
         var tab = _tabs[index];
-        
+
         // Check for unsaved changes
         if (tab.TextEditorDirty && tab.ModelPath != null)
         {
-            GameSparker.MessageWindow.ShowCustom("Unsaved changes", 
+            GameSparker.MessageWindow.ShowCustom("Unsaved changes",
                 $"Save changes to {Path.GetFileName(tab.ModelPath)}?",
                 new[] { "Save", "Don't Save", "Cancel" },
                 result => {
@@ -242,11 +242,11 @@ public class ModelEditorPhase : BasePhase
             PerformCloseTab(index);
         }
     }
-    
+
     private void PerformCloseTab(int index)
     {
         _tabs.RemoveAt(index);
-        
+
         // Adjust active tab index
         if (_tabs.Count == 0)
         {
@@ -257,31 +257,31 @@ public class ModelEditorPhase : BasePhase
             _activeTabIndex = _tabs.Count - 1;
         }
     }
-    
+
     private void CreateNewModel()
     {
         if (string.IsNullOrWhiteSpace(_newModelName)) return;
-        
+
         var category = _isCreatingCar ? "cars" : "stage";
         var userPath = $"./data/models/user/{category}";
         Directory.CreateDirectory(userPath);
-        
+
         var filePath = Path.Combine(userPath, _newModelName + ".rad");
-        
+
         if (File.Exists(filePath))
         {
             // File already exists
             return;
         }
-        
+
         string radContent;
-        
+
         if (_importReference && _selectedReferenceModel >= 0)
         {
             // Import reference model
             var builtInPath = $"./data/models/{category}";
             var refModels = _isCreatingCar ? BackendGameSparker.CarRads : BackendGameSparker.StageRads;
-            
+
             if (_selectedReferenceModel < refModels.Length)
             {
                 var refFile = Path.Combine(builtInPath, refModels[_selectedReferenceModel] + ".rad");
@@ -303,21 +303,21 @@ public class ModelEditorPhase : BasePhase
         {
             radContent = CreateEmptyRadFile();
         }
-        
+
         File.WriteAllText(filePath, radContent);
-        
+
         // Load the new model
         LoadModel(filePath, _openInNewTab);
-        
+
         // Refresh list
         RefreshUserModels();
-        
+
         // Close dialog
         _showNewModelDialog = false;
         _newModelName = "";
         _importReference = false;
     }
-    
+
     private string CreateEmptyRadFile()
     {
         // Create a minimal valid .rad file
@@ -325,7 +325,7 @@ public class ModelEditorPhase : BasePhase
 
 ";
     }
-    
+
     private void LoadModel(string filePath, bool openInNewTab = false)
     {
         // Check if already open
@@ -336,11 +336,11 @@ public class ModelEditorPhase : BasePhase
             _activeTabIndex = existingTabIndex;
             return;
         }
-        
+
         try
         {
             var radContent = File.ReadAllText(filePath);
-            
+
             ModelEditorTab tab;
             if (openInNewTab || _activeTabIndex < 0 || _tabs.Count == 0)
             {
@@ -353,12 +353,12 @@ public class ModelEditorPhase : BasePhase
             {
                 // Use current tab
                 tab = ActiveTab!;
-                
+
                 // Check for unsaved changes
                 if (tab.TextEditorDirty && tab.ModelPath != null)
                 {
                     var currentPath = tab.ModelPath;
-                    GameSparker.MessageWindow.ShowCustom("Unsaved changes", 
+                    GameSparker.MessageWindow.ShowCustom("Unsaved changes",
                         $"Save changes to {Path.GetFileName(currentPath)}?",
                         new[] { "Save", "Don't Save", "Cancel" },
                         result => {
@@ -382,7 +382,7 @@ public class ModelEditorPhase : BasePhase
                     return;
                 }
             }
-            
+
             LoadModelIntoTab(tab, filePath, radContent);
         }
         catch (Exception ex)
@@ -393,13 +393,13 @@ public class ModelEditorPhase : BasePhase
             Logging.Error(err);
         }
     }
-    
+
     private void LoadModelIntoTab(ModelEditorTab tab, string filePath, string radContent)
     {
         tab.ModelPath = filePath;
         tab.TextContent = radContent;
         tab.TextEditorDirty = false;
-        
+
         // Determine model type from file path - normalize path separators for comparison
         var normalizedPath = filePath.Replace('\\', '/').ToLowerInvariant();
         if (normalizedPath.Contains("/cars/"))
@@ -415,7 +415,7 @@ public class ModelEditorPhase : BasePhase
             // Default to car if we can't determine from path
             tab.ModelType = ModelEditorTab.ModelTypeEnum.Car;
         }
-        
+
         // Try to parse the model, but keep the file loaded even if it fails
         try
         {
@@ -431,7 +431,7 @@ public class ModelEditorPhase : BasePhase
             tab.Object = null;
         }
     }
-    
+
     private void ResetTabView(ModelEditorTab tab)
     {
         tab.ModelRotation = new f64Vector3(0, 0, 0);
@@ -441,18 +441,18 @@ public class ModelEditorPhase : BasePhase
         tab.CameraPitch = 10f;
         UpdateTabCameraPosition(tab);
     }
-    
+
     private void UpdateTabCameraPosition(ModelEditorTab tab)
     {
         // Position camera in orbit around the model position
         // Camera orbits at the specified distance
         var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
         var pitchRad = MathUtil.DegreesToRadians(tab.CameraPitch);
-        
+
         var x = tab.CameraDistance * (float)(Math.Cos(pitchRad) * Math.Sin(yawRad));
         var y = -tab.CameraDistance * (float)Math.Sin(pitchRad);
         var z = tab.CameraDistance * (float)(Math.Cos(pitchRad) * Math.Cos(yawRad));
-        
+
         // Camera position is relative to the model position
         tab.CameraPosition = (Vector3)tab.ModelPosition + new Vector3(x, y, -z);
     }
@@ -462,11 +462,11 @@ public class ModelEditorPhase : BasePhase
         base.KeyPressed(key, imguiWantsKeyboard, keys);
         if (imguiWantsKeyboard) return;
         if (!_isOpen) return;
-        
+
         var keyboardState = Microsoft.Xna.Framework.Input.Keyboard.GetState();
-        bool isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || 
+        bool isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) ||
                              keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift);
-        
+
         switch (key)
         {
             case Key.W:
@@ -519,11 +519,11 @@ public class ModelEditorPhase : BasePhase
     public override void KeyReleased(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyReleased(key, imguiWantsKeyboard, keys);
-        
+
         if (imguiWantsKeyboard) return;
-        
+
         if (!_isOpen) return;
-        
+
         switch (key)
         {
             case Key.W:
@@ -572,16 +572,16 @@ public class ModelEditorPhase : BasePhase
 
         if (imguiWantsMouse) return;
         if (!GameSparker.Game.IsActive) return;
-    
+
         if (!_isOpen) return;
-        
+
         var tab = ActiveTab;
         if (tab != null && tab.IsDragging)
         {
             // Calculate mouse delta
             int deltaX = x - tab.DragStartX;
             int deltaY = y - tab.DragStartY;
-            
+
             if (_isShiftPressed)
             {
                 // Pan mode: move model position
@@ -589,21 +589,21 @@ public class ModelEditorPhase : BasePhase
                 var sensitivity = 1.5f;
                 var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
                 var pitchRad = MathUtil.DegreesToRadians(tab.CameraPitch);
-                
+
                 // Camera right vector (for horizontal panning)
                 var rightX = (float)Math.Cos(yawRad);
                 var rightZ = (float)Math.Sin(yawRad);
-                
+
                 // Camera up vector (for vertical panning)
                 var upX = -(float)(Math.Sin(pitchRad) * Math.Sin(yawRad));
                 var upY = (float)Math.Cos(pitchRad);
                 var upZ = -(float)(Math.Sin(pitchRad) * Math.Cos(yawRad));
-                
+
                 // Update model position based on pan (inverted for intuitive control)
                 var panX = (fix64)((-rightX * deltaX + upX * deltaY) * sensitivity);
                 var panY = (fix64)(upY * deltaY * sensitivity);
                 var panZ = (fix64)((-rightZ * deltaX + upZ * deltaY) * sensitivity);
-                
+
                 tab.ModelPosition = tab.DragStartModelPosition + new f64Vector3(panX, panY, panZ);
             }
             else
@@ -612,14 +612,14 @@ public class ModelEditorPhase : BasePhase
                 var sensitivity = 0.3f;
                 tab.CameraYaw = tab.DragStartCameraYaw + deltaX * sensitivity;
                 tab.CameraPitch = tab.DragStartCameraPitch - deltaY * sensitivity;
-                
+
                 // Clamp pitch to avoid gimbal lock
                 tab.CameraPitch = Math.Clamp(tab.CameraPitch, -89f, 89f);
-                
+
                 UpdateTabCameraPosition(tab);
             }
         }
-        
+
         _mouseX = x;
         _mouseY = y;
     }
@@ -633,7 +633,7 @@ public class ModelEditorPhase : BasePhase
         if (imguiWantsMouse) return;
         if (!GameSparker.Game.IsActive) return;
         if (!_isOpen) return;
-        
+
         var tab = ActiveTab;
         if (tab != null)
         {
@@ -641,12 +641,12 @@ public class ModelEditorPhase : BasePhase
             var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
             _isLeftButtonDown = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
             _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            
+
             // Check shift state
             var keyboardState = Microsoft.Xna.Framework.Input.Keyboard.GetState();
-            _isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || 
+            _isShiftPressed = keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) ||
                              keyboardState.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.RightShift);
-            
+
             // Start dragging for camera control with left or right mouse button
             if (_isLeftButtonDown || _isRightButtonDown)
             {
@@ -659,7 +659,7 @@ public class ModelEditorPhase : BasePhase
             }
         }
     }
-    
+
     public override void MouseScrolled(int x, int y, int delta, bool imguiWantsMouse, MouseButtons buttons,
         bool ctrlKey, bool shiftKey, bool altKey)
     {
@@ -668,17 +668,17 @@ public class ModelEditorPhase : BasePhase
         if (imguiWantsMouse) return;
         if (!GameSparker.Game.IsActive) return;
         if (!_isOpen) return;
-        
+
         var tab = ActiveTab;
         if (tab != null)
         {
             // Zoom in/out by adjusting camera distance
             var zoomSpeed = 0.25f;
             tab.CameraDistance -= delta * zoomSpeed;
-            
+
             // Clamp to reasonable values
             tab.CameraDistance = Math.Clamp(tab.CameraDistance, 100f, 10000f);
-            
+
             UpdateTabCameraPosition(tab);
         }
     }
@@ -687,31 +687,31 @@ public class ModelEditorPhase : BasePhase
         bool ctrlKey, bool shiftKey, bool altKey)
     {
         base.MouseReleased(x, y, imguiWantsMouse, button, buttons, ctrlKey, shiftKey, altKey);
-        
+
         var tab = ActiveTab;
         if (tab != null)
         {
             // Check if this was a click (not a drag)
-            bool wasClick = tab.IsDragging && 
+            bool wasClick = tab.IsDragging &&
                            GameSparker.Game.IsActive &&
-                           Math.Abs(x - tab.DragStartX) < 5 && 
+                           Math.Abs(x - tab.DragStartX) < 5 &&
                            Math.Abs(y - tab.DragStartY) < 5;
-            
+
             // Stop dragging
             tab.IsDragging = false;
-            
+
             // Update button states
             var mouseState = Microsoft.Xna.Framework.Input.Mouse.GetState();
             _isLeftButtonDown = mouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
             _isRightButtonDown = mouseState.RightButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed;
-            
+
             // Process click for polygon/collision selection only if it was a simple click, not a drag
             if (wasClick && !imguiWantsMouse && tab.Object != null)
             {
                 if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
                 {
                     var result = PerformRayPicking(x, y, tab);
-                    
+
                     if (result.WheelIndex >= 0)
                     {
                         // Wheel polygon was picked
@@ -737,7 +737,7 @@ public class ModelEditorPhase : BasePhase
                 else if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
                 {
                     var pickedIndex = PerformCollisionPicking(x, y, tab);
-                    
+
                     if (pickedIndex >= 0)
                     {
                         tab.SelectedCollisionIndex = pickedIndex;
@@ -757,13 +757,13 @@ public class ModelEditorPhase : BasePhase
     private RayPickResult PerformRayPicking(int screenX, int screenY, ModelEditorTab tab)
     {
         if (tab.Object == null) return new RayPickResult(-1, -1);
-        
+
         var viewport = GameSparker.GraphicsDevice.Viewport;
-        
+
         // Set up the model's transform exactly as RenderModel does
         var originalPosition = tab.Object.Position;
         var originalRotation = tab.Object.Rotation;
-        
+
         // Keep model at origin - ModelPosition is only for camera orbit center
         tab.Object.Position = f64Vector3.Zero;
         tab.Object.Rotation = new f64Euler(
@@ -771,14 +771,14 @@ public class ModelEditorPhase : BasePhase
             f64AngleSingle.FromDegrees(-tab.ModelRotation.X), // Pitch (negated)
             f64AngleSingle.FromDegrees(tab.ModelRotation.Z)   // Roll
         );
-        
+
         // Get the ACTUAL MatrixWorld that will be used for rendering
         var modelWorld = tab.Object.MatrixWorld;
-        
+
         // Restore transform
         tab.Object.Position = originalPosition;
         tab.Object.Rotation = originalRotation;
-        
+
         // Set up camera exactly as RenderModel does
         // Use GameSparker.camera's actual Width/Height (not viewport, which might differ)
         var tempCamera = new PerspectiveCamera
@@ -792,13 +792,13 @@ public class ModelEditorPhase : BasePhase
             Near = camera.Near,
             Far = camera.Far
         };
-        
+
         // Call OnBeforeRender to compute the View and Projection matrices
         tempCamera.OnBeforeRender(1);
-        
+
         var view = tempCamera.ViewMatrix;
         var projection = tempCamera.ProjectionMatrix;
-        
+
         // Unproject screen coordinates to world space ray
         var nearPoint = viewport.Unproject(
             new Vector3(screenX, screenY, 0f),
@@ -806,37 +806,37 @@ public class ModelEditorPhase : BasePhase
             view,
             Matrix.Identity
         );
-        
+
         var farPoint = viewport.Unproject(
             new Vector3(screenX, screenY, 1f),
             projection,
             view,
             Matrix.Identity
         );
-        
+
         var rayOrigin = nearPoint;
         var rayDirection = Vector3.Normalize(farPoint - nearPoint);
-        
+
         // Test against all body polygons
         float closestBodyDistance = float.MaxValue;
         int closestBodyPolyIndex = -1;
-        
+
         for (int i = 0; i < tab.Object.Mesh.Polys.Length; i++)
         {
             var poly = tab.Object.Mesh.Polys[i];
-            
+
             // Test each triangle in this polygon
             for (int t = 0; t < poly.Triangles.Length; t += 3)
             {
                 var i0 = poly.Triangles[t];
                 var i1 = poly.Triangles[t + 1];
                 var i2 = poly.Triangles[t + 2];
-                
+
                 // Transform vertices by the model's world matrix
                 var v0 = Vector3.Transform(poly.Points[i0], modelWorld);
                 var v1 = Vector3.Transform(poly.Points[i1], modelWorld);
                 var v2 = Vector3.Transform(poly.Points[i2], modelWorld);
-                
+
                 if (RayIntersectsTriangle(rayOrigin, rayDirection, v0, v1, v2, out float distance))
                 {
                     if (distance < closestBodyDistance)
@@ -847,32 +847,32 @@ public class ModelEditorPhase : BasePhase
                 }
             }
         }
-        
+
         // Test against all wheel polygons
         float closestWheelDistance = float.MaxValue;
         int closestWheelIndex = -1;
         int closestWheelPolyIndex = -1;
-        
+
         var wheelObjects = tab.Object.WheelObjects;
         for (int wi = 0; wi < wheelObjects.Count; wi++)
         {
             var wheelObj = wheelObjects[wi];
             var wheelWorld = wheelObj.MatrixWorld;
-            
+
             for (int pi = 0; pi < wheelObj.Mesh.Polys.Length; pi++)
             {
                 var poly = wheelObj.Mesh.Polys[pi];
-                
+
                 for (int t = 0; t < poly.Triangles.Length; t += 3)
                 {
                     var i0 = poly.Triangles[t];
                     var i1 = poly.Triangles[t + 1];
                     var i2 = poly.Triangles[t + 2];
-                    
+
                     var v0 = Vector3.Transform(poly.Points[i0], wheelWorld);
                     var v1 = Vector3.Transform(poly.Points[i1], wheelWorld);
                     var v2 = Vector3.Transform(poly.Points[i2], wheelWorld);
-                    
+
                     if (RayIntersectsTriangle(rayOrigin, rayDirection, v0, v1, v2, out float distance))
                     {
                         if (distance < closestWheelDistance)
@@ -885,16 +885,16 @@ public class ModelEditorPhase : BasePhase
                 }
             }
         }
-        
+
         // Return the closest hit: prefer wheel if closer, otherwise body
         if (closestWheelIndex >= 0 && (closestBodyPolyIndex < 0 || closestWheelDistance < closestBodyDistance))
         {
             return new RayPickResult(closestWheelPolyIndex, closestWheelIndex);
         }
-        
+
         return new RayPickResult(closestBodyPolyIndex, -1);
     }
-    
+
     // Möller–Trumbore ray-triangle intersection algorithm
     private bool RayIntersectsTriangle(
         Vector3 rayOrigin,
@@ -906,43 +906,43 @@ public class ModelEditorPhase : BasePhase
     {
         distance = 0;
         const float EPSILON = 0.000001f;  // Smaller epsilon for better accuracy
-        
+
         var edge1 = v1 - v0;
         var edge2 = v2 - v0;
         var h = Vector3.Cross(rayDirection, edge2);
         var a = Vector3.Dot(edge1, h);
-        
+
         // Check if ray is parallel to triangle (with smaller tolerance)
         if (a > -EPSILON && a < EPSILON)
             return false;
-        
+
         var f = 1.0f / a;
         var s = rayOrigin - v0;
         var u = f * Vector3.Dot(s, h);
-        
+
         // Allow slightly outside bounds for edge cases
         if (u < -EPSILON || u > 1.0f + EPSILON)
             return false;
-        
+
         var q = Vector3.Cross(s, edge1);
         var v = f * Vector3.Dot(rayDirection, q);
-        
+
         // Allow slightly outside bounds for edge cases
         if (v < -EPSILON || u + v > 1.0f + EPSILON)
             return false;
-        
+
         distance = f * Vector3.Dot(edge2, q);
-        
+
         // Only accept intersections in front of the ray
         return distance > EPSILON;
     }
-    
+
     private int PerformCollisionPicking(int screenX, int screenY, ModelEditorTab tab)
     {
         if (tab.Object == null || tab.Object.Boxes.Length == 0) return -1;
-        
+
         var viewport = GameSparker.GraphicsDevice.Viewport;
-        
+
         // Set up camera exactly as RenderModel does
         var tempCamera = new PerspectiveCamera
         {
@@ -955,12 +955,12 @@ public class ModelEditorPhase : BasePhase
             Near = camera.Near,
             Far = camera.Far
         };
-        
+
         tempCamera.OnBeforeRender(1);
-        
+
         var view = tempCamera.ViewMatrix;
         var projection = tempCamera.ProjectionMatrix;
-        
+
         // Unproject screen coordinates to world space ray
         var nearPoint = viewport.Unproject(
             new Vector3(screenX, screenY, 0f),
@@ -968,25 +968,25 @@ public class ModelEditorPhase : BasePhase
             view,
             Matrix.Identity
         );
-        
+
         var farPoint = viewport.Unproject(
             new Vector3(screenX, screenY, 1f),
             projection,
             view,
             Matrix.Identity
         );
-        
+
         var rayOrigin = nearPoint;
         var rayDirection = Vector3.Normalize(farPoint - nearPoint);
-        
+
         // Test against all collision boxes
         float closestDistance = float.MaxValue;
         int closestBoxIndex = -1;
-        
+
         for (int i = 0; i < tab.Object.Boxes.Length; i++)
         {
             var box = tab.Object.Boxes[i];
-            
+
             // Check if ray intersects this box
             if (RayIntersectsBox(rayOrigin, rayDirection, box, out float distance))
             {
@@ -997,140 +997,140 @@ public class ModelEditorPhase : BasePhase
                 }
             }
         }
-        
+
         return closestBoxIndex;
     }
-    
+
     private bool RayIntersectsBox(Vector3 rayOrigin, Vector3 rayDirection, Rad3dBoxDef box, out float distance)
     {
         distance = float.MaxValue;
-        
+
         // Convert box to axis-aligned bounding box in world space
         var center = (Vector3)box.Translation;
         var radius = (Vector3)box.Radius;
-        
+
         // Simple AABB ray intersection (ignoring rotation for now - can be enhanced later)
         var min = center - radius;
         var max = center + radius;
-        
+
         float tmin = (min.X - rayOrigin.X) / rayDirection.X;
         float tmax = (max.X - rayOrigin.X) / rayDirection.X;
-        
+
         if (tmin > tmax)
         {
             (tmin, tmax) = (tmax, tmin);
         }
-        
+
         float tymin = (min.Y - rayOrigin.Y) / rayDirection.Y;
         float tymax = (max.Y - rayOrigin.Y) / rayDirection.Y;
-        
+
         if (tymin > tymax)
         {
             var temp = tymin;
             tymin = tymax;
             tymax = temp;
         }
-        
+
         if ((tmin > tymax) || (tymin > tmax))
             return false;
-        
+
         if (tymin > tmin)
             tmin = tymin;
-        
+
         if (tymax < tmax)
             tmax = tymax;
-        
+
         float tzmin = (min.Z - rayOrigin.Z) / rayDirection.Z;
         float tzmax = (max.Z - rayOrigin.Z) / rayDirection.Z;
-        
+
         if (tzmin > tzmax)
         {
             var temp = tzmin;
             tzmin = tzmax;
             tzmax = temp;
         }
-        
+
         if ((tmin > tzmax) || (tzmin > tmax))
             return false;
-        
+
         if (tzmin > tmin)
             tmin = tzmin;
-        
+
         if (tzmax < tmax)
             tmax = tzmax;
-        
+
         // Check if intersection is in front of ray
         if (tmax < 0)
             return false;
-        
+
         distance = tmin > 0 ? tmin : tmax;
         return true;
     }
-    
+
     private void FlipSelectedPolygonVertexOrder()
     {
         var tab = ActiveTab;
         if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Object == null) return;
-        
+
         var poly = tab.Object.Mesh.Polys[tab.SelectedPolygonIndex];
         Array.Reverse(poly.Points);
-        
+
         // Rebuild the mesh with the flipped polygon
         tab.Object.Mesh.RebuildMesh();
-        
+
         // Update the text content to reflect the change
         UpdateTextContentFromModel(tab);
     }
-    
+
     private void RemoveSelectedPolygon()
     {
         var tab = ActiveTab;
         if (tab == null || tab.SelectedPolygonIndex < 0 || tab.Object == null) return;
-        
+
         var polyList = tab.Object.Mesh.Polys.ToList();
         polyList.RemoveAt(tab.SelectedPolygonIndex);
         tab.Object.Mesh.Polys = polyList.ToArray();
-        
+
         // Rebuild the mesh
         tab.Object.Mesh.RebuildMesh();
-        
+
         // Update the text content to reflect the change
         UpdateTextContentFromModel(tab);
-        
+
         // Clear selection
         tab.SelectedPolygonIndex = -1;
     }
-    
+
     private void JumpToSelectedPolygonInText()
     {
         var tab = ActiveTab;
         if (tab == null || tab.Object == null) return;
-        
+
         // Handle wheel polygon selection
         if (tab.SelectedWheelIndex >= 0 && tab.SelectedWheelPolygonIndex >= 0)
         {
             JumpToSelectedWheelPolygonInText();
             return;
         }
-        
+
         if (tab.SelectedPolygonIndex < 0) return;
-        
+
         // Find the polygon in the text by searching for <p> tags and counting
         int polygonCount = 0;
         int selectionStart = -1;
         int selectionEnd = -1;
-        
+
         for (int i = 0; i < tab.TextContent.Length; i++)
         {
             // Check if we're at the start of a <p> tag
-            if (i + 3 <= tab.TextContent.Length && 
+            if (i + 3 <= tab.TextContent.Length &&
                 tab.TextContent.Substring(i, 3) == "<p>")
             {
                 if (polygonCount == tab.SelectedPolygonIndex)
                 {
                     // Found the start of our target polygon
                     selectionStart = i;
-                    
+
                     // Now find the closing </p> tag
                     int searchPos = i + 3;
                     while (searchPos + 4 <= tab.TextContent.Length)
@@ -1142,7 +1142,7 @@ public class ModelEditorPhase : BasePhase
                         }
                         searchPos++;
                     }
-                    
+
                     // If we didn't find a closing tag, select until the next <p> or end of file
                     if (selectionEnd == -1)
                     {
@@ -1161,17 +1161,17 @@ public class ModelEditorPhase : BasePhase
                             selectionEnd = tab.TextContent.Length;
                         }
                     }
-                    
+
                     break;
                 }
                 polygonCount++;
             }
         }
-        
+
         // Store selection range for future use (currently just for debugging)
         tab.TextEditorSelectionStart = selectionStart;
         tab.TextEditorSelectionEnd = selectionEnd;
-        
+
         // Extract the polygon code and open the editor window
         if (selectionStart >= 0 && selectionEnd >= 0 && selectionEnd <= tab.TextContent.Length)
         {
@@ -1182,32 +1182,32 @@ public class ModelEditorPhase : BasePhase
             tab.PolygonEditorIsWheel = false;
             tab.PolygonEditorWheelIndex = -1;
         }
-        
+
         // Debug output
         if (selectionStart >= 0)
         {
             Logging.Debug($"Polygon {tab.SelectedPolygonIndex + 1}: selection range {selectionStart}-{selectionEnd}");
         }
     }
-    
+
     private void JumpToSelectedWheelPolygonInText()
     {
         var tab = ActiveTab;
         if (tab == null || tab.SelectedWheelIndex < 0 || tab.SelectedWheelPolygonIndex < 0 || tab.Object == null) return;
-        
+
         int selectionStart = -1;
         int selectionEnd = -1;
         var wheelIndex = tab.SelectedWheelIndex;
         var polyIndex = tab.SelectedWheelPolygonIndex;
-        
+
         var text = tab.TextContent;
-        
+
         // First, check if this wheel uses SRC/PhyShot format (<wheel> blocks before w(...) lines)
         // SRC/PhyShot wheel meshes are declared before the wheel and correspond 1:1 by index
         int srcWheelBlockCount = 0;
         int srcWheelBlockStart = -1;
         int srcWheelBlockEnd = -1;
-        
+
         for (int i = 0; i < text.Length; i++)
         {
             if (i + 7 <= text.Length && text.Substring(i, 7) == "<wheel>")
@@ -1252,7 +1252,7 @@ public class ModelEditorPhase : BasePhase
                 srcWheelBlockCount++;
             }
         }
-        
+
         if (srcWheelBlockStart >= 0 && srcWheelBlockEnd >= 0)
         {
             // SRC/PhyShot format: find the Nth polygon block inside this <wheel> block.
@@ -1296,7 +1296,7 @@ public class ModelEditorPhase : BasePhase
             // Find the Nth w(...)c line (phy-addons wheel declaration)
             int phyWheelCount = 0;
             int phyWheelLineEnd = -1;
-            
+
             for (int i = 0; i < text.Length; i++)
             {
                 if (text[i] == 'w' && i + 2 < text.Length && text[i + 1] == '(')
@@ -1316,13 +1316,13 @@ public class ModelEditorPhase : BasePhase
                     }
                 }
             }
-            
+
             if (phyWheelLineEnd >= 0)
             {
                 // After the w(...)c line, find polygon blocks that contain wheel or wheel(N) markers.
                 // Supports both <p>/</p> and [p]/[/p] formats.
                 int wheelPolyCount = 0;
-                
+
                 for (int i = phyWheelLineEnd; i < text.Length; i++)
                 {
                     // Check for open tag: <p> or [p]
@@ -1331,11 +1331,11 @@ public class ModelEditorPhase : BasePhase
                         openLen = 3;
                     else if (i + 3 <= text.Length && text.Substring(i, 3) == "[p]")
                         openLen = 3;
-                    
+
                     if (openLen > 0)
                     {
                         int polyStart = i;
-                        
+
                         // Find matching close tag: </p> or [/p]
                         int polyEnd = -1;
                         string closeTag = openLen == 3 && text[i] == '<' ? "</p>" : "[/p]";
@@ -1349,18 +1349,18 @@ public class ModelEditorPhase : BasePhase
                             }
                             searchPos++;
                         }
-                        
+
                         if (polyEnd < 0)
                         {
                             // No closing tag found; skip this block
                             i = searchPos;
                             continue;
                         }
-                        
+
                         // Check if this block contains wheel/wheel(N) marker
                         bool isWheelPoly = false;
                         bool matchesWheel = false;
-                        
+
                         // Check for wheel(N) — specific wheel assignment
                         int wheelMarkerPos = text.IndexOf("wheel(", polyStart, polyEnd - polyStart);
                         if (wheelMarkerPos > polyStart && wheelMarkerPos < polyEnd)
@@ -1382,7 +1382,7 @@ public class ModelEditorPhase : BasePhase
                             int bareWheelPos = text.IndexOf("wheel", polyStart, polyEnd - polyStart);
                             if (bareWheelPos > polyStart && bareWheelPos < polyEnd)
                             {
-                                // Make sure it's not "wheel(" 
+                                // Make sure it's not "wheel("
                                 if (bareWheelPos + 5 >= polyEnd || text[bareWheelPos + 5] != '(')
                                 {
                                     isWheelPoly = true;
@@ -1401,7 +1401,7 @@ public class ModelEditorPhase : BasePhase
                                 }
                             }
                         }
-                        
+
                         if (isWheelPoly && matchesWheel)
                         {
                             if (wheelPolyCount == polyIndex)
@@ -1412,14 +1412,14 @@ public class ModelEditorPhase : BasePhase
                             }
                             wheelPolyCount++;
                         }
-                        
+
                         i = polyEnd - 1; // Continue after this block
-                        
+
                         // Stop when we hit the next w(...) line (start of next wheel pair)
                         int nextCheck = polyEnd;
                         while (nextCheck < text.Length && (text[nextCheck] == '\n' || text[nextCheck] == '\r' || text[nextCheck] == '-'))
                             nextCheck++;
-                        if (nextCheck < text.Length && text[nextCheck] == 'w' && 
+                        if (nextCheck < text.Length && text[nextCheck] == 'w' &&
                             nextCheck + 1 < text.Length && text[nextCheck + 1] == '(')
                         {
                             break;
@@ -1428,11 +1428,11 @@ public class ModelEditorPhase : BasePhase
                 }
             }
         }
-        
+
         // Store selection and open editor
         tab.TextEditorSelectionStart = selectionStart;
         tab.TextEditorSelectionEnd = selectionEnd;
-        
+
         if (selectionStart >= 0 && selectionEnd >= 0 && selectionEnd <= text.Length)
         {
             tab.PolygonEditorContent = text.Substring(selectionStart, selectionEnd - selectionStart);
@@ -1442,34 +1442,34 @@ public class ModelEditorPhase : BasePhase
             tab.PolygonEditorIsWheel = true;
             tab.PolygonEditorWheelIndex = wheelIndex;
         }
-        
+
         if (selectionStart >= 0)
         {
             Logging.Debug($"Wheel {wheelIndex + 1} Polygon {polyIndex + 1}: selection range {selectionStart}-{selectionEnd}");
         }
     }
-    
+
     private void JumpToSelectedCollisionInText()
     {
         var tab = ActiveTab;
         if (tab == null || tab.SelectedCollisionIndex < 0 || tab.Object == null) return;
-        
+
         // Find the collision box in the text by searching for <track> tags and counting
         int collisionCount = 0;
         int selectionStart = -1;
         int selectionEnd = -1;
-        
+
         for (int i = 0; i < tab.TextContent.Length; i++)
         {
             // Check if we're at the start of a <track> tag
-            if (i + 7 <= tab.TextContent.Length && 
+            if (i + 7 <= tab.TextContent.Length &&
                 tab.TextContent.Substring(i, 7) == "<track>")
             {
                 if (collisionCount == tab.SelectedCollisionIndex)
                 {
                     // Found the start of our target collision
                     selectionStart = i;
-                    
+
                     // Now find the closing </track> tag
                     int searchPos = i + 7;
                     while (searchPos + 8 <= tab.TextContent.Length)
@@ -1481,7 +1481,7 @@ public class ModelEditorPhase : BasePhase
                         }
                         searchPos++;
                     }
-                    
+
                     // If we didn't find a closing tag, select until the next <track> or end of file
                     if (selectionEnd == -1)
                     {
@@ -1500,17 +1500,17 @@ public class ModelEditorPhase : BasePhase
                             selectionEnd = tab.TextContent.Length;
                         }
                     }
-                    
+
                     break;
                 }
                 collisionCount++;
             }
         }
-        
+
         // Store selection range for future use
         tab.TextEditorSelectionStart = selectionStart;
         tab.TextEditorSelectionEnd = selectionEnd;
-        
+
         // Extract the collision code and open the editor window
         if (selectionStart >= 0 && selectionEnd >= 0 && selectionEnd <= tab.TextContent.Length)
         {
@@ -1521,41 +1521,41 @@ public class ModelEditorPhase : BasePhase
             tab.PolygonEditorIsWheel = false;
             tab.PolygonEditorWheelIndex = -1;
         }
-        
+
         // Debug output
         if (selectionStart >= 0)
         {
             Logging.Debug($"Collision {tab.SelectedCollisionIndex + 1}: selection range {selectionStart}-{selectionEnd}");
         }
     }
-    
+
     private void UpdateTextContentFromModel(ModelEditorTab tab)
     {
         if (tab.Object == null) return;
-        
+
         // Don't regenerate from scratch - this would lose comments and formatting
         // Instead, this method should only be called when we've done structural changes
         // like removing/flipping polygons, and we accept losing the original formatting
-        
+
         var sb = new StringBuilder();
         sb.AppendLine("// Modified in Model Editor");
         sb.AppendLine();
-        
+
         foreach (var poly in tab.Object.Mesh.Polys)
         {
             sb.AppendLine("<p>");
             sb.AppendLine($"c({poly.Color.R},{poly.Color.G},{poly.Color.B})");
             sb.AppendLine();
-            
+
             foreach (var point in poly.Points)
             {
                 sb.AppendLine($"p({point.X:F0},{point.Y:F0},{point.Z:F0})");
             }
-            
+
             sb.AppendLine("</p>");
             sb.AppendLine();
         }
-        
+
         tab.TextContent = sb.ToString();
         tab.TextEditorDirty = true;
     }
@@ -1565,10 +1565,10 @@ public class ModelEditorPhase : BasePhase
         base.GameTick();
 
         if (!_isOpen) return;
-        
+
         var tab = ActiveTab;
         if (tab == null) return;
-        
+
         // Apply camera orbit (A/D and Arrow keys)
         if (_orbitLeft)
             tab.CameraYaw -= ORBIT_SPEED;
@@ -1584,24 +1584,24 @@ public class ModelEditorPhase : BasePhase
             tab.CameraPitch -= ORBIT_SPEED;
             tab.CameraPitch = Math.Clamp(tab.CameraPitch, -89f, 89f);
         }
-        
+
         // Apply panning (Shift+WASD for all directions)
         if (_panLeft || _panRight || _panUp || _panDown)
         {
             var yawRad = MathUtil.DegreesToRadians(tab.CameraYaw);
             var pitchRad = MathUtil.DegreesToRadians(tab.CameraPitch);
-            
+
             // Camera right vector (for horizontal panning)
             var rightX = (fix64)Math.Cos(yawRad);
             var rightZ = (fix64)Math.Sin(yawRad);
-            
+
             // Camera up vector (for vertical panning)
             var upX = -(fix64)(Math.Sin(pitchRad) * Math.Sin(yawRad));
             var upY = (fix64)Math.Cos(pitchRad);
             var upZ = -(fix64)(Math.Sin(pitchRad) * Math.Cos(yawRad));
-            
+
             var pos = tab.ModelPosition;
-            
+
             // Sideways panning (Shift+A/D)
             if (_panLeft)
             {
@@ -1613,7 +1613,7 @@ public class ModelEditorPhase : BasePhase
                 pos.X -= rightX * PAN_SPEED;
                 pos.Z -= rightZ * PAN_SPEED;
             }
-            
+
             // Height panning (Shift+W/S)
             if (_panUp)
             {
@@ -1627,10 +1627,10 @@ public class ModelEditorPhase : BasePhase
                 pos.Y += upY * PAN_SPEED;
                 pos.Z += upZ * PAN_SPEED;
             }
-            
+
             tab.ModelPosition = pos;
         }
-        
+
         // Apply camera zoom (W/S and +/- keys)
         if (_zoomIn || _zoomInAlt)
         {
@@ -1642,7 +1642,7 @@ public class ModelEditorPhase : BasePhase
             tab.CameraDistance += ZOOM_SPEED;
             tab.CameraDistance = Math.Clamp(tab.CameraDistance, 100f, 10000f);
         }
-        
+
         UpdateTabCameraPosition(tab);
     }
 
@@ -1656,12 +1656,12 @@ public class ModelEditorPhase : BasePhase
     public override void RenderImgui()
     {
         base.RenderImgui();
-        
+
         if (!_isOpen) return;
-        
+
         var io = ImGui.GetIO();
         var displaySize = io.DisplaySize;
-        
+
         // File menu bar (main menu bar at top of screen)
         if (ImGui.BeginMainMenuBar())
         {
@@ -1671,14 +1671,14 @@ public class ModelEditorPhase : BasePhase
                 {
                     _showNewModelDialog = true;
                 }
-                
+
                 if (ImGui.MenuItem("Open..."))
                 {
                     _showLoadDialog = true;
                 }
-                
+
                 ImGui.Separator();
-                
+
                 if (ImGui.MenuItem("Exit"))
                 {
                     // Check for any unsaved tabs
@@ -1686,7 +1686,7 @@ public class ModelEditorPhase : BasePhase
                     if (unsavedTabs.Any())
                     {
                         var tabNames = string.Join(", ", unsavedTabs.Select(t => Path.GetFileName(t.ModelPath)));
-                        GameSparker.MessageWindow.ShowCustom("Unsaved changes", 
+                        GameSparker.MessageWindow.ShowCustom("Unsaved changes",
                             $"Save changes to: {tabNames}?",
                             new[] { "Save All", "Don't Save", "Cancel" },
                             result => {
@@ -1708,15 +1708,15 @@ public class ModelEditorPhase : BasePhase
                         ExitModelViewer();
                     }
                 }
-                
+
                 ImGui.EndMenu();
             }
-            
+
             ImGui.EndMainMenuBar();
         }
-        
+
         var menuBarHeight = ImGui.GetFrameHeight();
-        
+
         // Tab bar for open models
         float tabBarHeight = 0;
         if (_tabs.Count > 0)
@@ -1725,7 +1725,7 @@ public class ModelEditorPhase : BasePhase
             ImGui.SetNextWindowSize(new Vector2(displaySize.X, 0));
             ImGui.Begin("##TabBar", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize |
                         ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar);
-            
+
             if (ImGui.BeginTabBar("ModelTabs", ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs | ImGuiTabBarFlags.FittingPolicyScroll))
             {
                 for (int i = 0; i < _tabs.Count; i++)
@@ -1735,27 +1735,27 @@ public class ModelEditorPhase : BasePhase
                     var tabFlags = ImGuiTabItemFlags.None;
                     if (tabItem.TextEditorDirty)
                         tabFlags |= ImGuiTabItemFlags.UnsavedDocument;
-                    
+
                     if (ImGui.BeginTabItem(tabItem.GetDisplayName() + "###Tab" + i, ref tabOpen, tabFlags))
                     {
                         _activeTabIndex = i;
                         ImGui.EndTabItem();
                     }
-                    
+
                     if (!tabOpen)
                     {
                         CloseTab(i);
                         break; // Exit loop after closing to avoid index issues
                     }
                 }
-                
+
                 ImGui.EndTabBar();
             }
-            
+
             tabBarHeight = ImGui.GetWindowHeight();
             ImGui.End();
         }
-        
+
         // Toolbar - always visible when model is loaded
         float toolbarHeight = 0;
         var tab = ActiveTab;
@@ -1763,21 +1763,21 @@ public class ModelEditorPhase : BasePhase
         {
             ImGui.SetNextWindowPos(new Vector2(0, menuBarHeight + tabBarHeight));
             ImGui.SetNextWindowSize(new Vector2(displaySize.X, 0));
-            ImGui.Begin("##Toolbar", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | 
+            ImGui.Begin("##Toolbar", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize |
                         ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar);
-            
+
             if (ImGui.Button(tab.TextEditorExpanded ? "Hide Code Editor" : "Show Code Editor"))
             {
                 tab.TextEditorExpanded = !tab.TextEditorExpanded;
             }
-            
+
             ImGui.SameLine();
             ImGui.Text($"Editing: {Path.GetFileName(tab.ModelPath ?? "Untitled")}");
-            
+
             if (tab.TextEditorExpanded)
             {
                 ImGui.SameLine();
-                
+
                 if (ImGui.Button("Save"))
                 {
                     try
@@ -1798,9 +1798,9 @@ public class ModelEditorPhase : BasePhase
                         Logging.Error(err);
                     }
                 }
-                
+
                 ImGui.SameLine();
-                
+
                 if (ImGui.Button("Save & Preview"))
                 {
                     try
@@ -1822,9 +1822,9 @@ public class ModelEditorPhase : BasePhase
                         Logging.Error(err);
                     }
                 }
-                
+
                 ImGui.SameLine();
-                
+
                 if (ImGui.Button("Open in External Editor"))
                 {
                     try
@@ -1847,22 +1847,22 @@ public class ModelEditorPhase : BasePhase
                         Logging.Error(err);
                     }
                 }
-                
+
                 ImGui.SameLine();
                 ImGui.Text(tab.TextEditorDirty ? "(Modified)" : "");
             }
-            
+
             // Polygon/Collision selection info and controls (always visible when model is loaded)
             if (tab.Object != null)
             {
                 ImGui.Separator();
-                
+
                 // Edit mode toggle for stage scenery
                 if (tab.ModelType == ModelEditorTab.ModelTypeEnum.Stage)
                 {
                     ImGui.Text("Edit Mode:");
                     ImGui.SameLine();
-                    
+
                     int editMode = tab.EditMode == ModelEditorTab.EditModeEnum.Polygon ? 0 : 1;
                     if (ImGui.RadioButton("Polygon", editMode == 0))
                     {
@@ -1880,7 +1880,7 @@ public class ModelEditorPhase : BasePhase
                     ImGui.SameLine();
                     // ImGui.TextDisabled($"({tab.Model.Boxes.Length} collision boxes)");
                 }
-                
+
                 // Polygon editing UI
                 if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
                 {
@@ -1892,13 +1892,13 @@ public class ModelEditorPhase : BasePhase
                         var wheelObj = tab.Object.WheelObjects[tab.SelectedWheelIndex];
                         ImGui.Text($"[ Wheel {tab.SelectedWheelIndex + 1} of {tab.Object.WheelObjects.Count}, Piece {tab.SelectedWheelPolygonIndex + 1} of {wheelObj.Mesh.Polys.Length} selected ]");
                         ImGui.SameLine();
-                        
+
                         if (ImGui.Button("Edit Polygon"))
                         {
                             JumpToSelectedPolygonInText();
                         }
                         ImGui.SameLine();
-                        
+
                         if (ImGui.Button("X"))
                         {
                             tab.SelectedWheelIndex = -1;
@@ -1909,26 +1909,26 @@ public class ModelEditorPhase : BasePhase
                     {
                         ImGui.Text($"[ Piece {tab.SelectedPolygonIndex + 1} of {tab.Object.Mesh.Polys.Length} selected ]");
                         ImGui.SameLine();
-                        
+
                         if (ImGui.Button("Edit Polygon"))
                         {
                             JumpToSelectedPolygonInText();
                         }
                         ImGui.SameLine();
-                        
+
                         // currently unstable and i cba rn
                         // if (ImGui.Button("Flip Vertex Order"))
                         // {
                         //     FlipSelectedPolygonVertexOrder();
                         // }
                         // ImGui.SameLine();
-                        
+
                         // if (ImGui.Button("Remove Polygon"))
                         // {
                         //     RemoveSelectedPolygon();
                         // }
                         // ImGui.SameLine();
-                        
+
                         if (ImGui.Button("X"))
                         {
                             tab.SelectedPolygonIndex = -1; // Deselect
@@ -1952,18 +1952,18 @@ public class ModelEditorPhase : BasePhase
                         var box = tab.Object.Boxes[tab.SelectedCollisionIndex];
                         ImGui.Text($"[ Collision {tab.SelectedCollisionIndex + 1} of {tab.Object.Boxes.Length} selected ]");
                         ImGui.SameLine();
-                        
+
                         if (ImGui.Button("Edit Collision"))
                         {
                             JumpToSelectedCollisionInText();
                         }
                         ImGui.SameLine();
-                        
+
                         if (ImGui.Button("X"))
                         {
                             tab.SelectedCollisionIndex = -1; // Deselect
                         }
-                        
+
                         // Display collision properties
                         ImGui.Text($"Angle: xy={box.Xy:F0}° zy={box.Zy:F0}°");
                         ImGui.SameLine();
@@ -1982,55 +1982,55 @@ public class ModelEditorPhase : BasePhase
                     }
                 }
             }
-            
+
             toolbarHeight = ImGui.GetWindowHeight();
             ImGui.End();
         }
-        
+
         // Text editor panel (show when expanded)
         var showTextEditorPanel = tab != null && tab.TextEditorExpanded;
         float topPanelHeight = showTextEditorPanel ? displaySize.Y * 0.6f : 0;
-        
+
         if (showTextEditorPanel && tab != null)
         {
             ImGui.SetNextWindowPos(new Vector2(0, menuBarHeight + tabBarHeight + toolbarHeight));
             ImGui.SetNextWindowSize(new Vector2(displaySize.X, topPanelHeight - toolbarHeight));
-            ImGui.Begin("##TextEditorPanel", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | 
+            ImGui.Begin("##TextEditorPanel", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize |
                         ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar);
-            
+
             // Text editor
             var flags = ImGuiInputTextFlags.AllowTabInput;
             var content = tab.TextContent;
-            var textChanged = ImGui.InputTextMultiline("##TextEditor", ref content, 200000, 
+            var textChanged = ImGui.InputTextMultiline("##TextEditor", ref content, 200000,
                 new Vector2(-1, -1), flags);
-                
+
             if (textChanged)
             {
                 tab.TextContent = content;
                 tab.TextEditorDirty = true;
             }
-            
+
             ImGui.End();
         }
-        
+
         // Bottom control panel (fixed position, full width)
         float bottomPanelHeight = 180;
         ImGui.SetNextWindowPos(new Vector2(0, displaySize.Y - bottomPanelHeight));
         ImGui.SetNextWindowSize(new Vector2(displaySize.X, bottomPanelHeight));
-        ImGui.Begin("##BottomControls", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | 
+        ImGui.Begin("##BottomControls", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize |
                     ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse);
-        
+
         // Sub-tabs for bottom panel
         if (ImGui.BeginTabBar("ControlTabs"))
         {
             var activeTab = ActiveTab;
-            
+
             if (ImGui.BeginTabItem("3D Controls"))
             {
                 if (activeTab != null)
                 {
                     ImGui.Columns(3, "ControlColumns", false);
-                    
+
                     // Left column - Keyboard controls
                     ImGui.Text("Keyboard Controls:");
                     ImGui.Text("W/S: Zoom In/Out");
@@ -2039,24 +2039,24 @@ public class ModelEditorPhase : BasePhase
                     ImGui.Text("Shift+A/D: Pan Left/Right");
                     ImGui.Text("Arrows: Orbit Camera");
                     ImGui.Text("+/-: Zoom In/Out");
-                    
+
                     ImGui.NextColumn();
-                    
+
                     // Middle column - Mouse controls
                     ImGui.Text("Mouse Controls:");
                     ImGui.Text("Drag: Orbit camera");
                     ImGui.Text("Shift+Drag: Pan model");
                     ImGui.Text("Scroll Wheel: Zoom in/out");
                     ImGui.Text("Click: Select polygon");
-                    
+
                     ImGui.NextColumn();
-                    
+
                     // Right column - Sliders
                     float rotX = (float)activeTab.ModelRotation.X;
                     float rotY = (float)activeTab.ModelRotation.Y;
                     float rotZ = (float)activeTab.ModelRotation.Z;
                     float posY = (float)activeTab.ModelPosition.Y;
-                    
+
                     if (ImGui.SliderFloat("X (Pitch)", ref rotX, -180f, 180f))
                     {
                         var rot = activeTab.ModelRotation;
@@ -2075,26 +2075,26 @@ public class ModelEditorPhase : BasePhase
                         rot.Z = (fix64)rotZ;
                         activeTab.ModelRotation = rot;
                     }
-                    
+
                     if (ImGui.SliderFloat("Height", ref posY, -500f, 500f))
                     {
                         var pos = activeTab.ModelPosition;
                         pos.Y = (fix64)posY;
                         activeTab.ModelPosition = pos;
                     }
-                    
+
                     float camDist = activeTab.CameraDistance;
                     if (ImGui.SliderFloat("Camera Distance", ref camDist, 300f, 5000f))
                     {
                         activeTab.CameraDistance = camDist;
                         UpdateTabCameraPosition(activeTab);
                     }
-                    
+
                     if (ImGui.Button("Reset View"))
                     {
                         ResetTabView(activeTab);
                     }
-                    
+
                     ImGui.Columns(1);
                 }
                 ImGui.EndTabItem();
@@ -2113,37 +2113,37 @@ public class ModelEditorPhase : BasePhase
                 {
                     ImGui.SetTooltip("Show collision boxes for stage scenery");
                 }
-                
+
                 ImGui.EndTabItem();
             }
-            
+
             if (ImGui.BeginTabItem("Color Edit"))
             {
                 ImGui.Text("Color editing not yet implemented");
                 ImGui.EndTabItem();
             }
-            
+
             if (ImGui.BeginTabItem("Scale & Align"))
             {
                 if (activeTab != null)
                 {
                     ImGui.Text("Reference Car Overlay:");
                     ImGui.Spacing();
-                    
+
                     bool showOverlay = activeTab.ShowReferenceOverlay;
                     if (ImGui.Checkbox("Show Reference Car", ref showOverlay))
                     {
                         activeTab.ShowReferenceOverlay = showOverlay;
                     }
-                    
+
                     if (activeTab.ShowReferenceOverlay)
                     {
                         ImGui.Spacing();
-                        
+
                         // Car selection dropdown
                         var carRads = BackendGameSparker.CarRads;
                         int selectedCar = activeTab.ReferenceCarIndex;
-                        
+
                         if (ImGui.BeginCombo("Reference Car", selectedCar < carRads.Length ? carRads[selectedCar] : ""))
                         {
                             for (int i = 0; i < carRads.Length; i++)
@@ -2153,15 +2153,15 @@ public class ModelEditorPhase : BasePhase
                                 {
                                     activeTab.ReferenceCarIndex = i;
                                 }
-                                
+
                                 if (isSelected)
                                     ImGui.SetItemDefaultFocus();
                             }
                             ImGui.EndCombo();
                         }
-                        
+
                         ImGui.Spacing();
-                        
+
                         // Opacity slider
                         float opacity = activeTab.ReferenceOpacity;
                         if (ImGui.SliderFloat("Overlay Opacity", ref opacity, 0.1f, 1.0f))
@@ -2176,7 +2176,7 @@ public class ModelEditorPhase : BasePhase
                 }
                 ImGui.EndTabItem();
             }
-            
+
             // Wheels tab - only for cars
             if (activeTab != null && activeTab.ModelType == ModelEditorTab.ModelTypeEnum.Car)
             {
@@ -2186,7 +2186,7 @@ public class ModelEditorPhase : BasePhase
                     ImGui.EndTabItem();
                 }
             }
-            
+
             // Stats & Class tab - only for cars
             if (activeTab != null && activeTab.ModelType == ModelEditorTab.ModelTypeEnum.Car)
             {
@@ -2196,7 +2196,7 @@ public class ModelEditorPhase : BasePhase
                     ImGui.EndTabItem();
                 }
             }
-            
+
             // Physics tab - only for cars
             if (activeTab != null && activeTab.ModelType == ModelEditorTab.ModelTypeEnum.Car)
             {
@@ -2206,7 +2206,7 @@ public class ModelEditorPhase : BasePhase
                     ImGui.EndTabItem();
                 }
             }
-            
+
             // Test Drive tab - only for cars
             if (activeTab != null && activeTab.ModelType == ModelEditorTab.ModelTypeEnum.Car)
             {
@@ -2216,19 +2216,19 @@ public class ModelEditorPhase : BasePhase
                     ImGui.EndTabItem();
                 }
             }
-            
+
             ImGui.EndTabBar();
         }
-        
+
         ImGui.End();
-        
+
         // New Model Dialog
         if (_showNewModelDialog)
         {
             ImGui.SetNextWindowPos(new Vector2(displaySize.X / 2 - 200, displaySize.Y / 2 - 150));
             ImGui.SetNextWindowSize(new Vector2(400, 300));
             ImGui.Begin("Create New Model", ref _showNewModelDialog, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse);
-            
+
             ImGui.Text("Model Type:");
             int modelType = _isCreatingCar ? 0 : 1;
             if (ImGui.RadioButton("Car", modelType == 0))
@@ -2236,31 +2236,31 @@ public class ModelEditorPhase : BasePhase
             ImGui.SameLine();
             if (ImGui.RadioButton("Stage Scenery", modelType == 1))
                 _isCreatingCar = false;
-            
+
             ImGui.Spacing();
             ImGui.Separator();
             ImGui.Spacing();
-            
+
             ImGui.Text("Model Name:");
             ImGui.InputText("##ModelName", ref _newModelName, 100);
-            
+
             ImGui.Spacing();
             ImGui.Separator();
             ImGui.Spacing();
-            
+
             ImGui.Checkbox("Open in New Tab", ref _openInNewTab);
-            
+
             ImGui.Spacing();
-            
+
             ImGui.Checkbox("Import Reference Model", ref _importReference);
-            
+
             if (_importReference)
             {
                 ImGui.Spacing();
                 ImGui.Text("Select Reference:");
-                
+
                 var refModels = _isCreatingCar ? BackendGameSparker.CarRads : BackendGameSparker.StageRads;
-                
+
                 if (ImGui.BeginCombo("##Reference", _selectedReferenceModel < refModels.Length ? refModels[_selectedReferenceModel] : ""))
                 {
                     for (int i = 0; i < refModels.Length; i++)
@@ -2270,61 +2270,61 @@ public class ModelEditorPhase : BasePhase
                         {
                             _selectedReferenceModel = i;
                         }
-                        
+
                         if (isSelected)
                             ImGui.SetItemDefaultFocus();
                     }
                     ImGui.EndCombo();
                 }
             }
-            
+
             ImGui.Spacing();
             ImGui.Separator();
             ImGui.Spacing();
-            
+
             var canCreate = !string.IsNullOrWhiteSpace(_newModelName);
             if (!canCreate)
             {
                 ImGui.BeginDisabled();
             }
-            
+
             if (ImGui.Button("Create", new Vector2(190, 30)))
             {
                 CreateNewModel();
             }
-            
+
             if (!canCreate)
             {
                 ImGui.EndDisabled();
             }
-            
+
             ImGui.SameLine();
-            
+
             if (ImGui.Button("Cancel", new Vector2(190, 30)))
             {
                 _showNewModelDialog = false;
                 _newModelName = "";
                 _importReference = false;
             }
-            
+
             ImGui.End();
         }
-        
+
         // Load Existing Dialog
         if (_showLoadDialog)
         {
             ImGui.SetNextWindowPos(new Vector2(displaySize.X / 2 - 250, displaySize.Y / 2 - 200));
             ImGui.SetNextWindowSize(new Vector2(500, 400));
             ImGui.Begin("Load Model", ref _showLoadDialog, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar);
-            
+
             ImGui.Text("Select a model to load:");
             ImGui.Checkbox("Open in New Tab", ref _openInNewTab);
             ImGui.Separator();
             ImGui.Spacing();
-            
+
             // Calculate available space for file list (leave room for spacing and button)
             var availHeight = ImGui.GetContentRegionAvail().Y - 40; // Reserve space for button and spacing
-            
+
             // Create a child window for the file list with fixed height
             if (ImGui.BeginChild("FileList", new Vector2(-1, availHeight), (ImGuiChildFlags)1))
             {
@@ -2338,9 +2338,9 @@ public class ModelEditorPhase : BasePhase
                         {
                             var fileName = Path.GetFileName(file);
                             var activeTab = ActiveTab;
-                            var isCurrentModel = activeTab != null && activeTab.ModelPath != null && 
+                            var isCurrentModel = activeTab != null && activeTab.ModelPath != null &&
                                 activeTab.ModelPath.EndsWith(file.Replace('/', '\\'));
-                            
+
                             if (ImGui.Selectable($"  {fileName}##{file}", isCurrentModel))
                             {
                                 LoadModel(file, _openInNewTab);
@@ -2349,7 +2349,7 @@ public class ModelEditorPhase : BasePhase
                         }
                     }
                 }
-                
+
                 // Show stage folder
                 if (ImGui.CollapsingHeader("stage", ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.NoAutoOpenOnLog))
                 {
@@ -2360,9 +2360,9 @@ public class ModelEditorPhase : BasePhase
                         {
                             var fileName = Path.GetFileName(file);
                             var activeTab = ActiveTab;
-                            var isCurrentModel = activeTab != null && activeTab.ModelPath != null && 
+                            var isCurrentModel = activeTab != null && activeTab.ModelPath != null &&
                                 activeTab.ModelPath.EndsWith(file.Replace('/', '\\'));
-                            
+
                             if (ImGui.Selectable($"  {fileName}##{file}", isCurrentModel))
                             {
                                 LoadModel(file, _openInNewTab);
@@ -2371,32 +2371,32 @@ public class ModelEditorPhase : BasePhase
                         }
                     }
                 }
-                
+
                 ImGui.EndChild();
             }
-            
+
             ImGui.Spacing();
-            
+
             if (ImGui.Button("Cancel", new Vector2(-1, 30)))
             {
                 _showLoadDialog = false;
             }
-            
+
             ImGui.End();
         }
-        
+
         // Polygon Editor Window
         RenderPolygonEditorWindow();
     }
-    
+
     private void RenderPolygonEditorWindow()
     {
         var tab = ActiveTab;
         if (tab == null || !tab.ShowPolygonEditor) return;
-        
+
         // Determine if we're editing a polygon or collision
         bool editingCollision = tab.EditMode == ModelEditorTab.EditModeEnum.Collision;
-        
+
         // Check if user selected a different polygon/collision while editor is open
         if (!editingCollision && !tab.PolygonEditorIsWheel && tab.SelectedPolygonIndex >= 0 && tab.SelectedPolygonIndex != tab.PolygonEditorLastSelectedIndex)
         {
@@ -2404,9 +2404,9 @@ public class ModelEditorPhase : BasePhase
             JumpToSelectedPolygonInText();
             return; // JumpToSelectedPolygonInText will refresh the window
         }
-        else if (!editingCollision && tab.PolygonEditorIsWheel && 
+        else if (!editingCollision && tab.PolygonEditorIsWheel &&
                  tab.SelectedWheelIndex >= 0 && tab.SelectedWheelPolygonIndex >= 0 &&
-                 (tab.SelectedWheelIndex != tab.PolygonEditorWheelIndex || 
+                 (tab.SelectedWheelIndex != tab.PolygonEditorWheelIndex ||
                   tab.SelectedWheelPolygonIndex != tab.PolygonEditorLastSelectedIndex))
         {
             // Update the editor content to the newly selected wheel polygon
@@ -2419,13 +2419,13 @@ public class ModelEditorPhase : BasePhase
             JumpToSelectedCollisionInText();
             return;
         }
-        
+
         var io = ImGui.GetIO();
         var displaySize = io.DisplaySize;
-        
+
         ImGui.SetNextWindowPos(new Vector2(displaySize.X / 2 - 300, displaySize.Y / 2 - 250), ImGuiCond.FirstUseEver);
         ImGui.SetNextWindowSize(new Vector2(600, 400), ImGuiCond.FirstUseEver);
-        
+
         bool isOpen = tab.ShowPolygonEditor;
         string windowTitle;
         if (editingCollision)
@@ -2458,40 +2458,40 @@ public class ModelEditorPhase : BasePhase
                 ImGui.Text($"Editing polygon {tab.PolygonEditorLastSelectedIndex + 1} of {tab.Object?.Mesh.Polys.Length ?? 0}");
             }
             ImGui.Separator();
-            
+
             // Calculate available space for text editor
             var contentRegionAvail = ImGui.GetContentRegionAvail();
-            
+
             // Reserve space for the bottom controls (special flags + buttons)
             var bottomControlsHeight = 120f; // Space for flags section + buttons
             var textEditorHeight = contentRegionAvail.Y - bottomControlsHeight;
-            
+
             // Main text editor
             var flags = ImGuiInputTextFlags.AllowTabInput;
             var content = tab.PolygonEditorContent;
             var textChanged = ImGui.InputTextMultiline("##PolygonCode", ref content, 50000,
                 new Vector2(-1, textEditorHeight), flags);
-            
+
             if (textChanged)
             {
                 tab.PolygonEditorContent = content;
                 tab.PolygonEditorDirty = true;
             }
-            
+
             ImGui.Spacing();
-            
+
             // Special flags section
             ImGui.Text("Special Flags:");
             ImGui.SameLine();
             ImGui.TextDisabled("(?)");
             if (ImGui.IsItemHovered())
             {
-                var tooltip = editingCollision 
-                    ? "Special flags for collision behavior" 
+                var tooltip = editingCollision
+                    ? "Special flags for collision behavior"
                     : "Special flags which may change appearance or behavior";
                 ImGui.SetTooltip(tooltip);
             }
-            
+
             if (editingCollision)
             {
                 // Collision-specific flags
@@ -2499,9 +2499,9 @@ public class ModelEditorPhase : BasePhase
                 {
                     Insert("dam()");
                 }
-                
+
                 ImGui.SameLine();
-                
+
                 if (ImGui.Button("notwall()"))
                 {
                     Insert("notwall()");
@@ -2514,37 +2514,37 @@ public class ModelEditorPhase : BasePhase
                 {
                     Insert("gr(-18)");
                 }
-                
+
                 ImGui.SameLine();
-                
+
                 if (ImGui.Button("decal"))
                 {
                     Insert("decal");
                 }
 
                 ImGui.SameLine();
-                
+
                 if (ImGui.Button("noOutline()"))
                 {
                     Insert("noOutline()");
                 }
             }
-            
+
             ImGui.Spacing();
             ImGui.Separator();
-            
+
             // Action buttons
             var buttonWidth = (contentRegionAvail.X - 10f) / 2f; // Split width for 2 buttons with spacing
-            
-            
-            
+
+
+
             if (ImGui.Button("Apply", new Vector2(buttonWidth, 30)))
             {
                 ApplyPolygonEditorChanges();
             }
-            
+
             ImGui.SameLine();
-            
+
             if (ImGui.Button("Cancel", new Vector2(buttonWidth, 30)))
             {
                 if (tab.PolygonEditorDirty)
@@ -2586,15 +2586,15 @@ public class ModelEditorPhase : BasePhase
                 ImGui.TextColored(new Vector4(1, 1, 0, 1), "(Modified)");
             }
         }
-        
+
         ImGui.End();
     }
-    
+
     private void Insert(string command)
     {
         var tab = ActiveTab;
         if (tab == null) return;
-        
+
         // Find the c(...) line in the polygon editor content
         var lines = tab.PolygonEditorContent.Split('\n');
         for (int i = 0; i < lines.Length; i++)
@@ -2610,7 +2610,7 @@ public class ModelEditorPhase : BasePhase
             }
         }
     }
-    
+
     private void ApplyPolygonEditorChanges()
     {
         var tab = ActiveTab;
@@ -2619,9 +2619,9 @@ public class ModelEditorPhase : BasePhase
             GameSparker.MessageWindow.ShowMessage("Error", "Invalid selection range. Please select a polygon again.");
             return;
         }
-        
+
         // Validate selection indices are within bounds
-        if (tab.TextEditorSelectionStart >= tab.TextContent.Length || 
+        if (tab.TextEditorSelectionStart >= tab.TextContent.Length ||
             tab.TextEditorSelectionEnd > tab.TextContent.Length ||
             tab.TextEditorSelectionStart >= tab.TextEditorSelectionEnd)
         {
@@ -2629,25 +2629,25 @@ public class ModelEditorPhase : BasePhase
             SentrySdk.CaptureMessage(err, SentryLevel.Error);
             GameSparker.MessageWindow.ShowMessage("Parse Error", err);
             Logging.Error(err);
-            
+
             // Invalidate selection so user is forced to reselect
             tab.TextEditorSelectionStart = -1;
             tab.TextEditorSelectionEnd = -1;
             tab.ShowPolygonEditor = false;
             return;
         }
-        
+
         // Check if content is empty or whitespace (user is removing the element)
         bool editingCollision = tab.EditMode == ModelEditorTab.EditModeEnum.Collision;
         bool editingWheel = !editingCollision && tab.PolygonEditorIsWheel;
-        int editedIndex = editingCollision ? tab.SelectedCollisionIndex 
-            : editingWheel ? tab.SelectedWheelPolygonIndex 
+        int editedIndex = editingCollision ? tab.SelectedCollisionIndex
+            : editingWheel ? tab.SelectedWheelPolygonIndex
             : tab.SelectedPolygonIndex;
-        
-        var itemType = editingCollision ? "collision" 
-            : editingWheel ? "wheel polygon" 
+
+        var itemType = editingCollision ? "collision"
+            : editingWheel ? "wheel polygon"
             : "polygon";
-        
+
         if (string.IsNullOrWhiteSpace(tab.PolygonEditorContent))
         {
             GameSparker.MessageWindow.ShowCustom("Remove Element",
@@ -2662,26 +2662,26 @@ public class ModelEditorPhase : BasePhase
                 });
             return;
         }
-        
+
         // Normal apply
         PerformApplyChanges(tab, editingCollision, editedIndex, removeElement: false);
     }
-    
+
     private void PerformApplyChanges(ModelEditorTab tab, bool editingCollision, int editedIndex, bool removeElement)
     {
         // Replace the polygon/collision code in the main text content
         var before = tab.TextContent.Substring(0, tab.TextEditorSelectionStart);
         var after = tab.TextContent.Substring(tab.TextEditorSelectionEnd);
-        
+
         tab.TextContent = before + tab.PolygonEditorContent + after;
         tab.TextEditorDirty = true;
-        
+
         // Try to reload the model with the new code
         try
         {
             tab.Object = new EditorObject(_graphicsDevice, RadParser.ParseRad(tab.TextContent, "editing"));
             tab.PolygonEditorDirty = false;
-            
+
             if (removeElement)
             {
                 // Element was removed, close editor and deselect
@@ -2699,7 +2699,7 @@ public class ModelEditorPhase : BasePhase
                 {
                     tab.SelectedPolygonIndex = -1;
                 }
-                
+
                 var itemType = editingCollision ? "Collision" : "Polygon";
                 Logging.Debug($"{itemType} {editedIndex + 1} removed successfully");
             }
@@ -2729,10 +2729,10 @@ public class ModelEditorPhase : BasePhase
                     // Find the updated polygon in the text
                     JumpToSelectedPolygonInText();
                 }
-                
+
                 // Keep the editor window open with updated content
                 tab.ShowPolygonEditor = true;
-                
+
                 var itemType = editingCollision ? "Collision" : "Polygon";
                 Logging.Debug($"{itemType} {editedIndex + 1} updated successfully");
             }
@@ -2750,25 +2750,25 @@ public class ModelEditorPhase : BasePhase
     {
         GameSparker.ExitEditor();
     }
-    
+
     public override void Render3DOverlays()
     {
         base.Render3DOverlays();
-        
+
         var tab = ActiveTab;
         if (!_isOpen || tab == null || tab.Object == null) return;
-        
+
         _graphicsDevice.BlendState = BlendState.Opaque;
         _graphicsDevice.DepthStencilState = DepthStencilState.Default;
 
         // Set up camera to orbit around and look at the model position
         camera.Position = tab.CameraPosition;
         camera.LookAt = (Vector3)tab.ModelPosition; // Look at the orbit center (which can be panned)
-        
+
         // Store original transform
         var originalPosition = tab.Object.Position;
         var originalRotation = tab.Object.Rotation;
-        
+
         // Keep the model at the origin - don't apply ModelPosition
         // ModelPosition is used only for camera orbit center, not mesh position
         tab.Object.Position = f64Vector3.Zero;
@@ -2778,13 +2778,13 @@ public class ModelEditorPhase : BasePhase
             f64AngleSingle.FromDegrees(-tab.ModelRotation.X), // Pitch (X-axis rotation, negated for correct direction)
             f64AngleSingle.FromDegrees(tab.ModelRotation.Z)   // Roll (Z-axis rotation)
         );
-        
+
         scene.Objects.Clear();
         scene.Objects.Add(tab.Object);
-        
+
         // Render main model first
         scene.Render(1, false);
-        
+
         // Render reference car overlay with transparency (rendered separately after main model)
         if (tab.ShowReferenceOverlay && tab.ReferenceCarIndex >= 0 && tab.ReferenceCarIndex < BackendGameSparker.cars[Collection.NFMM].Count)
         {
@@ -2804,10 +2804,10 @@ public class ModelEditorPhase : BasePhase
                 f64AngleSingle.FromDegrees(-tab.ModelRotation.X),
                 f64AngleSingle.FromDegrees(tab.ModelRotation.Z)
             );
-            
+
             // Enable alpha blending
             _graphicsDevice.BlendState = BlendState.AlphaBlend;
-            
+
             // Clear depth buffer and disable depth testing so reference car always renders in front
             _graphicsDevice.Clear(ClearOptions.DepthBuffer, Color.Transparent, 1.0f, 0);
             var depthOff = new DepthStencilState
@@ -2816,20 +2816,20 @@ public class ModelEditorPhase : BasePhase
                 DepthBufferWriteEnable = false
             };
             _graphicsDevice.DepthStencilState = depthOff;
-            
+
             referenceCar.AlphaOverride = tab.ReferenceOpacity;
-            
+
             overlayScene.Objects.Clear();
             overlayScene.Objects.Add(referenceCar);
             overlayScene.Render(1, false, false);
-            
+
             // Restore states
             _graphicsDevice.BlendState = previousBlendState;
             _graphicsDevice.DepthStencilState = previousDepthState;
             referenceCar.Position = originalRefPosition;
             referenceCar.Rotation = originalRefRotation;
         }
-        
+
         // Render selected polygon overlay with transparency
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Polygon)
         {
@@ -2843,34 +2843,34 @@ public class ModelEditorPhase : BasePhase
                 RenderSelectionOverlay(tab);
             }
         }
-        
+
         // Render selected collision box overlay
-        if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision && 
+        if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision &&
             tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Object.Boxes.Length)
         {
             RenderCollisionSelectionOverlay(camera, tab);
         }
-        
+
         // Restore original transform
         tab.Object.Position = originalPosition;
         tab.Object.Rotation = originalRotation;
     }
-    
+
     private void RenderSelectionOverlay(ModelEditorTab tab)
     {
         if (tab.Object == null || tab.SelectedPolygonIndex < 0) return;
-        
+
         // Create a temporary mesh with only the selected polygon
         var selectedPoly = tab.Object.Mesh.Polys[tab.SelectedPolygonIndex];
-        
+
         // Make it bright cyan/yellow with semi-transparency for visibility
-        var highlightPoly = selectedPoly with { 
+        var highlightPoly = selectedPoly with {
             Color = new Color3(255, 255, 0),
             PolyType = PolyType.Flat  // Ensure it renders as flat/solid
         };
-        
+
         var overlayPolys = new Rad3dPoly[] { highlightPoly };
-        
+
         // Create a temporary mesh for the overlay
         var overlayMesh = new EditorObject(
             GameSparker.GraphicsDevice,
@@ -2880,11 +2880,11 @@ public class ModelEditorPhase : BasePhase
         // Match the main model's transform
         overlayMesh.Position = tab.Object.Position;
         overlayMesh.Rotation = tab.Object.Rotation;
-        
+
         // Save current blend state
         var oldBlendState = GameSparker.GraphicsDevice.BlendState;
         var oldDepthStencilState = GameSparker.GraphicsDevice.DepthStencilState;
-        
+
         // Enable alpha blending and disable depth write (but keep depth test)
         GameSparker.GraphicsDevice.BlendState = BlendState.AlphaBlend;
         var depthRead = new DepthStencilState
@@ -2894,35 +2894,35 @@ public class ModelEditorPhase : BasePhase
             DepthBufferFunction = CompareFunction.LessEqual
         };
         GameSparker.GraphicsDevice.DepthStencilState = depthRead;
-        
+
         // Render the overlay
         overlayScene.Objects.Clear();
         overlayScene.Objects.Add(overlayMesh);
         overlayScene.Render(1, false, false);
-        
+
         // Restore previous states
         GameSparker.GraphicsDevice.BlendState = oldBlendState;
         GameSparker.GraphicsDevice.DepthStencilState = oldDepthStencilState;
     }
-    
+
     private void RenderWheelSelectionOverlay(ModelEditorTab tab)
     {
         if (tab.Object == null || tab.SelectedWheelIndex < 0 || tab.SelectedWheelPolygonIndex < 0) return;
         if (tab.SelectedWheelIndex >= tab.Object.WheelObjects.Count) return;
-        
+
         var wheelObj = tab.Object.WheelObjects[tab.SelectedWheelIndex];
         if (tab.SelectedWheelPolygonIndex >= wheelObj.Mesh.Polys.Length) return;
-        
+
         var selectedPoly = wheelObj.Mesh.Polys[tab.SelectedWheelPolygonIndex];
-        
+
         // Make it bright yellow with semi-transparency for visibility
-        var highlightPoly = selectedPoly with { 
+        var highlightPoly = selectedPoly with {
             Color = new Color3(255, 255, 0),
             PolyType = PolyType.Flat
         };
-        
+
         var overlayPolys = new Rad3dPoly[] { highlightPoly };
-        
+
         // Create a temporary mesh for the overlay, parented to the wheel
         var overlayMesh = new MeshedGameObject(
             new Mesh(GameSparker.GraphicsDevice, new Rad3d(overlayPolys, false, "wheelOverlay"))
@@ -2935,7 +2935,7 @@ public class ModelEditorPhase : BasePhase
         // Save current blend state
         var oldBlendState = GameSparker.GraphicsDevice.BlendState;
         var oldDepthStencilState = GameSparker.GraphicsDevice.DepthStencilState;
-        
+
         // Enable alpha blending and disable depth write (but keep depth test)
         GameSparker.GraphicsDevice.BlendState = BlendState.AlphaBlend;
         var depthRead = new DepthStencilState
@@ -2945,45 +2945,45 @@ public class ModelEditorPhase : BasePhase
             DepthBufferFunction = CompareFunction.LessEqual
         };
         GameSparker.GraphicsDevice.DepthStencilState = depthRead;
-        
+
         // Render the overlay
         overlayScene.Objects.Clear();
         overlayScene.Objects.Add(overlayMesh);
         overlayScene.Render(1, false, false);
-        
+
         // Restore previous states
         GameSparker.GraphicsDevice.BlendState = oldBlendState;
         GameSparker.GraphicsDevice.DepthStencilState = oldDepthStencilState;
     }
-    
+
     private void RenderCollisionSelectionOverlay(PerspectiveCamera camera, ModelEditorTab tab)
     {
         if (tab.Object == null || tab.SelectedCollisionIndex < 0) return;
-        
+
         // Create a highlighted collision box mesh for the selected collision
         var selectedBox = tab.Object.Boxes[tab.SelectedCollisionIndex];
-        var highlightedBox = selectedBox with { 
+        var highlightedBox = selectedBox with {
             Color = new Color3(255, 255, 0) // Yellow highlight
         };
-        
+
         var highlightBoxes = new[] { highlightedBox };
         using var highlightMesh = new CollisionDebugMesh(highlightBoxes);
-        
+
         // Match the main model's transform
         highlightMesh.Position = tab.Object.Position;
         highlightMesh.Rotation = tab.Object.Rotation;
-        
+
         // Render with highlighting
         var oldDevRenderTrackers = GameSparker.devRenderTrackers;
         GameSparker.devRenderTrackers = true;
         highlightMesh.Render(camera, null);
         GameSparker.devRenderTrackers = oldDevRenderTrackers;
     }
-    
+
     public override void WindowSizeChanged(int width, int height)
     {
         base.WindowSizeChanged(width, height);
-        
+
         camera.Width = width;
         camera.Height = height;
     }

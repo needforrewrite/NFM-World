@@ -75,7 +75,8 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
             BackgroundColor = new CefColor(0, 0, 0, 0), // Transparent
             RootCachePath = Path.Combine(Path.GetTempPath(), $"NFMW_CefCache_{System.Environment.ProcessId}"),
             LogSeverity = CefLogSeverity.Warning,
-            PackLoadingDisabled = true
+            LocalesDirPath = Path.Combine(AppContext.BaseDirectory, "data/cef/locales"),
+            ResourcesDirPath = Path.Combine(AppContext.BaseDirectory, "data/cef"),
         };
 
         // 3. Create handlers
@@ -95,7 +96,7 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
             WindowlessFrameRate = 60,
             BackgroundColor = new CefColor(0, 0, 0, 0),
         };
-        
+
         CefRuntimeLoader.Initialize();
 
         _browser = CefBrowserHost.CreateBrowserSync(windowInfo, _cefClient, browserSettings, initialUrl);
@@ -113,9 +114,9 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
         {
             settings = new CefSettings();
         }
-        
+
         var basePath = AppContext.BaseDirectory;
-        
+
         settings.UncaughtExceptionStackSize = 100; // for uncaught exception event work properly
 
         settings.BrowserSubprocessPath = Path.Combine(AppContext.BaseDirectory, RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "NFMWorld.BrowserProcess.exe" : "NFMWorld.BrowserProcess");
@@ -127,10 +128,10 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
                 break;
 
             case CefRuntimePlatform.MacOS:
-                var resourcesPath = Path.Combine(basePath, "Resources");
+                var resourcesPath = Path.Combine(basePath, "data/cef");
                 if (!Directory.Exists(resourcesPath))
                 {
-                    throw new FileNotFoundException("Unable to find Resources folder");
+                    throw new FileNotFoundException("Unable to find data/cef folder");
                 }
 
                 settings.NoSandbox = true;
@@ -140,7 +141,7 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
                 settings.FrameworkDirPath = basePath;
                 settings.ResourcesDirPath = resourcesPath;
                 break;
-                
+
             case CefRuntimePlatform.Linux:
                 settings.NoSandbox = true;
                 settings.MultiThreadedMessageLoop = true;
@@ -148,7 +149,7 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
         }
 
         AppDomain.CurrentDomain.ProcessExit += delegate { CefRuntime.Shutdown(); };
-        
+
         // Fix crash with youtube https://github.com/chromiumembedded/cef/issues/3643
         flags = (flags ?? []).Append(KeyValuePair.Create("disable-features", "FirstPartySets")).ToArray();
 
@@ -473,7 +474,7 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
     {
         var keyboard = Keyboard.GetState();
         var host = _browserHost!;
-        
+
         var isShiftDown = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
         var isCtrlDown = keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
         var isAltDown = keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt);
@@ -513,7 +514,7 @@ public sealed class CefRenderer(Game game, string initialUrl, int browserWidth =
         if (isShiftDown) mods |= CefEventFlags.ShiftDown;
         if (isCtrlDown) mods |= CefEventFlags.ControlDown;
         if (isAltDown) mods |= CefEventFlags.AltDown;
-        
+
         return key switch
         {
             Keys.Back => (0x08, mods),              // VK_BACK
@@ -624,7 +625,7 @@ file class BrowserCefApp : CommonCefApp
     {
         if (string.IsNullOrEmpty(processType))
         {
-            if (CefRuntime.Platform == CefRuntimePlatform.Linux) 
+            if (CefRuntime.Platform == CefRuntimePlatform.Linux)
             {
                 commandLine.AppendSwitch("no-zygote");
             }
@@ -640,7 +641,7 @@ file class BrowserCefApp : CommonCefApp
             if (_flags != null)
             {
                 foreach (var flag in _flags)
-                {     
+                {
                     commandLine.AppendSwitch(flag.Key, flag.Value);
                 }
             }
@@ -684,7 +685,7 @@ file class CommonBrowserProcessHandler(BrowserProcessHandler? handler, CustomSch
     {
         handler?.HandleScheduleMessagePumpWork(delayMs);
     }
-    
+
     private static string SerializeToCommandLineValue(CustomScheme scheme)
     {
         return $"{scheme.SchemeName}|{scheme.DomainName}|{((int) scheme.Options).ToString()}";

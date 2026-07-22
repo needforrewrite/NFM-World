@@ -118,7 +118,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         ssp.StageSelected += (sender, stageName) =>
         {
             PhaseSharedState.SelectedStageName = stageName;
-            
+
             GaragePhase gp = new(GraphicsDevice, stageName);
             gp.CarSelected += (sender, car) =>
             {
@@ -149,7 +149,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void OnGarageClicked()
     {
         GaragePhase gp = new GaragePhase(GraphicsDevice);
-        
+
         gp.CarSelected += (sender, c) =>
         {
             GameSparker.PopPhase();

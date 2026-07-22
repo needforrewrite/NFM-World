@@ -517,7 +517,7 @@ public class WorldGame : Game
             return "unknown";
         }
 
-        if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+        if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsBrowser())
         {
             return NativeLibrary.GetMainProgramHandle(); // statically linked
         }
