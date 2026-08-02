@@ -40,3 +40,6 @@
 [submodule "CefGlue"]
 	path = CefGlue
 	url = https://github.com/uwx/CefGlue
+[submodule "Lua-CSharp"]
+	path = Lua-CSharp
+	url = https://github.com/uwx/Lua-CSharp
