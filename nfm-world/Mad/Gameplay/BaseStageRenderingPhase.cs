@@ -60,6 +60,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
     public override void Exit()
     {
         base.Exit();
+
         // Pause music while this phase is not displayed (buried in the stack).
         // Music is resumed in Enter() and unloaded in Dispose().
         GameSparker.CurrentMusic = null;
@@ -74,6 +75,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
             // ReSharper disable once ConditionalAccessQualifierIsNonNullableAccordingToAPIContract
             CurrentStage?.Dispose();
             CurrentStage = null!;
+            
+            _stageMusic?.Dispose();
+            _stageMusic = null;
         }
     }
 

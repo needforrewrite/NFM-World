@@ -68,7 +68,7 @@ public static class AudioDecoder
 
     private static DecodeResult DecodeWav(Stream stream)
     {
-        using var reader = new WaveFileReader(stream);
+        using var reader = new SoundFileReader(stream);
         return ReadToPcm16(reader);
     }
 

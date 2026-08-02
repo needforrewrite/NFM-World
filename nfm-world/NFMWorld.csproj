@@ -46,7 +46,6 @@
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Collections.Pooled" Version="2.0.0-preview.27" />
-        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" />
         <PackageReference Include="LibOpenMPT.NET" Version="0.8.6" />
         <PackageReference Include="ManagedBass" Version="4.0.1" />
@@ -65,6 +64,12 @@
         <PackageReference Include="NLayer" Version="2.0.1" />
         <PackageReference Include="NLayer.NAudioSupport" Version="2.0.1" />
         <PackageReference Include="NVorbis" Version="1.0.0-rc.2" />
+        <PackageReference Include="org.sndfile.runtime.linux-arm64" Version="1.2.2.1" />
+        <PackageReference Include="org.sndfile.runtime.linux-x64" Version="1.2.2.1" />
+        <PackageReference Include="org.sndfile.runtime.osx-arm64" Version="1.2.2" />
+        <PackageReference Include="org.sndfile.runtime.osx-x64" Version="1.2.2" />
+        <PackageReference Include="org.sndfile.runtime.win-arm64" Version="1.2.2" />
+        <PackageReference Include="org.sndfile.runtime.win-x64" Version="1.2.2" />
         <PackageReference Include="Silk.NET.OpenGL" Version="2.22.0" />
         <PackageReference Include="SoundTouch.Net" Version="2.3.2" />
         <PackageReference Include="System.Reactive" Version="7.0.0-rc.1" />

@@ -9,7 +9,7 @@ using NFMWorldLibrary.Util;
 
 namespace NFMWorld.Gameplay;
 
-public class StageSelectPhase(GraphicsDevice graphicsDevice) : BaseStageRenderingPhase(graphicsDevice)
+public class StageSelectPhase : BaseStageRenderingPhase
 {
     public event EventHandler<string>? StageSelected;
 
@@ -25,11 +25,10 @@ public class StageSelectPhase(GraphicsDevice graphicsDevice) : BaseStageRenderin
     private bool _openSearchPopup = false;
 
     private AroundStageCamera _aroundStageCamera = new();
+    private IRadicalMusic _stageSelectMusic;
 
-    public override void Enter()
+    public StageSelectPhase(GraphicsDevice graphicsDevice) : base(graphicsDevice)
     {
-        base.Enter();
-
         var directories = Directory.GetDirectories("data/stages");
         foreach (var dir in directories)
         {
@@ -44,9 +43,13 @@ public class StageSelectPhase(GraphicsDevice graphicsDevice) : BaseStageRenderin
         LoadStagesInCollection(_selectedCollection);
         LoadStageInCollection();
 
-        GameSparker.CurrentMusic?.Unload();
-        GameSparker.CurrentMusic = IBackend.Backend.LoadMusic("data/music/nfm1/stageselectremastered.mp3");
-        GameSparker.CurrentMusic?.Play();
+        _stageSelectMusic = IBackend.Backend.LoadMusic("data/music/nfm1/stageselectremastered.mp3");
+    }
+
+    public override void Enter()
+    {
+        base.Enter();
+        GameSparker.CurrentMusic = _stageSelectMusic;
     }
 
     private void LoadStagesInCollection(string collection)
@@ -253,9 +256,21 @@ public class StageSelectPhase(GraphicsDevice graphicsDevice) : BaseStageRenderin
         else if (key == Key.Enter)
         {
             StageSelected?.Invoke(this, $"{_selectedCollection}/{_stagesInCollection[_selectedStageIndex]}");
-        } else if (key == Key.S)
+        }
+        else if (key == Key.S)
         {
             _openSearchPopup = true;
+        }
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        base.Dispose(disposing);
+
+        if (disposing)
+        {
+            _stageSelectMusic.Dispose();
+            _stageSelectMusic = null!;
         }
     }
 }

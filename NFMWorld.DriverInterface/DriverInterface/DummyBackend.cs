@@ -131,7 +131,7 @@ file sealed class DummyMusic : IRadicalMusic
     {
     }
 
-    public void Unload()
+    public void Dispose()
     {
     }
 

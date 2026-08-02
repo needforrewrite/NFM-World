@@ -122,7 +122,7 @@ public sealed class FaudioMusic : IRadicalMusic
             _instance?.Resume();
     }
 
-    public void Unload()
+    public void Dispose()
     {
         if (!_readable) return;
 
