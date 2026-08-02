@@ -20,6 +20,8 @@ public static class DevConsoleCommands
 {
     public static void RegisterAll(DevConsole console)
     {
+        // TODO: map, car, go_tt, etc will break campaign flow (because they do not hook existing events) and so should
+        //       be debug-only or implemented in a way that does not require setting the phase
 
         // general
         console.RegisterCommand("help", (c, args) => PrintHelp(c));
@@ -73,6 +75,10 @@ public static class DevConsoleCommands
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var inRace = new InRacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName, new TimeTrialGamemodeFactory(), inRacePhase.Players);
+                inRace.Exited += (sender, args) =>
+                {
+                    GameSparker.PopGroup(PhaseManager.Groups.Event);
+                };
                 GameSparker.SetPhase(inRace);
             }
         });
@@ -81,6 +87,10 @@ public static class DevConsoleCommands
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var inRace = new InRacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName, new PvpGamemodeFactory(PvpConstraint.Racing), inRacePhase.Players);
+                inRace.Exited += (sender, args) =>
+                {
+                    GameSparker.PopGroup(PhaseManager.Groups.Event);
+                };
                 GameSparker.SetPhase(inRace);
             }
         });
@@ -89,6 +99,10 @@ public static class DevConsoleCommands
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var inRace = new InRacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName, new SandboxGamemodeFactory(), inRacePhase.Players);
+                inRace.Exited += (sender, args) =>
+                {
+                    GameSparker.PopGroup(PhaseManager.Groups.Event);
+                };
                 GameSparker.SetPhase(inRace);
             }
         });
@@ -97,6 +111,10 @@ public static class DevConsoleCommands
             if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
             {
                 var inRace = new InRacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName, new FootballGamemodeFactory(), inRacePhase.Players);
+                inRace.Exited += (sender, args) =>
+                {
+                    GameSparker.PopGroup(PhaseManager.Groups.Event);
+                };
                 GameSparker.SetPhase(inRace);
             }
         });
@@ -421,7 +439,12 @@ public static class DevConsoleCommands
         if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
         {
             Logging.Info($"Switched to stage '{stageName}'");
-            GameSparker.SetPhase(new InRacePhase(GameSparker.GraphicsDevice, stageName, inRacePhase.Gamemode, inRacePhase.Players));
+            var inRace = new InRacePhase(GameSparker.GraphicsDevice, stageName, inRacePhase.Gamemode, inRacePhase.Players);
+            inRace.Exited += (sender, args) =>
+            {
+                GameSparker.PopGroup(PhaseManager.Groups.Event);
+            };
+            GameSparker.SetPhase(inRace);
         }
     }
 
@@ -444,23 +467,26 @@ public static class DevConsoleCommands
 
         if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
         {
-            GameSparker.SetPhase(
-                new InRacePhase(
-                    GameSparker.GraphicsDevice,
-                    inRacePhase.StageName,
-                    inRacePhase.Gamemode,
-                    inRacePhase.Players.Select(p => p.IsClientPlayer
-                        ? new PlayerParameters
-                        {
-                            CarName = car.FileName,
-                            Color = p.Color,
-                            PlayerName = p.PlayerName,
-                            IsBot = p.IsBot,
-                            IsClientPlayer = true
-                        }
-                        : p).ToArray()
-                )
+            var inRace = new InRacePhase(
+                GameSparker.GraphicsDevice,
+                inRacePhase.StageName,
+                inRacePhase.Gamemode,
+                inRacePhase.Players.Select(p => p.IsClientPlayer
+                    ? new PlayerParameters
+                    {
+                        CarName = car.FileName,
+                        Color = p.Color,
+                        PlayerName = p.PlayerName,
+                        IsBot = p.IsBot,
+                        IsClientPlayer = true
+                    }
+                    : p).ToArray()
             );
+            inRace.Exited += (sender, args) =>
+            {
+                GameSparker.PopGroup(PhaseManager.Groups.Event);
+            };
+            GameSparker.SetPhase(inRace);
         }
         
         IBackend.Backend.StopAllSounds();

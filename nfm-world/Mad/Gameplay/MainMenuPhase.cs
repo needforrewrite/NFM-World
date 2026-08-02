@@ -99,7 +99,11 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 IsBot = true
             }
         ]);
-        GameSparker.PushPhase(inRace);
+        inRace.Exited += (sender, args) =>
+        {
+            GameSparker.PopGroup(PhaseManager.Groups.Event);
+        };
+        GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
 
         Logging.Info("Game started!");
     }
@@ -132,6 +136,10 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         PlayerName = "MadPlayer"
                     }
                 ]);
+                inRace.Exited += (sender, args) =>
+                {
+                    GameSparker.PopGroup(PhaseManager.Groups.Event);
+                };
                 GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
             };
 

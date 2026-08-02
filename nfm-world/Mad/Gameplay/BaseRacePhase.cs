@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using Microsoft.Xna.Framework.Graphics;
+﻿﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.UI;
 using NFMWorld.UI.Cef;
@@ -39,51 +39,26 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         GamemodeInstance?.Begin();
     }
 
-    private bool _hasAutoPopped;
-
     public RaceState RaceState
     {
         get;
         set
         {
-            // Guard against re-entrant updates after auto-pop
-            if (_hasAutoPopped)
-            {
-                field = value;
-                return;
-            }
-
             field = value;
             RaceStateChanged?.Invoke(this, value);
-
-            // Auto-navigate back to the previous phase when the race finishes or fails.
-            // This centralizes return-to-caller logic — callers no longer need to wire
-            // RaceStateChanged for navigation.
-            if (value is RaceState.Finished or RaceState.FailedToStart)
-            {
-                if (value == RaceState.Finished)
-                {
-                    var results = GamemodeInstance?.GetResults();
-                    if (results is { } resultsValue)
-                        RaceFinished?.Invoke(this, resultsValue);
-                }
-
-                _hasAutoPopped = true;
-                GameSparker.PopGroup(PhaseManager.Groups.Event);
-            }
         }
     } = RaceState.InProgress;
 
+    public RaceResults? RaceResults => GamemodeInstance?.GetResults();
+
     IClientCallbacks IGamemodeData.ClientCallbacks => this;
 
-    /// <summary>
-    /// Fired when <see cref="RaceState"/> transitions to <see cref="RaceState.Finished"/>.
-    /// Campaign code hooks here to receive race results uniformly for both
-    /// singleplayer and multiplayer.
-    /// </summary>
-    public event EventHandler<RaceResults>? RaceFinished;
-
     public event EventHandler<RaceState>? RaceStateChanged;
+    
+    /// <summary>
+    /// Called when the race is exited, to pop the phase.
+    /// </summary>
+    public event EventHandler? Exited;
 
     protected FollowCamera PlayerFollowCamera = new();
     protected AroundCamera PlayerAroundCamera = new();
