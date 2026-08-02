@@ -329,6 +329,9 @@ public class Sparks : IDisposable, IImmediateRenderElement
         Effects.Line.ChargedBlinkAmount?.SetValue(0.0f);
         Effects.Line.HalfThickness?.SetValue(World.OutlineThickness);
 
+        // Spark segments are effects rather than mesh outlines, so gameplay outline modes must not hide them.
+        LineEffectDistantOutlineSettings.Apply(DistantOutlineBehavior.AlwaysRender);
+
         Effects.Line.LightDirection?.SetValue(World.LightDirection);
         Effects.Line.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
         Effects.Line.FogDistance?.SetValue(World.FadeFrom);

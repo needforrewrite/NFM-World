@@ -232,6 +232,9 @@ public sealed partial class SettingsSnapshot
 
     // Key bindings
     public KeyBindingData[] KeyBindings { get; set; } = [];
+
+    // Appended for MemoryPack schema compatibility with older snapshots.
+    public int DistantOutlineBehavior { get; set; }
 }
 
 /// <summary>

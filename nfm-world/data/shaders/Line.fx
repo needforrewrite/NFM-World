@@ -35,11 +35,24 @@ float ChargedBlinkAmount;
 float HalfThickness;
 float2 Resolution;
 
+// Distant outline modes are sent as independent numeric masks. Keeping this path
+// branchless avoids inconsistent dynamic-branch behavior on the FNA/Metal shader path.
+float DistantOutlineDistanceFalloffWithCutoffMask;
+float DistantOutlineClassicCutoffMask;
+float DistantOutlineDistanceFalloffMask;
+
+float OutlineClassicCutoffDistance;
+float OutlineFalloffStartDistance;
+float OutlineFalloffCutoffDistance;
+float OutlineFalloffLinearFadeStartDistance;
+float OutlineFalloffLinearFadeStartThickness;
+float OutlineFalloffInverseLinearFadeLength;
+
 struct VertexShaderInput
 {
 	float3 PositionA : POSITION0;
 	float3 PositionB : POSITION1;
-	float Side : TEXCOORD0; // -1 or 1
+	float Side : TEXCOORD0; // +/-1 for endpoint A, +/-2 for endpoint B
 	float3 Normal : NORMAL0;
 	float3 Color : COLOR0;
 	float3 Centroid : POSITION2;
@@ -58,6 +71,40 @@ struct VertexShaderOutput
     float Diffuse : TEXCOORD7;        // pre-computed in VS, consumed in PS
 };
 
+void CalculateDistantOutline(
+    float viewDepth,
+    out float renderedHalfThickness,
+    out float hideLine
+)
+{
+    // Falloff keeps the requested width through the start distance, then follows inverse-depth sizing.
+    float referenceDepth = max(OutlineFalloffStartDistance, 0.0001);
+    float inverseDepthThickness = HalfThickness * min(1.0, referenceDepth / max(viewDepth, 0.0001));
+
+    // The cutoff mode transitions from inverse-depth sizing to a short linear fade to zero.
+    // Values involving divisions are precomputed on the CPU.
+    float linearFadeAmount = saturate(
+        (OutlineFalloffCutoffDistance - viewDepth) * OutlineFalloffInverseLinearFadeLength);
+    float linearFadeThickness = OutlineFalloffLinearFadeStartThickness * linearFadeAmount;
+    float linearFadeRegionMask = saturate(sign(viewDepth - OutlineFalloffLinearFadeStartDistance));
+    float cutoffThickness = lerp(inverseDepthThickness, linearFadeThickness, linearFadeRegionMask);
+    float falloffThickness = lerp(
+        inverseDepthThickness,
+        cutoffThickness,
+        DistantOutlineDistanceFalloffWithCutoffMask);
+    float falloffMode = DistantOutlineDistanceFalloffMask +
+                        DistantOutlineDistanceFalloffWithCutoffMask;
+
+    renderedHalfThickness = lerp(HalfThickness, falloffThickness, falloffMode);
+
+    // Hide quads in the vertex shader rather than paying for pixel-shader discard.
+    float pastClassicCutoff = saturate(sign(viewDepth - OutlineClassicCutoffDistance));
+    float pastFalloffCutoff = saturate(sign(viewDepth - OutlineFalloffCutoffDistance));
+    float distanceCutoffHidden = DistantOutlineDistanceFalloffWithCutoffMask * pastFalloffCutoff;
+    float classicHidden = DistantOutlineClassicCutoffMask * pastClassicCutoff;
+    hideLine = max(classicHidden, distanceCutoffHidden);
+}
+
 VertexShaderOutput MainVS(
     in VertexShaderInput input,
     // instance parameters
@@ -72,6 +119,14 @@ VertexShaderOutput MainVS(
     VS_UnpackParameters(parameters, getsShadowed, alphaOverride, isFullbright, glow);
 
 	VertexShaderOutput output = (VertexShaderOutput)0;
+
+    // Distance behavior uses the line centroid and camera-space depth rather than an endpoint or radial distance.
+    float3 worldCentroid = mul(float4(input.Centroid, 1), world).xyz;
+    float viewDepth = -mul(float4(worldCentroid, 1), View).z;
+
+    float renderedHalfThickness;
+    float hideLine;
+    CalculateDistantOutline(viewDepth, renderedHalfThickness, hideLine);
 
     // Decode Side: abs > 1.5 means endpoint B, sign gives offset direction
     float3 position = (abs(input.Side) > 1.5) ? input.PositionB : input.PositionA;
@@ -106,7 +161,7 @@ VertexShaderOutput MainVS(
 
     // Screen-space offset for line thickness
     float4 clipPos = mul(viewPos, Projection);
-    float2 offset = normal * HalfThickness * sideSign / Resolution * 2.0;
+    float2 offset = normal * renderedHalfThickness * sideSign / Resolution * 2.0;
 
 	float3 color = input.Color;
 
@@ -120,6 +175,9 @@ VertexShaderOutput MainVS(
 
     // Nudge outlines toward the camera so they render on top of the geometry they outline
     output.Position.z -= 0.1;
+
+    // Collapse hidden line quads outside clip space without a pixel-shader discard.
+    output.Position = lerp(output.Position, float4(2.0, 2.0, 0.0, 1.0), hideLine);
 
     if (Darken < 1.0f)
     {
@@ -137,7 +195,7 @@ VertexShaderOutput MainVS(
     // and fog are applied per-pixel (see MainPS) so the geometric diffuse and
     // the shadow map fold into one darkening pass.
     output.NormalWorld = normalize(mul(float4(input.Normal, 0), world).xyz);
-    output.CentroidWorld = mul(float4(input.Centroid, 1), world).xyz;
+    output.CentroidWorld = worldCentroid;
     output.Lit = (IsFullbright == false && isFullbright == false && glow == false) ? 1.0f : 0.0f;
     output.Diffuse = ComputePolygonDiffuse(output.CentroidWorld, output.NormalWorld, LightDirection, CameraPosition);
 

@@ -26,7 +26,6 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         var data = new List<LineMeshVertexAttribute>(LineMeshHelpers.VerticesPerLine * lines.Count);
         var indices = new List<int>(LineMeshHelpers.IndicesPerLine * lines.Count);
 
-        const float halfThickness = 1f;
         Span<LineMeshVertexAttribute> verts = stackalloc LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
         Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
@@ -83,6 +82,9 @@ public class LineMesh : IInstancedRenderElement, IDisposable
 
     public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
     {
+        if (World.DistantOutlineBehavior == DistantOutlineBehavior.HideOutlines)
+            return;
+
         _graphicsDevice.SetVertexBuffers(_lineVertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
         _graphicsDevice.Indices = _lineIndexBuffer;
         _graphicsDevice.RasterizerState = RasterizerState.CullNone;
@@ -94,6 +96,17 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         Effects.Line.BaseColor?.SetValue(new Vector3(0, 0, 0));
         Effects.Line.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
         Effects.Line.HalfThickness?.SetValue(World.OutlineThickness);
+
+        // Line meshes are batched, so cutoff and falloff are evaluated per-line in the shader.
+        LineEffectDistantOutlineSettings.Apply(World.DistantOutlineBehavior);
+        Effects.Line.OutlineClassicCutoffDistance?.SetValue(World.OutlineClassicCutoffDistance);
+        Effects.Line.OutlineFalloffStartDistance?.SetValue(World.OutlineFalloffStartDistance);
+        var (cutoffDistance, linearFadeStartDistance, linearFadeStartThickness, inverseLinearFadeLength) =
+            GetOutlineFalloffCutoffParameters();
+        Effects.Line.OutlineFalloffCutoffDistance?.SetValue(cutoffDistance);
+        Effects.Line.OutlineFalloffLinearFadeStartDistance?.SetValue(linearFadeStartDistance);
+        Effects.Line.OutlineFalloffLinearFadeStartThickness?.SetValue(linearFadeStartThickness);
+        Effects.Line.OutlineFalloffInverseLinearFadeLength?.SetValue(inverseLinearFadeLength);
 
         Effects.Line.LightDirection?.SetValue(World.LightDirection);
         Effects.Line.FogColor?.SetValue(World.Fog.Snap(World.Snap));
@@ -169,6 +182,37 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         }
     }
 
+    private static (
+        float CutoffDistance,
+        float LinearFadeStartDistance,
+        float LinearFadeStartThickness,
+        float InverseLinearFadeLength
+    ) GetOutlineFalloffCutoffParameters()
+    {
+        const float epsilon = 0.0001f;
+        var outlineThickness = MathF.Max(World.OutlineThickness, 0f);
+        var falloffStartDistance = MathF.Max(World.OutlineFalloffStartDistance, epsilon);
+        var minimumVisibleThickness = MathF.Max(World.OutlineMinimumVisibleThickness, epsilon);
+
+        // Inverse-depth sizing reaches the minimum at this width-dependent depth. Replace
+        // its final section with a linear fade so it reaches zero without a hard pop.
+        var cutoffDistance = falloffStartDistance * outlineThickness / minimumVisibleThickness;
+        var linearFadeStartDistance = MathF.Max(
+            falloffStartDistance,
+            cutoffDistance - MathF.Max(World.OutlineLinearFadeDistance, 0f)
+        );
+        var linearFadeLength = MathF.Max(cutoffDistance - linearFadeStartDistance, epsilon);
+        var linearFadeStartThickness = outlineThickness *
+                                       MathF.Min(1f, falloffStartDistance / linearFadeStartDistance);
+
+        return (
+            cutoffDistance,
+            linearFadeStartDistance,
+            linearFadeStartThickness,
+            1f / linearFadeLength
+        );
+    }
+
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
     public readonly record struct LineMeshVertexAttribute(
         Vector3 PositionA,
@@ -207,5 +251,19 @@ public class LineMesh : IInstancedRenderElement, IDisposable
     {
         Dispose(true);
         GC.SuppressFinalize(this);
+    }
+}
+
+internal static class LineEffectDistantOutlineSettings
+{
+    public static void Apply(DistantOutlineBehavior behavior)
+    {
+        // Independent numeric switches keep the shader path branchless.
+        Effects.Line.DistantOutlineDistanceFalloffWithCutoffMask?.SetValue(
+            behavior == DistantOutlineBehavior.DistanceFalloffWithCutoff ? 1f : 0f);
+        Effects.Line.DistantOutlineClassicCutoffMask?.SetValue(
+            behavior == DistantOutlineBehavior.ClassicCutoff ? 1f : 0f);
+        Effects.Line.DistantOutlineDistanceFalloffMask?.SetValue(
+            behavior == DistantOutlineBehavior.DistanceFalloff ? 1f : 0f);
     }
 }

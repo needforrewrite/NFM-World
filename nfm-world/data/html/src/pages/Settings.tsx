@@ -492,6 +492,14 @@ export function Settings({ onClose }: SettingsProps) {
 
 // ── Video Tab ────────────────────────────────────────────────────
 
+const DISTANT_OUTLINE_BEHAVIORS = [
+  "Distance Falloff (With Cutoff)",
+  "Distance Falloff",
+  "Classic Cutoff (NFM)",
+  "Always Render",
+  "Hide Outlines",
+];
+
 function VideoTab({
   config,
   options,
@@ -685,6 +693,24 @@ function VideoTab({
           }
         />
         <SliderValue>{config.lineWidth.toFixed(1)}</SliderValue>
+      </Row>
+      <Row>
+        <Label>Distant Outlines</Label>
+        <Select
+          value={config.distantOutlineBehavior}
+          onChange={(e: Event) =>
+            set(
+              "distantOutlineBehavior",
+              Number((e.target as HTMLSelectElement).value)
+            )
+          }
+        >
+          {DISTANT_OUTLINE_BEHAVIORS.map((label, value) => (
+            <option key={label} value={value}>
+              {label}
+            </option>
+          ))}
+        </Select>
       </Row>
     </div>
   );

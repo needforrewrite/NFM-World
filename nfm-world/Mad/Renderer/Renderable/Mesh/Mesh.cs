@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using HoleyDiver;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
@@ -220,7 +221,11 @@ public class Mesh : IDisposable
             }
         }
 
-        if (lighting?.IsCreateShadowMap != true && LineMeshes != null)
+        // HideOutlines is handled on the CPU by not submitting line meshes. Other distance
+        // behavior remains in the shader because it depends on each line's centroid.
+        if (lighting?.IsCreateShadowMap != true &&
+            World.DistantOutlineBehavior != DistantOutlineBehavior.HideOutlines &&
+            LineMeshes != null)
         {
             foreach (var lineMesh in LineMeshes)
             {

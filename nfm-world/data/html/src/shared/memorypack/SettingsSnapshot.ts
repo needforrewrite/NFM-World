@@ -24,6 +24,7 @@ export class SettingsSnapshot {
     followZ: number;
     smoothFov: boolean;
     keyBindings: (KeyBindingData | null)[] | null;
+    distantOutlineBehavior: number;
 
     constructor() {
         this.selectedRenderer = 0;
@@ -47,6 +48,7 @@ export class SettingsSnapshot {
         this.followZ = 0;
         this.smoothFov = false;
         this.keyBindings = null;
+        this.distantOutlineBehavior = 0;
 
     }
 
@@ -62,7 +64,7 @@ export class SettingsSnapshot {
             return;
         }
 
-        writer.writeObjectHeader(21);
+        writer.writeObjectHeader(22);
         writer.writeInt32(value.selectedRenderer);
         writer.writeInt32(value.selectedResolution);
         writer.writeInt32(value.selectedDisplayMode);
@@ -84,6 +86,7 @@ export class SettingsSnapshot {
         writer.writeInt32(value.followZ);
         writer.writeBoolean(value.smoothFov);
         writer.writeArray(value.keyBindings, (writer, x) => KeyBindingData.serializeCore(writer, x));
+        writer.writeInt32(value.distantOutlineBehavior);
 
     }
 
@@ -108,7 +111,7 @@ export class SettingsSnapshot {
         }
 
         const value = new SettingsSnapshot();
-        if (count == 21) {
+        if (count == 22) {
             value.selectedRenderer = reader.readInt32()!;
             value.selectedResolution = reader.readInt32()!;
             value.selectedDisplayMode = reader.readInt32()!;
@@ -130,9 +133,10 @@ export class SettingsSnapshot {
             value.followZ = reader.readInt32()!;
             value.smoothFov = reader.readBoolean()!;
             value.keyBindings = reader.readArray(reader => KeyBindingData.deserializeCore(reader));
+            value.distantOutlineBehavior = reader.readInt32()!;
 
         }
-        else if (count > 21) {
+        else if (count > 22) {
             throw new Error("Current object's property count is larger than type schema, can't deserialize about versioning.");
         }
         else {
@@ -158,6 +162,7 @@ export class SettingsSnapshot {
             value.followZ = reader.readInt32()!; if (count == 19) return value;
             value.smoothFov = reader.readBoolean()!; if (count == 20) return value;
             value.keyBindings = reader.readArray(reader => KeyBindingData.deserializeCore(reader)); if (count == 21) return value;
+            value.distantOutlineBehavior = reader.readInt32()!; if (count == 22) return value;
 
         }
         return value;
