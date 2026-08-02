@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay.Gamemodes;
@@ -48,6 +48,7 @@ public class InMultiplayerRacePhase : BaseRacePhase
         _session = session;
         // Set initial race state once at construction; Enter() no longer resets it.
         RaceState = RaceState.WaitingToStart;
+        AllowPausing = false;
 
         // Inject event sender so the client gamemode can send events to the server.
         GamemodeInstance?.SetEventSender(payload =>

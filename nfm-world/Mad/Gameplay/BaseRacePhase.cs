@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.UI;
 using NFMWorld.UI.Cef;
@@ -26,11 +26,23 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
     /// </summary>
     protected HudBridge HudBridge { get; } = new();
 
+    public bool AllowPausing { get; protected set; }
+
     protected BaseRacePhase(GraphicsDevice graphicsDevice, string stageName, BaseGamemodeFactory gamemode, IReadOnlyList<PlayerParameters> players) : base(graphicsDevice, stageName)
     {
         Gamemode = gamemode;
         Players = players;
         CefBridge = HudBridge;
+
+        // Subscribe to pause-menu actions from the HUD bridge.
+        HudBridge.ResumeRequested += () => ResumeRace();
+        HudBridge.RestartRequested += () => QuitRace(); // Restart = quit for now; caller can re-push
+        HudBridge.QuitRequested += () => QuitRace();
+        HudBridge.SettingsCloseRequested += () =>
+        {
+            // User closed settings from the pause menu — navigate back to pause.
+            GameSparker.CefRenderer?.ExecuteJavaScript("window.location.href = '#/pause';");
+        };
 
         // Create the gamemode once at construction time. Enter/Exit only handle
         // display-level activation/deactivation; the gamemode survives across
@@ -60,6 +72,13 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
     /// </summary>
     public event EventHandler? Exited;
 
+    /// <summary>
+    /// Whether the race is currently paused (pause menu is visible).
+    /// While paused, CEF input is enabled, the gamemode does not tick,
+    /// and the pause menu overlay is shown.
+    /// </summary>
+    public bool IsPaused { get; private set; }
+
     protected FollowCamera PlayerFollowCamera = new();
     protected AroundCamera PlayerAroundCamera = new();
     protected AroundStageCamera StageAroundCamera = new();
@@ -80,15 +99,75 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
     /// <summary>
     /// Push HUD state to the CEF race overlay each frame.
     /// Called by WorldGame.Update() when CefBridge is active.
+    /// Skipped while paused — the pause menu handles its own rendering.
     /// </summary>
     public override void PushCefState()
     {
         base.PushCefState();
 
+        if (IsPaused)
+            return;
+
         if (GamemodeInstance is not BaseGamemode gm)
             return;
 
         HudBridge.PushHudState(gm.HudState);
+    }
+
+    // ── Pause / Resume / Quit ─────────────────────────────────────
+
+    /// <summary>
+    /// Pause the race: freeze gameplay, show the pause menu overlay,
+    /// and enable CEF input so the player can interact with buttons.
+    /// </summary>
+    private void PauseRace()
+    {
+        if (IsPaused) return;
+        IsPaused = true;
+        RaceState = RaceState.Paused;
+        GameSparker.CefRenderer?.SetInputEnabled(true);
+        GameSparker.CefRenderer?.ExecuteJavaScript("window.location.href = '#/pause';");
+
+        // Push context for the pause menu (lap, position, stage name)
+        if (GamemodeInstance is BaseGamemode gm)
+        {
+            var hud = gm.HudState;
+            HudBridge.PushPauseState(hud.Lap, hud.TotalLaps, hud.Position, hud.TotalRacers, StageName ?? "");
+        }
+        else
+        {
+            HudBridge.PushPauseState(1, 1, 1, 1, StageName ?? "");
+        }
+    }
+
+    /// <summary>
+    /// Resume the race: hide the pause menu, disable CEF input,
+    /// and restore the race HUD.
+    /// </summary>
+    private void ResumeRace()
+    {
+        if (!IsPaused) return;
+        IsPaused = false;
+        RaceState = RaceState.InProgress;
+        GameSparker.CefRenderer?.SetInputEnabled(false);
+        GameSparker.CefRenderer?.ExecuteJavaScript("window.location.href = '#/race';");
+        GameSparker.CefRenderer?.ConsumeKeyboardState();
+    }
+
+    /// <summary>
+    /// Quit the race entirely. Fires the <see cref="Exited"/> event,
+    /// which the caller (e.g., MainMenuPhase) uses to pop the phase group.
+    /// </summary>
+    private void QuitRace()
+    {
+        // Resume input forwarding state before exiting so the next phase
+        // (main menu) gets clean input state.
+        if (IsPaused)
+        {
+            IsPaused = false;
+            GameSparker.CefRenderer?.SetInputEnabled(true); // Main menu needs input
+        }
+        Exited?.Invoke(this, EventArgs.Empty);
     }
 
     public override void Enter()
@@ -135,6 +214,30 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         base.KeyPressed(key, imguiWantsKeyboard, keys);
 
         if (imguiWantsKeyboard) return;
+
+        // ── Pause toggle (Escape) ──────────────────────────────────
+        if (key == Key.Escape)
+        {
+            if (IsPaused)
+            {
+                // If settings is open, let CEF handle Escape (it will dismiss settings via JS).
+                // Otherwise, resume the race.
+                if (!HudBridge.IsSettingsOpen)
+                    ResumeRace();
+            }
+            else if (RaceState == RaceState.InProgress)
+            {
+                PauseRace();
+            }
+            return;
+        }
+
+        // ── While paused, only forward keys to SettingsHandler ─────
+        if (IsPaused)
+        {
+            HudBridge.Settings.TryHandleKeyPress(key);
+            return;
+        }
 
         var bindings = SettingsMenu.Bindings;
 
@@ -249,6 +352,10 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
     {
         base.KeyReleased(key, imguiWantsKeyboard, keys);
 
+        // While paused, skip all game control updates.
+        if (IsPaused)
+            return;
+
         var bindings = SettingsMenu.Bindings;
 
         // track released keys
@@ -350,6 +457,9 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
 
     public override void GameTick()
     {
+        if (IsPaused && AllowPausing)
+            return;
+
         if (RaceState is RaceState.InProgress or RaceState.Finished)
         {
             GamemodeInstance?.GameTick();
