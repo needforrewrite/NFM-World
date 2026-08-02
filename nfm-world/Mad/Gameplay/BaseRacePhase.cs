@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.Xna.Framework.Graphics;
+﻿﻿﻿﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.UI;
 using NFMWorld.UI.Cef;
@@ -69,7 +69,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
                 }
 
                 _hasAutoPopped = true;
-                GameSparker.PopPhase();
+                GameSparker.PopGroup(PhaseManager.Groups.Event);
             }
         }
     } = RaceState.InProgress;

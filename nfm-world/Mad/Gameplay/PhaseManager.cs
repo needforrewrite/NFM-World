@@ -17,19 +17,34 @@ namespace NFMWorld.Gameplay;
 /// </summary>
 public class PhaseManager
 {
-    private readonly List<BasePhase> _stack = [];
+    public static class Groups
+    {
+        /// <summary>
+        /// An event like a race.
+        /// In singleplayer: Stage Select -> Car Select -> Race
+        /// In multiplayer: typically just Race
+        /// </summary>
+        public static Group Event { get; } = new("Event");
+    }
+    
+    public sealed class Group(string friendlyName)
+    {
+        public string FriendlyName { get; } = friendlyName;
+    }
+
+    private readonly List<(BasePhase Phase, Group? Group)> _stack = [];
     private readonly List<BasePhase> _disposalQueue = [];
 
     /// <summary>
     /// The currently active phase (top of stack).
     /// </summary>
     public BasePhase Current =>
-        _stack.Count > 0 ? _stack[^1] : throw new InvalidOperationException("PhaseManager has no active phase.");
+        _stack.Count > 0 ? _stack[^1].Phase : throw new InvalidOperationException("PhaseManager has no active phase.");
 
     /// <summary>
     /// The root phase (bottom of stack), or null if none has been set.
     /// </summary>
-    public BasePhase? Root => _stack.Count > 0 ? _stack[0] : null;
+    public BasePhase? Root => _stack.Count > 0 ? _stack[0].Phase : null;
 
     /// <summary>
     /// Number of phases currently on the stack.
@@ -39,7 +54,7 @@ public class PhaseManager
     /// <summary>
     /// Read-only view of the phase stack for debugging.
     /// </summary>
-    public IReadOnlyList<BasePhase> Stack => _stack;
+    public IReadOnlyList<(BasePhase Phase, Group? Group)> Stack => _stack;
 
     /// <summary>
     /// Initializes the stack with a root phase. Clears any existing stack first.
@@ -48,7 +63,7 @@ public class PhaseManager
     public void SetRoot(BasePhase root)
     {
         // Dispose any existing stack before reinitializing
-        foreach (var phase in _stack)
+        foreach (var (phase, _) in _stack)
         {
             phase.Exit();
             QueueDisposal(phase);
@@ -56,7 +71,7 @@ public class PhaseManager
         _stack.Clear();
         FlushDisposals();
 
-        _stack.Add(root);
+        _stack.Add((root, null));
         root.Enter();
         Logging.Info($"PhaseManager: root set to {root.GetType().Name}");
     }
@@ -67,14 +82,14 @@ public class PhaseManager
     /// and <see cref="BasePhase.Enter"/> on the new phase.
     /// The old top phase is NOT disposed — it stays alive on the stack.
     /// </summary>
-    public void Push(BasePhase phase)
+    public void Push(BasePhase phase, Group? group = null)
     {
         if (_stack.Count > 0)
         {
-            _stack[^1].Exit();
+            _stack[^1].Phase.Exit();
         }
 
-        _stack.Add(phase);
+        _stack.Add((phase, group));
         phase.Enter();
         Logging.Info($"PhaseManager: pushed {phase.GetType().Name} (depth {_stack.Count})");
     }
@@ -94,15 +109,32 @@ public class PhaseManager
         }
 
         var popped = _stack[^1];
-        popped.Exit();
+        popped.Phase.Exit();
         _stack.RemoveAt(_stack.Count - 1);
 
-        QueueDisposal(popped);
+        QueueDisposal(popped.Phase);
 
         // Enter the new top (which was previously on the stack but exited)
-        _stack[^1].Enter();
+        _stack[^1].Phase.Enter();
         Logging.Info($"PhaseManager: popped {popped.GetType().Name} (depth {_stack.Count})");
-        return popped;
+        return popped.Phase;
+    }
+
+    public void PopGroup(Group group)
+    {
+        if (_stack[^1].Group != group) return;
+        
+        do
+        {
+            if (_stack.Count <= 1)
+            {
+                throw new InvalidOperationException(
+                    "Cannot pop the root phase. Use Replace or PopToRoot instead, or push a new phase first.");
+            }
+
+            Logging.Info($"PhaseManager: popping via group {group.FriendlyName} (depth {_stack.Count})");
+            Pop();
+        } while (_stack[^1].Group == group);
     }
 
     /// <summary>
@@ -114,12 +146,12 @@ public class PhaseManager
         while (_stack.Count > 1)
         {
             var popped = _stack[^1];
-            popped.Exit();
+            popped.Phase.Exit();
             _stack.RemoveAt(_stack.Count - 1);
-            QueueDisposal(popped);
+            QueueDisposal(popped.Phase);
         }
 
-        _stack[0].Enter();
+        _stack[0].Phase.Enter();
         Logging.Info($"PhaseManager: popped to root (depth {_stack.Count})");
     }
 
@@ -128,17 +160,19 @@ public class PhaseManager
     /// Equivalent to Pop + Push but avoids re-entering the underlying phase.
     /// Used for debug commands, editor entry points, and backward-compatible SetPhase.
     /// </summary>
-    public void Replace(BasePhase phase)
+    public void Replace(BasePhase phase, bool keepGroup = true, Group? group = null)
     {
         if (_stack.Count > 0)
         {
             var old = _stack[^1];
-            old.Exit();
+            old.Phase.Exit();
             _stack.RemoveAt(_stack.Count - 1);
-            QueueDisposal(old);
+            QueueDisposal(old.Phase);
+
+            if (keepGroup) group = old.Group;
         }
 
-        _stack.Add(phase);
+        _stack.Add((phase, group));
         phase.Enter();
         Logging.Info($"PhaseManager: replaced with {phase.GetType().Name} (depth {_stack.Count})");
     }
@@ -177,9 +211,9 @@ public class PhaseManager
         while (_stack.Count > 0)
         {
             var phase = _stack[^1];
-            phase.Exit();
+            phase.Phase.Exit();
             _stack.RemoveAt(_stack.Count - 1);
-            phase.Dispose();
+            phase.Phase.Dispose();
         }
 
         Logging.Info("PhaseManager: shutdown complete");

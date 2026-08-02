@@ -132,7 +132,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         PlayerName = "MadPlayer"
                     }
                 ]);
-                GameSparker.PushPhase(inRace);
+                GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
             };
 
             gp.CarSelectionCancelled += (sender, _) =>
@@ -140,10 +140,10 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 GameSparker.PopPhase();
             };
 
-            GameSparker.PushPhase(gp);
+            GameSparker.PushPhase(gp, PhaseManager.Groups.Event);
         };
 
-        GameSparker.PushPhase(ssp);
+        GameSparker.PushPhase(ssp, PhaseManager.Groups.Event);
     }
 
     private void OnGarageClicked()

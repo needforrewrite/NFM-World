@@ -24,7 +24,7 @@ public abstract class BasePhase : IDisposable
     /// Whether the mouse was pressed this game tick. Reset at the end of a game tick.
     /// </summary>
     protected bool MouseDownThisFrame { get; private set; }
-
+    
     /// <summary>
     /// Invoked each frame by WorldGame.Update() when this phase has an active CefBridge.
     /// Override to push per-frame state (e.g., HUD data) to JS.

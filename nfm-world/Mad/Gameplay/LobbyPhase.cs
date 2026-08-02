@@ -84,7 +84,7 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
 
                     // Navigation back to lobby is handled automatically by BaseRacePhase
                     // when the race finishes or fails — no manual RaceStateChanged wiring needed.
-                    GameSparker.PushPhase(phase);
+                    GameSparker.PushPhase(phase, PhaseManager.Groups.Event);
                     break;
                 }
             }

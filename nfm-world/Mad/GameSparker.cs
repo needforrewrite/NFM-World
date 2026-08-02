@@ -69,18 +69,18 @@ public static partial class GameSparker
     /// at end-of-frame via <see cref="PhaseManager.FlushDisposals"/>.
     /// For navigation with back-support, use <see cref="PushPhase"/> instead.
     /// </summary>
-    public static void SetPhase(BasePhase phase)
+    public static void SetPhase(BasePhase phase, bool keepGroup = true, PhaseManager.Group? group = null)
     {
-        Phases.Replace(phase);
+        Phases.Replace(phase, keepGroup, group);
     }
 
     /// <summary>
     /// Pushes a new phase onto the stack, keeping the current phase alive.
     /// Use <see cref="PopPhase"/> to return to the previous phase.
     /// </summary>
-    public static void PushPhase(BasePhase phase)
+    public static void PushPhase(BasePhase phase, PhaseManager.Group? group = null)
     {
-        Phases.Push(phase);
+        Phases.Push(phase, group);
     }
 
     /// <summary>
@@ -90,6 +90,16 @@ public static partial class GameSparker
     public static void PopPhase()
     {
         Phases.Pop();
+    }
+
+    /// <summary>
+    /// Pops a phase group and returns to the phase preceding the group on the stack.
+    /// If the phase group is not on the top of the phase stack, nothing is popped.
+    /// The popped phases are disposed at end-of-frame.
+    /// </summary>
+    public static void PopGroup(PhaseManager.Group group)
+    {
+        Phases.PopGroup(group);
     }
 
     /// <summary>

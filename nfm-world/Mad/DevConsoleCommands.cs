@@ -54,7 +54,7 @@ public static class DevConsoleCommands
                 }
             ]);
             GameSparker.PopToRoot();
-            GameSparker.PushPhase(inRace);
+            GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
         });
             
         // rendering
