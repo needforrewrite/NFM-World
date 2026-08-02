@@ -15,12 +15,18 @@ interface PauseState {
 
 type PauseView = "menu" | "settings" | "confirmQuit" | "confirmRestart";
 
+interface PauseMenuProps {
+  /** Whether the pause overlay is visible. */
+  visible: boolean;
+}
+
 // ── Styled components ────────────────────────────────────────────
 
 const Overlay = styled("div")`
-  width: 100%; height: 100%;
+  position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.65);
+  z-index: 50;
   animation: nfmw-fadeIn 0.2s ease-out;
 `;
 
@@ -110,7 +116,7 @@ const ConfirmOverlay = styled("div")`
   position: fixed; inset: 0;
   display: flex; align-items: center; justify-content: center;
   background: rgba(0,0,0,0.7);
-  z-index: 10;
+  z-index: 60;
   animation: nfmw-fadeIn 0.15s ease-out;
 `;
 
@@ -160,7 +166,14 @@ const ConfirmBtn = styled("button")<{ variant?: "primary" | "danger" }>`
 
 // ── Component ────────────────────────────────────────────────────
 
-export function PauseMenu() {
+/**
+ * Pause menu overlay. Controlled by the `visible` prop — the parent
+ * (RaceHud) shows/hides it based on the `"race:paused"` event from C#.
+ *
+ * Renders on top of the race HUD within the same `#/race` route, so
+ * HUD state is preserved across pause/resume cycles.
+ */
+export function PauseMenu({ visible }: PauseMenuProps) {
   const [view, setView] = useState<PauseView>("menu");
   const [pauseState, setPauseState] = useState<PauseState | null>(null);
 
@@ -171,20 +184,26 @@ export function PauseMenu() {
     });
   }, []);
 
+  // Reset sub-view when visibility changes
+  useEffect(() => {
+    if (!visible) setView("menu");
+  }, [visible]);
+
   // Notify C# when settings sub-view opens/closes so Escape can be
   // routed correctly (dismiss settings vs. resume race).
   useEffect(() => {
+    if (!visible) return;
     if (view === "settings") {
       callNfmw("settingsOpened");
     } else {
       callNfmw("settingsClosed");
     }
-  }, [view]);
+  }, [view, visible]);
 
   // Handle Escape key to dismiss settings sub-view (CEF input is
   // enabled during pause, so Escape reaches the browser).
   useEffect(() => {
-    if (view !== "settings") return;
+    if (!visible || view !== "settings") return;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -195,51 +214,59 @@ export function PauseMenu() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [view]);
+  }, [view, visible]);
+
+  if (!visible) return null;
 
   // ── Settings sub-view ──────────────────────────────────────────
   if (view === "settings") {
     return (
-      <Settings onClose={() => setView("menu")} />
+      <div style={{ position: "absolute", inset: 0, zIndex: 50 }}>
+        <Settings onClose={() => setView("menu")} />
+      </div>
     );
   }
 
   // ── Confirm dialogs ────────────────────────────────────────────
   if (view === "confirmQuit") {
     return (
-      <ConfirmOverlay onClick={() => setView("menu")}>
-        <ConfirmBox onClick={(e) => e.stopPropagation()}>
-          <ConfirmTitle>Quit to Main Menu?</ConfirmTitle>
-          <ConfirmMsg>
-            All race progress will be lost.
-          </ConfirmMsg>
-          <ConfirmBtns>
-            <ConfirmBtn onClick={() => setView("menu")}>Cancel</ConfirmBtn>
-            <ConfirmBtn variant="danger" onClick={() => callNfmw("quit")}>
-              Quit
-            </ConfirmBtn>
-          </ConfirmBtns>
-        </ConfirmBox>
-      </ConfirmOverlay>
+      <Overlay>
+        <ConfirmOverlay onClick={() => setView("menu")}>
+          <ConfirmBox onClick={(e) => e.stopPropagation()}>
+            <ConfirmTitle>Quit to Main Menu?</ConfirmTitle>
+            <ConfirmMsg>
+              All race progress will be lost.
+            </ConfirmMsg>
+            <ConfirmBtns>
+              <ConfirmBtn onClick={() => setView("menu")}>Cancel</ConfirmBtn>
+              <ConfirmBtn variant="danger" onClick={() => callNfmw("quit")}>
+                Quit
+              </ConfirmBtn>
+            </ConfirmBtns>
+          </ConfirmBox>
+        </ConfirmOverlay>
+      </Overlay>
     );
   }
 
   if (view === "confirmRestart") {
     return (
-      <ConfirmOverlay onClick={() => setView("menu")}>
-        <ConfirmBox onClick={(e) => e.stopPropagation()}>
-          <ConfirmTitle>Restart Race?</ConfirmTitle>
-          <ConfirmMsg>
-            Your current lap time and position will be reset.
-          </ConfirmMsg>
-          <ConfirmBtns>
-            <ConfirmBtn onClick={() => setView("menu")}>Cancel</ConfirmBtn>
-            <ConfirmBtn variant="danger" onClick={() => callNfmw("restart")}>
-              Restart
-            </ConfirmBtn>
-          </ConfirmBtns>
-        </ConfirmBox>
-      </ConfirmOverlay>
+      <Overlay>
+        <ConfirmOverlay onClick={() => setView("menu")}>
+          <ConfirmBox onClick={(e) => e.stopPropagation()}>
+            <ConfirmTitle>Restart Race?</ConfirmTitle>
+            <ConfirmMsg>
+              Your current lap time and position will be reset.
+            </ConfirmMsg>
+            <ConfirmBtns>
+              <ConfirmBtn onClick={() => setView("menu")}>Cancel</ConfirmBtn>
+              <ConfirmBtn variant="danger" onClick={() => callNfmw("restart")}>
+                Restart
+              </ConfirmBtn>
+            </ConfirmBtns>
+          </ConfirmBox>
+        </ConfirmOverlay>
+      </Overlay>
     );
   }
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.UI;
 using NFMWorld.UI.Cef;
@@ -40,8 +40,8 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         HudBridge.QuitRequested += () => QuitRace();
         HudBridge.SettingsCloseRequested += () =>
         {
-            // User closed settings from the pause menu — navigate back to pause.
-            GameSparker.CefRenderer?.ExecuteJavaScript("window.location.href = '#/pause';");
+            // Settings were dismissed — the JS PauseMenu handles its own
+            // view transition back to the pause menu. No hash navigation needed.
         };
 
         // Create the gamemode once at construction time. Enter/Exit only handle
@@ -126,9 +126,8 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         IsPaused = true;
         RaceState = RaceState.Paused;
         GameSparker.CefRenderer?.SetInputEnabled(true);
-        GameSparker.CefRenderer?.ExecuteJavaScript("window.location.href = '#/pause';");
 
-        // Push context for the pause menu (lap, position, stage name)
+        // Push pause context for the overlay (lap, position, stage name)
         if (GamemodeInstance is BaseGamemode gm)
         {
             var hud = gm.HudState;
@@ -138,6 +137,8 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         {
             HudBridge.PushPauseState(1, 1, 1, 1, StageName ?? "");
         }
+
+        HudBridge.PushPausedEvent(true);
     }
 
     /// <summary>
@@ -150,7 +151,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         IsPaused = false;
         RaceState = RaceState.InProgress;
         GameSparker.CefRenderer?.SetInputEnabled(false);
-        GameSparker.CefRenderer?.ExecuteJavaScript("window.location.href = '#/race';");
+        HudBridge.PushPausedEvent(false);
         GameSparker.CefRenderer?.ConsumeKeyboardState();
     }
 

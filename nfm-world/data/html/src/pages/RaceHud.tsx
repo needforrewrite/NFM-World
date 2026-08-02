@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "preact/hooks";
 import { onNfmwEvent } from "../shared/bridge";
 import { HudStateData } from "../shared/memorypack/HudStateData";
 import { GlassCard, StatBar, CenterText } from "../shared/components/GlassCard";
+import { PauseMenu } from "./PauseMenu";
 
 // ── RaceHUD ──────────────────────────────────────────────────────
 // Functional Preact component: in-race HUD overlay.
@@ -39,6 +40,7 @@ export function RaceHud() {
   const [lastLapDiffMs, setLastLapDiffMs] = useState<number | null>(null);
   const [lapTime, setLapTime] = useState(0);
   const [countdownTimer, setCountdownTimer] = useState<number>(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     return onNfmwEvent<HudStateData | null>("race:hudState", (newHud) => {
@@ -60,6 +62,13 @@ export function RaceHud() {
       setLapTime(newHud.lapTime ?? 0);
       setCountdownTimer(newHud.countdownTimer);
     }, HudStateData.deserialize.bind(HudStateData));
+  }, []);
+
+  // Listen for pause/resume events from C#
+  useEffect(() => {
+    return onNfmwEvent<boolean>("race:paused", (paused) => {
+      setIsPaused(paused);
+    });
   }, []);
 
   useEffect(() => {
@@ -251,6 +260,9 @@ export function RaceHud() {
           POSITION
         </div>
       </div>
+
+      {/* Pause menu overlay — shown/hidden via C# "race:paused" event */}
+      <PauseMenu visible={isPaused} />
     </div>
   );
 }

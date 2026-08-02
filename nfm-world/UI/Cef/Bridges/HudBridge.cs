@@ -70,6 +70,7 @@ public sealed class HudBridge : PhaseBridge
     /// <summary>
     /// Push pause context (lap, position, stage name) to JS so the
     /// pause menu can display race summary information.
+    /// Also signals the RaceHud to show the pause overlay.
     /// </summary>
     public void PushPauseState(int lap, int totalLaps, int position, int totalRacers, string stageName)
     {
@@ -81,6 +82,15 @@ public sealed class HudBridge : PhaseBridge
             totalRacers,
             stageName
         });
+    }
+
+    /// <summary>
+    /// Push the paused/unpaused state to JS so the RaceHud can show/hide
+    /// the pause menu overlay without a hash navigation.
+    /// </summary>
+    public void PushPausedEvent(bool paused)
+    {
+        Push("paused", paused);
     }
 
     // ── Events ────────────────────────────────────────────────────
