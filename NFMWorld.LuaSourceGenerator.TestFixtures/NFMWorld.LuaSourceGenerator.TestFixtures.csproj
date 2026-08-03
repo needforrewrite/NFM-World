@@ -4,10 +4,18 @@
         <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+        <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->
+        <Compile Remove="Generated/**" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\NFMWorld.Lua\NFMWorld.Lua.csproj" />
+      <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
 </Project>

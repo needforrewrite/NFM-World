@@ -3,7 +3,7 @@ using nfm_world_library.Lua;
 namespace NFMWorld.LuaSourceGenerator.Test;
 
 [LuaVisible(Name = "TypeWithArrays")]
-public class TypeWithArrays
+public partial class TypeWithArrays
 {
     // Properties with arrays
     public int[]? Numbers { get; set; }

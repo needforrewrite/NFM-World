@@ -4,7 +4,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 /// A type that is NOT marked with [LuaVisible] but is referenced by other visible types.
 /// Should be automatically discovered and have bindings generated.
 /// </summary>
-public class ReferencedType
+public partial class ReferencedType
 {
     public int Value { get; set; }
     public string Name { get; set; } = "";

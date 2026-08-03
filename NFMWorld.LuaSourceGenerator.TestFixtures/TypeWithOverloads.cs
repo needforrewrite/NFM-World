@@ -3,7 +3,7 @@ using nfm_world_library.Lua;
 namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 
 [LuaVisible]
-public class TypeWithOverloads
+public partial class TypeWithOverloads
 {
     public int Value { get; set; }
     public string Text { get; set; } = "";

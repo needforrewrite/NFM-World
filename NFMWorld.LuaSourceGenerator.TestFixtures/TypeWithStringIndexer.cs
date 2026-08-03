@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace NFMWorld.LuaSourceGenerator.Test;
 
 [LuaVisible(Name = nameof(TypeWithStringIndexer))]
-public class TypeWithStringIndexer
+public partial class TypeWithStringIndexer
 {
     private readonly Dictionary<string, int> _data = new();
 

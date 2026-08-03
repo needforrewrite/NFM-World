@@ -3,7 +3,7 @@ using nfm_world_library.Lua;
 namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 
 [LuaVisible]
-public class TypeWithEvents
+public partial class TypeWithEvents
 {
     // Simple event with no arguments
     public event Action? SimpleEvent;
@@ -50,7 +50,7 @@ public class TypeWithEvents
 }
 
 [LuaVisible]
-public class CustomEventArgs : EventArgs
+public partial class CustomEventArgs : EventArgs
 {
     public string Message { get; set; } = "";
     public int Value { get; set; }

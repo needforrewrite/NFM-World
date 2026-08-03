@@ -6,7 +6,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 /// A more complex struct for testing nested types and cross-type operations.
 /// </summary>
 [LuaVisible(Name = "Vec3")]
-public struct Vector3Struct
+public partial struct Vector3Struct
 {
     public float X;
     public float Y;

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace NFMWorld.LuaSourceGenerator.Test;
 
 [LuaVisible(Name = nameof(TypeWithIntIndexer))]
-public class TypeWithIntIndexer
+public partial class TypeWithIntIndexer
 {
     private readonly int[] _numbers = new int[10];
 

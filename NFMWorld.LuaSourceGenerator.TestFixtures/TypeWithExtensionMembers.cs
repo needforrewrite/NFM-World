@@ -6,7 +6,7 @@ namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 /// Test type for extension methods and properties
 /// </summary>
 [LuaVisible]
-public class TypeWithExtensionMembers
+public partial class TypeWithExtensionMembers
 {
     public int Value { get; set; }
 

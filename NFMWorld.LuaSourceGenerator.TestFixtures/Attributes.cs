@@ -1,4 +1,4 @@
-﻿using nfm_world_library.Lua;
+using nfm_world_library.Lua;
 
 [assembly: AssemblyLuaVisible<int[]>]
 [assembly: AssemblyLuaVisible<string[]>]

@@ -8,7 +8,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 /// Tests automatic type discovery.
 /// </summary>
 [LuaVisible]
-public class TypeWithReferences
+public partial class TypeWithReferences
 {
     public static ReferencedType SampleReferencedType { get; } = new ReferencedType(100, "Constructor");
     

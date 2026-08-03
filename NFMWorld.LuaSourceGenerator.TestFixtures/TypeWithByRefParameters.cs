@@ -6,7 +6,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 /// Test type with byref parameters - these methods should be excluded from generation
 /// </summary>
 [LuaVisible]
-public class TypeWithByRefParameters
+public partial class TypeWithByRefParameters
 {
     public int Value { get; set; } = 42;
 

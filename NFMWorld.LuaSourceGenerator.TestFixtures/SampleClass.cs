@@ -7,7 +7,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 /// This class has various members to test different binding scenarios.
 /// </summary>
 [LuaVisible]
-public class SampleClass
+public partial class SampleClass
 {
     // Static property
     public static int StaticCounter { get; set; } = 0;

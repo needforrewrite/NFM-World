@@ -8,7 +8,7 @@ namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 /// <summary>
 /// Interface with static abstract members (C# 11 feature).
 /// </summary>
-public interface IParsableValue<TSelf> where TSelf : IParsableValue<TSelf>
+public partial interface IParsableValue<TSelf> where TSelf : IParsableValue<TSelf>
 {
     static abstract TSelf Parse(string input);
     static abstract bool TryParse(string input, [NotNullWhen(true)] out TSelf? result);
@@ -20,7 +20,7 @@ public interface IParsableValue<TSelf> where TSelf : IParsableValue<TSelf>
 /// This tests that static abstract interface implementations are bound as static methods, not instance methods.
 /// </summary>
 [LuaVisible]
-public struct TypeWithStaticAbstractInterface : IParsableValue<TypeWithStaticAbstractInterface>
+public partial struct TypeWithStaticAbstractInterface : IParsableValue<TypeWithStaticAbstractInterface>
 {
     public int Value { get; set; }
 

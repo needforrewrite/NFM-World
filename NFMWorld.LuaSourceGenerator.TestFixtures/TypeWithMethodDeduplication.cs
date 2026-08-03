@@ -3,7 +3,7 @@ using nfm_world_library.Lua;
 namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 
 // Interface for testing interface implementation deduplication
-public interface ICalculator
+public partial interface ICalculator
 {
     int Add(int a, int b);
     int Multiply(int x, int y);
@@ -11,7 +11,7 @@ public interface ICalculator
 }
 
 // Base class for testing virtual override deduplication
-public class CalculatorBase
+public partial class CalculatorBase
 {
     public virtual int Subtract(int a, int b)
     {
@@ -31,7 +31,7 @@ public class CalculatorBase
 }
 
 [LuaVisible]
-public class TypeWithMethodDeduplication : CalculatorBase, ICalculator
+public partial class TypeWithMethodDeduplication : CalculatorBase, ICalculator
 {
     // Interface implementations (should use ICalculator's implementation)
     public int Add(int a, int b)
@@ -80,7 +80,7 @@ public class TypeWithMethodDeduplication : CalculatorBase, ICalculator
 
 // Another type implementing the same interface (to verify interface implementation reuse)
 [LuaVisible]
-public class AnotherCalculator : ICalculator
+public partial class AnotherCalculator : ICalculator
 {
     public int Add(int a, int b)
     {
@@ -100,7 +100,7 @@ public class AnotherCalculator : ICalculator
 
 // Type with 'new' member (should generate its own implementation, not reuse base)
 [LuaVisible]
-public class TypeWithNewMember : CalculatorBase
+public partial class TypeWithNewMember : CalculatorBase
 {
     // This uses 'new' to shadow the base method, not override it
     // Should generate its own implementation

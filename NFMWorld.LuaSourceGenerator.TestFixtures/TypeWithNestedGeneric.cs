@@ -7,7 +7,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 /// Test type that uses nested generic types like List<int>.Enumerator
 /// </summary>
 [LuaVisible]
-public class TypeWithNestedGeneric
+public partial class TypeWithNestedGeneric
 {
     private List<int> _numbers = new List<int> { 1, 2, 3, 4, 5 };
 

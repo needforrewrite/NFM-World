@@ -3,7 +3,7 @@ using nfm_world_library.Lua;
 namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 
 [LuaVisible(Name = "TypeWithExceptions")]
-public class TypeWithExceptions
+public partial class TypeWithExceptions
 {
     public int Value { get; set; }
 

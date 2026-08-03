@@ -7,7 +7,7 @@ namespace NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 /// Structs should have copy-on-read semantics for value type behavior.
 /// </summary>
 [LuaVisible(Name = "Vec2")]
-public struct SampleStruct
+public partial struct SampleStruct
 {
     // Fields
     public float X;

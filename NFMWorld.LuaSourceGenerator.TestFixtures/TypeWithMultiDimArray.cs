@@ -3,7 +3,7 @@ using nfm_world_library.Lua;
 namespace NFMWorld.LuaSourceGenerator.Test;
 
 [LuaVisible(Name = "TypeWithMultiDimArray")]
-public class TypeWithMultiDimArray
+public partial class TypeWithMultiDimArray
 {
     // 2D array property
     public int[,]? Matrix { get; set; }

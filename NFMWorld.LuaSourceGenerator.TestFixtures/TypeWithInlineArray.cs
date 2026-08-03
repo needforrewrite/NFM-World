@@ -9,7 +9,7 @@ namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 /// </summary>
 [LuaVisible(Name = "InlineBuffer")]
 [InlineArray(10)]
-public struct InlineBuffer
+public partial struct InlineBuffer
 {
     private int _element0;
 }
@@ -18,7 +18,7 @@ public struct InlineBuffer
 /// A class that uses an inline array as a field.
 /// </summary>
 [LuaVisible(Name = "TypeWithInlineArray")]
-public class TypeWithInlineArray
+public partial class TypeWithInlineArray
 {
     public InlineBuffer buffer;
 

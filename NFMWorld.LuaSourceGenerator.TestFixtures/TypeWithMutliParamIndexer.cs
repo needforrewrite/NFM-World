@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace NFMWorld.LuaSourceGenerator.Test;
 
 [LuaVisible(Name = nameof(TypeWithMultiParamIndexer))]
-public class TypeWithMultiParamIndexer
+public partial class TypeWithMultiParamIndexer
 {
     private readonly Dictionary<(int, int), string> _grid = new();
 

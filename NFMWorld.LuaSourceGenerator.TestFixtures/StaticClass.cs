@@ -3,7 +3,7 @@ using nfm_world_library.Lua;
 namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 
 [LuaVisible]
-public static class StaticClass
+public static partial class StaticClass
 {
     // Static field
     public static int StaticField = 42;
