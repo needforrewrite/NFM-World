@@ -22,7 +22,6 @@
         <PackageReference Include="CommunityToolkit.HighPerformance" Version="8.4.0" />
         <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
         <PackageReference Include="ENet-CSharp" Version="2.4.8" />
-        <PackageReference Include="Lua.NET" Version="6.0.1" />
         <PackageReference Include="LuzFaltex.Core.Collections" Version="0.1.0" />
         <PackageReference Include="MessagePack" Version="3.1.8" />
         <PackageReference Include="MessagePack.Experimental" Version="3.1.8" />
@@ -34,10 +33,13 @@
         <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\NFMWorld.CrashReporter\NFMWorld.CrashReporter.csproj" />
         <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" />
+        <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj" />
         <ProjectReference Include="..\NFMWorld.OpcodeSourceGen\NFMWorld.OpcodeSourceGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\NFMWorld.PhysicsFS\NFMWorld.PhysicsFS.csproj" />
         <ProjectReference Include="..\NFMWorld.Sentry\NFMWorld.Sentry.csproj" />
+        <ProjectReference Include="..\Lua-CSharp\src\Lua.SourceGenerator\Lua.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\Lua-CSharp\src\Lua\Lua.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -68,4 +70,12 @@
         <MemoryPackGenerator_TypeScriptEnableNullableTypes>true</MemoryPackGenerator_TypeScriptEnableNullableTypes>
     </PropertyGroup>
 
+
+    <!-- LuaCATS definition file output -->
+    <ItemGroup>
+        <CompilerVisibleProperty Include="LuaSourceGenerator_LuaCATSOutputDirectory" />
+    </ItemGroup>
+    <PropertyGroup>
+        <LuaSourceGenerator_LuaCATSOutputDirectory>$(MSBuildProjectDirectory)\data\lua\library</LuaSourceGenerator_LuaCATSOutputDirectory>
+    </PropertyGroup>
 </Project>

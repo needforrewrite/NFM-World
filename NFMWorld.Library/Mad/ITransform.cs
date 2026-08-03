@@ -1,4 +1,5 @@
-﻿using NFMWorldLibrary.FixedMath;
+﻿using Lua;
+using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary;
 

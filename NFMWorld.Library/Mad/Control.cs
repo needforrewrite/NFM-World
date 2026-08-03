@@ -1,35 +1,60 @@
+using Lua;
 using Maxine.Extensions;
 
 namespace NFMWorldLibrary;
 
-public class Control
+[LuaObject]
+public partial class Control
 {
+    [LuaMember("arrace")]
     public bool Arrace;
 
+    [LuaMember("chatup")]
     public int Chatup;
+    
+    [LuaMember("down")]
     public bool Down;
+    
+    [LuaMember("enter")]
     public bool Enter;
+    
+    [LuaMember("exit")]
     public bool Exit;
-
+    
+    [LuaMember("handb")]
     public bool Handb;
-
+    
+    [LuaMember("multion")]
     public int Multion;
-
+    
+    [LuaMember("mutem")]
     public bool Mutem;
+    
+    [LuaMember("mutes")]
     public bool Mutes;
-
+    
+    [LuaMember("radar")]
     public bool Radar;
-
+    
+    [LuaMember("right")]
     public bool Right;
+    
+    [LuaMember("up")]
     public bool Up;
+    
+    [LuaMember("left")]
     public bool Left;
+    
+    [LuaMember("lookback")]
     public int Lookback;
-
+    
+    [LuaMember("wall")]
     public int Wall = -1;
 
-    /**
-     * Inverts the ZY angle. It is true if the AI axis is flipped.
-     */
+    /// <summary>
+    /// Inverts the ZY angle. It is true if the AI axis is flipped.
+    /// </summary>
+    [LuaMember("zyinv")]
     public bool Zyinv = false;
 
     internal void Falseo(int i)
@@ -63,16 +88,7 @@ public class Control
         Mutes = false;
     }
 
-    private int Py(int i, int i47, int i48, int i49)
-    {
-        return (i - i47) * (i - i47) + (i48 - i49) * (i48 - i49);
-    }
-
-    private int Pys(int i, int i50, int i51, int i52)
-    {
-        return (int) Math.Sqrt((i - i50) * (i - i50) + (i51 - i52) * (i51 - i52));
-    }
-
+    [LuaMember("reset")]
     internal void Reset()
     {
         Left = false;

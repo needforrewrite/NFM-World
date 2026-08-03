@@ -1,0 +1,244 @@
+---@meta
+
+---@class fixed64
+---@operator add(fixed64): fixed64
+---@operator sub(fixed64): fixed64
+---@operator mul(fixed64): fixed64
+---@operator div(fixed64): fixed64
+---@operator mod(fixed64): fixed64
+---@operator unm(): fixed64
+local fixed64_type = {}
+
+---@class fixed64vector3
+---@operator add(fixed64vector3): fixed64vector3
+---@operator sub(fixed64vector3): fixed64vector3
+---@operator mul(fixed64vector3): fixed64vector3        -- component-wise
+---@operator div(fixed64vector3): fixed64vector3        -- component-wise
+---@operator unm(): fixed64vector3
+local fixed64vector3_type = {}
+
+---@class fixed64vector3
+---@operator mul(fixed64): fixed64vector3       -- scalar multiplication
+---@operator div(fixed64): fixed64vector3       -- scalar division
+local fixed64vector3_scalar = {}
+
+--- Creates a Fixed64 value.
+---
+--- Accepts a Lua number (double), a string (parsed via Fixed64.TryParse),
+--- or an existing Fixed64 (returned as-is).
+---
+--- Cross-type arithmetic (Fixed64 + Number) is intentionally not supported —
+--- convert both sides to the same type first.
+---
+---@param value number|string|fixed64
+---@return fixed64
+function fixed64(value) end
+
+--- Creates a Fixed64Vector3 value.
+---
+--- Each argument is converted to Fixed64 (accepts both Lua numbers and Fixed64).
+---
+---@param x number|fixed64
+---@param y number|fixed64
+---@param z number|fixed64
+---@return fixed64vector3
+function fixed64vector3(x, y, z) end
+
+---@class fixed64vec3lib
+local fixed64vec3 = {}
+
+--- Returns a normalized (unit-length) copy of the vector.
+---@param v fixed64vector3
+---@return fixed64vector3
+function fixed64vec3.normalized(v) end
+
+--- Returns the cross product of two vectors.
+---@param a fixed64vector3
+---@param b fixed64vector3
+---@return fixed64vector3
+function fixed64vec3.cross(a, b) end
+
+--- Returns the dot product of two vectors.
+---@param a fixed64vector3
+---@param b fixed64vector3
+---@return fixed64
+function fixed64vec3.dot(a, b) end
+
+--- Returns the Euclidean distance between two points.
+---@param a fixed64vector3
+---@param b fixed64vector3
+---@return fixed64
+function fixed64vec3.distance(a, b) end
+
+--- Returns the squared Euclidean distance between two points.
+---@param a fixed64vector3
+---@param b fixed64vector3
+---@return fixed64
+function fixed64vec3.sqrdistance(a, b) end
+
+--- Returns the magnitude (length) of the vector.
+---@param v fixed64vector3
+---@return fixed64
+function fixed64vec3.magnitude(v) end
+
+--- Returns the squared magnitude (length) of the vector.
+---@param v fixed64vector3
+---@return fixed64
+function fixed64vec3.sqrmagnitude(v) end
+
+--- Returns the component-wise maximum of two vectors.
+---@param a fixed64vector3
+---@param b fixed64vector3
+---@return fixed64vector3
+function fixed64vec3.max(a, b) end
+
+--- Returns the component-wise minimum of two vectors.
+---@param a fixed64vector3
+---@param b fixed64vector3
+---@return fixed64vector3
+function fixed64vec3.min(a, b) end
+
+--- Linearly interpolates between two vectors.
+---@param a fixed64vector3
+---@param b fixed64vector3
+---@param t fixed64 -- interpolation factor (0 = a, 1 = b)
+---@return fixed64vector3
+function fixed64vec3.lerp(a, b, t) end
+
+--- Returns the component-wise absolute value of the vector.
+---@param v fixed64vector3
+---@return fixed64vector3
+function fixed64vec3.abs(v) end
+
+--- Returns the component-wise sign of the vector (1, -1, or 0 per component).
+---@param v fixed64vector3
+---@return fixed64vector3
+function fixed64vec3.sign(v) end
+
+--- `type()` overloads for the new types.
+---
+--- type(fixed64(...))       → "fixed64"
+--- type(fixed64vector3(...)) → "fixed64vector3"
+---@overload fun(v: fixed64): "fixed64"
+---@overload fun(v: fixed64vector3): "fixed64vector3"
+function type(v) end
+
+---@class UnlimitedArray<T>: { [number]: T }
+---@class LuaArray<T>: { [number]: T }
+
+---@meta
+
+---@class f64angle
+---@operator add(f64angle): f64angle
+---@operator sub(f64angle): f64angle
+---@operator mul(f64angle): f64angle
+---@operator div(f64angle): f64angle
+---@operator unm(): f64angle
+---@operator lt(f64angle): boolean
+---@operator le(f64angle): boolean
+---@operator eq(f64angle): boolean
+local f64angle_type = {}
+
+---@class f64euler
+---@field Yaw f64angle
+---@field Pitch f64angle
+---@field Roll f64angle
+---@operator add(f64euler): f64euler
+---@operator sub(f64euler): f64euler
+---@operator unm(): f64euler
+---@operator eq(f64euler): boolean
+local f64euler_type = {}
+
+---@class f64euler
+---@operator mul(f64angle): f64euler    -- scalar multiply (wrapped)
+---@operator div(f64angle): f64euler    -- scalar divide (wrapped)
+local f64euler_scalar = {}
+
+--- Creates an f64AngleSingle from degrees.
+---
+--- Accepts a Lua number, a Fixed64 (interpreted as degrees), a string,
+--- or an existing f64angle (returned as-is).
+---
+--- Cross-type arithmetic (f64angle + Number) is intentionally not supported —
+--- convert both sides to the same type first.
+---
+---@param value number|string|fixed64|f64angle
+---@return f64angle
+function f64angle(value) end
+
+--- Creates an f64Euler from three angles or numbers.
+---
+--- Each argument is converted to f64AngleSingle:
+--- numbers/Fixed64 are interpreted as degrees; existing f64angle values pass through.
+---
+---@param yaw number|fixed64|f64angle
+---@param pitch number|fixed64|f64angle
+---@param roll number|fixed64|f64angle
+---@return f64euler
+function f64euler(yaw, pitch, roll) end
+
+---@class f64anglelib
+local f64anglelib = {}
+
+--- Creates an f64AngleSingle from a radian value.
+---@param radians fixed64
+---@return f64angle
+function f64anglelib.from_radians(radians) end
+
+--- Creates an f64AngleSingle from a degree value.
+---@param degrees fixed64
+---@return f64angle
+function f64anglelib.from_degrees(degrees) end
+
+--- Wraps the angle to the range [-180°, 180°] ([-π, π] rad).
+---@param a f64angle
+---@return f64angle
+function f64anglelib.wrap(a) end
+
+--- Wraps the angle to the range [0°, 360°) ([0, 2π) rad).
+---@param a f64angle
+---@return f64angle
+function f64anglelib.wrap_positive(a) end
+
+--- Returns the smaller of two angles.
+---@param a f64angle
+---@param b f64angle
+---@return f64angle
+function f64anglelib.min(a, b) end
+
+--- Returns the larger of two angles.
+---@param a f64angle
+---@param b f64angle
+---@return f64angle
+function f64anglelib.max(a, b) end
+
+--- Returns the angle's value in degrees.
+---@param a f64angle
+---@return fixed64
+function f64anglelib.degrees(a) end
+
+--- Returns the angle's value in radians.
+---@param a f64angle
+---@return fixed64
+function f64anglelib.radians(a) end
+
+---@class f64eulerlib
+local f64eulerlib = {}
+
+--- Wraps each component (yaw, pitch, roll) to [-180°, 180°] ([-π, π] rad).
+---@param e f64euler
+---@return f64euler
+function f64eulerlib.wrap(e) end
+
+--- Wraps each component (yaw, pitch, roll) to [0°, 360°) ([0, 2π) rad).
+---@param e f64euler
+---@return f64euler
+function f64eulerlib.wrap_positive(e) end
+
+--- `type()` overloads for the new types.
+---
+--- type(f64angle(...))  → "f64angle"
+--- type(f64euler(...))  → "f64euler"
+---@overload fun(v: f64angle): "f64angle"
+---@overload fun(v: f64euler): "f64euler"
+function type(v) end

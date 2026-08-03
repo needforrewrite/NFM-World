@@ -1,4 +1,5 @@
-﻿using NFMWorldLibrary.Backend;
+﻿using Lua;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.AI;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.FixedMath;
@@ -6,17 +7,36 @@ using NFMWorldLibrary.Gamemodes;
 
 namespace NFMWorldLibrary;
 
-public interface IInGameCar : ICar
+[LuaObject]
+public partial interface IInGameCar : ICar
 {
+    [LuaMember("car_physics")]
     CarPhysics CarPhysics { get; }
+    
+    [LuaMember("control")]
     Control Control { get; }
+    
+    [LuaMember("current_checkpoint")]
     ushort CurrentCheckpoint { get; set; }
+    
+    [LuaMember("nlaps")]
     byte CurrentLap { get; set; } // mad.nlaps
+    
+    [LuaMember("clear")]
     int TotalCheckpoint { get; set; } // mad.clear
+    
+    [LuaMember("last_checkpoint_node")]
     int LastCheckpointNode { get; set; } // resets on new lap
+    
+    [LuaMember("placement")]
     int Placement { get; set; } // cp.pos
+    
+    [LuaMember("wasted")]
     bool Wasted { get; }
+    
     BaseAi? Bot { get; set; }
+    
+    [LuaMember("player")]
     PlayerParameters Player { get; }
 
     public event DamageFunc? DamagedX;

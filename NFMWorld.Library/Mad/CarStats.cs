@@ -1,44 +1,47 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
+using Lua;
 using MemoryPack;
-using NFMWorldLibrary.FixedMath;
 using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary;
 
 [MemoryPackable(GenerateType.VersionTolerant)]
+[LuaObject]
 public partial record struct CarStats
 {
-    [JsonPropertyName("swits"), MemoryPackOrder(0)] public Int3 Swits { get; init; }
-    [JsonPropertyName("acelf"), MemoryPackOrder(1)] public f64Vector3 Acelf { get; init; }
-    [JsonPropertyName("handb"), MemoryPackOrder(2)] public int Handb { get; init; }
-    [JsonPropertyName("airs"), MemoryPackOrder(3)] public fix64 Airs { get; init; }
-    [JsonPropertyName("airc"), MemoryPackOrder(4)] public int Airc { get; init; }
+    [JsonPropertyName("swits"), LuaMember("swits"), MemoryPackOrder(0)] public Int3 Swits { get; init; }
+    [JsonPropertyName("acelf"), LuaMember("acelf"), MemoryPackOrder(1)] public f64Vector3 Acelf { get; init; }
+    [JsonPropertyName("handb"), LuaMember("handb"), MemoryPackOrder(2)] public int Handb { get; init; }
+    [JsonPropertyName("airs"), LuaMember("airs"), MemoryPackOrder(3)] public fix64 Airs { get; init; }
+    [JsonPropertyName("airc"), LuaMember("airc"), MemoryPackOrder(4)] public int Airc { get; init; }
     // ReSharper disable once InconsistentNaming
     [JsonIgnore, MemoryPackOrder(5)] public int _deprecated_Turn { get; init; }
-    [JsonPropertyName("grip"), MemoryPackOrder(6)] public fix64 Grip { get; init; }
-    [JsonPropertyName("bounce"), MemoryPackOrder(7)] public fix64 Bounce { get; init; }
-    [JsonPropertyName("simag"), MemoryPackOrder(8)] public fix64 Simag { get; init; }
-    [JsonPropertyName("moment"), MemoryPackOrder(9)] public fix64 Moment { get; init; }
-    [JsonPropertyName("comprad"), MemoryPackOrder(10)] public fix64 Comprad { get; init; }
-    [JsonPropertyName("push"), MemoryPackOrder(11)] public fix64 Push { get; init; }
-    [JsonPropertyName("revpush"), MemoryPackOrder(12)] public fix64 Revpush { get; init; }
-    [JsonPropertyName("lift"), MemoryPackOrder(13)] public int Lift { get; init; }
-    [JsonPropertyName("revlift"), MemoryPackOrder(14)] public int Revlift { get; init; }
-    [JsonPropertyName("powerloss"), MemoryPackOrder(15)] public int Powerloss { get; init; }
-    [JsonPropertyName("flipy"), MemoryPackOrder(16)] public int Flipy { get; init; }
-    [JsonPropertyName("msquash"), MemoryPackOrder(17)] public int Msquash { get; init; }
-    [JsonPropertyName("clrad"), MemoryPackOrder(18)] public int Clrad { get; init; } 
-    [JsonPropertyName("dammult"), MemoryPackOrder(19)] public fix64 Dammult { get; init; }
-    [JsonPropertyName("maxmag"), MemoryPackOrder(20)] public int Maxmag { get; init; }
-    [JsonPropertyName("dishandle"), MemoryPackOrder(21)] public fix64 Dishandle { get; init; }
-    [JsonPropertyName("outdam"), MemoryPackOrder(22)] public fix64 Outdam { get; init; }
-    [JsonPropertyName("name"), MemoryPackOrder(23)] public string Name { get; init; }
-    [JsonPropertyName("enginsignature"), MemoryPackOrder(24)] public sbyte Enginsignature { get; init; }
-    [JsonPropertyName("turnradius"), MemoryPackOrder(25)] public int TurnRadius { get; set; }
-    [JsonPropertyName("roadgrip"), MemoryPackOrder(26)] public fix64? RoadGrip { get; set; }
-    [JsonPropertyName("offroadgrip"), MemoryPackOrder(27)] public fix64? OffRoadGrip { get; set; }
-    [JsonPropertyName("offtrackgrip"), MemoryPackOrder(28)] public fix64? OffTrackGrip { get; set; }
-    [JsonPropertyName("turn"), MemoryPackOrder(29)] public fix64 Turn { get; init; }
+    [JsonPropertyName("grip"), LuaMember("grip"), MemoryPackOrder(6)] public fix64 Grip { get; init; }
+    [JsonPropertyName("bounce"), LuaMember("bounce"), MemoryPackOrder(7)] public fix64 Bounce { get; init; }
+    [JsonPropertyName("simag"), LuaMember("simag"), MemoryPackOrder(8)] public fix64 Simag { get; init; }
+    [JsonPropertyName("moment"), LuaMember("moment"), MemoryPackOrder(9)] public fix64 Moment { get; init; }
+    [JsonPropertyName("comprad"), LuaMember("comprad"), MemoryPackOrder(10)] public fix64 Comprad { get; init; }
+    [JsonPropertyName("push"), LuaMember("push"), MemoryPackOrder(11)] public fix64 Push { get; init; }
+    [JsonPropertyName("revpush"), LuaMember("revpush"), MemoryPackOrder(12)] public fix64 Revpush { get; init; }
+    [JsonPropertyName("lift"), LuaMember("lift"), MemoryPackOrder(13)] public int Lift { get; init; }
+    [JsonPropertyName("revlift"), LuaMember("revlift"), MemoryPackOrder(14)] public int Revlift { get; init; }
+    [JsonPropertyName("powerloss"), LuaMember("powerloss"), MemoryPackOrder(15)] public int Powerloss { get; init; }
+    [JsonPropertyName("flipy"), LuaMember("flipy"), MemoryPackOrder(16)] public int Flipy { get; init; }
+    [JsonPropertyName("msquash"), LuaMember("msquash"), MemoryPackOrder(17)] public int Msquash { get; init; }
+    [JsonPropertyName("clrad"), LuaMember("clrad"), MemoryPackOrder(18)] public int Clrad { get; init; } 
+    [JsonPropertyName("dammult"), LuaMember("dammult"), MemoryPackOrder(19)] public fix64 Dammult { get; init; }
+    [JsonPropertyName("maxmag"), LuaMember("maxmag"), MemoryPackOrder(20)] public int Maxmag { get; init; }
+    [JsonPropertyName("dishandle"), LuaMember("dishandle"), MemoryPackOrder(21)] public fix64 Dishandle { get; init; }
+    [JsonPropertyName("outdam"), LuaMember("outdam"), MemoryPackOrder(22)] public fix64 Outdam { get; init; }
+    [JsonPropertyName("name"), LuaMember("name"), MemoryPackOrder(23)] public string Name { get; init; }
+    [JsonPropertyName("enginsignature"), LuaMember("enginsignature"), MemoryPackOrder(24)] public sbyte Enginsignature { get; init; }
+    [JsonPropertyName("turnradius"), LuaMember("turnradius"), MemoryPackOrder(25)] public int TurnRadius { get; set; }
+    [JsonPropertyName("roadgrip"), LuaMember("roadgrip"), MemoryPackOrder(26)] public fix64? RoadGrip { get; set; }
+    [JsonPropertyName("offroadgrip"), LuaMember("offroadgrip"), MemoryPackOrder(27)] public fix64? OffRoadGrip { get; set; }
+    [JsonPropertyName("offtrackgrip"), LuaMember("offtrackgrip"), MemoryPackOrder(28)] public fix64? OffTrackGrip { get; set; }
+    [JsonPropertyName("turn"), LuaMember("turn"), MemoryPackOrder(29)] public fix64 Turn { get; init; }
 
     /// <summary>
     /// Tornado Shark stats, used as a fallback if a car has incomplete or invalid stats in the rad file.
@@ -196,5 +199,173 @@ public partial record struct CarStats
         }
 
         return stats;
+    }
+}
+
+
+/// <summary>
+/// Represents a three dimensional mathematical vector.
+/// </summary>
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
+[LuaObject]
+public partial struct Int3 : IEquatable<Int3>
+{
+    /// <summary>
+    /// A <see cref="Int3"/> with all of its components set to zero.
+    /// </summary>
+    public static readonly Int3 Zero = new();
+
+    /// <summary>
+    /// The X unit <see cref="Int3"/> (1, 0, 0).
+    /// </summary>
+    public static readonly Int3 UnitX = new(1, 0, 0);
+
+    /// <summary>
+    /// The Y unit <see cref="Int3"/> (0, 1, 0).
+    /// </summary>
+    public static readonly Int3 UnitY = new(0, 1, 0);
+
+    /// <summary>
+    /// The Z unit <see cref="Int3"/> (0, 0, 1).
+    /// </summary>
+    public static readonly Int3 UnitZ = new(0, 0, 1);
+
+    /// <summary>
+    /// A <see cref="Int3"/> with all of its components set to one.
+    /// </summary>
+    public static readonly Int3 One = new(1, 1, 1);
+
+    /// <summary>
+    /// The X component of the vector.
+    /// </summary>
+    [JsonPropertyName("x")] public int X;
+
+    /// <summary>
+    /// The Y component of the vector.
+    /// </summary>
+    [JsonPropertyName("y")] public int Y;
+
+    /// <summary>
+    /// The Z component of the vector.
+    /// </summary>
+    [JsonPropertyName("z")] public int Z;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Int3"/> struct.
+    /// </summary>
+    /// <param name="value">The value that will be assigned to all components.</param>
+    public Int3(int value)
+    {
+        X = value;
+        Y = value;
+        Z = value;
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Int3"/> struct.
+    /// </summary>
+    /// <param name="x">Initial value for the X component of the vector.</param>
+    /// <param name="y">Initial value for the Y component of the vector.</param>
+    /// <param name="z">Initial value for the Z component of the vector.</param>
+    public Int3(int x, int y, int z)
+    {
+        X = x;
+        Y = y;
+        Z = z;
+    }
+    
+    /// <summary>
+    /// Tests for equality between two objects.
+    /// </summary>
+    /// <param name="left">The first value to compare.</param>
+    /// <param name="right">The second value to compare.</param>
+    /// <returns><c>true</c> if <paramref name="left"/> has the same value as <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+    public static bool operator ==(Int3 left, Int3 right)
+    {
+        return left.Equals(right);
+    }
+
+    /// <summary>
+    /// Tests for inequality between two objects.
+    /// </summary>
+    /// <param name="left">The first value to compare.</param>
+    /// <param name="right">The second value to compare.</param>
+    /// <returns><c>true</c> if <paramref name="left"/> has a different value than <paramref name="right"/>; otherwise, <c>false</c>.</returns>
+    public static bool operator !=(Int3 left, Int3 right)
+    {
+        return !left.Equals(right);
+    }
+    
+    /// <summary>
+    /// Returns a hash code for this instance.
+    /// </summary>
+    /// <returns>
+    /// A hash code for this instance, suitable for use in hashing algorithms and data structures like a hash table.
+    /// </returns>
+    public override readonly int GetHashCode()
+    {
+        return HashCode.Combine(X, Y, Z);
+    }
+
+    /// <summary>
+    /// Determines whether the specified <see cref="Int3"/> is equal to this instance.
+    /// </summary>
+    /// <param name="other">The <see cref="Int3"/> to compare with this instance.</param>
+    /// <returns>
+    /// <c>true</c> if the specified <see cref="Int3"/> is equal to this instance; otherwise, <c>false</c>.
+    /// </returns>
+    public readonly bool Equals(Int3 other)
+    {
+        return other.X == X && other.Y == Y && other.Z == Z;
+    }
+
+    /// <summary>
+    /// Determines whether the specified <see cref="object"/> is equal to this instance.
+    /// </summary>
+    /// <param name="value">The <see cref="object"/> to compare with this instance.</param>
+    /// <returns>
+    /// <c>true</c> if the specified <see cref="object"/> is equal to this instance; otherwise, <c>false</c>.
+    /// </returns>
+    public readonly override bool Equals(object? value)
+    {
+        return value is Int3 i && Equals(i);
+    }
+
+    public int this[int index]
+    {
+        get
+        {
+            return index switch
+            {
+                0 => X,
+                1 => Y,
+                2 => Z,
+                _ => ThrowArgumentOutOfRangeException()
+            };
+        }
+        set
+        {
+            switch (index)
+            {
+                case 0:
+                    X = value;
+                    return;
+                case 1:
+                    Y = value;
+                    return;
+                case 2:
+                    Z = value;
+                    return;
+                default:
+                    ThrowArgumentOutOfRangeException();
+                    return;
+            }
+        }
+    }
+
+    [DoesNotReturn]
+    private static int ThrowArgumentOutOfRangeException()
+    {
+        throw new ArgumentOutOfRangeException();
     }
 }

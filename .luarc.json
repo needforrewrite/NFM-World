@@ -1,0 +1,9 @@
+{
+    "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+    "workspace.library": [
+        "${workspaceFolder}/NFMWorld.Library/data/lua/library"
+    ],
+    "runtime.version": "Lua 5.2",
+    "hint.enable": true,
+    "type.checkTableShape": true
+}

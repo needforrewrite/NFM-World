@@ -1,4 +1,5 @@
 ﻿using Maxine.Extensions.Mathematics;
+using NFMWorldMath;
 
 namespace NFMWorldLibrary.Util;
 

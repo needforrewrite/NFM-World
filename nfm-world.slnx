@@ -48,6 +48,13 @@
   <Folder Name="/ImGui/">
     <Project Path="MonoGame.ImGuiNet/MonoGame.ImGuiNet/Monogame.ImGuiNet.csproj" />
   </Folder>
+  <Folder Name="/Lua-CSharp/">
+    <Project Path="Lua-CSharp/sandbox/ConsoleApp1/ConsoleApp1.csproj" />
+    <Project Path="Lua-CSharp/src/Lua.Annotations/Lua.Annotations.csproj" />
+    <Project Path="Lua-CSharp/src/Lua.SourceGenerator/Lua.SourceGenerator.csproj" />
+    <Project Path="Lua-CSharp/src/Lua/Lua.csproj" />
+    <Project Path="Lua-CSharp/tests/Lua.Tests/Lua.Tests.csproj" />
+  </Folder>
   <Folder Name="/Maxine.Extensions/">
     <Project Path="Maxine.Extensions/Maxine.Extensions.Mathematics.Tests/Maxine.Extensions.Mathematics.Tests.csproj" />
     <Project Path="Maxine.Extensions/Maxine.Extensions.Mathematics/Maxine.Extensions.Mathematics.csproj" />
@@ -86,6 +93,11 @@
   <Project Path="NFMWorld.GenerateHmacKey/NFMWorld.GenerateHmacKey.csproj" />
   <Project Path="NFMWorld.Library.Test/NFMWorld.Library.Test.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />
+  <Project Path="NFMWorld.Lua/NFMWorld.Lua.csproj" />
+  <Project Path="NFMWorld.LuaSourceGenerator.Test/NFMWorld.LuaSourceGenerator.Test.csproj" />
+  <Project Path="NFMWorld.LuaSourceGenerator.TestFixtures/NFMWorld.LuaSourceGenerator.TestFixtures.csproj" />
+  <Project Path="NFMWorld.LuaSourceGenerator/NFMWorld.LuaSourceGenerator.csproj" />
+  <Project Path="NFMWorld.Math/NFMWorld.Math.csproj" />
   <Project Path="NFMWorld.Multiplayer.Base/NFMWorld.Multiplayer.Base.csproj" />
   <Project Path="NFMWorld.NativeLibs/NFMWorld.NativeLibs.csproj" />
   <Project Path="NFMWorld.OpcodeSourceGen/NFMWorld.OpcodeSourceGen.csproj" />

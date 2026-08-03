@@ -1,4 +1,4 @@
-using NFMWorldLibrary;
+using NFMWorldMath;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
 

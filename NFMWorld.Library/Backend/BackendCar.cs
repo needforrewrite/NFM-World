@@ -120,7 +120,7 @@ public class BackendCar : BackendGameObject, IInGameCar
     public void Collide(IInGameCar otherCar)
     {
         var transaction = SentrySdk.StartTransaction("BackendCar.Collide", "car-collide");
-        CarPhysics.Collide(this, otherCar.CarPhysics, new ContO(otherCar));
+        CarPhysics.Collide(this, otherCar.CarPhysics, otherCar);
         transaction.Finish();
     }
 
