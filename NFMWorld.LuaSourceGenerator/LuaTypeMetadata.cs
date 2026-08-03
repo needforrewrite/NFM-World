@@ -88,10 +88,69 @@ internal sealed class LuaTypeMetadata
 
     private LuaMethodMetadata[] CollectMethods(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic, INamedTypeSymbol? owningType = null)
     {
-        return members.OfType<IMethodSymbol>()
+        var methods = members.OfType<IMethodSymbol>()
             .Where(m => m.IsStatic == isStatic && m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared && !HasAttr(m, hiddenAttr))
             .Where(m => !m.Parameters.Any(p => p.RefKind != RefKind.None)) // skip ref/out/in parameters
             .Select(m => new LuaMethodMetadata(m, isExtension: m.IsExtensionMethod, owningType)).ToArray();
+
+        // Assign overload suffixes: for groups with >1 method sharing the same LuaName,
+        // the first keeps the base name (no suffix), subsequent get a parameter-type-based suffix.
+        foreach (var group in methods.GroupBy(m => m.LuaName).Where(g => g.Count() > 1))
+        {
+            var first = true;
+            foreach (var m in group)
+            {
+                if (first) { first = false; continue; }
+                m.OverloadSuffix = "_" + string.Join("_", m.Parameters.Select(p => ParamSuffix(p)));
+            }
+        }
+
+        return methods;
+    }
+
+    /// <summary>Short Lua-friendly type name for overload suffix generation.</summary>
+    private static string ParamSuffix(LuaParameterMetadata p)
+    {
+        var typeName = p.Type;
+        // Detect arrays: "int[]" → "intArray", "float[,]" → "floatArray"
+        var isArray = typeName.EndsWith("]");
+        // For StructUserData-wrapped types, unwrap to short type name
+        var baseSuffix = p.NeedsStructUserData
+            ? CamelCase(ShortTypeName(typeName))
+            : ParamSuffixFromTypeName(typeName);
+        return isArray ? baseSuffix + "Array" : baseSuffix;
+    }
+
+    /// <summary>Short type suffix for a C# type name string (handles primitives, nullables, generics).</summary>
+    private static string ParamSuffixFromTypeName(string typeName)
+    {
+        // Map primitives to short names
+        var simple = typeName switch
+        {
+            "int" => "int", "long" => "long", "float" => "flt", "double" => "dbl",
+            "bool" => "bool", "string" => "str", "byte" => "byte", "sbyte" => "sbyte",
+            "short" => "short", "ushort" => "ushort", "uint" => "uint", "ulong" => "ulong",
+            "decimal" => "dec", "char" => "char", "object" => "obj",
+            _ => null
+        };
+        if (simple != null) return simple;
+        // For nullable types, unwrap: "int?" → "int"
+        if (typeName.EndsWith("?")) return ParamSuffixFromTypeName(typeName.Substring(0, typeName.Length - 1));
+        // Fallback: use the short type name
+        return CamelCase(ShortTypeName(typeName));
+    }
+
+    private static string CamelCase(string n) => n.Length > 0 ? char.ToLowerInvariant(n[0]) + n[1..] : n;
+
+    private static string ShortTypeName(string fullName)
+    {
+        // Strip generic args for the base name: "System.Collections.Generic.List<int>" → "List"
+        var name = fullName.Contains('<') ? fullName.Substring(0, fullName.IndexOf('<')) : fullName;
+        // Take last segment after '.'
+        var lastDot = name.LastIndexOf('.');
+        var shortName = lastDot >= 0 ? name.Substring(lastDot + 1) : name;
+        // Sanitize: replace invalid C# identifier chars for use in function names
+        return shortName.Replace("[", "").Replace("]", "").Replace("*", "Ptr");
     }
 
     private LuaPropertyMetadata[] CollectProperties(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic)
@@ -151,6 +210,10 @@ internal sealed class LuaMethodMetadata
     public string? ImplementationSourceType { get; }
     /// <summary>True if this method is declared on a different type than the current one (virtual override or interface impl).</summary>
     public bool IsInherited => ImplementationSourceType != null && ImplementationSourceType != DeclaringType;
+    /// <summary>Suffix for overload disambiguation (e.g. "_int", "_string_int"). Empty for non-overloaded or first overload.</summary>
+    public string OverloadSuffix { get; set; } = "";
+    /// <summary>Full Lua-visible name including overload suffix.</summary>
+    public string FullLuaName => OverloadSuffix.Length > 0 ? LuaName + OverloadSuffix : LuaName;
 
     public LuaMethodMetadata(IMethodSymbol s, bool isExtension, INamedTypeSymbol? owningType = null)
     {
@@ -204,7 +267,7 @@ internal sealed class LuaParameterMetadata(IParameterSymbol p)
         .Replace("global::", "");
     /// <summary>True if this type needs StructUserData wrapping (not ILuaUserData, not primitive, not FixedMath).</summary>
     public bool NeedsStructUserData => !IsPrimitiveOrSpecial(Type);
-    
+
     private static bool IsPrimitiveOrSpecial(string t) => t switch
     {
         "int" or "long" or "float" or "double" or "bool" or "string" or "object" or "void"

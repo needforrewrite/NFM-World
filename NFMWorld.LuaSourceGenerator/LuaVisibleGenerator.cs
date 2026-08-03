@@ -29,7 +29,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             if (references == null) return;
 
             var generatedTypes = new List<LuaTypeMetadata>();
-            var externalTypes = new HashSet<string>();
+            var externalTypeSymbols = new Dictionary<string, ITypeSymbol>(); // displayName → symbol
             var seenHints = new HashSet<string>();
 
             foreach (var attrCtx in typeContexts)
@@ -40,8 +40,8 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
 
                 generatedTypes.Add(typeMeta);
 
-                // Collect external types from methods, properties, fields
-                CollectExternalTypes(typeMeta, externalTypes);
+                // Collect external type symbols from methods, properties, fields
+                CollectExternalTypeSymbols(typeMeta, externalTypeSymbols);
             }
 
             // Build set of known LuaVisible types (full names) for StructUserData wrapping decisions
@@ -60,13 +60,15 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                     spc.AddSource(fullHint, code);
             }
 
-            // Generate StructUserData metatables for external types
-            foreach (var extType in externalTypes)
+            // Generate StructUserData metatables for external types (using resolved ITypeSymbol)
+            foreach (var kvp in externalTypeSymbols)
             {
-                var code = GenerateStructUserDataMetatable(extType, compilation, references);
+                var displayName = kvp.Key;
+                var typeSymbol = kvp.Value;
+                var code = GenerateStructUserDataMetatable(displayName, typeSymbol, compilation);
                 if (code != null)
                 {
-                    var hintName = SanitizeHint(extType);
+                    var hintName = SanitizeHint(displayName);
                     var fullHint = $"StructUserData_Metatable_{hintName}.g.cs";
                     if (seenHints.Add(fullHint))
                         spc.AddSource(fullHint, code);
@@ -75,18 +77,40 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         });
     }
 
-    private static void CollectExternalTypes(LuaTypeMetadata typeMeta, HashSet<string> externalTypes)
+    private static void CollectExternalTypeSymbols(LuaTypeMetadata typeMeta, Dictionary<string, ITypeSymbol> externalTypes)
     {
-        foreach (var m in typeMeta.InstanceMethods)
+        var symbol = typeMeta.Symbol;
+
+        // Instance methods — return types and parameters
+        foreach (var m in symbol.GetMembers().OfType<IMethodSymbol>()
+            .Where(m => !m.IsStatic && m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared))
         {
+            TryAddExternalType(externalTypes, m.ReturnType);
             foreach (var p in m.Parameters)
-                if (p.NeedsStructUserData) externalTypes.Add(p.Type);
-            if (NeedsStructWrap(m.ReturnType)) externalTypes.Add(m.ReturnType);
+                TryAddExternalType(externalTypes, p.Type);
         }
-        foreach (var p in typeMeta.InstanceProperties)
-            if (NeedsStructWrap(p.PropertyType)) externalTypes.Add(p.PropertyType);
-        foreach (var f in typeMeta.InstanceFields)
-            if (NeedsStructWrap(f.FieldType)) externalTypes.Add(f.FieldType);
+
+        // Instance properties (no indexers)
+        foreach (var p in symbol.GetMembers().OfType<IPropertySymbol>()
+            .Where(p => !p.IsStatic && !p.IsIndexer && !p.IsImplicitlyDeclared))
+        {
+            TryAddExternalType(externalTypes, p.Type);
+        }
+
+        // Instance fields
+        foreach (var f in symbol.GetMembers().OfType<IFieldSymbol>()
+            .Where(f => !f.IsStatic && !f.IsImplicitlyDeclared))
+        {
+            TryAddExternalType(externalTypes, f.Type);
+        }
+    }
+
+    private static void TryAddExternalType(Dictionary<string, ITypeSymbol> dict, ITypeSymbol type)
+    {
+        var displayName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+        if (dict.ContainsKey(displayName)) return;
+        if (!NeedsStructWrap(displayName)) return;
+        dict[displayName] = type;
     }
 
     private static bool NeedsStructWrap(string t)
@@ -104,17 +128,20 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         return true;
     }
 
-    private static string? GenerateStructUserDataMetatable(string typeName, Compilation compilation, SymbolReferences references)
+    private static string? GenerateStructUserDataMetatable(string typeName, ITypeSymbol? typeSymbol, Compilation compilation)
     {
         // Skip true tuple types at the top level
         var baseName = typeName.Contains('<') ? typeName.Substring(0, typeName.IndexOf('<')) : typeName;
         if (baseName.StartsWith("(") || baseName == "System.ValueTuple" || baseName == "System.Tuple")
             return null;
 
-        var symbol = compilation.GetTypeByMetadataName(typeName);
+        // Prefer the already-resolved symbol (handles constructed generics like List<int>)
+        // Fall back to metadata name lookup for simple named types
+        // Otherwise fall back to reflection-based metatable
+        INamedTypeSymbol? symbol = typeSymbol as INamedTypeSymbol
+            ?? compilation.GetTypeByMetadataName(typeName);
         if (symbol == null)
         {
-            // For types we can't resolve (arrays, constructed generics), generate a minimal fallback metatable
             return GenerateFallbackMetatable(typeName);
         }
 

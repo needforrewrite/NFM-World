@@ -97,18 +97,11 @@ internal sealed class LuaBindingTypeGenerator
     // ---------------------------------------------------------------
     private void StaticMethods(CodeBuilder sb, int i)
     {
-        var seen = new System.Collections.Generic.Dictionary<string, int>();
         foreach (var m in _type.StaticMethods)
         {
-            var baseName = m.LuaName;
-            seen.TryGetValue(baseName, out var overloadIdx);
-            seen[baseName] = overloadIdx + 1;
-            // Use overloaded suffix for duplicates: "foo", "foo_2", "foo_3", etc.
-            var uniqueName = overloadIdx == 0 ? baseName : $"{baseName}_{overloadIdx + 1}";
-
             var ret = m.ReturnType == "void";
             var paramList = m.Parameters;
-            W(sb, i, $"internal static readonly Lua.LuaFunction __function_static_{uniqueName} = new(\"{m.LuaName}\", (context, ct) =>");
+            W(sb, i, $"internal static readonly Lua.LuaFunction __function_static_{m.FullLuaName} = new(\"{m.LuaName}\", (context, ct) =>");
             W(sb, i, "{");
             var b = i + 1;
             for (var pi = 0; pi < paramList.Length; pi++)
@@ -125,14 +118,12 @@ internal sealed class LuaBindingTypeGenerator
     }
     private void Methods(CodeBuilder sb, int i)
     {
-        var seen = new HashSet<string>();
         foreach (var m in _type.InstanceMethods)
         {
-            if (!seen.Add(m.LuaName)) continue;
             if (m.IsInherited) continue;
 
             var ret = m.ReturnType == "void";
-            W(sb, i, $"internal static readonly Lua.LuaFunction __function_{m.LuaName} = new(\"{m.LuaName}\", (context, ct) =>");
+            W(sb, i, $"internal static readonly Lua.LuaFunction __function_{m.FullLuaName} = new(\"{m.LuaName}\", (context, ct) =>");
             W(sb, i, "{");
             var b = i + 1;
             W(sb, b, $"var userData = context.GetArgument<{TypeRef(_type.FullTypeName)}>(0);");
@@ -189,12 +180,14 @@ internal sealed class LuaBindingTypeGenerator
         W(sb, b, "{"); var body = b + 1;
         foreach (var f in _type.InstanceFields) W(sb, body, $"if (stringKey == \"{f.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + f.Name, f.FieldType)}));");
         foreach (var p in _type.InstanceProperties.Where(x => x.HasGetter)) W(sb, body, $"if (stringKey == \"{p.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + p.Name, p.PropertyType)}));");
+        var seenMethods = new HashSet<string>();
         foreach (var m in _type.InstanceMethods)
         {
+            if (!seenMethods.Add(m.FullLuaName)) continue;
             if (m.IsInherited)
-                W(sb, body, $"if (stringKey == \"{m.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return(new Lua.LuaValue({m.ImplementationSourceType}.__Cache.__function_{m.LuaName})));");
+                W(sb, body, $"if (stringKey == \"{m.FullLuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return(new Lua.LuaValue({m.ImplementationSourceType}.__Cache.__function_{m.FullLuaName})));");
             else
-                W(sb, body, $"if (stringKey == \"{m.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return(new Lua.LuaValue(__Cache.__function_{m.LuaName})));");
+                W(sb, body, $"if (stringKey == \"{m.FullLuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return(new Lua.LuaValue(__Cache.__function_{m.FullLuaName})));");
         }
         foreach (var evt in _type.InstanceEvents) { W(sb, body, $"if (stringKey == \"add_{evt.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return(new Lua.LuaValue(__Cache.__function_{evt.Name}_add)));"); W(sb, body, $"if (stringKey == \"remove_{evt.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return(new Lua.LuaValue(__Cache.__function_{evt.Name}_remove)));"); }
         W(sb, body, "return new System.Threading.Tasks.ValueTask<int>(context.Return(Lua.LuaValue.Nil));");
@@ -271,7 +264,7 @@ internal sealed class LuaBindingTypeGenerator
             W(sb, gb, "__Cache.__metatable[Lua.Runtime.Metamethods.Index] = __Cache.__metamethod_index;");
             W(sb, gb, "__Cache.__metatable[Lua.Runtime.Metamethods.NewIndex] = __Cache.__metamethod_newindex;");
             foreach (var m in _type.InstanceMethods.Where(m => !m.IsInherited))
-                W(sb, gb, $"__Cache.__metatable[\"{m.LuaName}\"] = new Lua.LuaValue(__Cache.__function_{m.LuaName});");
+                W(sb, gb, $"__Cache.__metatable[\"{m.FullLuaName}\"] = new Lua.LuaValue(__Cache.__function_{m.FullLuaName});");
             foreach (var evt in _type.InstanceEvents) { W(sb, gb, $"__Cache.__metatable[\"add_{evt.LuaName}\"] = new Lua.LuaValue(__Cache.__function_{evt.Name}_add);"); W(sb, gb, $"__Cache.__metatable[\"remove_{evt.LuaName}\"] = new Lua.LuaValue(__Cache.__function_{evt.Name}_remove);"); }
         }
         W(sb, gb, "return __Cache.__metatable;");
@@ -316,11 +309,7 @@ internal sealed class LuaBindingTypeGenerator
 
         foreach (var m in _type.StaticMethods)
         {
-            // Determine unique internal name (consistent with StaticMethods)
-            var baseName = m.LuaName;
-            var overloadIdx = _type.StaticMethods.TakeWhile(x => x != m).Count(x => x.LuaName == baseName);
-            var uniqueName = overloadIdx == 0 ? baseName : $"{baseName}_{overloadIdx + 1}";
-            W(sb, gb, $"__Cache.__typeTable[\"{m.LuaName}\"] = new Lua.LuaValue(__Cache.__function_static_{uniqueName});");
+            W(sb, gb, $"__Cache.__typeTable[\"{m.FullLuaName}\"] = new Lua.LuaValue(__Cache.__function_static_{m.FullLuaName});");
         }
 
         foreach (var evt in _type.StaticEvents)
