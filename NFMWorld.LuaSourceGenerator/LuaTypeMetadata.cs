@@ -24,6 +24,11 @@ internal sealed class LuaTypeMetadata
     public LuaFieldMetadata[] InstanceFields { get; }
     public LuaEventMetadata[] InstanceEvents { get; }
     public LuaMethodMetadata[] Operators { get; }
+    public LuaMethodMetadata[] StaticMethods { get; }
+    public LuaPropertyMetadata[] StaticProperties { get; }
+    public LuaFieldMetadata[] StaticFields { get; }
+    public LuaEventMetadata[] StaticEvents { get; }
+    public LuaConstructorMetadata[] Constructors { get; }
 
     public LuaTypeMetadata(INamedTypeSymbol symbol, SymbolReferences references, Compilation compilation)
     {
@@ -58,9 +63,10 @@ internal sealed class LuaTypeMetadata
         var isConstructedGeneric = symbol.IsGenericType && symbol.TypeArguments.Length > 0
             && !symbol.IsDefinition; // List<int>, not List<>
         var isOpenGeneric = symbol.IsGenericType && symbol.IsDefinition; // List<>, GenericWrapper<>
-        IsExternal = symbol.IsSealed || isConstructedGeneric
+        IsExternal = (symbol.IsSealed && !IsStatic) || isConstructedGeneric
             || FullTypeName.StartsWith("System.");
-        IsCandidate = !isArray && !isRefStruct && !IsStatic && !IsExternal && !isOpenGeneric
+        // Static classes are candidates too (they get a type table only)
+        IsCandidate = !isArray && !isRefStruct && !IsExternal && !isOpenGeneric
             && FullTypeName != "System.Object";
 
         var hiddenAttr = references.LuaHiddenAttribute;
@@ -73,6 +79,11 @@ internal sealed class LuaTypeMetadata
         InstanceProperties = CollectProperties(members, hiddenAttr, isStatic: false);
         InstanceFields = CollectFields(members, hiddenAttr, isStatic: false);
         InstanceEvents = CollectEvents(members, hiddenAttr, isStatic: false);
+        StaticMethods = CollectMethods(members, hiddenAttr, isStatic: true, symbol);
+        StaticProperties = CollectProperties(members, hiddenAttr, isStatic: true);
+        StaticFields = CollectFields(members, hiddenAttr, isStatic: true);
+        StaticEvents = CollectEvents(members, hiddenAttr, isStatic: true);
+        Constructors = IsStatic ? System.Array.Empty<LuaConstructorMetadata>() : CollectConstructors(symbol, hiddenAttr);
     }
 
     private LuaMethodMetadata[] CollectMethods(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic, INamedTypeSymbol? owningType = null)
@@ -109,6 +120,22 @@ internal sealed class LuaTypeMetadata
 
     private static AttributeData? GetAttr(ISymbol s, INamedTypeSymbol? attr)
         => attr != null ? s.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attr)) : null;
+
+    private static LuaConstructorMetadata[] CollectConstructors(INamedTypeSymbol symbol, INamedTypeSymbol? hiddenAttr)
+    {
+        return symbol.Constructors
+            .Where(c => !c.IsImplicitlyDeclared && !c.IsStatic && c.DeclaredAccessibility == Accessibility.Public && !HasAttr(c, hiddenAttr))
+            .Select(c => new LuaConstructorMetadata(c)).ToArray();
+    }
+}
+
+internal sealed class LuaConstructorMetadata
+{
+    public LuaParameterMetadata[] Parameters { get; }
+    public LuaConstructorMetadata(IMethodSymbol c)
+    {
+        Parameters = c.Parameters.Select(p => new LuaParameterMetadata(p)).ToArray();
+    }
 }
 
 internal sealed class LuaMethodMetadata
@@ -182,6 +209,10 @@ internal sealed class LuaParameterMetadata(IParameterSymbol p)
     {
         "int" or "long" or "float" or "double" or "bool" or "string" or "object" or "void"
             or "byte" or "sbyte" or "short" or "ushort" or "uint" or "ulong" or "decimal"
+            => true,
+        // Nullable value types are marshalled as "value or nil", not StructUserData
+        "int?" or "long?" or "float?" or "double?" or "bool?"
+            or "byte?" or "sbyte?" or "short?" or "ushort?" or "uint?" or "ulong?" or "decimal?" or "char?"
             => true,
         _ => t.Contains("Fixed64") || t.Contains("Vector3d") || t.Contains("f64AngleSingle") || t.Contains("f64Euler")
     };

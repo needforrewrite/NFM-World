@@ -30,6 +30,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
 
             var generatedTypes = new List<LuaTypeMetadata>();
             var externalTypes = new HashSet<string>();
+            var seenHints = new HashSet<string>();
 
             foreach (var attrCtx in typeContexts)
             {
@@ -43,13 +44,20 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                 CollectExternalTypes(typeMeta, externalTypes);
             }
 
+            // Build set of known LuaVisible types (full names) for StructUserData wrapping decisions
+            var luaVisibleFullNames = new HashSet<string>();
+            foreach (var typeMeta in generatedTypes)
+                luaVisibleFullNames.Add(typeMeta.FullTypeName);
+
             // Generate ILuaUserData partials for [LuaVisible] types
             foreach (var typeMeta in generatedTypes)
             {
-                var typeGen = new LuaBindingTypeGenerator(typeMeta);
+                var typeGen = new LuaBindingTypeGenerator(typeMeta, luaVisibleFullNames);
                 var code = typeGen.GenerateCode();
                 var hintName = SanitizeHint(typeMeta.FullTypeName);
-                spc.AddSource($"{hintName}.LuaVisible.g.cs", code);
+                var fullHint = $"{hintName}.LuaVisible.g.cs";
+                if (seenHints.Add(fullHint))
+                    spc.AddSource(fullHint, code);
             }
 
             // Generate StructUserData metatables for external types
@@ -59,7 +67,9 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                 if (code != null)
                 {
                     var hintName = SanitizeHint(extType);
-                    spc.AddSource($"StructUserData_Metatable_{hintName}.g.cs", code);
+                    var fullHint = $"StructUserData_Metatable_{hintName}.g.cs";
+                    if (seenHints.Add(fullHint))
+                        spc.AddSource(fullHint, code);
                 }
             }
         });
@@ -84,15 +94,22 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         if (t is "int" or "long" or "float" or "double" or "bool" or "string" or "object" or "void"
             or "byte" or "sbyte" or "short" or "ushort" or "uint" or "ulong" or "decimal" or "char")
             return false;
+        if (t.EndsWith("?") || t.StartsWith("System.Nullable<")) return false; // nullable types
         if (t.Contains("Fixed64") || t.Contains("Vector3d") || t.Contains("f64AngleSingle") || t.Contains("f64Euler"))
+            return false;
+        // Only skip true tuple types — check outermost type name (before any '<')
+        var baseName = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        if (baseName.StartsWith("(") || baseName == "System.ValueTuple" || baseName == "System.Tuple")
             return false;
         return true;
     }
 
     private static string? GenerateStructUserDataMetatable(string typeName, Compilation compilation, SymbolReferences references)
     {
-        // Skip types that can't be cleanly sanitized
-        if (typeName.Contains('(') || typeName.Contains(')')) return null;
+        // Skip true tuple types at the top level
+        var baseName = typeName.Contains('<') ? typeName.Substring(0, typeName.IndexOf('<')) : typeName;
+        if (baseName.StartsWith("(") || baseName == "System.ValueTuple" || baseName == "System.Tuple")
+            return null;
 
         var symbol = compilation.GetTypeByMetadataName(typeName);
         if (symbol == null)
@@ -219,9 +236,12 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
     }
 
     private static string SanitizeHint(string name) =>
-        name.Replace("global::", "").Replace("<", "_").Replace(">", "_")
-            .Replace("?", "_Nullable").Replace("[]", "Array").Replace(",", "_")
-            .Replace(" ", "").Replace("*", "Ptr").Replace(".", "_");
+        name.Replace("global::", "").Replace("[]", "Array")
+            .Replace("<", "_").Replace(">", "_")
+            .Replace("(", "_").Replace(")", "_")
+            .Replace("[", "_").Replace("]", "_").Replace("*", "Ptr_")
+            .Replace("?", "_Nullable").Replace(",", "_")
+            .Replace(" ", "").Replace(".", "_");
 
     private static string? GenerateFallbackMetatable(string typeName)
     {
@@ -237,7 +257,9 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         sb.AppendLine("    internal static readonly LuaTable Metatable;");
         sb.AppendLine($"    static StructUserData_Metatable_{safeName}()");
         sb.AppendLine("    {");
-        sb.AppendLine("        Metatable = new LuaTable(0, 2);");
+        sb.AppendLine("        Metatable = new LuaTable(0, 3);");
+        sb.AppendLine();
+        // __index
         sb.AppendLine("        Metatable[Metamethods.Index] = new LuaFunction(\"__index\", (context, ct) =>");
         sb.AppendLine("        {");
         sb.AppendLine($"            var wrapper = context.GetArgument<StructUserData<{typeName}>>(0);");
@@ -245,13 +267,24 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         sb.AppendLine("            if (key.TryRead<double>(out var n) && double.IsFinite(n) && n >= 1.0 && n <= int.MaxValue)");
         sb.AppendLine("            {");
         sb.AppendLine("                var i = (int)n - 1;");
-        sb.AppendLine("                if (wrapper.Value is System.Array arr && (uint)i < (uint)arr.Length)");
+        sb.AppendLine($"                var obj = (object)wrapper.Value;");
+        sb.AppendLine("                if (obj is System.Array arr && (uint)i < (uint)arr.Length)");
         sb.AppendLine("                    return new(context.Return(Lua.LuaValue.FromObject(arr.GetValue(i))));");
-        sb.AppendLine("                if (wrapper.Value is System.Collections.IList list && (uint)i < (uint)list.Count)");
+        sb.AppendLine("                if (obj is System.Collections.IList list && (uint)i < (uint)list.Count)");
         sb.AppendLine("                    return new(context.Return(Lua.LuaValue.FromObject(list[i])));");
+        sb.AppendLine("            }");
+        sb.AppendLine("            if (key.TryRead<string>(out var sk))");
+        sb.AppendLine("            {");
+        sb.AppendLine("                var obj = (object)wrapper.Value;");
+        sb.AppendLine("                var fi = obj.GetType().GetField(sk);");
+        sb.AppendLine("                if (fi != null) return new(context.Return(Lua.LuaValue.FromObject(fi.GetValue(obj))));");
+        sb.AppendLine("                var pi = obj.GetType().GetProperty(sk);");
+        sb.AppendLine("                if (pi != null) return new(context.Return(Lua.LuaValue.FromObject(pi.GetValue(obj))));");
         sb.AppendLine("            }");
         sb.AppendLine("            return new(context.Return(LuaValue.Nil));");
         sb.AppendLine("        });");
+        sb.AppendLine();
+        // __tostring
         sb.AppendLine("        Metatable[Metamethods.ToString] = new LuaFunction(\"__tostring\", (context, ct) =>");
         sb.AppendLine("        {");
         sb.AppendLine($"            var wrapper = context.GetArgument<StructUserData<{typeName}>>(0);");
