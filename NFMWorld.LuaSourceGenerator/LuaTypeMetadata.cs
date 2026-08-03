@@ -63,7 +63,7 @@ internal sealed class LuaTypeMetadata
         var isConstructedGeneric = symbol.IsGenericType && symbol.TypeArguments.Length > 0
             && !symbol.IsDefinition; // List<int>, not List<>
         var isOpenGeneric = symbol.IsGenericType && symbol.IsDefinition; // List<>, GenericWrapper<>
-        IsExternal = (symbol.IsSealed && !IsStatic) || isConstructedGeneric
+        IsExternal = (symbol.IsSealed && !IsStatic && !IsValueType) || isConstructedGeneric
             || FullTypeName.StartsWith("System.");
         // Static classes are candidates too (they get a type table only)
         IsCandidate = !isArray && !isRefStruct && !IsExternal && !isOpenGeneric
@@ -84,6 +84,17 @@ internal sealed class LuaTypeMetadata
         StaticFields = CollectFields(members, hiddenAttr, isStatic: true);
         StaticEvents = CollectEvents(members, hiddenAttr, isStatic: true);
         Constructors = IsStatic ? System.Array.Empty<LuaConstructorMetadata>() : CollectConstructors(symbol, hiddenAttr);
+
+        // Assign overload suffixes to constructors (all are "new" overloads)
+        if (Constructors.Length > 1)
+        {
+            var first = true;
+            foreach (var c in Constructors)
+            {
+                if (first) { first = false; continue; }
+                c.OverloadSuffix = "_" + string.Join("_", c.Parameters.Select(p => ParamSuffix(p)));
+            }
+        }
     }
 
     private LuaMethodMetadata[] CollectMethods(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic, INamedTypeSymbol? owningType = null)
@@ -134,8 +145,8 @@ internal sealed class LuaTypeMetadata
             _ => null
         };
         if (simple != null) return simple;
-        // For nullable types, unwrap: "int?" → "int"
-        if (typeName.EndsWith("?")) return ParamSuffixFromTypeName(typeName.Substring(0, typeName.Length - 1));
+        // For nullable types, unwrap: "int?" → "intn" (nullable)
+        if (typeName.EndsWith("?")) return ParamSuffixFromTypeName(typeName.Substring(0, typeName.Length - 1)) + "n";
         // Fallback: use the short type name
         return CamelCase(ShortTypeName(typeName));
     }
@@ -150,7 +161,7 @@ internal sealed class LuaTypeMetadata
         var lastDot = name.LastIndexOf('.');
         var shortName = lastDot >= 0 ? name.Substring(lastDot + 1) : name;
         // Sanitize: replace invalid C# identifier chars for use in function names
-        return shortName.Replace("[", "").Replace("]", "").Replace("*", "Ptr");
+        return shortName.Replace("[", "").Replace("]", "").Replace(",", "_").Replace("*", "Ptr");
     }
 
     private LuaPropertyMetadata[] CollectProperties(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic)
@@ -191,6 +202,10 @@ internal sealed class LuaTypeMetadata
 internal sealed class LuaConstructorMetadata
 {
     public LuaParameterMetadata[] Parameters { get; }
+    /// <summary>Suffix for overload disambiguation (e.g. "_int_string"). Empty for first/only constructor.</summary>
+    public string OverloadSuffix { get; set; } = "";
+    /// <summary>Full Lua-visible name: "new" + overload suffix.</summary>
+    public string FullLuaNew => OverloadSuffix.Length > 0 ? "new" + OverloadSuffix : "new";
     public LuaConstructorMetadata(IMethodSymbol c)
     {
         Parameters = c.Parameters.Select(p => new LuaParameterMetadata(p)).ToArray();
@@ -284,7 +299,7 @@ internal sealed class LuaParameterMetadata(IParameterSymbol p)
 internal sealed class LuaPropertyMetadata(IPropertySymbol s)
 {
     public string Name { get; } = s.Name;
-    public string PropertyType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+    public string PropertyType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
     public bool HasGetter { get; } = s.GetMethod != null;
     public bool HasSetter { get; } = s.SetMethod != null;
     public string LuaName { get; } = s.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "LuaNameAttribute")
@@ -294,7 +309,7 @@ internal sealed class LuaPropertyMetadata(IPropertySymbol s)
 internal sealed class LuaFieldMetadata(IFieldSymbol s)
 {
     public string Name { get; } = s.Name;
-    public string FieldType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+    public string FieldType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
     public bool IsReadOnly { get; } = s.IsReadOnly;
     public string LuaName { get; } = s.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "LuaNameAttribute")
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);

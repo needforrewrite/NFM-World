@@ -39,15 +39,16 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                 if (!typeMeta.IsCandidate) continue;
 
                 generatedTypes.Add(typeMeta);
-
-                // Collect external type symbols from methods, properties, fields
-                CollectExternalTypeSymbols(typeMeta, externalTypeSymbols);
             }
 
             // Build set of known LuaVisible types (full names) for StructUserData wrapping decisions
             var luaVisibleFullNames = new HashSet<string>();
             foreach (var typeMeta in generatedTypes)
                 luaVisibleFullNames.Add(typeMeta.FullTypeName);
+
+            // Collect external type symbols, excluding types that are themselves [LuaVisible]
+            foreach (var typeMeta in generatedTypes)
+                CollectExternalTypeSymbols(typeMeta, externalTypeSymbols, luaVisibleFullNames);
 
             // Generate ILuaUserData partials for [LuaVisible] types
             foreach (var typeMeta in generatedTypes)
@@ -74,10 +75,17 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                         spc.AddSource(fullHint, code);
                 }
             }
+
+            // Generate per-assembly registration helper to register all type tables
+            if (generatedTypes.Count > 0)
+            {
+                var registryCode = GenerateTypeRegistry(generatedTypes);
+                spc.AddSource("LuaVisibleTypeRegistry.g.cs", registryCode);
+            }
         });
     }
 
-    private static void CollectExternalTypeSymbols(LuaTypeMetadata typeMeta, Dictionary<string, ITypeSymbol> externalTypes)
+    private static void CollectExternalTypeSymbols(LuaTypeMetadata typeMeta, Dictionary<string, ITypeSymbol> externalTypes, HashSet<string> luaVisibleFullNames)
     {
         var symbol = typeMeta.Symbol;
 
@@ -85,30 +93,32 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         foreach (var m in symbol.GetMembers().OfType<IMethodSymbol>()
             .Where(m => !m.IsStatic && m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared))
         {
-            TryAddExternalType(externalTypes, m.ReturnType);
+            TryAddExternalType(externalTypes, m.ReturnType, luaVisibleFullNames);
             foreach (var p in m.Parameters)
-                TryAddExternalType(externalTypes, p.Type);
+                TryAddExternalType(externalTypes, p.Type, luaVisibleFullNames);
         }
 
         // Instance properties (no indexers)
         foreach (var p in symbol.GetMembers().OfType<IPropertySymbol>()
             .Where(p => !p.IsStatic && !p.IsIndexer && !p.IsImplicitlyDeclared))
         {
-            TryAddExternalType(externalTypes, p.Type);
+            TryAddExternalType(externalTypes, p.Type, luaVisibleFullNames);
         }
 
         // Instance fields
         foreach (var f in symbol.GetMembers().OfType<IFieldSymbol>()
             .Where(f => !f.IsStatic && !f.IsImplicitlyDeclared))
         {
-            TryAddExternalType(externalTypes, f.Type);
+            TryAddExternalType(externalTypes, f.Type, luaVisibleFullNames);
         }
     }
 
-    private static void TryAddExternalType(Dictionary<string, ITypeSymbol> dict, ITypeSymbol type)
+    private static void TryAddExternalType(Dictionary<string, ITypeSymbol> dict, ITypeSymbol type, HashSet<string> luaVisibleFullNames)
     {
         var displayName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
         if (dict.ContainsKey(displayName)) return;
+        // Skip types that are themselves [LuaVisible] — they have their own metatable
+        if (luaVisibleFullNames.Contains(displayName)) return;
         if (!NeedsStructWrap(displayName)) return;
         dict[displayName] = type;
     }
@@ -208,15 +218,32 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         sb.AppendLine("            if (key.TryRead<string>(out var sk))");
         sb.AppendLine("            {");
         var hasWritable = false;
+        var isValueType = symbol.IsValueType;
         foreach (var p in props.Where(x => x.SetMethod != null))
         {
             hasWritable = true;
-            sb.AppendLine($"                if (sk == \"{Camel(p.Name)}\") {{ wrapper.Value.{p.Name} = val.Read<{p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}>(); return new(context.Return()); }}");
+            var typeStr = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (isValueType)
+            {
+                sb.AppendLine($"                if (sk == \"{Camel(p.Name)}\") {{ var __tmp = wrapper.Value; __tmp.{p.Name} = val.Read<{typeStr}>(); wrapper.Value = __tmp; return new(context.Return()); }}");
+            }
+            else
+            {
+                sb.AppendLine($"                if (sk == \"{Camel(p.Name)}\") {{ wrapper.Value.{p.Name} = val.Read<{typeStr}>(); return new(context.Return()); }}");
+            }
         }
         foreach (var f in fields.Where(x => !x.IsReadOnly))
         {
             hasWritable = true;
-            sb.AppendLine($"                if (sk == \"{Camel(f.Name)}\") {{ wrapper.Value.{f.Name} = val.Read<{f.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}>(); return new(context.Return()); }}");
+            var typeStr = f.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+            if (isValueType)
+            {
+                sb.AppendLine($"                if (sk == \"{Camel(f.Name)}\") {{ var __tmp = wrapper.Value; __tmp.{f.Name} = val.Read<{typeStr}>(); wrapper.Value = __tmp; return new(context.Return()); }}");
+            }
+            else
+            {
+                sb.AppendLine($"                if (sk == \"{Camel(f.Name)}\") {{ wrapper.Value.{f.Name} = val.Read<{typeStr}>(); return new(context.Return()); }}");
+            }
         }
         if (hasWritable)
             sb.AppendLine("                throw new LuaRuntimeException(context.State, $\"'{sk}' is read-only or not found.\");");
@@ -260,6 +287,26 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         if (typeName.Contains("Fixed64") || typeName.Contains("Vector3d") || typeName.Contains("f64AngleSingle") || typeName.Contains("f64Euler"))
             return $"({expr})";
         return $"Lua.LuaValue.FromObject({expr})";
+    }
+
+    private static string GenerateTypeRegistry(List<LuaTypeMetadata> generatedTypes)
+    {
+        var sb = new CodeBuilder();
+        sb.AppendLine("// <auto-generated />");
+        sb.AppendLine("using Lua;");
+        sb.AppendLine();
+        sb.AppendLine("internal static class LuaVisibleTypeRegistry");
+        sb.AppendLine("{");
+        sb.AppendLine("    public static void RegisterAll(LuaState state)");
+        sb.AppendLine("    {");
+        foreach (var t in generatedTypes.OrderBy(t => t.FullTypeName))
+        {
+            var luaName = t.LuaName;
+            sb.AppendLine($"        state.Environment[\"{luaName}\"] = {t.FullTypeName}.TypeTable;");
+        }
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+        return sb.ToString();
     }
 
     private static string SanitizeHint(string name) =>

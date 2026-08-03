@@ -55,7 +55,7 @@ internal sealed class LuaBindingTypeGenerator
         W(sb, i, "private static class __Cache");
         W(sb, i, "{");
         var b = i + 1;
-        if (!_type.IsStatic) { Methods(sb, b); Events(sb, b); Index(sb, b); NewIndex(sb, b); }
+        if (!_type.IsStatic) { Methods(sb, b); Events(sb, b); Index(sb, b); NewIndex(sb, b); Tostring(sb, b); }
         // Static members and constructors
         StaticMethods(sb, b);
         Constructors(sb, b);
@@ -73,12 +73,10 @@ internal sealed class LuaBindingTypeGenerator
         foreach (var ctor in _type.Constructors)
         {
             var paramList = ctor.Parameters;
-            var argDecls = string.Join(", ", Enumerable.Range(0, paramList.Length).Select(pi =>
-                $"{Ts(paramList[pi])} arg{pi}"));
             var argNames = string.Join(", ", Enumerable.Range(0, paramList.Length).Select(pi =>
                 paramList[pi].NeedsStructUserData ? $"arg{pi}.Value" : $"arg{pi}"));
 
-            W(sb, i, $"internal static readonly Lua.LuaFunction __function_new = new(\"new\", (context, ct) =>");
+            W(sb, i, $"internal static readonly Lua.LuaFunction __function_new{ctor.OverloadSuffix} = new(\"new\", (context, ct) =>");
             W(sb, i, "{");
             var b = i + 1;
             for (var pi = 0; pi < paramList.Length; pi++)
@@ -88,7 +86,6 @@ internal sealed class LuaBindingTypeGenerator
             W(sb, i, "}");
             W(sb, i, ");");
             sb.AppendLine();
-            break; // Only emit one constructor (first public one)
         }
     }
 
@@ -250,6 +247,20 @@ internal sealed class LuaBindingTypeGenerator
     }
 
     // ---------------------------------------------------------------
+    // __tostring
+    // ---------------------------------------------------------------
+    private void Tostring(CodeBuilder sb, int i)
+    {
+        W(sb, i, "internal static readonly Lua.LuaFunction __metamethod_tostring = new(\"tostring\", (context, ct) =>");
+        W(sb, i, "{");
+        W(sb, i + 1, $"var userData = context.GetArgument<{TypeRef(_type.FullTypeName)}>(0);");
+        W(sb, i + 1, $"return new System.Threading.Tasks.ValueTask<int>(context.Return($\"{_type.TypeName}: {{userData}}\"));");
+        W(sb, i, "}");
+        W(sb, i, ");");
+        sb.AppendLine();
+    }
+
+    // ---------------------------------------------------------------
     // Metatable property
     // ---------------------------------------------------------------
     private void Metatable(CodeBuilder sb, int i)
@@ -263,6 +274,7 @@ internal sealed class LuaBindingTypeGenerator
         {
             W(sb, gb, "__Cache.__metatable[Lua.Runtime.Metamethods.Index] = __Cache.__metamethod_index;");
             W(sb, gb, "__Cache.__metatable[Lua.Runtime.Metamethods.NewIndex] = __Cache.__metamethod_newindex;");
+            W(sb, gb, "__Cache.__metatable[Lua.Runtime.Metamethods.ToString] = __Cache.__metamethod_tostring;");
             foreach (var m in _type.InstanceMethods.Where(m => !m.IsInherited))
                 W(sb, gb, $"__Cache.__metatable[\"{m.FullLuaName}\"] = new Lua.LuaValue(__Cache.__function_{m.FullLuaName});");
             foreach (var evt in _type.InstanceEvents) { W(sb, gb, $"__Cache.__metatable[\"add_{evt.LuaName}\"] = new Lua.LuaValue(__Cache.__function_{evt.Name}_add);"); W(sb, gb, $"__Cache.__metatable[\"remove_{evt.LuaName}\"] = new Lua.LuaValue(__Cache.__function_{evt.Name}_remove);"); }
@@ -303,7 +315,10 @@ internal sealed class LuaBindingTypeGenerator
         W(sb, gb, "__Cache.__typeTable = new();");
 
         if (_type.Constructors.Length > 0)
-            W(sb, gb, "__Cache.__typeTable[\"new\"] = new Lua.LuaValue(__Cache.__function_new);");
+        {
+            foreach (var c in _type.Constructors)
+                W(sb, gb, $"__Cache.__typeTable[\"{c.FullLuaNew}\"] = new Lua.LuaValue(__Cache.__function_new{c.OverloadSuffix});");
+        }
         else if (_type.IsValueType)
             W(sb, gb, $"__Cache.__typeTable[\"new\"] = new Lua.LuaValue(new Lua.LuaFunction(\"new\", (context, ct) => new System.Threading.Tasks.ValueTask<int>(context.Return(Lua.LuaValue.FromUserData(new {_type.FullTypeName}())))));");
 
@@ -329,9 +344,11 @@ internal sealed class LuaBindingTypeGenerator
             W(sb, gb + 1, "}");
             W(sb, gb + 1, "return new System.Threading.Tasks.ValueTask<int>(context.Return(Lua.LuaValue.Nil));");
             W(sb, gb, "});");
-            W(sb, gb, "__Cache.__typeTable[Lua.Runtime.Metamethods.Index] = new Lua.LuaValue(__si);");
 
             var hasWritable = _type.StaticFields.Any(f => !f.IsReadOnly) || _type.StaticProperties.Any(p => p.HasSetter);
+            // Create a metatable for the TypeTable so __index/__newindex work via Lua's metatable mechanism
+            W(sb, gb, "var __typeMt = new Lua.LuaTable(0, " + (hasWritable ? "2" : "1") + ");");
+            W(sb, gb, "__typeMt[Lua.Runtime.Metamethods.Index] = new Lua.LuaValue(__si);");
             if (hasWritable)
             {
                 W(sb, gb, "var __sni = new Lua.LuaFunction(\"__newindex\", (context, ct) =>");
@@ -357,8 +374,9 @@ internal sealed class LuaBindingTypeGenerator
                 W(sb, gb + 1, "}");
                 W(sb, gb + 1, "throw new Lua.LuaRuntimeException(context.State, $\"'{sk}' is read-only or not found.\");");
                 W(sb, gb, "});");
-                W(sb, gb, "__Cache.__typeTable[Lua.Runtime.Metamethods.NewIndex] = new Lua.LuaValue(__sni);");
+                W(sb, gb, "__typeMt[Lua.Runtime.Metamethods.NewIndex] = new Lua.LuaValue(__sni);");
             }
+            W(sb, gb, "__Cache.__typeTable.Metatable = __typeMt;");
         }
 
         W(sb, gb, "return __Cache.__typeTable;");
