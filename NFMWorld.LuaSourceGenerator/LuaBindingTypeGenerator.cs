@@ -305,7 +305,8 @@ internal sealed class LuaBindingTypeGenerator
     private void TypeTable(CodeBuilder sb, int i)
     {
         var hasStatic = _type.StaticMethods.Length > 0 || _type.StaticProperties.Length > 0
-            || _type.StaticFields.Length > 0 || _type.Constructors.Length > 0 || _type.StaticEvents.Length > 0;
+            || _type.StaticFields.Length > 0 || _type.Constructors.Length > 0 || _type.StaticEvents.Length > 0
+            || _type.IsValueType || (!_type.IsStatic && !_type.IsInterface); // non-static, non-interface types get default new()
         if (!hasStatic) return;
 
         W(sb, i, "public static Lua.LuaTable TypeTable");
@@ -319,7 +320,7 @@ internal sealed class LuaBindingTypeGenerator
             foreach (var c in _type.Constructors)
                 W(sb, gb, $"__Cache.__typeTable[\"{c.FullLuaNew}\"] = new Lua.LuaValue(__Cache.__function_new{c.OverloadSuffix});");
         }
-        else if (_type.IsValueType)
+        else if (!_type.IsStatic && !_type.IsInterface)
             W(sb, gb, $"__Cache.__typeTable[\"new\"] = new Lua.LuaValue(new Lua.LuaFunction(\"new\", (context, ct) => new System.Threading.Tasks.ValueTask<int>(context.Return(Lua.LuaValue.FromUserData(new {_type.FullTypeName}())))));");
 
         foreach (var m in _type.StaticMethods)

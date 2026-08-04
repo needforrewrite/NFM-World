@@ -3,7 +3,6 @@ using Lua.Runtime;
 using Lua.Standard;
 using nfm_world_library.Lua;
 using NFMWorld.LuaSourceGenerator.Test.SampleTypes;
-using NFMWorld.LuaSourceGenerator.TestFixtures;
 
 namespace NFMWorld.LuaSourceGenerator.Test;
 
@@ -21,35 +20,13 @@ public class LuaRuntimePortedTests
     {
         _state = LuaState.Create();
         _state.OpenBasicLibrary();
-        RegisterAllTypes(_state);
+        LuaVisibleTypeRegistry.RegisterAll(_state);
     }
 
     [TestCleanup]
     public void TearDown()
     {
         _state.Dispose();
-    }
-
-    /// <summary>Register all [LuaVisible] test types as Lua globals.</summary>
-    internal static void RegisterAllTypes(LuaState state)
-    {
-        // Register type tables as globals so Lua can call TypeTable.new(), TypeTable.method(), etc.
-        state.Environment["SampleClass"] = SampleClass.TypeTable;
-        state.Environment["Vec2"] = SampleStruct.TypeTable;
-        state.Environment["Vec3"] = Vector3Struct.TypeTable;
-        state.Environment["StaticClass"] = StaticClass.TypeTable;
-        state.Environment["TypeWithOverloads"] = TypeWithOverloads.TypeTable;
-        state.Environment["TypeWithArrays"] = TypeWithArrays.TypeTable;
-        state.Environment["TypeWithMultiDimArray"] = TypeWithMultiDimArray.TypeTable;
-        state.Environment["TypeWithIntIndexer"] = TypeWithIntIndexer.TypeTable;
-        state.Environment["TypeWithStringIndexer"] = TypeWithStringIndexer.TypeTable;
-        state.Environment["TypeWithMultiParamIndexer"] = TypeWithMultiParamIndexer.TypeTable;
-        state.Environment["TypeWithEvents"] = TypeWithEvents.TypeTable;
-        state.Environment["TypeWithExceptions"] = TypeWithExceptions.TypeTable;
-        state.Environment["TypeWithReferences"] = TypeWithReferences.TypeTable;
-        state.Environment["TypeWithInlineArray"] = TypeWithInlineArray.TypeTable;
-        state.Environment["TypeWithByRefParameters"] = TypeWithByRefParameters.TypeTable;
-        state.Environment["TypeWithExtensionMembers"] = TypeWithExtensionMembers.TypeTable;
     }
 
     // ===================================================================
