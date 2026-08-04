@@ -492,8 +492,20 @@ internal sealed class LuaBindingTypeGenerator
             or "byte" or "sbyte" or "short" or "ushort" or "uint" or "ulong" or "decimal" or "char" => true,
         "int?" or "long?" or "float?" or "double?" or "bool?"
             or "byte?" or "sbyte?" or "short?" or "ushort?" or "uint?" or "ulong?" or "decimal?" or "char?" => true,
-        _ => t.Contains("Fixed64") || t.Contains("Vector3d") || t.Contains("f64AngleSingle") || t.Contains("f64Euler")
+        _ => IsFixedMathType(t)
     };
+
+    /// <summary>Check if t is a FixedMath type (not just contains it — avoids false positives on generics).</summary>
+    private static bool IsFixedMathType(string t)
+    {
+        // Strip generic arguments to check only the outermost type
+        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        return baseT == "FixedMathSharp.Fixed64" || baseT == "Fixed64"
+            || baseT == "FixedMathSharp.Vector3d" || baseT == "Vector3d"
+            || baseT == "FixedMathSharp.f64AngleSingle" || baseT == "f64AngleSingle"
+            || baseT == "FixedMathSharp.f64Euler" || baseT == "f64Euler"
+            || baseT == "FixedMathSharp.Fixed4x4" || baseT == "Fixed4x4";
+    }
 
     private static bool NeedsStructWrap(string t)
     {

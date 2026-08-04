@@ -129,8 +129,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             or "byte" or "sbyte" or "short" or "ushort" or "uint" or "ulong" or "decimal" or "char")
             return false;
         if (t.EndsWith("?") || t.StartsWith("System.Nullable<")) return false; // nullable types
-        if (t.Contains("Fixed64") || t.Contains("Vector3d") || t.Contains("f64AngleSingle") || t.Contains("f64Euler"))
-            return false;
+        if (IsFixedMathBaseType(t)) return false;
         // Only skip true tuple types — check outermost type name (before any '<')
         var baseName = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
         if (baseName.StartsWith("(") || baseName == "System.ValueTuple" || baseName == "System.Tuple")
@@ -284,7 +283,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         if (typeName is "int" or "long" or "float" or "double" or "bool" or "string"
             or "byte" or "sbyte" or "short" or "ushort" or "uint" or "ulong" or "decimal")
             return $"({expr})";
-        if (typeName.Contains("Fixed64") || typeName.Contains("Vector3d") || typeName.Contains("f64AngleSingle") || typeName.Contains("f64Euler"))
+        if (IsFixedMathBaseType(typeName))
             return $"({expr})";
         return $"Lua.LuaValue.FromObject({expr})";
     }
@@ -314,6 +313,16 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         sb.AppendLine("    }");
         sb.AppendLine("}");
         return sb.ToString();
+    }
+
+    /// <summary>Check if t is a FixedMath type by base name, not Contains (avoids false positives on generics).</summary>
+    private static bool IsFixedMathBaseType(string t)
+    {
+        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        return baseT is "Fixed64" or "Vector3d" or "f64AngleSingle" or "f64Euler" or "Fixed4x4"
+            || baseT.EndsWith(".Fixed64") || baseT.EndsWith(".Vector3d")
+            || baseT.EndsWith(".f64AngleSingle") || baseT.EndsWith(".f64Euler")
+            || baseT.EndsWith(".Fixed4x4");
     }
 
     private static string SanitizeHint(string name) =>

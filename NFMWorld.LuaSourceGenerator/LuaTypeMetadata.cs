@@ -292,8 +292,17 @@ internal sealed class LuaParameterMetadata(IParameterSymbol p)
         "int?" or "long?" or "float?" or "double?" or "bool?"
             or "byte?" or "sbyte?" or "short?" or "ushort?" or "uint?" or "ulong?" or "decimal?" or "char?"
             => true,
-        _ => t.Contains("Fixed64") || t.Contains("Vector3d") || t.Contains("f64AngleSingle") || t.Contains("f64Euler")
+        _ => IsFixedMathBaseType(t)
     };
+
+    private static bool IsFixedMathBaseType(string t)
+    {
+        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        return baseT is "Fixed64" or "Vector3d" or "f64AngleSingle" or "f64Euler" or "Fixed4x4"
+            || baseT.EndsWith(".Fixed64") || baseT.EndsWith(".Vector3d")
+            || baseT.EndsWith(".f64AngleSingle") || baseT.EndsWith(".f64Euler")
+            || baseT.EndsWith(".Fixed4x4");
+    }
 }
 
 internal sealed class LuaPropertyMetadata(IPropertySymbol s)
