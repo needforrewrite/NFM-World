@@ -1,4 +1,4 @@
----@class Color3Instance
+---@class Color3Instance : System_IEquatable_NFMWorldLibrary_Util_Color3_Instance
 ---@field r number
 ---@field g number
 ---@field b number

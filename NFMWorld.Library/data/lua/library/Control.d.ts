@@ -18,7 +18,7 @@ declare class Control
     zyinv: boolean;
     falseo(i: number): void;
     reset(): void;
-    encode(): Nibble_byte;
-    decode(enc: Nibble_byte): void;
+    encode(): Maxine_Extensions_Nibble_byte_;
+    decode(enc: Maxine_Extensions_Nibble_byte_): void;
     decode_tuple5(enc: ValueTuple): void;
 }

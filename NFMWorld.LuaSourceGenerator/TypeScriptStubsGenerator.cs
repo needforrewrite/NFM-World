@@ -7,8 +7,9 @@ namespace NFMWorld.LuaSourceGenerator;
 /// Generates TypeScript definition stubs for [LuaVisible] types.
 /// Outputs declare class/interface definitions for the CEF-based frontend.
 /// </summary>
-internal sealed class TypeScriptStubsGenerator(LuaTypeMetadata type, Compilation compilation)
+internal sealed class TypeScriptStubsGenerator(LuaTypeMetadata type, Compilation compilation, Dictionary<string, string> luaVisibleNameMap)
 {
+    private readonly Dictionary<string, string> _luaVisibleNameMap = luaVisibleNameMap;
     public string GenerateCode()
     {
         var sb = new StringBuilder();
@@ -109,7 +110,7 @@ internal sealed class TypeScriptStubsGenerator(LuaTypeMetadata type, Compilation
     // Type name conversion helpers
     // ==================================================================
 
-    private static string ToTSTypeName(string t)
+    private string ToTSTypeName(string t)
     {
         if (t.EndsWith("?")) return $"{ToTSTypeName(t.Substring(0, t.Length - 1))} | null";
         return t switch
@@ -124,7 +125,7 @@ internal sealed class TypeScriptStubsGenerator(LuaTypeMetadata type, Compilation
         };
     }
 
-    private static string FixedMathToTSName(string t)
+    private string FixedMathToTSName(string t)
     {
         var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
         if (baseT == "Fixed64" || baseT.EndsWith(".Fixed64")) return "fixed64";
@@ -143,8 +144,12 @@ internal sealed class TypeScriptStubsGenerator(LuaTypeMetadata type, Compilation
             || baseT.EndsWith(".Fixed4x4");
     }
 
-    private static string StubTypeName(string fullName)
+    /// <summary>TypeScript-friendly type name for stub declarations. Uses LuaName for [LuaVisible] types, sanitized full name otherwise.</summary>
+    private string StubTypeName(string fullName)
     {
+        // Check if this is a [LuaVisible] type — use its LuaName
+        if (_luaVisibleNameMap.TryGetValue(fullName, out var luaName))
+            return luaName;
         // Handle tuples
         if (fullName.StartsWith("(")) return "ValueTuple";
         // Handle arrays: int[,,] → intArray, int[] → intArray
@@ -154,11 +159,18 @@ internal sealed class TypeScriptStubsGenerator(LuaTypeMetadata type, Compilation
             var elemName = bracketIdx >= 0 ? StubTypeName(fullName.Substring(0, bracketIdx)) : fullName;
             return elemName + "Array";
         }
+        // For non-LuaVisible types, use sanitized full name (matching external type stub names)
+        var sanitized = SanitizeForStub(fullName);
+        return sanitized;
+    }
+
+    /// <summary>Sanitize a full type name to match external stub file naming convention.</summary>
+    private static string SanitizeForStub(string fullName)
+    {
         // Include generic args: UnlimitedArray<string> → UnlimitedArray_string
-        var name = fullName.Contains('<') ? fullName.Replace('<', '_').Replace('>', '_').Replace(", ", "_").Replace(",", "_").TrimEnd('_') : fullName;
-        name = name.Replace("global::", "");
-        var lastDot = name.LastIndexOf('.');
-        return lastDot >= 0 ? name.Substring(lastDot + 1) : name;
+        var name = fullName.Contains('<') ? fullName.Replace('<', '_').Replace('>', '_').Replace(", ", "_").Replace(",", "_") : fullName;
+        name = name.Replace("global::", "").Replace(".", "_").Replace("[]", "Array");
+        return name;
     }
 
     private static string TsParamName(LuaParameterMetadata p) =>

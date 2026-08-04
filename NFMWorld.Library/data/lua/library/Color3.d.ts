@@ -1,5 +1,5 @@
 declare class Color3
-    implements Color3
+    implements System_IEquatable_NFMWorldLibrary_Util_Color3_
 {
     r: number;
     g: number;

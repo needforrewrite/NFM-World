@@ -7,8 +7,9 @@ namespace NFMWorld.LuaSourceGenerator;
 /// Generates Lua Language Server (LuaLS) annotation stubs for [LuaVisible] types.
 /// Outputs ---@class, ---@field, ---@param, ---@return annotations for IDE autocomplete.
 /// </summary>
-internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compilation)
+internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compilation, Dictionary<string, string> luaVisibleNameMap)
 {
+    private readonly Dictionary<string, string> _luaVisibleNameMap = luaVisibleNameMap;
     public string GenerateCode()
     {
         var sb = new StringBuilder();
@@ -194,7 +195,7 @@ internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compil
     // Type name conversion helpers
     // ==================================================================
 
-    private static string ToLuaTypeName(string t)
+    private string ToLuaTypeName(string t)
     {
         if (t.EndsWith("?")) return $"{ToLuaTypeName(t.Substring(0, t.Length - 1))}|nil";
         return t switch
@@ -229,9 +230,12 @@ internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compil
             || baseT.EndsWith(".Fixed4x4");
     }
 
-    /// <summary>Short Lua-friendly type name for stub annotations.</summary>
-    private static string StubTypeName(string fullName)
+    /// <summary>Short Lua-friendly type name for stub annotations. Uses LuaName for [LuaVisible] types, sanitized full name otherwise.</summary>
+    private string StubTypeName(string fullName)
     {
+        // Check if this is a [LuaVisible] type — use its LuaName
+        if (_luaVisibleNameMap.TryGetValue(fullName, out var luaName))
+            return luaName;
         // Handle tuples
         if (fullName.StartsWith("(")) return "ValueTuple";
         // Handle arrays: int[,,] → intArray, int[] → intArray
@@ -241,11 +245,18 @@ internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compil
             var elemName = bracketIdx >= 0 ? StubTypeName(fullName.Substring(0, bracketIdx)) : fullName;
             return elemName + "Array";
         }
-        // Include generic args: UnlimitedArray<string> → UnlimitedArray_string
-        var name = fullName.Contains('<') ? fullName.Replace('<', '_').Replace('>', '_').Replace(", ", "_").Replace(",", "_").TrimEnd('_') : fullName;
-        name = name.Replace("global::", "");
-        var lastDot = name.LastIndexOf('.');
-        return lastDot >= 0 ? name.Substring(lastDot + 1) : name;
+        // For non-LuaVisible types, use sanitized full name (matching external type stub names)
+        var sanitized = SanitizeForStub(fullName);
+        return sanitized;
+    }
+
+    /// <summary>Sanitize a full type name to match external stub file naming convention.</summary>
+    private static string SanitizeForStub(string fullName)
+    {
+        // Include generic args: UnlimitedArray<string> → UnlimitedArray_string_
+        var name = fullName.Contains('<') ? fullName.Replace('<', '_').Replace('>', '_').Replace(", ", "_").Replace(",", "_") : fullName;
+        name = name.Replace("global::", "").Replace(".", "_").Replace("[]", "Array");
+        return name;
     }
 
     private static string ExtractSimpleName(string fullName)

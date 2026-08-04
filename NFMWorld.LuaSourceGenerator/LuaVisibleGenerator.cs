@@ -84,12 +84,17 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                 {
                     System.IO.Directory.CreateDirectory(stubsOutDir);
 
+                    // Build a mapping from full type name → LuaName for resolving references
+                    var luaVisibleNameMap = new Dictionary<string, string>();
+                    foreach (var typeMeta in generatedTypes)
+                        luaVisibleNameMap[typeMeta.FullTypeName] = typeMeta.LuaName;
+
                     // Stubs for [LuaVisible] types
                     foreach (var typeMeta in generatedTypes)
                     {
                         WriteStubFiles(stubsOutDir, typeMeta.LuaName,
-                            new LuaStubsGenerator(typeMeta, compilation).GenerateCode(),
-                            new TypeScriptStubsGenerator(typeMeta, compilation).GenerateCode());
+                            new LuaStubsGenerator(typeMeta, compilation, luaVisibleNameMap).GenerateCode(),
+                            new TypeScriptStubsGenerator(typeMeta, compilation, luaVisibleNameMap).GenerateCode());
                     }
 
                     // Stubs for external types (StructUserData-wrapped)

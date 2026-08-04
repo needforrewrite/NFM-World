@@ -1,5 +1,5 @@
 declare class CarStats
-    implements CarStats
+    implements System_IEquatable_NFMWorldLibrary_CarStats_
 {
     readonly swits: Int3;
     readonly acelf: fixed64vector3;

@@ -1,4 +1,4 @@
----@class CarStatsInstance
+---@class CarStatsInstance : System_IEquatable_NFMWorldLibrary_CarStats_Instance
 ---@field swits Int3Instance
 ---@field acelf fixed64vector3
 ---@field handb number

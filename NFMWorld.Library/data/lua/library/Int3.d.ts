@@ -1,5 +1,5 @@
 declare class Int3
-    implements Int3
+    implements System_IEquatable_NFMWorldLibrary_Int3_
 {
     x: number;
     y: number;

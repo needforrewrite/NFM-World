@@ -1,5 +1,5 @@
 ---@class DeterministicRandomInstance
----@field _random DeterministicRandomInstance
+---@field _random FixedMathSharp_Utility_DeterministicRandomInstance
 DeterministicRandomInstance = {}
 
 ---@class (exact) DeterministicRandom
@@ -7,12 +7,12 @@ DeterministicRandomInstance = {}
 DeterministicRandom = {}
 
 ---Creates a new DeterministicRandom
----@param random DeterministicRandomInstance
+---@param random FixedMathSharp_Utility_DeterministicRandomInstance
 ---@return DeterministicRandomInstance
 function DeterministicRandom.new(random) end
 
 ---@param value fixed64
----@return LuaDeterministicRandomInstance
+---@return DeterministicRandomInstance
 function DeterministicRandom.create(value) end
 
 ---@param self DeterministicRandomInstance

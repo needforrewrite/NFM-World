@@ -1,4 +1,4 @@
----@class Int3Instance
+---@class Int3Instance : System_IEquatable_NFMWorldLibrary_Int3_Instance
 ---@field x number
 ---@field y number
 ---@field z number

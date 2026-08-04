@@ -33,11 +33,11 @@ function ControlInstance:falseo(i) end
 function ControlInstance:reset() end
 
 ---@param self ControlInstance
----@return Nibble_byteInstance
+---@return Maxine_Extensions_Nibble_byte_Instance
 function ControlInstance:encode() end
 
 ---@param self ControlInstance
----@param enc Nibble_byteInstance
+---@param enc Maxine_Extensions_Nibble_byte_Instance
 function ControlInstance:decode(enc) end
 
 ---@param self ControlInstance
