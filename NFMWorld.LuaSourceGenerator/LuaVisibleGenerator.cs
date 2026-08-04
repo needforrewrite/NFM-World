@@ -195,6 +195,8 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             foreach (var baseIface in iface.Interfaces)
             {
                 if (!visited.Add(baseIface)) continue;
+                // Add the base interface itself as an external type so stubs are generated for it
+                TryAddExternalType(externalTypes, baseIface, luaVisibleFullNames);
                 CollectExternalFromMembers(baseIface, externalTypes, luaVisibleFullNames);
                 WalkInterfaces(baseIface, visited);
             }
