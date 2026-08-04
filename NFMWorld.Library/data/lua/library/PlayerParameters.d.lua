@@ -8,6 +8,8 @@ PlayerParametersInstance = {}
 
 ---@class (exact) PlayerParameters
 
+PlayerParameters = {}
+
 ---Creates a new PlayerParameters
 ---@return PlayerParametersInstance
 function PlayerParameters.new() end

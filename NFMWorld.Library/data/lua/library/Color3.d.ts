@@ -6,7 +6,6 @@ declare class Color3
     b: number;
     darker(): Color3;
     brighter(): Color3;
-    static factor: number;
-    static fromSpan(span: ReadOnlySpan_short): Color3;
+    static readonly factor: number;
     static fromHSB(hue: number, saturation: number, brightness: number): Color3;
 }

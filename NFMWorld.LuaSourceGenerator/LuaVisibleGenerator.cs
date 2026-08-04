@@ -175,6 +175,29 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
     {
         var symbol = typeMeta.Symbol;
 
+        // Collect from the type itself
+        CollectExternalFromMembers(symbol, externalTypes, luaVisibleFullNames);
+
+        // For interfaces, also collect from base interfaces
+        if (symbol.TypeKind == TypeKind.Interface)
+        {
+            var visited = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
+            WalkInterfaces(symbol, visited);
+        }
+
+        void WalkInterfaces(INamedTypeSymbol iface, HashSet<INamedTypeSymbol> visited)
+        {
+            foreach (var baseIface in iface.Interfaces)
+            {
+                if (!visited.Add(baseIface)) continue;
+                CollectExternalFromMembers(baseIface, externalTypes, luaVisibleFullNames);
+                WalkInterfaces(baseIface, visited);
+            }
+        }
+    }
+
+    private static void CollectExternalFromMembers(INamedTypeSymbol symbol, Dictionary<string, ITypeSymbol> externalTypes, HashSet<string> luaVisibleFullNames)
+    {
         // Instance methods — return types and parameters
         foreach (var m in symbol.GetMembers().OfType<IMethodSymbol>()
             .Where(m => !m.IsStatic && m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared))
@@ -410,9 +433,9 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
     {
         var clean = t.EndsWith("?") ? t.Substring(0, t.Length - 1) : t;
         var baseT = clean.Contains('<') ? clean.Substring(0, clean.IndexOf('<')) : clean;
-        return baseT is "Fixed64" or "Vector3d" or "f64AngleSingle" or "f64Euler" or "Fixed4x4"
+        return baseT is "Fixed64" or "Vector3d" or "f64AngleSingle" or "Fixed4x4"
             || baseT.EndsWith(".Fixed64") || baseT.EndsWith(".Vector3d")
-            || baseT.EndsWith(".f64AngleSingle") || baseT.EndsWith(".f64Euler")
+            || baseT.EndsWith(".f64AngleSingle")
             || baseT.EndsWith(".Fixed4x4");
     }
 

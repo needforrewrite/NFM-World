@@ -26,10 +26,10 @@ internal sealed class LuaTypeMetadata
     /// <summary>True if the type has required properties/fields (no constructor should be generated).</summary>
     public bool HasRequiredMembers { get; }
 
-    public LuaMethodMetadata[] InstanceMethods { get; }
-    public LuaPropertyMetadata[] InstanceProperties { get; }
-    public LuaFieldMetadata[] InstanceFields { get; }
-    public LuaEventMetadata[] InstanceEvents { get; }
+    public LuaMethodMetadata[] InstanceMethods { get; private set; }
+    public LuaPropertyMetadata[] InstanceProperties { get; private set; }
+    public LuaFieldMetadata[] InstanceFields { get; private set; }
+    public LuaEventMetadata[] InstanceEvents { get; private set; }
     public LuaMethodMetadata[] Operators { get; }
     public LuaMethodMetadata[] StaticMethods { get; }
     public LuaPropertyMetadata[] StaticProperties { get; }
@@ -105,6 +105,10 @@ internal sealed class LuaTypeMetadata
             : CollectConstructors(symbol, hiddenAttr);
         HasRequiredMembers = HasAnyRequiredMembers(symbol);
 
+        // For interfaces, also collect members inherited from base interfaces
+        if (IsInterface)
+            CollectInheritedInterfaceMembers(symbol, hiddenAttr, references);
+
         // Assign overload suffixes to constructors (all are "new" overloads)
         if (Constructors.Length > 1)
         {
@@ -113,6 +117,97 @@ internal sealed class LuaTypeMetadata
             {
                 if (first) { first = false; continue; }
                 c.OverloadSuffix = "_" + string.Join("_", c.Parameters.Select(p => ParamSuffix(p)));
+            }
+        }
+    }
+
+    /// <summary>Collect members inherited from base interfaces (for interface types only).</summary>
+    private void CollectInheritedInterfaceMembers(INamedTypeSymbol symbol, INamedTypeSymbol? hiddenAttr, SymbolReferences references)
+    {
+        var luaVisibleAttr = references.LuaVisibleAttribute;
+        var seenLuaNames = new HashSet<string>(
+            InstanceProperties.Select(p => p.LuaName)
+            .Concat(InstanceFields.Select(f => f.LuaName))
+            .Concat(InstanceMethods.Select(m => m.FullLuaName))
+            .Concat(InstanceEvents.Select(e => e.LuaName))
+        );
+
+        var inheritedProps = new List<LuaPropertyMetadata>();
+        var inheritedFields = new List<LuaFieldMetadata>();
+        var inheritedMethods = new List<LuaMethodMetadata>();
+        var inheritedEvents = new List<LuaEventMetadata>();
+
+        // Walk all base interfaces recursively
+        WalkBaseInterfaces(symbol, new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default));
+
+        void WalkBaseInterfaces(INamedTypeSymbol iface, HashSet<INamedTypeSymbol> visited)
+        {
+            foreach (var baseIface in iface.Interfaces)
+            {
+                if (!visited.Add(baseIface)) continue;
+                CollectFromInterface(baseIface);
+                WalkBaseInterfaces(baseIface, visited);
+            }
+        }
+
+        void CollectFromInterface(INamedTypeSymbol baseIface)
+        {
+            var baseMembers = baseIface.GetMembers();
+            var isBaseLuaVisible = HasAttr(baseIface, luaVisibleAttr);
+
+            foreach (var m in baseMembers.OfType<IMethodSymbol>()
+                .Where(m => m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared && !HasAttr(m, hiddenAttr))
+                .Where(m => !m.Parameters.Any(p => p.RefKind != RefKind.None))
+                .Where(m => !m.Parameters.Any(p => p.Type.IsRefLikeType))
+                .Where(m => !m.ReturnType.IsRefLikeType))
+            {
+                var meta = new LuaMethodMetadata(m, isExtension: false, owningType: symbol);
+                if (seenLuaNames.Add(meta.FullLuaName))
+                    inheritedMethods.Add(meta);
+            }
+
+            foreach (var p in baseMembers.OfType<IPropertySymbol>()
+                .Where(p => !p.IsIndexer && !p.IsImplicitlyDeclared && !HasAttr(p, hiddenAttr))
+                .Where(p => !p.IsStatic))
+            {
+                var meta = new LuaPropertyMetadata(p);
+                if (seenLuaNames.Add(meta.LuaName))
+                    inheritedProps.Add(meta);
+            }
+
+            foreach (var f in baseMembers.OfType<IFieldSymbol>()
+                .Where(f => !f.IsImplicitlyDeclared && !HasAttr(f, hiddenAttr) && !f.IsStatic))
+            {
+                var meta = new LuaFieldMetadata(f);
+                if (seenLuaNames.Add(meta.LuaName))
+                    inheritedFields.Add(meta);
+            }
+
+            foreach (var e in baseMembers.OfType<IEventSymbol>()
+                .Where(ev => !ev.IsImplicitlyDeclared && !HasAttr(ev, hiddenAttr) && !ev.IsStatic))
+            {
+                var meta = new LuaEventMetadata(e);
+                if (seenLuaNames.Add(meta.LuaName))
+                    inheritedEvents.Add(meta);
+            }
+        }
+
+        // Merge inherited members into the type's own lists
+        InstanceProperties = [.. InstanceProperties, .. inheritedProps];
+        InstanceFields = [.. InstanceFields, .. inheritedFields];
+        InstanceMethods = [.. InstanceMethods, .. inheritedMethods];
+        InstanceEvents = [.. InstanceEvents, .. inheritedEvents];
+
+        // Reassign overload suffixes for methods (new inherited methods may create overload groups)
+        foreach (var group in InstanceMethods.GroupBy(m => m.LuaName).Where(g => g.Count() > 1))
+        {
+            var first = true;
+            foreach (var m in group)
+            {
+                if (first) { first = false; continue; }
+                // Only add suffix if not already set (own overloads already have suffixes from CollectMethods)
+                if (m.OverloadSuffix.Length == 0)
+                    m.OverloadSuffix = "_" + string.Join("_", m.Parameters.Select(p => ParamSuffix(p)));
             }
         }
     }
@@ -129,6 +224,8 @@ internal sealed class LuaTypeMetadata
         var methods = members.OfType<IMethodSymbol>()
             .Where(m => m.IsStatic == isStatic && m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared && !HasAttr(m, hiddenAttr))
             .Where(m => !m.Parameters.Any(p => p.RefKind != RefKind.None)) // skip ref/out/in parameters
+            .Where(m => !m.Parameters.Any(p => p.Type.IsRefLikeType)) // skip Span/ReadOnlySpan params (ref structs)
+            .Where(m => !m.ReturnType.IsRefLikeType) // skip methods returning ref structs
             .Select(m => new LuaMethodMetadata(m, isExtension: m.IsExtensionMethod, owningType)).ToArray();
 
         // Assign overload suffixes: for groups with >1 method sharing the same LuaName,
@@ -258,11 +355,15 @@ internal sealed class LuaMethodMetadata
     public bool IsExtension { get; }
     public string? DeclaringType { get; }
     public string ReturnType { get; }
+    public bool IsNullableReturnType { get; }
     public LuaParameterMetadata[] Parameters { get; }
     /// <summary>Full type name of the type that actually implements this method (base class or interface).</summary>
     public string? ImplementationSourceType { get; }
-    /// <summary>True if this method is declared on a different type than the current one (virtual override or interface impl).</summary>
-    public bool IsInherited => ImplementationSourceType != null && ImplementationSourceType != DeclaringType;
+    /// <summary>Full type name of the type being code-generated (for IsInherited comparison).</summary>
+    private string? GeneratingTypeFullName { get; }
+    /// <summary>True if this method is declared on a different type than the one being generated (virtual override, interface impl, or interface inheritance).</summary>
+    public bool IsInherited => ImplementationSourceType != null && GeneratingTypeFullName != null
+        && ImplementationSourceType != GeneratingTypeFullName;
     /// <summary>Suffix for overload disambiguation (e.g. "_int", "_string_int"). Empty for non-overloaded or first overload.</summary>
     public string OverloadSuffix { get; set; } = "";
     /// <summary>Full Lua-visible name including overload suffix.</summary>
@@ -275,8 +376,11 @@ internal sealed class LuaMethodMetadata
         IsExtension = isExtension;
         DeclaringType = s.ContainingType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
             ?.Replace("global::", "");
+        GeneratingTypeFullName = owningType?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
+            ?.Replace("global::", "");
         ReturnType = s.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
             .Replace("global::", "");
+        IsNullableReturnType = s.ReturnType.IsReferenceType && s.ReturnType.NullableAnnotation == NullableAnnotation.Annotated;
         var attr = s.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "LuaNameAttribute");
         LuaName = attr?.ConstructorArguments.FirstOrDefault().Value as string ?? Camel(Name);
         Parameters = s.Parameters.Select(p => new LuaParameterMetadata(p)).ToArray();
@@ -319,6 +423,7 @@ internal sealed class LuaParameterMetadata(IParameterSymbol p)
     public string Name { get; } = p.Name;
     public string Type { get; } = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
         .Replace("global::", "");
+    public bool IsNullableReferenceType { get; } = p.Type.IsReferenceType && p.Type.NullableAnnotation == NullableAnnotation.Annotated;
     /// <summary>True if this type needs StructUserData wrapping (not ILuaUserData, not primitive, not FixedMath).</summary>
     public bool NeedsStructUserData => !IsPrimitiveOrSpecial(Type);
 
@@ -344,9 +449,9 @@ internal sealed class LuaParameterMetadata(IParameterSymbol p)
     {
         var clean = t.EndsWith("?") ? t.Substring(0, t.Length - 1) : t;
         var baseT = clean.Contains('<') ? clean.Substring(0, clean.IndexOf('<')) : clean;
-        return baseT is "Fixed64" or "Vector3d" or "f64AngleSingle" or "f64Euler" or "Fixed4x4"
+        return baseT is "Fixed64" or "Vector3d" or "f64AngleSingle" or "Fixed4x4"
             || baseT.EndsWith(".Fixed64") || baseT.EndsWith(".Vector3d")
-            || baseT.EndsWith(".f64AngleSingle") || baseT.EndsWith(".f64Euler")
+            || baseT.EndsWith(".f64AngleSingle")
             || baseT.EndsWith(".Fixed4x4");
     }
 }
@@ -357,6 +462,7 @@ internal sealed class LuaPropertyMetadata(IPropertySymbol s)
     public string PropertyType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
     public bool HasGetter { get; } = s.GetMethod != null;
     public bool HasSetter { get; } = s.SetMethod != null && !s.SetMethod.IsInitOnly;
+    public bool IsNullableReferenceType { get; } = s.Type.IsReferenceType && s.Type.NullableAnnotation == NullableAnnotation.Annotated;
     public string LuaName { get; } = s.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "LuaNameAttribute")
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);
 }
@@ -365,7 +471,8 @@ internal sealed class LuaFieldMetadata(IFieldSymbol s)
 {
     public string Name { get; } = s.Name;
     public string FieldType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
-    public bool IsReadOnly { get; } = s.IsReadOnly;
+    public bool IsReadOnly { get; } = s.IsReadOnly || s.IsConst;
+    public bool IsNullableReferenceType { get; } = s.Type.IsReferenceType && s.Type.NullableAnnotation == NullableAnnotation.Annotated;
     public string LuaName { get; } = s.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "LuaNameAttribute")
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);
 }

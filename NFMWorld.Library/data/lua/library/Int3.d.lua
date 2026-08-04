@@ -1,4 +1,4 @@
----@class Int3Instance : Int3Instance
+---@class Int3Instance
 ---@field x number
 ---@field y number
 ---@field z number
@@ -10,6 +10,8 @@ Int3Instance = {}
 ---@field unitY Int3Instance
 ---@field unitZ Int3Instance
 ---@field one Int3Instance
+
+Int3 = {}
 
 ---Creates a new Int3
 ---@param value number

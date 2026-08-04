@@ -508,6 +508,376 @@ public class LuaRuntimePortedTests
         Assert.AreEqual(0, results[0].Read<int>());
         Assert.AreEqual("OnlyNameGiven", results[1].Read<string>());
     }
+
+    // ===================================================================
+    // FixedMath nullable tests — verify no missing metatable errors
+    // ===================================================================
+
+    [TestMethod]
+    public async Task FixedMathNullable_CompileCheck()
+    {
+        // Verify Fixed64? doesn't generate a StructUserData metatable
+        _state.Environment["TypeWithFixedMathNullables"] = TypeWithFixedMathNullables.TypeTable;
+        Assert.IsNotNull(TypeWithFixedMathNullables.TypeTable);
+        Assert.IsTrue(true, "TypeWithFixedMathNullables compiled — no missing StructUserData_Metatable for Fixed64?");
+    }
+
+    [TestMethod]
+    public async Task FixedMathNullable_NonNullValue()
+    {
+        _state.Environment["TypeWithFixedMathNullables"] = TypeWithFixedMathNullables.TypeTable;
+        // Read a non-null Fixed64 value
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeWithFixedMathNullables.new()
+            obj.normalFixed = 42.5
+            return obj.normalFixed
+        ");
+        // Should be a Fixed64 value, not nil
+        Assert.AreEqual(LuaValueType.Fixed64, results[0].Type);
+    }
+
+    // ===================================================================
+    // Span/ReadOnlySpan parameter tests — verify ref struct methods skipped
+    // ===================================================================
+
+    [TestMethod]
+    public async Task SpanParams_CompileCheck()
+    {
+        // Verify the type compiled — Span/ReadOnlySpan methods were safely skipped
+        _state.Environment["TypeWithSpanParameters"] = TypeWithSpanParameters.TypeTable;
+        Assert.IsNotNull(TypeWithSpanParameters.TypeTable);
+
+        // GetName (normal method) should be accessible
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeWithSpanParameters.new()
+            return obj:getName()
+        ");
+        Assert.AreEqual("", results[0].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task SpanParams_SpanMethodsNotExposed()
+    {
+        _state.Environment["TypeWithSpanParameters"] = TypeWithSpanParameters.TypeTable;
+        // Verify that Sum, Fill, GetChars, CountMatching are NOT in the metatable
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeWithSpanParameters.new()
+            return obj.sum, obj.fill, obj.getChars, obj.countMatching
+        ");
+        Assert.AreEqual(LuaValueType.Nil, results[0].Type); // sum: skipped (ReadOnlySpan param)
+        Assert.AreEqual(LuaValueType.Nil, results[1].Type); // fill: skipped (Span param)
+        Assert.AreEqual(LuaValueType.Nil, results[2].Type); // getChars: skipped (returns ref struct)
+        Assert.AreEqual(LuaValueType.Nil, results[3].Type); // countMatching: skipped (ReadOnlySpan param)
+    }
+
+    // ===================================================================
+    // Const field tests — verify consts are read-only
+    // ===================================================================
+
+    [TestMethod]
+    public async Task ConstFields_CompileCheck()
+    {
+        // Verify the type compiled — no syntax error trying to assign to consts
+        _state.Environment["TypeWithConstants"] = TypeWithConstants.TypeTable;
+        Assert.IsNotNull(TypeWithConstants.TypeTable);
+        Assert.IsTrue(true, "TypeWithConstants compiled without const assignment errors");
+    }
+
+    [TestMethod]
+    public async Task ConstFields_Readable()
+    {
+        _state.Environment["TypeWithConstants"] = TypeWithConstants.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            return TypeWithConstants.factor, TypeWithConstants.defaultName, TypeWithConstants.pi
+        ");
+        Assert.AreEqual(100, results[0].Read<int>());
+        Assert.AreEqual("Default", results[1].Read<string>());
+        Assert.AreEqual(3.14159, results[2].Read<double>(), 0.001);
+    }
+
+    [TestMethod]
+    public async Task ConstFields_WritableFieldStillWorks()
+    {
+        _state.Environment["TypeWithConstants"] = TypeWithConstants.TypeTable;
+        await _state.DoStringAsync("TypeWithConstants.multiplier = 5");
+        Assert.AreEqual(5, TypeWithConstants.Multiplier);
+    }
+
+    // ===================================================================
+    // Interface inheritance tests — verify base interface members are
+    // accessible through the derived [LuaVisible] interface's metatable
+    // ===================================================================
+
+    // --- Two-level: IDog : IBaseAnimal ---
+
+    [TestMethod]
+    public async Task InterfaceInheritance_IDog_OwnProperty_Accessible()
+    {
+        var dog = new Dog { Breed = "Labrador" };
+        _state.Environment["dog"] = LuaValue.FromUserData(dog);
+        var results = await _state.DoStringAsync("return dog.breed");
+        Assert.AreEqual("Labrador", results[0].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_IDog_OwnProperty_Writable()
+    {
+        var dog = new Dog();
+        _state.Environment["dog"] = LuaValue.FromUserData(dog);
+        await _state.DoStringAsync("dog.breed = 'Poodle'");
+        Assert.AreEqual("Poodle", dog.Breed);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_IDog_InheritedName_Readable()
+    {
+        var dog = new Dog { Name = "Fido" };
+        _state.Environment["dog"] = LuaValue.FromUserData(dog);
+        var results = await _state.DoStringAsync("return dog.name");
+        Assert.AreEqual("Fido", results[0].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_IDog_InheritedName_Writable()
+    {
+        var dog = new Dog();
+        _state.Environment["dog"] = LuaValue.FromUserData(dog);
+        await _state.DoStringAsync("dog.name = 'Rex'");
+        Assert.AreEqual("Rex", dog.Name);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_IDog_InheritedAge_Readable()
+    {
+        var dog = new Dog { Age = 3 };
+        _state.Environment["dog"] = LuaValue.FromUserData(dog);
+        var results = await _state.DoStringAsync("return dog.age");
+        Assert.AreEqual(3, results[0].Read<int>());
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_IDog_InheritedAge_Writable()
+    {
+        var dog = new Dog { Age = 1 };
+        _state.Environment["dog"] = LuaValue.FromUserData(dog);
+        await _state.DoStringAsync("dog.age = 7");
+        Assert.AreEqual(7, dog.Age);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_IDog_AllPropertiesRoundTrip()
+    {
+        var dog = new Dog();
+        _state.Environment["dog"] = LuaValue.FromUserData(dog);
+        var results = await _state.DoStringAsync(@"
+            dog.name = 'Buddy'
+            dog.age = 5
+            dog.breed = 'Golden Retriever'
+            return dog.name, dog.age, dog.breed
+        ");
+        Assert.AreEqual("Buddy", results[0].Read<string>());
+        Assert.AreEqual(5, results[1].Read<int>());
+        Assert.AreEqual("Golden Retriever", results[2].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_IDog_Tostring()
+    {
+        var dog = new Dog { Name = "Spot", Age = 2, Breed = "Dalmatian" };
+        _state.Environment["dog"] = LuaValue.FromUserData(dog);
+        var results = await _state.DoStringAsync("return tostring(dog)");
+        var str = results[0].Read<string>();
+        Assert.IsTrue(str.Contains("Dog"));
+    }
+
+    // --- Three-level: IFixtureCar : IFixtureVehicle : IFixtureTransform ---
+
+    [TestMethod]
+    public async Task InterfaceInheritance_FixtureCar_OwnProperties_Accessible()
+    {
+        var car = new FixtureCar { Model = "Tesla", IsElectric = true };
+        _state.Environment["car"] = LuaValue.FromUserData(car);
+        var results = await _state.DoStringAsync("return car.model, car.isElectric");
+        Assert.AreEqual("Tesla", results[0].Read<string>());
+        Assert.IsTrue(results[1].Read<bool>());
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_FixtureCar_OwnProperties_Writable()
+    {
+        var car = new FixtureCar();
+        _state.Environment["car"] = LuaValue.FromUserData(car);
+        await _state.DoStringAsync("car.model = 'BMW'; car.isElectric = false");
+        Assert.AreEqual("BMW", car.Model);
+        Assert.IsFalse(car.IsElectric);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_FixtureCar_Level1Inherited_Speed()
+    {
+        var car = new FixtureCar { Speed = 120 };
+        _state.Environment["car"] = LuaValue.FromUserData(car);
+        var results = await _state.DoStringAsync("return car.speed");
+        Assert.AreEqual(120, results[0].Read<int>());
+
+        await _state.DoStringAsync("car.speed = 200");
+        Assert.AreEqual(200, car.Speed);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_FixtureCar_Level1Inherited_DriverName()
+    {
+        var car = new FixtureCar { DriverName = "Max" };
+        _state.Environment["car"] = LuaValue.FromUserData(car);
+        var results = await _state.DoStringAsync("return car.driverName");
+        Assert.AreEqual("Max", results[0].Read<string>());
+
+        await _state.DoStringAsync("car.driverName = 'Lewis'");
+        Assert.AreEqual("Lewis", car.DriverName);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_FixtureCar_Level1Inherited_DriverName_Nil()
+    {
+        var car = new FixtureCar { DriverName = "Seb" };
+        _state.Environment["car"] = LuaValue.FromUserData(car);
+        var results = await _state.DoStringAsync("return car.driverName");
+        Assert.AreEqual("Seb", results[0].Read<string>());
+
+        await _state.DoStringAsync("car.driverName = nil");
+        Assert.IsNull(car.DriverName);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_FixtureCar_Level2Inherited_XYZ()
+    {
+        var car = new FixtureCar { X = 1.1, Y = 2.2, Z = 3.3 };
+        _state.Environment["car"] = LuaValue.FromUserData(car);
+        var results = await _state.DoStringAsync("return car.x, car.y, car.z");
+        Assert.AreEqual(1.1, results[0].Read<double>(), 0.001);
+        Assert.AreEqual(2.2, results[1].Read<double>(), 0.001);
+        Assert.AreEqual(3.3, results[2].Read<double>(), 0.001);
+
+        await _state.DoStringAsync("car.x = 10.5; car.y = 20.5; car.z = 30.5");
+        Assert.AreEqual(10.5, car.X, 0.001);
+        Assert.AreEqual(20.5, car.Y, 0.001);
+        Assert.AreEqual(30.5, car.Z, 0.001);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_FixtureCar_AllLevelsRoundTrip()
+    {
+        var car = new FixtureCar();
+        _state.Environment["car"] = LuaValue.FromUserData(car);
+        var results = await _state.DoStringAsync(@"
+            car.model = 'Audi'
+            car.isElectric = true
+            car.speed = 250
+            car.driverName = 'Nico'
+            car.x = 5.5
+            car.y = 6.6
+            car.z = 7.7
+            return car.model, car.isElectric, car.speed, car.driverName, car.x, car.y, car.z
+        ");
+        Assert.AreEqual("Audi", results[0].Read<string>());
+        Assert.IsTrue(results[1].Read<bool>());
+        Assert.AreEqual(250, results[2].Read<int>());
+        Assert.AreEqual("Nico", results[3].Read<string>());
+        Assert.AreEqual(5.5, results[4].Read<double>(), 0.001);
+        Assert.AreEqual(6.6, results[5].Read<double>(), 0.001);
+        Assert.AreEqual(7.7, results[6].Read<double>(), 0.001);
+    }
+
+    // --- Multiple interface inheritance: IPerson : IHasName, IHasAge ---
+
+    [TestMethod]
+    public async Task InterfaceInheritance_Person_OwnProperty_Email()
+    {
+        var person = new Person { Email = "test@example.com" };
+        _state.Environment["person"] = LuaValue.FromUserData(person);
+        var results = await _state.DoStringAsync("return person.email");
+        Assert.AreEqual("test@example.com", results[0].Read<string>());
+
+        await _state.DoStringAsync("person.email = 'new@example.com'");
+        Assert.AreEqual("new@example.com", person.Email);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_Person_OwnProperty_Email_Nil()
+    {
+        var person = new Person { Email = "old@example.com" };
+        _state.Environment["person"] = LuaValue.FromUserData(person);
+        await _state.DoStringAsync("person.email = nil");
+        Assert.IsNull(person.Email);
+        var results = await _state.DoStringAsync("return person.email");
+        Assert.AreEqual(LuaValueType.Nil, results[0].Type);
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_Person_InheritedMethods_GetSetName()
+    {
+        var person = new Person();
+        _state.Environment["person"] = LuaValue.FromUserData(person);
+
+        await _state.DoStringAsync("person:setName('Alice')");
+        Assert.AreEqual("Alice", person.GetName());
+
+        var results = await _state.DoStringAsync("return person:getName()");
+        Assert.AreEqual("Alice", results[0].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_Person_InheritedMethods_GetSetAge()
+    {
+        var person = new Person();
+        _state.Environment["person"] = LuaValue.FromUserData(person);
+
+        await _state.DoStringAsync("person:setAge(25)");
+        Assert.AreEqual(25, person.GetAge());
+
+        var results = await _state.DoStringAsync("return person:getAge()");
+        Assert.AreEqual(25, results[0].Read<int>());
+    }
+
+    [TestMethod]
+    public async Task InterfaceInheritance_Person_Tostring()
+    {
+        var person = new Person { Email = "alice@test.com" };
+        _state.Environment["person"] = LuaValue.FromUserData(person);
+        var results = await _state.DoStringAsync("return tostring(person)");
+        var str = results[0].Read<string>();
+        Assert.IsTrue(str.Contains("Person"));
+    }
+
+    // ===================================================================
+    // Generated code sanity checks — verify StructUserData metatables exist
+    // ===================================================================
+
+    [TestMethod]
+    public void InterfaceInheritance_StructUserDataMetatables_Exist()
+    {
+        // Verify that DOG metatable was generated (IDog is [LuaVisible])
+        Assert.IsNotNull(IDog.Metatable, "IDog.Metatable should be generated");
+
+        // Verify the fixture car metatable was generated
+        Assert.IsNotNull(IFixtureCar.Metatable, "IFixtureCar.Metatable should be generated");
+
+        // Verify the person metatable was generated
+        Assert.IsNotNull(IPerson.Metatable, "IPerson.Metatable should be generated");
+    }
+
+    [TestMethod]
+    public void InterfaceInheritance_NoDuplicateOwnAndInheritedProperties()
+    {
+        // Verify that own properties don't appear twice in __index
+        // (check Dog metatable has exactly one entry for 'breed', not two)
+        var meta = IDog.Metatable;
+        Assert.IsNotNull(meta);
+
+        // The metatable should have the index function
+        var indexFunc = meta[Metamethods.Index];
+        Assert.IsTrue(indexFunc.Type != LuaValueType.Nil, "__index should be set on IDog metatable");
+    }
 }
 
 

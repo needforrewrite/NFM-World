@@ -127,14 +127,11 @@ internal sealed class TypeScriptStubsGenerator(LuaTypeMetadata type, Compilation
     private static string FixedMathToTSName(string t)
     {
         var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
-        return baseT switch
-        {
-            "Fixed64" => "number",
-            "Vector3d" => "Fixed64Vector3",
-            "f64AngleSingle" => "Fixed64Angle",
-            "f64Euler" => "Fixed64Euler",
-            _ => StubTypeName(baseT)
-        };
+        if (baseT == "Fixed64" || baseT.EndsWith(".Fixed64")) return "fixed64";
+        if (baseT == "Vector3d" || baseT.EndsWith(".Vector3d")) return "fixed64vector3";
+        if (baseT == "f64AngleSingle" || baseT.EndsWith(".f64AngleSingle")) return "fixed64angle";
+        if (baseT == "f64Euler" || baseT.EndsWith(".f64Euler")) return "fixed64euler";
+        return StubTypeName(baseT);
     }
 
     private static bool IsFixedMathType(string t)

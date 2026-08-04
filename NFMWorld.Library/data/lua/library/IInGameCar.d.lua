@@ -8,9 +8,22 @@
 ---@field placement number
 ---@field wasted boolean
 ---@field player PlayerParametersInstance
+---@field rad Rad3dInstance
+---@field stats CarStatsInstance
+---@field groundAt number
+---@field maxRadius number
+---@field wheelAngle f64euler
+---@field turningWheelAngle f64euler
+---@field wheels Rad3dWheelDefInstance
+---@field childTransforms ITransformInstance
+---@field position fixed64vector3
+---@field rotation f64euler
+---@field parent ITransformInstance
 IInGameCarInstance = {}
 
 ---@class (exact) IInGameCar
+
+IInGameCar = {}
 
 ---@param self IInGameCarInstance
 ---@param wheelidx number
@@ -38,12 +51,12 @@ function IInGameCarInstance:spark(x, y, z, scx, scy, scz, type, wheelGround) end
 
 ---@param self IInGameCarInstance
 ---@param wheelnum number
----@param amount Fixed64
+---@param amount fixed64
 function IInGameCarInstance:damageX(wheelnum, amount) end
 
 ---@param self IInGameCarInstance
 ---@param wheelnum number
----@param amount Fixed64
+---@param amount fixed64
 ---@param mtouch boolean
 ---@param nbsq number
 ---@param squash number
@@ -51,7 +64,7 @@ function IInGameCarInstance:damageY(wheelnum, amount, mtouch, nbsq, squash) end
 
 ---@param self IInGameCarInstance
 ---@param wheelnum number
----@param amount Fixed64
+---@param amount fixed64
 function IInGameCarInstance:damageZ(wheelnum, amount) end
 
 ---@param self IInGameCarInstance

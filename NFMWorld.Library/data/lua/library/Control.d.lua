@@ -19,6 +19,8 @@ ControlInstance = {}
 
 ---@class (exact) Control
 
+Control = {}
+
 ---Creates a new Control
 ---@return ControlInstance
 function Control.new() end

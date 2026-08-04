@@ -4,12 +4,14 @@ DeterministicRandomInstance = {}
 
 ---@class (exact) DeterministicRandom
 
+DeterministicRandom = {}
+
 ---Creates a new DeterministicRandom
 ---@param random DeterministicRandomInstance
 ---@return DeterministicRandomInstance
 function DeterministicRandom.new(random) end
 
----@param value Fixed64
+---@param value fixed64
 ---@return LuaDeterministicRandomInstance
 function DeterministicRandom.create(value) end
 
@@ -18,5 +20,5 @@ function DeterministicRandom.create(value) end
 function DeterministicRandomInstance:next() end
 
 ---@param self DeterministicRandomInstance
----@return Fixed64
+---@return fixed64
 function DeterministicRandomInstance:nextf64() end

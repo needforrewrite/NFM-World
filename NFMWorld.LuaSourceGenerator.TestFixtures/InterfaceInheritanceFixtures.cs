@@ -1,0 +1,100 @@
+using nfm_world_library.Lua;
+
+namespace NFMWorld.LuaSourceGenerator.TestFixtures;
+
+// ===================================================================
+// Two-level interface inheritance: IDog : IBaseAnimal
+// Simulates IInGameCar : ICar pattern (base NOT LuaVisible, derived IS)
+// ===================================================================
+
+public interface IBaseAnimal
+{
+    string Name { get; set; }
+    int Age { get; set; }
+}
+
+[LuaVisible]
+public partial interface IDog : IBaseAnimal
+{
+    string Breed { get; set; }
+}
+
+/// <summary>Concrete impl of IDog — NOT LuaVisible, relies on IDog's metatable.</summary>
+public class Dog : IDog
+{
+    public string Name { get; set; } = "";
+    public int Age { get; set; }
+    public string Breed { get; set; } = "";
+}
+
+// ===================================================================
+// Three-level interface inheritance: ICar : IVehicle : ITransform
+// All base interfaces NOT LuaVisible, only the leaf IS.
+// ===================================================================
+
+public interface IFixtureTransform
+{
+    double X { get; set; }
+    double Y { get; set; }
+    double Z { get; set; }
+}
+
+public interface IFixtureVehicle : IFixtureTransform
+{
+    int Speed { get; set; }
+    string? DriverName { get; set; }
+}
+
+[LuaVisible]
+public partial interface IFixtureCar : IFixtureVehicle
+{
+    string Model { get; set; }
+    bool IsElectric { get; set; }
+}
+
+/// <summary>Concrete impl of IFixtureCar — NOT LuaVisible, relies on IFixtureCar's metatable.</summary>
+public class FixtureCar : IFixtureCar
+{
+    public double X { get; set; }
+    public double Y { get; set; }
+    public double Z { get; set; }
+    public int Speed { get; set; }
+    public string? DriverName { get; set; }
+    public string Model { get; set; } = "";
+    public bool IsElectric { get; set; }
+}
+
+// ===================================================================
+// Interface inheritance with methods
+// ===================================================================
+
+public interface IHasName
+{
+    string GetName();
+    void SetName(string name);
+}
+
+public interface IHasAge
+{
+    int GetAge();
+    void SetAge(int age);
+}
+
+[LuaVisible]
+public partial interface IPerson : IHasName, IHasAge
+{
+    string? Email { get; set; }
+}
+
+public class Person : IPerson
+{
+    private string _name = "";
+    private int _age;
+
+    public string? Email { get; set; }
+
+    public string GetName() => _name;
+    public void SetName(string name) => _name = name;
+    public int GetAge() => _age;
+    public void SetAge(int age) => _age = age;
+}

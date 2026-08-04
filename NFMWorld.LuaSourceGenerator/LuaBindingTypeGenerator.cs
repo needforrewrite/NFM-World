@@ -117,7 +117,10 @@ internal sealed class LuaBindingTypeGenerator
     {
         foreach (var m in _type.InstanceMethods)
         {
-            if (m.IsInherited) continue;
+            // Skip only if inherited from a [LuaVisible] base (its __function_* lives there).
+            // Methods from non-LuaVisible bases must be generated locally.
+            if (m.IsInherited && m.ImplementationSourceType != null && IsKnownLuaVisible(m.ImplementationSourceType))
+                continue;
 
             var ret = m.ReturnType == "void";
             W(sb, i, $"internal static readonly global::Lua.LuaFunction __function_{m.FullLuaName} = new(\"{m.LuaName}\", (context, ct) =>");
@@ -175,13 +178,13 @@ internal sealed class LuaBindingTypeGenerator
         W(sb, b, "var key = context.GetArgument(1);");
         W(sb, b, "if (key.TryRead<string>(out var stringKey))");
         W(sb, b, "{"); var body = b + 1;
-        foreach (var f in _type.InstanceFields) W(sb, body, $"if (stringKey == \"{f.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + f.Name, f.FieldType)}));");
-        foreach (var p in _type.InstanceProperties.Where(x => x.HasGetter)) W(sb, body, $"if (stringKey == \"{p.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + p.Name, p.PropertyType)}));");
+        foreach (var f in _type.InstanceFields) W(sb, body, $"if (stringKey == \"{f.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + f.Name, f.FieldType, f.IsNullableReferenceType)}));");
+        foreach (var p in _type.InstanceProperties.Where(x => x.HasGetter)) W(sb, body, $"if (stringKey == \"{p.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + p.Name, p.PropertyType, p.IsNullableReferenceType)}));");
         var seenMethods = new HashSet<string>();
         foreach (var m in _type.InstanceMethods)
         {
             if (!seenMethods.Add(m.FullLuaName)) continue;
-            if (m.IsInherited)
+            if (m.IsInherited && m.ImplementationSourceType != null && IsKnownLuaVisible(m.ImplementationSourceType))
                 W(sb, body, $"if (stringKey == \"{m.FullLuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return(new global::Lua.LuaValue({m.ImplementationSourceType}.__Cache.__function_{m.FullLuaName})));");
             else
                 W(sb, body, $"if (stringKey == \"{m.FullLuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return(new global::Lua.LuaValue(__Cache.__function_{m.FullLuaName})));");
@@ -219,7 +222,7 @@ internal sealed class LuaBindingTypeGenerator
         {
             W(sb, body, $"if (stringKey == \"{f.LuaName}\")");
             W(sb, body, "{");
-            if (IsNullable(f.FieldType))
+            if (IsNullableOrRef(f.FieldType, f.IsNullableReferenceType))
                 WriteNullableSetter(sb, body + 1, $"userData.{f.Name}", f.FieldType);
             else
             {
@@ -232,7 +235,7 @@ internal sealed class LuaBindingTypeGenerator
         {
             W(sb, body, $"if (stringKey == \"{p.LuaName}\")");
             W(sb, body, "{");
-            if (IsNullable(p.PropertyType))
+            if (IsNullableOrRef(p.PropertyType, p.IsNullableReferenceType))
                 WriteNullableSetter(sb, body + 1, $"userData.{p.Name}", p.PropertyType);
             else
             {
@@ -275,7 +278,7 @@ internal sealed class LuaBindingTypeGenerator
             W(sb, gb, "__Cache.__metatable[global::Lua.Runtime.Metamethods.Index] = __Cache.__metamethod_index;");
             W(sb, gb, "__Cache.__metatable[global::Lua.Runtime.Metamethods.NewIndex] = __Cache.__metamethod_newindex;");
             W(sb, gb, "__Cache.__metatable[global::Lua.Runtime.Metamethods.ToString] = __Cache.__metamethod_tostring;");
-            foreach (var m in _type.InstanceMethods.Where(m => !m.IsInherited))
+            foreach (var m in _type.InstanceMethods.Where(m => !m.IsInherited || (m.ImplementationSourceType != null && !IsKnownLuaVisible(m.ImplementationSourceType))))
                 W(sb, gb, $"__Cache.__metatable[\"{m.FullLuaName}\"] = new global::Lua.LuaValue(__Cache.__function_{m.FullLuaName});");
             foreach (var evt in _type.InstanceEvents) { W(sb, gb, $"__Cache.__metatable[\"add_{evt.LuaName}\"] = new global::Lua.LuaValue(__Cache.__function_{evt.Name}_add);"); W(sb, gb, $"__Cache.__metatable[\"remove_{evt.LuaName}\"] = new global::Lua.LuaValue(__Cache.__function_{evt.Name}_remove);"); }
         }
@@ -339,9 +342,9 @@ internal sealed class LuaBindingTypeGenerator
             W(sb, gb + 1, "if (key.TryRead<string>(out var sk))");
             W(sb, gb + 1, "{");
             foreach (var f in _type.StaticFields)
-                W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField($"{_type.FullTypeName}.{f.Name}", f.FieldType)}));");
+                W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField($"{_type.FullTypeName}.{f.Name}", f.FieldType, f.IsNullableReferenceType)}));");
             foreach (var p in _type.StaticProperties.Where(x => x.HasGetter))
-                W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField($"{_type.FullTypeName}.{p.Name}", p.PropertyType)}));");
+                W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField($"{_type.FullTypeName}.{p.Name}", p.PropertyType, p.IsNullableReferenceType)}));");
             W(sb, gb + 1, "}");
             W(sb, gb + 1, "return new System.Threading.Tasks.ValueTask<int>(context.Return(global::Lua.LuaValue.Nil));");
             W(sb, gb, "});");
@@ -360,14 +363,14 @@ internal sealed class LuaBindingTypeGenerator
                 W(sb, gb + 1, "{");
                 foreach (var f in _type.StaticFields.Where(x => !x.IsReadOnly))
                 {
-                    if (IsNullable(f.FieldType))
+                    if (IsNullableOrRef(f.FieldType, f.IsNullableReferenceType))
                         W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") {{ {_type.FullTypeName}.{f.Name} = context.GetArgumentOrNull<{NullableUnderlying(f.FieldType)}>(2); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                     else
                         W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") {{ {_type.FullTypeName}.{f.Name} = val.Read<{TsType(f.FieldType)}>(); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                 }
                 foreach (var p in _type.StaticProperties.Where(x => x.HasSetter))
                 {
-                    if (IsNullable(p.PropertyType))
+                    if (IsNullableOrRef(p.PropertyType, p.IsNullableReferenceType))
                         W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") {{ {_type.FullTypeName}.{p.Name} = context.GetArgumentOrNull<{NullableUnderlying(p.PropertyType)}>(2); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                     else
                         W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") {{ {_type.FullTypeName}.{p.Name} = val.Read<{TsType(p.PropertyType)}>(); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
@@ -422,7 +425,10 @@ internal sealed class LuaBindingTypeGenerator
     private string WrRet(string expr, LuaMethodMetadata m)
     {
         if (m.ReturnType == "void") return expr;
-        if (IsSimple(m.ReturnType) && !IsNullable(m.ReturnType)) return $"({expr})";
+        // For nullable reference type returns, use FromObject which handles null → Nil
+        if (m.IsNullableReturnType) return $"global::Lua.LuaValue.FromObject({expr})";
+        if (IsSimple(m.ReturnType) && !IsNullable(m.ReturnType))
+            return IsFixedMathType(m.ReturnType) ? $"(global::Lua.LuaValue)({expr})" : $"({expr})";
         if (IsSimple(m.ReturnType) && IsNullable(m.ReturnType)) return WrNullableValue(expr, m.ReturnType);
         if (IsKnownLuaVisible(m.ReturnType)) return $"global::Lua.LuaValue.FromUserData({expr})";
         if (NeedsStructWrap(m.ReturnType))
@@ -435,10 +441,13 @@ internal sealed class LuaBindingTypeGenerator
     }
 
     /// <summary>Wrap field/property return value.</summary>
-    private string WrField(string expr, string rt)
+    private string WrField(string expr, string rt, bool isNullableRefType = false)
     {
         if (rt == "void") return expr;
-        if (IsSimple(rt) && !IsNullable(rt)) return $"({expr})";
+        // For nullable reference types (string?, object?), use FromObject which handles null → Nil
+        if (isNullableRefType) return $"global::Lua.LuaValue.FromObject({expr})";
+        if (IsSimple(rt) && !IsNullable(rt))
+            return IsFixedMathType(rt) ? $"(global::Lua.LuaValue)({expr})" : $"({expr})";
         if (IsSimple(rt) && IsNullable(rt)) return WrNullableValue(expr, rt);
         if (IsKnownLuaVisible(rt)) return $"global::Lua.LuaValue.FromUserData({expr})";
         if (NeedsStructWrap(rt))
@@ -453,10 +462,10 @@ internal sealed class LuaBindingTypeGenerator
     /// <summary>Generate "value or nil" marshalling for Nullable&lt;T&gt; types.</summary>
     private static string WrNullableValue(string expr, string nullableType)
     {
-        // Extract underlying type: "int?" → "int"
         var underlying = NullableUnderlying(nullableType);
-        // Value types: HasValue ? cast-to-LuaValue(Value) : Nil
-        // Numeric types go through double; bool uses explicit LuaValue(bool)
+        // FixedMath types use implicit LuaValue conversion, not double cast
+        if (IsFixedMathType(underlying))
+            return $"{expr}.HasValue ? (global::Lua.LuaValue)({expr}.Value) : global::Lua.LuaValue.Nil";
         if (underlying == "bool")
             return $"{expr}.HasValue ? new global::Lua.LuaValue({expr}.Value) : global::Lua.LuaValue.Nil";
         // All other value types (int, long, float, double, byte, etc.) → cast via double
@@ -467,11 +476,35 @@ internal sealed class LuaBindingTypeGenerator
     private static void WriteNullableSetter(CodeBuilder sb, int indent, string targetExpr, string nullableType)
     {
         var underlying = NullableUnderlying(nullableType);
-        W(sb, indent, $"{targetExpr} = context.GetArgumentOrNull<{underlying}>(2);");
+        // GetArgumentOrNull<T> requires T : struct, so for reference types
+        // (string?, object?, etc.) we check the Lua value type manually.
+        if (IsReferenceType(underlying))
+        {
+            W(sb, indent, $"var __tmp = context.GetArgument(2);");
+            W(sb, indent, $"{targetExpr} = __tmp.Type == global::Lua.LuaValueType.Nil ? null : __tmp.Read<{underlying}>();");
+        }
+        else
+        {
+            W(sb, indent, $"{targetExpr} = context.GetArgumentOrNull<{underlying}>(2);");
+        }
         W(sb, indent, "return new System.Threading.Tasks.ValueTask<int>(context.Return());");
     }
 
+    private static bool IsReferenceType(string t)
+    {
+        // Value types that are known primitives or FixedMath
+        if (t is "int" or "long" or "float" or "double" or "bool"
+            or "byte" or "sbyte" or "short" or "ushort" or "uint" or "ulong"
+            or "decimal" or "char") return false;
+        if (IsFixedMathType(t)) return false;
+        // Everything else (string, object, arrays, interfaces, classes) is a reference type
+        return true;
+    }
+
     private static bool IsNullable(string t) => t.EndsWith("?");
+
+    /// <summary>True if the type is nullable (value type with ?) or a nullable reference type.</summary>
+    private static bool IsNullableOrRef(string t, bool isNullableRefType) => t.EndsWith("?") || isNullableRefType;
 
     private static string NullableUnderlying(string t) =>
         t.EndsWith("?") ? t.Substring(0, t.Length - 1) : t;

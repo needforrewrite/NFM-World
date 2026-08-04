@@ -2,6 +2,6 @@ declare class DeterministicRandom
 {
     _random: DeterministicRandom;
     next(): number;
-    nextf64(): Fixed64;
-    static create(value: Fixed64): LuaDeterministicRandom;
+    nextf64(): fixed64;
+    static create(value: fixed64): LuaDeterministicRandom;
 }

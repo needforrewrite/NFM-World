@@ -1,0 +1,2 @@
+declare class System_Collections_Generic_IReadOnlyList_NFMWorldLibrary_Rad_Rad3dWheelDef_ {
+}

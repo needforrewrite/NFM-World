@@ -27,12 +27,20 @@ internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compil
     {
         var luaName = type.LuaName;
 
-        // Build base type list for ---@class
+        // Build base type list for ---@class, filtering self-references and ILuaUserData
         var baseTypes = new List<string>();
         if (type.BaseTypeFullName != null)
-            baseTypes.Add($"{StubTypeName(type.BaseTypeFullName)}Instance");
+        {
+            var baseStub = StubTypeName(type.BaseTypeFullName);
+            if (baseStub != luaName)
+                baseTypes.Add($"{baseStub}Instance");
+        }
         foreach (var iface in type.InterfaceFullNames)
-            baseTypes.Add($"{StubTypeName(iface)}Instance");
+        {
+            var ifaceStub = StubTypeName(iface);
+            if (ifaceStub != luaName && ifaceStub != "ILuaUserData")
+                baseTypes.Add($"{ifaceStub}Instance");
+        }
 
         if (baseTypes.Count > 0)
             sb.AppendLine($"---@class {luaName}Instance : {string.Join(", ", baseTypes)}");
@@ -54,9 +62,15 @@ internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compil
     {
         var luaName = type.LuaName;
 
-        // Class annotation with base type
+        // Class annotation with base type (filter self-references)
         if (type.BaseTypeFullName != null)
-            sb.AppendLine($"---@class (exact) {luaName} : {StubTypeName(type.BaseTypeFullName)}");
+        {
+            var baseStub = StubTypeName(type.BaseTypeFullName);
+            if (baseStub != luaName)
+                sb.AppendLine($"---@class (exact) {luaName} : {baseStub}");
+            else
+                sb.AppendLine($"---@class (exact) {luaName}");
+        }
         else
             sb.AppendLine($"---@class (exact) {luaName}");
 
@@ -66,6 +80,9 @@ internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compil
 
         foreach (var field in type.StaticFields)
             sb.AppendLine($"---@field {field.LuaName} {ToLuaTypeName(field.FieldType)}");
+
+        sb.AppendLine();
+        sb.AppendLine($"{luaName} = {{}}");
 
         // Constructors
         GenerateConstructorStubs(sb);
@@ -195,14 +212,12 @@ internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compil
     private static string FixedMathToLuaName(string t)
     {
         var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
-        return baseT switch
-        {
-            "Fixed64" => "fixed64",
-            "Vector3d" => "fixed64vector3",
-            "f64AngleSingle" => "f64angle",
-            "f64Euler" => "f64euler",
-            _ => ExtractSimpleName(baseT)
-        };
+        // Handle namespace-qualified names (FixedMathSharp.Fixed64) and bare names (Fixed64)
+        if (baseT == "Fixed64" || baseT.EndsWith(".Fixed64")) return "fixed64";
+        if (baseT == "Vector3d" || baseT.EndsWith(".Vector3d")) return "fixed64vector3";
+        if (baseT == "f64AngleSingle" || baseT.EndsWith(".f64AngleSingle")) return "f64angle";
+        if (baseT == "f64Euler" || baseT.EndsWith(".f64Euler")) return "f64euler";
+        return ExtractSimpleName(baseT);
     }
 
     private static bool IsFixedMathType(string t)
