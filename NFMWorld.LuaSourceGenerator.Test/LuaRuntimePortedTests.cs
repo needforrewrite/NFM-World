@@ -497,13 +497,16 @@ public class LuaRuntimePortedTests
     }
 
     [TestMethod]
-    public async Task NullableOverloads_CompileAndVerify()
+    public async Task NullableOverloads_CallNullableCtor()
     {
-        // Verify the nullable constructor overload was generated with valid identifier (no '?')
         _state.Environment["SampleClass"] = SampleClass.TypeTable;
-        Assert.IsNotNull(SampleClass.TypeTable["new_intn_str"]);
-        // The nullable constructor is registered — compilation succeeded without '?' in identifiers
-        Assert.IsTrue(true, "Nullable constructor overload compiled without invalid chars");
+        // Call the nullable constructor with nil for int, value for string
+        var results = await _state.DoStringAsync(@"
+            local obj = SampleClass.new_intn_str(nil, 'OnlyNameGiven')
+            return obj.id, obj.name
+        ");
+        Assert.AreEqual(0, results[0].Read<int>());
+        Assert.AreEqual("OnlyNameGiven", results[1].Read<string>());
     }
 }
 

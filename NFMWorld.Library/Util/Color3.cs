@@ -3,10 +3,11 @@ using System.Text.Json.Serialization;
 using Lua;
 using Maxine.Extensions.Mathematics;
 using MemoryPack;
+using nfm_world_library.Lua;
 
 namespace NFMWorldLibrary.Util;
 
-[MemoryPackable, LuaObject]
+[MemoryPackable, LuaVisible]
 public partial record struct Color3(
     [property: JsonPropertyName("r"), LuaMember("r")] short R,
     [property: JsonPropertyName("g"), LuaMember("g")] short G,

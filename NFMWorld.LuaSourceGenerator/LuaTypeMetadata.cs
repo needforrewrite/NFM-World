@@ -23,6 +23,8 @@ internal sealed class LuaTypeMetadata
     public string? BaseTypeFullName { get; }
     /// <summary>Implemented interface full names (without global::).</summary>
     public string[] InterfaceFullNames { get; }
+    /// <summary>True if the type has required properties/fields (no constructor should be generated).</summary>
+    public bool HasRequiredMembers { get; }
 
     public LuaMethodMetadata[] InstanceMethods { get; }
     public LuaPropertyMetadata[] InstanceProperties { get; }
@@ -98,7 +100,10 @@ internal sealed class LuaTypeMetadata
         StaticProperties = CollectProperties(members, hiddenAttr, isStatic: true);
         StaticFields = CollectFields(members, hiddenAttr, isStatic: true);
         StaticEvents = CollectEvents(members, hiddenAttr, isStatic: true);
-        Constructors = IsStatic ? System.Array.Empty<LuaConstructorMetadata>() : CollectConstructors(symbol, hiddenAttr);
+        Constructors = (IsStatic || HasAnyRequiredMembers(symbol))
+            ? System.Array.Empty<LuaConstructorMetadata>()
+            : CollectConstructors(symbol, hiddenAttr);
+        HasRequiredMembers = HasAnyRequiredMembers(symbol);
 
         // Assign overload suffixes to constructors (all are "new" overloads)
         if (Constructors.Length > 1)
@@ -110,6 +115,13 @@ internal sealed class LuaTypeMetadata
                 c.OverloadSuffix = "_" + string.Join("_", c.Parameters.Select(p => ParamSuffix(p)));
             }
         }
+    }
+
+    private static bool HasAnyRequiredMembers(INamedTypeSymbol symbol)
+    {
+        return symbol.GetMembers().Any(m =>
+            (m is IPropertySymbol p && p.IsRequired) ||
+            (m is IFieldSymbol f && f.IsRequired));
     }
 
     private LuaMethodMetadata[] CollectMethods(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic, INamedTypeSymbol? owningType = null)
@@ -319,12 +331,19 @@ internal sealed class LuaParameterMetadata(IParameterSymbol p)
         "int?" or "long?" or "float?" or "double?" or "bool?"
             or "byte?" or "sbyte?" or "short?" or "ushort?" or "uint?" or "ulong?" or "decimal?" or "char?"
             => true,
-        _ => IsFixedMathBaseType(t)
+        _ => IsFixedMathBaseType(t) || IsSpanType(t)
     };
+
+    private static bool IsSpanType(string t)
+    {
+        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        return baseT is "System.Span" or "Span" or "System.ReadOnlySpan" or "ReadOnlySpan";
+    }
 
     private static bool IsFixedMathBaseType(string t)
     {
-        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        var clean = t.EndsWith("?") ? t.Substring(0, t.Length - 1) : t;
+        var baseT = clean.Contains('<') ? clean.Substring(0, clean.IndexOf('<')) : clean;
         return baseT is "Fixed64" or "Vector3d" or "f64AngleSingle" or "f64Euler" or "Fixed4x4"
             || baseT.EndsWith(".Fixed64") || baseT.EndsWith(".Vector3d")
             || baseT.EndsWith(".f64AngleSingle") || baseT.EndsWith(".f64Euler")
@@ -337,7 +356,7 @@ internal sealed class LuaPropertyMetadata(IPropertySymbol s)
     public string Name { get; } = s.Name;
     public string PropertyType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
     public bool HasGetter { get; } = s.GetMethod != null;
-    public bool HasSetter { get; } = s.SetMethod != null;
+    public bool HasSetter { get; } = s.SetMethod != null && !s.SetMethod.IsInitOnly;
     public string LuaName { get; } = s.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "LuaNameAttribute")
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);
 }

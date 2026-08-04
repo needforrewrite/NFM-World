@@ -80,7 +80,7 @@ internal sealed class LuaBindingTypeGenerator
             W(sb, i, "{");
             var b = i + 1;
             for (var pi = 0; pi < paramList.Length; pi++)
-                W(sb, b, $"var arg{pi} = context.GetArgument<{Ts(paramList[pi])}>({pi});");
+                W(sb, b, $"var arg{pi} = {ReadArg(paramList[pi], pi)};");
             W(sb, b, $"var __result = new {_type.FullTypeName}({argNames});");
             W(sb, b, "return new System.Threading.Tasks.ValueTask<int>(context.Return(global::Lua.LuaValue.FromUserData(__result)));");
             W(sb, i, "}");
@@ -102,7 +102,7 @@ internal sealed class LuaBindingTypeGenerator
             W(sb, i, "{");
             var b = i + 1;
             for (var pi = 0; pi < paramList.Length; pi++)
-                W(sb, b, $"var arg{pi} = context.GetArgument<{Ts(paramList[pi])}>({pi});");
+                W(sb, b, $"var arg{pi} = {ReadArg(paramList[pi], pi)};");
             var args = string.Join(", ", Enumerable.Range(0, paramList.Length).Select(pi =>
                 paramList[pi].NeedsStructUserData ? $"arg{pi}.Value" : $"arg{pi}"));
 
@@ -125,7 +125,7 @@ internal sealed class LuaBindingTypeGenerator
             var b = i + 1;
             W(sb, b, $"var userData = context.GetArgument<{TypeRef(_type.FullTypeName)}>(0);");
             for (var pi = 0; pi < m.Parameters.Length; pi++)
-                W(sb, b, $"var arg{pi} = context.GetArgument<{Ts(m.Parameters[pi])}>({pi + 1});");
+                W(sb, b, $"var arg{pi} = {ReadArg(m.Parameters[pi], pi + 1)};");
             var args = string.Join(", ", Enumerable.Range(0, m.Parameters.Length).Select(pi =>
                 m.Parameters[pi].NeedsStructUserData ? $"arg{pi}.Value" : $"arg{pi}"));
 
@@ -320,7 +320,7 @@ internal sealed class LuaBindingTypeGenerator
             foreach (var c in _type.Constructors)
                 W(sb, gb, $"__Cache.__typeTable[\"{c.FullLuaNew}\"] = new global::Lua.LuaValue(__Cache.__function_new{c.OverloadSuffix});");
         }
-        else if (!_type.IsStatic && !_type.IsInterface)
+        else if (!_type.IsStatic && !_type.IsInterface && !_type.HasRequiredMembers)
             W(sb, gb, $"__Cache.__typeTable[\"new\"] = new global::Lua.LuaValue(new global::Lua.LuaFunction(\"new\", (context, ct) => new System.Threading.Tasks.ValueTask<int>(context.Return(global::Lua.LuaValue.FromUserData(new {_type.FullTypeName}())))));");
 
         foreach (var m in _type.StaticMethods)
@@ -361,14 +361,14 @@ internal sealed class LuaBindingTypeGenerator
                 foreach (var f in _type.StaticFields.Where(x => !x.IsReadOnly))
                 {
                     if (IsNullable(f.FieldType))
-                        W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") {{ {_type.FullTypeName}.{f.Name} = val.Type == global::Lua.LuaValueType.Nil ? ({f.FieldType})null : val.Read<{NullableUnderlying(f.FieldType)}>(); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
+                        W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") {{ {_type.FullTypeName}.{f.Name} = context.GetArgumentOrNull<{NullableUnderlying(f.FieldType)}>(2); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                     else
                         W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") {{ {_type.FullTypeName}.{f.Name} = val.Read<{TsType(f.FieldType)}>(); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                 }
                 foreach (var p in _type.StaticProperties.Where(x => x.HasSetter))
                 {
                     if (IsNullable(p.PropertyType))
-                        W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") {{ {_type.FullTypeName}.{p.Name} = val.Type == global::Lua.LuaValueType.Nil ? ({p.PropertyType})null : val.Read<{NullableUnderlying(p.PropertyType)}>(); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
+                        W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") {{ {_type.FullTypeName}.{p.Name} = context.GetArgumentOrNull<{NullableUnderlying(p.PropertyType)}>(2); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                     else
                         W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") {{ {_type.FullTypeName}.{p.Name} = val.Read<{TsType(p.PropertyType)}>(); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                 }
@@ -395,6 +395,17 @@ internal sealed class LuaBindingTypeGenerator
     /// <summary>Stack type for parameter — wraps in StructUserData if needed.</summary>
     private static string Ts(LuaParameterMetadata p) =>
         p.NeedsStructUserData ? $"nfm_world_library.Lua.StructUserData<{p.Type}>" : TsType(p.Type);
+
+    /// <summary>Generate the argument-reading expression. Uses GetArgumentOrNull for nullable value types.</summary>
+    private static string ReadArg(LuaParameterMetadata p, int index)
+    {
+        if (!p.NeedsStructUserData && IsNullable(p.Type))
+        {
+            var underlying = p.Type.EndsWith("?") ? p.Type.Substring(0, p.Type.Length - 1) : p.Type;
+            return $"context.GetArgumentOrNull<{underlying}>({index})";
+        }
+        return $"context.GetArgument<{Ts(p)}>({index})";
+    }
 
     /// <summary>Stack type for a raw type string.</summary>
     private static string TsType(string t) => t switch
@@ -456,9 +467,7 @@ internal sealed class LuaBindingTypeGenerator
     private static void WriteNullableSetter(CodeBuilder sb, int indent, string targetExpr, string nullableType)
     {
         var underlying = NullableUnderlying(nullableType);
-        W(sb, indent, "var __val = context.GetArgument(2);");
-        W(sb, indent, $"if (__val.Type == global::Lua.LuaValueType.Nil) {{ {targetExpr} = null; return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
-        W(sb, indent, $"{targetExpr} = __val.Read<{underlying}>();");
+        W(sb, indent, $"{targetExpr} = context.GetArgumentOrNull<{underlying}>(2);");
         W(sb, indent, "return new System.Threading.Tasks.ValueTask<int>(context.Return());");
     }
 
@@ -498,8 +507,9 @@ internal sealed class LuaBindingTypeGenerator
     /// <summary>Check if t is a FixedMath type (not just contains it — avoids false positives on generics).</summary>
     private static bool IsFixedMathType(string t)
     {
-        // Strip generic arguments to check only the outermost type
-        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        // Strip nullable suffix and generic arguments to check only the outermost type
+        var clean = t.EndsWith("?") ? t.Substring(0, t.Length - 1) : t;
+        var baseT = clean.Contains('<') ? clean.Substring(0, clean.IndexOf('<')) : clean;
         return baseT == "FixedMathSharp.Fixed64" || baseT == "Fixed64"
             || baseT == "FixedMathSharp.Vector3d" || baseT == "Vector3d"
             || baseT == "FixedMathSharp.f64AngleSingle" || baseT == "f64AngleSingle"
@@ -513,6 +523,10 @@ internal sealed class LuaBindingTypeGenerator
         // Only skip true tuple types — check outermost type name (before any '<')
         var baseName = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
         if (baseName.StartsWith("(") || baseName == "System.ValueTuple" || baseName == "System.Tuple")
+            return false;
+        // Ref structs (Span<T>, ReadOnlySpan<T>) can't be used with StructUserData<T>
+        if (baseName == "System.Span" || baseName == "Span"
+            || baseName == "System.ReadOnlySpan" || baseName == "ReadOnlySpan")
             return false;
         return true;
     }

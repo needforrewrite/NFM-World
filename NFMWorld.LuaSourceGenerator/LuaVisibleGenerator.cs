@@ -220,6 +220,10 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         var baseName = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
         if (baseName.StartsWith("(") || baseName == "System.ValueTuple" || baseName == "System.Tuple")
             return false;
+        // Ref structs (Span<T>, ReadOnlySpan<T>) can't be wrapped in StructUserData
+        if (baseName == "System.Span" || baseName == "Span"
+            || baseName == "System.ReadOnlySpan" || baseName == "ReadOnlySpan")
+            return false;
         return true;
     }
 
@@ -304,7 +308,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         sb.AppendLine("            {");
         var hasWritable = false;
         var isValueType = symbol.IsValueType;
-        foreach (var p in props.Where(x => x.SetMethod != null))
+        foreach (var p in props.Where(x => x.SetMethod != null && !x.SetMethod.IsInitOnly))
         {
             hasWritable = true;
             var typeStr = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -404,7 +408,8 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
     /// <summary>Check if t is a FixedMath type by base name, not Contains (avoids false positives on generics).</summary>
     private static bool IsFixedMathBaseType(string t)
     {
-        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        var clean = t.EndsWith("?") ? t.Substring(0, t.Length - 1) : t;
+        var baseT = clean.Contains('<') ? clean.Substring(0, clean.IndexOf('<')) : clean;
         return baseT is "Fixed64" or "Vector3d" or "f64AngleSingle" or "f64Euler" or "Fixed4x4"
             || baseT.EndsWith(".Fixed64") || baseT.EndsWith(".Vector3d")
             || baseT.EndsWith(".f64AngleSingle") || baseT.EndsWith(".f64Euler")
