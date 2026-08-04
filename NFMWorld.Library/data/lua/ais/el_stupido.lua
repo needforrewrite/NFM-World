@@ -14,9 +14,9 @@ end
 -- Calculate angle difference, normalized to -180 to 180 range
 local function angleDiff(a, b)
     local diff = a - b
-    diff = ((diff + fix64.create(180)) % fix64.create(360)) - fix64.create(180)
-    if diff:compareTo(fix64.create(-180)) < 0 then
-        diff = diff + fix64.create(360)
+    diff = ((diff + fixed64(180)) % fixed64(360)) - fixed64(180)
+    if diff:compareTo(fixed64(-180)) < 0 then
+        diff = diff + fixed64(360)
     end
     return diff
 end

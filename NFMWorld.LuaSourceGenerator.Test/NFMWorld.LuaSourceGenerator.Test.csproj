@@ -21,7 +21,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
       <ProjectReference Include="..\NFMWorld.LuaSourceGenerator.TestFixtures\NFMWorld.LuaSourceGenerator.TestFixtures.csproj" />
     </ItemGroup>
 

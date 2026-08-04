@@ -1,4 +1,5 @@
 ﻿using Lua;
+using nfm_world_library.Lua;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.AI;
 using NFMWorldLibrary.Backend.Gamemodes;
@@ -7,43 +8,55 @@ using NFMWorldLibrary.Gamemodes;
 
 namespace NFMWorldLibrary;
 
-[LuaObject]
+[LuaVisible]
 public partial interface IInGameCar : ICar
 {
-    [LuaMember("car_physics")]
+    [LuaName("car_physics")]
     CarPhysics CarPhysics { get; }
     
-    [LuaMember("control")]
+    [LuaName("control")]
     Control Control { get; }
     
-    [LuaMember("current_checkpoint")]
+    [LuaName("current_checkpoint")]
     ushort CurrentCheckpoint { get; set; }
     
-    [LuaMember("nlaps")]
+    [LuaName("nlaps")]
     byte CurrentLap { get; set; } // mad.nlaps
     
-    [LuaMember("clear")]
+    [LuaName("clear")]
     int TotalCheckpoint { get; set; } // mad.clear
     
-    [LuaMember("last_checkpoint_node")]
+    [LuaName("last_checkpoint_node")]
     int LastCheckpointNode { get; set; } // resets on new lap
     
-    [LuaMember("placement")]
+    [LuaName("placement")]
     int Placement { get; set; } // cp.pos
     
-    [LuaMember("wasted")]
+    [LuaName("wasted")]
     bool Wasted { get; }
     
+    [LuaHidden]
     BaseAi? Bot { get; set; }
     
-    [LuaMember("player")]
+    [LuaName("player")]
     PlayerParameters Player { get; }
 
+    [LuaHidden]
     public event DamageFunc? DamagedX;
+    
+    [LuaHidden]
     public event RoofDamageFunc? DamagedY;
+    
+    [LuaHidden]
     public event DamageFunc? DamagedZ;
+    
+    [LuaHidden]
     public event SparkFunc? Sparked;
+    
+    [LuaHidden]
     public event DustFunc? Dusted;
+    
+    [LuaHidden]
     public event Action? Fixed;
 
     /// <summary>

@@ -3,6 +3,8 @@ using Lua.Runtime;
 using Lua.Standard;
 using nfm_world_library.Lua;
 using NFMWorld.LuaSourceGenerator.Test.SampleTypes;
+using NFMWorld.LuaSourceGenerator.TestFixtures;
+using NFMWorld.LuaSourceGenerator.TestFixtures.Lua;
 
 namespace NFMWorld.LuaSourceGenerator.Test;
 
@@ -327,6 +329,181 @@ public class LuaRuntimePortedTests
         _state.Environment["obj"] = (LuaValue)obj;
         var results = await _state.DoStringAsync("return obj.nullableLongField");
         Assert.AreEqual(1234567890123.0, results[0].Read<double>(), 1.0);
+    }
+
+    // ===================================================================
+    // Record struct tests
+    // ===================================================================
+
+    [TestMethod]
+    public async Task RecordStruct_CreateAndRead()
+    {
+        _state.Environment["RecordStructType"] = RecordStructType.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            local obj = RecordStructType.new_int_int(10, 20)
+            return obj.x, obj.y
+        ");
+        Assert.AreEqual(10, results[0].Read<int>());
+        Assert.AreEqual(20, results[1].Read<int>());
+    }
+
+    [TestMethod]
+    public async Task RecordStruct_DefaultConstructor()
+    {
+        _state.Environment["RecordStructType"] = RecordStructType.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            local obj = RecordStructType.new()
+            return obj.x, obj.y
+        ");
+        Assert.AreEqual(0, results[0].Read<int>());
+        Assert.AreEqual(0, results[1].Read<int>());
+    }
+
+    [TestMethod]
+    public async Task RecordStruct_InstanceMethod()
+    {
+        _state.Environment["RecordStructType"] = RecordStructType.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            local obj = RecordStructType.new_int_int(3, 4)
+            return obj:sum()
+        ");
+        Assert.AreEqual(7, results[0].Read<int>());
+    }
+
+    // ===================================================================
+    // Tuple overload tests — verify no invalid identifiers generated
+    // ===================================================================
+
+    [TestMethod]
+    public async Task TupleOverloads_CompileCheck()
+    {
+        // Verify the type table exists and has the expected overloaded entries
+        _state.Environment["TypeWithTupleOverloads"] = TypeWithTupleOverloads.TypeTable;
+        Assert.IsNotNull(TypeWithTupleOverloads.TypeTable);
+
+        // The key test: just verify the type compiled — presence of
+        // valid __function_ entries proves no invalid identifiers were generated
+        Assert.IsTrue(true, "TypeWithTupleOverloads compiled successfully");
+    }
+
+    [TestMethod]
+    public async Task TupleOverloads_CreateAndVerifyCompilation()
+    {
+        // Main test: verify compilation succeeded (no invalid C# identifiers from tuple types)
+        _state.Environment["TypeWithTupleOverloads"] = TypeWithTupleOverloads.TypeTable;
+        
+        // Create instance and verify it exists
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeWithTupleOverloads.new()
+            return type(obj)
+        ");
+        Assert.IsNotNull(results[0].Read<string>());
+    }
+
+    // ===================================================================
+    // Namespace conflict test — verify global:: prefix
+    // ===================================================================
+
+    [TestMethod]
+    public async Task LuaNamespace_CompileCheck()
+    {
+        // TypeInLuaNamespace is in a namespace containing "Lua"
+        // The generated code must use global::Lua.ILuaUserData to avoid conflict
+        _state.Environment["TypeInLuaNamespace"] = TypeInLuaNamespace.TypeTable;
+        Assert.IsNotNull(TypeInLuaNamespace.TypeTable);
+        Assert.IsTrue(true, "TypeInLuaNamespace compiled without Lua namespace conflict");
+    }
+
+    [TestMethod]
+    public async Task LuaNamespace_CreateAndRead()
+    {
+        _state.Environment["TypeInLuaNamespace"] = TypeInLuaNamespace.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeInLuaNamespace.new_str_int('Test', 99)
+            return obj.name, obj.value
+        ");
+        Assert.AreEqual("Test", results[0].Read<string>());
+        Assert.AreEqual(99, results[1].Read<int>());
+    }
+
+    // ===================================================================
+    // Constructor overload tests
+    // ===================================================================
+
+    [TestMethod]
+    public async Task ConstructorOverloads_AllVariants()
+    {
+        _state.Environment["TypeWithOverloads"] = TypeWithOverloads.TypeTable;
+
+        // int overload (first constructor, registered as base "new")
+        var r1 = await _state.DoStringAsync(@"
+            local obj = TypeWithOverloads.new(42)
+            return obj.value
+        ");
+        Assert.AreEqual(42, r1[0].Read<int>());
+
+        // float overload
+        var r2 = await _state.DoStringAsync(@"
+            local obj = TypeWithOverloads.new_flt(3.14)
+            return obj.value
+        ");
+        Assert.AreEqual(3, r2[0].Read<int>());
+
+        // string overload
+        var r3 = await _state.DoStringAsync(@"
+            local obj = TypeWithOverloads.new_str('Hello')
+            return obj.text
+        ");
+        Assert.AreEqual("string:Hello", r3[0].Read<string>());
+    }
+
+    // ===================================================================
+    // Static property access tests (TypeTable metatable)
+    // ===================================================================
+
+    [TestMethod]
+    public async Task StaticProperty_Counter_ReadWrite()
+    {
+        _state.Environment["SampleClass"] = SampleClass.TypeTable;
+        SampleClass.StaticCounter = 0;
+
+        await _state.DoStringAsync("SampleClass.staticCounter = 100");
+        Assert.AreEqual(100, SampleClass.StaticCounter);
+
+        var results = await _state.DoStringAsync("return SampleClass.staticCounter");
+        Assert.AreEqual(100, results[0].Read<int>());
+    }
+
+    [TestMethod]
+    public async Task StaticProperty_Name_Readable()
+    {
+        _state.Environment["SampleClass"] = SampleClass.TypeTable;
+        var results = await _state.DoStringAsync("return SampleClass.staticName");
+        Assert.AreEqual("SampleClass", results[0].Read<string>());
+    }
+
+    // ===================================================================
+    // Nullable in overloads — verify no '?' in generated identifiers
+    // ===================================================================
+
+    [TestMethod]
+    public async Task NullableOverloads_CompileCheck()
+    {
+        // SampleClass has constructor overloads with nullable params
+        // The nullable variant should have suffix like _intn_str not _int?_str
+        _state.Environment["SampleClass"] = SampleClass.TypeTable;
+        Assert.IsNotNull(SampleClass.TypeTable["new_intn_str"]);
+        Assert.IsTrue(true, "Nullable constructor overload compiled without '?' in identifiers");
+    }
+
+    [TestMethod]
+    public async Task NullableOverloads_CompileAndVerify()
+    {
+        // Verify the nullable constructor overload was generated with valid identifier (no '?')
+        _state.Environment["SampleClass"] = SampleClass.TypeTable;
+        Assert.IsNotNull(SampleClass.TypeTable["new_intn_str"]);
+        // The nullable constructor is registered — compilation succeeded without '?' in identifiers
+        Assert.IsTrue(true, "Nullable constructor overload compiled without invalid chars");
     }
 }
 

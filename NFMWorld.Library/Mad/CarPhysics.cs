@@ -3,6 +3,7 @@ using FixedMathSharp;
 using FixedMathSharp.Utility;
 using Lua;
 using Microsoft.Extensions.Logging;
+using nfm_world_library.Lua;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
@@ -27,7 +28,7 @@ namespace NFMWorldLibrary;
 //     public InlineArray4<fix64> wheelz;
 // }
 
-[LuaObject]
+[LuaVisible]
 public partial class CarPhysics
 {
     public enum SurfaceType
@@ -43,228 +44,228 @@ public partial class CarPhysics
     private static readonly fix64 _tickRate = Physics.PHYSICS_MULTIPLIER_F64;
     private static readonly fix64 _oneOverTickRate = 1 / _tickRate;
     
-    [LuaMember("halted")]
-    public Boolean Halted = false;
+    [LuaName("halted")]
+    public bool Halted = false;
 
-    [LuaMember("btab")]
+    [LuaName("btab")]
     public bool BackwardsTabletop;
     
-    [LuaMember("capcnt")]
+    [LuaName("capcnt")]
     public int CapsizedCounter;
     
-    [LuaMember("capsized")]
+    [LuaName("capsized")]
     public bool BadLanding;
     
-    [LuaMember("caught")]
+    [LuaName("caught")]
     public readonly UnlimitedArray<bool> _caught = [];
     
-    [LuaMember("stat")]
+    [LuaName("stat")]
     public CarStats Stat;
 
-    [LuaMember("cn")]
+    [LuaName("cn")]
     public int Cn;
     
-    [LuaMember("cntdest")]
+    [LuaName("cntdest")]
     public int Cntdest;
     
-    [LuaMember("cntouch")]
+    [LuaName("cntouch")]
     public int _cntouch;
     
     /// <summary>
     /// Is colliding with the client player car
     /// </summary>
-    [LuaMember("colliding_with_client_player")]
+    [LuaName("colliding_with_client_player")]
     public bool _collidingWithClientPlayer;
     
     public readonly int[,] _crank = new int[4, 4];
     
     public readonly int[,] _lcrank = new int[4, 4];
     
-    [LuaMember("cxz")]
+    [LuaName("cxz")]
     public fix64 Cxz;
     
-    [LuaMember("static_camera_xz")]
+    [LuaName("static_camera_xz")]
     public fix64 StaticCameraXz;
     
-    [LuaMember("dcnt")]
+    [LuaName("dcnt")]
     public int _dcnt;
     
-    [LuaMember("dcomp")]
+    [LuaName("dcomp")]
     public fix64 DownComponent;
     
-    [LuaMember("lcomp")]
+    [LuaName("lcomp")]
     public fix64 LeftComponent;
     
-    [LuaMember("wasted")]
+    [LuaName("wasted")]
     public bool Wasted;
     
-    [LuaMember("dominate")]
+    [LuaName("dominate")]
     public readonly UnlimitedArray<bool> _dominate = [];
     
-    [LuaMember("drag")]
+    [LuaName("drag")]
     public readonly fix64 _drag = fix64.Half;
     
-    [LuaMember("fixes")]
+    [LuaName("fixes")]
     public int _fixes = -1;
     
-    [LuaMember("forca")]
+    [LuaName("forca")]
     public fix64 _forca;
     
-    [LuaMember("ftab")]
+    [LuaName("ftab")]
     public bool ForwardTabletop;
     
-    [LuaMember("turn_xz")]
+    [LuaName("turn_xz")]
     public fix64 _turnXz;
     
-    [LuaMember("gtouch")]
+    [LuaName("gtouch")]
     public bool Gtouch;
     
-    [LuaMember("hitmag")]
+    [LuaName("hitmag")]
     public int DamagePoints;
     
-    [LuaMember("im")]
+    [LuaName("im")]
     public int Im;
     
-    [LuaMember("lastcolido")]
+    [LuaName("lastcolido")]
     public int Lastcolido;
     
-    [LuaMember("loop")]
+    [LuaName("loop")]
     public sbyte StuntState;
     
-    [LuaMember("lxz")]
+    [LuaName("lxz")]
     public fix64 _lxz;
     
-    [LuaMember("mtouch")]
+    [LuaName("mtouch")]
     public bool Mtouch;
     
-    [LuaMember("mxz")]
+    [LuaName("mxz")]
     public fix64 Mxz;
     
-    [LuaMember("num_roof_damage")]
+    [LuaName("num_roof_damage")]
     public int _numRoofDamage;
     
-    [LuaMember("newcar")]
+    [LuaName("newcar")]
     public bool Newcar;
     
-    [LuaMember("newedcar")]
+    [LuaName("newedcar")]
     public int Newedcar;
     
-    [LuaMember("nmlt")]
+    [LuaName("nmlt")]
     public int _nmlt = 1;
     
-    [LuaMember("nofocus")]
+    [LuaName("nofocus")]
     public bool Nofocus;
     
-    [LuaMember("outshakedam")]
+    [LuaName("outshakedam")]
     public int Outshakedam = 0;
     
-    [LuaMember("pd")]
+    [LuaName("pd")]
     public bool PressDown;
     
-    [LuaMember("pl")]
+    [LuaName("pl")]
     public bool PressLeft;
     
-    [LuaMember("pmlt")]
+    [LuaName("pmlt")]
     public int _pmlt = 1;
     
-    [LuaMember("point")]
+    [LuaName("point")]
     public int Point;
     
-    [LuaMember("power")]
+    [LuaName("power")]
     public fix64 Power = 98;
     
-    [LuaMember("powerup")]
+    [LuaName("powerup")]
     public fix64 Powerup;
     
-    [LuaMember("pr")]
+    [LuaName("pr")]
     public bool PressRight;
     
-    [LuaMember("pu")]
+    [LuaName("pu")]
     public bool PressUp;
     
-    [LuaMember("pushed")]
+    [LuaName("pushed")]
     public bool Pushed;
 
-    [LuaMember("pxy")]
+    [LuaName("pxy")]
     public fix64 Pxy;
     
-    [LuaMember("pzy")]
+    [LuaName("pzy")]
     public fix64 Pzy;
     
-    [LuaMember("rcomp")]
+    [LuaName("rcomp")]
     public fix64 RightComponent;
     
-    [LuaMember("rtab")]
+    [LuaName("rtab")]
     public bool RightTabletop;
     
-    [LuaMember("scx")]
+    [LuaName("scx")]
     public LuaArray<fix64> Scx = new(4);
     
-    [LuaMember("scy")]
+    [LuaName("scy")]
     public LuaArray<fix64> Scy = new(4);
     
-    [LuaMember("scz")]
+    [LuaName("scz")]
     public LuaArray<fix64> Scz = new(4);
     
-    [LuaMember("shakedam")]
+    [LuaName("shakedam")]
     public int Shakedam;
     
-    [LuaMember("skid")]
+    [LuaName("skid")]
     public sbyte Skid;
     
-    [LuaMember("speed")]
+    [LuaName("speed")]
     public fix64 Speed;
     
-    [LuaMember("roof_damage")]
+    [LuaName("roof_damage")]
     public int RoofDamage;
     
-    [LuaMember("surf_count")]
+    [LuaName("surf_count")]
     public int _surfCount;
     
-    [LuaMember("surfing")]
+    [LuaName("surfing")]
     public bool Surfing;
     
-    [LuaMember("tilt")]
+    [LuaName("tilt")]
     public fix64 _tilt;
     
-    [LuaMember("total_stunt_xy")]
+    [LuaName("total_stunt_xy")]
     public fix64 TotalStuntXy;
     
-    [LuaMember("total_stunt_xz")]
+    [LuaName("total_stunt_xz")]
     public fix64 TotalStuntXz;
     
-    [LuaMember("total_stunt_zy")]
+    [LuaName("total_stunt_zy")]
     public fix64 TotalStuntZy;
     
-    [LuaMember("tcnt")]
+    [LuaName("tcnt")]
     public int TabletopCounter;
     
-    [LuaMember("txz")]
+    [LuaName("txz")]
     public fix64 Txz;
     
-    [LuaMember("ucomp")]
+    [LuaName("ucomp")]
     public fix64 UpComponent;
     
-    [LuaMember("wtouch")]
+    [LuaName("wtouch")]
     public bool Wtouch;
     
-    [LuaMember("xtpower")]
+    [LuaName("xtpower")]
     public int _xtpower;
 
-    [LuaMember("is_client_player")]
+    [LuaName("is_client_player")]
     internal bool IsClientPlayer;
     
-    [LuaMember("mtcount")]
+    [LuaName("mtcount")]
     internal int Mtcount = 0;
     
-    [LuaMember("py")]
+    [LuaName("py")]
     internal fix64 py = 0;
 
-    public event EventHandler<(float f, int i)>? SfxPlayCrash;
-    public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
-    public event EventHandler<(int i, int i2, int i3)>? SfxPlayScrape;
-    public event EventHandler<(int i, int i2, int i3)>? SfxPlayGscrape;
-    public event EventHandler<float>? PowerUp;
+    [LuaHidden] public event EventHandler<(float f, int i)>? SfxPlayCrash;
+    [LuaHidden] public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
+    [LuaHidden] public event EventHandler<(int i, int i2, int i3)>? SfxPlayScrape;
+    [LuaHidden] public event EventHandler<(int i, int i2, int i3)>? SfxPlayGscrape;
+    [LuaHidden] public event EventHandler<float>? PowerUp;
 
     private static f64Vector3 Up => new(0, -1, 0);
     private static f64Vector3 Forward => new(0, 0, 1);
@@ -309,7 +310,7 @@ public partial class CarPhysics
         IsClientPlayer = isClientPlayer;
     }
 
-    [LuaMember("collide")]
+    [LuaName("collide")]
     public void Collide(IInGameCar self, CarPhysics othermad, IInGameCar other)
     {
         ContO conto = new ContO(self);
@@ -605,7 +606,7 @@ public partial class CarPhysics
             Scy[wi] = (fix64)(-1) * Scy[wi] * (rebound - fix64.One);
     }
 
-    [LuaMember("drive")]
+    [LuaName("drive")]
     public void Drive(Control control, IInGameCar car, IStage stage)
     {
         ContO conto = new ContO(car);

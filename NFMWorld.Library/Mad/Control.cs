@@ -1,60 +1,61 @@
 using Lua;
 using Maxine.Extensions;
+using nfm_world_library.Lua;
 
 namespace NFMWorldLibrary;
 
-[LuaObject]
+[LuaVisible]
 public partial class Control
 {
-    [LuaMember("arrace")]
+    [LuaName("arrace")]
     public bool Arrace;
 
-    [LuaMember("chatup")]
+    [LuaName("chatup")]
     public int Chatup;
     
-    [LuaMember("down")]
+    [LuaName("down")]
     public bool Down;
     
-    [LuaMember("enter")]
+    [LuaName("enter")]
     public bool Enter;
     
-    [LuaMember("exit")]
+    [LuaName("exit")]
     public bool Exit;
     
-    [LuaMember("handb")]
+    [LuaName("handb")]
     public bool Handb;
     
-    [LuaMember("multion")]
+    [LuaName("multion")]
     public int Multion;
     
-    [LuaMember("mutem")]
+    [LuaName("mutem")]
     public bool Mutem;
     
-    [LuaMember("mutes")]
+    [LuaName("mutes")]
     public bool Mutes;
     
-    [LuaMember("radar")]
+    [LuaName("radar")]
     public bool Radar;
     
-    [LuaMember("right")]
+    [LuaName("right")]
     public bool Right;
     
-    [LuaMember("up")]
+    [LuaName("up")]
     public bool Up;
     
-    [LuaMember("left")]
+    [LuaName("left")]
     public bool Left;
     
-    [LuaMember("lookback")]
+    [LuaName("lookback")]
     public int Lookback;
     
-    [LuaMember("wall")]
+    [LuaName("wall")]
     public int Wall = -1;
 
     /// <summary>
     /// Inverts the ZY angle. It is true if the AI axis is flipped.
     /// </summary>
-    [LuaMember("zyinv")]
+    [LuaName("zyinv")]
     public bool Zyinv = false;
 
     internal void Falseo(int i)
@@ -88,7 +89,7 @@ public partial class Control
         Mutes = false;
     }
 
-    [LuaMember("reset")]
+    [LuaName("reset")]
     internal void Reset()
     {
         Left = false;

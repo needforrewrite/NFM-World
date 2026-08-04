@@ -1,0 +1,247 @@
+using System.Text;
+using Microsoft.CodeAnalysis;
+
+namespace NFMWorld.LuaSourceGenerator;
+
+/// <summary>
+/// Generates Lua Language Server (LuaLS) annotation stubs for [LuaVisible] types.
+/// Outputs ---@class, ---@field, ---@param, ---@return annotations for IDE autocomplete.
+/// </summary>
+internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compilation)
+{
+    public string GenerateCode()
+    {
+        var sb = new StringBuilder();
+        var luaName = type.LuaName;
+
+        // Instance annotation (for objects created via .new())
+        GenerateInstanceClass(sb);
+
+        // Static/class annotation (for TypeTable access)
+        GenerateClassAnnotation(sb);
+
+        return sb.ToString();
+    }
+
+    private void GenerateInstanceClass(StringBuilder sb)
+    {
+        var luaName = type.LuaName;
+
+        // Build base type list for ---@class
+        var baseTypes = new List<string>();
+        if (type.BaseTypeFullName != null)
+            baseTypes.Add($"{StubTypeName(type.BaseTypeFullName)}Instance");
+        foreach (var iface in type.InterfaceFullNames)
+            baseTypes.Add($"{StubTypeName(iface)}Instance");
+
+        if (baseTypes.Count > 0)
+            sb.AppendLine($"---@class {luaName}Instance : {string.Join(", ", baseTypes)}");
+        else
+            sb.AppendLine($"---@class {luaName}Instance");
+
+        // Fields and properties
+        foreach (var prop in type.InstanceProperties.Where(p => p.HasGetter))
+            sb.AppendLine($"---@field {prop.LuaName} {ToLuaTypeName(prop.PropertyType)}");
+
+        foreach (var field in type.InstanceFields)
+            sb.AppendLine($"---@field {field.LuaName} {ToLuaTypeName(field.FieldType)}");
+
+        sb.AppendLine($"{luaName}Instance = {{}}");
+        sb.AppendLine();
+    }
+
+    private void GenerateClassAnnotation(StringBuilder sb)
+    {
+        var luaName = type.LuaName;
+
+        // Class annotation with base type
+        if (type.BaseTypeFullName != null)
+            sb.AppendLine($"---@class (exact) {luaName} : {StubTypeName(type.BaseTypeFullName)}");
+        else
+            sb.AppendLine($"---@class (exact) {luaName}");
+
+        // Static properties and fields
+        foreach (var prop in type.StaticProperties.Where(p => p.HasGetter))
+            sb.AppendLine($"---@field {prop.LuaName} {ToLuaTypeName(prop.PropertyType)}");
+
+        foreach (var field in type.StaticFields)
+            sb.AppendLine($"---@field {field.LuaName} {ToLuaTypeName(field.FieldType)}");
+
+        // Constructors
+        GenerateConstructorStubs(sb);
+
+        // Static methods
+        foreach (var m in type.StaticMethods)
+        {
+            sb.AppendLine();
+            foreach (var p in m.Parameters)
+                sb.AppendLine($"---@param {ParamName(p)} {ToLuaTypeName(p.Type)}");
+            if (m.ReturnType != "void")
+                sb.AppendLine($"---@return {ToLuaTypeName(m.ReturnType)}");
+            var paramStr = string.Join(", ", m.Parameters.Select(ParamName));
+            sb.AppendLine($"function {luaName}.{m.FullLuaName}({paramStr}) end");
+        }
+
+        // Instance methods
+        foreach (var m in type.InstanceMethods)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"---@param self {luaName}Instance");
+            // For extension methods, skip first param (this)
+            var docParams = m.IsExtension ? m.Parameters.Skip(1).ToArray() : m.Parameters;
+            foreach (var p in docParams)
+                sb.AppendLine($"---@param {ParamName(p)} {ToLuaTypeName(p.Type)}");
+            if (m.ReturnType != "void")
+                sb.AppendLine($"---@return {ToLuaTypeName(m.ReturnType)}");
+            var paramStr = string.Join(", ", docParams.Select(ParamName));
+            sb.AppendLine($"function {luaName}Instance:{m.FullLuaName}({paramStr}) end");
+        }
+
+        // Instance events
+        foreach (var evt in type.InstanceEvents)
+        {
+            var sig = GetEventDelegateSignature(evt);
+            sb.AppendLine();
+            sb.AppendLine($"---@param self {luaName}Instance");
+            sb.AppendLine($"---@param callback fun({sig})");
+            sb.AppendLine($"function {luaName}Instance:add_{evt.LuaName}(callback) end");
+            sb.AppendLine();
+            sb.AppendLine($"---@param self {luaName}Instance");
+            sb.AppendLine($"function {luaName}Instance:remove_{evt.LuaName}() end");
+        }
+
+        // Static events
+        foreach (var evt in type.StaticEvents)
+        {
+            var sig = GetEventDelegateSignature(evt);
+            sb.AppendLine();
+            sb.AppendLine($"---@param callback fun({sig})");
+            sb.AppendLine($"function {luaName}.add_{evt.LuaName}(callback) end");
+            sb.AppendLine();
+            sb.AppendLine($"function {luaName}.remove_{evt.LuaName}() end");
+        }
+    }
+
+    private void GenerateConstructorStubs(StringBuilder sb)
+    {
+        var luaName = type.LuaName;
+
+        if (type.IsStatic || type.IsInterface) return;
+
+        if (type.Constructors.Length == 0)
+        {
+            // Default parameterless constructor for classes/structs
+            sb.AppendLine();
+            sb.AppendLine($"---Creates a new {luaName}");
+            sb.AppendLine($"---@return {luaName}Instance");
+            sb.AppendLine($"function {luaName}.new() end");
+            return;
+        }
+
+        foreach (var ctor in type.Constructors)
+        {
+            sb.AppendLine();
+            sb.AppendLine($"---Creates a new {luaName}");
+            foreach (var p in ctor.Parameters)
+                sb.AppendLine($"---@param {ParamName(p)} {ToLuaTypeName(p.Type)}");
+            sb.AppendLine($"---@return {luaName}Instance");
+            var paramStr = string.Join(", ", ctor.Parameters.Select(ParamName));
+            sb.AppendLine($"function {luaName}.{ctor.FullLuaNew}({paramStr}) end");
+        }
+    }
+
+    private string GetEventDelegateSignature(LuaEventMetadata evt)
+    {
+        // Try to resolve the delegate type and get its Invoke parameters
+        var handlerType = compilation.GetTypeByMetadataName(evt.HandlerType);
+        if (handlerType == null)
+        {
+            // Fallback: try to get the type from the event symbol's original type
+            return "...";
+        }
+
+        var invoke = handlerType.GetMembers("Invoke").OfType<IMethodSymbol>().FirstOrDefault();
+        if (invoke == null) return "...";
+
+        var paramStrs = new List<string>();
+        for (int i = 0; i < invoke.Parameters.Length; i++)
+        {
+            var p = invoke.Parameters[i];
+            var typeName = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+            paramStrs.Add($"{ParamName(p)}: {ToLuaTypeName(typeName)}");
+        }
+        return string.Join(", ", paramStrs);
+    }
+
+    // ==================================================================
+    // Type name conversion helpers
+    // ==================================================================
+
+    private static string ToLuaTypeName(string t)
+    {
+        if (t.EndsWith("?")) return $"{ToLuaTypeName(t.Substring(0, t.Length - 1))}|nil";
+        return t switch
+        {
+            "int" or "long" or "float" or "double" or "byte" or "sbyte"
+                or "short" or "ushort" or "uint" or "ulong" or "decimal" => "number",
+            "bool" => "boolean",
+            "string" => "string",
+            "void" => "nil",
+            "object" => "any",
+            _ => IsFixedMathType(t) ? FixedMathToLuaName(t) : $"{StubTypeName(t)}Instance"
+        };
+    }
+
+    private static string FixedMathToLuaName(string t)
+    {
+        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        return baseT switch
+        {
+            "Fixed64" => "fixed64",
+            "Vector3d" => "fixed64vector3",
+            "f64AngleSingle" => "f64angle",
+            "f64Euler" => "f64euler",
+            _ => ExtractSimpleName(baseT)
+        };
+    }
+
+    private static bool IsFixedMathType(string t)
+    {
+        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        return baseT is "Fixed64" or "Vector3d" or "f64AngleSingle" or "f64Euler" or "Fixed4x4"
+            || baseT.EndsWith(".Fixed64") || baseT.EndsWith(".Vector3d")
+            || baseT.EndsWith(".f64AngleSingle") || baseT.EndsWith(".f64Euler")
+            || baseT.EndsWith(".Fixed4x4");
+    }
+
+    /// <summary>Short Lua-friendly type name for stub annotations.</summary>
+    private static string StubTypeName(string fullName)
+    {
+        // Handle tuples
+        if (fullName.StartsWith("(")) return "ValueTuple";
+        // Handle arrays: int[,,] → intArray, int[] → intArray
+        if (fullName.EndsWith("]"))
+        {
+            var bracketIdx = fullName.IndexOf('[');
+            var elemName = bracketIdx >= 0 ? StubTypeName(fullName.Substring(0, bracketIdx)) : fullName;
+            return elemName + "Array";
+        }
+        // Include generic args: UnlimitedArray<string> → UnlimitedArray_string
+        var name = fullName.Contains('<') ? fullName.Replace('<', '_').Replace('>', '_').Replace(", ", "_").Replace(",", "_").TrimEnd('_') : fullName;
+        name = name.Replace("global::", "");
+        var lastDot = name.LastIndexOf('.');
+        return lastDot >= 0 ? name.Substring(lastDot + 1) : name;
+    }
+
+    private static string ExtractSimpleName(string fullName)
+    {
+        var lastDot = fullName.LastIndexOf('.');
+        return lastDot >= 0 ? fullName.Substring(lastDot + 1) : fullName;
+    }
+
+    private static string ParamName(LuaParameterMetadata p) =>
+        p.Name ?? $"arg{p.Name.GetHashCode() & 0xFFFF}";
+
+    private static string ParamName(IParameterSymbol p) =>
+        p.Name ?? $"arg{p.Ordinal}";
+}

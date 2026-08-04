@@ -1,26 +1,28 @@
 ﻿using FixedMathSharp.Utility;
 using Lua;
+using nfm_world_library.Lua;
 
 namespace NFMWorldLibrary.Util.Lua;
 
-[LuaObject("DeterministicRandom")]
+[LuaVisible]
+[LuaName("DeterministicRandom")]
 public partial class LuaDeterministicRandom(DeterministicRandom random)
 {
     private DeterministicRandom _random = random;
 
-    [LuaMember("create")]
+    [LuaName("create")]
     public static LuaDeterministicRandom Create(fix64 value)
     {
         return new LuaDeterministicRandom(new DeterministicRandom((ulong)value.rawValue));
     }
 
-    [LuaMember("next")]
+    [LuaName("next")]
     public int Next()
     {
         return _random.Next();
     }
 
-    [LuaMember("nextf64")]
+    [LuaName("nextf64")]
     public fix64 NextF64()
     {
         return _random.NextFixed6401();

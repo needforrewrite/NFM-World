@@ -18,11 +18,24 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             static (ctx, ct) => ctx
         );
 
-        var combined = typeProvider.Collect().Combine(context.CompilationProvider);
+        // Read optional stubs output directory from MSBuild property
+        var stubsOutputDir = context.AnalyzerConfigOptionsProvider
+            .Select((configOptions, token) =>
+            {
+                if (configOptions.GlobalOptions.TryGetValue(
+                        "build_property.LuaVisibleGenerator_StubsOutputDirectory",
+                        out var path))
+                    return path;
+                return (string?)null;
+            });
 
-        context.RegisterSourceOutput(combined, (spc, pair) =>
+        var combined = typeProvider.Collect().Combine(stubsOutputDir);
+
+        context.RegisterSourceOutput(
+            context.CompilationProvider.Combine(combined),
+            (spc, pair) =>
         {
-            var (typeContexts, compilation) = pair;
+            var (compilation, (typeContexts, stubsOutDir)) = pair;
             if (typeContexts.IsEmpty) return;
 
             var references = SymbolReferences.Create(compilation);
@@ -50,6 +63,9 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             foreach (var typeMeta in generatedTypes)
                 CollectExternalTypeSymbols(typeMeta, externalTypeSymbols, luaVisibleFullNames);
 
+            // Collect types from [assembly: AssemblyLuaVisible<T>] attributes
+            CollectAssemblyLevelTypes(compilation, externalTypeSymbols, luaVisibleFullNames);
+
             // Generate ILuaUserData partials for [LuaVisible] types
             foreach (var typeMeta in generatedTypes)
             {
@@ -59,6 +75,43 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                 var fullHint = $"{hintName}.LuaVisible.g.cs";
                 if (seenHints.Add(fullHint))
                     spc.AddSource(fullHint, code);
+            }
+
+            // Write LuaLS + TypeScript stubs to disk (if output directory configured)
+            if (stubsOutDir != null)
+            {
+                try
+                {
+                    System.IO.Directory.CreateDirectory(stubsOutDir);
+
+                    // Stubs for [LuaVisible] types
+                    foreach (var typeMeta in generatedTypes)
+                    {
+                        WriteStubFiles(stubsOutDir, typeMeta.LuaName,
+                            new LuaStubsGenerator(typeMeta, compilation).GenerateCode(),
+                            new TypeScriptStubsGenerator(typeMeta, compilation).GenerateCode());
+                    }
+
+                    // Stubs for external types (StructUserData-wrapped)
+                    foreach (var kvp in externalTypeSymbols)
+                    {
+                        var displayName = kvp.Key;
+                        var typeSymbol = kvp.Value;
+                        var stubName = SanitizeHint(displayName).Replace("_Array", "Array");
+                        // Simple external stub: just the type name annotation
+                        var luaStub = GenerateExternalTypeLuaStub(stubName);
+                        var tsStub = GenerateExternalTypeTSStub(stubName, typeSymbol);
+                        WriteStubFiles(stubsOutDir, stubName, luaStub, tsStub);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    spc.ReportDiagnostic(Diagnostic.Create(
+                        new DiagnosticDescriptor("LUA001", "Stub generation",
+                            $"Failed to write stubs to '{stubsOutDir}': {ex.Message}",
+                            "LuaVisibleGenerator", DiagnosticSeverity.Warning, true),
+                        Location.None));
+                }
             }
 
             // Generate StructUserData metatables for external types (using resolved ITypeSymbol)
@@ -83,6 +136,39 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                 spc.AddSource("LuaVisibleTypeRegistry.g.cs", registryCode);
             }
         });
+    }
+
+    private static void CollectAssemblyLevelTypes(Compilation compilation, Dictionary<string, ITypeSymbol> externalTypes, HashSet<string> luaVisibleFullNames)
+    {
+        var asmAttr = compilation.Assembly.GetAttributes();
+        foreach (var attr in asmAttr)
+        {
+            if (attr.AttributeClass == null) continue;
+            var attrName = attr.AttributeClass.ToDisplayString();
+            // Match AssemblyLuaVisibleAttribute<T> (generic) or AssemblyLuaVisibleAttribute (non-generic)
+            if (!attrName.StartsWith("nfm_world_library.Lua.AssemblyLuaVisibleAttribute")) continue;
+
+            ITypeSymbol? typeSymbol = null;
+
+            // Generic version: AssemblyLuaVisibleAttribute<T> — type is in TypeArguments
+            if (attr.AttributeClass.TypeArguments.Length == 1)
+            {
+                typeSymbol = attr.AttributeClass.TypeArguments[0];
+            }
+            // Non-generic version: AssemblyLuaVisibleAttribute(Type) — type is in constructor args
+            else if (attr.ConstructorArguments.Length == 1)
+            {
+                typeSymbol = attr.ConstructorArguments[0].Value as ITypeSymbol;
+            }
+
+            if (typeSymbol == null) continue;
+
+            var displayName = typeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+            if (externalTypes.ContainsKey(displayName)) continue;
+            if (luaVisibleFullNames.Contains(displayName)) continue;
+            if (!NeedsStructWrap(displayName)) continue;
+            externalTypes[displayName] = typeSymbol;
+        }
     }
 
     private static void CollectExternalTypeSymbols(LuaTypeMetadata typeMeta, Dictionary<string, ITypeSymbol> externalTypes, HashSet<string> luaVisibleFullNames)
@@ -323,6 +409,32 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             || baseT.EndsWith(".Fixed64") || baseT.EndsWith(".Vector3d")
             || baseT.EndsWith(".f64AngleSingle") || baseT.EndsWith(".f64Euler")
             || baseT.EndsWith(".Fixed4x4");
+    }
+
+    private static void WriteStubFiles(string dir, string name, string luaStub, string tsStub)
+    {
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"{name}.d.lua"), luaStub);
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"{name}.d.ts"), tsStub);
+    }
+
+    private static string GenerateExternalTypeLuaStub(string stubName)
+    {
+        return $"---@class {stubName}Instance\n{stubName}Instance = {{}}\n\n---@class (exact) {stubName}\n";
+    }
+
+    private static string GenerateExternalTypeTSStub(string stubName, ITypeSymbol symbol)
+    {
+        if (symbol is IArrayTypeSymbol arr)
+        {
+            var elemTs = arr.ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+            var elemName = elemTs is "System.Int32" or "int" ? "number" :
+                           elemTs is "System.Single" or "float" ? "number" :
+                           elemTs is "System.Double" or "double" ? "number" :
+                           elemTs is "System.String" or "string" ? "string" :
+                           elemTs is "System.Boolean" or "bool" ? "boolean" : "any";
+            return $"declare class {stubName} {{\n    [index: number]: {elemName};\n    readonly length: number;\n}}\n";
+        }
+        return $"declare class {stubName} {{\n}}\n";
     }
 
     private static string SanitizeHint(string name) =>

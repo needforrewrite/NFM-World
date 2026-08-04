@@ -16,8 +16,13 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <CompilerVisibleProperty Include="LuaVisibleGenerator_StubsOutputDirectory" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.3.0" PrivateAssets="all" />
         <PackageReference Include="PolySharp" Version="1.14.1" PrivateAssets="all" />
+        <PackageReference Include="System.IO.FileSystem" Version="4.3.0" PrivateAssets="all" />
     </ItemGroup>
 
 </Project>

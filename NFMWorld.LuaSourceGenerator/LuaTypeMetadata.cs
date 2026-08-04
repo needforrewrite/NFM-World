@@ -12,12 +12,17 @@ internal sealed class LuaTypeMetadata
     public string LuaName { get; }
     public bool IsStatic { get; }
     public bool IsValueType { get; }
+    public bool IsRecord { get; }
     public bool IsInterface { get; }
     public bool IsInlineArray { get; }
     public int? InlineArrayLength { get; }
     public string? InlineArrayElementType { get; }
     /// <summary>True if this type needs StructUserData wrapping (sealed BCL, generic, or doesn't implement ILuaUserData).</summary>
     public bool IsExternal { get; }
+    /// <summary>Base type full name (without global::), or null if System.Object/ValueType.</summary>
+    public string? BaseTypeFullName { get; }
+    /// <summary>Implemented interface full names (without global::).</summary>
+    public string[] InterfaceFullNames { get; }
 
     public LuaMethodMetadata[] InstanceMethods { get; }
     public LuaPropertyMetadata[] InstanceProperties { get; }
@@ -39,6 +44,7 @@ internal sealed class LuaTypeMetadata
         Namespace = symbol.ContainingNamespace?.ToDisplayString();
         IsStatic = symbol.IsStatic;
         IsValueType = symbol.IsValueType;
+        IsRecord = symbol.IsRecord;
         IsInterface = symbol.TypeKind == TypeKind.Interface;
 
         var luaVisibleAttr = GetAttr(symbol, references.LuaVisibleAttribute);
@@ -68,6 +74,15 @@ internal sealed class LuaTypeMetadata
         // Static classes are candidates too (they get a type table only)
         IsCandidate = !isArray && !isRefStruct && !IsExternal && !isOpenGeneric
             && FullTypeName != "System.Object";
+
+        // Base type and interfaces for stub generators
+        var bt = symbol.BaseType;
+        if (bt != null && bt.SpecialType != SpecialType.System_Object && bt.SpecialType != SpecialType.System_ValueType)
+            BaseTypeFullName = bt.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+        InterfaceFullNames = symbol.AllInterfaces
+            .Where(i => i.DeclaredAccessibility == Accessibility.Public)
+            .Select(i => i.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", ""))
+            .ToArray();
 
         var hiddenAttr = references.LuaHiddenAttribute;
         var members = symbol.GetMembers();
@@ -125,10 +140,14 @@ internal sealed class LuaTypeMetadata
         var typeName = p.Type;
         // Detect arrays: "int[]" → "intArray", "float[,]" → "floatArray"
         var isArray = typeName.EndsWith("]");
+        // Detect nullable: strip ? for suffix purposes, append "n" marker
+        var isNullable = typeName.EndsWith("?") && !isArray;
+        var cleanType = isNullable ? typeName.Substring(0, typeName.Length - 1) : typeName;
         // For StructUserData-wrapped types, unwrap to short type name
         var baseSuffix = p.NeedsStructUserData
-            ? CamelCase(ShortTypeName(typeName))
-            : ParamSuffixFromTypeName(typeName);
+            ? CamelCase(ShortTypeName(cleanType))
+            : ParamSuffixFromTypeName(cleanType);
+        if (isNullable) baseSuffix += "n";
         return isArray ? baseSuffix + "Array" : baseSuffix;
     }
 
@@ -155,6 +174,13 @@ internal sealed class LuaTypeMetadata
 
     private static string ShortTypeName(string fullName)
     {
+        // Handle tuples: "(bool, bool)" → "Tuple"
+        if (fullName.StartsWith("("))
+        {
+            // Count commas to differentiate: "(bool,bool)" vs "(bool,bool,bool)"
+            var commas = fullName.Count(c => c == ',');
+            return $"Tuple{commas + 1}";
+        }
         // Strip generic args for the base name: "System.Collections.Generic.List<int>" → "List"
         var name = fullName.Contains('<') ? fullName.Substring(0, fullName.IndexOf('<')) : fullName;
         // Take last segment after '.'
@@ -278,6 +304,7 @@ internal sealed class LuaMethodMetadata
 
 internal sealed class LuaParameterMetadata(IParameterSymbol p)
 {
+    public string Name { get; } = p.Name;
     public string Type { get; } = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)
         .Replace("global::", "");
     /// <summary>True if this type needs StructUserData wrapping (not ILuaUserData, not primitive, not FixedMath).</summary>
@@ -327,7 +354,7 @@ internal sealed class LuaFieldMetadata(IFieldSymbol s)
 internal sealed class LuaEventMetadata(IEventSymbol s)
 {
     public string Name { get; } = s.Name;
-    public string HandlerType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+    public string HandlerType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
     public string LuaName { get; } = s.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "LuaNameAttribute")
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);
 }

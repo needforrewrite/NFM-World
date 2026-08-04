@@ -3,45 +3,46 @@ using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using Lua;
 using MemoryPack;
+using nfm_world_library.Lua;
 using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary;
 
 [MemoryPackable(GenerateType.VersionTolerant)]
-[LuaObject]
+[LuaVisible]
 public partial record struct CarStats
 {
-    [JsonPropertyName("swits"), LuaMember("swits"), MemoryPackOrder(0)] public Int3 Swits { get; init; }
-    [JsonPropertyName("acelf"), LuaMember("acelf"), MemoryPackOrder(1)] public f64Vector3 Acelf { get; init; }
-    [JsonPropertyName("handb"), LuaMember("handb"), MemoryPackOrder(2)] public int Handb { get; init; }
-    [JsonPropertyName("airs"), LuaMember("airs"), MemoryPackOrder(3)] public fix64 Airs { get; init; }
-    [JsonPropertyName("airc"), LuaMember("airc"), MemoryPackOrder(4)] public int Airc { get; init; }
+    [JsonPropertyName("swits"), LuaName("swits"), MemoryPackOrder(0)] public Int3 Swits { get; init; }
+    [JsonPropertyName("acelf"), LuaName("acelf"), MemoryPackOrder(1)] public f64Vector3 Acelf { get; init; }
+    [JsonPropertyName("handb"), LuaName("handb"), MemoryPackOrder(2)] public int Handb { get; init; }
+    [JsonPropertyName("airs"), LuaName("airs"), MemoryPackOrder(3)] public fix64 Airs { get; init; }
+    [JsonPropertyName("airc"), LuaName("airc"), MemoryPackOrder(4)] public int Airc { get; init; }
     // ReSharper disable once InconsistentNaming
     [JsonIgnore, MemoryPackOrder(5)] public int _deprecated_Turn { get; init; }
-    [JsonPropertyName("grip"), LuaMember("grip"), MemoryPackOrder(6)] public fix64 Grip { get; init; }
-    [JsonPropertyName("bounce"), LuaMember("bounce"), MemoryPackOrder(7)] public fix64 Bounce { get; init; }
-    [JsonPropertyName("simag"), LuaMember("simag"), MemoryPackOrder(8)] public fix64 Simag { get; init; }
-    [JsonPropertyName("moment"), LuaMember("moment"), MemoryPackOrder(9)] public fix64 Moment { get; init; }
-    [JsonPropertyName("comprad"), LuaMember("comprad"), MemoryPackOrder(10)] public fix64 Comprad { get; init; }
-    [JsonPropertyName("push"), LuaMember("push"), MemoryPackOrder(11)] public fix64 Push { get; init; }
-    [JsonPropertyName("revpush"), LuaMember("revpush"), MemoryPackOrder(12)] public fix64 Revpush { get; init; }
-    [JsonPropertyName("lift"), LuaMember("lift"), MemoryPackOrder(13)] public int Lift { get; init; }
-    [JsonPropertyName("revlift"), LuaMember("revlift"), MemoryPackOrder(14)] public int Revlift { get; init; }
-    [JsonPropertyName("powerloss"), LuaMember("powerloss"), MemoryPackOrder(15)] public int Powerloss { get; init; }
-    [JsonPropertyName("flipy"), LuaMember("flipy"), MemoryPackOrder(16)] public int Flipy { get; init; }
-    [JsonPropertyName("msquash"), LuaMember("msquash"), MemoryPackOrder(17)] public int Msquash { get; init; }
-    [JsonPropertyName("clrad"), LuaMember("clrad"), MemoryPackOrder(18)] public int Clrad { get; init; } 
-    [JsonPropertyName("dammult"), LuaMember("dammult"), MemoryPackOrder(19)] public fix64 Dammult { get; init; }
-    [JsonPropertyName("maxmag"), LuaMember("maxmag"), MemoryPackOrder(20)] public int Maxmag { get; init; }
-    [JsonPropertyName("dishandle"), LuaMember("dishandle"), MemoryPackOrder(21)] public fix64 Dishandle { get; init; }
-    [JsonPropertyName("outdam"), LuaMember("outdam"), MemoryPackOrder(22)] public fix64 Outdam { get; init; }
-    [JsonPropertyName("name"), LuaMember("name"), MemoryPackOrder(23)] public string Name { get; init; }
-    [JsonPropertyName("enginsignature"), LuaMember("enginsignature"), MemoryPackOrder(24)] public sbyte Enginsignature { get; init; }
-    [JsonPropertyName("turnradius"), LuaMember("turnradius"), MemoryPackOrder(25)] public int TurnRadius { get; set; }
-    [JsonPropertyName("roadgrip"), LuaMember("roadgrip"), MemoryPackOrder(26)] public fix64? RoadGrip { get; set; }
-    [JsonPropertyName("offroadgrip"), LuaMember("offroadgrip"), MemoryPackOrder(27)] public fix64? OffRoadGrip { get; set; }
-    [JsonPropertyName("offtrackgrip"), LuaMember("offtrackgrip"), MemoryPackOrder(28)] public fix64? OffTrackGrip { get; set; }
-    [JsonPropertyName("turn"), LuaMember("turn"), MemoryPackOrder(29)] public fix64 Turn { get; init; }
+    [JsonPropertyName("grip"), LuaName("grip"), MemoryPackOrder(6)] public fix64 Grip { get; init; }
+    [JsonPropertyName("bounce"), LuaName("bounce"), MemoryPackOrder(7)] public fix64 Bounce { get; init; }
+    [JsonPropertyName("simag"), LuaName("simag"), MemoryPackOrder(8)] public fix64 Simag { get; init; }
+    [JsonPropertyName("moment"), LuaName("moment"), MemoryPackOrder(9)] public fix64 Moment { get; init; }
+    [JsonPropertyName("comprad"), LuaName("comprad"), MemoryPackOrder(10)] public fix64 Comprad { get; init; }
+    [JsonPropertyName("push"), LuaName("push"), MemoryPackOrder(11)] public fix64 Push { get; init; }
+    [JsonPropertyName("revpush"), LuaName("revpush"), MemoryPackOrder(12)] public fix64 Revpush { get; init; }
+    [JsonPropertyName("lift"), LuaName("lift"), MemoryPackOrder(13)] public int Lift { get; init; }
+    [JsonPropertyName("revlift"), LuaName("revlift"), MemoryPackOrder(14)] public int Revlift { get; init; }
+    [JsonPropertyName("powerloss"), LuaName("powerloss"), MemoryPackOrder(15)] public int Powerloss { get; init; }
+    [JsonPropertyName("flipy"), LuaName("flipy"), MemoryPackOrder(16)] public int Flipy { get; init; }
+    [JsonPropertyName("msquash"), LuaName("msquash"), MemoryPackOrder(17)] public int Msquash { get; init; }
+    [JsonPropertyName("clrad"), LuaName("clrad"), MemoryPackOrder(18)] public int Clrad { get; init; } 
+    [JsonPropertyName("dammult"), LuaName("dammult"), MemoryPackOrder(19)] public fix64 Dammult { get; init; }
+    [JsonPropertyName("maxmag"), LuaName("maxmag"), MemoryPackOrder(20)] public int Maxmag { get; init; }
+    [JsonPropertyName("dishandle"), LuaName("dishandle"), MemoryPackOrder(21)] public fix64 Dishandle { get; init; }
+    [JsonPropertyName("outdam"), LuaName("outdam"), MemoryPackOrder(22)] public fix64 Outdam { get; init; }
+    [JsonPropertyName("name"), LuaName("name"), MemoryPackOrder(23)] public string Name { get; init; }
+    [JsonPropertyName("enginsignature"), LuaName("enginsignature"), MemoryPackOrder(24)] public sbyte Enginsignature { get; init; }
+    [JsonPropertyName("turnradius"), LuaName("turnradius"), MemoryPackOrder(25)] public int TurnRadius { get; set; }
+    [JsonPropertyName("roadgrip"), LuaName("roadgrip"), MemoryPackOrder(26)] public fix64? RoadGrip { get; set; }
+    [JsonPropertyName("offroadgrip"), LuaName("offroadgrip"), MemoryPackOrder(27)] public fix64? OffRoadGrip { get; set; }
+    [JsonPropertyName("offtrackgrip"), LuaName("offtrackgrip"), MemoryPackOrder(28)] public fix64? OffTrackGrip { get; set; }
+    [JsonPropertyName("turn"), LuaName("turn"), MemoryPackOrder(29)] public fix64 Turn { get; init; }
 
     /// <summary>
     /// Tornado Shark stats, used as a fallback if a car has incomplete or invalid stats in the rad file.
@@ -207,7 +208,7 @@ public partial record struct CarStats
 /// Represents a three dimensional mathematical vector.
 /// </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-[LuaObject]
+[LuaVisible]
 public partial struct Int3 : IEquatable<Int3>
 {
     /// <summary>

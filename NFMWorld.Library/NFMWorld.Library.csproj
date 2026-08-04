@@ -33,6 +33,8 @@
         <ProjectReference Include="..\MemoryPack\src\MemoryPack.Generator\MemoryPack.Generator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\NFMWorld.CrashReporter\NFMWorld.CrashReporter.csproj" />
         <ProjectReference Include="..\NFMWorld.DriverInterface\NFMWorld.DriverInterface.csproj" />
+        <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
+        <ProjectReference Include="..\NFMWorld.Lua\NFMWorld.Lua.csproj" />
         <ProjectReference Include="..\NFMWorld.Math\NFMWorld.Math.csproj" />
         <ProjectReference Include="..\NFMWorld.OpcodeSourceGen\NFMWorld.OpcodeSourceGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\NFMWorld.ClientOnlyAnalyzer\NFMWorld.ClientOnlyAnalyzer.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
@@ -74,8 +76,10 @@
     <!-- LuaCATS definition file output -->
     <ItemGroup>
         <CompilerVisibleProperty Include="LuaSourceGenerator_LuaCATSOutputDirectory" />
+        <CompilerVisibleProperty Include="LuaVisibleGenerator_StubsOutputDirectory" />
     </ItemGroup>
     <PropertyGroup>
         <LuaSourceGenerator_LuaCATSOutputDirectory>$(MSBuildProjectDirectory)\data\lua\library</LuaSourceGenerator_LuaCATSOutputDirectory>
+        <LuaVisibleGenerator_StubsOutputDirectory>$(MSBuildProjectDirectory)\data\lua\library</LuaVisibleGenerator_StubsOutputDirectory>
     </PropertyGroup>
 </Project>
