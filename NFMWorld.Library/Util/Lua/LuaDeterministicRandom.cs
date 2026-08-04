@@ -6,15 +6,9 @@ namespace NFMWorldLibrary.Util.Lua;
 
 [LuaVisible]
 [LuaName("DeterministicRandom")]
-public partial class LuaDeterministicRandom(DeterministicRandom random)
+public partial class LuaDeterministicRandom(fix64 value)
 {
-    private DeterministicRandom _random = random;
-
-    [LuaName("create")]
-    public static LuaDeterministicRandom Create(fix64 value)
-    {
-        return new LuaDeterministicRandom(new DeterministicRandom((ulong)value.rawValue));
-    }
+    private DeterministicRandom _random = new((ulong)value.rawValue);
 
     [LuaName("next")]
     public int Next()

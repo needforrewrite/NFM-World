@@ -432,10 +432,7 @@ internal sealed class LuaBindingTypeGenerator
         if (IsSimple(m.ReturnType) && IsNullable(m.ReturnType)) return WrNullableValue(expr, m.ReturnType);
         if (IsKnownLuaVisible(m.ReturnType)) return $"global::Lua.LuaValue.FromUserData({expr})";
         if (NeedsStructWrap(m.ReturnType))
-        {
-            var mtRef = GetMetatableRef(m.ReturnType);
-            return $"global::Lua.LuaValue.FromUserData(new nfm_world_library.Lua.StructUserData<{m.ReturnType}>({mtRef}) {{ Value = {expr} }})";
-        }
+            return $"global::Lua.LuaValue.FromUserData(nfm_world_library.Lua.StructUserDataHelper.Wrap({expr}))";
         // Fallback: use FromObject for complex/generic types that don't implement ILuaUserData
         return $"global::Lua.LuaValue.FromObject({expr})";
     }
@@ -451,10 +448,7 @@ internal sealed class LuaBindingTypeGenerator
         if (IsSimple(rt) && IsNullable(rt)) return WrNullableValue(expr, rt);
         if (IsKnownLuaVisible(rt)) return $"global::Lua.LuaValue.FromUserData({expr})";
         if (NeedsStructWrap(rt))
-        {
-            var mtRef = GetMetatableRef(rt);
-            return $"global::Lua.LuaValue.FromUserData(new nfm_world_library.Lua.StructUserData<{rt}>({mtRef}) {{ Value = {expr} }})";
-        }
+            return $"global::Lua.LuaValue.FromUserData(nfm_world_library.Lua.StructUserDataHelper.Wrap({expr}))";
         // Fallback: use FromObject for complex/generic types that don't implement ILuaUserData
         return $"global::Lua.LuaValue.FromObject({expr})";
     }
@@ -514,20 +508,6 @@ internal sealed class LuaBindingTypeGenerator
         return _knownLuaVisibleFullNames.Contains(fullTypeName);
     }
 
-    private static string GetMetatableRef(string typeName)
-    {
-        // Skip true tuple types
-        var baseName = typeName.Contains('<') ? typeName.Substring(0, typeName.IndexOf('<')) : typeName;
-        if (baseName.StartsWith("(") || baseName == "System.ValueTuple" || baseName == "System.Tuple")
-            return "null";
-        // Simple types that don't need StructUserData wrapping — no metatable needed
-        if (!NeedsStructWrap(typeName))
-            return "null";
-        // Try to match a generated metatable by sanitized name
-        var safe = Sanitize(typeName);
-        return $"StructUserData_Metatable_{safe}.Metatable";
-    }
-
     private static bool IsSimple(string t) => t switch
     {
         "int" or "long" or "float" or "double" or "bool" or "string" or "object"
@@ -563,12 +543,4 @@ internal sealed class LuaBindingTypeGenerator
             return false;
         return true;
     }
-
-    private static string Sanitize(string name) =>
-        name.Replace("global::", "").Replace("[]", "Array")
-            .Replace("<", "_").Replace(">", "_")
-            .Replace("(", "_").Replace(")", "_")
-            .Replace("[", "_").Replace("]", "_").Replace("*", "Ptr_")
-            .Replace("?", "_Nullable").Replace(",", "_")
-            .Replace(" ", "").Replace(".", "_");
 }

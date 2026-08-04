@@ -7,13 +7,9 @@ DeterministicRandomInstance = {}
 DeterministicRandom = {}
 
 ---Creates a new DeterministicRandom
----@param random FixedMathSharp_Utility_DeterministicRandomInstance
----@return DeterministicRandomInstance
-function DeterministicRandom.new(random) end
-
 ---@param value fixed64
 ---@return DeterministicRandomInstance
-function DeterministicRandom.create(value) end
+function DeterministicRandom.new(value) end
 
 ---@param self DeterministicRandomInstance
 ---@return number

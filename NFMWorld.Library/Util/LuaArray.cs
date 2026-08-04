@@ -1,6 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
+using FixedMathSharp;
 using Lua;
 using Lua.Runtime;
+using nfm_world_library.Lua;
+using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary.Util;
 
@@ -8,7 +11,10 @@ namespace NFMWorldLibrary.Util;
 /// A lua-compatible T[]
 /// </summary>
 /// <param name="length">The length of the array</param>
-/// <typeparam name="T">The type of the array's elements</typeparam>
+/// <typeparam name="T">
+/// The type of the array's elements. Must implement <see cref="ILuaUserData"/> or be a primitive
+/// type for correct functionality.
+/// </typeparam>
 public class LuaArray<T>(int length) : ILuaUserData
 {
     public readonly T[] Value = new T[length];
@@ -67,11 +73,67 @@ public class LuaArray<T>(int length) : ILuaUserData
         {
             if ((uint)index < (uint)arr.Count)
             {
-                return new(context.Return(LuaValue.FromObject(arr[index]!)));
+                return new(context.Return(ToLuaValue(arr[index]!)));
             }
         }
 
         return new(context.Return(LuaValue.Nil));
+    }
+
+    private static LuaValue ToLuaValue(T value)
+    {
+        if (value is null) return LuaValue.Nil;
+        
+        if (value is bool @bool)
+            return new LuaValue(@bool);
+        if (value is float @float)
+            return new LuaValue(@float);
+        if (value is int @int)
+            return new LuaValue(@int);
+        if (value is long @long)
+            return new LuaValue(@long);
+        if (value is uint @uint)
+            return new LuaValue(@uint);
+        if (value is ulong @ulong)
+            return new LuaValue(@ulong);
+        if (value is short @short)
+            return new LuaValue(@short);
+        if (value is ushort @ushort)
+            return new LuaValue(@ushort);
+        if (value is byte @byte)
+            return new LuaValue(@byte);
+        if (value is sbyte @sbyte)
+            return new LuaValue(@sbyte);
+        if (value is double @double)
+            return new LuaValue(@double);
+
+        if (value is string @string)
+            return new LuaValue(@string);
+
+        if (value is LuaFunction func)
+            return new LuaValue(func);
+        if (value is LuaTable table)
+            return new LuaValue(table);
+        if (value is LuaState state)
+            return new LuaValue(state);
+        
+        if (value is fix64 fixed64)
+            return new LuaValue(fixed64);
+        if (value is f64Vector3 f64Vector3)
+            return new LuaValue(f64Vector3);
+        if (value is f64AngleSingle f64AngleSingle)
+            return new LuaValue(f64AngleSingle);
+        if (value is f64Euler f64Euler)
+            return new LuaValue(f64Euler);
+        
+        if (StructUserDataHelper.TryWrap(value, out var data))
+            return LuaValue.FromUserData(data);
+        
+        if (data is ILuaUserData userData)
+            return LuaValue.FromUserData(userData);
+
+        // Fallback!
+        return LuaValue.FromObject(value);
     }
 
     private static ValueTask<int> NewIndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
@@ -121,6 +183,9 @@ public class LuaArray<T>(int length) : ILuaUserData
     /// <summary>Converts a <see cref="LuaValue"/> to <typeparamref name="T"/> with flexible coercion.</summary>
     private static T ConvertLuaValue(LuaValue value)
     {
+        if (value.TryRead<StructUserData<T>>(out var structUserData))
+            return structUserData.Value;
+        
         // Let LuaValue's own conversion handle it (supports double, string, bool, etc.)
         if (value.TryRead<T>(out var result))
             return result;

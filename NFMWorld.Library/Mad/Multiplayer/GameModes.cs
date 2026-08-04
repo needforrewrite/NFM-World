@@ -67,6 +67,46 @@ public class FootballGamemodeFactory : BaseGamemodeFactory
         => new FootballServerGamemode();
 }
 
+/// <summary>
+/// Factory for Lua-driven gamemodes. The gamemode ID is derived from the script path:
+/// <c>nfmm/lua:{scriptRelativePath}</c>. Both client and server gamemodes are supported.
+/// </summary>
+public class LuaGamemodeFactory : BaseGamemodeFactory
+{
+    private readonly string _gamemodeId;
+    private readonly string _scriptRelativePath;
+
+    /// <summary>
+    /// Creates a Lua gamemode factory.
+    /// </summary>
+    /// <param name="scriptRelativePath">
+    /// Path to the .lua script, relative to <c>data/gamemodes/</c>.
+    /// The gamemode ID is automatically derived as <c>nfmm/lua:{script}</c>.
+    /// </param>
+    public LuaGamemodeFactory(string scriptRelativePath)
+    {
+        _scriptRelativePath = scriptRelativePath;
+        _gamemodeId = $"nfmm/lua:{scriptRelativePath}";
+    }
+
+    /// <summary>
+    /// Creates a Lua gamemode factory with a custom gamemode ID.
+    /// </summary>
+    public LuaGamemodeFactory(string gamemodeId, string scriptRelativePath)
+    {
+        _gamemodeId = gamemodeId;
+        _scriptRelativePath = scriptRelativePath;
+    }
+
+    public override string GamemodeId => _gamemodeId;
+
+    public override IGamemode CreateGameMode(GamemodeParameters parameters, IGamemodeData gamemodeData)
+        => new LuaGamemode(parameters, gamemodeData, _scriptRelativePath);
+
+    public override IServerGamemode? CreateServerGamemode(GamemodeParameters parameters)
+        => new LuaServerGamemode(_gamemodeId, _scriptRelativePath);
+}
+
 public enum PvpConstraint
 {
     Racing, Wasting, Both
@@ -92,6 +132,29 @@ public static class GamemodeRegistry
 
     public static void Register(BaseGamemodeFactory factory)
         => _factories[factory.GamemodeId] = factory;
+
+    /// <summary>
+    /// Registers a Lua-driven gamemode from a script file in <c>data/gamemodes/</c>.
+    /// The gamemode ID is automatically derived as <c>nfmm/lua:{scriptRelativePath}</c>.
+    /// </summary>
+    /// <param name="scriptRelativePath">Path to the .lua file, relative to <c>data/gamemodes/</c>.</param>
+    /// <returns>The registered factory.</returns>
+    public static LuaGamemodeFactory RegisterLua(string scriptRelativePath)
+    {
+        var factory = new LuaGamemodeFactory(scriptRelativePath);
+        Register(factory);
+        return factory;
+    }
+
+    /// <summary>
+    /// Registers a Lua-driven gamemode with a custom gamemode ID.
+    /// </summary>
+    public static LuaGamemodeFactory RegisterLua(string gamemodeId, string scriptRelativePath)
+    {
+        var factory = new LuaGamemodeFactory(gamemodeId, scriptRelativePath);
+        Register(factory);
+        return factory;
+    }
 
     public static BaseGamemodeFactory? Get(string gamemodeId)
         => _factories.GetValueOrDefault(gamemodeId);

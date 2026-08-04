@@ -55,13 +55,11 @@ public class StructUserData<T> : ILuaUserData
 
     // Minimal fallback metatable — used when no code-generated metatable is provided.
     // Provides basic __index (array/list), __len (array/list), and __tostring.
-    private static LuaTable? s_fallbackMetatable;
-
     private static LuaTable FallbackMetatable
     {
         get
         {
-            if (s_fallbackMetatable != null) return s_fallbackMetatable;
+            if (field != null) return field;
             var mt = new LuaTable();
             mt[Metamethods.Index] = new LuaFunction("__index", (context, ct) =>
             {
@@ -108,8 +106,52 @@ public class StructUserData<T> : ILuaUserData
                 var wrapper = context.GetArgument<StructUserData<T>>(0);
                 return new(context.Return(wrapper.Value?.ToString() ?? "<nil>"));
             });
-            Interlocked.CompareExchange(ref s_fallbackMetatable, mt, null);
-            return s_fallbackMetatable!;
+            Interlocked.CompareExchange(ref field, mt, null);
+            return field;
         }
+    }
+}
+
+/// <summary>
+/// Thread-safe registry mapping each <typeparamref name="T"/> to its code-generated StructUserData metatable.
+/// Populated at assembly load time by the source-generated <see cref="StructUserDataMetatableInitializer"/>.
+/// </summary>
+public static class StructUserDataMetatableRegistry<T>
+{
+    // ReSharper disable once StaticMemberInGenericType
+    public static LuaTable? Metatable { get; private set; }
+
+    public static void Register(LuaTable metatable) => Metatable = metatable;
+}
+
+/// <summary>
+/// Helper for wrapping a value into <see cref="StructUserData{T}"/> using the registered metatable.
+/// </summary>
+public static class StructUserDataHelper
+{
+    /// <summary>
+    /// Wraps <paramref name="value"/> into a <see cref="StructUserData{T}"/> if a metatable is registered for <typeparamref name="T"/>.
+    /// Returns false with a fallback (parameterless) StructUserData if no metatable is registered.
+    /// </summary>
+    public static StructUserData<T> Wrap<T>(T value)
+    {
+        if (StructUserDataMetatableRegistry<T>.Metatable is { } mt)
+            return new StructUserData<T>(mt) { Value = value };
+        return new StructUserData<T> { Value = value };
+    }
+
+    /// <summary>
+    /// Wraps <paramref name="value"/> into a <see cref="StructUserData{T}"/> if a metatable is registered for <typeparamref name="T"/>.
+    /// Returns false when no metatable is registered (result is default).
+    /// </summary>
+    public static bool TryWrap<T>(T value, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out StructUserData<T> result)
+    {
+        if (StructUserDataMetatableRegistry<T>.Metatable is { } mt)
+        {
+            result = new StructUserData<T>(mt) { Value = value };
+            return true;
+        }
+        result = default;
+        return false;
     }
 }

@@ -1,6 +1,7 @@
 ---@meta
 
 ---@class fixed64
+---@field raw number -- The underlying raw long value cast to double
 ---@operator add(fixed64): fixed64
 ---@operator sub(fixed64): fixed64
 ---@operator mul(fixed64): fixed64
@@ -10,6 +11,9 @@
 local fixed64_type = {}
 
 ---@class fixed64vector3
+---@field x fixed64
+---@field y fixed64
+---@field z fixed64
 ---@operator add(fixed64vector3): fixed64vector3
 ---@operator sub(fixed64vector3): fixed64vector3
 ---@operator mul(fixed64vector3): fixed64vector3        -- component-wise
@@ -123,12 +127,11 @@ function fixed64vec3.sign(v) end
 ---@overload fun(v: fixed64vector3): "fixed64vector3"
 function type(v) end
 
----@class UnlimitedArray<T>: { [number]: T }
----@class LuaArray<T>: { [number]: T }
-
 ---@meta
 
 ---@class f64angle
+---@field deg fixed64 -- Angle in degrees
+---@field rad fixed64 -- Angle in radians
 ---@operator add(f64angle): f64angle
 ---@operator sub(f64angle): f64angle
 ---@operator mul(f64angle): f64angle
@@ -140,9 +143,9 @@ function type(v) end
 local f64angle_type = {}
 
 ---@class f64euler
----@field Yaw f64angle
----@field Pitch f64angle
----@field Roll f64angle
+---@field yaw f64angle
+---@field pitch f64angle
+---@field roll f64angle
 ---@operator add(f64euler): f64euler
 ---@operator sub(f64euler): f64euler
 ---@operator unm(): f64euler
