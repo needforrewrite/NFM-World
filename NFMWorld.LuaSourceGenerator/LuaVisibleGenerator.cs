@@ -42,7 +42,8 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             if (references == null) return;
 
             var generatedTypes = new List<LuaTypeMetadata>();
-            var externalTypeSymbols = new Dictionary<string, ITypeSymbol>(); // displayName → symbol
+            var externalTypeSymbols = new Dictionary<string, ITypeSymbol>(); // Metatable (MemberLuaVisible)
+            var stubTypeSymbols = new Dictionary<string, ITypeSymbol>();    // Stubs only (all referenced)
             var seenHints = new HashSet<string>();
 
             foreach (var attrCtx in typeContexts)
@@ -59,9 +60,9 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             foreach (var typeMeta in generatedTypes)
                 luaVisibleFullNames.Add(typeMeta.FullTypeName);
 
-            // Collect external type symbols from [MemberLuaVisible] members only
+            // Collect external type symbols from [MemberLuaVisible] members + stubs from all members
             foreach (var typeMeta in generatedTypes)
-                CollectExternalTypeSymbols(typeMeta, externalTypeSymbols, luaVisibleFullNames, references);
+                CollectExternalTypeSymbols(typeMeta, externalTypeSymbols, stubTypeSymbols, luaVisibleFullNames, references);
 
             // Collect types from [assembly: AssemblyLuaVisible<T>] attributes
             CollectAssemblyLevelTypes(compilation, externalTypeSymbols, luaVisibleFullNames);
@@ -105,6 +106,16 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                         var stubName = SanitizeHint(displayName).Replace("_Array", "Array");
                         var luaStub = GenerateExternalTypeLuaStub(stubName, typeSymbol, compilation, luaVisibleNameMap);
                         var tsStub = GenerateExternalTypeTSStub(stubName, typeSymbol);
+                        WriteStubFiles(stubsOutDir, stubName, luaStub, tsStub);
+                    }
+
+                    // Opaque stubs for all other referenced types (no metatable, just type identity)
+                    foreach (var kvp in stubTypeSymbols)
+                    {
+                        if (externalTypeSymbols.ContainsKey(kvp.Key)) continue; // already emitted above
+                        var stubName = SanitizeHint(kvp.Key).Replace("_Array", "Array");
+                        var luaStub = $"---@class {stubName}Instance\n{stubName}Instance = {{}}\n\n---@class (exact) {stubName}\n";
+                        var tsStub = $"declare class {stubName} {{\n}}\n";
                         WriteStubFiles(stubsOutDir, stubName, luaStub, tsStub);
                     }
                 }
@@ -186,13 +197,16 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         }
     }
 
-    private static void CollectExternalTypeSymbols(LuaTypeMetadata typeMeta, Dictionary<string, ITypeSymbol> externalTypes, HashSet<string> luaVisibleFullNames, SymbolReferences references)
+    private static void CollectExternalTypeSymbols(LuaTypeMetadata typeMeta, Dictionary<string, ITypeSymbol> externalTypes, Dictionary<string, ITypeSymbol> stubTypes, HashSet<string> luaVisibleFullNames, SymbolReferences references)
     {
         var symbol = typeMeta.Symbol;
         var memberLuaVisibleAttr = references.MemberLuaVisibleAttribute;
 
-        // Collect only from members explicitly marked [MemberLuaVisible]
+        // Collect MemberLuaVisible types for StructUserData metatables
         CollectMemberLuaVisibleTypes(symbol, externalTypes, luaVisibleFullNames, memberLuaVisibleAttr);
+
+        // Collect ALL referenced types for opaque stubs
+        CollectStubTypes(symbol, stubTypes, luaVisibleFullNames);
 
         // For interfaces, also add base interfaces themselves for stubs
         if (symbol.TypeKind == TypeKind.Interface)
@@ -207,9 +221,35 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             {
                 if (!visited.Add(baseIface)) continue;
                 TryAddExternalType(externalTypes, baseIface, luaVisibleFullNames);
+                TryAddStubType(stubTypes, baseIface, luaVisibleFullNames);
                 CollectMemberLuaVisibleTypes(baseIface, externalTypes, luaVisibleFullNames, memberLuaVisibleAttr);
+                CollectStubTypes(baseIface, stubTypes, luaVisibleFullNames);
                 WalkInterfaces(baseIface, visited);
             }
+        }
+    }
+
+    /// <summary>Collect types for opaque stubs from all public members (not just MemberLuaVisible).</summary>
+    private static void CollectStubTypes(INamedTypeSymbol symbol, Dictionary<string, ITypeSymbol> stubTypes, HashSet<string> luaVisibleFullNames)
+    {
+        foreach (var p in symbol.GetMembers().OfType<IPropertySymbol>()
+            .Where(p => !p.IsStatic && !p.IsIndexer && !p.IsImplicitlyDeclared && p.DeclaredAccessibility == Accessibility.Public))
+        {
+            TryAddStubType(stubTypes, p.Type, luaVisibleFullNames);
+        }
+
+        foreach (var f in symbol.GetMembers().OfType<IFieldSymbol>()
+            .Where(f => !f.IsStatic && !f.IsImplicitlyDeclared && f.DeclaredAccessibility == Accessibility.Public))
+        {
+            TryAddStubType(stubTypes, f.Type, luaVisibleFullNames);
+        }
+
+        foreach (var m in symbol.GetMembers().OfType<IMethodSymbol>()
+            .Where(m => !m.IsStatic && m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared && m.DeclaredAccessibility == Accessibility.Public))
+        {
+            TryAddStubType(stubTypes, m.ReturnType, luaVisibleFullNames);
+            foreach (var param in m.Parameters)
+                TryAddStubType(stubTypes, param.Type, luaVisibleFullNames);
         }
     }
 
@@ -259,6 +299,18 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         // Skip 1D arrays — they're stubbed inline as { [integer]: T }
         if (type is IArrayTypeSymbol arr && arr.Rank == 1) return;
         // Skip known Lua-CSharp base types — mapped to native Lua types in stubs
+        if (displayName is "Lua.LuaTable" or "Lua.LuaFunction" or "Lua.LuaValue" or "Lua.ILuaUserData") return;
+        dict[displayName] = type;
+    }
+
+    /// <summary>Add a type to the stub-only dictionary. Skips primitives, LuaVisible, 1D arrays, and Lua base types.</summary>
+    private static void TryAddStubType(Dictionary<string, ITypeSymbol> dict, ITypeSymbol type, HashSet<string> luaVisibleFullNames)
+    {
+        var displayName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+        if (dict.ContainsKey(displayName)) return;
+        if (luaVisibleFullNames.Contains(displayName)) return;
+        if (!NeedsStructWrap(displayName)) return;
+        if (type is IArrayTypeSymbol arr && arr.Rank == 1) return;
         if (displayName is "Lua.LuaTable" or "Lua.LuaFunction" or "Lua.LuaValue" or "Lua.ILuaUserData") return;
         dict[displayName] = type;
     }
@@ -634,9 +686,25 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"---@class {stubName}Instance");
 
-        // Add indexer annotations for types with integer indexers
         if (typeSymbol is INamedTypeSymbol named)
         {
+            // Public instance properties (non-indexer)
+            foreach (var prop in named.GetMembers().OfType<IPropertySymbol>()
+                .Where(p => !p.IsStatic && !p.IsIndexer && !p.IsImplicitlyDeclared && p.DeclaredAccessibility == Accessibility.Public && p.GetMethod != null))
+            {
+                var elemDisplay = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+                sb.AppendLine($"---@field {Camel(prop.Name)} {ToExternalLuaTypeName(elemDisplay, luaVisibleNameMap)}");
+            }
+
+            // Public instance fields
+            foreach (var f in named.GetMembers().OfType<IFieldSymbol>()
+                .Where(f => !f.IsStatic && !f.IsImplicitlyDeclared && f.DeclaredAccessibility == Accessibility.Public))
+            {
+                var elemDisplay = f.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+                sb.AppendLine($"---@field {Camel(f.Name)} {ToExternalLuaTypeName(elemDisplay, luaVisibleNameMap)}");
+            }
+
+            // Integer indexers
             foreach (var prop in named.GetMembers().OfType<IPropertySymbol>()
                 .Where(p => p.IsIndexer && !p.IsImplicitlyDeclared))
             {
@@ -706,10 +774,29 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             return $"declare class {stubName} {{\n    [index: number]: {elemName};\n    readonly length: number;\n}}\n";
         }
 
-        // Check for integer indexers on non-array types (IReadOnlyList<T>, etc.)
-        var indexerTypes = new List<string>();
+        var members = new List<string>();
+
         if (symbol is INamedTypeSymbol named)
         {
+            // Public instance properties (non-indexer)
+            foreach (var prop in named.GetMembers().OfType<IPropertySymbol>()
+                .Where(p => !p.IsStatic && !p.IsIndexer && !p.IsImplicitlyDeclared && p.DeclaredAccessibility == Accessibility.Public && p.GetMethod != null))
+            {
+                var ts = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+                var tsName = TsSimpleName(ts);
+                var prefix = prop.SetMethod != null && !prop.SetMethod.IsInitOnly ? "" : "readonly ";
+                members.Add($"    {prefix}{Camel(prop.Name)}: {tsName};");
+            }
+
+            // Public instance fields
+            foreach (var f in named.GetMembers().OfType<IFieldSymbol>()
+                .Where(f => !f.IsStatic && !f.IsImplicitlyDeclared && f.DeclaredAccessibility == Accessibility.Public))
+            {
+                var ts = f.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+                members.Add($"    {Camel(f.Name)}: {TsSimpleName(ts)};");
+            }
+
+            // Integer indexers
             foreach (var prop in named.GetMembers().OfType<IPropertySymbol>()
                 .Where(p => p.IsIndexer && !p.IsImplicitlyDeclared))
             {
@@ -718,21 +805,31 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                     if (param.Type.SpecialType == SpecialType.System_Int32)
                     {
                         var elemDisplay = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
-                        var elemName = elemDisplay is "System.Int32" or "int" ? "number" :
-                                       elemDisplay is "System.Single" or "float" ? "number" :
-                                       elemDisplay is "System.Double" or "double" ? "number" :
-                                       elemDisplay is "System.String" or "string" ? "string" :
-                                       elemDisplay is "System.Boolean" or "bool" ? "boolean" : "any";
-                        indexerTypes.Add($"[index: number]: {elemName};");
+                        members.Add($"    [index: number]: {TsSimpleName(elemDisplay)};");
                     }
                 }
             }
         }
 
-        if (indexerTypes.Count > 0)
-            return $"declare class {stubName} {{\n    {string.Join("\n    ", indexerTypes)}\n}}\n";
+        if (members.Count > 0)
+            return $"declare class {stubName} {{\n{string.Join("\n", members)}\n}}\n";
 
         return $"declare class {stubName} {{\n}}\n";
+    }
+
+    private static string TsSimpleName(string t)
+    {
+        if (t.EndsWith("?")) return $"{TsSimpleName(t.Substring(0, t.Length - 1))} | null";
+        return t switch
+        {
+            "int" or "long" or "float" or "double" or "byte" or "sbyte"
+                or "short" or "ushort" or "uint" or "ulong" or "decimal" => "number",
+            "bool" => "boolean",
+            "string" => "string",
+            "void" => "void",
+            "object" => "any",
+            _ => "any"
+        };
     }
 
     private static string SanitizeHint(string name) =>
