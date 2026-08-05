@@ -1,5 +1,5 @@
 declare interface IInGameCar
-    extends NFMWorldLibrary_ICar, NFMWorldLibrary_ITransform
+    extends NFMWorldLibrary_ICar, ITransform
 {
     readonly car_physics: CarPhysics;
     readonly control: Control;
@@ -20,13 +20,13 @@ declare interface IInGameCar
     readonly childTransforms: System_Collections_Generic_IReadOnlyList_NFMWorldLibrary_ITransform_;
     position: fixed64vector3;
     rotation: fixed64euler;
-    readonly parent: NFMWorldLibrary_ITransform;
+    readonly parent: ITransform;
     addDust(wheelidx: number, x: number, y: number, z: number, scx: number, scz: number, simag: number, tilt: number, onRoof: boolean, wheelGround: number): void;
     spark(x: number, y: number, z: number, scx: number, scy: number, scz: number, type: number, wheelGround: number): void;
     damageX(wheelnum: number, amount: fixed64): void;
     damageY(wheelnum: number, amount: fixed64, mtouch: boolean, nbsq: number, squash: number): void;
     damageZ(wheelnum: number, amount: fixed64): void;
-    drive(stage: NFMWorldLibrary_IStage): void;
+    drive(stage: IStage): void;
     collide(otherCar: IInGameCar): void;
     resetPosition(): void;
     fix(): void;

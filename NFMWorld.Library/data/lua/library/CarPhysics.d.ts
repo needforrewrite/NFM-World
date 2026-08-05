@@ -74,7 +74,7 @@ declare class CarPhysics
     py: fixed64;
     collide(self: IInGameCar, othermad: CarPhysics, other: IInGameCar): void;
     bounceRebound(wi: number, conto: NFMWorldLibrary_ContO, random: FixedMathSharp_Utility_DeterministicRandom): void;
-    drive(control: Control, car: IInGameCar, stage: NFMWorldLibrary_IStage): void;
+    drive(control: Control, car: IInGameCar, stage: IStage): void;
     getReboundMul(wasMtouch: boolean): fixed64;
     regx(i: number, f: fixed64, conto: NFMWorldLibrary_ContO, random: FixedMathSharp_Utility_DeterministicRandom): number;
     regy(i: number, f: fixed64, conto: NFMWorldLibrary_ContO, random: FixedMathSharp_Utility_DeterministicRandom): number;

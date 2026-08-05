@@ -115,7 +115,7 @@ function CarPhysicsInstance:bounceRebound(wi, conto, random) end
 ---@param self CarPhysicsInstance
 ---@param control ControlInstance
 ---@param car IInGameCarInstance
----@param stage NFMWorldLibrary_IStageInstance
+---@param stage IStageInstance
 function CarPhysicsInstance:drive(control, car, stage) end
 
 ---@param self CarPhysicsInstance

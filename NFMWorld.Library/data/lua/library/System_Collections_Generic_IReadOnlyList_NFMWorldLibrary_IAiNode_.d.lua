@@ -1,0 +1,4 @@
+---@class System_Collections_Generic_IReadOnlyList_NFMWorldLibrary_IAiNode_Instance
+System_Collections_Generic_IReadOnlyList_NFMWorldLibrary_IAiNode_Instance = {}
+
+---@class (exact) System_Collections_Generic_IReadOnlyList_NFMWorldLibrary_IAiNode_

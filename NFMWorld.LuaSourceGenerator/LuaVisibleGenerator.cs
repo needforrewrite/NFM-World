@@ -229,9 +229,18 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         }
     }
 
-    /// <summary>Collect types for opaque stubs from all public members (not just MemberLuaVisible).</summary>
+    /// <summary>Collect types for opaque stubs from all public members, base types, and interfaces.</summary>
     private static void CollectStubTypes(INamedTypeSymbol symbol, Dictionary<string, ITypeSymbol> stubTypes, HashSet<string> luaVisibleFullNames)
     {
+        // Base type (if not Object/ValueType)
+        var bt = symbol.BaseType;
+        if (bt != null && bt.SpecialType != SpecialType.System_Object && bt.SpecialType != SpecialType.System_ValueType)
+            TryAddStubType(stubTypes, bt, luaVisibleFullNames);
+
+        // Implemented interfaces
+        foreach (var iface in symbol.AllInterfaces)
+            TryAddStubType(stubTypes, iface, luaVisibleFullNames);
+
         foreach (var p in symbol.GetMembers().OfType<IPropertySymbol>()
             .Where(p => !p.IsStatic && !p.IsIndexer && !p.IsImplicitlyDeclared && p.DeclaredAccessibility == Accessibility.Public))
         {
@@ -747,7 +756,9 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             "Lua.LuaTable" => "table",
             "Lua.LuaFunction" => "function",
             "Lua.LuaValue" => "any",
-            _ => IsFixedMathBaseType(t) ? FixedMathBaseToLuaName(t) : $"{SanitizeHint(t).Replace("_Array", "Array")}Instance"
+            _ => IsFixedMathBaseType(t) ? FixedMathBaseToLuaName(t)
+                 : luaVisibleNameMap.TryGetValue(t, out var luaName) ? $"{luaName}Instance"
+                 : $"{SanitizeHint(t).Replace("_Array", "Array")}Instance"
         };
     }
 

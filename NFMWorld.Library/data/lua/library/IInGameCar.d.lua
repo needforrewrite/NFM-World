@@ -1,4 +1,4 @@
----@class IInGameCarInstance : NFMWorldLibrary_ICarInstance, NFMWorldLibrary_ITransformInstance
+---@class IInGameCarInstance : NFMWorldLibrary_ICarInstance, ITransformInstance
 ---@field car_physics CarPhysicsInstance
 ---@field control ControlInstance
 ---@field current_checkpoint number
@@ -18,7 +18,7 @@
 ---@field childTransforms System_Collections_Generic_IReadOnlyList_NFMWorldLibrary_ITransform_Instance
 ---@field position fixed64vector3
 ---@field rotation f64euler
----@field parent NFMWorldLibrary_ITransformInstance
+---@field parent ITransformInstance
 IInGameCarInstance = {}
 
 ---@class (exact) IInGameCar
@@ -68,7 +68,7 @@ function IInGameCarInstance:damageY(wheelnum, amount, mtouch, nbsq, squash) end
 function IInGameCarInstance:damageZ(wheelnum, amount) end
 
 ---@param self IInGameCarInstance
----@param stage NFMWorldLibrary_IStageInstance
+---@param stage IStageInstance
 function IInGameCarInstance:drive(stage) end
 
 ---@param self IInGameCarInstance

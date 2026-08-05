@@ -1,6 +1,6 @@
 ---@class NFMWorldLibrary_ICarInstance
 ---@field rad NFMWorldLibrary_Rad_Rad3dInstance
----@field stats NFMWorldLibrary_CarStatsInstance
+---@field stats CarStatsInstance
 ---@field groundAt number
 ---@field maxRadius number
 ---@field wheelAngle NFMWorldLibrary_FixedMath_f64EulerInstance
