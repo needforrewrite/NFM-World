@@ -113,6 +113,12 @@ internal sealed class TypeScriptStubsGenerator(LuaTypeMetadata type, Compilation
     private string ToTSTypeName(string t)
     {
         if (t.EndsWith("?")) return $"{ToTSTypeName(t.Substring(0, t.Length - 1))} | null";
+        // Handle 1D arrays: int[] → ArrayLike<number>
+        if (t.EndsWith("[]") && !t.EndsWith("[,]") && !t.Contains("["))
+        {
+            var elemType = t.Substring(0, t.Length - 2);
+            return $"ArrayLike<{ToTSTypeName(elemType)}>";
+        }
         return t switch
         {
             "int" or "long" or "float" or "double" or "byte" or "sbyte"
@@ -121,6 +127,10 @@ internal sealed class TypeScriptStubsGenerator(LuaTypeMetadata type, Compilation
             "string" => "string",
             "void" => "void",
             "object" => "any",
+            // Map Lua-CSharp base types
+            "Lua.LuaTable" => "object",
+            "Lua.LuaFunction" => "Function",
+            "Lua.LuaValue" => "any",
             _ => IsFixedMathType(t) ? FixedMathToTSName(t) : StubTypeName(t)
         };
     }

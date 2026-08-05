@@ -103,8 +103,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                         var displayName = kvp.Key;
                         var typeSymbol = kvp.Value;
                         var stubName = SanitizeHint(displayName).Replace("_Array", "Array");
-                        // Simple external stub: just the type name annotation
-                        var luaStub = GenerateExternalTypeLuaStub(stubName);
+                        var luaStub = GenerateExternalTypeLuaStub(stubName, typeSymbol, compilation, luaVisibleNameMap);
                         var tsStub = GenerateExternalTypeTSStub(stubName, typeSymbol);
                         WriteStubFiles(stubsOutDir, stubName, luaStub, tsStub);
                     }
@@ -247,6 +246,10 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         // Skip types that are themselves [LuaVisible] — they have their own metatable
         if (luaVisibleFullNames.Contains(displayName)) return;
         if (!NeedsStructWrap(displayName)) return;
+        // Skip 1D arrays — they're stubbed inline as { [integer]: T }
+        if (type is IArrayTypeSymbol arr && arr.Rank == 1) return;
+        // Skip known Lua-CSharp base types — mapped to native Lua types in stubs
+        if (displayName is "Lua.LuaTable" or "Lua.LuaFunction" or "Lua.LuaValue" or "Lua.ILuaUserData") return;
         dict[displayName] = type;
     }
 
@@ -484,9 +487,68 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, $"{name}.d.ts"), tsStub);
     }
 
-    private static string GenerateExternalTypeLuaStub(string stubName)
+    private static string GenerateExternalTypeLuaStub(string stubName, ITypeSymbol typeSymbol, Compilation compilation, Dictionary<string, string> luaVisibleNameMap)
     {
-        return $"---@class {stubName}Instance\n{stubName}Instance = {{}}\n\n---@class (exact) {stubName}\n";
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"---@class {stubName}Instance");
+
+        // Add indexer annotations for types with integer indexers
+        if (typeSymbol is INamedTypeSymbol named)
+        {
+            foreach (var prop in named.GetMembers().OfType<IPropertySymbol>()
+                .Where(p => p.IsIndexer && !p.IsImplicitlyDeclared))
+            {
+                foreach (var param in prop.Parameters)
+                {
+                    if (param.Type.SpecialType == SpecialType.System_Int32)
+                    {
+                        var elemDisplay = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+                        var elemLua = ToExternalLuaTypeName(elemDisplay, luaVisibleNameMap);
+                        sb.AppendLine($"---@field [integer] {elemLua}");
+                    }
+                }
+            }
+        }
+
+        sb.AppendLine($"{stubName}Instance = {{}}");
+        sb.AppendLine();
+        sb.AppendLine($"---@class (exact) {stubName}");
+        return sb.ToString();
+    }
+
+    /// <summary>Convert a full C# type name to a Lua stub type name for external type stubs.</summary>
+    private static string ToExternalLuaTypeName(string t, Dictionary<string, string> luaVisibleNameMap)
+    {
+        if (t.EndsWith("?")) return $"{ToExternalLuaTypeName(t.Substring(0, t.Length - 1), luaVisibleNameMap)}|nil";
+        // Handle 1D arrays
+        if (t.EndsWith("[]") && !t.Contains("[")) // simple 1D
+        {
+            var elemType = t.Substring(0, t.Length - 2);
+            return $"{{ [integer]: {ToExternalLuaTypeName(elemType, luaVisibleNameMap)} }}";
+        }
+        return t switch
+        {
+            "int" or "long" or "float" or "double" or "byte" or "sbyte"
+                or "short" or "ushort" or "uint" or "ulong" or "decimal" => "number",
+            "bool" => "boolean",
+            "string" => "string",
+            "void" => "nil",
+            "object" => "any",
+            "Lua.LuaTable" => "table",
+            "Lua.LuaFunction" => "function",
+            "Lua.LuaValue" => "any",
+            _ => IsFixedMathBaseType(t) ? FixedMathBaseToLuaName(t) : $"{SanitizeHint(t).Replace("_Array", "Array")}Instance"
+        };
+    }
+
+    private static string FixedMathBaseToLuaName(string t)
+    {
+        var baseT = t.Contains('<') ? t.Substring(0, t.IndexOf('<')) : t;
+        if (baseT == "Fixed64" || baseT.EndsWith(".Fixed64")) return "fixed64";
+        if (baseT == "Vector3d" || baseT.EndsWith(".Vector3d")) return "fixed64vector3";
+        if (baseT == "f64AngleSingle" || baseT.EndsWith(".f64AngleSingle")) return "f64angle";
+        if (baseT == "f64Euler" || baseT.EndsWith(".f64Euler")) return "f64euler";
+        return SanitizeHint(baseT);
     }
 
     private static string GenerateExternalTypeTSStub(string stubName, ITypeSymbol symbol)
@@ -501,6 +563,33 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                            elemTs is "System.Boolean" or "bool" ? "boolean" : "any";
             return $"declare class {stubName} {{\n    [index: number]: {elemName};\n    readonly length: number;\n}}\n";
         }
+
+        // Check for integer indexers on non-array types (IReadOnlyList<T>, etc.)
+        var indexerTypes = new List<string>();
+        if (symbol is INamedTypeSymbol named)
+        {
+            foreach (var prop in named.GetMembers().OfType<IPropertySymbol>()
+                .Where(p => p.IsIndexer && !p.IsImplicitlyDeclared))
+            {
+                foreach (var param in prop.Parameters)
+                {
+                    if (param.Type.SpecialType == SpecialType.System_Int32)
+                    {
+                        var elemDisplay = prop.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+                        var elemName = elemDisplay is "System.Int32" or "int" ? "number" :
+                                       elemDisplay is "System.Single" or "float" ? "number" :
+                                       elemDisplay is "System.Double" or "double" ? "number" :
+                                       elemDisplay is "System.String" or "string" ? "string" :
+                                       elemDisplay is "System.Boolean" or "bool" ? "boolean" : "any";
+                        indexerTypes.Add($"[index: number]: {elemName};");
+                    }
+                }
+            }
+        }
+
+        if (indexerTypes.Count > 0)
+            return $"declare class {stubName} {{\n    {string.Join("\n    ", indexerTypes)}\n}}\n";
+
         return $"declare class {stubName} {{\n}}\n";
     }
 

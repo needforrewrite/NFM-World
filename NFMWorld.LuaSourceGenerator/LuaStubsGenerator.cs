@@ -198,6 +198,13 @@ internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compil
     private string ToLuaTypeName(string t)
     {
         if (t.EndsWith("?")) return $"{ToLuaTypeName(t.Substring(0, t.Length - 1))}|nil";
+        // Handle 1D arrays: int[] → { [integer]: number }
+        if (t.EndsWith("[]") && !t.EndsWith("[,]") && !t.Contains("["))
+        {
+            // t.EndsWith("[]") but check it's a simple 1D array, not multi-dim
+            var elemType = t.Substring(0, t.Length - 2);
+            return $"{{ [integer]: {ToLuaTypeName(elemType)} }}";
+        }
         return t switch
         {
             "int" or "long" or "float" or "double" or "byte" or "sbyte"
@@ -206,6 +213,10 @@ internal sealed class LuaStubsGenerator(LuaTypeMetadata type, Compilation compil
             "string" => "string",
             "void" => "nil",
             "object" => "any",
+            // Map Lua-CSharp base types to native Lua types
+            "Lua.LuaTable" => "table",
+            "Lua.LuaFunction" => "function",
+            "Lua.LuaValue" => "any",
             _ => IsFixedMathType(t) ? FixedMathToLuaName(t) : $"{StubTypeName(t)}Instance"
         };
     }
