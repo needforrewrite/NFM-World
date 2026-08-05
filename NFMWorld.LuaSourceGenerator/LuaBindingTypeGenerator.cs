@@ -5,12 +5,14 @@ internal sealed class LuaBindingTypeGenerator
     private readonly LuaTypeMetadata _type;
     private readonly int _i;
     private readonly HashSet<string> _knownLuaVisibleFullNames;
+    private readonly HashSet<string> _knownLuaVisibleEnumFullNames;
 
-    public LuaBindingTypeGenerator(LuaTypeMetadata type, HashSet<string> knownLuaVisibleFullNames, int baseIndent = 0)
+    public LuaBindingTypeGenerator(LuaTypeMetadata type, HashSet<string> knownLuaVisibleFullNames, HashSet<string>? knownLuaVisibleEnumFullNames = null, int baseIndent = 0)
     {
         _type = type;
         _i = baseIndent;
         _knownLuaVisibleFullNames = knownLuaVisibleFullNames;
+        _knownLuaVisibleEnumFullNames = knownLuaVisibleEnumFullNames ?? new HashSet<string>();
     }
 
     public string GenerateCode()
@@ -430,6 +432,8 @@ internal sealed class LuaBindingTypeGenerator
         if (IsSimple(m.ReturnType) && !IsNullable(m.ReturnType))
             return IsFixedMathType(m.ReturnType) ? $"(global::Lua.LuaValue)({expr})" : $"({expr})";
         if (IsSimple(m.ReturnType) && IsNullable(m.ReturnType)) return WrNullableValue(expr, m.ReturnType);
+        if (IsKnownLuaVisibleEnum(m.ReturnType))
+            return $"global::Lua.LuaValue.FromUserData(nfm_world_library.Lua.StructUserDataHelper.Wrap({expr}))";
         if (IsKnownLuaVisible(m.ReturnType)) return $"global::Lua.LuaValue.FromUserData({expr})";
         if (NeedsStructWrap(m.ReturnType))
             return $"global::Lua.LuaValue.FromUserData(nfm_world_library.Lua.StructUserDataHelper.Wrap({expr}))";
@@ -446,6 +450,9 @@ internal sealed class LuaBindingTypeGenerator
         if (IsSimple(rt) && !IsNullable(rt))
             return IsFixedMathType(rt) ? $"(global::Lua.LuaValue)({expr})" : $"({expr})";
         if (IsSimple(rt) && IsNullable(rt)) return WrNullableValue(expr, rt);
+        // Enums use StructUserData wrapping (they can't implement ILuaUserData)
+        if (IsKnownLuaVisibleEnum(rt))
+            return $"global::Lua.LuaValue.FromUserData(nfm_world_library.Lua.StructUserDataHelper.Wrap({expr}))";
         if (IsKnownLuaVisible(rt)) return $"global::Lua.LuaValue.FromUserData({expr})";
         // [MemberLuaVisible] — use StructUserData wrapping (metatable was generated for this type)
         if (needsStructUserData)
@@ -507,6 +514,11 @@ internal sealed class LuaBindingTypeGenerator
     private bool IsKnownLuaVisible(string fullTypeName)
     {
         return _knownLuaVisibleFullNames.Contains(fullTypeName);
+    }
+
+    private bool IsKnownLuaVisibleEnum(string fullTypeName)
+    {
+        return _knownLuaVisibleEnumFullNames.Contains(fullTypeName);
     }
 
     private static bool IsSimple(string t) => t switch
