@@ -178,8 +178,8 @@ internal sealed class LuaBindingTypeGenerator
         W(sb, b, "var key = context.GetArgument(1);");
         W(sb, b, "if (key.TryRead<string>(out var stringKey))");
         W(sb, b, "{"); var body = b + 1;
-        foreach (var f in _type.InstanceFields) W(sb, body, $"if (stringKey == \"{f.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + f.Name, f.FieldType, f.IsNullableReferenceType)}));");
-        foreach (var p in _type.InstanceProperties.Where(x => x.HasGetter)) W(sb, body, $"if (stringKey == \"{p.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + p.Name, p.PropertyType, p.IsNullableReferenceType)}));");
+        foreach (var f in _type.InstanceFields) W(sb, body, $"if (stringKey == \"{f.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + f.Name, f.FieldType, f.IsNullableReferenceType, f.NeedsStructUserData)}));");
+        foreach (var p in _type.InstanceProperties.Where(x => x.HasGetter)) W(sb, body, $"if (stringKey == \"{p.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField("userData." + p.Name, p.PropertyType, p.IsNullableReferenceType, p.NeedsStructUserData)}));");
         var seenMethods = new HashSet<string>();
         foreach (var m in _type.InstanceMethods)
         {
@@ -342,9 +342,9 @@ internal sealed class LuaBindingTypeGenerator
             W(sb, gb + 1, "if (key.TryRead<string>(out var sk))");
             W(sb, gb + 1, "{");
             foreach (var f in _type.StaticFields)
-                W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField($"{_type.FullTypeName}.{f.Name}", f.FieldType, f.IsNullableReferenceType)}));");
+                W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField($"{_type.FullTypeName}.{f.Name}", f.FieldType, f.IsNullableReferenceType, f.NeedsStructUserData)}));");
             foreach (var p in _type.StaticProperties.Where(x => x.HasGetter))
-                W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField($"{_type.FullTypeName}.{p.Name}", p.PropertyType, p.IsNullableReferenceType)}));");
+                W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") return new System.Threading.Tasks.ValueTask<int>(context.Return({WrField($"{_type.FullTypeName}.{p.Name}", p.PropertyType, p.IsNullableReferenceType, p.NeedsStructUserData)}));");
             W(sb, gb + 1, "}");
             W(sb, gb + 1, "return new System.Threading.Tasks.ValueTask<int>(context.Return(global::Lua.LuaValue.Nil));");
             W(sb, gb, "});");
@@ -438,7 +438,7 @@ internal sealed class LuaBindingTypeGenerator
     }
 
     /// <summary>Wrap field/property return value.</summary>
-    private string WrField(string expr, string rt, bool isNullableRefType = false)
+    private string WrField(string expr, string rt, bool isNullableRefType = false, bool needsStructUserData = false)
     {
         if (rt == "void") return expr;
         // For nullable reference types (string?, object?), use FromObject which handles null → Nil
@@ -447,7 +447,8 @@ internal sealed class LuaBindingTypeGenerator
             return IsFixedMathType(rt) ? $"(global::Lua.LuaValue)({expr})" : $"({expr})";
         if (IsSimple(rt) && IsNullable(rt)) return WrNullableValue(expr, rt);
         if (IsKnownLuaVisible(rt)) return $"global::Lua.LuaValue.FromUserData({expr})";
-        if (NeedsStructWrap(rt))
+        // [MemberLuaVisible] — use StructUserData wrapping (metatable was generated for this type)
+        if (needsStructUserData)
             return $"global::Lua.LuaValue.FromUserData(nfm_world_library.Lua.StructUserDataHelper.Wrap({expr}))";
         // Fallback: use FromObject for complex/generic types that don't implement ILuaUserData
         return $"global::Lua.LuaValue.FromObject({expr})";

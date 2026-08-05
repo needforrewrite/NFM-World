@@ -14,6 +14,14 @@ public sealed class LuaVisibleAttribute : Attribute
 }
 
 /// <summary>
+/// Marks a property, field, method, or method return type to expose its type to Lua
+/// via StructUserData wrapping. The type itself does not need [LuaVisible] — only
+/// the member-level attribute is required for StructUserData metatable generation.
+/// </summary>
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Method | AttributeTargets.ReturnValue, AllowMultiple = false)]
+public sealed class MemberLuaVisibleAttribute : Attribute;
+
+/// <summary>
 /// Marks a method, property, or field to be hidden from Lua even if the containing type is [LuaVisible].
 /// </summary>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Constructor | AttributeTargets.Event)]

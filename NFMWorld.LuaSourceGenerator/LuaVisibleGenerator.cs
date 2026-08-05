@@ -59,9 +59,9 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             foreach (var typeMeta in generatedTypes)
                 luaVisibleFullNames.Add(typeMeta.FullTypeName);
 
-            // Collect external type symbols, excluding types that are themselves [LuaVisible]
+            // Collect external type symbols from [MemberLuaVisible] members only
             foreach (var typeMeta in generatedTypes)
-                CollectExternalTypeSymbols(typeMeta, externalTypeSymbols, luaVisibleFullNames);
+                CollectExternalTypeSymbols(typeMeta, externalTypeSymbols, luaVisibleFullNames, references);
 
             // Collect types from [assembly: AssemblyLuaVisible<T>] attributes
             CollectAssemblyLevelTypes(compilation, externalTypeSymbols, luaVisibleFullNames);
@@ -186,14 +186,15 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         }
     }
 
-    private static void CollectExternalTypeSymbols(LuaTypeMetadata typeMeta, Dictionary<string, ITypeSymbol> externalTypes, HashSet<string> luaVisibleFullNames)
+    private static void CollectExternalTypeSymbols(LuaTypeMetadata typeMeta, Dictionary<string, ITypeSymbol> externalTypes, HashSet<string> luaVisibleFullNames, SymbolReferences references)
     {
         var symbol = typeMeta.Symbol;
+        var memberLuaVisibleAttr = references.MemberLuaVisibleAttribute;
 
-        // Collect from the type itself
-        CollectExternalFromMembers(symbol, externalTypes, luaVisibleFullNames);
+        // Collect only from members explicitly marked [MemberLuaVisible]
+        CollectMemberLuaVisibleTypes(symbol, externalTypes, luaVisibleFullNames, memberLuaVisibleAttr);
 
-        // For interfaces, also collect from base interfaces
+        // For interfaces, also add base interfaces themselves for stubs
         if (symbol.TypeKind == TypeKind.Interface)
         {
             var visited = new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default);
@@ -205,37 +206,46 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             foreach (var baseIface in iface.Interfaces)
             {
                 if (!visited.Add(baseIface)) continue;
-                // Add the base interface itself as an external type so stubs are generated for it
                 TryAddExternalType(externalTypes, baseIface, luaVisibleFullNames);
-                CollectExternalFromMembers(baseIface, externalTypes, luaVisibleFullNames);
+                CollectMemberLuaVisibleTypes(baseIface, externalTypes, luaVisibleFullNames, memberLuaVisibleAttr);
                 WalkInterfaces(baseIface, visited);
             }
         }
     }
 
-    private static void CollectExternalFromMembers(INamedTypeSymbol symbol, Dictionary<string, ITypeSymbol> externalTypes, HashSet<string> luaVisibleFullNames)
+    private static void CollectMemberLuaVisibleTypes(INamedTypeSymbol symbol, Dictionary<string, ITypeSymbol> externalTypes, HashSet<string> luaVisibleFullNames, INamedTypeSymbol? memberLuaVisibleAttr)
     {
-        // Instance methods — return types and parameters
-        foreach (var m in symbol.GetMembers().OfType<IMethodSymbol>()
-            .Where(m => !m.IsStatic && m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared))
-        {
-            TryAddExternalType(externalTypes, m.ReturnType, luaVisibleFullNames);
-            foreach (var p in m.Parameters)
-                TryAddExternalType(externalTypes, p.Type, luaVisibleFullNames);
-        }
+        if (memberLuaVisibleAttr == null) return;
 
-        // Instance properties (no indexers)
+        // Properties with [MemberLuaVisible]
         foreach (var p in symbol.GetMembers().OfType<IPropertySymbol>()
-            .Where(p => !p.IsStatic && !p.IsIndexer && !p.IsImplicitlyDeclared))
+            .Where(p => !p.IsStatic && !p.IsImplicitlyDeclared && HasAttr(p, memberLuaVisibleAttr)))
         {
             TryAddExternalType(externalTypes, p.Type, luaVisibleFullNames);
         }
 
-        // Instance fields
+        // Fields with [MemberLuaVisible]
         foreach (var f in symbol.GetMembers().OfType<IFieldSymbol>()
-            .Where(f => !f.IsStatic && !f.IsImplicitlyDeclared))
+            .Where(f => !f.IsStatic && !f.IsImplicitlyDeclared && HasAttr(f, memberLuaVisibleAttr)))
         {
             TryAddExternalType(externalTypes, f.Type, luaVisibleFullNames);
+        }
+
+        // Methods with [MemberLuaVisible] — add return type and parameter types
+        foreach (var m in symbol.GetMembers().OfType<IMethodSymbol>()
+            .Where(m => !m.IsStatic && m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared && HasAttr(m, memberLuaVisibleAttr)))
+        {
+            TryAddExternalType(externalTypes, m.ReturnType, luaVisibleFullNames);
+            foreach (var param in m.Parameters)
+                TryAddExternalType(externalTypes, param.Type, luaVisibleFullNames);
+        }
+
+        // Methods with [MemberLuaVisible] on return value
+        foreach (var m in symbol.GetMembers().OfType<IMethodSymbol>()
+            .Where(m => !m.IsStatic && m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared
+                && m.GetReturnTypeAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, memberLuaVisibleAttr))))
+        {
+            TryAddExternalType(externalTypes, m.ReturnType, luaVisibleFullNames);
         }
     }
 
@@ -252,6 +262,9 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         if (displayName is "Lua.LuaTable" or "Lua.LuaFunction" or "Lua.LuaValue" or "Lua.ILuaUserData") return;
         dict[displayName] = type;
     }
+
+    private static bool HasAttr(ISymbol s, INamedTypeSymbol? attr)
+        => attr != null && s.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attr));
 
     private static bool NeedsStructWrap(string t)
     {
@@ -280,13 +293,10 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
 
         // Prefer the already-resolved symbol (handles constructed generics like List<int>)
         // Fall back to metadata name lookup for simple named types
-        // Otherwise fall back to reflection-based metatable
         INamedTypeSymbol? symbol = typeSymbol as INamedTypeSymbol
             ?? compilation.GetTypeByMetadataName(typeName);
         if (symbol == null)
-        {
             return GenerateFallbackMetatable(typeName);
-        }
 
         var sb = new CodeBuilder();
         var safeName = SanitizeHint(typeName);
@@ -298,106 +308,221 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         sb.AppendLine($"internal static class StructUserData_Metatable_{safeName}");
         sb.AppendLine("{");
 
-        // Collect PUBLIC instance fields and properties only (no private/protected)
+        // Named properties and fields (exclude indexers — handled separately)
         var props = symbol.GetMembers().OfType<IPropertySymbol>()
             .Where(p => !p.IsStatic && !p.IsIndexer && !p.IsImplicitlyDeclared && p.DeclaredAccessibility == Accessibility.Public).ToArray();
         var fields = symbol.GetMembers().OfType<IFieldSymbol>()
             .Where(f => !f.IsStatic && !f.IsImplicitlyDeclared && f.DeclaredAccessibility == Accessibility.Public).ToArray();
+
+        // Array detection
         var isArray = symbol.TypeKind == TypeKind.Array;
-        var isEnumerable = symbol.AllInterfaces.Any(i => i.ToDisplayString() == "System.Collections.IEnumerable"
-            || i.ToDisplayString() == "System.Collections.Generic.IEnumerable<T>");
+        var arrayElemTypeStr = isArray ? ((IArrayTypeSymbol)symbol).ElementType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "") : null;
+
+        // Integer indexer detection (this[int]) — for List<T>, IReadOnlyList<T>, etc.
+        var intIndexers = symbol.GetMembers().OfType<IPropertySymbol>()
+            .Where(p => p.IsIndexer && !p.IsImplicitlyDeclared && p.DeclaredAccessibility == Accessibility.Public)
+            .Where(p => p.Parameters.Length == 1 && p.Parameters[0].Type.SpecialType == SpecialType.System_Int32)
+            .ToArray();
+        var hasIntIndexer = intIndexers.Length > 0;
+        var indexerRetTypeStr = hasIntIndexer ? intIndexers[0].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "") : null;
+        var hasIndexerSet = hasIntIndexer && intIndexers[0].SetMethod != null;
+        // Look for Count or Length property for list-like types to use for bounds + __len
+        string? countPropName = null;
+        if (hasIntIndexer)
+        {
+            countPropName = props.FirstOrDefault(p => (p.Name == "Count" || p.Name == "Length") && p.GetMethod != null)?.Name;
+            if (countPropName == null)
+            {
+                // For IReadOnlyList<T>, Count might be on the base interface
+                foreach (var iface in symbol.AllInterfaces)
+                {
+                    var cp = iface.GetMembers().OfType<IPropertySymbol>()
+                        .FirstOrDefault(p => p.Name is "Count" or "Length" && p.GetMethod != null);
+                    if (cp != null) { countPropName = cp.Name; break; }
+                }
+            }
+        }
+        var hasListLen = countPropName != null;
+
+        var hasIntAccess = isArray || hasIntIndexer;
+        // Slots: __index, __tostring, + __newindex (if int access or writable props), + __len (if array or list-like)
+        var slotCount = 2 + (hasIntAccess || props.Any(p => p.SetMethod != null && !p.SetMethod.IsInitOnly) || fields.Any(f => !f.IsReadOnly) ? 1 : 0) + ((isArray || hasListLen) ? 1 : 0);
 
         sb.AppendLine("    internal static readonly LuaTable Metatable;");
         sb.AppendLine($"    static StructUserData_Metatable_{safeName}()");
         sb.AppendLine("    {");
-        sb.AppendLine($"        Metatable = new LuaTable(0, {(isArray ? 3 : 2)});");
+        sb.AppendLine($"        Metatable = new LuaTable(0, {slotCount});");
         sb.AppendLine();
 
+        // ====================================================================
         // __index
+        // ====================================================================
         sb.AppendLine("        Metatable[Metamethods.Index] = new LuaFunction(\"__index\", (context, ct) =>");
         sb.AppendLine("        {");
         sb.AppendLine($"            var wrapper = context.GetArgument<StructUserData<{typeName}>>(0);");
         sb.AppendLine("            var key = context.GetArgument(1);");
-        sb.AppendLine("            if (key.TryRead<string>(out var sk))");
-        sb.AppendLine("            {");
-        foreach (var p in props)
+
+        // String key dispatch
+        if (props.Length > 0 || fields.Length > 0)
         {
-            if (p.GetMethod != null)
-                sb.AppendLine($"                if (sk == \"{Camel(p.Name)}\") return new(context.Return({WrapField($"wrapper.Value.{p.Name}", p.Type)}));");
+            sb.AppendLine("            if (key.TryRead<string>(out var sk))");
+            sb.AppendLine("            {");
+            foreach (var p in props.Where(p => p.GetMethod != null))
+                sb.AppendLine($"                if (sk == \"{Camel(p.Name)}\") return new(context.Return({MarshalProperty($"wrapper.Value.{p.Name}", p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", ""))}));");
+            foreach (var f in fields)
+                sb.AppendLine($"                if (sk == \"{Camel(f.Name)}\") return new(context.Return({MarshalProperty($"wrapper.Value.{f.Name}", f.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", ""))}));");
+            sb.AppendLine("                return new(context.Return(LuaValue.Nil));");
+            sb.AppendLine("            }");
         }
-        foreach (var f in fields)
-            sb.AppendLine($"                if (sk == \"{Camel(f.Name)}\") return new(context.Return({WrapField($"wrapper.Value.{f.Name}", f.Type)}));");
-        sb.AppendLine("                return new(context.Return(LuaValue.Nil));");
-        sb.AppendLine("            }");
-        if (isArray)
+
+        // Integer index dispatch
+        if (hasIntAccess)
         {
             sb.AppendLine("            if (key.TryRead<double>(out var n) && double.IsFinite(n) && n >= 1.0 && n <= int.MaxValue)");
             sb.AppendLine("            {");
             sb.AppendLine("                var i = (int)n - 1;");
-            sb.AppendLine("                if ((uint)i < (uint)((System.Array)(object)wrapper.Value).Length)");
-            sb.AppendLine("                    return new(context.Return(LuaValue.FromObject(((System.Array)(object)wrapper.Value).GetValue(i))));");
+
+            if (isArray)
+            {
+                sb.AppendLine("                if ((uint)i < (uint)wrapper.Value.Length)");
+                sb.AppendLine($"                    return new(context.Return({MarshalElement("wrapper.Value[i]", arrayElemTypeStr!)}));");
+            }
+            else if (hasIntIndexer)
+            {
+                if (countPropName != null)
+                {
+                    sb.AppendLine($"                if ((uint)i < (uint)wrapper.Value.{countPropName})");
+                    sb.AppendLine($"                    return new(context.Return({MarshalElement("wrapper.Value[i]", indexerRetTypeStr!)}));");
+                }
+                else
+                {
+                    sb.AppendLine($"                return new(context.Return({MarshalElement("wrapper.Value[i]", indexerRetTypeStr!)}));");
+                }
+            }
+
             sb.AppendLine("            }");
         }
+
         sb.AppendLine("            return new(context.Return(LuaValue.Nil));");
         sb.AppendLine("        });");
         sb.AppendLine();
 
+        // ====================================================================
         // __newindex
-        sb.AppendLine("        Metatable[Metamethods.NewIndex] = new LuaFunction(\"__newindex\", (context, ct) =>");
-        sb.AppendLine("        {");
-        sb.AppendLine($"            var wrapper = context.GetArgument<StructUserData<{typeName}>>(0);");
-        sb.AppendLine("            var key = context.GetArgument(1);");
-        sb.AppendLine("            var val = context.GetArgument(2);");
-        sb.AppendLine("            if (key.TryRead<string>(out var sk))");
-        sb.AppendLine("            {");
-        var hasWritable = false;
-        var isValueType = symbol.IsValueType;
-        foreach (var p in props.Where(x => x.SetMethod != null && !x.SetMethod.IsInitOnly))
+        // ====================================================================
+        var hasWritableStrings = props.Any(p => p.SetMethod != null && !p.SetMethod.IsInitOnly)
+                               || fields.Any(f => !f.IsReadOnly);
+        var hasWritableInts = isArray || (hasIndexerSet && hasIntIndexer);
+        if (hasWritableStrings || hasWritableInts)
         {
-            hasWritable = true;
-            var typeStr = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (isValueType)
-            {
-                sb.AppendLine($"                if (sk == \"{Camel(p.Name)}\") {{ var __tmp = wrapper.Value; __tmp.{p.Name} = val.Read<{typeStr}>(); wrapper.Value = __tmp; return new(context.Return()); }}");
-            }
-            else
-            {
-                sb.AppendLine($"                if (sk == \"{Camel(p.Name)}\") {{ wrapper.Value.{p.Name} = val.Read<{typeStr}>(); return new(context.Return()); }}");
-            }
-        }
-        foreach (var f in fields.Where(x => !x.IsReadOnly))
-        {
-            hasWritable = true;
-            var typeStr = f.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-            if (isValueType)
-            {
-                sb.AppendLine($"                if (sk == \"{Camel(f.Name)}\") {{ var __tmp = wrapper.Value; __tmp.{f.Name} = val.Read<{typeStr}>(); wrapper.Value = __tmp; return new(context.Return()); }}");
-            }
-            else
-            {
-                sb.AppendLine($"                if (sk == \"{Camel(f.Name)}\") {{ wrapper.Value.{f.Name} = val.Read<{typeStr}>(); return new(context.Return()); }}");
-            }
-        }
-        if (hasWritable)
-            sb.AppendLine("                throw new LuaRuntimeException(context.State, $\"'{sk}' is read-only or not found.\");");
-        else
-            sb.AppendLine("                throw new LuaRuntimeException(context.State, $\"'{sk}' not found.\");");
-        sb.AppendLine("            }");
-        sb.AppendLine("            throw new LuaRuntimeException(context.State, $\"'{key}' not found.\");");
-        sb.AppendLine("        });");
+            sb.AppendLine("        Metatable[Metamethods.NewIndex] = new LuaFunction(\"__newindex\", (context, ct) =>");
+            sb.AppendLine("        {");
+            sb.AppendLine($"            var wrapper = context.GetArgument<StructUserData<{typeName}>>(0);");
+            sb.AppendLine("            var key = context.GetArgument(1);");
+            sb.AppendLine("            var val = context.GetArgument(2);");
 
-        // __len for arrays
+            if (hasWritableStrings)
+            {
+                sb.AppendLine("            if (key.TryRead<string>(out var sk))");
+                sb.AppendLine("            {");
+                var isValueType = symbol.IsValueType;
+                foreach (var p in props.Where(x => x.SetMethod != null && !x.SetMethod.IsInitOnly))
+                {
+                    var ts = p.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+                    if (isValueType)
+                        sb.AppendLine($"                if (sk == \"{Camel(p.Name)}\") {{ var __tmp = wrapper.Value; __tmp.{p.Name} = {UnmarshalRead("val", ts)}; wrapper.Value = __tmp; return new(context.Return()); }}");
+                    else
+                        sb.AppendLine($"                if (sk == \"{Camel(p.Name)}\") {{ wrapper.Value.{p.Name} = {UnmarshalRead("val", ts)}; return new(context.Return()); }}");
+                }
+                foreach (var f in fields.Where(x => !x.IsReadOnly))
+                {
+                    var ts = f.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
+                    if (isValueType)
+                        sb.AppendLine($"                if (sk == \"{Camel(f.Name)}\") {{ var __tmp = wrapper.Value; __tmp.{f.Name} = {UnmarshalRead("val", ts)}; wrapper.Value = __tmp; return new(context.Return()); }}");
+                    else
+                        sb.AppendLine($"                if (sk == \"{Camel(f.Name)}\") {{ wrapper.Value.{f.Name} = {UnmarshalRead("val", ts)}; return new(context.Return()); }}");
+                }
+                sb.AppendLine("                throw new LuaRuntimeException(context.State, $\"'{sk}' is read-only or not found.\");");
+                sb.AppendLine("            }");
+            }
+
+            // Integer __newindex
+            if (isArray)
+            {
+                sb.AppendLine("            if (key.TryRead<double>(out var n) && double.IsFinite(n) && n >= 1.0 && n <= int.MaxValue)");
+                sb.AppendLine("            {");
+                sb.AppendLine("                var i = (int)n - 1;");
+                sb.AppendLine("                if ((uint)i < (uint)wrapper.Value.Length)");
+                sb.AppendLine("                {");
+                if (symbol.IsValueType)
+                {
+                    sb.AppendLine($"                    var __tmp = wrapper.Value; __tmp[i] = {UnmarshalRead("val", arrayElemTypeStr!)}; wrapper.Value = __tmp;");
+                }
+                else
+                {
+                    sb.AppendLine($"                    wrapper.Value[i] = {UnmarshalRead("val", arrayElemTypeStr!)};");
+                }
+                sb.AppendLine("                    return new(context.Return());");
+                sb.AppendLine("                }");
+                sb.AppendLine("            }");
+            }
+            else if (hasIndexerSet && hasIntIndexer)
+            {
+                sb.AppendLine("            if (key.TryRead<double>(out var n) && double.IsFinite(n) && n >= 1.0 && n <= int.MaxValue)");
+                sb.AppendLine("            {");
+                sb.AppendLine("                var i = (int)n - 1;");
+                var elemType = indexerRetTypeStr!;
+                if (countPropName != null)
+                {
+                    sb.AppendLine($"                if ((uint)i < (uint)wrapper.Value.{countPropName})");
+                    sb.AppendLine("                {");
+                    if (symbol.IsValueType)
+                        sb.AppendLine($"                    var __tmp = wrapper.Value; __tmp[i] = {UnmarshalRead("val", elemType)}; wrapper.Value = __tmp;");
+                    else
+                        sb.AppendLine($"                    wrapper.Value[i] = {UnmarshalRead("val", elemType)};");
+                    sb.AppendLine("                    return new(context.Return());");
+                    sb.AppendLine("                }");
+                }
+                else
+                {
+                    if (symbol.IsValueType)
+                        sb.AppendLine($"                    var __tmp = wrapper.Value; __tmp[i] = {UnmarshalRead("val", elemType)}; wrapper.Value = __tmp;");
+                    else
+                        sb.AppendLine($"                    wrapper.Value[i] = {UnmarshalRead("val", elemType)};");
+                    sb.AppendLine("                    return new(context.Return());");
+                }
+                sb.AppendLine("            }");
+            }
+
+            sb.AppendLine("            throw new LuaRuntimeException(context.State, $\"'{key}' not found.\");");
+            sb.AppendLine("        });");
+        }
+
+        // ====================================================================
+        // __len
+        // ====================================================================
         if (isArray)
         {
             sb.AppendLine();
             sb.AppendLine("        Metatable[Metamethods.Len] = new LuaFunction(\"__len\", (context, ct) =>");
             sb.AppendLine("        {");
             sb.AppendLine($"            var wrapper = context.GetArgument<StructUserData<{typeName}>>(0);");
-            sb.AppendLine("            return new(context.Return((double)((System.Array)(object)wrapper.Value).Length));");
+            sb.AppendLine("            return new(context.Return((double)wrapper.Value.Length));");
+            sb.AppendLine("        });");
+        }
+        else if (hasListLen)
+        {
+            sb.AppendLine();
+            sb.AppendLine("        Metatable[Metamethods.Len] = new LuaFunction(\"__len\", (context, ct) =>");
+            sb.AppendLine("        {");
+            sb.AppendLine($"            var wrapper = context.GetArgument<StructUserData<{typeName}>>(0);");
+            sb.AppendLine($"            return new(context.Return((double)wrapper.Value.{countPropName}));");
             sb.AppendLine("        });");
         }
 
+        // ====================================================================
         // __tostring
+        // ====================================================================
         sb.AppendLine();
         sb.AppendLine("        Metatable[Metamethods.ToString] = new LuaFunction(\"__tostring\", (context, ct) =>");
         sb.AppendLine("        {");
@@ -411,15 +536,32 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         return sb.ToString();
     }
 
-    private static string WrapField(string expr, ITypeSymbol type)
+    /// <summary>
+    /// Marshal a value to Lua. Primitives/FixedMath get a bare cast; everything else uses FromObject.
+    /// StructUserData wrapping is opt-in via [MemberLuaVisible] which is handled by the binding generator.
+    /// </summary>
+    private static string MarshalProperty(string expr, string typeName)
     {
-        var typeName = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         if (typeName is "int" or "long" or "float" or "double" or "bool" or "string"
             or "byte" or "sbyte" or "short" or "ushort" or "uint" or "ulong" or "decimal")
             return $"({expr})";
         if (IsFixedMathBaseType(typeName))
             return $"({expr})";
         return $"Lua.LuaValue.FromObject({expr})";
+    }
+
+    /// <summary>
+    /// Marshal an array or indexer element to Lua. Same logic as MarshalProperty —
+    /// StructUserData wrapping is handled by the binding generator for [MemberLuaVisible] types.
+    /// </summary>
+    private static string MarshalElement(string expr, string typeName) => MarshalProperty(expr, typeName);
+
+    /// <summary>
+    /// Read a LuaValue back to C# for assignment into StructUserData.
+    /// </summary>
+    private static string UnmarshalRead(string valExpr, string typeName)
+    {
+        return $"{valExpr}.Read<{typeName}>()";
     }
 
     private static string GenerateTypeRegistry(List<LuaTypeMetadata> generatedTypes)
@@ -661,12 +803,14 @@ internal sealed class SymbolReferences
     public INamedTypeSymbol? LuaVisibleAttribute { get; }
     public INamedTypeSymbol? LuaNameAttribute { get; }
     public INamedTypeSymbol? LuaHiddenAttribute { get; }
+    public INamedTypeSymbol? MemberLuaVisibleAttribute { get; }
 
     private SymbolReferences(Compilation compilation)
     {
         LuaVisibleAttribute = compilation.GetTypeByMetadataName("nfm_world_library.Lua.LuaVisibleAttribute");
         LuaNameAttribute = compilation.GetTypeByMetadataName("nfm_world_library.Lua.LuaNameAttribute");
         LuaHiddenAttribute = compilation.GetTypeByMetadataName("nfm_world_library.Lua.LuaHiddenAttribute");
+        MemberLuaVisibleAttribute = compilation.GetTypeByMetadataName("nfm_world_library.Lua.MemberLuaVisibleAttribute");
     }
 
     public static SymbolReferences? Create(Compilation compilation)

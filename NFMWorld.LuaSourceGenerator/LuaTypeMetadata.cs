@@ -87,18 +87,19 @@ internal sealed class LuaTypeMetadata
             .ToArray();
 
         var hiddenAttr = references.LuaHiddenAttribute;
+        var memberLuaVisibleAttr = references.MemberLuaVisibleAttribute;
         var members = symbol.GetMembers();
 
         InstanceMethods = CollectMethods(members, hiddenAttr, isStatic: false, symbol);
         Operators = members.OfType<IMethodSymbol>()
             .Where(m => m.MethodKind == MethodKind.UserDefinedOperator && !HasAttr(m, hiddenAttr))
             .Select(m => new LuaMethodMetadata(m, isExtension: false)).ToArray();
-        InstanceProperties = CollectProperties(members, hiddenAttr, isStatic: false);
-        InstanceFields = CollectFields(members, hiddenAttr, isStatic: false);
+        InstanceProperties = CollectProperties(members, hiddenAttr, isStatic: false, memberLuaVisibleAttr);
+        InstanceFields = CollectFields(members, hiddenAttr, isStatic: false, memberLuaVisibleAttr);
         InstanceEvents = CollectEvents(members, hiddenAttr, isStatic: false);
         StaticMethods = CollectMethods(members, hiddenAttr, isStatic: true, symbol);
-        StaticProperties = CollectProperties(members, hiddenAttr, isStatic: true);
-        StaticFields = CollectFields(members, hiddenAttr, isStatic: true);
+        StaticProperties = CollectProperties(members, hiddenAttr, isStatic: true, memberLuaVisibleAttr);
+        StaticFields = CollectFields(members, hiddenAttr, isStatic: true, memberLuaVisibleAttr);
         StaticEvents = CollectEvents(members, hiddenAttr, isStatic: true);
         Constructors = (IsStatic || HasAnyRequiredMembers(symbol))
             ? System.Array.Empty<LuaConstructorMetadata>()
@@ -299,18 +300,18 @@ internal sealed class LuaTypeMetadata
         return shortName.Replace("[", "").Replace("]", "").Replace(",", "_").Replace("*", "Ptr");
     }
 
-    private LuaPropertyMetadata[] CollectProperties(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic)
+    private LuaPropertyMetadata[] CollectProperties(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic, INamedTypeSymbol? memberLuaVisibleAttr = null)
     {
         return members.OfType<IPropertySymbol>()
             .Where(p => p.IsStatic == isStatic && !p.IsIndexer && !p.IsImplicitlyDeclared && !HasAttr(p, hiddenAttr))
-            .Select(p => new LuaPropertyMetadata(p)).ToArray();
+            .Select(p => new LuaPropertyMetadata(p, memberLuaVisibleAttr)).ToArray();
     }
 
-    private LuaFieldMetadata[] CollectFields(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic)
+    private LuaFieldMetadata[] CollectFields(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic, INamedTypeSymbol? memberLuaVisibleAttr = null)
     {
         return members.OfType<IFieldSymbol>()
             .Where(f => f.IsStatic == isStatic && !f.IsImplicitlyDeclared && !HasAttr(f, hiddenAttr))
-            .Select(f => new LuaFieldMetadata(f)).ToArray();
+            .Select(f => new LuaFieldMetadata(f, memberLuaVisibleAttr)).ToArray();
     }
 
     private LuaEventMetadata[] CollectEvents(System.Collections.Immutable.ImmutableArray<ISymbol> members, INamedTypeSymbol? hiddenAttr, bool isStatic)
@@ -463,8 +464,14 @@ internal sealed class LuaPropertyMetadata(IPropertySymbol s)
     public bool HasGetter { get; } = s.GetMethod != null;
     public bool HasSetter { get; } = s.SetMethod != null && !s.SetMethod.IsInitOnly;
     public bool IsNullableReferenceType { get; } = s.Type.IsReferenceType && s.Type.NullableAnnotation == NullableAnnotation.Annotated;
+    public bool NeedsStructUserData { get; }
     public string LuaName { get; } = s.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "LuaNameAttribute")
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);
+
+    public LuaPropertyMetadata(IPropertySymbol s, INamedTypeSymbol? memberLuaVisibleAttr) : this(s)
+    {
+        NeedsStructUserData = memberLuaVisibleAttr != null && s.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, memberLuaVisibleAttr));
+    }
 }
 
 internal sealed class LuaFieldMetadata(IFieldSymbol s)
@@ -473,8 +480,14 @@ internal sealed class LuaFieldMetadata(IFieldSymbol s)
     public string FieldType { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat).Replace("global::", "");
     public bool IsReadOnly { get; } = s.IsReadOnly || s.IsConst;
     public bool IsNullableReferenceType { get; } = s.Type.IsReferenceType && s.Type.NullableAnnotation == NullableAnnotation.Annotated;
+    public bool NeedsStructUserData { get; }
     public string LuaName { get; } = s.GetAttributes().FirstOrDefault(a => a.AttributeClass?.Name == "LuaNameAttribute")
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);
+
+    public LuaFieldMetadata(IFieldSymbol s, INamedTypeSymbol? memberLuaVisibleAttr) : this(s)
+    {
+        NeedsStructUserData = memberLuaVisibleAttr != null && s.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, memberLuaVisibleAttr));
+    }
 }
 
 internal sealed class LuaEventMetadata(IEventSymbol s)
