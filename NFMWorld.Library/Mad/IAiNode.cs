@@ -1,11 +1,15 @@
-﻿namespace NFMWorldLibrary;
+﻿using nfm_world_library.Lua;
 
-public interface IAiNode : ITransform
+namespace NFMWorldLibrary;
+
+[LuaVisible]
+public partial interface IAiNode : ITransform
 {
     AiNodeKind Kind { get; }
     bool IsSpecial { get; }
 }
 
+[LuaVisible]
 public enum AiNodeKind
 {
     CheckPoint,

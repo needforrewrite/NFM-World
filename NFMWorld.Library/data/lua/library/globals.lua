@@ -18,13 +18,10 @@ local fixed64_type = {}
 ---@operator sub(fixed64vector3): fixed64vector3
 ---@operator mul(fixed64vector3): fixed64vector3        -- component-wise
 ---@operator div(fixed64vector3): fixed64vector3        -- component-wise
----@operator unm(): fixed64vector3
-local fixed64vector3_type = {}
-
----@class fixed64vector3
 ---@operator mul(fixed64): fixed64vector3       -- scalar multiplication
 ---@operator div(fixed64): fixed64vector3       -- scalar division
-local fixed64vector3_scalar = {}
+---@operator unm(): fixed64vector3
+local fixed64vector3_type = {}
 
 --- Creates a Fixed64 value.
 ---
@@ -150,12 +147,9 @@ local f64angle_type = {}
 ---@operator sub(f64euler): f64euler
 ---@operator unm(): f64euler
 ---@operator eq(f64euler): boolean
-local f64euler_type = {}
-
----@class f64euler
 ---@operator mul(f64angle): f64euler    -- scalar multiply (wrapped)
 ---@operator div(f64angle): f64euler    -- scalar divide (wrapped)
-local f64euler_scalar = {}
+local f64euler_type = {}
 
 --- Creates an f64AngleSingle from degrees.
 ---
@@ -245,3 +239,7 @@ function f64eulerlib.wrap_positive(e) end
 ---@overload fun(v: f64angle): "f64angle"
 ---@overload fun(v: f64euler): "f64euler"
 function type(v) end
+
+---@class Players : {[integer]: PlayerParametersInstance}
+
+---@class Cars : {[integer]: IInGameCarInstance}

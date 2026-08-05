@@ -1,5 +1,5 @@
 ---@class IAiNodeInstance : ITransformInstance
----@field kind NFMWorldLibrary_AiNodeKindInstance
+---@field kind AiNodeKindInstance
 ---@field isSpecial boolean
 ---@field childTransforms System_Collections_Generic_IReadOnlyList_NFMWorldLibrary_ITransform_Instance
 ---@field position fixed64vector3

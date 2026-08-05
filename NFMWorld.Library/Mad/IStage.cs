@@ -1,10 +1,13 @@
-﻿using NFMWorldLibrary.Collision;
+﻿using nfm_world_library.Lua;
+using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary;
 
-public interface IStage
+[LuaVisible]
+public partial interface IStage
 {
+    [LuaHidden]
     ReadOnlySpan<CollisionShapeRef> RetrievePointCollidables(fix64 x, fix64 z);
     IReadOnlyList<ITransform> pieces { get; }
     IReadOnlyList<IAiNode> nodes { get; }

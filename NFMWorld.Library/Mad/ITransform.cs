@@ -1,9 +1,11 @@
 ﻿using Lua;
+using nfm_world_library.Lua;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary;
 
-public interface ITransform
+[LuaVisible]
+public partial interface ITransform
 {
     IReadOnlyList<ITransform> ChildTransforms { get; }
 

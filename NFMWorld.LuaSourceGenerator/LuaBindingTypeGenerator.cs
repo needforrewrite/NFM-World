@@ -228,7 +228,7 @@ internal sealed class LuaBindingTypeGenerator
                 WriteNullableSetter(sb, body + 1, $"userData.{f.Name}", f.FieldType);
             else
             {
-                W(sb, body + 1, $"userData.{f.Name} = context.GetArgument<{TsType(f.FieldType)}>(2);");
+                W(sb, body + 1, $"userData.{f.Name} = {ReadForAssignment(f.FieldType)};");
                 W(sb, body + 1, "return new System.Threading.Tasks.ValueTask<int>(context.Return());");
             }
             W(sb, body, "}");
@@ -241,7 +241,7 @@ internal sealed class LuaBindingTypeGenerator
                 WriteNullableSetter(sb, body + 1, $"userData.{p.Name}", p.PropertyType);
             else
             {
-                W(sb, body + 1, $"userData.{p.Name} = context.GetArgument<{TsType(p.PropertyType)}>(2);");
+                W(sb, body + 1, $"userData.{p.Name} = {ReadForAssignment(p.PropertyType)};");
                 W(sb, body + 1, "return new System.Threading.Tasks.ValueTask<int>(context.Return());");
             }
             W(sb, body, "}");
@@ -368,14 +368,14 @@ internal sealed class LuaBindingTypeGenerator
                     if (IsNullableOrRef(f.FieldType, f.IsNullableReferenceType))
                         W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") {{ {_type.FullTypeName}.{f.Name} = context.GetArgumentOrNull<{NullableUnderlying(f.FieldType)}>(2); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                     else
-                        W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") {{ {_type.FullTypeName}.{f.Name} = val.Read<{TsType(f.FieldType)}>(); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
+                        W(sb, gb + 2, $"if (sk == \"{f.LuaName}\") {{ {_type.FullTypeName}.{f.Name} = {ReadForStaticAssignment(f.FieldType, "val")}; return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                 }
                 foreach (var p in _type.StaticProperties.Where(x => x.HasSetter))
                 {
                     if (IsNullableOrRef(p.PropertyType, p.IsNullableReferenceType))
                         W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") {{ {_type.FullTypeName}.{p.Name} = context.GetArgumentOrNull<{NullableUnderlying(p.PropertyType)}>(2); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                     else
-                        W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") {{ {_type.FullTypeName}.{p.Name} = val.Read<{TsType(p.PropertyType)}>(); return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
+                        W(sb, gb + 2, $"if (sk == \"{p.LuaName}\") {{ {_type.FullTypeName}.{p.Name} = {ReadForStaticAssignment(p.PropertyType, "val")}; return new System.Threading.Tasks.ValueTask<int>(context.Return()); }}");
                 }
                 W(sb, gb + 1, "}");
                 W(sb, gb + 1, "throw new global::Lua.LuaRuntimeException(context.State, $\"'{sk}' is read-only or not found.\");");
@@ -410,6 +410,22 @@ internal sealed class LuaBindingTypeGenerator
             return $"context.GetArgumentOrNull<{underlying}>({index})";
         }
         return $"context.GetArgument<{Ts(p)}>({index})";
+    }
+
+    /// <summary>Generate expression to read a value from a LuaValue for field/property assignment in instance __newindex.</summary>
+    private string ReadForAssignment(string typeName)
+    {
+        if (IsKnownLuaVisibleEnum(typeName))
+            return $"context.GetArgument<nfm_world_library.Lua.StructUserData<{typeName}>>(2).Value";
+        return $"context.GetArgument<{typeName}>(2)";
+    }
+
+    /// <summary>Generate expression to read a value from a val variable for static field/property assignment.</summary>
+    private string ReadForStaticAssignment(string typeName, string valExpr)
+    {
+        if (IsKnownLuaVisibleEnum(typeName))
+            return $"{valExpr}.Read<nfm_world_library.Lua.StructUserData<{typeName}>>().Value";
+        return $"{valExpr}.Read<{typeName}>()";
     }
 
     /// <summary>Stack type for a raw type string.</summary>

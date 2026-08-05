@@ -878,6 +878,115 @@ public class LuaRuntimePortedTests
         var indexFunc = meta[Metamethods.Index];
         Assert.IsTrue(indexFunc.Type != LuaValueType.Nil, "__index should be set on IDog metatable");
     }
+
+    // ===================================================================
+    // Enum marshalling tests
+    // ===================================================================
+
+    [TestMethod]
+    public async Task Enum_CompileCheck()
+    {
+        // Verify enum binding compiled — TypeWithEnum references TestColor properties
+        var obj = new TypeWithEnum { Color = TestColor.Green };
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+        Assert.IsTrue(true, "TypeWithEnum compiled with enum properties");
+    }
+
+    [TestMethod]
+    public async Task Enum_Property_Read()
+    {
+        var obj = new TypeWithEnum { Color = TestColor.Green };
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var results = await _state.DoStringAsync(@"
+            local c = obj.color
+            return tostring(c)
+        ");
+        Assert.AreEqual("Green", results[0].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task Enum_Property_Set()
+    {
+        var obj = new TypeWithEnum();
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var blueVal = StructUserDataHelper.Wrap(TestColor.Blue);
+        _state.Environment["blueColor"] = (LuaValue)blueVal;
+        await _state.DoStringAsync("obj.color = blueColor");
+        Assert.AreEqual(TestColor.Blue, obj.Color);
+    }
+
+    [TestMethod]
+    public async Task Enum_Method_Return()
+    {
+        var obj = new TypeWithEnum { Color = TestColor.Blue };
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var results = await _state.DoStringAsync(@"
+            local c = obj:getColor()
+            return tostring(c)
+        ");
+        Assert.AreEqual("Blue", results[0].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task Enum_Method_Parameter()
+    {
+        var obj = new TypeWithEnum();
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var greenVal = StructUserDataHelper.Wrap(TestColor.Green);
+        _state.Environment["greenColor"] = (LuaValue)greenVal;
+        await _state.DoStringAsync("obj:setColor(greenColor)");
+        Assert.AreEqual(TestColor.Green, obj.Color);
+    }
+
+    [TestMethod]
+    public async Task Enum_Method_BoolReturn()
+    {
+        var obj = new TypeWithEnum();
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var redVal = StructUserDataHelper.Wrap(TestColor.Red);
+        var yellowVal = StructUserDataHelper.Wrap(TestColor.Yellow);
+        _state.Environment["redColor"] = (LuaValue)redVal;
+        _state.Environment["yellowColor"] = (LuaValue)yellowVal;
+
+        var results = await _state.DoStringAsync(@"
+            local r1 = obj:isPrimary(redColor)
+            local r2 = obj:isPrimary(yellowColor)
+            return r1, r2
+        ");
+        Assert.IsTrue(results[0].Read<bool>());
+        Assert.IsFalse(results[1].Read<bool>());
+    }
+
+    [TestMethod]
+    public async Task Enum_ReadOnlyProperty()
+    {
+        var obj = new TypeWithEnum();
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var results = await _state.DoStringAsync(@"
+            local c = obj.readOnlyColor
+            return tostring(c)
+        ");
+        Assert.AreEqual("Blue", results[0].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task Enum_DefaultProperty()
+    {
+        var obj = new TypeWithEnum();
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var results = await _state.DoStringAsync(@"
+            local c = obj.defaultColor
+            return tostring(c)
+        ");
+        Assert.AreEqual("Red", results[0].Read<string>());
+    }
 }
 
 

@@ -35,6 +35,10 @@ function compare(a, b)
     end
 end
 
+---@type
+
+function on_begin(_players, _cars, _stage, _hud_state)
+
 ---@param gamemode LuaGamemodeInstance
 ---@param racePhase IRaceValuesInstance
 local function _gm(gamemode, racePhase)

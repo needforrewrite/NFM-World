@@ -14,7 +14,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         var typeProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
             LuaVisibleAttrName,
             static (node, _) => node is ClassDeclarationSyntax or RecordDeclarationSyntax
-                or StructDeclarationSyntax or InterfaceDeclarationSyntax,
+                or StructDeclarationSyntax or InterfaceDeclarationSyntax or EnumDeclarationSyntax,
             static (ctx, ct) => ctx
         );
 
@@ -691,7 +691,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         sb.AppendLine();
 
         // --- TypeTable with enum members ---
-        sb.AppendLine($"internal static class EnumTypeTable_{safeName}");
+        sb.AppendLine($"public static class EnumTypeTable_{safeName}");
         sb.AppendLine("{");
         sb.AppendLine("    internal static readonly LuaTable TypeTable;");
         sb.AppendLine($"    static EnumTypeTable_{safeName}()");

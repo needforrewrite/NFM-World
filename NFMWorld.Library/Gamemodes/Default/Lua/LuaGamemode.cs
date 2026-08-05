@@ -352,39 +352,10 @@ public class LuaGamemode : BaseGamemode
         cars = new LuaValue(carsArray);
 
         // stage — wrapper table with name, nlaps, checkpoints.
-        stage = CreateStageTable();
+        stage = LuaValue.FromUserData(GamemodeData.CurrentStage);
 
         // hud_state — proxy table with __index/__newindex for HudStateData fields.
         hudState = CreateHudStateTable();
-    }
-
-    /// <summary>
-    /// Creates a Lua table representing the <see cref="IGamemodeData.CurrentStage"/>.
-    /// Fields: <c>name</c> (string), <c>nlaps</c> (number),
-    /// <c>checkpoints</c> (1-indexed array of <c>{x, y, z}</c> position tables).
-    /// </summary>
-    private LuaValue CreateStageTable()
-    {
-        var stage = GamemodeData.CurrentStage;
-        var table = new LuaTable(0, 3);
-        table["name"] = stage.Name;
-        table["nlaps"] = (double)stage.nlaps;
-
-        // checkpoints: 1-indexed Lua array of {x, y, z} tables.
-        var checkpoints = stage.checkpoints;
-        var cpArray = new LuaTable(checkpoints.Count, 0);
-        for (int i = 0; i < checkpoints.Count; i++)
-        {
-            var pos = checkpoints[i].Position;
-            var cpTable = new LuaTable(0, 3);
-            cpTable["x"] = (double)(float)pos.X;
-            cpTable["y"] = (double)(float)pos.Y;
-            cpTable["z"] = (double)(float)pos.Z;
-            cpArray[i + 1] = cpTable;
-        }
-        table["checkpoints"] = cpArray;
-
-        return table;
     }
 
     /// <summary>
