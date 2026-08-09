@@ -1,0 +1,2 @@
+declare class NFMWorldLibrary_Util_ObservableUnlimitedArray_NFMWorldLibrary_IInGameCar_ {
+}

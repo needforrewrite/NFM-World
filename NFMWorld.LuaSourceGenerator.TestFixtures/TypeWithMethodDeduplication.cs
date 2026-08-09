@@ -80,7 +80,7 @@ public partial class TypeWithMethodDeduplication : CalculatorBase, ICalculator
 
 // Another type implementing the same interface (to verify interface implementation reuse)
 [LuaVisible]
-public partial class AnotherCalculator : ICalculator
+public partial class AnotherCalculator2 : ICalculator
 {
     public int Add(int a, int b)
     {

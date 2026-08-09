@@ -1,4 +1,5 @@
-﻿using NFMWorld.DriverInterface;
+﻿using nfm_world_library.Lua;
+using NFMWorld.DriverInterface;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Util;
 
@@ -7,9 +8,10 @@ namespace NFMWorldLibrary.Backend;
 /// <summary>
 /// Data for the gamemode.
 /// </summary>
-public interface IGamemodeData
+[LuaVisible]
+public partial interface IGamemodeData
 {
-    ObservableUnlimitedArray<IInGameCar> CarsInRace { get; }
+    UnlimitedArray<IInGameCar> CarsInRace { get; }
     BackendStage CurrentStage { get; }
     RaceState RaceState { get; }
 

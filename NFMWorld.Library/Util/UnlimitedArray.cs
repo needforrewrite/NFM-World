@@ -9,9 +9,11 @@ using Lua;
 using Lua.Runtime;
 using MemoryPack;
 using MemoryPack.Formatters;
+using nfm_world_library.Lua;
 
 namespace NFMWorldLibrary.Util;
 
+[LuaVisible]
 public class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>, IMemoryPackable<UnlimitedArray<T>>, ILuaUserData
 {
     private protected T[] _items = [];
