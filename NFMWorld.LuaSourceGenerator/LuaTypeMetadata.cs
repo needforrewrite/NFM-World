@@ -38,6 +38,35 @@ internal class BaseLuaTypeMetadata
 
     public string SanitizedTypeName { get; }
 
+    public bool IsBuiltIn => SpecialType is
+                                 SpecialType.System_Boolean or
+                                 SpecialType.System_Char or
+                                 SpecialType.System_SByte or
+                                 SpecialType.System_Byte or
+                                 SpecialType.System_Int16 or
+                                 SpecialType.System_UInt16 or
+                                 SpecialType.System_Int32 or
+                                 SpecialType.System_UInt32 or
+                                 SpecialType.System_Int64 or
+                                 SpecialType.System_UInt64 or
+                                 SpecialType.System_Decimal or
+                                 SpecialType.System_Single or
+                                 SpecialType.System_Double or
+                                 SpecialType.System_String ||
+                             IsFixed64 ||
+                             IsFixed64AngleSingle ||
+                             IsFixed64Euler ||
+                             IsFixed64Vector3;
+    
+    public static SymbolDisplayFormat FullyQualifiedNoGlobalNoNamespacesFormat { get; } =
+        new(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions:
+            SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
+            SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+
     public BaseLuaTypeMetadata(ITypeSymbol symbol, SymbolReferences references)
     {
         Assembly = symbol.ContainingAssembly?.Identity;
@@ -58,7 +87,7 @@ internal class BaseLuaTypeMetadata
         var hasLuaVisibleAttr = luaVisibleAttr != null && symbol.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, luaVisibleAttr.AttributeClass));
         HasLuaVisibleAttr = hasLuaVisibleAttr;
 
-        var sanitizedTypeName = SanitizeLongTypeName(FullTypeName);
+        var sanitizedTypeName = SanitizeLongTypeName(symbol.ToDisplayString(FullyQualifiedNoGlobalNoNamespacesFormat));
         LuaName = luaVisibleAttr?.ConstructorArguments.FirstOrDefault().Value as string
                   ?? luaVisibleAttr?.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Name").Value.Value as string
                   ?? (HasLuaVisibleAttr ? TypeName : sanitizedTypeName); // TODO decide if we should have short names for non-LuaVisible types
@@ -70,28 +99,7 @@ internal class BaseLuaTypeMetadata
         IsRefStruct = symbol is { IsValueType: true, IsRefLikeType: true };
         IsConstructedGeneric = symbol is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: > 0, IsDefinition: false }; // List<int>, not List<>
         IsOpenGeneric = symbol is INamedTypeSymbol { IsGenericType: true, IsDefinition: true }; // List<>, GenericWrapper<>
-        IsCandidate = !IsRefStruct && !IsOpenGeneric && SpecialType is not SpecialType.System_Object
-            and not SpecialType.System_ValueType
-            and not SpecialType.System_Boolean
-            and not SpecialType.System_Char
-            and not SpecialType.System_SByte
-            and not SpecialType.System_Byte
-            and not SpecialType.System_Int16
-            and not SpecialType.System_UInt16
-            and not SpecialType.System_Int32
-            and not SpecialType.System_UInt32
-            and not SpecialType.System_Int64
-            and not SpecialType.System_UInt64
-            and not SpecialType.System_Decimal
-            and not SpecialType.System_Single
-            and not SpecialType.System_Double
-            and not SpecialType.System_String
-            and not SpecialType.System_Void &&
-            !IsFixed64 &&
-            !IsFixed64AngleSingle &&
-            !IsFixed64Euler &&
-            !IsFixed64Vector3 &&
-            !IsNullableValueType;
+        IsCandidate = !IsRefStruct && !IsOpenGeneric && !IsBuiltIn && !IsNullableValueType;
 
         IsILuaUserData = symbol.AllInterfaces.Any(t => SymbolEqualityComparer.Default.Equals(t, references.ILuaUserData));
 
@@ -105,15 +113,13 @@ internal class BaseLuaTypeMetadata
     private static string SanitizeLongTypeName(string fullTypeName)
     {
         // Map primitives to short names
-        var simple = fullTypeName switch
-        {
-            "int" => "int", "long" => "long", "float" => "flt", "double" => "dbl",
-            "bool" => "bool", "string" => "str", "byte" => "byte", "sbyte" => "sbyte",
-            "short" => "short", "ushort" => "ushort", "uint" => "uint", "ulong" => "ulong",
-            "decimal" => "dec", "char" => "char", "object" => "object",
-            _ => null
-        };
-        if (simple != null) return simple;
+        if (fullTypeName is
+            "int" or "long" or "float" or "double" or
+            "bool" or "string" or "byte" or "sbyte" or
+            "short" or "ushort" or "uint" or "ulong" or
+            "decimal" or "char" or "object")
+            return fullTypeName;
+
         return Regex.Replace(fullTypeName, @"\[,*\]", match => "Array" + (match.Value.Count(c => c == ',') is var v and >= 1 ? $"{v+1}" : ""))
                 .Replace("<", "_")
                 .Replace(">", "_")
@@ -127,6 +133,7 @@ internal class BaseLuaTypeMetadata
                 .Replace(",", "_")
                 .Replace("*", "Ptr")
                 .Replace("global::", "")
+                .Replace("@", "_")
                 .TrimEnd('_');
     }
 
@@ -159,7 +166,7 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     public LuaMethodMetadata[] InstanceMethods { get; }
     public LuaPropertyMetadata[] InstanceProperties { get; }
     public LuaFieldMetadata[] InstanceFields { get; }
-    public LuaMethodMetadata[] Operators { get; }
+    public LuaOperatorMetadata[] Operators { get; }
     public LuaMethodMetadata[] StaticMethods { get; }
     public LuaPropertyMetadata[] StaticProperties { get; }
     public LuaFieldMetadata[] StaticFields { get; }
@@ -316,13 +323,27 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
             m is IPropertySymbol { IsRequired: true } or IFieldSymbol { IsRequired: true });
     }
 
-    private static LuaMethodMetadata[] CollectOperators(SymbolReferences references, ImmutableArray<ISymbol> members)
+    private static LuaOperatorMetadata[] CollectOperators(SymbolReferences references, ImmutableArray<ISymbol> members)
     {
         return members.OfType<IMethodSymbol>()
             .Where(m => m.MethodKind == MethodKind.UserDefinedOperator && !HasAttr(m, references.LuaHiddenAttribute))
             .Where(m => GetResultantVisibility(m) == SymbolVisibility.Public)
-            .Select(m => new LuaMethodMetadata(m, references))
+            .Where(m => IsLuaOperatorMethodName(m.Name))
+            .Select(m => new LuaOperatorMetadata(m, references))
             .ToArray();
+    }
+
+    private static bool IsLuaOperatorMethodName(string name)
+    {
+        return name is
+            "op_Add" or
+            "op_Subtract" or
+            "op_Divide" or
+            "op_UnaryNegation" or
+            "op_Equality" or
+            "op_LessThan" or
+            "op_LessThanOrEqual" or
+            "op_Modulus";
     }
 
     private static LuaMethodMetadata[] CollectMethods(ImmutableArray<ISymbol> members, SymbolReferences references, bool isStatic, ITypeSymbol? owningType = null)
@@ -466,6 +487,37 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     }
 }
 
+internal class LuaOperatorMetadata(IMethodSymbol s, SymbolReferences references) : LuaMethodMetadata(s, references)
+{
+    public bool IsUnary => Parameters.Length == 1;
+
+    public string Operator => Name switch
+    {
+        "op_Add" => "+",
+        "op_Subtract" => "-",
+        "op_Divide" => "/",
+        "op_UnaryNegation" => "-",
+        "op_Equality" => "==",
+        "op_LessThan" => "<",
+        "op_LessThanOrEqual" => "<=",
+        "op_Modulus" => "%",
+        _ => throw new ArgumentOutOfRangeException(nameof(Name), Name, "Unsupported operator")
+    };
+
+    public string MetamethodName => Name switch
+    {
+        "op_Add" => Metamethods.Add,
+        "op_Subtract" => Metamethods.Sub,
+        "op_Divide" => Metamethods.Div,
+        "op_UnaryNegation" => Metamethods.Unm,
+        "op_Equality" => Metamethods.Eq,
+        "op_LessThan" => Metamethods.Lt,
+        "op_LessThanOrEqual" => Metamethods.Le,
+        "op_Modulus" => Metamethods.Mod,
+        _ => throw new ArgumentOutOfRangeException(nameof(Name), Name, "Unsupported operator")
+    };
+}
+
 internal sealed class LuaConstructorMetadata
 {
     public LuaParameterMetadata[] Parameters { get; }
@@ -479,7 +531,7 @@ internal sealed class LuaConstructorMetadata
     }
 }
 
-internal sealed class LuaMethodMetadata
+internal class LuaMethodMetadata
 {
     public string Name { get; }
     public string LuaName { get; }

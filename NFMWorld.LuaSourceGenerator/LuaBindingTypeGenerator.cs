@@ -1,9 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using WorldXaml.Generator.Common;
 
 namespace NFMWorld.LuaSourceGenerator;
 
-// TODO: operators, constructors, partial TypeTable, partial implicit cast
+// TODO: operators, constructors, partial TypeTable, lua/ts stubs, pairs, ipairs, # operator, global static initializer on GeneratorGenerated
 internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTypeGenerator
 {
     public string GenerateCode()
@@ -18,49 +19,89 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
         sb.AppendLine("#pragma warning disable CS8604");
         sb.AppendLine("#pragma warning disable CS8631");
         sb.AppendLine();
-        sb.AppendLine("namespace NFMWorld.LuaSourceGenerator.Generator;");
-        sb.AppendLine("partial class GeneratorGenerated");
+        sb.AppendLine("namespace NFMWorld.LuaSourceGenerator.Generator");
         using (sb.Block())
         {
-            foreach (var method in type.InstanceMethods)
+            sb.AppendLine("partial class GeneratorGenerated");
+            using (sb.Block())
             {
-                EmitMethod(sb, method);
-            }
-            
-            foreach (var method in type.StaticMethods)
-            {
-                EmitMethod(sb, method);
-            }
+                foreach (var method in type.InstanceMethods)
+                {
+                    EmitMethod(sb, method);
+                }
 
-            if (type.HasIndex)
-            {
-                EmitIndex(sb, false);
+                foreach (var method in type.StaticMethods)
+                {
+                    EmitMethod(sb, method);
+                }
+                
+                foreach (var op in type.Operators)
+                {
+                    EmitMethod(sb, op);
+                }
+
+                if (type.HasIndex)
+                {
+                    EmitIndex(sb, false);
+                }
+
+                if (type.HasNewIndex)
+                {
+                    EmitNewIndex(sb, false);
+                }
+
+                if (type.HasStaticIndex)
+                {
+                    EmitIndex(sb, true);
+                }
+
+                if (type.HasStaticNewIndex)
+                {
+                    EmitNewIndex(sb, true);
+                }
+
+                if (!type.IsStatic)
+                {
+                    EmitToString(sb);
+
+                    EmitMetatable(sb);
+                }
+
+                EmitTypeTable(sb);
             }
-
-            if (type.HasNewIndex)
-            {
-                EmitNewIndex(sb, false);
-            }
-
-            if (type.HasStaticIndex)
-            {
-                EmitIndex(sb, true);
-            }
-
-            if (type.HasStaticNewIndex)
-            {
-                EmitNewIndex(sb, true);
-            }
-
-            if (!type.IsStatic)
-            {
-                EmitToString(sb);
-
-                EmitMetatable(sb);
-            }
-
-            EmitTypeTable(sb);
         }
+
+        if (type.HasLuaVisibleAttr)
+        {
+            sb.AppendLine($"namespace {type.Namespace}");
+            using (sb.Block())
+            {
+                sb.Append($"{(type.IsStatic ? "static " : "")} {(type.IsRefStruct ? "ref " : "")}{(type.IsRecord ? "partial record " : "partial ")}{(type.IsValueType ? "struct " : !type.IsRecord ? "class " : "")} {type.TypeName}");
+                sb.Append(" : global::Lua.ILuaUserData");
+                sb.AppendLine();
+                using (sb.Block())
+                {
+                    sb.AppendLine("global::Lua.LuaTable? global::Lua.ILuaUserData.Metatable");
+                    using (sb.Block())
+                    {
+                        sb.AppendLine($"get => global::NFMWorld.LuaSourceGenerator.Generator.GeneratorGenerated.{GetMetatableName(type)};");
+                        sb.AppendLine("set => throw new System.InvalidOperationException(\"The metatable of a [LuaVisible] type cannot be assigned to.\")");
+                    }
+
+                    if (!type.IsInterface)
+                    {
+                        sb.AppendLine();
+
+                        sb.AppendLine($"public static implicit operator global::Lua.LuaValue({type.FullTypeName} value)");
+                        using (sb.Block())
+                        {
+                            sb.AppendLine("return global::Lua.LuaValue.FromUserData(value);");
+                        }
+                    }
+                }
+            }
+        }
+
         //
         sb.AppendLine("#pragma warning restore CS0162");
         sb.AppendLine("#pragma warning restore CS8600");
@@ -119,7 +160,18 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                 sb.Append("var result = ");
             }
             var argExpressions = string.Join(", ", Enumerable.Range(0, method.Parameters.Length).Select(i => $"arg{i}"));
-            if (method.IsStatic)
+            if (method is LuaOperatorMetadata op)
+            {
+                if (op.IsUnary)
+                {
+                    sb.AppendLine($"{op.Operator}arg0;");
+                }
+                else
+                {
+                    sb.AppendLine($"arg0 {op.Operator} arg1;");
+                }
+            }
+            else if (method.IsStatic)
             {
                 sb.AppendLine($"{method.DeclaringType?.FullTypeName}.{method.Name}({argExpressions});");
             }
@@ -300,6 +352,10 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             {
                 sb.AppendLine($"{GetMetatableName(type)}[global::Lua.Runtime.Metamethods.NewIndex] = {GetMetamethodName(type, Metamethods.NewIndex)};");
             }
+            foreach (var op in type.Operators)
+            {
+                sb.AppendLine($"{GetMetatableName(type)}[\"{op.MetamethodName}\"] = {GetFunctionName(op)};");
+            }
             sb.AppendLine($"{GetMetatableName(type)}[global::Lua.Runtime.Metamethods.ToString] = {GetMetamethodName(type, Metamethods.ToString)};");
             foreach (var method in type.InstanceMethods)
             {
@@ -332,67 +388,52 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
     }
 }
 
+internal static class Metamethods
+{
+    public const string Metatable = "__metatable";
+    public const string Index = "__index";
+    public const string NewIndex = "__newindex";
+    public const string Add = "__add";
+    public const string Sub = "__sub";
+    public const string Mul = "__mul";
+    public const string Div = "__div";
+    public const string Mod = "__mod";
+    public const string Pow = "__pow";
+    public const string Unm = "__unm";
+    public const string Len = "__len";
+    public const string Eq = "__eq";
+    public const string Lt = "__lt";
+    public const string Le = "__le";
+    public const string Call = "__call";
+    public const string Concat = "__concat";
+    public const string Pairs = "__pairs";
+    public const string IPairs = "__ipairs";
+    public new const string ToString = "__tostring";
+}
+
 internal abstract class BaseLuaTypeGenerator
 {
-    protected static class Metamethods
-    {
-        public const string Metatable = "__metatable";
-        public const string Index = "__index";
-        public const string NewIndex = "__newindex";
-        public const string Add = "__add";
-        public const string Sub = "__sub";
-        public const string Mul = "__mul";
-        public const string Div = "__div";
-        public const string Mod = "__mod";
-        public const string Pow = "__pow";
-        public const string Unm = "__unm";
-        public const string Len = "__len";
-        public const string Eq = "__eq";
-        public const string Lt = "__lt";
-        public const string Le = "__le";
-        public const string Call = "__call";
-        public const string Concat = "__concat";
-        public const string Pairs = "__pairs";
-        public const string IPairs = "__ipairs";
-        public new const string ToString = "__tostring";
-    }
-
     protected static string MarshalToLua(string variable, BaseLuaTypeMetadata variableType)
     {
-        if (variableType.SpecialType is
-                SpecialType.System_Boolean or
-                SpecialType.System_Char or
-                SpecialType.System_SByte or
-                SpecialType.System_Byte or
-                SpecialType.System_Int16 or
-                SpecialType.System_UInt16 or
-                SpecialType.System_Int32 or
-                SpecialType.System_UInt32 or
-                SpecialType.System_Int64 or
-                SpecialType.System_UInt64 or
-                SpecialType.System_Decimal or
-                SpecialType.System_Single or
-                SpecialType.System_Double or
-                SpecialType.System_String ||
-            variableType.IsFixed64 ||
-            variableType.IsFixed64AngleSingle ||
-            variableType.IsFixed64Euler ||
-            variableType.IsFixed64Vector3)
+        if (variableType.IsBuiltIn)
         {
             return variable;
         }
 
-        if (variableType.IsILuaUserData)
+        if (variableType.IsILuaUserData || variableType.HasLuaVisibleAttr)
         {
             return $"global::Lua.LuaValue.FromUserData({variable})";
         }
         
         return $"global::Lua.LuaValue.FromUserData({variable}, {GetMetatableName(variableType)})";
     }
-
-    protected static string GetFunctionName(LuaMethodMetadata method) => $"__function_{method.DeclaringType?.LuaName}_{method.FullLuaName}";
-    protected static string GetMetamethodName(BaseLuaTypeMetadata type, string metamethod) => $"__metamethod_{type.LuaName}_{metamethod}";
-    protected static string GetStaticMetamethodName(BaseLuaTypeMetadata type, string metamethod) => $"__metamethod__static_{type.LuaName}_{metamethod}";
-    protected static string GetMetatableName(BaseLuaTypeMetadata type) => $"__metatable_{type.LuaName}";
-    protected static string GetTypeTableName(BaseLuaTypeMetadata type) => $"__typeTable_{type.LuaName}";
+    
+    [return: NotNullIfNotNull(nameof(ns))]
+    protected static string? ToIdentifier(string? ns) =>
+        ns?.Replace(".", "_");
+    protected static string GetFunctionName(LuaMethodMetadata method) => $"__function_{ToIdentifier(method.DeclaringType?.LuaName)}_{method.FullLuaName}";
+    protected static string GetMetamethodName(BaseLuaTypeMetadata type, string metamethod) => $"__metamethod_{ToIdentifier(type.LuaName)}_{metamethod}";
+    protected static string GetStaticMetamethodName(BaseLuaTypeMetadata type, string metamethod) => $"__metamethod__static_{ToIdentifier(type.LuaName)}_{metamethod}";
+    protected static string GetMetatableName(BaseLuaTypeMetadata type) => $"__metatable_{ToIdentifier(type.LuaName)}";
+    protected static string GetTypeTableName(BaseLuaTypeMetadata type) => $"__typeTable_{ToIdentifier(type.LuaName)}";
 }
