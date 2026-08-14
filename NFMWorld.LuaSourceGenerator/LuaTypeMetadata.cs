@@ -141,6 +141,7 @@ internal class BaseLuaTypeMetadata
                 .Replace("[", "")
                 .Replace("]", "")
                 .Replace(",", "_")
+                .Replace(" ", "_")
                 .Replace("*", "Ptr")
                 .Replace("global::", "")
                 .Replace("@", "_")
@@ -532,6 +533,12 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
         var lastDot = name.LastIndexOf('.');
         var shortName = lastDot >= 0 ? name[(lastDot + 1)..] : name;
         
+        // Edge cases:
+        // int?
+        // (bool Up, bool Down)
+        // int[,]
+        // int[]
+        // int*
         return CamelCase(
             Regex.Replace(shortName, @"\[,*\]", match => "Array" + (match.Value.Count(c => c == ',') is var v and >= 1 ? $"{v+1}" : ""))
             .Replace("?", "n")
@@ -541,6 +548,7 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
             .Replace("[", "")
             .Replace("]", "")
             .Replace(",", "_")
+            .Replace(" ", "_")
             .Replace("*", "Ptr")
             .TrimEnd('_')
         );
