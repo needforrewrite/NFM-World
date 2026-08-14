@@ -25,6 +25,8 @@ internal sealed class LuaBindingInitGenerator(
             sb.AppendLine("partial class GeneratorGenerated");
             using (sb.Block())
             {
+                EmitNamespaceTreeInit(sb, CollectNamespaceTables());
+
                 sb.AppendLine("static GeneratorGenerated()");
                 using (sb.Block())
                 {
@@ -38,6 +40,16 @@ internal sealed class LuaBindingInitGenerator(
 
                         sb.AppendLine($"init_{GetTypeTableName(type)}();");
                     }
+
+                    // Stub types have metatables but no type tables — initialize and
+                    // register them so marshal code never passes a null metatable.
+                    foreach (var type in stubTypes)
+                    {
+                        sb.AppendLine($"init_{GetMetatableName(type)}();");
+                        sb.AppendLine($"global::NFMWorld.LuaSourceGenerator.Generator.LuaVisibleTypeMetatableRegistry<{type.FullTypeName}>.Register({GetMetatableName(type)});");
+                    }
+
+                    sb.AppendLine("init_Namespaces();");
                 }
             }
 
@@ -69,15 +81,134 @@ internal sealed class LuaBindingInitGenerator(
         return sb.ToString();
     }
     
-    private void EmitRegisterAll(IndentedStringBuilder sb)
+    private static void EmitRegisterAll(IndentedStringBuilder sb)
     {
         sb.AppendLine("public static void RegisterAll(global::Lua.LuaState state)");
         using (sb.Block())
         {
-            foreach (var type in types)
+            sb.AppendLine("foreach (var (k, v) in global::NFMWorld.LuaSourceGenerator.Generator.GeneratorGenerated.__namespaceTable_G)");
+            using (sb.Block())
             {
-                sb.AppendLine($"state.Environment[\"{type.LuaName}\"] = global::NFMWorld.LuaSourceGenerator.Generator.GeneratorGenerated.{GetTypeTableName(type)};");
+                sb.AppendLine("state.Environment[k] = v;");
             }
         }
+    }
+
+    // ================================================================
+    // Trie node — one per unique namespace path
+    // ================================================================
+
+    private sealed class NamespaceNode
+    {
+        /// <summary>Lua key for this segment, e.g. "TestFixtures" ("" for the root).</summary>
+        public string Segment = "";
+        /// <summary>Dot-joined path from the root, e.g. "NFMWorld.LuaSourceGenerator".</summary>
+        public string Path = "";
+        public SortedDictionary<string, NamespaceNode> Children { get; } = new(StringComparer.Ordinal);
+        /// <summary>Types living directly in this namespace.</summary>
+        public List<BaseLuaTypeMetadata> Types { get; } = [];
+    }
+
+    // ================================================================
+    // 1) Collect: build the trie from all types' namespaces
+    // ================================================================
+
+    private string GetNamespace(BaseLuaTypeMetadata type)
+    {
+        return type.LuaName[..(type.LuaName.LastIndexOf('.') is var v and not -1 ? v : 0)];
+    }
+
+    private string GetLeaf(BaseLuaTypeMetadata type)
+    {
+        return type.LuaName[(type.LuaName.LastIndexOf('.') + 1)..];
+    }
+    
+    private NamespaceNode CollectNamespaceTables()
+    {
+        var root = new NamespaceNode();
+
+        // Only real types participate — stub types have no type table to register.
+        foreach (var type in types)
+        {
+            var node = root;
+
+            if (!string.IsNullOrEmpty(GetNamespace(type)))
+            {
+                foreach (var segment in type.Namespace.Split('.', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (!node.Children.TryGetValue(segment, out var child))
+                    {
+                        node.Children[segment] = child = new NamespaceNode
+                        {
+                            Segment = segment,
+                            Path = node.Path.Length == 0
+                                ? segment
+                                : node.Path + "." + segment,
+                        };
+                    }
+                    node = child;
+                }
+            }
+
+            node.Types.Add(type); // global namespace → lands on the root
+        }
+
+        return root;
+    }
+
+    // ================================================================
+    // 2) Emit: fields + init with ??= dedup, depth-first
+    // ================================================================
+
+    private static string FieldName(NamespaceNode node)
+        => $"__namespaceTable_{ToIdentifier(node.Path)}";
+
+    private static IEnumerable<NamespaceNode> EnumerateNodes(NamespaceNode node)
+    {
+        foreach (var child in node.Children.Values)
+        {
+            yield return child;
+            foreach (var descendant in EnumerateNodes(child))
+                yield return descendant;
+        }
+    }
+
+    private void EmitNamespaceTreeInit(IndentedStringBuilder sb, NamespaceNode root)
+    {
+        // Field declarations — one per unique namespace path (deterministic order)
+        foreach (var node in EnumerateNodes(root))
+            sb.AppendLine($"internal static global::Lua.LuaTable {FieldName(node)} = null!;");
+
+        sb.AppendLine("internal static global::System.Collections.Generic.Dictionary<string, global::Lua.LuaTable> __namespaceTable_G = null!;");
+        sb.AppendLine();
+
+        sb.AppendLine("internal static void init_Namespaces()");
+        using (sb.Block())
+        {
+            sb.AppendLine($"__namespaceTable_G ??= new global::System.Collections.Generic.Dictionary<string, global::Lua.LuaTable>();");
+            EmitNode(sb, root, "__namespaceTable_G");
+        }
+    }
+
+    private void EmitNode(IndentedStringBuilder sb, NamespaceNode node, string parentExpr)
+    {
+        // Child namespace tables: null-check + create, then attach via set indexer
+        foreach (var child in node.Children.Values)
+        {
+            var field = FieldName(child);
+            sb.AppendLine(
+                $"{field} ??= new global::Lua.LuaTable(0, {child.Children.Count + child.Types.Count});");
+            sb.AppendLine($"{parentExpr}[\"{child.Segment}\"] = {field};");
+        }
+
+        // Types directly in this namespace: attach their type tables
+        foreach (var type in node.Types)
+        {
+            sb.AppendLine($"{parentExpr}[\"{GetLeaf(type)}\"] = {GetTypeTableName(type)};");
+        }
+
+        // Recurse (depth-first keeps child tables attached before grandchildren fill them)
+        foreach (var child in node.Children.Values)
+            EmitNode(sb, child, FieldName(child));
     }
 }

@@ -63,10 +63,10 @@ internal class BaseLuaTypeMetadata
     
     public BaseLuaTypeMetadata? NullableUnderlyingType { get; }
     
-    public static SymbolDisplayFormat FullyQualifiedNoGlobalFormat { get; } =
+    public static SymbolDisplayFormat FullyQualifiedNoGlobalNoNamespaceFormat { get; } =
         new(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
-            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
             genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
             miscellaneousOptions:
             SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
@@ -92,7 +92,7 @@ internal class BaseLuaTypeMetadata
         var hasLuaVisibleAttr = luaVisibleAttr != null && symbol.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, luaVisibleAttr.AttributeClass));
         HasLuaVisibleAttr = hasLuaVisibleAttr;
 
-        var sanitizedTypeName = SanitizeLongTypeName(symbol.ToDisplayString(FullyQualifiedNoGlobalFormat));
+        var sanitizedTypeName = (Namespace != null ? Namespace + "." : "") + SanitizeLongTypeName(symbol.ToDisplayString(FullyQualifiedNoGlobalNoNamespaceFormat));
         LuaName = luaVisibleAttr?.ConstructorArguments.FirstOrDefault().Value as string
                   ?? luaVisibleAttr?.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Name").Value.Value as string
                   ?? (HasLuaVisibleAttr ? TypeName : sanitizedTypeName); // TODO decide if we should have short names for non-LuaVisible types
@@ -133,6 +133,7 @@ internal class BaseLuaTypeMetadata
         return Regex.Replace(fullTypeName, @"\[,*\]", match => "Array" + (match.Value.Count(c => c == ',') is var v and >= 1 ? $"{v+1}" : ""))
                 .Replace("<", "_")
                 .Replace(">", "")
+                .Replace(".", "_")
                 .Replace("?", "n")
                 .Replace("(", "ValueTuple_")
                 .Replace(", ", "_")
@@ -189,7 +190,9 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     public LuaConstructorMetadata[] Constructors { get; }
     public LuaEnumMemberMetadata[] EnumMembers { get; }
 
-    public bool HasIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0; // todo check if any readable members exist
+    // Instance methods dispatch through __index too, so method-only types
+    // (e.g. interfaces or calculators) still need an __index metamethod.
+    public bool HasIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0 || InstanceMethods.Length > 0; // todo check if any readable members exist
     public bool HasNewIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0; // todo check if any writable members exist
 
     public bool HasStaticIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any readable members exist

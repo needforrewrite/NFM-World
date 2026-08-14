@@ -23,6 +23,10 @@ public class LuaRuntimePortedTests
         _state = LuaState.Create();
         _state.OpenBasicLibrary();
         LuaVisibleTypeRegistry.RegisterAll(_state);
+
+        // Convenience alias — the flat SampleClass tests below predate the
+        // namespace registry and target binding semantics, not registry layout.
+        _state.Environment["SampleClass"] = SampleClass.TypeTable;
     }
 
     [TestCleanup]
