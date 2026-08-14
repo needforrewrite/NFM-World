@@ -407,14 +407,6 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
         }
     }
 
-    // private void EmitCastToLuaValue(IndentedStringBuilder sb)
-    // {
-    //     if (type.IsInterface) return;
-    //     if (type.IsStatic) return;
-    //     sb.AppendLine($"public static implicit operator global::Lua.LuaValue({type.FullTypeName} value)");
-    //     sb.AppendLine($"    => global::Lua.LuaValue.FromUserData(value, {GetMetatableName(type)});");
-    // }
-
     private void EmitIndex(IndentedStringBuilder sb, bool isStatic)
     {
         sb.AppendLine($"internal static readonly global::Lua.LuaFunction {(isStatic ? GetStaticMetamethodName(type, Metamethods.Index) : GetMetamethodName(type, Metamethods.Index))} = new(\"{Metamethods.Index}\", (context, ct) =>");
@@ -435,6 +427,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             sb.AppendLine("if (key.TryRead<string>(out var stringKey))");
             using (sb.Block())
             {
+                // TODO replace with switch statement for runtime perf
                 foreach (var field in isStatic ? type.StaticFields : type.InstanceFields)
                 {
                     if (field.FieldType == null)
@@ -456,6 +449,16 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                     else
                     {
                         sb.AppendLine($"if (stringKey == \"{prop.LuaName}\") return new global::System.Threading.Tasks.ValueTask<int>(context.Return({MarshalToLua($"{instanceExpression}.{prop.Name}", prop.PropertyType)}));");
+                    }
+                }
+
+                // static method dispatch goes via the type table, userdata cannot have key/values so instance method
+                // dispatch goes via __index
+                if (!isStatic)
+                {
+                    foreach (var method in type.InstanceMethods)
+                    {
+                        sb.AppendLine($"if (stringKey == \"{method.LuaName}\") return new global::System.Threading.Tasks.ValueTask<int>(context.Return({GetFunctionName(method)}));");
                     }
                 }
             }
@@ -483,6 +486,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             sb.AppendLine("if (key.TryRead<string>(out var stringKey))");
             using (sb.Block())
             {
+                // TODO replace with switch statement for runtime perf
                 foreach (var field in isStatic ? type.StaticFields : type.InstanceFields)
                 {
                     if (field.IsReadOnly) continue;
@@ -566,10 +570,6 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                 sb.AppendLine($"{GetMetatableName(type)}[\"{op.MetamethodName}\"] = {GetFunctionName(op)};");
             }
             sb.AppendLine($"{GetMetatableName(type)}[global::Lua.Runtime.Metamethods.ToString] = {GetMetamethodName(type, Metamethods.ToString)};");
-            foreach (var method in type.InstanceMethods)
-            {
-                sb.AppendLine($"{GetMetatableName(type)}[\"{method.FullLuaName}\"] = {GetFunctionName(method)};");
-            }
         }
     }
 
@@ -581,14 +581,20 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
         using (sb.Block())
         {
             sb.AppendLine($"{GetTypeTableName(type)} = new global::Lua.LuaTable();");
+            
+            // static mt
+            sb.AppendLine($"var {GetTypeTableName(type)}_metatable = new global::Lua.LuaTable();");
             if (type.HasStaticIndex)
             {
-                sb.AppendLine($"{GetTypeTableName(type)}[global::Lua.Runtime.Metamethods.Index] = {GetStaticMetamethodName(type, Metamethods.Index)};");
+                sb.AppendLine($"{GetTypeTableName(type)}_metatable[global::Lua.Runtime.Metamethods.Index] = {GetStaticMetamethodName(type, Metamethods.Index)};");
             }
             if (type.HasStaticNewIndex)
             {
-                sb.AppendLine($"{GetTypeTableName(type)}[global::Lua.Runtime.Metamethods.NewIndex] = {GetStaticMetamethodName(type, Metamethods.NewIndex)};");
+                sb.AppendLine($"{GetTypeTableName(type)}_metatable[global::Lua.Runtime.Metamethods.NewIndex] = {GetStaticMetamethodName(type, Metamethods.NewIndex)};");
             }
+            sb.AppendLine($"{GetTypeTableName(type)}.Metatable = {GetTypeTableName(type)}_metatable;");
+            
+            // static type table
             foreach (var method in type.StaticMethods)
             {
                 sb.AppendLine($"{GetTypeTableName(type)}[\"{method.FullLuaName}\"] = {GetFunctionName(method)};");
@@ -596,6 +602,13 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             foreach (var ctor in type.Constructors)
             {
                 sb.AppendLine($"{GetTypeTableName(type)}[\"{ctor.FullLuaName}\"] = {GetFunctionName(ctor)};");
+            }
+            
+            // lua convention: static type table gets instance methods taking self as first parameter
+            // it's very rare that you'd use these, but tooling expects it to be there
+            foreach (var method in type.InstanceMethods)
+            {
+                sb.AppendLine($"{GetTypeTableName(type)}[\"{method.FullLuaName}\"] = {GetFunctionName(method)};");
             }
         }
     }

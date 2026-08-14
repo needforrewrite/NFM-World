@@ -660,7 +660,7 @@ internal class LuaMethodMetadata
         ReturnTypeName = s.ReturnType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         IsNullableReturnType = s.ReturnType.IsReferenceType && s.ReturnType.NullableAnnotation == NullableAnnotation.Annotated;
         var attr = s.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(references.LuaNameAttribute, a.AttributeClass));
-        LuaName = attr?.ConstructorArguments.FirstOrDefault().Value as string ?? Camel(Name);
+        LuaName = attr?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.MethodKind == MethodKind.Constructor ? "new" : Camel(Name));
         Parameters = s.Parameters.Select(p => new LuaParameterMetadata(p, references)).ToArray();
         ReturnType = new BaseLuaTypeMetadata(s.ReturnType, references);
         DeclaringType = s.ContainingType != null ? new BaseLuaTypeMetadata(s.ContainingType, references) : null;
