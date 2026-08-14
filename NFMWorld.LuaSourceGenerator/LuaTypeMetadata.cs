@@ -63,10 +63,10 @@ internal class BaseLuaTypeMetadata
     
     public BaseLuaTypeMetadata? NullableUnderlyingType { get; }
     
-    public static SymbolDisplayFormat FullyQualifiedNoGlobalNoNamespacesFormat { get; } =
+    public static SymbolDisplayFormat FullyQualifiedNoGlobalFormat { get; } =
         new(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
-            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypes,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
             genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
             miscellaneousOptions:
             SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
@@ -92,7 +92,7 @@ internal class BaseLuaTypeMetadata
         var hasLuaVisibleAttr = luaVisibleAttr != null && symbol.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, luaVisibleAttr.AttributeClass));
         HasLuaVisibleAttr = hasLuaVisibleAttr;
 
-        var sanitizedTypeName = SanitizeLongTypeName(symbol.ToDisplayString(FullyQualifiedNoGlobalNoNamespacesFormat));
+        var sanitizedTypeName = SanitizeLongTypeName(symbol.ToDisplayString(FullyQualifiedNoGlobalFormat));
         LuaName = luaVisibleAttr?.ConstructorArguments.FirstOrDefault().Value as string
                   ?? luaVisibleAttr?.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Name").Value.Value as string
                   ?? (HasLuaVisibleAttr ? TypeName : sanitizedTypeName); // TODO decide if we should have short names for non-LuaVisible types
@@ -133,7 +133,6 @@ internal class BaseLuaTypeMetadata
         return Regex.Replace(fullTypeName, @"\[,*\]", match => "Array" + (match.Value.Count(c => c == ',') is var v and >= 1 ? $"{v+1}" : ""))
                 .Replace("<", "_")
                 .Replace(">", "")
-                .Replace(".", "_")
                 .Replace("?", "n")
                 .Replace("(", "ValueTuple_")
                 .Replace(", ", "_")
@@ -322,7 +321,7 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
             var seenLuaNames = new HashSet<string>(
                 InstanceProperties.Select(p => p.LuaName)
                     .Concat(InstanceFields.Select(f => f.LuaName))
-                    .Concat(InstanceMethods.Select(m => m.FullLuaName))
+                    .Concat(InstanceMethods.Select(m => m.LuaName))
             );
 
             var seenIndexerKeys = new HashSet<string>(
@@ -362,7 +361,7 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
                              .Where(m => !m.ReturnType.IsRefLikeType))
                 {
                     var meta = new LuaMethodMetadata(m, references, owningType: symbol);
-                    if (seenLuaNames.Add(meta.FullLuaName))
+                    if (seenLuaNames.Add(meta.LuaName))
                         inheritedMethods.Add(meta);
                 }
 
@@ -398,30 +397,6 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
             InstanceIndexers = [.. InstanceIndexers, .. inheritedIndexers];
             InstanceFields = [.. InstanceFields, .. inheritedFields];
             InstanceMethods = [.. InstanceMethods, .. inheritedMethods];
-
-            // Reassign overload suffixes for methods (new inherited methods may create overload groups)
-            foreach (var group in InstanceMethods.GroupBy(m => m.LuaName).Where(g => g.Count() > 1))
-            {
-                var first = true;
-                foreach (var m in group)
-                {
-                    if (first) { first = false; continue; }
-                    // Only add suffix if not already set (own overloads already have suffixes from CollectMethods)
-                    if (m.OverloadSuffix.Length == 0)
-                        m.OverloadSuffix = "_" + string.Join("_", m.Parameters.Select(ParamSuffix));
-                }
-            }
-        }
-
-        // Assign overload suffixes to constructors (all are "new" overloads)
-        if (Constructors.Length > 1)
-        {
-            var first = true;
-            foreach (var c in Constructors)
-            {
-                if (first) { first = false; continue; }
-                c.OverloadSuffix = "_" + string.Join("_", c.Parameters.Select(ParamSuffix));
-            }
         }
 
         HasLength = IsArray || symbol
@@ -459,9 +434,9 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     private static bool IsLuaOperatorMethodName(string name)
     {
         return name is
-            "op_Add" or
-            "op_Subtract" or
-            "op_Divide" or
+            "op_Addition" or
+            "op_Subtraction" or
+            "op_Division" or
             "op_UnaryNegation" or
             "op_Equality" or
             "op_LessThan" or
@@ -478,18 +453,6 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
             .Where(m => !m.Parameters.Any(p => p.Type.IsRefLikeType)) // skip Span/ReadOnlySpan params (ref structs)
             .Where(m => !m.ReturnType.IsRefLikeType) // skip methods returning ref structs
             .Select(m => new LuaMethodMetadata(m, references, owningType)).ToArray();
-
-        // Assign overload suffixes: for groups with >1 method sharing the same LuaName,
-        // the first keeps the base name (no suffix), subsequent get a parameter-type-based suffix.
-        foreach (var group in methods.GroupBy(m => m.LuaName).Where(g => g.Count() > 1))
-        {
-            var first = true;
-            foreach (var m in group)
-            {
-                if (first) { first = false; continue; }
-                m.OverloadSuffix = "_" + string.Join("_", m.Parameters.Select(ParamSuffix));
-            }
-        }
 
         return methods;
     }
@@ -626,10 +589,10 @@ internal class LuaOperatorMetadata(IMethodSymbol s, SymbolReferences references)
 
     public string Operator => Name switch
     {
-        "op_Add" => "+",
-        "op_Subtract" => "-",
+        "op_Addition" => "+",
+        "op_Subtraction" => "-",
         "op_Multiply" => "*",
-        "op_Divide" => "/",
+        "op_Division" => "/",
         "op_UnaryNegation" => "-",
         "op_Equality" => "==",
         "op_LessThan" => "<",
@@ -640,10 +603,10 @@ internal class LuaOperatorMetadata(IMethodSymbol s, SymbolReferences references)
 
     public string MetamethodName => Name switch
     {
-        "op_Add" => Metamethods.Add,
-        "op_Subtract" => Metamethods.Sub,
+        "op_Addition" => Metamethods.Add,
+        "op_Subtraction" => Metamethods.Sub,
         "op_Multiply" => Metamethods.Mul,
-        "op_Divide" => Metamethods.Div,
+        "op_Division" => Metamethods.Div,
         "op_UnaryNegation" => Metamethods.Unm,
         "op_Equality" => Metamethods.Eq,
         "op_LessThan" => Metamethods.Lt,
@@ -676,10 +639,6 @@ internal class LuaMethodMetadata
     /// <summary>True if this method is declared on a different type than the one being generated (virtual override, interface impl, or interface inheritance).</summary>
     public bool IsInherited => ImplementationSourceType != null && GeneratingTypeFullName != null
         && ImplementationSourceType != GeneratingTypeFullName;
-    /// <summary>Suffix for overload disambiguation (e.g. "_int", "_string_int"). Empty for non-overloaded or first overload.</summary>
-    public string OverloadSuffix { get; set; } = "";
-    /// <summary>Full Lua-visible name including overload suffix.</summary>
-    public string FullLuaName => OverloadSuffix.Length > 0 ? LuaName + OverloadSuffix : LuaName;
 
     public BaseLuaTypeMetadata? DeclaringType { get; }
     public BaseLuaTypeMetadata ReturnType { get; }
@@ -687,6 +646,8 @@ internal class LuaMethodMetadata
     public bool IsStatic { get; }
     public bool IsVoid { get; }
     public bool IsInstanceConstructor { get; protected set; }
+
+    public long OverloadPriority { get; }
 
     public LuaMethodMetadata(IMethodSymbol s, SymbolReferences references, ITypeSymbol? owningType = null)
     {
@@ -703,6 +664,8 @@ internal class LuaMethodMetadata
         IsStatic = s.IsStatic;
         IsVoid = s.ReturnsVoid;
         IsInstanceConstructor = false;
+        OverloadPriority = s.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(references.LuaOverloadPriorityAttribute, a.AttributeClass))
+            ?.ConstructorArguments.FirstOrDefault().Value as long? ?? 1;
 
         // Determine the actual implementation source (for method deduplication)
         if (owningType != null && !SymbolEqualityComparer.Default.Equals(s.ContainingType, owningType))

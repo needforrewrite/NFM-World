@@ -50,7 +50,7 @@ public class LuaRuntimePortedTests
     public async Task SampleClass_Constructor_WithIdAndName()
     {
         var results = await _state.DoStringAsync(@"
-            local obj = SampleClass.new_int_str(42, 'TestName')
+            local obj = SampleClass.new(42, 'TestName')
             return obj.id, obj.name
         ");
         Assert.AreEqual(42, results[0].Read<int>());
@@ -61,7 +61,7 @@ public class LuaRuntimePortedTests
     public async Task SampleClass_Constructor_Full()
     {
         var results = await _state.DoStringAsync(@"
-            local obj = SampleClass.new_int_str_bool_flt(10, 'FullTest', true, 3.14)
+            local obj = SampleClass.new(10, 'FullTest', true, 3.14)
             return obj.id, obj.name, obj.isActive, obj.value
         ");
         Assert.AreEqual(10, results[0].Read<int>());
@@ -91,7 +91,7 @@ public class LuaRuntimePortedTests
     public async Task SampleClass_InstanceMethod_GetDoubleId()
     {
         var results = await _state.DoStringAsync(@"
-            local obj = SampleClass.new_int_str(21, 'Test')
+            local obj = SampleClass.new(21, 'Test')
             return obj:getDoubleId()
         ");
         Assert.AreEqual(42, results[0].Read<int>());
@@ -101,7 +101,7 @@ public class LuaRuntimePortedTests
     public async Task SampleClass_InstanceMethod_GetGreeting()
     {
         var results = await _state.DoStringAsync(@"
-            local obj = SampleClass.new_int_str(1, 'World')
+            local obj = SampleClass.new(1, 'World')
             return obj:getGreeting('Hello')
         ");
         Assert.AreEqual("Hello World!", results[0].Read<string>());
@@ -135,7 +135,7 @@ public class LuaRuntimePortedTests
     public async Task SampleClass_InstanceMethod_Clone()
     {
         var results = await _state.DoStringAsync(@"
-            local obj = SampleClass.new_int_str(42, 'Original')
+            local obj = SampleClass.new(42, 'Original')
             local clone = obj:clone()
             clone.name = 'Cloned'
             return obj.name, clone.name, clone.id
@@ -197,7 +197,7 @@ public class LuaRuntimePortedTests
     public async Task SampleClass_Tostring()
     {
         var results = await _state.DoStringAsync(@"
-            local obj = SampleClass.new_int_str_bool_flt(42, 'Test', true, 3.14)
+            local obj = SampleClass.new(42, 'Test', true, 3.14)
             return tostring(obj)
         ");
         var str = results[0].Read<string>();
@@ -242,7 +242,7 @@ public class LuaRuntimePortedTests
     public async Task SampleClass_BooleanFalse_RoundTrip()
     {
         var results = await _state.DoStringAsync(@"
-            local obj = SampleClass.new_int_str_bool_flt(0, '', false, 0)
+            local obj = SampleClass.new(0, '', false, 0)
             return obj.isActive
         ");
         Assert.IsFalse(results[0].Read<bool>());
@@ -253,7 +253,7 @@ public class LuaRuntimePortedTests
     {
         // Id is read-only via the generated binding
         var results = await _state.DoStringAsync(@"
-            local obj = SampleClass.new_int_str(99, 'ReadOnly')
+            local obj = SampleClass.new(99, 'ReadOnly')
             return obj.id
         ");
         Assert.AreEqual(99, results[0].Read<int>());
@@ -342,7 +342,7 @@ public class LuaRuntimePortedTests
     {
         _state.Environment["RecordStructType"] = RecordStructType.TypeTable;
         var results = await _state.DoStringAsync(@"
-            local obj = RecordStructType.new_int_int(10, 20)
+            local obj = RecordStructType.new(10, 20)
             return obj.x, obj.y
         ");
         Assert.AreEqual(10, results[0].Read<int>());
@@ -366,7 +366,7 @@ public class LuaRuntimePortedTests
     {
         _state.Environment["RecordStructType"] = RecordStructType.TypeTable;
         var results = await _state.DoStringAsync(@"
-            local obj = RecordStructType.new_int_int(3, 4)
+            local obj = RecordStructType.new(3, 4)
             return obj:sum()
         ");
         Assert.AreEqual(7, results[0].Read<int>());
@@ -421,7 +421,7 @@ public class LuaRuntimePortedTests
     {
         _state.Environment["TypeInLuaNamespace"] = TypeInLuaNamespace.TypeTable;
         var results = await _state.DoStringAsync(@"
-            local obj = TypeInLuaNamespace.new_str_int('Test', 99)
+            local obj = TypeInLuaNamespace.new('Test', 99)
             return obj.name, obj.value
         ");
         Assert.AreEqual("Test", results[0].Read<string>());
@@ -444,16 +444,16 @@ public class LuaRuntimePortedTests
         ");
         Assert.AreEqual(42, r1[0].Read<int>());
 
-        // float overload
+        // float overload — dispatch by argument type
         var r2 = await _state.DoStringAsync(@"
-            local obj = TypeWithOverloads.new_flt(3.14)
+            local obj = TypeWithOverloads.new(3.14)
             return obj.value
         ");
         Assert.AreEqual(3, r2[0].Read<int>());
 
-        // string overload
+        // string overload — dispatch by argument type
         var r3 = await _state.DoStringAsync(@"
-            local obj = TypeWithOverloads.new_str('Hello')
+            local obj = TypeWithOverloads.new('Hello')
             return obj.text
         ");
         Assert.AreEqual("string:Hello", r3[0].Read<string>());
@@ -491,10 +491,10 @@ public class LuaRuntimePortedTests
     [TestMethod]
     public async Task NullableOverloads_CompileCheck()
     {
-        // SampleClass has constructor overloads with nullable params
-        // The nullable variant should have suffix like _intn_str not _int?_str
+        // SampleClass has constructor overloads with nullable params — overload resolution
+        // dispatches on a single 'new' entry instead of name-mangled identifiers.
         _state.Environment["SampleClass"] = SampleClass.TypeTable;
-        Assert.IsNotNull(SampleClass.TypeTable["new_intn_str"]);
+        Assert.AreNotEqual(LuaValueType.Nil, SampleClass.TypeTable["new"].Type);
         Assert.IsTrue(true, "Nullable constructor overload compiled without '?' in identifiers");
     }
 
@@ -504,7 +504,7 @@ public class LuaRuntimePortedTests
         _state.Environment["SampleClass"] = SampleClass.TypeTable;
         // Call the nullable constructor with nil for int, value for string
         var results = await _state.DoStringAsync(@"
-            local obj = SampleClass.new_intn_str(nil, 'OnlyNameGiven')
+            local obj = SampleClass.new(nil, 'OnlyNameGiven')
             return obj.id, obj.name
         ");
         Assert.AreEqual(0, results[0].Read<int>());
@@ -988,6 +988,95 @@ public class LuaRuntimePortedTests
             return tostring(c)
         ");
         Assert.AreEqual("Red", results[0].Read<string>());
+    }
+
+    // ===================================================================
+    // Overload resolution tests — runtime dispatch by argument count + types
+    // ===================================================================
+
+    [TestMethod]
+    public async Task OverloadResolution_ProcessNumber_DispatchesByNumberType()
+    {
+        _state.Environment["TypeWithOverloads"] = TypeWithOverloads.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeWithOverloads.new(0)
+            return obj:processNumber(3), obj:processNumber(3.5), obj:processNumber(2.0)
+        ");
+        Assert.AreEqual("int:3", results[0].Read<string>());
+        Assert.AreEqual("double:3.5", results[1].Read<string>());
+        // integer-valued doubles match the int overload first
+        Assert.AreEqual("int:2", results[2].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task OverloadResolution_ProcessData_DispatchesByType()
+    {
+        _state.Environment["TypeWithOverloads"] = TypeWithOverloads.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeWithOverloads.new(0)
+            return obj:processData('abc'), obj:processData(true)
+        ");
+        Assert.AreEqual("string:abc", results[0].Read<string>());
+        Assert.AreEqual("bool:True", results[1].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task OverloadResolution_Combine_DispatchesByArgumentTypes()
+    {
+        _state.Environment["TypeWithOverloads"] = TypeWithOverloads.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeWithOverloads.new(0)
+            return obj:combine(1, 'a'), obj:combine('a', 1), obj:combine(1.5, 2.5), obj:combine('a', 'b')
+        ");
+        Assert.AreEqual("int,string:1,a", results[0].Read<string>());
+        Assert.AreEqual("string,int:a,1", results[1].Read<string>());
+        Assert.AreEqual("float,float:1.5,2.5", results[2].Read<string>());
+        Assert.AreEqual("string,string:a,b", results[3].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task OverloadResolution_StaticProcess_DispatchesByType()
+    {
+        _state.Environment["TypeWithOverloads"] = TypeWithOverloads.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            return TypeWithOverloads.staticProcess(1), TypeWithOverloads.staticProcess(2.5), TypeWithOverloads.staticProcess('s')
+        ");
+        Assert.AreEqual("static:int:1", results[0].Read<string>());
+        Assert.AreEqual("static:double:2.5", results[1].Read<string>());
+        Assert.AreEqual("static:string:s", results[2].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task OverloadResolution_OperatorAdd_DispatchesByOperandTypes()
+    {
+        _state.Environment["TypeWithOverloads"] = TypeWithOverloads.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeWithOverloads.new(5)
+            local obj2 = TypeWithOverloads.new(7)
+            local r1 = obj + 3
+            local r2 = obj + obj2
+            local r3 = 3 + obj
+            local r4 = obj2 - obj
+            return r1.text, r2.text, r3.text, r4.text
+        ");
+        Assert.AreEqual("obj+int", results[0].Read<string>());
+        Assert.AreEqual("obj+obj", results[1].Read<string>());
+        Assert.AreEqual("int+obj", results[2].Read<string>());
+        Assert.AreEqual("obj-obj", results[3].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task OverloadResolution_NoMatchingOverload_Throws()
+    {
+        _state.Environment["TypeWithOverloads"] = TypeWithOverloads.TypeTable;
+        var results = await _state.DoStringAsync(@"
+            local obj = TypeWithOverloads.new(0)
+            local ok1 = pcall(function() return obj:combine(1) end)
+            local ok2 = pcall(function() return obj:processNumber('x') end)
+            return ok1, ok2
+        ");
+        Assert.IsFalse(results[0].Read<bool>());
+        Assert.IsFalse(results[1].Read<bool>());
     }
 }
 

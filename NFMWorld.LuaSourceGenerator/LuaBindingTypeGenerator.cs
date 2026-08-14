@@ -25,24 +25,24 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             sb.AppendLine("partial class GeneratorGenerated");
             using (sb.Block())
             {
-                foreach (var method in type.InstanceMethods)
+                foreach (var method in type.InstanceMethods.GroupBy(m => m.LuaName))
                 {
-                    EmitMethod(sb, method);
+                    EmitMethod(sb, method.ToArray());
                 }
 
-                foreach (var method in type.StaticMethods)
+                foreach (var method in type.StaticMethods.GroupBy(m => m.LuaName))
                 {
-                    EmitMethod(sb, method);
+                    EmitMethod(sb, method.ToArray());
                 }
                 
-                foreach (var op in type.Operators)
+                foreach (var op in type.Operators.GroupBy(m => m.LuaName))
                 {
-                    EmitMethod(sb, op);
+                    EmitMethod(sb, op.ToArray());
                 }
                 
-                foreach (var ctor in type.Constructors)
+                foreach (var ctor in type.Constructors.GroupBy(m => m.LuaName))
                 {
-                    EmitMethod(sb, ctor);
+                    EmitMethod(sb, ctor.ToArray());
                 }
 
                 if (type.HasIndex)
@@ -331,88 +331,228 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
         }
     }
 
-    private void EmitMethod(IndentedStringBuilder sb, LuaMethodMetadata method)
+    private void EmitMethod(IndentedStringBuilder sb, LuaMethodMetadata[] overloads)
     {
-        var argOffset = method.IsStatic || method.IsInstanceConstructor ? 0 : 1;
-        sb.AppendLine($"internal static readonly global::Lua.LuaFunction {GetFunctionName(method)} = new(\"{method.FullLuaName}\", (context, ct) =>");
+        // Stable sort by OverloadPriority — ties keep collection (declaration) order,
+        // which is the fallback order overload resolution tries candidates in.
+        overloads = [.. overloads.OrderBy(m => m.OverloadPriority)];
+
+        var baseMethod = overloads[0];
+        
+        var argOffset = baseMethod.IsStatic || baseMethod.IsInstanceConstructor ? 0 : 1;
+        sb.AppendLine($"internal static readonly global::Lua.LuaFunction {GetFunctionName(baseMethod)} = new(\"{baseMethod.LuaName}\", (context, ct) =>");
         using (sb.Block(end: "});"))
         {
-            if (!method.IsStatic && !method.IsInstanceConstructor)
+            if (overloads.Length == 1)
             {
-                sb.AppendLine($"var instance = context.GetArgument<{type.FullTypeName}>(0);");
-            }
-
-            for (var i = 0; i < method.Parameters.Length; i++)
-            {
-                var p = method.Parameters[i];
-                var t = p.Type;
-                if (t == null)
-                {
-                    sb.AppendLine($"#error {p.TypeName} is not INamedTypeSymbol");
-                }
-                else if (t.IsReferenceType)
-                {
-                    sb.AppendLine($"var arg{i} = context.GetArgumentOrNullClass<{t.FullTypeName}>({i + argOffset});");
-                }
-                else if (t.IsNullableValueType)
-                {
-                    sb.AppendLine($"var arg{i} = context.GetArgumentOrNull<{t.FullTypeName[..^1]}>({i + argOffset});");
-                }
-                else
-                {
-                    sb.AppendLine($"var arg{i} = context.GetArgument<{t.FullTypeName}>({i + argOffset});");
-                }
-            }
-
-            if (!method.IsVoid || method.IsInstanceConstructor)
-            {
-                sb.Append("var result = ");
-            }
-            var argExpressions = string.Join(", ", Enumerable.Range(0, method.Parameters.Length).Select(i => $"arg{i}"));
-            if (method is LuaConstructorMetadata ctor)
-            {
-                sb.AppendLine($"new {method.DeclaringType?.FullTypeName}({argExpressions});");
-            }
-            else if (method is LuaOperatorMetadata op)
-            {
-                if (op.IsUnary)
-                {
-                    sb.AppendLine($"{op.Operator}arg0;");
-                }
-                else
-                {
-                    sb.AppendLine($"arg0 {op.Operator} arg1;");
-                }
-            }
-            else if (method.IsStatic)
-            {
-                sb.AppendLine($"{method.DeclaringType?.FullTypeName}.{method.Name}({argExpressions});");
+                EmitSingleOverloadBody(sb, baseMethod, argOffset);
             }
             else
             {
-                sb.AppendLine($"instance.{method.Name}({argExpressions});");
+                EmitOverloadResolutionBody(sb, overloads, argOffset);
             }
+        }
+    }
 
-            if (method.IsVoid && !method.IsInstanceConstructor)
+    /// <summary>Emits the body for a method with a single overload — strict argument reads via GetArgument*. Unchanged behavior.</summary>
+    private void EmitSingleOverloadBody(IndentedStringBuilder sb, LuaMethodMetadata baseMethod, int argOffset)
+    {
+        if (!baseMethod.IsStatic && !baseMethod.IsInstanceConstructor)
+        {
+            sb.AppendLine($"var instance = context.GetArgument<{type.FullTypeName}>(0);");
+        }
+
+        for (var i = 0; i < baseMethod.Parameters.Length; i++)
+        {
+            var p = baseMethod.Parameters[i];
+            var t = p.Type;
+            if (t == null)
             {
-                sb.AppendLine($"return new global::System.Threading.Tasks.ValueTask<int>(context.Return());");
+                sb.AppendLine($"#error {p.TypeName} is not INamedTypeSymbol");
+            }
+            else if (t.IsReferenceType)
+            {
+                sb.AppendLine($"var arg{i} = context.GetArgumentOrNullClass<{t.FullTypeName}>({i + argOffset});");
+            }
+            else if (t.IsNullableValueType)
+            {
+                sb.AppendLine($"var arg{i} = context.GetArgumentOrNull<{t.FullTypeName[..^1]}>({i + argOffset});");
             }
             else
             {
-                sb.AppendLine($"return new global::System.Threading.Tasks.ValueTask<int>(context.Return(");
-                using (sb.Indent())
-                {
-                    if (method.ReturnType != null)
-                    {
-                        sb.AppendLine(MarshalToLua("result", method.IsInstanceConstructor ? type : method.ReturnType));
-                    }
-                    else
-                    {
-                        sb.AppendLine($"#error {method.ReturnTypeName} is not INamedTypeSymbol");
-                    }
-                }
-                sb.AppendLine("));");
+                sb.AppendLine($"var arg{i} = context.GetArgument<{t.FullTypeName}>({i + argOffset});");
             }
+        }
+
+        EmitCallAndReturn(sb, baseMethod, "arg");
+    }
+
+    /// <summary>
+    /// Emits runtime overload resolution: disambiguate overloads by the provided argument count,
+    /// probe each candidate's parameters in priority order with TryRead, and execute the first match.
+    /// </summary>
+    private void EmitOverloadResolutionBody(IndentedStringBuilder sb, LuaMethodMetadata[] overloads, int argOffset)
+    {
+        var baseMethod = overloads[0];
+        if (!baseMethod.IsStatic && !baseMethod.IsInstanceConstructor)
+        {
+            sb.AppendLine($"var instance = context.GetArgument<{type.FullTypeName}>(0);");
+        }
+
+        if (overloads.Any(m => m.Parameters.Any(p => p.Type is { IsNullableValueType: true })))
+        {
+            sb.AppendLine("static bool TryConvertNullable<T>(global::Lua.LuaValue value, out T? result) where T : struct");
+            using (sb.Block())
+            {
+                sb.AppendLine("if (value.Type is global::Lua.LuaValueType.Nil)");
+                using (sb.Block())
+                {
+                    sb.AppendLine("result = null;");
+                    sb.AppendLine("return true;");
+                }
+                sb.AppendLine("if (value.TryRead<T>(out var v))");
+                using (sb.Block())
+                {
+                    sb.AppendLine("result = v;");
+                    sb.AppendLine("return true;");
+                }
+                sb.AppendLine("result = null;");
+                sb.AppendLine("return false;");
+            }
+        }
+
+        foreach (var group in overloads.GroupBy(m => m.Parameters.Length).OrderBy(g => g.Key))
+        {
+            var parameterCount = group.Key;
+            sb.AppendLine($"if (context.ArgumentCount == {argOffset + parameterCount})");
+            using (sb.Block())
+            {
+                for (var i = 0; i < parameterCount; i++)
+                {
+                    sb.AppendLine($"var raw{i} = context.GetArgument({argOffset + i});");
+                }
+
+                foreach (var candidate in group)
+                {
+                    EmitOverloadCandidate(sb, candidate, parameterCount);
+                }
+            }
+        }
+
+        sb.AppendLine($"throw new global::Lua.LuaRuntimeException(context.State, $\"No overload of '{baseMethod.LuaName}' matches the provided arguments.\");");
+    }
+
+    /// <summary>Emits one overload-resolution candidate: a TryRead probe chain that executes the method body on full match.</summary>
+    private void EmitOverloadCandidate(IndentedStringBuilder sb, LuaMethodMetadata candidate, int parameterCount)
+    {
+        var probes = new List<string>(parameterCount);
+        var preDeclared = new List<string>();
+        for (var i = 0; i < candidate.Parameters.Length; i++)
+        {
+            var p = candidate.Parameters[i];
+            var t = p.Type;
+            if (t == null)
+            {
+                sb.AppendLine($"#error {p.TypeName} is not INamedTypeSymbol");
+                return;
+            }
+
+            if (t.IsReferenceType)
+            {
+                // nil converts to null for reference-type parameters (GetArgumentOrNullClass semantics).
+                // Assign into a pre-declared variable so it is definitely assigned even when the
+                // probe short-circuits on nil.
+                preDeclared.Add($"{t.FullTypeName} a{i} = null!;");
+                probes.Add($"(raw{i}.Type is global::Lua.LuaValueType.Nil || raw{i}.TryRead<{t.FullTypeName}>(out a{i}))");
+            }
+            else if (t.IsNullableValueType)
+            {
+                probes.Add($"TryConvertNullable<{t.FullTypeName[..^1]}>(raw{i}, out var a{i})");
+            }
+            else
+            {
+                probes.Add($"raw{i}.TryRead<{t.FullTypeName}>(out var a{i})");
+            }
+        }
+
+        if (probes.Count == 0)
+        {
+            using (sb.Block())
+            {
+                EmitCallAndReturn(sb, candidate, "a");
+            }
+            return;
+        }
+
+        // Nested block scopes the out-vars declared in the if condition to this candidate,
+        // so sibling candidates in the same count block can reuse the same variable names.
+        using (sb.Block())
+        {
+            foreach (var declaration in preDeclared)
+            {
+                sb.AppendLine(declaration);
+            }
+
+            sb.AppendLine($"if ({string.Join(" && ", probes)})");
+            using (sb.Block())
+            {
+                EmitCallAndReturn(sb, candidate, "a");
+            }
+        }
+    }
+
+    /// <summary>Emits the call site and return marshalling for a resolved overload. Arg variables are named '{argPrefix}{i}'.</summary>
+    private void EmitCallAndReturn(IndentedStringBuilder sb, LuaMethodMetadata method, string argPrefix)
+    {
+        if (!method.IsVoid || method.IsInstanceConstructor)
+        {
+            sb.Append("var result = ");
+        }
+
+        var argExpressions = string.Join(", ", Enumerable.Range(0, method.Parameters.Length).Select(i => $"{argPrefix}{i}"));
+        if (method is LuaConstructorMetadata)
+        {
+            sb.AppendLine($"new {method.DeclaringType?.FullTypeName}({argExpressions});");
+        }
+        else if (method is LuaOperatorMetadata op)
+        {
+            if (op.IsUnary)
+            {
+                sb.AppendLine($"{op.Operator}{argPrefix}0;");
+            }
+            else
+            {
+                sb.AppendLine($"{argPrefix}0 {op.Operator} {argPrefix}1;");
+            }
+        }
+        else if (method.IsStatic)
+        {
+            sb.AppendLine($"{method.DeclaringType?.FullTypeName}.{method.Name}({argExpressions});");
+        }
+        else
+        {
+            sb.AppendLine($"instance.{method.Name}({argExpressions});");
+        }
+
+        if (method.IsVoid && !method.IsInstanceConstructor)
+        {
+            sb.AppendLine($"return new global::System.Threading.Tasks.ValueTask<int>(context.Return());");
+        }
+        else
+        {
+            sb.AppendLine($"return new global::System.Threading.Tasks.ValueTask<int>(context.Return(");
+            using (sb.Indent())
+            {
+                if (method.ReturnType != null)
+                {
+                    sb.AppendLine(MarshalToLua("result", method.IsInstanceConstructor ? type : method.ReturnType));
+                }
+                else
+                {
+                    sb.AppendLine($"#error {method.ReturnTypeName} is not INamedTypeSymbol");
+                }
+            }
+            sb.AppendLine("));");
         }
     }
 
@@ -641,18 +781,18 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             // static type table
             foreach (var method in type.StaticMethods)
             {
-                sb.AppendLine($"{GetTypeTableName(type)}[\"{method.FullLuaName}\"] = {GetFunctionName(method)};");
+                sb.AppendLine($"{GetTypeTableName(type)}[\"{method.LuaName}\"] = {GetFunctionName(method)};");
             }
             foreach (var ctor in type.Constructors)
             {
-                sb.AppendLine($"{GetTypeTableName(type)}[\"{ctor.FullLuaName}\"] = {GetFunctionName(ctor)};");
+                sb.AppendLine($"{GetTypeTableName(type)}[\"{ctor.LuaName}\"] = {GetFunctionName(ctor)};");
             }
             
             // lua convention: static type table gets instance methods taking self as first parameter
             // it's very rare that you'd use these, but tooling expects it to be there
             foreach (var method in type.InstanceMethods)
             {
-                sb.AppendLine($"{GetTypeTableName(type)}[\"{method.FullLuaName}\"] = {GetFunctionName(method)};");
+                sb.AppendLine($"{GetTypeTableName(type)}[\"{method.LuaName}\"] = {GetFunctionName(method)};");
             }
         }
     }
@@ -702,7 +842,7 @@ internal abstract class BaseLuaTypeGenerator
     [return: NotNullIfNotNull(nameof(ns))]
     protected static string? ToIdentifier(string? ns) =>
         ns?.Replace(".", "_");
-    protected static string GetFunctionName(LuaMethodMetadata method) => $"__function_{ToIdentifier(method.DeclaringType?.LuaName)}_{method.FullLuaName}";
+    protected static string GetFunctionName(LuaMethodMetadata method) => $"__function_{ToIdentifier(method.DeclaringType?.LuaName)}_{method.LuaName}";
     protected static string GetMetamethodName(BaseLuaTypeMetadata type, string metamethod) => $"__metamethod_{ToIdentifier(type.LuaName)}_{metamethod}";
     protected static string GetStaticMetamethodName(BaseLuaTypeMetadata type, string metamethod) => $"__metamethod__static_{ToIdentifier(type.LuaName)}_{metamethod}";
     protected static string GetMetatableName(BaseLuaTypeMetadata type) => $"__metatable_{ToIdentifier(type.LuaName)}";

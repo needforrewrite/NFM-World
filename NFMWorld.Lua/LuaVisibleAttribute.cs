@@ -37,6 +37,15 @@ public sealed class LuaNameAttribute(string name) : Attribute
 }
 
 /// <summary>
+/// Defines the overload priority of a method overload when binding to Lua. The default priority is 1.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method)]
+public sealed class LuaOverloadPriorityAttribute(long priority) : Attribute
+{
+    public long OverloadPriority { get; } = priority;
+}
+
+/// <summary>
 /// Marks an assembly to indicate that type T should be considered Lua visible.
 /// </summary>
 /// <typeparam name="T">The type.</typeparam>
