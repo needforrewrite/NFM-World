@@ -1,7 +1,7 @@
 using Lua;
 using Lua.Runtime;
 using Lua.Standard;
-using nfm_world_library.Lua;
+using NFMWorld.LuaSourceGenerator.Generator;
 using NFMWorld.LuaSourceGenerator.Test.SampleTypes;
 using NFMWorld.LuaSourceGenerator.TestFixtures;
 using NFMWorld.LuaSourceGenerator.TestFixtures.Lua;
@@ -328,7 +328,9 @@ public class LuaRuntimePortedTests
         var obj = new SampleClass { NullableLongField = 1234567890123L };
         _state.Environment["obj"] = (LuaValue)obj;
         var results = await _state.DoStringAsync("return obj.nullableLongField");
-        Assert.AreEqual(1234567890123.0, results[0].Read<double>(), 1.0);
+        var readDouble = results[0].Read<double>();
+        Assert.IsNotNull(readDouble);
+        Assert.AreEqual(1234567890123.0, readDouble, 1.0);
     }
 
     // ===================================================================
@@ -911,7 +913,7 @@ public class LuaRuntimePortedTests
         var obj = new TypeWithEnum();
         _state.Environment["obj"] = LuaValue.FromUserData(obj);
 
-        var blueVal = StructUserDataHelper.Wrap(TestColor.Blue);
+        var blueVal = LuaVisibleHelper.Wrap(TestColor.Blue);
         _state.Environment["blueColor"] = (LuaValue)blueVal;
         await _state.DoStringAsync("obj.color = blueColor");
         Assert.AreEqual(TestColor.Blue, obj.Color);
@@ -936,7 +938,7 @@ public class LuaRuntimePortedTests
         var obj = new TypeWithEnum();
         _state.Environment["obj"] = LuaValue.FromUserData(obj);
 
-        var greenVal = StructUserDataHelper.Wrap(TestColor.Green);
+        var greenVal = LuaVisibleHelper.Wrap(TestColor.Green);
         _state.Environment["greenColor"] = (LuaValue)greenVal;
         await _state.DoStringAsync("obj:setColor(greenColor)");
         Assert.AreEqual(TestColor.Green, obj.Color);
@@ -948,10 +950,10 @@ public class LuaRuntimePortedTests
         var obj = new TypeWithEnum();
         _state.Environment["obj"] = LuaValue.FromUserData(obj);
 
-        var redVal = StructUserDataHelper.Wrap(TestColor.Red);
-        var yellowVal = StructUserDataHelper.Wrap(TestColor.Yellow);
-        _state.Environment["redColor"] = (LuaValue)redVal;
-        _state.Environment["yellowColor"] = (LuaValue)yellowVal;
+        var redVal = LuaVisibleHelper.Wrap(TestColor.Red);
+        var yellowVal = LuaVisibleHelper.Wrap(TestColor.Yellow);
+        _state.Environment["redColor"] = redVal;
+        _state.Environment["yellowColor"] = yellowVal;
 
         var results = await _state.DoStringAsync(@"
             local r1 = obj:isPrimary(redColor)

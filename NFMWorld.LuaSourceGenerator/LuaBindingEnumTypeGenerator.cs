@@ -42,7 +42,7 @@ internal sealed class LuaBindingEnumTypeGenerator(LuaTypeMetadata type) : BaseLu
                 sb.AppendLine($"{GetTypeTableName(type)} = new global::Lua.LuaTable(0, {type.EnumMembers.Length});");
                 foreach (var member in type.EnumMembers)
                 {
-                    sb.AppendLine($"{GetTypeTableName(type)}[\"{member.LuaName}\"] = {MarshalToLua($"{type.FullTypeName}.{member.Name}", member.FieldType)};");
+                    sb.AppendLine($"{GetTypeTableName(type)}[\"{member.LuaName}\"] = {MarshalToLua($"{type.FullTypeName}.{member.Name}", type)};");
                 }
             }
         }

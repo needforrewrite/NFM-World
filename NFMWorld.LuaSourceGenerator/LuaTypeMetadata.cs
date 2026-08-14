@@ -58,7 +58,10 @@ internal class BaseLuaTypeMetadata
                              IsFixed64 ||
                              IsFixed64AngleSingle ||
                              IsFixed64Euler ||
-                             IsFixed64Vector3;
+                             IsFixed64Vector3 ||
+                             NullableUnderlyingType?.IsBuiltIn == true;
+    
+    public BaseLuaTypeMetadata? NullableUnderlyingType { get; }
     
     public static SymbolDisplayFormat FullyQualifiedNoGlobalNoNamespacesFormat { get; } =
         new(
@@ -107,7 +110,12 @@ internal class BaseLuaTypeMetadata
 
         IsReferenceType = symbol.IsReferenceType;
         IsNullableReferenceType = symbol.IsReferenceType && symbol.NullableAnnotation == NullableAnnotation.Annotated;
-        IsNullableValueType = symbol.Name.EndsWith("?");
+        if (symbol is INamedTypeSymbol { IsGenericType: true } namedType &&
+            namedType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+        {
+            IsNullableValueType = true;
+            NullableUnderlyingType = new BaseLuaTypeMetadata(namedType.TypeArguments[0], references);
+        }
         IsEnum = symbol is INamedTypeSymbol { EnumUnderlyingType: not null };
         SanitizedTypeName = sanitizedTypeName;
     }
@@ -124,10 +132,10 @@ internal class BaseLuaTypeMetadata
 
         return Regex.Replace(fullTypeName, @"\[,*\]", match => "Array" + (match.Value.Count(c => c == ',') is var v and >= 1 ? $"{v+1}" : ""))
                 .Replace("<", "_")
-                .Replace(">", "_")
+                .Replace(">", "")
                 .Replace(".", "_")
                 .Replace("?", "n")
-                .Replace("(", "_Tuple_")
+                .Replace("(", "ValueTuple_")
                 .Replace(", ", "_")
                 .Replace(")", "_")
                 .Replace("[", "")
@@ -173,6 +181,7 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
 
     public LuaMethodMetadata[] InstanceMethods { get; }
     public LuaPropertyMetadata[] InstanceProperties { get; }
+    public LuaIndexerMetadata[] InstanceIndexers { get; }
     public LuaFieldMetadata[] InstanceFields { get; }
     public LuaOperatorMetadata[] Operators { get; }
     public LuaMethodMetadata[] StaticMethods { get; }
@@ -181,8 +190,8 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     public LuaConstructorMetadata[] Constructors { get; }
     public LuaEnumMemberMetadata[] EnumMembers { get; }
 
-    public bool HasIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0; // todo check if any readable members exist
-    public bool HasNewIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0; // todo check if any writable members exist
+    public bool HasIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0; // todo check if any readable members exist
+    public bool HasNewIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0; // todo check if any writable members exist
 
     public bool HasStaticIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any readable members exist
     public bool HasStaticNewIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any writable members exist
@@ -297,6 +306,7 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
         InstanceMethods = CollectMethods(members, references, isStatic: false, symbol);
         Operators = CollectOperators(references, members);
         InstanceProperties = CollectProperties(members, references, isStatic: false);
+        InstanceIndexers = CollectInstanceIndexers(members, references);
         InstanceFields = CollectFields(members, references, isStatic: false);
         StaticMethods = CollectMethods(members, references, isStatic: true, symbol);
         StaticProperties = CollectProperties(members, references, isStatic: true);
@@ -315,9 +325,14 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
                     .Concat(InstanceMethods.Select(m => m.FullLuaName))
             );
 
+            var seenIndexerKeys = new HashSet<string>(
+                InstanceIndexers.Select(i => i.Name + ":" + i.KeyTypeName)
+            );
+
             var inheritedProps = new List<LuaPropertyMetadata>();
             var inheritedFields = new List<LuaFieldMetadata>();
             var inheritedMethods = new List<LuaMethodMetadata>();
+            var inheritedIndexers = new List<LuaIndexerMetadata>();
 
             // Walk all base interfaces recursively
             WalkBaseInterfaces(symbol, new HashSet<INamedTypeSymbol>(SymbolEqualityComparer.Default));
@@ -367,10 +382,20 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
                     if (seenLuaNames.Add(meta.LuaName))
                         inheritedFields.Add(meta);
                 }
+
+                foreach (var idx in baseMembers.OfType<IPropertySymbol>()
+                             .Where(p => p.IsIndexer && !p.IsStatic && p.Parameters.Length == 1 && !HasAttr(p, references.LuaHiddenAttribute))
+                             .Where(p => GetResultantVisibility(p) == SymbolVisibility.Public))
+                {
+                    var meta = new LuaIndexerMetadata(idx, references);
+                    if (seenIndexerKeys.Add(meta.Name + ":" + meta.KeyTypeName))
+                        inheritedIndexers.Add(meta);
+                }
             }
 
             // Merge inherited members into the type's own lists
             InstanceProperties = [.. InstanceProperties, .. inheritedProps];
+            InstanceIndexers = [.. InstanceIndexers, .. inheritedIndexers];
             InstanceFields = [.. InstanceFields, .. inheritedFields];
             InstanceMethods = [.. InstanceMethods, .. inheritedMethods];
 
@@ -544,7 +569,7 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
         return CamelCase(
             Regex.Replace(shortName, @"\[,*\]", match => "Array" + (match.Value.Count(c => c == ',') is var v and >= 1 ? $"{v+1}" : ""))
             .Replace("?", "n")
-            .Replace("(", "_Tuple_")
+            .Replace("(", "ValueTuple_")
             .Replace(")", "_")
             .Replace(", ", "_")
             .Replace("[", "")
@@ -563,6 +588,16 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
             .Where(p => p.IsStatic == isStatic && !p.IsIndexer && !p.IsImplicitlyDeclared && !HasAttr(p, references.LuaHiddenAttribute))
             .Where(m => GetResultantVisibility(m) == SymbolVisibility.Public)
             .Select(p => new LuaPropertyMetadata(p, references))
+            .ToArray();
+    }
+
+    /// <summary>Collects public single-parameter instance indexers (e.g. <c>this[int index]</c>).</summary>
+    private static LuaIndexerMetadata[] CollectInstanceIndexers(ImmutableArray<ISymbol> members, SymbolReferences references)
+    {
+        return members.OfType<IPropertySymbol>()
+            .Where(p => p.IsIndexer && !p.IsStatic && p.Parameters.Length == 1 && !HasAttr(p, references.LuaHiddenAttribute))
+            .Where(p => GetResultantVisibility(p) == SymbolVisibility.Public)
+            .Select(p => new LuaIndexerMetadata(p, references))
             .ToArray();
     }
 
@@ -710,7 +745,7 @@ internal sealed class LuaParameterMetadata(IParameterSymbol p, SymbolReferences 
     public BaseLuaTypeMetadata Type { get; } = new BaseLuaTypeMetadata(p.Type, references);
 }
 
-internal sealed class LuaPropertyMetadata(IPropertySymbol s, SymbolReferences references)
+internal class LuaPropertyMetadata(IPropertySymbol s, SymbolReferences references)
 {
     public string Name { get; } = s.Name;
     public string PropertyTypeName { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
@@ -723,6 +758,13 @@ internal sealed class LuaPropertyMetadata(IPropertySymbol s, SymbolReferences re
         .GetAttributes()
         .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, references.LuaNameAttribute))
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);
+}
+
+internal sealed class LuaIndexerMetadata(IPropertySymbol s, SymbolReferences references) : LuaPropertyMetadata(s, references)
+{
+    /// <summary>The single index key parameter.</summary>
+    public LuaParameterMetadata Key { get; } = new(s.Parameters[0], references);
+    public string KeyTypeName { get; } = s.Parameters[0].Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
 }
 
 internal sealed class LuaFieldMetadata(IFieldSymbol s, SymbolReferences references)

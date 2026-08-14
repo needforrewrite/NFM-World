@@ -3,6 +3,7 @@ using FixedMathSharp;
 using Lua;
 using Lua.Runtime;
 using nfm_world_library.Lua;
+using NFMWorld.LuaSourceGenerator.Generator;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary.Util;
@@ -126,10 +127,10 @@ public class LuaArray<T>(int length) : ILuaUserData
         if (value is f64Euler f64Euler)
             return new LuaValue(f64Euler);
         
-        if (StructUserDataHelper.TryWrap(value, out var data))
-            return LuaValue.FromUserData(data);
+        if (LuaVisibleHelper.TryWrap(value, out var data))
+            return data;
         
-        if (data is ILuaUserData userData)
+        if (value is ILuaUserData userData)
             return LuaValue.FromUserData(userData);
 
         // Fallback!
@@ -183,9 +184,6 @@ public class LuaArray<T>(int length) : ILuaUserData
     /// <summary>Converts a <see cref="LuaValue"/> to <typeparamref name="T"/> with flexible coercion.</summary>
     private static T ConvertLuaValue(LuaValue value)
     {
-        if (value.TryRead<StructUserData<T>>(out var structUserData))
-            return structUserData.Value;
-        
         // Let LuaValue's own conversion handle it (supports double, string, bool, etc.)
         if (value.TryRead<T>(out var result))
             return result;

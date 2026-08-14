@@ -4,7 +4,7 @@ using WorldXaml.Generator.Common;
 
 namespace NFMWorld.LuaSourceGenerator;
 
-// TODO: indexer, lua/ts stubs, global static initializer on GeneratorGenerated
+// TODO: lua/ts stubs, global static initializer on GeneratorGenerated
 internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTypeGenerator
 {
     public string GenerateCode()
@@ -333,7 +333,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
 
     private void EmitMethod(IndentedStringBuilder sb, LuaMethodMetadata method)
     {
-        var argOffset = method.IsStatic ? 0 : 1;
+        var argOffset = method.IsStatic || method.IsInstanceConstructor ? 0 : 1;
         sb.AppendLine($"internal static readonly global::Lua.LuaFunction {GetFunctionName(method)} = new(\"{method.FullLuaName}\", (context, ct) =>");
         using (sb.Block(end: "});"))
         {
@@ -356,7 +356,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                 }
                 else if (t.IsNullableValueType)
                 {
-                    sb.AppendLine($"var arg{i} = context.GetArgumentOrNull<{t.FullTypeName}>({i + argOffset});");
+                    sb.AppendLine($"var arg{i} = context.GetArgumentOrNull<{t.FullTypeName[..^1]}>({i + argOffset});");
                 }
                 else
                 {
@@ -364,7 +364,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                 }
             }
 
-            if (!method.IsVoid)
+            if (!method.IsVoid || method.IsInstanceConstructor)
             {
                 sb.Append("var result = ");
             }
@@ -393,7 +393,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                 sb.AppendLine($"instance.{method.Name}({argExpressions});");
             }
 
-            if (method.IsVoid)
+            if (method.IsVoid && !method.IsInstanceConstructor)
             {
                 sb.AppendLine($"return new global::System.Threading.Tasks.ValueTask<int>(context.Return());");
             }
@@ -404,7 +404,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                 {
                     if (method.ReturnType != null)
                     {
-                        sb.AppendLine(MarshalToLua("result", method.ReturnType));
+                        sb.AppendLine(MarshalToLua("result", method.IsInstanceConstructor ? type : method.ReturnType));
                     }
                     else
                     {
@@ -433,6 +433,15 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             }
 
             sb.AppendLine("var key = context.GetArgument(1);");
+            if (type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
+            {
+                sb.AppendLine($"if (key.TryRead<{indexer.Key.Type.FullTypeName}>(out var indexerKey))");
+                using (sb.Block())
+                {
+                    sb.AppendLine($"return new global::System.Threading.Tasks.ValueTask<int>(context.Return({MarshalToLua($"{instanceExpression}[indexerKey]", indexer.PropertyType)}));");
+                }
+            }
+
             sb.AppendLine("if (key.TryRead<string>(out var stringKey))");
             using (sb.Block())
             {
@@ -492,6 +501,29 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             }
             
             sb.AppendLine("var key = context.GetArgument(1);");
+            if (type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
+            {
+                sb.AppendLine($"if (key.TryRead<{indexer.Key.Type.FullTypeName}>(out var indexerKey))");
+                using (sb.Block())
+                {
+                    var t = indexer.PropertyType;
+                    if (t.IsReferenceType)
+                    {
+                        sb.AppendLine($"var value = context.GetArgumentOrNullClass<{t.FullTypeName}>(2);");
+                    }
+                    else if (t.IsNullableValueType)
+                    {
+                        sb.AppendLine($"var value = context.GetArgumentOrNull<{t.FullTypeName[..^1]}>(2);");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"var value = context.GetArgument<{t.FullTypeName}>(2);");
+                    }
+
+                    sb.AppendLine($"{instanceExpression}[indexerKey] = value;");
+                }
+            }
+
             sb.AppendLine("if (key.TryRead<string>(out var stringKey))");
             using (sb.Block())
             {
@@ -510,7 +542,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                         }
                         else if (t.IsNullableValueType)
                         {
-                            sb.AppendLine($"var value = context.GetArgumentOrNull<{t.FullTypeName}>(2);");
+                            sb.AppendLine($"var value = context.GetArgumentOrNull<{t.FullTypeName[..^1]}>(2);");
                         }
                         else
                         {
@@ -535,7 +567,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                         }
                         else if (t.IsNullableValueType)
                         {
-                            sb.AppendLine($"var value = context.GetArgumentOrNull<{t.FullTypeName}>(2);");
+                            sb.AppendLine($"var value = context.GetArgumentOrNull<{t.FullTypeName[..^1]}>(2);");
                         }
                         else
                         {
@@ -592,16 +624,19 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             sb.AppendLine($"{GetTypeTableName(type)} = new global::Lua.LuaTable();");
             
             // static mt
-            sb.AppendLine($"var {GetTypeTableName(type)}_metatable = new global::Lua.LuaTable();");
-            if (type.HasStaticIndex)
+            if (type.HasStaticIndex || type.HasStaticNewIndex)
             {
-                sb.AppendLine($"{GetTypeTableName(type)}_metatable[global::Lua.Runtime.Metamethods.Index] = {GetStaticMetamethodName(type, Metamethods.Index)};");
+                sb.AppendLine($"var {GetTypeTableName(type)}_metatable = new global::Lua.LuaTable();");
+                if (type.HasStaticIndex)
+                {
+                    sb.AppendLine($"{GetTypeTableName(type)}_metatable[global::Lua.Runtime.Metamethods.Index] = {GetStaticMetamethodName(type, Metamethods.Index)};");
+                }
+                if (type.HasStaticNewIndex)
+                {
+                    sb.AppendLine($"{GetTypeTableName(type)}_metatable[global::Lua.Runtime.Metamethods.NewIndex] = {GetStaticMetamethodName(type, Metamethods.NewIndex)};");
+                }
+                sb.AppendLine($"{GetTypeTableName(type)}.Metatable = {GetTypeTableName(type)}_metatable;");
             }
-            if (type.HasStaticNewIndex)
-            {
-                sb.AppendLine($"{GetTypeTableName(type)}_metatable[global::Lua.Runtime.Metamethods.NewIndex] = {GetStaticMetamethodName(type, Metamethods.NewIndex)};");
-            }
-            sb.AppendLine($"{GetTypeTableName(type)}.Metatable = {GetTypeTableName(type)}_metatable;");
             
             // static type table
             foreach (var method in type.StaticMethods)
@@ -655,7 +690,8 @@ internal abstract class BaseLuaTypeGenerator
             return variable;
         }
 
-        if (variableType.IsILuaUserData || (variableType.HasLuaVisibleAttr && !variableType.IsEnum)) // enums can't implement interfaces!
+        // enums can't implement interfaces! and metatables are specific to a generic instantiation
+        if (variableType.IsILuaUserData || (variableType.HasLuaVisibleAttr && !variableType.IsEnum && !variableType.IsOpenGeneric))
         {
             return $"global::Lua.LuaValue.FromUserData({variable})";
         }
