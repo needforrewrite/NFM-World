@@ -5,7 +5,7 @@ namespace NFMWorldLibrary.Backend;
 
 public class BackendGamemodeData : IGamemodeData
 {
-    public required ObservableUnlimitedArray<IInGameCar> CarsInRace { get; init; }
+    public required UnlimitedArray<IInGameCar> CarsInRace { get; init; }
     public required BackendStage CurrentStage { get; init; }
     public required RaceState RaceState { get; init; }
     public IClientCallbacks ClientCallbacks => ClientServer.AccidentallyCalledClientMethodOnServer<IClientCallbacks>();
