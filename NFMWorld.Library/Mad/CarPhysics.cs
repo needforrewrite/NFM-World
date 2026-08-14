@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using FixedMathSharp;
 using FixedMathSharp.Utility;
@@ -74,17 +76,19 @@ public partial class CarPhysics
     /// <summary>
     /// Is colliding with the client player car
     /// </summary>
-    [LuaName("colliding_with_client_player")]
+    [LuaName("collidingWithClientPlayer")]
     public bool _collidingWithClientPlayer;
     
-    public readonly int[,] _crank = new int[4, 4];
+    [LuaName("crank")]
+    public readonly Array2D<int> _crank = new(4, 4);
     
-    public readonly int[,] _lcrank = new int[4, 4];
+    [LuaName("lcrank")]
+    public readonly Array2D<int> _lcrank = new(4, 4);
     
     [LuaName("cxz")]
     public fix64 Cxz;
     
-    [LuaName("static_camera_xz")]
+    [LuaName("staticCameraXz")]
     public fix64 StaticCameraXz;
     
     [LuaName("dcnt")]
@@ -114,7 +118,7 @@ public partial class CarPhysics
     [LuaName("ftab")]
     public bool ForwardTabletop;
     
-    [LuaName("turn_xz")]
+    [LuaName("turnXz")]
     public fix64 _turnXz;
     
     [LuaName("gtouch")]
@@ -141,7 +145,7 @@ public partial class CarPhysics
     [LuaName("mxz")]
     public fix64 Mxz;
     
-    [LuaName("num_roof_damage")]
+    [LuaName("numRoofDamage")]
     public int _numRoofDamage;
     
     [LuaName("newcar")]
@@ -216,10 +220,10 @@ public partial class CarPhysics
     [LuaName("speed")]
     public fix64 Speed;
     
-    [LuaName("roof_damage")]
+    [LuaName("roofDamage")]
     public int RoofDamage;
     
-    [LuaName("surf_count")]
+    [LuaName("surfCount")]
     public int _surfCount;
     
     [LuaName("surfing")]
@@ -228,13 +232,13 @@ public partial class CarPhysics
     [LuaName("tilt")]
     public fix64 _tilt;
     
-    [LuaName("total_stunt_xy")]
+    [LuaName("totalStuntXy")]
     public fix64 TotalStuntXy;
     
-    [LuaName("total_stunt_xz")]
+    [LuaName("totalStuntXz")]
     public fix64 TotalStuntXz;
     
-    [LuaName("total_stunt_zy")]
+    [LuaName("totalStuntZy")]
     public fix64 TotalStuntZy;
     
     [LuaName("tcnt")]
@@ -252,7 +256,7 @@ public partial class CarPhysics
     [LuaName("xtpower")]
     public int _xtpower;
 
-    [LuaName("is_client_player")]
+    [LuaName("isClientPlayer")]
     internal bool IsClientPlayer;
     
     [LuaName("mtcount")]
@@ -1555,15 +1559,15 @@ public partial class CarPhysics
         PhyTrackPieceCollision(stage, control, conto, wheelx, wheely, wheelz, groundY, wheelYThreshold, wheelGround, ref nGroundedWheels, wasMtouch, surfaceType, out hitVertical, isWheelGrounded, wheelContactNormal, random);
 
         // sparks and scrapes
-        for (var i79 = 0; i79 < 4; i79++)
+        for (var i = 0; i < 4; i++)
         {
-            for (var i80 = 0; i80 < 4; i80++)
+            for (var j = 0; j < 4; j++)
             {
-                if (_crank[i79, i80] == _lcrank[i79, i80])
+                if (_crank[i, j] == _lcrank[i, j])
                 {
-                    _crank[i79, i80] = 0;
+                    _crank[i, j] = 0;
                 }
-                _lcrank[i79, i80] = _crank[i79, i80];
+                _lcrank[i, j] = _crank[i, j];
             }
         }
 
@@ -3073,5 +3077,106 @@ public partial class CarPhysics
         {
             _fixes--;
         }
+    }
+}
+
+[LuaVisible]
+public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>
+{
+    private struct ArrayEnumerator : IEnumerator<T>, ICloneable
+    {
+        private readonly T[] _array;
+        private int _index;
+
+        internal ArrayEnumerator(T[] array)
+        {
+            _array = array;
+            _index = -1;
+        }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
+        }
+
+        public bool MoveNext()
+        {
+            int index = _index + 1;
+            int length = _array.Length;
+            if (index >= length)
+            {
+                _index = length;
+                return false;
+            }
+            _index = index;
+            return true;
+        }
+
+        public T Current
+        {
+            get
+            {
+                int index = _index;
+                var array = _array;
+
+                if (index < 0)
+                {
+                    ThrowEnumerationNotStarted();
+                }
+                else if (index >= array.Length)
+                {
+                    ThrowEnumerationEnded();
+                }
+
+                return array[index];
+
+                [DoesNotReturn]
+                void ThrowEnumerationNotStarted()
+                {
+                    throw new InvalidOperationException("Enumeration not started");
+                }
+
+                [DoesNotReturn]
+                void ThrowEnumerationEnded()
+                {
+                    throw new InvalidOperationException("Enumeration ended");
+                }
+            }
+        }
+
+        public void Reset()
+        {
+            _index = -1;
+        }
+
+        object? IEnumerator.Current => Current;
+
+        public void Dispose()
+        {
+        }
+    }
+    
+    private readonly T[] _arr = new T[rows * columns];
+
+    public T this[int row, int column]
+    {
+        get => _arr[row + (column * rows)];
+        set => _arr[row + (column * rows)] = value;
+    }
+
+    public T this[int index]
+    {
+        get => _arr[index];
+        set => _arr[index] = value;
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        return new ArrayEnumerator(_arr);
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return _arr.GetEnumerator();
     }
 }

@@ -11,13 +11,13 @@ namespace NFMWorldLibrary;
 [LuaVisible]
 public partial interface IInGameCar : ICar
 {
-    [LuaName("car_physics")]
+    [LuaName("carPhysics")]
     CarPhysics CarPhysics { get; }
     
     [LuaName("control")]
     Control Control { get; }
     
-    [LuaName("current_checkpoint")]
+    [LuaName("currentCheckpoint")]
     ushort CurrentCheckpoint { get; set; }
     
     [LuaName("nlaps")]
@@ -26,7 +26,7 @@ public partial interface IInGameCar : ICar
     [LuaName("clear")]
     int TotalCheckpoint { get; set; } // mad.clear
     
-    [LuaName("last_checkpoint_node")]
+    [LuaName("lastCheckpointNode")]
     int LastCheckpointNode { get; set; } // resets on new lap
     
     [LuaName("placement")]

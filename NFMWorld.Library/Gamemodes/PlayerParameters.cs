@@ -6,19 +6,19 @@ namespace NFMWorldLibrary.Gamemodes;
 [LuaVisible]
 public partial class PlayerParameters
 {
-    [LuaName("player_name")]
+    [LuaName("playerName")]
     public required string PlayerName { get; init; } = "Player";
     
-    [LuaName("car_name")]
+    [LuaName("carName")]
     public required string CarName { get; init; } = "nfmm/radicalone";
     
     [LuaName("color")]
     public required Color3 Color { get; init; } = new Color3(255, 0, 0);
     
-    [LuaName("is_bot")]
+    [LuaName("isBot")]
     public required bool IsBot { get; init; } = false;
     
-    [LuaName("is_client_player")]
+    [LuaName("isClientPlayer")]
     public required bool IsClientPlayer { get; init; } = false;
     // team, isbot, etc
 }
