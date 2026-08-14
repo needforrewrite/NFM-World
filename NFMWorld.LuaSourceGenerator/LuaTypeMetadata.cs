@@ -23,6 +23,8 @@ internal class BaseLuaTypeMetadata
     public bool IsILuaUserData { get; }
     public bool IsReferenceType { get; }
     public bool IsNullableReferenceType { get; }
+    
+    [MemberNotNullWhen(true, nameof(NullableUnderlyingType))]
     public bool IsNullableValueType { get; }
 
     public SpecialType SpecialType { get; }
@@ -31,6 +33,7 @@ internal class BaseLuaTypeMetadata
     public bool IsFixed64Euler { get; }
     public bool IsFixed64Vector3 { get; }
     
+    [MemberNotNullWhen(true, nameof(IEnumerableType))]
     public bool IsArray { get; }
     public bool IsRefStruct { get; }
     public bool IsConstructedGeneric { get; }
@@ -63,6 +66,23 @@ internal class BaseLuaTypeMetadata
     
     public BaseLuaTypeMetadata? NullableUnderlyingType { get; }
     
+    [MemberNotNullWhen(true, nameof(InlineArrayLength))]
+    [MemberNotNullWhen(true, nameof(InlineArrayElementType))]
+    public bool IsInlineArray { get; }
+    public int? InlineArrayLength { get; }
+    public BaseLuaTypeMetadata? InlineArrayElementType { get; }
+    
+    [MemberNotNullWhen(true, nameof(IEnumerableType))]
+    public bool IsIEnumerable { get; }
+    public BaseLuaTypeMetadata? IEnumerableType { get; }
+    
+    [MemberNotNullWhen(true, nameof(IEnumerableKeyType))]
+    [MemberNotNullWhen(true, nameof(IEnumerableValueType))]
+    public bool IsIEnumerableOfKeyValuePair { get; }
+    
+    public BaseLuaTypeMetadata? IEnumerableKeyType { get; }
+    public BaseLuaTypeMetadata? IEnumerableValueType { get; }
+
     public static SymbolDisplayFormat FullyQualifiedNoGlobalNoNamespaceFormat { get; } =
         new(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
@@ -72,10 +92,18 @@ internal class BaseLuaTypeMetadata
             SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
             SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
 
+    public static SymbolDisplayFormat MinimallyQualifiedWithTypeParameters { get; } =
+        new(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Omitted,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameOnly,
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            miscellaneousOptions:
+            SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+
     public BaseLuaTypeMetadata(ITypeSymbol symbol, SymbolReferences references)
     {
         Assembly = symbol.ContainingAssembly?.Identity;
-        TypeName = symbol.Name;
+        TypeName = symbol.ToDisplayString(MinimallyQualifiedWithTypeParameters);
         FullTypeName = symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
         Namespace = symbol.ContainingNamespace?.ToDisplayString();
         IsStatic = symbol.IsStatic;
@@ -95,7 +123,7 @@ internal class BaseLuaTypeMetadata
         var sanitizedTypeName = (Namespace != null ? Namespace + "." : "") + SanitizeLongTypeName(symbol.ToDisplayString(FullyQualifiedNoGlobalNoNamespaceFormat));
         LuaName = luaVisibleAttr?.ConstructorArguments.FirstOrDefault().Value as string
                   ?? luaVisibleAttr?.NamedArguments.FirstOrDefault(kvp => kvp.Key == "Name").Value.Value as string
-                  ?? (HasLuaVisibleAttr ? TypeName : sanitizedTypeName); // TODO decide if we should have short names for non-LuaVisible types
+                  ?? (HasLuaVisibleAttr ? SanitizeLongTypeName(TypeName) : sanitizedTypeName); // TODO decide if we should have short names for non-LuaVisible types
         var luaNameAttr = GetAttr(symbol, references.LuaNameAttribute);
         if (luaNameAttr?.ConstructorArguments.FirstOrDefault().Value is string nameOverride)
             LuaName = nameOverride;
@@ -118,101 +146,29 @@ internal class BaseLuaTypeMetadata
         }
         IsEnum = symbol is INamedTypeSymbol { EnumUnderlyingType: not null };
         SanitizedTypeName = sanitizedTypeName;
+        
+        var inlineAttr = symbol.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, references.InlineArrayAttribute));
+        if (inlineAttr != null)
+        {
+            IsInlineArray = true;
+            InlineArrayLength = (int)(inlineAttr.ConstructorArguments.FirstOrDefault().Value ?? 0);
+            var firstField = symbol.GetMembers().OfType<IFieldSymbol>().FirstOrDefault();
+            InlineArrayElementType = firstField?.Type is {} inlineArrayElementType ? new BaseLuaTypeMetadata(inlineArrayElementType, references) : null;
+        }
+
+        if (GetEnumerableElementType(symbol, references) is { } elementType)
+        {
+            IsIEnumerable = true;
+            IEnumerableType = new BaseLuaTypeMetadata(elementType, references);
+
+            if (TryGetKeyValuePairTypes(elementType, references, out var kvpKey, out var kvpValue))
+            {
+                IsIEnumerableOfKeyValuePair = true;
+                IEnumerableKeyType = new BaseLuaTypeMetadata(kvpKey, references);
+                IEnumerableValueType = new BaseLuaTypeMetadata(kvpValue, references);
+            }
+        }
     }
-
-    private static string SanitizeLongTypeName(string fullTypeName)
-    {
-        // Map primitives to short names
-        if (fullTypeName is
-            "int" or "long" or "float" or "double" or
-            "bool" or "string" or "byte" or "sbyte" or
-            "short" or "ushort" or "uint" or "ulong" or
-            "decimal" or "char" or "object")
-            return fullTypeName;
-
-        return Regex.Replace(fullTypeName, @"\[,*\]", match => "Array" + (match.Value.Count(c => c == ',') is var v and >= 1 ? $"{v+1}" : ""))
-                .Replace("<", "_")
-                .Replace(">", "")
-                .Replace(".", "_")
-                .Replace("?", "n")
-                .Replace("(", "ValueTuple_")
-                .Replace(", ", "_")
-                .Replace(")", "_")
-                .Replace("[", "")
-                .Replace("]", "")
-                .Replace(",", "_")
-                .Replace(" ", "_")
-                .Replace("*", "Ptr")
-                .Replace("global::", "")
-                .Replace("@", "_")
-                .TrimEnd('_');
-    }
-
-    protected static bool HasAttr(ISymbol s, INamedTypeSymbol? attr)
-        => attr != null && s.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attr));
-
-    protected static AttributeData? GetAttr(ISymbol s, INamedTypeSymbol? attr)
-        => attr != null ? s.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attr)) : null;
-}
-
-internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
-{
-    public bool IsInlineArray { get; }
-    public int? InlineArrayLength { get; }
-    public string? InlineArrayElementType { get; }
-    
-    public bool IsIEnumerable { get; }
-    public BaseLuaTypeMetadata? IEnumerableType { get; }
-    public bool IsIEnumerableOfKeyValuePair { get; }
-    public BaseLuaTypeMetadata? IEnumerableKeyType { get; }
-    public BaseLuaTypeMetadata? IEnumerableValueType { get; }
-
-    /// <summary>Base type full name (with global::), or null if System.Object/ValueType.</summary>
-    public string? BaseTypeFullName => BaseType?.FullTypeName;
-
-    public BaseLuaTypeMetadata? BaseType { get; }
-
-    /// <summary>Implemented interface full names (with global::).</summary>
-    public string[] InterfaceFullNames { get; }
-    
-    /// <summary>True if the type has required properties/fields (no constructor should be generated).</summary>
-    public bool HasRequiredMembers { get; }
-
-    public BaseLuaTypeMetadata? EnumUnderlyingType { get; }
-
-    public LuaMethodMetadata[] InstanceMethods { get; }
-    public LuaPropertyMetadata[] InstanceProperties { get; }
-    public LuaIndexerMetadata[] InstanceIndexers { get; }
-    public LuaFieldMetadata[] InstanceFields { get; }
-    public LuaOperatorMetadata[] Operators { get; }
-    public LuaMethodMetadata[] StaticMethods { get; }
-    public LuaPropertyMetadata[] StaticProperties { get; }
-    public LuaFieldMetadata[] StaticFields { get; }
-    public LuaConstructorMetadata[] Constructors { get; }
-    public LuaEnumMemberMetadata[] EnumMembers { get; }
-
-    // Instance methods dispatch through __index too, so method-only types
-    // (e.g. interfaces or calculators) still need an __index metamethod.
-    public bool HasIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0 || InstanceMethods.Length > 0; // todo check if any readable members exist
-    public bool HasNewIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0; // todo check if any writable members exist
-
-    public bool HasStaticIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any readable members exist
-    public bool HasStaticNewIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any writable members exist
-
-    public bool HasPairsAndIPairs => IsArray || IsInlineArray || IsIEnumerable;
-
-    public bool HasLength { get; }
-    public bool HasCount { get; }
-    public bool HasLengthOrCount => HasLength || IsInlineArray || HasCount || IsIEnumerable;
-    
-    public static SymbolDisplayFormat FullyQualifiedFormatWithoutTypeParameters { get; } =
-        new SymbolDisplayFormat(
-            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
-            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
-            genericsOptions: SymbolDisplayGenericsOptions.None,
-            miscellaneousOptions:
-            SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
-            SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
 
     private static ITypeSymbol? GetEnumerableElementType(ITypeSymbol type, SymbolReferences references)
     {
@@ -269,31 +225,86 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
         return true;
     }
     
+    private static string SanitizeLongTypeName(string fullTypeName)
+    {
+        // Map primitives to short names
+        if (fullTypeName is
+            "int" or "long" or "float" or "double" or
+            "bool" or "string" or "byte" or "sbyte" or
+            "short" or "ushort" or "uint" or "ulong" or
+            "decimal" or "char" or "object")
+            return fullTypeName;
+
+        return Regex.Replace(fullTypeName, @"\[,*\]", match => "Array" + (match.Value.Count(c => c == ',') is var v and >= 1 ? $"{v+1}" : ""))
+                .Replace("<", "_")
+                .Replace(">", "")
+                .Replace(".", "_")
+                .Replace("?", "n")
+                .Replace("(", "ValueTuple_")
+                .Replace(", ", "_")
+                .Replace(")", "_")
+                .Replace("[", "")
+                .Replace("]", "")
+                .Replace(",", "_")
+                .Replace(" ", "_")
+                .Replace("*", "Ptr")
+                .Replace("global::", "")
+                .Replace("@", "_")
+                .TrimEnd('_');
+    }
+
+    protected static bool HasAttr(ISymbol s, INamedTypeSymbol? attr)
+        => attr != null && s.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attr));
+
+    protected static AttributeData? GetAttr(ISymbol s, INamedTypeSymbol? attr)
+        => attr != null ? s.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, attr)) : null;
+}
+
+internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
+{
+    /// <summary>Base type full name (with global::), or null if System.Object/ValueType.</summary>
+    public string? BaseTypeFullName => BaseType?.FullTypeName;
+
+    public BaseLuaTypeMetadata? BaseType { get; }
+
+    /// <summary>Implemented interface full names (with global::).</summary>
+    public string[] InterfaceFullNames { get; }
+    
+    public BaseLuaTypeMetadata[] Interfaces { get; }
+    
+    /// <summary>True if the type has required properties/fields (no constructor should be generated).</summary>
+    public bool HasRequiredMembers { get; }
+
+    public BaseLuaTypeMetadata? EnumUnderlyingType { get; }
+
+    public LuaMethodMetadata[] InstanceMethods { get; }
+    public LuaPropertyMetadata[] InstanceProperties { get; }
+    public LuaIndexerMetadata[] InstanceIndexers { get; }
+    public LuaFieldMetadata[] InstanceFields { get; }
+    public LuaOperatorMetadata[] Operators { get; }
+    public LuaMethodMetadata[] StaticMethods { get; }
+    public LuaPropertyMetadata[] StaticProperties { get; }
+    public LuaFieldMetadata[] StaticFields { get; }
+    public LuaConstructorMetadata[] Constructors { get; }
+    public LuaEnumMemberMetadata[] EnumMembers { get; }
+
+    // Instance methods dispatch through __index too, so method-only types
+    // (e.g. interfaces or calculators) still need an __index metamethod.
+    public bool HasIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0 || InstanceMethods.Length > 0; // todo check if any readable members exist
+    public bool HasNewIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0; // todo check if any writable members exist
+
+    public bool HasStaticIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any readable members exist
+    public bool HasStaticNewIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any writable members exist
+
+    public bool HasPairsAndIPairs => IsArray || IsInlineArray || IsIEnumerable;
+
+    public bool HasLength { get; }
+    public bool HasCount { get; }
+    public bool HasLengthOrCount => HasLength || IsInlineArray || HasCount || IsIEnumerable;
+    
     public LuaTypeMetadata(ITypeSymbol symbol, SymbolReferences references) : base(symbol, references)
     {
         var luaVisibleAttr = GetAttr(symbol, references.LuaVisibleAttribute);
-
-        var inlineAttr = symbol.GetAttributes().FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, references.InlineArrayAttribute));
-        if (inlineAttr != null)
-        {
-            IsInlineArray = true;
-            InlineArrayLength = (int)(inlineAttr.ConstructorArguments.FirstOrDefault().Value ?? 0);
-            var firstField = symbol.GetMembers().OfType<IFieldSymbol>().FirstOrDefault();
-            InlineArrayElementType = firstField?.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-        }
-
-        if (GetEnumerableElementType(symbol, references) is { } elementType)
-        {
-            IsIEnumerable = true;
-            IEnumerableType = new BaseLuaTypeMetadata(elementType, references);
-
-            if (TryGetKeyValuePairTypes(elementType, references, out var kvpKey, out var kvpValue))
-            {
-                IsIEnumerableOfKeyValuePair = true;
-                IEnumerableKeyType = new BaseLuaTypeMetadata(kvpKey, references);
-                IEnumerableValueType = new BaseLuaTypeMetadata(kvpValue, references);
-            }
-        }
 
         // Base type and interfaces for stub generators
         var bt = symbol.BaseType;
@@ -302,6 +313,10 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
         InterfaceFullNames = symbol.AllInterfaces
             .Where(i => i.DeclaredAccessibility == Accessibility.Public)
             .Select(i => i.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
+            .ToArray();
+        Interfaces = symbol.AllInterfaces
+            .Where(i => i.DeclaredAccessibility == Accessibility.Public)
+            .Select(i => new BaseLuaTypeMetadata(i, references))
             .ToArray();
 
         var members = symbol.GetMembers();

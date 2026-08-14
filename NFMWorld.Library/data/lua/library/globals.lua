@@ -8,7 +8,6 @@
 ---@operator div(fixed64): fixed64
 ---@operator mod(fixed64): fixed64
 ---@operator unm(): fixed64
-local fixed64_type = {}
 
 ---@class fixed64vector3
 ---@field x fixed64
@@ -21,7 +20,6 @@ local fixed64_type = {}
 ---@operator mul(fixed64): fixed64vector3       -- scalar multiplication
 ---@operator div(fixed64): fixed64vector3       -- scalar division
 ---@operator unm(): fixed64vector3
-local fixed64vector3_type = {}
 
 --- Creates a Fixed64 value.
 ---
@@ -45,7 +43,6 @@ function fixed64(value) end
 ---@return fixed64vector3
 function fixed64vector3(x, y, z) end
 
----@class fixed64vec3lib
 local fixed64vec3 = {}
 
 --- Returns a normalized (unit-length) copy of the vector.
@@ -137,7 +134,6 @@ function type(v) end
 ---@operator lt(f64angle): boolean
 ---@operator le(f64angle): boolean
 ---@operator eq(f64angle): boolean
-local f64angle_type = {}
 
 ---@class f64euler
 ---@field yaw f64angle
@@ -149,7 +145,6 @@ local f64angle_type = {}
 ---@operator eq(f64euler): boolean
 ---@operator mul(f64angle): f64euler    -- scalar multiply (wrapped)
 ---@operator div(f64angle): f64euler    -- scalar divide (wrapped)
-local f64euler_type = {}
 
 --- Creates an f64AngleSingle from degrees.
 ---
@@ -174,7 +169,6 @@ function f64angle(value) end
 ---@return f64euler
 function f64euler(yaw, pitch, roll) end
 
----@class f64anglelib
 local f64anglelib = {}
 
 --- Creates an f64AngleSingle from a radian value.
@@ -219,7 +213,6 @@ function f64anglelib.degrees(a) end
 ---@return fixed64
 function f64anglelib.radians(a) end
 
----@class f64eulerlib
 local f64eulerlib = {}
 
 --- Wraps each component (yaw, pitch, roll) to [-180°, 180°] ([-π, π] rad).

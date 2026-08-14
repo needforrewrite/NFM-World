@@ -1,2 +1,0 @@
-declare class NFMWorldLibrary_Util_LuaArray_FixedMathSharp_Fixed64_ {
-}

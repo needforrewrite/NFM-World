@@ -1,0 +1,2 @@
+---@class UnlimitedArray_IInGameCar
+

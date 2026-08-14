@@ -192,6 +192,23 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                     }
                 }
                 
+                var luaStubTypes = new Dictionary<string, BaseLuaTypeMetadata>();
+                foreach (var type in list.Values)
+                {
+                    // TODO walk base types and interfaces recursively
+                    if (type.BaseType != null)
+                    {
+                        if (!list.ContainsKey(type.BaseType.FullTypeName) && !stubTypes.ContainsKey(type.BaseType.FullTypeName))
+                            luaStubTypes[type.BaseType.FullTypeName] = type.BaseType;
+                    }
+                    
+                    foreach (var intf in type.Interfaces)
+                    {
+                        if (!list.ContainsKey(intf.FullTypeName) && !stubTypes.ContainsKey(intf.FullTypeName))
+                            luaStubTypes[intf.FullTypeName] = intf;
+                    }
+                }
+                
                 foreach (var type in list.Values)
                 {
                     if (type.IsEnum)
@@ -397,6 +414,27 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                         }
                         """;
                     spc.AddSource("LuaVisibleHelper.cs", code);
+                }
+
+                if (stubsOutputDir != null)
+                {
+                    foreach (var type in list.Values)
+                    {
+                        var initGenerator = new LuaStubsGenerator(type, true);
+                        var code = initGenerator.GenerateCode();
+#pragma warning disable RS1035
+                        File.WriteAllText(Path.Combine(stubsOutputDir ?? "", type.LuaName + ".lua"), code);
+#pragma warning restore RS1035
+                    }
+
+                    foreach (var type in stubTypes.Values.Concat(luaStubTypes.Values))
+                    {
+                        var initGenerator = new LuaStubsGenerator(type, false);
+                        var code = initGenerator.GenerateCode();
+#pragma warning disable RS1035
+                        File.WriteAllText(Path.Combine(stubsOutputDir ?? "", type.LuaName + ".lua"), code);
+#pragma warning restore RS1035
+                    }
                 }
             });
     }

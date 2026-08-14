@@ -573,7 +573,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             }
 
             sb.AppendLine("var key = context.GetArgument(1);");
-            if (type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
+            if (!isStatic && type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
             {
                 sb.AppendLine($"if (key.TryRead<{indexer.Key.Type.FullTypeName}>(out var indexerKey))");
                 using (sb.Block())
@@ -641,7 +641,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             }
             
             sb.AppendLine("var key = context.GetArgument(1);");
-            if (type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
+            if (!isStatic && type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
             {
                 sb.AppendLine($"if (key.TryRead<{indexer.Key.Type.FullTypeName}>(out var indexerKey))");
                 using (sb.Block())
@@ -831,7 +831,7 @@ internal abstract class BaseLuaTypeGenerator
         }
 
         // enums can't implement interfaces! and metatables are specific to a generic instantiation
-        if (variableType.IsILuaUserData || (variableType.HasLuaVisibleAttr && !variableType.IsEnum && !variableType.IsOpenGeneric))
+        if (variableType.IsILuaUserData || (variableType.HasLuaVisibleAttr && !variableType.IsEnum && !variableType.IsOpenGeneric && !variableType.IsConstructedGeneric))
         {
             return $"global::Lua.LuaValue.FromUserData({variable})";
         }

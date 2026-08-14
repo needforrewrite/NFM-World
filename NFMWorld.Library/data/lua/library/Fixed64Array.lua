@@ -1,0 +1,2 @@
+---@class Fixed64Array
+

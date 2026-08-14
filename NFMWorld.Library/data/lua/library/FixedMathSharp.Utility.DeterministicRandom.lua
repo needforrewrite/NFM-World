@@ -1,0 +1,2 @@
+---@class FixedMathSharp.Utility.DeterministicRandom
+

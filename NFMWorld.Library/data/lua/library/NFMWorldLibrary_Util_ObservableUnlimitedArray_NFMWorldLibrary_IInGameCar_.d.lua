@@ -1,4 +1,0 @@
----@class NFMWorldLibrary_Util_ObservableUnlimitedArray_NFMWorldLibrary_IInGameCar_Instance
-NFMWorldLibrary_Util_ObservableUnlimitedArray_NFMWorldLibrary_IInGameCar_Instance = {}
-
----@class (exact) NFMWorldLibrary_Util_ObservableUnlimitedArray_NFMWorldLibrary_IInGameCar_

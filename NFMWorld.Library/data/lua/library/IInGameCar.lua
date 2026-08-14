@@ -1,0 +1,33 @@
+---@class IInGameCar : NFMWorldLibrary.ICar, ITransform
+---@field carPhysics CarPhysics
+---@field control Control
+---@field currentCheckpoint integer
+---@field nlaps integer
+---@field clear integer
+---@field lastCheckpointNode integer
+---@field placement integer
+---@field wasted boolean
+---@field player ClientSidePlayerParameters
+---@field rad NFMWorldLibrary.Rad.Rad3d
+---@field stats CarStats
+---@field groundAt integer
+---@field maxRadius integer
+---@field wheelAngle f64euler
+---@field turningWheelAngle f64euler
+---@field wheels System.Collections.Generic.IReadOnlyList_Rad3dWheelDef
+---@field childTransforms System.Collections.Generic.IReadOnlyList_ITransform
+---@field position fixed64vector3
+---@field rotation f64euler
+---@field parent ITransform|nil
+---@field addDust fun(self: IInGameCar, wheelidx: integer, x: number, y: number, z: number, scx: integer, scz: integer, simag: number, tilt: integer, onRoof: boolean, wheelGround: integer)
+---@field spark fun(self: IInGameCar, x: number, y: number, z: number, scx: number, scy: number, scz: number, type: integer, wheelGround: integer)
+---@field damageX fun(self: IInGameCar, wheelnum: integer, amount: fixed64)
+---@field damageY fun(self: IInGameCar, wheelnum: integer, amount: fixed64, mtouch: boolean, nbsq: integer, squash: integer)
+---@field damageZ fun(self: IInGameCar, wheelnum: integer, amount: fixed64)
+---@field drive fun(self: IInGameCar, stage: IStage)
+---@field collide fun(self: IInGameCar, otherCar: IInGameCar)
+---@field resetPosition fun(self: IInGameCar)
+---@field fix fun(self: IInGameCar)
+
+IInGameCar = {}
+
