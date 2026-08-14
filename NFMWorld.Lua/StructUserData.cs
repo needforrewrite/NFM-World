@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Runtime.CompilerServices;
 using Lua;
 using Lua.Runtime;
 
@@ -110,6 +112,54 @@ public class StructUserData<T> : ILuaUserData
             return field;
         }
     }
+    internal static readonly global::Lua.LuaFunction __next_asd = new("len", (context, ct) =>
+    {
+        var instance = context.GetArgument<InlineArray4<int>>(0);
+        return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(4));
+    });
+
+    // internal static readonly global::Lua.LuaFunction __next_asd = new("next", (context, ct) =>
+    // {
+    //     var instance = context.GetArgument<InlineArray4<int>>(0);
+    //     var index = context.GetArgument<int>(1); // 1-based
+    //     index += 1;
+    //     if (index >= 4)
+    //     {
+    //         return global::System.Threading.Tasks.ValueTask.FromResult(context.Return());
+    //     }
+    //     
+    //     return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(instance[index - 1]));
+    // });
+    // internal static readonly global::Lua.LuaFunction __pairs_asd = new("next", (context, ct) =>
+    // {
+    //     var table = context.GetArgument(0);
+    //     var index = 0;
+    //     
+    //     return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(__next_asd, table, index));
+    // });
+    //
+    // internal static readonly Func<global::Lua.LuaFunctionExecutionContext, global::System.Threading.CancellationToken, global::System.Threading.Tasks.ValueTask<int>> __next_enum = static (context, ct) =>
+    // {
+    //     var instance = context.GetCsClosure()!.UpValues[0].Read<global::System.Collections.IEnumerator>();
+    //     var idx = context.GetCsClosure()!.UpValues[1].Read<int>();
+    //     context.GetCsClosure()!.UpValues[1] = idx + 1;
+    //     
+    //     if (!instance.MoveNext())
+    //     {
+    //         return global::System.Threading.Tasks.ValueTask.FromResult(context.Return());
+    //     }
+    //     
+    //     return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(instance.Current));
+    // };
+    //
+    // internal static readonly global::Lua.LuaFunction __pairs_enum = new("pairs", (context, ct) =>
+    // {
+    //     var instance = context.GetArgument<IEnumerable>(0);
+    //     
+    //     var closure = new global::Lua.Runtime.CSharpClosure("next", [LuaValue.FromLightUserData(instance), 0], __next_enum);
+    //     
+    //     return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(closure, context.GetArgument(0), LuaValue.Nil));
+    // });
 }
 
 /// <summary>

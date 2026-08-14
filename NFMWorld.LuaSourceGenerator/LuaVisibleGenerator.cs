@@ -230,6 +230,8 @@ internal sealed class SymbolReferences
     public INamedTypeSymbol? Fixed64 { get; }
     public INamedTypeSymbol? Fixed64AngleSingle { get; }
     public INamedTypeSymbol? Fixed64Euler { get; }
+    public INamedTypeSymbol IEnumerableT { get; }
+    public INamedTypeSymbol? KeyValuePair { get; }
 
     private SymbolReferences(Compilation compilation)
     {
@@ -243,6 +245,9 @@ internal sealed class SymbolReferences
         Fixed64Vector3 = compilation.GetTypeByMetadataName("FixedMathSharp.Vector3d");
         Fixed64AngleSingle = compilation.GetTypeByMetadataName("NFMWorldLibrary.FixedMath.f64AngleSingle");
         Fixed64Euler = compilation.GetTypeByMetadataName("NFMWorldLibrary.FixedMath.f64Euler");
+        
+        IEnumerableT = compilation.GetSpecialType(SpecialType.System_Collections_Generic_IEnumerable_T);
+        KeyValuePair = compilation.GetTypeByMetadataName("System.Collections.Generic.KeyValuePair`2");
     }
 
     public static SymbolReferences? Create(Compilation compilation)

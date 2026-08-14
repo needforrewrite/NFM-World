@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 
@@ -149,6 +150,12 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     public bool IsInlineArray { get; }
     public int? InlineArrayLength { get; }
     public string? InlineArrayElementType { get; }
+    
+    public bool IsIEnumerable { get; }
+    public BaseLuaTypeMetadata? IEnumerableType { get; }
+    public bool IsIEnumerableOfKeyValuePair { get; }
+    public BaseLuaTypeMetadata? IEnumerableKeyType { get; }
+    public BaseLuaTypeMetadata? IEnumerableValueType { get; }
 
     /// <summary>Base type full name (with global::), or null if System.Object/ValueType.</summary>
     public string? BaseTypeFullName => BaseType?.FullTypeName;
@@ -179,6 +186,76 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     public bool HasStaticIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any readable members exist
     public bool HasStaticNewIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any writable members exist
 
+    public bool HasPairsAndIPairs => IsArray || IsInlineArray || IsIEnumerable;
+
+    public bool HasLength { get; }
+    public bool HasCount { get; }
+    public bool HasLengthOrCount => HasLength || IsInlineArray || HasCount || IsIEnumerable;
+    
+    public static SymbolDisplayFormat FullyQualifiedFormatWithoutTypeParameters { get; } =
+        new SymbolDisplayFormat(
+            globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+            genericsOptions: SymbolDisplayGenericsOptions.None,
+            miscellaneousOptions:
+            SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
+            SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
+
+    private static ITypeSymbol? GetEnumerableElementType(ITypeSymbol type, SymbolReferences references)
+    {
+        // Case 1: the type itself is IEnumerable<T>
+        if (type is INamedTypeSymbol namedType &&
+            namedType.OriginalDefinition.Equals(references.IEnumerableT, SymbolEqualityComparer.Default))
+        {
+            return namedType.TypeArguments.FirstOrDefault();
+        }
+
+        // Case 2: type implements IEnumerable<T> (possibly through an interface chain,
+        // base class, or is itself an array like T[])
+        var allInterfaces = type.AllInterfaces;
+
+        var match = type is INamedTypeSymbol nt && nt.OriginalDefinition.Equals(references.IEnumerableT, SymbolEqualityComparer.Default)
+            ? nt
+            : allInterfaces.FirstOrDefault(i =>
+                i.OriginalDefinition.Equals(references.IEnumerableT, SymbolEqualityComparer.Default));
+
+        if (match is not null)
+            return match.TypeArguments.FirstOrDefault();
+
+        // Case 3: arrays (string[], int[], etc.) implement IEnumerable<T> implicitly per spec
+        // but Roslyn's AllInterfaces sometimes doesn't surface it cleanly depending on symbol source;
+        // handle explicitly for safety.
+        if (type is IArrayTypeSymbol arrayType)
+            return arrayType.ElementType;
+
+        return null;
+    }
+    
+    private static bool TryGetKeyValuePairTypes(
+        ITypeSymbol type,
+        SymbolReferences references,
+        [NotNullWhen(true)] out ITypeSymbol? keyType,
+        [NotNullWhen(true)] out ITypeSymbol? valueType)
+    {
+        keyType = null;
+        valueType = null;
+
+        if (type is not INamedTypeSymbol namedType)
+            return false;
+
+        var kvpDefinition = references.KeyValuePair;
+
+        if (kvpDefinition is null)
+            return false; // shouldn't happen unless corlib refs are broken
+
+        if (!namedType.OriginalDefinition.Equals(kvpDefinition, SymbolEqualityComparer.Default))
+            return false;
+
+        keyType = namedType.TypeArguments[0];
+        valueType = namedType.TypeArguments[1];
+        return true;
+    }
+    
     public LuaTypeMetadata(ITypeSymbol symbol, SymbolReferences references) : base(symbol, references)
     {
         var luaVisibleAttr = GetAttr(symbol, references.LuaVisibleAttribute);
@@ -190,6 +267,19 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
             InlineArrayLength = (int)(inlineAttr.ConstructorArguments.FirstOrDefault().Value ?? 0);
             var firstField = symbol.GetMembers().OfType<IFieldSymbol>().FirstOrDefault();
             InlineArrayElementType = firstField?.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        }
+
+        if (GetEnumerableElementType(symbol, references) is { } elementType)
+        {
+            IsIEnumerable = true;
+            IEnumerableType = new BaseLuaTypeMetadata(elementType, references);
+
+            if (TryGetKeyValuePairTypes(elementType, references, out var kvpKey, out var kvpValue))
+            {
+                IsIEnumerableOfKeyValuePair = true;
+                IEnumerableKeyType = new BaseLuaTypeMetadata(kvpKey, references);
+                IEnumerableValueType = new BaseLuaTypeMetadata(kvpValue, references);
+            }
         }
 
         // Base type and interfaces for stub generators
@@ -307,6 +397,13 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
                 c.OverloadSuffix = "_" + string.Join("_", c.Parameters.Select(ParamSuffix));
             }
         }
+
+        HasLength = IsArray || symbol
+            .GetMembers("Length")
+            .Any(s => s is IPropertySymbol prop && prop.Type.SpecialType is SpecialType.System_Int32);
+        HasCount = symbol
+            .GetMembers("Count")
+            .Any(s => s is IPropertySymbol prop && prop.Type.SpecialType is SpecialType.System_Int32);
     }
 
     private static LuaEnumMemberMetadata[] CollectEnumMembers(ImmutableArray<ISymbol> members, SymbolReferences references)
@@ -495,6 +592,7 @@ internal class LuaOperatorMetadata(IMethodSymbol s, SymbolReferences references)
     {
         "op_Add" => "+",
         "op_Subtract" => "-",
+        "op_Multiply" => "*",
         "op_Divide" => "/",
         "op_UnaryNegation" => "-",
         "op_Equality" => "==",
@@ -508,6 +606,7 @@ internal class LuaOperatorMetadata(IMethodSymbol s, SymbolReferences references)
     {
         "op_Add" => Metamethods.Add,
         "op_Subtract" => Metamethods.Sub,
+        "op_Multiply" => Metamethods.Mul,
         "op_Divide" => Metamethods.Div,
         "op_UnaryNegation" => Metamethods.Unm,
         "op_Equality" => Metamethods.Eq,
@@ -518,16 +617,11 @@ internal class LuaOperatorMetadata(IMethodSymbol s, SymbolReferences references)
     };
 }
 
-internal sealed class LuaConstructorMetadata
+internal sealed class LuaConstructorMetadata : LuaMethodMetadata
 {
-    public LuaParameterMetadata[] Parameters { get; }
-    /// <summary>Suffix for overload disambiguation (e.g. "_int_string"). Empty for first/only constructor.</summary>
-    public string OverloadSuffix { get; set; } = "";
-    /// <summary>Full Lua-visible name: "new" + overload suffix.</summary>
-    public string FullLuaNew => OverloadSuffix.Length > 0 ? "new" + OverloadSuffix : "new";
-    public LuaConstructorMetadata(IMethodSymbol c, SymbolReferences references)
+    public LuaConstructorMetadata(IMethodSymbol c, SymbolReferences references) : base(c, references)
     {
-        Parameters = c.Parameters.Select(p => new LuaParameterMetadata(p, references)).ToArray();
+        IsInstanceConstructor = true;
     }
 }
 
@@ -556,6 +650,7 @@ internal class LuaMethodMetadata
 
     public bool IsStatic { get; }
     public bool IsVoid { get; }
+    public bool IsInstanceConstructor { get; protected set; }
 
     public LuaMethodMetadata(IMethodSymbol s, SymbolReferences references, ITypeSymbol? owningType = null)
     {
@@ -571,6 +666,7 @@ internal class LuaMethodMetadata
         DeclaringType = s.ContainingType != null ? new BaseLuaTypeMetadata(s.ContainingType, references) : null;
         IsStatic = s.IsStatic;
         IsVoid = s.ReturnsVoid;
+        IsInstanceConstructor = false;
 
         // Determine the actual implementation source (for method deduplication)
         if (owningType != null && !SymbolEqualityComparer.Default.Equals(s.ContainingType, owningType))
