@@ -53,7 +53,8 @@ internal class BaseLuaTypeMetadata
                                  SpecialType.System_Decimal or
                                  SpecialType.System_Single or
                                  SpecialType.System_Double or
-                                 SpecialType.System_String ||
+                                 SpecialType.System_String or
+                                 SpecialType.System_Void ||
                              IsFixed64 ||
                              IsFixed64AngleSingle ||
                              IsFixed64Euler ||
