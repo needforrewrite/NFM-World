@@ -188,15 +188,15 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             using (sb.Block(end: "});"))
             {
                 sb.AppendLine($"var instance = context.GetArgument<{type.FullTypeName}>(0);");
-                sb.AppendLine("var index = context.GetArgument<int>(1); // 1-based");
+                sb.AppendLine("var index = context.GetArgument<int>(1); // 0-based iterator state");
                 sb.AppendLine("index += 1;");
-                sb.AppendLine("if (index >= instance.Length)");
+                sb.AppendLine("if (index > instance.Length)");
                 using (sb.Block())
                 {
                     sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return());");
                 }
 
-                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(instance[index - 1]));");
+                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(index, instance[index - 1]));");
             }
             
             sb.AppendLine($"internal static readonly global::Lua.LuaFunction {GetMetamethodName(type, Metamethods.Pairs)} = new(\"{Metamethods.Pairs}\", (context, ct) =>");
@@ -215,15 +215,15 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             using (sb.Block(end: "});"))
             {
                 sb.AppendLine($"var instance = context.GetArgument<{type.FullTypeName}>(0);");
-                sb.AppendLine("var index = context.GetArgument<int>(1); // 1-based");
+                sb.AppendLine("var index = context.GetArgument<int>(1); // 0-based iterator state");
                 sb.AppendLine("index += 1;");
-                sb.AppendLine($"if (index >= {type.InlineArrayLength!})");
+                sb.AppendLine($"if (index > {type.InlineArrayLength!})");
                 using (sb.Block())
                 {
                     sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return());");
                 }
 
-                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(instance[index - 1]));");
+                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(index, instance[index - 1]));");
             }
             
             sb.AppendLine($"internal static readonly global::Lua.LuaFunction {GetMetamethodName(type, Metamethods.Pairs)} = new(\"{Metamethods.Pairs}\", (context, ct) =>");
@@ -573,6 +573,32 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             }
 
             sb.AppendLine("var key = context.GetArgument(1);");
+            if (!isStatic && type.IsArray && type.ArrayRank == 1 && type.IEnumerableType is { } arrayElementType)
+            {
+                sb.AppendLine("if (key.TryRead<int>(out var arrayIndex))");
+                using (sb.Block())
+                {
+                    sb.AppendLine("if (arrayIndex < 1 || arrayIndex > instance.Length)");
+                    using (sb.Block())
+                    {
+                        sb.AppendLine("return new global::System.Threading.Tasks.ValueTask<int>(context.Return(global::Lua.LuaValue.Nil));");
+                    }
+                    sb.AppendLine($"return new global::System.Threading.Tasks.ValueTask<int>(context.Return({MarshalToLua($"instance[arrayIndex - 1]", arrayElementType)}));");
+                }
+            }
+            else if (!isStatic && type.IsInlineArray && type.InlineArrayElementType is { } inlineArrayElementType)
+            {
+                sb.AppendLine("if (key.TryRead<int>(out var inlineArrayIndex))");
+                using (sb.Block())
+                {
+                    sb.AppendLine($"if (inlineArrayIndex < 1 || inlineArrayIndex > {type.InlineArrayLength})");
+                    using (sb.Block())
+                    {
+                        sb.AppendLine("return new global::System.Threading.Tasks.ValueTask<int>(context.Return(global::Lua.LuaValue.Nil));");
+                    }
+                    sb.AppendLine($"return new global::System.Threading.Tasks.ValueTask<int>(context.Return({MarshalToLua($"instance[inlineArrayIndex - 1]", inlineArrayElementType)}));");
+                }
+            }
             if (!isStatic && type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
             {
                 sb.AppendLine($"if (key.TryRead<{indexer.Key.Type.FullTypeName}>(out var indexerKey))");
@@ -641,6 +667,62 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             }
             
             sb.AppendLine("var key = context.GetArgument(1);");
+            if (!isStatic && type.IsArray && type.ArrayRank == 1 && type.IEnumerableType is { } arrayElementType)
+            {
+                sb.AppendLine("if (key.TryRead<int>(out var arrayIndex))");
+                using (sb.Block())
+                {
+                    sb.AppendLine("if (arrayIndex < 1 || arrayIndex > instance.Length)");
+                    using (sb.Block())
+                    {
+                        sb.AppendLine("throw new global::Lua.LuaRuntimeException(context.State, $\"Array index {arrayIndex} out of range.\");");
+                    }
+                    var t = arrayElementType;
+                    if (t.IsReferenceType)
+                    {
+                        sb.AppendLine($"var value = context.GetArgumentOrNullClass<{t.FullTypeName}>(2);");
+                    }
+                    else if (t.IsNullableValueType)
+                    {
+                        sb.AppendLine($"var value = context.GetArgumentOrNull<{t.FullTypeName[..^1]}>(2);");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"var value = context.GetArgument<{t.FullTypeName}>(2);");
+                    }
+
+                    sb.AppendLine($"{instanceExpression}[arrayIndex - 1] = value;");
+                    sb.AppendLine("return new System.Threading.Tasks.ValueTask<int>(context.Return());");
+                }
+            }
+            else if (!isStatic && type.IsInlineArray && type.InlineArrayElementType is { } inlineArrayElementType)
+            {
+                sb.AppendLine("if (key.TryRead<int>(out var inlineArrayIndex))");
+                using (sb.Block())
+                {
+                    sb.AppendLine($"if (inlineArrayIndex < 1 || inlineArrayIndex > {type.InlineArrayLength})");
+                    using (sb.Block())
+                    {
+                        sb.AppendLine("throw new global::Lua.LuaRuntimeException(context.State, $\"Inline array index {inlineArrayIndex} out of range.\");");
+                    }
+                    var t = inlineArrayElementType;
+                    if (t.IsReferenceType)
+                    {
+                        sb.AppendLine($"var value = context.GetArgumentOrNullClass<{t.FullTypeName}>(2);");
+                    }
+                    else if (t.IsNullableValueType)
+                    {
+                        sb.AppendLine($"var value = context.GetArgumentOrNull<{t.FullTypeName[..^1]}>(2);");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"var value = context.GetArgument<{t.FullTypeName}>(2);");
+                    }
+
+                    sb.AppendLine($"{instanceExpression}[inlineArrayIndex - 1] = value;");
+                    sb.AppendLine("return new System.Threading.Tasks.ValueTask<int>(context.Return());");
+                }
+            }
             if (!isStatic && type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
             {
                 sb.AppendLine($"if (key.TryRead<{indexer.Key.Type.FullTypeName}>(out var indexerKey))");
@@ -745,6 +827,10 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             {
                 sb.AppendLine($"{GetMetatableName(type)}[global::Lua.Runtime.Metamethods.Pairs] = {GetMetamethodName(type, Metamethods.Pairs)};");
                 sb.AppendLine($"{GetMetatableName(type)}[global::Lua.Runtime.Metamethods.IPairs] = {GetMetamethodName(type, Metamethods.IPairs)};");
+            }
+            if (type.HasLengthOrCount)
+            {
+                sb.AppendLine($"{GetMetatableName(type)}[global::Lua.Runtime.Metamethods.Len] = {GetMetamethodName(type, Metamethods.Len)};");
             }
             foreach (var op in type.Operators)
             {
