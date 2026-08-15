@@ -46,7 +46,7 @@ public static class DevConsoleCommands
         console.RegisterCommand("replay_trial", (c, args) =>
         {
             var inRace = new InRacePhase(GameSparker.GraphicsDevice, args[1], new TimeTrialPreviewGamemodeFactory(SavedTimeTrial.Load(args[0], args[1])!), [
-                new PlayerParameters
+                new ClientSidePlayerParameters
                 {
                     CarName = args[0],
                     Color = new Color3(255, 0, 0),
@@ -94,31 +94,6 @@ public static class DevConsoleCommands
                 GameSparker.SetPhase(inRace);
             }
         });
-        console.RegisterCommand("go_sbox", (c, args) =>
-        {
-            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
-            {
-                var inRace = new InRacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName, new SandboxGamemodeFactory(), inRacePhase.Players);
-                inRace.Exited += (sender, args) =>
-                {
-                    GameSparker.PopGroup(PhaseManager.Groups.Event);
-                };
-                GameSparker.SetPhase(inRace);
-            }
-        });
-        console.RegisterCommand("go_football", (c, args) =>
-        {
-            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
-            {
-                var inRace = new InRacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName, new FootballGamemodeFactory(), inRacePhase.Players);
-                inRace.Exited += (sender, args) =>
-                {
-                    GameSparker.PopGroup(PhaseManager.Groups.Event);
-                };
-                GameSparker.SetPhase(inRace);
-            }
-        });
-
         console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
         //ui
@@ -207,8 +182,8 @@ public static class DevConsoleCommands
 
     private static void DemoPlayback(DevConsole console, string[] args)
     {
-        TimeTrialClientGamemode.PlaybackOnReset = !TimeTrialClientGamemode.PlaybackOnReset;
-        Logging.Info($"Playback set to {TimeTrialClientGamemode.PlaybackOnReset}, for maps with a saved demo file.");
+        TimeTrialClientGamemode1.PlaybackOnReset = !TimeTrialClientGamemode1.PlaybackOnReset;
+        Logging.Info($"Playback set to {TimeTrialClientGamemode1.PlaybackOnReset}, for maps with a saved demo file.");
         Logging.Info("Restart the time trial for changes to take effect.");
     }
 
@@ -472,7 +447,7 @@ public static class DevConsoleCommands
                 inRacePhase.StageName,
                 inRacePhase.Gamemode,
                 inRacePhase.Players.Select(p => p.IsClientPlayer
-                    ? new PlayerParameters
+                    ? new ClientSidePlayerParameters
                     {
                         CarName = car.FileName,
                         Color = p.Color,

@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.Xna.Framework.Graphics;
+﻿﻿﻿﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay.Gamemodes;
@@ -32,7 +32,7 @@ public class InMultiplayerRacePhase : BaseRacePhase
             session.StageName,
             GetGameModeFactory(session),
             session.Players
-                .Select(c => new PlayerParameters
+                .Select(c => new ClientSidePlayerParameters
                 {
                     CarName = c.Value.Vehicle,
                     Color = c.Value.Color,
@@ -64,10 +64,6 @@ public class InMultiplayerRacePhase : BaseRacePhase
                 return new PvpGamemodeFactory(PvpConstraint.Wasting);
             case DefaultGamemodes.Both:
                 return new PvpGamemodeFactory(PvpConstraint.Both);
-            case DefaultGamemodes.Football:
-                return new FootballGamemodeFactory();
-            case DefaultGamemodes.Sandbox:
-                return new SandboxGamemodeFactory();
             default:
                 throw new ArgumentOutOfRangeException(nameof(matchGameplayInfo.Gamemode), matchGameplayInfo.Gamemode, "Unknown gamemode");
         }

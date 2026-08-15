@@ -12,5 +12,5 @@ public class InRacePhase(
     GraphicsDevice graphicsDevice,
     string stageName,
     BaseGamemodeFactory gamemode,
-    IReadOnlyList<PlayerParameters> players)
+    IReadOnlyList<ClientSidePlayerParameters> players)
     : BaseRacePhase(graphicsDevice, stageName, gamemode, players);

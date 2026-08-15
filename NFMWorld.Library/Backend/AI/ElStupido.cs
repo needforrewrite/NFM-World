@@ -5,15 +5,16 @@ using NFMWorldLibrary.FixedMath;
 namespace NFMWorldLibrary.Backend.AI;
 
 /// <summary>
-/// Handles AI decision making, path finding, and control inputs based on difficulty and race conditions.
+/// Handles AI decision-making, path finding, and control inputs based on difficulty and race conditions.
 /// </summary>
-public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
+public class ElStupido(BaseClientGamemode gamemode, IGamemodeData racePhase) : BaseAi
 {
     /// <summary>
     /// Pythagorean distance squared calculation (integer version).
     /// Used for fast distance comparisons without square root.
     /// </summary>
-    private static int pyo(int x1, int x2, int z1, int z2) {
+    private static int pyo(int x1, int x2, int z1, int z2)
+    {
         return (((x1 - x2) * (x1 - x2)) + ((z1 - z2) * (z1 - z2)));
     }
 
@@ -69,7 +70,7 @@ public class ElStupido(IGamemode gamemode, IGamemodeData racePhase) : BaseAi
 
         // Calculate rubberbanding factor
         // 1.0 = last place, 0.0 = first place
-        var rubberbandingFactor = (fix64)position / (fix64)(racePhase.CarsInRace.Count - 1);
+        var rubberbandingFactor = (fix64)position / (fix64)(gamemode.Players.Count - 1);
 
         if (car.Wasted) return;
 

@@ -232,7 +232,7 @@ public static class UnmanagedEntryPoints
             {
                 Players =
                 [
-                    new PlayerParameters()
+                    new ClientSidePlayerParameters()
                     {
                         PlayerName = "Player",
                         CarName = Encoding.UTF8.GetString(args->Cars[0].CarName),

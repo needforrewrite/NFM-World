@@ -82,7 +82,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
     private void OnFreePlayClicked()
     {
         var inRace = new InRacePhase(GraphicsDevice, "nfm2/9_majestic", new PvpGamemodeFactory(PvpConstraint.Both), [
-            new PlayerParameters
+            new ClientSidePlayerParameters
             {
                 CarName = "nfmm/radicalone",
                 IsClientPlayer = true,
@@ -90,7 +90,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 Color = default,
                 IsBot = false
             },
-            new PlayerParameters
+            new ClientSidePlayerParameters
             {
                 CarName = "nfmm/audir8",
                 IsClientPlayer = true,
@@ -127,7 +127,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             gp.CarSelected += (sender, car) =>
             {
                 var inRace = new InRacePhase(GraphicsDevice, stageName, new TimeTrialGamemodeFactory(), [
-                    new PlayerParameters()
+                    new ClientSidePlayerParameters()
                     {
                         CarName = car.FileName,
                         Color = default,

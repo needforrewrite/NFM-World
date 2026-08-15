@@ -26,8 +26,6 @@ public class BackendCar : BackendGameObject, IInGameCar
     public CarStats Stats { get; }
     public bool Wasted => CarPhysics.Wasted;
 
-    public BaseAi? Bot { get; set; }
-
     public event DamageFunc? DamagedX;
     public event RoofDamageFunc? DamagedY;
     public event DamageFunc? DamagedZ;
@@ -35,7 +33,7 @@ public class BackendCar : BackendGameObject, IInGameCar
     public event DustFunc? Dusted;
     public event Action? Fixed;
 
-    public PlayerParameters Player { get; }
+    public ClientSidePlayerParameters Player { get; }
     
     private bool _fixing;
     private byte _fixTimer;
@@ -55,7 +53,7 @@ public class BackendCar : BackendGameObject, IInGameCar
     {
     }
 
-    public BackendCar(PlayerParameters player, int im, fix64 x, fix64 z) : this(BackendGameSparker.GetCar(player.CarName).Rad!, im, x, z, player.IsClientPlayer)
+    public BackendCar(ClientSidePlayerParameters player, int im, fix64 x, fix64 z) : this(BackendGameSparker.GetCar(player.CarName).Rad!, im, x, z, player.IsClientPlayer)
     {
         Player = player;
     }
@@ -76,7 +74,7 @@ public class BackendCar : BackendGameObject, IInGameCar
         Position = new f64Vector3(x, World.Ground - GroundAt, z);
         Rotation = f64Euler.Identity;
         
-        Player = new PlayerParameters
+        Player = new ClientSidePlayerParameters
         {
             CarName = rad.FileName,
             IsClientPlayer = false,

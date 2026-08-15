@@ -14,7 +14,7 @@ public class TimeTrialSimulationGamemode(GamemodeParameters gamemodeParameters, 
 
     protected override BackendCar LoadPlayerCar(int x, int z)
     {
-        return new BackendCar(timeTrial.CarData ?? BackendGameSparker.GetCar(Players[0].CarName).Rad!, 0, x, z, true);
+        return new BackendCar(timeTrial.CarData ?? BackendGameSparker.GetCar(Players[0].Parameters.CarName).Rad!, 0, x, z, true);
     }
 
     protected override void TimeTrialInRace()

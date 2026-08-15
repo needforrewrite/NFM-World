@@ -1,5 +1,6 @@
 ﻿using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Helpers;
@@ -8,58 +9,60 @@ public class CheckPointHelper
 {
     public static void CalculatePositions(
         IStage currentStage,
-        IReadOnlyList<IInGameCar> carsInRace
+        IReadOnlyList<ClientSidePlayer> players
     )
     {
-        foreach (var car in carsInRace)
+        foreach (var player in players)
         {
-            car.Placement = 0;
+            player.Car?.Placement = 0;
         }
 
-        for (int i = 0; i < carsInRace.Count; i++)
+        for (int i = 0; i < players.Count; i++)
         {
-            var car1 = carsInRace[i];
-            for (int j = i + 1; j < carsInRace.Count; j++)
+            var player1 = players[i];
+            if (player1.Car is not { } car1) continue;
+            for (int j = i + 1; j < players.Count; j++)
             {
-                var car2 = carsInRace[j];
+                var player2 = players[j];
+                if (player2.Car is not { } car2) continue;
                 if (car1.TotalCheckpoint != car2.TotalCheckpoint)
                 {
                     if (car1.TotalCheckpoint < car2.TotalCheckpoint)
                     {
-                        carsInRace[i].Placement++;
+                        car1.Placement++;
                     }
                     else
                     {
-                        carsInRace[j].Placement++;
+                        car2.Placement++;
                     }
                 }
                 else
                 {
-                    int c = carsInRace[i].CurrentCheckpoint + 1;
+                    int c = car1.CurrentCheckpoint + 1;
                     if (c >= currentStage.checkpoints.Count)
                     {
                         c = 0;
                     }
 
                     if (UMath.Py(
-                            carsInRace[i].Position.X / 100,
+                            car1.Position.X / 100,
                             currentStage.checkpoints[c].Position.X / 100,
-                            carsInRace[i].Position.Z / 100,
+                            car1.Position.Z / 100,
                             currentStage.checkpoints[c].Position.Z / 100
                         ) >
                         UMath.Py(
-                            carsInRace[j].Position.X / 100,
+                            car2.Position.X / 100,
                             currentStage.checkpoints[c].Position.X / 100,
-                            carsInRace[j].Position.Z / 100,
+                            car2.Position.Z / 100,
                             currentStage.checkpoints[c].Position.Z / 100
                         )
                        )
                     {
-                        carsInRace[i].Placement++;
+                        car1.Placement++;
                     }
                     else
                     {
-                        carsInRace[j].Placement++;
+                        car2.Placement++;
                     }
                 }
             }

@@ -1,30 +1,10 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace NFMWorldLibrary.Backend.Gamemodes;
+namespace NFMWorldLibrary.Gamemodes;
 
 public static class ClientServer
 {
-    public static bool IsRunningOnClient { get; set; } = false;
-
-    [Obsolete("Use proper class split (PvpClientGamemode / IServerGamemode) instead of runtime gating.")]
-    public static void RunIfOnClient(Action action)
-    {
-        if (IsRunningOnClient)
-        {
-            action();
-        }
-    }
-
-    [Obsolete("Use proper class split (PvpClientGamemode / IServerGamemode) instead of runtime gating.")]
-    public static void RunIfOnClient<T>(Action<T> action, T parameter)
-    {
-        if (IsRunningOnClient)
-        {
-            action(parameter);
-        }
-    }
-
     [DoesNotReturn]
     public static void AccidentallyCalledClientMethodOnServer([CallerMemberName] string? methodName = null)
     {

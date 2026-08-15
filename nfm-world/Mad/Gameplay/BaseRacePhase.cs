@@ -1,4 +1,4 @@
-﻿﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.UI;
 using NFMWorld.UI.Cef;
@@ -15,7 +15,7 @@ namespace NFMWorld.Gameplay;
 public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallbacks
 {
     public readonly BaseGamemodeFactory Gamemode;
-    public readonly IReadOnlyList<PlayerParameters> Players;
+    public readonly IReadOnlyList<ClientSidePlayerParameters> Players;
     protected IGamemode? GamemodeInstance;
 
     BackendStage IGamemodeData.CurrentStage => CurrentStage.Backend;
@@ -28,7 +28,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
 
     public bool AllowPausing { get; protected set; }
 
-    protected BaseRacePhase(GraphicsDevice graphicsDevice, string stageName, BaseGamemodeFactory gamemode, IReadOnlyList<PlayerParameters> players) : base(graphicsDevice, stageName)
+    protected BaseRacePhase(GraphicsDevice graphicsDevice, string stageName, BaseGamemodeFactory gamemode, IReadOnlyList<ClientSidePlayerParameters> players) : base(graphicsDevice, stageName)
     {
         Gamemode = gamemode;
         Players = players;
@@ -108,7 +108,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         if (IsPaused)
             return;
 
-        if (GamemodeInstance is not BaseGamemode gm)
+        if (GamemodeInstance is not BaseClientGamemode gm)
             return;
 
         HudBridge.PushHudState(gm.HudState);
@@ -128,7 +128,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         GameSparker.CefRenderer?.SetInputEnabled(true);
 
         // Push pause context for the overlay (lap, position, stage name)
-        if (GamemodeInstance is BaseGamemode gm)
+        if (GamemodeInstance is BaseClientGamemode gm)
         {
             var hud = gm.HudState;
             HudBridge.PushPauseState(hud.Lap, hud.TotalLaps, hud.Position, hud.TotalRacers, StageName ?? "");
@@ -516,6 +516,20 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
     IClientCarCallbacks IClientCallbacks.GetClientCarCallbacks(int index)
     {
         return GetCarVisual(index).Visuals;
+    }
+
+    UnlimitedArray<IInGameCar> IGamemodeData.CarsInRace => CarsInRace;
+
+    void IGamemodeData.SendServerEvent(ReadOnlySpan<byte> payload)
+    {
+        // No-op in singleplayer. The multiplayer phase injects a sender into
+        // the gamemode via SetEventSender; a local host replaces this during
+        // the single-path rework.
+    }
+
+    void IGamemodeData.UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
+    {
+        // Server-driven player roster updates; wired up with the local host.
     }
 
 }

@@ -10,17 +10,17 @@ namespace NFMWorldLibrary.Backend.Gamemodes;
 ///
 /// Does NOT run physics — it validates discrete events with fuzzy proximity checks.
 /// </summary>
-public class PvpServerGamemode(PvpConstraint constraint) : BaseServerGamemode
+public class PvpServerGamemode(PvpConstraint constraint) : BaseServerGamemode()
 {
     private readonly Dictionary<Guid, PlayerServerState> _players = new();
     private int _totalLaps;
     private IReadOnlyList<(f64Vector3 Position, int Index)>? _checkpoints;
 
-    private enum InnerRaceState { WaitingToStart, Countdown, InProgress, Finished }
-    private InnerRaceState _state = InnerRaceState.WaitingToStart;
-    private int _countdownTime = 4;
-    private int _innerCountdownTicks;
+    private enum ServerGamemodeState { WaitingToStart, Countdown, InProgress, Finished }
+    private ServerGamemodeState _state = ServerGamemodeState.WaitingToStart;
     private int _finishPositionCounter;
+    
+    private ServerCountdown _countdown = new();
 
     public override string GamemodeId => constraint switch
     {
@@ -32,27 +32,29 @@ public class PvpServerGamemode(PvpConstraint constraint) : BaseServerGamemode
 
     // ── Lifecycle ──────────────────────────────────────────────────
 
-    public override void Begin(IServerGamemodeContext context)
+    public override void Begin(IServerGamemodeData data)
     {
-        _totalLaps = context.CurrentStage.nlaps;
-        _checkpoints = context.CurrentStage.checkpoints
+        base.Begin(data);
+
+        _totalLaps = Data.CurrentStage.nlaps;
+        _checkpoints = Data.CurrentStage.checkpoints
             .Select((cp, i) => (cp.Position, i))
             .ToList();
 
         _players.Clear();
-        foreach (var playerId in context.PlayerIds)
+        foreach (var playerId in Data.PlayerIds)
             _players[playerId] = new PlayerServerState();
 
         _finishPositionCounter = 0;
         _resultsBroadcast = false;
-        _state = InnerRaceState.WaitingToStart;
+        _state = ServerGamemodeState.WaitingToStart;
     }
 
     public override void StartRace()
     {
-        _countdownTime = 4;
-        _innerCountdownTicks = 0;
-        _state = InnerRaceState.Countdown;
+        _countdown = new ServerCountdown();
+        _countdown.Go += () => _state = ServerGamemodeState.InProgress;
+        _state = ServerGamemodeState.Countdown;
     }
 
     // ── Tick ───────────────────────────────────────────────────────
@@ -61,30 +63,18 @@ public class PvpServerGamemode(PvpConstraint constraint) : BaseServerGamemode
     {
         switch (_state)
         {
-            case InnerRaceState.WaitingToStart:
+            case ServerGamemodeState.WaitingToStart:
                 // Not yet started — waiting for all clients to load.
                 break;
-            case InnerRaceState.Countdown:
-                CountdownTick();
+            case ServerGamemodeState.Countdown:
+                _countdown.GameTick();
                 break;
-            case InnerRaceState.InProgress:
+            case ServerGamemodeState.InProgress:
                 // No per-tick logic — events drive state changes.
                 break;
-            case InnerRaceState.Finished:
+            case ServerGamemodeState.Finished:
                 // No per-tick logic — finish was broadcast on transition.
                 break;
-        }
-    }
-
-    private void CountdownTick()
-    {
-        _innerCountdownTicks--;
-        if (_innerCountdownTicks <= 0)
-        {
-            _countdownTime--;
-            _innerCountdownTicks = (int)(10 * (1 / Physics.PHYSICS_MULTIPLIER));
-            if (_countdownTime <= 0)
-                _state = InnerRaceState.InProgress;
         }
     }
 
@@ -104,7 +94,7 @@ public class PvpServerGamemode(PvpConstraint constraint) : BaseServerGamemode
 
     private void HandleCheckpointEvent(Guid playerId, PvpCheckpointEvent evt)
     {
-        if (_state != InnerRaceState.InProgress) return;
+        if (_state != ServerGamemodeState.InProgress) return;
         if (!_players.TryGetValue(playerId, out var ps)) return;
 
         // ── Validation ──────────────────────────────────────────
@@ -132,7 +122,7 @@ public class PvpServerGamemode(PvpConstraint constraint) : BaseServerGamemode
 
                 if (_finishPositionCounter == 1) // First finisher
                 {
-                    _state = InnerRaceState.Finished;
+                    _state = ServerGamemodeState.Finished;
                 }
             }
         }
@@ -141,10 +131,10 @@ public class PvpServerGamemode(PvpConstraint constraint) : BaseServerGamemode
     // ── Results ───────────────────────────────────────────────────
 
     private bool _resultsBroadcast;
-
+    
     public override GameStateSnapshot? GetStateSnapshot()
     {
-        if (_state == InnerRaceState.Finished && !_resultsBroadcast)
+        if (_state == ServerGamemodeState.Finished && !_resultsBroadcast)
         {
             _resultsBroadcast = true;
 
@@ -164,23 +154,13 @@ public class PvpServerGamemode(PvpConstraint constraint) : BaseServerGamemode
             return new GameStateSnapshot
             {
                 IsFinished = true,
-                Results = results,
-                State = new Dictionary<string, object>
-                {
-                    ["countdownTime"] = _countdownTime,
-                    ["raceState"] = _state.ToString()
-                }
+                Results = results
             };
         }
 
         return new GameStateSnapshot
         {
-            IsFinished = _state == InnerRaceState.Finished,
-            State = new Dictionary<string, object>
-            {
-                ["countdownTime"] = _countdownTime,
-                ["raceState"] = _state.ToString()
-            }
+            IsFinished = _state == ServerGamemodeState.Finished
         };
     }
 

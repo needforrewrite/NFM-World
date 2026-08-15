@@ -1,15 +1,10 @@
-using NFMWorldLibrary.Backend;
+﻿using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 
 namespace NFMWorldLibrary.Gamemodes;
 
-/// <summary>
-/// Data context provided to <see cref="IServerGamemode"/> at startup.
-/// Contains everything the server gamemode needs to know about the race
-/// without coupling it to rendering, input, or physics.
-/// </summary>
-public interface IServerGamemodeContext
+public interface IServerGamemodeData
 {
     /// <summary>The stage being raced on (checkpoints, lap count, geometry).</summary>
     BackendStage CurrentStage { get; }
@@ -25,4 +20,6 @@ public interface IServerGamemodeContext
     /// Position data flows from <see cref="C2S_PlayerState"/> relay.
     /// </summary>
     f64Vector3? GetPlayerPosition(Guid playerId);
+    
+    void BroadcastEvent(ReadOnlyMemory<byte> payload);
 }

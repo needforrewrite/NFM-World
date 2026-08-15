@@ -46,7 +46,7 @@ class SimCar : IInGameCar
     public BaseAi? Bot { get; set; }
     public bool FinishedFix => false;
 
-    public PlayerParameters Player { get; } = new PlayerParameters()
+    public ClientSidePlayerParameters Player { get; } = new ClientSidePlayerParameters()
     {
         IsClientPlayer = true,
         CarName = "nfmm/2000tornados",
@@ -142,7 +142,7 @@ public class SteeringSimulation
         {
             FrameTrace.ClearMessages();
             
-            mad.Drive(control, new ContO(car), stage);
+            mad.Drive(control, car, stage);
 
             Console.WriteLine(FrameTrace.GetMessageString());
         }

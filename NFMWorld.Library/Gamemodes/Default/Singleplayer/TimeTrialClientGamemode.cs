@@ -14,7 +14,7 @@ namespace NFMWorldLibrary.Backend.Gamemodes;
 /// split tracking, and saving best times. Physics and state machine are in
 /// the abstract base <see cref="TimeTrialGamemode"/>.
 /// </summary>
-public class TimeTrialClientGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData)
+public class TimeTrialClientGamemode1(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData)
     : TimeTrialGamemode(gamemodeParameters, gamemodeData)
 {
     private Stopwatch _raceTimer = new();
@@ -41,7 +41,7 @@ public class TimeTrialClientGamemode(GamemodeParameters gamemodeParameters, IGam
         _tick = 0;
 
         // Load ghost
-        SavedTimeTrial? bestTimeDemo = SavedTimeTrial.Load(Players[PlayerCarIndex].CarName, CurrentStage.Path);
+        SavedTimeTrial? bestTimeDemo = SavedTimeTrial.Load(Players[PlayerCarIndex].Parameters.CarName, CurrentStage.Path);
         if (bestTimeDemo != null && PlaybackOnReset)
         {
             _bestTimeTrial = bestTimeDemo;
@@ -52,7 +52,7 @@ public class TimeTrialClientGamemode(GamemodeParameters gamemodeParameters, IGam
             CarsInRace[GhostCarIndex].CurrentLap = 0;
         }
 
-        _currentTimeTrial = new SavedTimeTrial(Players[PlayerCarIndex].CarName, CurrentStage.Path,
+        _currentTimeTrial = new SavedTimeTrial(Players[PlayerCarIndex].Parameters.CarName, CurrentStage.Path,
             CurrentStage.stageLoader, CarsInRace[PlayerCarIndex].Rad);
 
         gamemodeData.ClientCallbacks.ResetCheckpointGlow();

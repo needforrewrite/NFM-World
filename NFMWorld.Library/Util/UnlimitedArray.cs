@@ -123,6 +123,16 @@ public class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>, IMemoryPackable<Unl
             _items = new T[capacity];
         }
     }
+    
+    
+    public UnlimitedArray(IEnumerable<T> items) : this(items.TryGetNonEnumeratedCount(out var count) ? count : 0)
+    {
+        foreach (var item in items)
+        {
+            // ReSharper disable once VirtualMemberCallInConstructor
+            Add(item);
+        }
+    }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Enumerator GetEnumerator()

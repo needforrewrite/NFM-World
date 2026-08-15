@@ -13,10 +13,4 @@ public readonly partial struct GameStateSnapshot
 
     /// <summary>Final race results, populated when IsFinished is true.</summary>
     public RaceResults? Results { get; init; }
-
-    /// <summary>
-    /// Gamemode-specific key-value state for HUD rendering.
-    /// Example keys: "payloadProgress", "hillController", "flagState".
-    /// </summary>
-    public Dictionary<string, object>? State { get; init; }
 }

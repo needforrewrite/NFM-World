@@ -9,7 +9,7 @@ namespace NFMWorldLibrary.Backend.Gamemodes;
 /// physics simulation, and checkpoint handling. No rendering, HUD, or recording.
 /// </summary>
 public abstract class TimeTrialGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData)
-    : BaseGamemode(gamemodeParameters, gamemodeData)
+    : BaseClientGamemode(gamemodeParameters, gamemodeData)
 {
     protected const int PlayerCarIndex = 0;
     protected const int GhostCarIndex = 1;
@@ -37,7 +37,7 @@ public abstract class TimeTrialGamemode(GamemodeParameters gamemodeParameters, I
         base.Reset();
         _countdownTime = 4;
         _innerCountdownTicks = 0;
-
+        
         CarsInRace.Clear();
         CarsInRace[PlayerCarIndex] = LoadPlayerCar(0, 0);
         CarsInRace[PlayerCarIndex].CurrentCheckpoint = 0;
@@ -51,7 +51,7 @@ public abstract class TimeTrialGamemode(GamemodeParameters gamemodeParameters, I
 
     protected virtual BackendCar LoadPlayerCar(int x, int z)
     {
-        return new BackendCar(Players[PlayerCarIndex], PlayerCarIndex, x, z);
+        return new BackendCar(Players[PlayerCarIndex].Parameters, PlayerCarIndex, x, z);
     }
 
     public override void GameTick()

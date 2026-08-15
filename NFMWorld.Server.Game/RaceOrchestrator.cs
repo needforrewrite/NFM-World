@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+﻿﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using NFMWorldLibrary.Backend;
@@ -227,7 +227,7 @@ public class RaceOrchestrator : IDisposable
         if (factory?.CreateServerGamemode(new GamemodeParameters
             {
                 Players = raceParams.MatchGameplayInfo.Players
-                    .Select(kvp => new PlayerParameters
+                    .Select(kvp => new ClientSidePlayerParameters
                     {
                         CarName = kvp.Value.Vehicle,
                         PlayerName = kvp.Value.Name,
@@ -238,10 +238,11 @@ public class RaceOrchestrator : IDisposable
                     .ToList()
             }) is { } serverGm)
         {
-            var context = new OrchestratorServerContext(session, raceParams.MatchGameplayInfo.StageName);
+            var context = new OrchestratorServerContext(
+                session,
+                raceParams.MatchGameplayInfo.StageName,
+                payload => _transport.BroadcastPacket(new S2C_ServerEvent { Payload = payload }, reliable: true));
             serverGm.Begin(context);
-            serverGm.SetEventBroadcaster(payload =>
-                _transport.BroadcastPacket(new S2C_ServerEvent { Payload = payload }, reliable: true));
             session.ServerGamemode = serverGm;
         }
 
@@ -309,10 +310,13 @@ public class RaceOrchestrator : IDisposable
     }
 
     /// <summary>
-    /// Adapter that provides <see cref="IServerGamemodeContext"/> from
+    /// Adapter that provides <see cref="IServerGamemodeData"/> from
     /// the RaceSession data available in the orchestrator.
     /// </summary>
-    private class OrchestratorServerContext(RaceSession session, string stageName) : IServerGamemodeContext
+    private class OrchestratorServerContext(
+        RaceSession session,
+        string stageName,
+        Action<ReadOnlyMemory<byte>> broadcast) : IServerGamemodeData
     {
         public BackendStage CurrentStage { get; } = new(stageName);
 
@@ -324,6 +328,8 @@ public class RaceOrchestrator : IDisposable
 
         public f64Vector3? GetPlayerPosition(Guid playerId) =>
             session.PlayerPositions.TryGetValue(playerId, out var pos) ? pos : null;
+
+        public void BroadcastEvent(ReadOnlyMemory<byte> payload) => broadcast(payload);
     }
 
     private static uint _sessionIdCounter;

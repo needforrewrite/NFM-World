@@ -448,8 +448,6 @@ public class WorldGame : Game
 
     public static void Main(string[] args)
     {
-        ClientServer.IsRunningOnClient = true;
-
         // TODO figure out why SDL ProcessExit doesn't work properly
         AppDomain.CurrentDomain.ProcessExit += static (sender, args) =>
         {

@@ -35,11 +35,8 @@ public partial interface IInGameCar : ICar
     [LuaName("wasted")]
     bool Wasted { get; }
     
-    [LuaHidden]
-    BaseAi? Bot { get; set; }
-    
     [LuaName("player")]
-    PlayerParameters Player { get; }
+    ClientSidePlayerParameters Player { get; }
 
     [LuaHidden]
     public event DamageFunc? DamagedX;

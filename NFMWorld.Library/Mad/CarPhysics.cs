@@ -203,13 +203,13 @@ public partial class CarPhysics
     public bool RightTabletop;
     
     [LuaName("scx")]
-    public LuaArray<fix64> Scx = new(4);
+    public fix64[] Scx = new fix64[4];
     
     [LuaName("scy")]
-    public LuaArray<fix64> Scy = new(4);
+    public fix64[] Scy = new fix64[4];
     
     [LuaName("scz")]
-    public LuaArray<fix64> Scz = new(4);
+    public fix64[] Scz = new fix64[4];
     
     [LuaName("shakedam")]
     public int Shakedam;

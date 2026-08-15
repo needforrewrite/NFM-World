@@ -4,5 +4,5 @@ namespace NFMWorldLibrary.Backend.Gamemodes;
 
 public class GamemodeParameters
 {
-    public required IReadOnlyList<PlayerParameters> Players { get; init; }
+    public required IReadOnlyList<ClientSidePlayerParameters> Players { get; init; }
 }
