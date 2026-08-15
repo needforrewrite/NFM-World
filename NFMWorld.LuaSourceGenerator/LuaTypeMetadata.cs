@@ -375,6 +375,7 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
 
                 foreach (var m in baseMembers.OfType<IMethodSymbol>()
                              .Where(m => m.MethodKind == MethodKind.Ordinary && !m.IsImplicitlyDeclared && !HasAttr(m, references.LuaHiddenAttribute))
+                             .Where(m => m.DeclaredAccessibility == Accessibility.Public)
                              .Where(m => !m.Parameters.Any(p => p.RefKind != RefKind.None))
                              .Where(m => !m.Parameters.Any(p => p.Type.IsRefLikeType))
                              .Where(m => !m.ReturnType.IsRefLikeType))
@@ -386,6 +387,7 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
 
                 foreach (var p in baseMembers.OfType<IPropertySymbol>()
                              .Where(p => !p.IsIndexer && !p.IsImplicitlyDeclared && !HasAttr(p, references.LuaHiddenAttribute))
+                             .Where(p => p.DeclaredAccessibility == Accessibility.Public)
                              .Where(p => !p.IsStatic))
                 {
                     var meta = new LuaPropertyMetadata(p, references);
@@ -394,7 +396,8 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
                 }
 
                 foreach (var f in baseMembers.OfType<IFieldSymbol>()
-                             .Where(f => !f.IsImplicitlyDeclared && !HasAttr(f, references.LuaHiddenAttribute) && !f.IsStatic))
+                             .Where(f => !f.IsImplicitlyDeclared && !HasAttr(f, references.LuaHiddenAttribute) && !f.IsStatic)
+                             .Where(f => f.DeclaredAccessibility == Accessibility.Public))
                 {
                     var meta = new LuaFieldMetadata(f, references);
                     if (seenLuaNames.Add(meta.LuaName))
@@ -477,6 +480,9 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     }
     
     // Copied from https://github.com/dotnet/roslyn/blob/d2ff1d83e8fde6165531ad83f0e5b1ae95908289/src/Workspaces/SharedUtilitiesAndExtensions/Compiler/Core/Extensions/ISymbolExtensions.cs#L28-L73
+    // Deviates from the original: Protected and ProtectedOrInternal are NOT treated as
+    // public here. Lua bindings must only expose fully public members, so protected
+    // members (e.g. INotifyPropertyChanged.OnPropertyChanged) are excluded.
     private static SymbolVisibility GetResultantVisibility(ISymbol symbol)
     {
         // Start by assuming it's visible.
@@ -509,8 +515,12 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
                 case Accessibility.ProtectedAndInternal:
                     visibility = SymbolVisibility.Internal;
                     break;
-                // For anything else (Public, Protected, ProtectedOrInternal), the
-                // symbol stays at the level we've gotten so far.
+                // Protected members are not public — exclude them from bindings.
+                case Accessibility.Protected:
+                case Accessibility.ProtectedOrInternal:
+                    return SymbolVisibility.Private;
+                // For anything else (Public), the symbol stays at the level we've
+                // gotten so far.
             }
 
             symbol = symbol.ContainingSymbol;

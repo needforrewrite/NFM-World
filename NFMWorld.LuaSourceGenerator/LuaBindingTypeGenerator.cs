@@ -242,7 +242,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             sb.AppendLine($"internal static readonly Func<global::Lua.LuaFunctionExecutionContext, global::System.Threading.CancellationToken, global::System.Threading.Tasks.ValueTask<int>> __inext_{ToIdentifier(type.LuaName)} = static (context, ct) =>");
             using (sb.Block(end: "};"))
             {
-                sb.AppendLine($"var instance = context.GetCsClosure()!.UpValues[0].Read<global::System.Collections.IEnumerator<{kvpType.FullTypeName}>>();");
+                sb.AppendLine($"var instance = context.GetCsClosure()!.UpValues[0].Read<global::System.Collections.Generic.IEnumerator<{kvpType.FullTypeName}>>();");
                 sb.AppendLine("var idx = context.GetCsClosure()!.UpValues[1].Read<int>();");
                 sb.AppendLine("context.GetCsClosure()!.UpValues[1] = idx + 1;");
                 sb.AppendLine("if (!instance.MoveNext())");
@@ -251,7 +251,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                     sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return());");
                 }
                 
-                sb.AppendLine($"return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(idx + 1, {MarshalToLua("instance.Current", kvpType)});");
+                sb.AppendLine($"return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(idx + 1, {MarshalToLua("instance.Current", kvpType)}));");
             }
 
             sb.AppendLine($"internal static readonly global::Lua.LuaFunction {GetMetamethodName(type, Metamethods.IPairs)} = new(\"{Metamethods.IPairs}\", (context, ct) =>");
@@ -260,16 +260,16 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                 sb.AppendLine($"var instance = context.GetArgument<global::System.Collections.Generic.IEnumerable<{kvpType.FullTypeName}>>(0);");
                 
                 // upvalues: instance, idx
-                sb.AppendLine($"var closure = new global::Lua.Runtime.CSharpClosure(\"inext\", [LuaValue.FromLightUserData(instance), 0], __inext_{ToIdentifier(type.LuaName)});");
+                sb.AppendLine($"var closure = new global::Lua.Runtime.CSharpClosure(\"inext\", [global::Lua.LuaValue.FromLightUserData(instance), 0], __inext_{ToIdentifier(type.LuaName)});");
                 
-                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(closure, LuaValue.Nil, LuaValue.Nil));");
+                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(closure, global::Lua.LuaValue.Nil, global::Lua.LuaValue.Nil));");
             }
             
             // pairs
             sb.AppendLine($"internal static readonly Func<global::Lua.LuaFunctionExecutionContext, global::System.Threading.CancellationToken, global::System.Threading.Tasks.ValueTask<int>> __next_{ToIdentifier(type.LuaName)} = static (context, ct) =>");
             using (sb.Block(end: "};"))
             {
-                sb.AppendLine($"var instance = context.GetCsClosure()!.UpValues[0].Read<global::System.Collections.IEnumerator<{kvpType.FullTypeName}>>();");
+                sb.AppendLine($"var instance = context.GetCsClosure()!.UpValues[0].Read<global::System.Collections.Generic.IEnumerator<{kvpType.FullTypeName}>>();");
                 sb.AppendLine("if (!instance.MoveNext())");
                 using (sb.Block())
                 {
@@ -285,9 +285,9 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                 sb.AppendLine($"var instance = context.GetArgument<global::System.Collections.Generic.IEnumerable<{kvpType.FullTypeName}>>(0);");
                 
                 // upvalues: instance, idx
-                sb.AppendLine($"var closure = new global::Lua.Runtime.CSharpClosure(\"next\", [LuaValue.FromLightUserData(instance)], __next_{ToIdentifier(type.LuaName)});");
+                sb.AppendLine($"var closure = new global::Lua.Runtime.CSharpClosure(\"next\", [global::Lua.LuaValue.FromLightUserData(instance)], __next_{ToIdentifier(type.LuaName)});");
                 
-                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(closure, LuaValue.Nil, LuaValue.Nil));");
+                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(closure, global::Lua.LuaValue.Nil, global::Lua.LuaValue.Nil));");
             }
         }
         else if (type.IsIEnumerable && type.IEnumerableType is { } elementType)
@@ -295,7 +295,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             sb.AppendLine($"internal static readonly Func<global::Lua.LuaFunctionExecutionContext, global::System.Threading.CancellationToken, global::System.Threading.Tasks.ValueTask<int>> __next_{ToIdentifier(type.LuaName)} = static (context, ct) =>");
             using (sb.Block(end: "};"))
             {
-                sb.AppendLine($"var instance = context.GetCsClosure()!.UpValues[0].Read<global::System.Collections.IEnumerator<{elementType.FullTypeName}>>();");
+                sb.AppendLine($"var instance = context.GetCsClosure()!.UpValues[0].Read<global::System.Collections.Generic.IEnumerator<{elementType.FullTypeName}>>();");
                 sb.AppendLine("var idx = context.GetCsClosure()!.UpValues[1].Read<int>();");
                 sb.AppendLine("context.GetCsClosure()!.UpValues[1] = idx + 1;");
                 sb.AppendLine("if (!instance.MoveNext())");
@@ -304,7 +304,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                     sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return());");
                 }
                 
-                sb.AppendLine($"return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(idx + 1, {MarshalToLua("instance.Current", elementType)});");
+                sb.AppendLine($"return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(idx + 1, {MarshalToLua("instance.Current", elementType)}));");
             }
 
             sb.AppendLine($"internal static readonly global::Lua.LuaFunction {GetMetamethodName(type, Metamethods.Pairs)} = new(\"{Metamethods.Pairs}\", (context, ct) =>");
@@ -313,9 +313,9 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
                 sb.AppendLine($"var instance = context.GetArgument<global::System.Collections.Generic.IEnumerable<{elementType.FullTypeName}>>(0);");
                 
                 // upvalues: instance, idx
-                sb.AppendLine($"var closure = new global::Lua.Runtime.CSharpClosure(\"next\", [LuaValue.FromLightUserData(instance), 0], __next_{ToIdentifier(type.LuaName)});");
+                sb.AppendLine($"var closure = new global::Lua.Runtime.CSharpClosure(\"next\", [global::Lua.LuaValue.FromLightUserData(instance), 0], __next_{ToIdentifier(type.LuaName)});");
                 
-                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(closure, LuaValue.Nil, LuaValue.Nil));");
+                sb.AppendLine("return global::System.Threading.Tasks.ValueTask.FromResult(context.Return(closure, global::Lua.LuaValue.Nil, global::Lua.LuaValue.Nil));");
             }
             sb.AppendLine($"internal static readonly global::Lua.LuaFunction {GetMetamethodName(type, Metamethods.IPairs)} = {GetMetamethodName(type, Metamethods.Pairs)};");
         }
@@ -842,7 +842,7 @@ internal abstract class BaseLuaTypeGenerator
     [return: NotNullIfNotNull(nameof(ns))]
     protected static string? ToIdentifier(string? ns) =>
         ns?.Replace(".", "_");
-    protected static string GetFunctionName(LuaMethodMetadata method) => $"__function_{ToIdentifier(method.DeclaringType?.LuaName)}_{method.LuaName}";
+    protected static string GetFunctionName(LuaMethodMetadata method) => $"__function_{(method.IsStatic?"static_":"")}{ToIdentifier(method.DeclaringType?.LuaName)}_{method.LuaName}";
     protected static string GetMetamethodName(BaseLuaTypeMetadata type, string metamethod) => $"__metamethod_{ToIdentifier(type.LuaName)}_{metamethod}";
     protected static string GetStaticMetamethodName(BaseLuaTypeMetadata type, string metamethod) => $"__metamethod__static_{ToIdentifier(type.LuaName)}_{metamethod}";
     protected static string GetMetatableName(BaseLuaTypeMetadata type) => $"__metatable_{ToIdentifier(type.LuaName)}";
