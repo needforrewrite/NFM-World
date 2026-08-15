@@ -1,4 +1,5 @@
-﻿using NFMWorldLibrary.Backend.AI;
+﻿using nfm_world_library.Lua;
+using NFMWorldLibrary.Backend.AI;
 
 namespace NFMWorldLibrary.Gamemodes;
 
@@ -8,7 +9,8 @@ namespace NFMWorldLibrary.Gamemodes;
 /// <param name="parameters">The player parameters.</param>
 /// <param name="index">The zero-based index of the player.</param>
 /// <param name="isFake">True if the player was created by the gamemode, such as the ball in football.</param>
-public class ClientSidePlayer(ClientSidePlayerParameters parameters, int index, bool isFake = false)
+[LuaVisible]
+public partial class ClientSidePlayer(ClientSidePlayerParameters parameters, int index, bool isFake = false)
 {
     private IInGameCar? _car;
 

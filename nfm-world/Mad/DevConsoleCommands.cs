@@ -102,6 +102,26 @@ public static class DevConsoleCommands
                 GameSparker.SetPhase(inRace);
             }
         });
+        console.RegisterCommand("go_lua", (c, args) =>
+        {
+            if (args.Length < 1)
+            {
+                Logging.Info("Usage: go_lua <script_path> (relative to data/gamemodes/)");
+                return;
+            }
+
+            if (GameSparker.CurrentPhase is RacePhase inRacePhase)
+            {
+                var factory = new LuaGamemodeFactory(args[0]);
+                var inRace = new RacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName!, factory, inRacePhase.Players,
+                    LocalRaceHost.Create(inRacePhase.StageName!, factory, inRacePhase.Players));
+                inRace.Exited += (sender, args) =>
+                {
+                    GameSparker.PopGroup(PhaseManager.Groups.Event);
+                };
+                GameSparker.SetPhase(inRace);
+            }
+        });
         console.RegisterCommand("disconnect", (c, args) => Disconnect(c));
 
         //ui

@@ -17,6 +17,7 @@ public sealed class LocalRaceHost : IRaceHost
     private readonly LocalServerContext _context;
     private readonly Guid _localPlayerId;
     private bool _started;
+    private bool _finished;
 
     public bool IsConnected => true;
 
@@ -72,8 +73,11 @@ public sealed class LocalRaceHost : IRaceHost
 
         _serverGamemode.GameTick();
         var snapshot = _serverGamemode.GetStateSnapshot();
-        if (snapshot is { IsFinished: true, Results: { } results })
+        if (!_finished && snapshot is { IsFinished: true, Results: { } results })
+        {
+            _finished = true;
             GameFinished?.Invoke(results);
+        }
     }
 
     public void SendServerEvent(ReadOnlyMemory<byte> payload)

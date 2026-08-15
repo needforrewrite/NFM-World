@@ -1,4 +1,4 @@
-﻿﻿using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using NFMWorldLibrary.Backend;
@@ -97,7 +97,7 @@ public class RaceOrchestrator : IDisposable
             gm.GameTick();
 
             var snapshot = gm.GetStateSnapshot();
-            if (snapshot is { IsFinished: true, Results: { } results })
+            if (!session.ResultsBroadcasted && snapshot is { IsFinished: true, Results: { } results })
             {
                 // Broadcast final results as S2C_GameFinished
                 session.ResultsBroadcasted = true;

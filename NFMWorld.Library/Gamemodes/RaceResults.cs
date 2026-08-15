@@ -4,7 +4,7 @@ namespace NFMWorldLibrary.Gamemodes;
 
 /// <summary>
 /// Results of a completed race. Returned by <see cref="IGamemode.GetResults"/>
-/// and fired by <see cref="BaseRacePhase.RaceFinished"/>.
+/// and delivered by the race host on finish.
 /// </summary>
 [MemoryPackable]
 public readonly partial struct RaceResults

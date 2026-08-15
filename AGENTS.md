@@ -116,6 +116,48 @@ Generated files appear in `nfm-world/Generated/NFMWorld.Reactor.Generator/.../*.
 
 ---
 
+## Gamemodes (Lua-driven)
+
+Gamemodes are written in **Lua** and share one code path for singleplayer and multiplayer.
+
+### Architecture
+
+- **One race phase** — `nfm-world/Mad/Gameplay/RacePhase.cs` is the only in-race phase. It composes `RaceInputController` and `RaceCameraDirector` and talks to an `IRaceHost` (`NFMWorld.Library/Gamemodes/RaceHost/`):
+  - `LocalRaceHost` — singleplayer: runs the factory's `IServerGamemode` in-process, so SP exercises the same client/server split as online play.
+  - `NetworkRaceHost` (`nfm-world/Mad/Gameplay/RaceHost/`) — multiplayer: bridges an `IMultiplayerClientTransport` (join token, C2S/S2C packets) to the same interface.
+- **Contracts** — `IGamemode` (client lifecycle/input/render/results) and `IServerGamemode` (server lifecycle + `IServerGamemodeData`), both in `NFMWorld.Library/Gamemodes/`.
+- **Players as the single source of truth** — gamemodes own `ObservableUnlimitedArray<ClientSidePlayer>` (`Players`, each with an `IInGameCar? Car`). `ClientStage.SetPlayers(...)` observes collection + `CarChanged` events and creates one `CarVisual` per car. There is no separate `CarsInRace` array on the race phase (garage/menu phases still use `BaseStageRenderingPhase.CarsInRace` with `ClientStage.SetCars`).
+
+### Lua framework (`NFMWorld.Library/Gamemodes/Lua/`)
+
+- Scripts live at `data/gamemodes/{id}/client.lua` and `server.lua` (shipped via the existing `data/**` copy rule). `LuaGamemodeFactory` / `GamemodeRegistry.RegisterLua(id, path)` wire them up; `nfmm/racing|wasting|both` → `pvp/`, `nfmm/timetrial` → `timetrial/`.
+- Globals injected into scripts: `stage` (`LuaStage`), `players` (`LuaPlayers` — generic `UnlimitedArray<T>` constructed types only get opaque Lua stubs, so use this wrapper), `hud` (`LuaHudState`, writes through to `HudStateData`), `physics` (`PhysicsController`), `time_trial` (`LuaTimeTrial` ghost/recording helper), `config` (JSON table from the factory), plus functions `create_car`, `drive`, `physics_tick`, `calculate_positions`, `handle_checkpoint`, `handle_fix_hoops`, `send_event`, `countdown_interval`, `client_index`, `attach_bot` (C# `ElStupido` for now), `reset_client_state`, `update_hud`, `add_ghost_player`, `remove_fake_players`. Server scripts get `server` (`LuaServerData`), `broadcast_event`, `finish_race`.
+- Callback contract (invoked synchronously each tick): `on_begin`, `on_end`, `on_reset`, `on_game_tick`, `on_render`, `on_key_pressed(key)` / `on_key_released(key)` / `on_key_typed(char)` (keys passed as ints), `on_server_event(type, table)` / `on_client_event(playerId, type, table)` (server), `on_ai_tick(car, index)` (bots via `LuaBot`).
+- Events between client and server are `LuaEventEnvelope { Type, JsonPayload }` (MemoryPack + JSON Lua table) — not MemoryPack unions. `LuaJson` handles Lua table ↔ JSON.
+- `wait()`-style coroutine suspension is **not** supported yet — callbacks must be synchronous per-tick (countdown is tick-counted in Lua).
+
+### Lua binding pipeline
+
+- `[LuaVisible]` / `[LuaName]` / `[LuaHidden]` (in `NFMWorld.Lua`). Marking a class/struct LuaVisible makes the `NFMWorld.LuaSourceGenerator` emit a partial `T : ILuaUserData` with metatables, type tables, and `data/lua/library/*.lua` stubs — **declare such types `partial`**.
+- Hidden ctor pattern: `[LuaHidden]` on constructors whose parameters the generator can't marshal.
+- `LuaVisibleTypeRegistry.RegisterAll(state)` installs namespaces/types into a `LuaState`; call it after `OpenStandardLibraries()`.
+- Cars cross to Lua via `LuaValue.FromUserData(car, LuaVisibleTypeMetatableRegistry<IInGameCar>.Metatable)` (see `LuaGamemode.ToLua`).
+- Lua-CSharp fork: sync execution via `DoString`/`DoFile`/`Run` (throws `LuaYieldException` on suspension); `LuaNfmwPlatform` is VFS-backed.
+
+### Gotchas
+
+| Gotcha | Rule |
+|---|---|
+| New `[LuaVisible]` type | declare the class/struct `partial` |
+| Ctor with unmarshalable params | `[LuaHidden]` on the constructor |
+| `UnlimitedArray<T>` in Lua | opaque stub — wrap it (`LuaPlayers`) |
+| Cars in Lua | use the `IInGameCar` metatable, not `FromObject` |
+| `HudStateData` (DriverInterface) | never mark `[LuaVisible]` — use `LuaHudState` |
+| Race finish broadcasts | guard with `_finished` / `ResultsBroadcasted` (done in both hosts) |
+| TT preview/simulation | still C# (`TimeTrialPreviewGamemode`/`TimeTrialSimulationGamemode` derive from C# `TimeTrialGamemode`) |
+
+---
+
 ## CEF-Based UI System
 
 The UI is a **Preact + TypeScript SPA** rendered by CEF (Chromium Embedded Framework) as a transparent overlay on the FNA/MonoGame 3D scene. Replaces both the legacy XAML and Reactor VDOM systems.

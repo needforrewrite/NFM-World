@@ -10,7 +10,7 @@ namespace NFMWorld.UI.Cef;
 /// a <see cref="SettingsHandler"/> sub-handler for in-race settings access.
 ///
 /// Input is disabled during normal racing (clicks pass through); it is
-/// enabled on the CefRenderer directly by BaseRacePhase during pause.
+/// enabled on the CefRenderer directly by RacePhase during pause.
 /// </summary>
 public sealed class HudBridge : PhaseBridge
 {
