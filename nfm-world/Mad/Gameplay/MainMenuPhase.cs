@@ -6,6 +6,7 @@ using NFMWorld.UI.Cef;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
 
@@ -81,7 +82,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnFreePlayClicked()
     {
-        var inRace = new InRacePhase(GraphicsDevice, "nfm2/9_majestic", new PvpGamemodeFactory(PvpConstraint.Both), [
+        var factory = new PvpGamemodeFactory(PvpConstraint.Both);
+        ClientSidePlayerParameters[] players = [
             new ClientSidePlayerParameters
             {
                 CarName = "nfmm/radicalone",
@@ -98,7 +100,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 Color = default,
                 IsBot = true
             }
-        ]);
+        ];
+        var inRace = new RacePhase(GraphicsDevice, "nfm2/9_majestic", factory, players,
+            LocalRaceHost.Create("nfm2/9_majestic", factory, players));
         inRace.Exited += (sender, args) =>
         {
             GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -126,7 +130,8 @@ public class MainMenuPhase : BaseStageRenderingPhase
             GaragePhase gp = new(GraphicsDevice, stageName);
             gp.CarSelected += (sender, car) =>
             {
-                var inRace = new InRacePhase(GraphicsDevice, stageName, new TimeTrialGamemodeFactory(), [
+                var factory = new TimeTrialGamemodeFactory();
+                ClientSidePlayerParameters[] players = [
                     new ClientSidePlayerParameters()
                     {
                         CarName = car.FileName,
@@ -135,7 +140,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
                         IsClientPlayer = true,
                         PlayerName = "MadPlayer"
                     }
-                ]);
+                ];
+                var inRace = new RacePhase(GraphicsDevice, stageName, factory, players,
+                    LocalRaceHost.Create(stageName, factory, players));
                 inRace.Exited += (sender, args) =>
                 {
                     GameSparker.PopGroup(PhaseManager.Groups.Event);

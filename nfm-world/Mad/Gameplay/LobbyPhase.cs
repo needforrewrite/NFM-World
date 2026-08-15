@@ -1,6 +1,9 @@
 using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Gameplay.RaceHost;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Backend.Gamemodes;
+using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Multiplayer.Packets.S2C;
@@ -77,10 +80,24 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
                     var ipString = ((System.Net.IPAddress)gameAddr.Address).ToString();
                     var gameTransport = new ENetMultiplayerClientTransport(ipString, gameAddr.Port);
 
-                    var phase = new InMultiplayerRacePhase(
-                        graphicsDevice, gameTransport,
-                        raceStarted.MatchGameplayInfo, _player.Id,
-                        raceStarted.JoinInfo.JoinToken);
+                    var session = raceStarted.MatchGameplayInfo;
+                    var players = session.Players
+                        .Select(c => new ClientSidePlayerParameters
+                        {
+                            CarName = c.Value.Vehicle,
+                            Color = c.Value.Color,
+                            PlayerName = c.Value.Name,
+                            IsBot = false,
+                            IsClientPlayer = c.Value.Id == _player.Id
+                        })
+                        .ToArray();
+
+                    var phase = new RacePhase(
+                        graphicsDevice,
+                        session.StageName,
+                        GetGameModeFactory(session),
+                        players,
+                        new NetworkRaceHost(gameTransport, session, raceStarted.JoinInfo.JoinToken));
 
                     phase.Exited += (sender, args) =>
                     {
@@ -437,6 +454,21 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
         {
             Message = chatInput
         });
+    }
+
+    private static BaseGamemodeFactory GetGameModeFactory(MatchGameplayInfo matchGameplayInfo)
+    {
+        switch (matchGameplayInfo.Gamemode)
+        {
+            case DefaultGamemodes.Racing:
+                return new PvpGamemodeFactory(PvpConstraint.Racing);
+            case DefaultGamemodes.Wasting:
+                return new PvpGamemodeFactory(PvpConstraint.Wasting);
+            case DefaultGamemodes.Both:
+                return new PvpGamemodeFactory(PvpConstraint.Both);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(matchGameplayInfo.Gamemode), matchGameplayInfo.Gamemode, "Unknown gamemode");
+        }
     }
 }
 

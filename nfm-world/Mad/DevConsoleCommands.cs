@@ -10,6 +10,7 @@ using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
 using Steamworks;
 using Logging = NFMWorldLibrary.Logging;
@@ -45,7 +46,8 @@ public static class DevConsoleCommands
         
         console.RegisterCommand("replay_trial", (c, args) =>
         {
-            var inRace = new InRacePhase(GameSparker.GraphicsDevice, args[1], new TimeTrialPreviewGamemodeFactory(SavedTimeTrial.Load(args[0], args[1])!), [
+            var factory = new TimeTrialPreviewGamemodeFactory(SavedTimeTrial.Load(args[0], args[1])!);
+            ClientSidePlayerParameters[] players = [
                 new ClientSidePlayerParameters
                 {
                     CarName = args[0],
@@ -54,7 +56,9 @@ public static class DevConsoleCommands
                     IsBot = false,
                     IsClientPlayer = true
                 }
-            ]);
+            ];
+            var inRace = new RacePhase(GameSparker.GraphicsDevice, args[1], factory, players,
+                LocalRaceHost.Create(args[1], factory, players));
             GameSparker.PopToRoot();
             GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
         });
@@ -72,9 +76,11 @@ public static class DevConsoleCommands
         // gamemode
         console.RegisterCommand("go_tt", (c, args) =>
         {
-            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            if (GameSparker.CurrentPhase is RacePhase inRacePhase)
             {
-                var inRace = new InRacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName, new TimeTrialGamemodeFactory(), inRacePhase.Players);
+                var factory = new TimeTrialGamemodeFactory();
+                var inRace = new RacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName!, factory, inRacePhase.Players,
+                    LocalRaceHost.Create(inRacePhase.StageName!, factory, inRacePhase.Players));
                 inRace.Exited += (sender, args) =>
                 {
                     GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -84,9 +90,11 @@ public static class DevConsoleCommands
         });
         console.RegisterCommand("go_race", (c, args) =>
         {
-            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            if (GameSparker.CurrentPhase is RacePhase inRacePhase)
             {
-                var inRace = new InRacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName, new PvpGamemodeFactory(PvpConstraint.Racing), inRacePhase.Players);
+                var factory = new PvpGamemodeFactory(PvpConstraint.Racing);
+                var inRace = new RacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName!, factory, inRacePhase.Players,
+                    LocalRaceHost.Create(inRacePhase.StageName!, factory, inRacePhase.Players));
                 inRace.Exited += (sender, args) =>
                 {
                     GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -106,7 +114,7 @@ public static class DevConsoleCommands
 #if DEBUG
         console.RegisterCommand("fix", (c, args) =>
         {
-            if (GameSparker.CurrentPhase is InRacePhase inRacePhase && inRacePhase.ClientCar is { } car)
+            if (GameSparker.CurrentPhase is RacePhase inRacePhase && inRacePhase.ClientCar is { } car)
             {
                 car.Fix();
             }
@@ -188,7 +196,7 @@ public static class DevConsoleCommands
 
     private static void WastePlayer(DevConsole console, string[] args)
     {
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+        if (GameSparker.CurrentPhase is RacePhase inRacePhase)
         {
             inRacePhase.GetCarVisual(0).VisuallyWasted = true;
         }
@@ -218,7 +226,7 @@ public static class DevConsoleCommands
             amount = 150;
         }
 
-        if (GameSparker.CurrentPhase is not InRacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
+        if (GameSparker.CurrentPhase is not RacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
             return;
 
         var visual = inRacePhase.GetCarVisual(0);
@@ -236,7 +244,7 @@ public static class DevConsoleCommands
             amount = 150;
         }
 
-        if (GameSparker.CurrentPhase is not InRacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
+        if (GameSparker.CurrentPhase is not RacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
             return;
 
         var visual = inRacePhase.GetCarVisual(0);
@@ -257,7 +265,7 @@ public static class DevConsoleCommands
             amount = 150;
         }
 
-        if (GameSparker.CurrentPhase is not InRacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
+        if (GameSparker.CurrentPhase is not RacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
             return;
 
         var visual = inRacePhase.GetCarVisual(0);
@@ -337,7 +345,7 @@ public static class DevConsoleCommands
             return;
         }
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase && inRacePhase.ClientCar is { } car)
+        if (GameSparker.CurrentPhase is RacePhase inRacePhase && inRacePhase.ClientCar is { } car)
         {
             car.CarPhysics.Speed = (fix64)speed;
         }
@@ -346,7 +354,7 @@ public static class DevConsoleCommands
 
     private static void ResetCar(DevConsole console)
     {
-        if (GameSparker.CurrentPhase is not InRacePhase inRacePhase || inRacePhase.ClientCar is not { } originalCar)
+        if (GameSparker.CurrentPhase is not RacePhase inRacePhase || inRacePhase.ClientCar is not { } originalCar)
             return;
 
         if (inRacePhase.GamemodeInstance is BaseClientGamemode gm)
@@ -369,7 +377,7 @@ public static class DevConsoleCommands
             return;
         }
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase && inRacePhase.ClientCar is { } mesh)
+        if (GameSparker.CurrentPhase is RacePhase inRacePhase && inRacePhase.ClientCar is { } mesh)
         {
             mesh.Position = new f64Vector3(x, y, z);
             Logging.Info($"Teleported player to ({x}, {y}, {z})");
@@ -386,7 +394,7 @@ public static class DevConsoleCommands
 
         var objectName = args[0];
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+        if (GameSparker.CurrentPhase is RacePhase inRacePhase)
         {
             inRacePhase.CurrentStage.Backend.CreateObject(objectName, x, y, z, r);
         }
@@ -406,10 +414,11 @@ public static class DevConsoleCommands
 
         var stageName = args[0];
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+        if (GameSparker.CurrentPhase is RacePhase inRacePhase)
         {
             Logging.Info($"Switched to stage '{stageName}'");
-            var inRace = new InRacePhase(GameSparker.GraphicsDevice, stageName, inRacePhase.Gamemode, inRacePhase.Players);
+            var inRace = new RacePhase(GameSparker.GraphicsDevice, stageName, inRacePhase.Gamemode, inRacePhase.Players,
+                LocalRaceHost.Create(stageName, inRacePhase.Gamemode, inRacePhase.Players));
             inRace.Exited += (sender, args) =>
             {
                 GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -435,23 +444,24 @@ public static class DevConsoleCommands
             return;
         }
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+        if (GameSparker.CurrentPhase is RacePhase inRacePhase)
         {
-            var inRace = new InRacePhase(
+            var newPlayers = inRacePhase.Players.Select(p => p.IsClientPlayer
+                ? new ClientSidePlayerParameters
+                {
+                    CarName = car.FileName,
+                    Color = p.Color,
+                    PlayerName = p.PlayerName,
+                    IsBot = p.IsBot,
+                    IsClientPlayer = true
+                }
+                : p).ToArray();
+            var inRace = new RacePhase(
                 GameSparker.GraphicsDevice,
-                inRacePhase.StageName,
+                inRacePhase.StageName!,
                 inRacePhase.Gamemode,
-                inRacePhase.Players.Select(p => p.IsClientPlayer
-                    ? new ClientSidePlayerParameters
-                    {
-                        CarName = car.FileName,
-                        Color = p.Color,
-                        PlayerName = p.PlayerName,
-                        IsBot = p.IsBot,
-                        IsClientPlayer = true
-                    }
-                    : p).ToArray()
-            );
+                newPlayers,
+                LocalRaceHost.Create(inRacePhase.StageName!, inRacePhase.Gamemode, newPlayers));
             inRace.Exited += (sender, args) =>
             {
                 GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -560,7 +570,7 @@ public static class DevConsoleCommands
 
     private static void Disconnect(DevConsole console)
     {
-        if (GameSparker.CurrentPhase is not InRacePhase or InMultiplayerRacePhase)
+        if (GameSparker.CurrentPhase is not RacePhase)
         {
             Logging.Info("Not in game.");
             return;
