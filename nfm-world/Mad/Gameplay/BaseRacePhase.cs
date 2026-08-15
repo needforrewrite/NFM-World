@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.UI;
 using NFMWorld.UI.Cef;
@@ -16,7 +16,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
 {
     public readonly BaseGamemodeFactory Gamemode;
     public readonly IReadOnlyList<ClientSidePlayerParameters> Players;
-    protected IGamemode? GamemodeInstance;
+    public IGamemode? GamemodeInstance { get; protected set; }
 
     BackendStage IGamemodeData.CurrentStage => CurrentStage.Backend;
 
@@ -49,7 +49,17 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         // push/pop cycles (e.g., opening Settings over a race).
         GamemodeInstance = ReloadGamemode();
         GamemodeInstance?.Begin();
+
+        // The gamemode's Players array is the single source of truth for cars.
+        // Point the client stage at it so CarVisuals are created per player.
+        if (GamemodeInstance is BaseClientGamemode clientGamemode)
+            CurrentStage.SetPlayers(clientGamemode.Players);
     }
+
+    /// <summary>
+    /// The local client player's car, or null if the gamemode hasn't assigned one yet.
+    /// </summary>
+    public IInGameCar? ClientCar => (GamemodeInstance as BaseClientGamemode)?.ClientPlayer.Car;
 
     public RaceState RaceState
     {
@@ -251,7 +261,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         // Handle non-movement keys
         if (GamemodeInstance != null)
         {
-            var control = CarsInRace.FirstOrDefault(c => c.Player.IsClientPlayer)?.Control;
+            var control = ClientCar?.Control;
 
             if (control != null)
             {
@@ -320,7 +330,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
 
         if (GamemodeInstance != null)
         {
-            var control = CarsInRace.FirstOrDefault(c => c.Player.IsClientPlayer)?.Control;
+            var control = ClientCar?.Control;
 
             if (control != null)
             {
@@ -368,7 +378,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
         // handle special cases
         if (GamemodeInstance != null)
         {
-            var control = CarsInRace.FirstOrDefault(c => c.Player.IsClientPlayer)?.Control;
+            var control = ClientCar?.Control;
 
             if (control != null)
             {
@@ -437,7 +447,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
             G.SetColor(new Color(0, 0, 0));
             G.DrawString($"Render: {WorldGame.LastFrameTime}ms", 100, 100);
             G.DrawString($"Tick: {WorldGame.LastTickTime}μs", 100, 120);
-            G.DrawString($"Power: {CarsInRace[0]?.CarPhysics?.Power:0.00}", 100, 140);
+            G.DrawString($"Power: {ClientCar?.CarPhysics?.Power:0.00}", 100, 140);
             G.DrawString($"Ticks executed last frame: {WorldGame.LastTickCount}", 100, 160);
         }
 
@@ -468,7 +478,7 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
 
         if (GamemodeInstance != null)
         {
-            var car = CarsInRace.FirstOrDefault(c => c.Player.IsClientPlayer);
+            var car = ClientCar;
             if (car != null)
             {
                 switch (currentViewMode)
@@ -517,8 +527,6 @@ public abstract class BaseRacePhase : BaseStageRenderingPhase, IGamemodeData, IC
     {
         return GetCarVisual(index).Visuals;
     }
-
-    UnlimitedArray<IInGameCar> IGamemodeData.CarsInRace => CarsInRace;
 
     void IGamemodeData.SendServerEvent(ReadOnlySpan<byte> payload)
     {

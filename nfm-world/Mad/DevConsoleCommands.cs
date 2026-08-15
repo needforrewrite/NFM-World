@@ -106,9 +106,8 @@ public static class DevConsoleCommands
 #if DEBUG
         console.RegisterCommand("fix", (c, args) =>
         {
-            if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+            if (GameSparker.CurrentPhase is InRacePhase inRacePhase && inRacePhase.ClientCar is { } car)
             {
-                var car = inRacePhase.CarsInRace[0];
                 car.Fix();
             }
         });
@@ -219,16 +218,15 @@ public static class DevConsoleCommands
             amount = 150;
         }
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
-        {
-            var car = inRacePhase.CarsInRace[0];
-            var visual = inRacePhase.GetCarVisual(0);
-            var stats = car.Stats;
-            MeshDamage.DamageX(stats, car, visual, 0, amount);
-            MeshDamage.DamageX(stats, car, visual, 1, amount);
-            MeshDamage.DamageX(stats, car, visual, 2, amount);
-            MeshDamage.DamageX(stats, car, visual, 3, amount);
-        }
+        if (GameSparker.CurrentPhase is not InRacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
+            return;
+
+        var visual = inRacePhase.GetCarVisual(0);
+        var stats = car.Stats;
+        MeshDamage.DamageX(stats, car, visual, 0, amount);
+        MeshDamage.DamageX(stats, car, visual, 1, amount);
+        MeshDamage.DamageX(stats, car, visual, 2, amount);
+        MeshDamage.DamageX(stats, car, visual, 3, amount);
     }
 
     private static void BreakY(DevConsole console, string[] args)
@@ -238,19 +236,18 @@ public static class DevConsoleCommands
             amount = 150;
         }
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
-        {
-            var car = inRacePhase.CarsInRace[0];
-            var visual = inRacePhase.GetCarVisual(0);
-            var stats = car.Stats;
-            var nbsq = 0;
-            var squash = inRacePhase.CarsInRace[0].CarPhysics.RoofDamage;
-            var mtouch = inRacePhase.CarsInRace[0].CarPhysics.Mtouch;
-            MeshDamage.DamageY(stats, car, visual, 0, amount, mtouch, ref nbsq, ref squash);
-            MeshDamage.DamageY(stats, car, visual, 1, amount, mtouch, ref nbsq, ref squash);
-            MeshDamage.DamageY(stats, car, visual, 2, amount, mtouch, ref nbsq, ref squash);
-            MeshDamage.DamageY(stats, car, visual, 3, amount, mtouch, ref nbsq, ref squash);
-        }
+        if (GameSparker.CurrentPhase is not InRacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
+            return;
+
+        var visual = inRacePhase.GetCarVisual(0);
+        var stats = car.Stats;
+        var nbsq = 0;
+        var squash = car.CarPhysics.RoofDamage;
+        var mtouch = car.CarPhysics.Mtouch;
+        MeshDamage.DamageY(stats, car, visual, 0, amount, mtouch, ref nbsq, ref squash);
+        MeshDamage.DamageY(stats, car, visual, 1, amount, mtouch, ref nbsq, ref squash);
+        MeshDamage.DamageY(stats, car, visual, 2, amount, mtouch, ref nbsq, ref squash);
+        MeshDamage.DamageY(stats, car, visual, 3, amount, mtouch, ref nbsq, ref squash);
     }
 
     private static void BreakZ(DevConsole console, string[] args)
@@ -260,16 +257,15 @@ public static class DevConsoleCommands
             amount = 150;
         }
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
-        {
-            var car = inRacePhase.CarsInRace[0];
-            var visual = inRacePhase.GetCarVisual(0);
-            var stats = car.Stats;
-            MeshDamage.DamageZ(stats, car, visual, 0, amount);
-            MeshDamage.DamageZ(stats, car, visual, 1, amount);
-            MeshDamage.DamageZ(stats, car, visual, 2, amount);
-            MeshDamage.DamageZ(stats, car, visual, 3, amount);
-        }
+        if (GameSparker.CurrentPhase is not InRacePhase inRacePhase || inRacePhase.ClientCar is not { } car)
+            return;
+
+        var visual = inRacePhase.GetCarVisual(0);
+        var stats = car.Stats;
+        MeshDamage.DamageZ(stats, car, visual, 0, amount);
+        MeshDamage.DamageZ(stats, car, visual, 1, amount);
+        MeshDamage.DamageZ(stats, car, visual, 2, amount);
+        MeshDamage.DamageZ(stats, car, visual, 3, amount);
     }
 
     private static void SetBlackPoint(DevConsole console, string[] args)
@@ -341,20 +337,20 @@ public static class DevConsoleCommands
             return;
         }
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+        if (GameSparker.CurrentPhase is InRacePhase inRacePhase && inRacePhase.ClientCar is { } car)
         {
-            inRacePhase.CarsInRace[0].CarPhysics.Speed = (fix64)speed;
+            car.CarPhysics.Speed = (fix64)speed;
         }
         Logging.Info($"Set player car speed to {speed}");
     }
 
     private static void ResetCar(DevConsole console)
     {
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
-        {
-            var originalCar = inRacePhase.CarsInRace[0];
-            inRacePhase.CarsInRace[0] = new BackendCar(originalCar.Rad, 0, 0, 0, true);
-        }
+        if (GameSparker.CurrentPhase is not InRacePhase inRacePhase || inRacePhase.ClientCar is not { } originalCar)
+            return;
+
+        if (inRacePhase.GamemodeInstance is BaseClientGamemode gm)
+            gm.ClientPlayer.Car = new BackendCar(originalCar.Rad, 0, 0, 0, true);
 
         Logging.Info("Position reset");
     }
@@ -373,9 +369,8 @@ public static class DevConsoleCommands
             return;
         }
 
-        if (GameSparker.CurrentPhase is InRacePhase inRacePhase)
+        if (GameSparker.CurrentPhase is InRacePhase inRacePhase && inRacePhase.ClientCar is { } mesh)
         {
-            var mesh = inRacePhase.CarsInRace[0];
             mesh.Position = new f64Vector3(x, y, z);
             Logging.Info($"Teleported player to ({x}, {y}, {z})");
         }

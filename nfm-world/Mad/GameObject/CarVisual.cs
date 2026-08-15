@@ -17,6 +17,11 @@ public class CarVisual : MeshedGameObject, IDisposable
     private readonly IInGameCar _car;
 
     /// <summary>
+    /// The backend car this visual is bound to.
+    /// </summary>
+    public IInGameCar Car => _car;
+
+    /// <summary>
     /// Visual properties that gamemodes can modify via <see cref="IClientCarCallbacks"/>.
     /// </summary>
     public CarVisualProperties Visuals { get; } = new();

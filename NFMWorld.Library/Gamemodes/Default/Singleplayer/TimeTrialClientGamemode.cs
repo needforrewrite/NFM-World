@@ -5,6 +5,7 @@ using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Sfx;
 using NFMWorldLibrary.Files;
+using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Helpers;
 
 namespace NFMWorldLibrary.Backend.Gamemodes;
@@ -45,15 +46,22 @@ public class TimeTrialClientGamemode1(GamemodeParameters gamemodeParameters, IGa
         if (bestTimeDemo != null && PlaybackOnReset)
         {
             _bestTimeTrial = bestTimeDemo;
-            CarsInRace[GhostCarIndex] = bestTimeDemo.CarData != null
+            var ghostCar = bestTimeDemo.CarData != null
                 ? new BackendCar(bestTimeDemo.CarData, PlayerCarIndex, 0, 0, false)
-                : new BackendCar(CarsInRace[PlayerCarIndex], PlayerCarIndex, false);
+                : new BackendCar(Players[PlayerCarIndex].Car!, PlayerCarIndex, false);
+            ghostCar.CurrentLap = 0;
+
+            var ghostPlayer = new ClientSidePlayer(Players[PlayerCarIndex].Parameters, GhostCarIndex, isFake: true)
+            {
+                Car = ghostCar
+            };
+            Players.Add(ghostPlayer);
+
             gamemodeData.ClientCallbacks.GetClientCarCallbacks(GhostCarIndex).AlphaOverride = 0.2f;
-            CarsInRace[GhostCarIndex].CurrentLap = 0;
         }
 
         _currentTimeTrial = new SavedTimeTrial(Players[PlayerCarIndex].Parameters.CarName, CurrentStage.Path,
-            CurrentStage.stageLoader, CarsInRace[PlayerCarIndex].Rad);
+            CurrentStage.stageLoader, Players[PlayerCarIndex].Car!.Rad);
 
         gamemodeData.ClientCallbacks.ResetCheckpointGlow();
         SetTimeText();
@@ -68,7 +76,7 @@ public class TimeTrialClientGamemode1(GamemodeParameters gamemodeParameters, IGa
     protected override void OnGameTickComplete()
     {
         FrameTrace.AddMessage(
-            $"contox: {CarsInRace[PlayerCarIndex].Position.X:0.00}, contoz: {CarsInRace[PlayerCarIndex].Position.Z:0.00}, contoy: {CarsInRace[PlayerCarIndex].Position.Y:0.00}");
+            $"contox: {Players[PlayerCarIndex].Car?.Position.X:0.00}, contoz: {Players[PlayerCarIndex].Car?.Position.Z:0.00}, contoy: {Players[PlayerCarIndex].Car?.Position.Y:0.00}");
 
         switch (_currentState)
         {
@@ -90,25 +98,27 @@ public class TimeTrialClientGamemode1(GamemodeParameters gamemodeParameters, IGa
     protected override void OnBeforePhysics()
     {
         SetTimeText();
-        base.UpdateHudAndSounds(CarsInRace[PlayerCarIndex]);
+
+        var playerCar = Players[PlayerCarIndex].Car!;
+        base.UpdateHudAndSounds(playerCar);
 
         // Replay ghost
-        if (_bestTimeTrial != null)
+        if (_bestTimeTrial != null && Players[GhostCarIndex].Car is { } ghostCar)
         {
-            CarsInRace[GhostCarIndex].Control.Decode(
+            ghostCar.Control.Decode(
                 _bestTimeTrial.GetTick(_tick) ?? (false, false, false, false, false));
-            CarsInRace[GhostCarIndex].Drive(gamemodeData.CurrentStage);
+            ghostCar.Drive(gamemodeData.CurrentStage);
         }
 
-        _currentTimeTrial?.RecordTick(CarsInRace[PlayerCarIndex]);
+        _currentTimeTrial?.RecordTick(playerCar);
 
-        _lastCurrentCheckpoint = CarsInRace[PlayerCarIndex].CurrentCheckpoint;
-        _lastLap = CarsInRace[PlayerCarIndex].CurrentLap;
+        _lastCurrentCheckpoint = playerCar.CurrentCheckpoint;
+        _lastLap = playerCar.CurrentLap;
     }
 
     protected override void OnAfterPhysics()
     {
-        var car = CarsInRace[PlayerCarIndex];
+        var car = Players[PlayerCarIndex].Car!;
 
         if (car.CurrentCheckpoint != _lastCurrentCheckpoint)
         {
@@ -196,7 +206,8 @@ public class TimeTrialClientGamemode1(GamemodeParameters gamemodeParameters, IGa
 
     private void RenderInfo()
     {
-        if ((CarsInRace[PlayerCarIndex].CurrentCheckpoint != 0 || CarsInRace[PlayerCarIndex].CurrentLap != 0) &&
+        var car = Players[PlayerCarIndex].Car;
+        if (car is not null && (car.CurrentCheckpoint != 0 || car.CurrentLap != 0) &&
             _bestTimeTrial != null && _currentTimeTrial != null)
         {
             long diff = _currentTimeTrial.GetSplitDiff(_bestTimeTrial,

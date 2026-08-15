@@ -38,13 +38,19 @@ public abstract class TimeTrialGamemode(GamemodeParameters gamemodeParameters, I
         _countdownTime = 4;
         _innerCountdownTicks = 0;
         
-        CarsInRace.Clear();
-        CarsInRace[PlayerCarIndex] = LoadPlayerCar(0, 0);
-        CarsInRace[PlayerCarIndex].CurrentCheckpoint = 0;
-        CarsInRace[PlayerCarIndex].CurrentLap = 0;
+        // Drop gamemode-created players (e.g., the ghost from a previous run).
+        for (var i = Players.Count - 1; i >= 0; i--)
+        {
+            if (Players[i].IsFake)
+                Players.RemoveAt(i);
+        }
+
+        var playerCar = LoadPlayerCar(0, 0);
+        playerCar.CurrentCheckpoint = 0;
+        playerCar.CurrentLap = 0;
+        Players[PlayerCarIndex].Car = playerCar;
 
         _currentState = TimeTrialState.Countdown;
-        CarsInRace[PlayerCarIndex].CurrentLap = 0;
 
         OnResetComplete();
     }
@@ -80,15 +86,16 @@ public abstract class TimeTrialGamemode(GamemodeParameters gamemodeParameters, I
     {
         OnBeforePhysics();
 
-        CarsInRace[PlayerCarIndex].Drive(CurrentStage);
+        var car = Players[PlayerCarIndex].Car!;
+        car.Drive(CurrentStage);
 
         if (CurrentStage.checkpoints.Count == 0)
             return;
 
-        FixHoopHelper.HandleFixHoops(CurrentStage, CarsInRace[PlayerCarIndex]);
-        CheckPointHelper.HandleCheckPoint(CurrentStage, CarsInRace[PlayerCarIndex]);
+        FixHoopHelper.HandleFixHoops(CurrentStage, car);
+        CheckPointHelper.HandleCheckPoint(CurrentStage, car);
 
-        if (CarsInRace[PlayerCarIndex].CurrentLap >= CurrentStage.nlaps)
+        if (car.CurrentLap >= CurrentStage.nlaps)
             _currentState = TimeTrialState.Finished;
 
         OnAfterPhysics();
@@ -96,8 +103,9 @@ public abstract class TimeTrialGamemode(GamemodeParameters gamemodeParameters, I
 
     protected virtual void TimeTrialFinished()
     {
-        CarsInRace[PlayerCarIndex].CarPhysics.Halted = true;
-        CarsInRace[PlayerCarIndex].Drive(gamemodeData.CurrentStage);
+        var car = Players[PlayerCarIndex].Car!;
+        car.CarPhysics.Halted = true;
+        car.Drive(gamemodeData.CurrentStage);
 
         OnFinishedComplete();
     }

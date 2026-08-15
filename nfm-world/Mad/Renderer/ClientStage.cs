@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorld;
@@ -16,7 +17,9 @@ public class ClientStage : IDisposable
 {
     private readonly GraphicsDevice _graphicsDevice;
     private readonly Dictionary<IInGameCar, CarVisual> _carVisuals = new();
+    private readonly Dictionary<ClientSidePlayer, CarVisual> _playerVisuals = new();
     private ObservableUnlimitedArray<IInGameCar> _cars;
+    private ObservableUnlimitedArray<ClientSidePlayer>? _players;
     private Scene _scene;
     private bool _disposed;
 
@@ -73,6 +76,26 @@ public class ClientStage : IDisposable
     }
 
     /// <summary>
+    /// Replaces the set of players this stage tracks (race path). The stage
+    /// creates a <see cref="CarVisual"/> for each player's <see cref="ClientSidePlayer.Car"/>
+    /// and keeps it in sync as cars are assigned or players join/leave.
+    /// </summary>
+    public void SetPlayers(ObservableUnlimitedArray<ClientSidePlayer> players)
+    {
+        if (_players is { } oldPlayers)
+        {
+            oldPlayers.CollectionChanged -= PlayersOnCollectionChanged;
+            foreach (var player in oldPlayers)
+                DetachPlayer(player);
+        }
+
+        _players = players;
+        players.CollectionChanged += PlayersOnCollectionChanged;
+        foreach (var player in players)
+            AttachPlayer(player);
+    }
+
+    /// <summary>
     /// Gets or creates the <see cref="CarVisual"/> for a backend car.
     /// The visual is added to the scene immediately.
     /// </summary>
@@ -88,9 +111,17 @@ public class ClientStage : IDisposable
 
     /// <summary>
     /// Gets the <see cref="CarVisual"/> for a backend car by index.
+    /// In player mode the index is a player index.
     /// </summary>
     public CarVisual GetCarVisual(int index)
     {
+        if (_players is { } players)
+        {
+            var car = players[index].Car
+                ?? throw new InvalidOperationException($"Player {index} has no car.");
+            return GetCarVisual(car);
+        }
+
         return GetCarVisual(_cars.ElementAt(index));
     }
 
@@ -106,6 +137,76 @@ public class ClientStage : IDisposable
         Camera.OnBeforeGameTick();
         foreach (var lightCamera in LightCameras)
             lightCamera.OnBeforeGameTick();
+    }
+
+    private void AttachPlayer(ClientSidePlayer player)
+    {
+        player.CarChanged += OnPlayerCarChanged;
+        if (player.Car is { } car)
+            CreatePlayerVisual(player, car);
+    }
+
+    private void DetachPlayer(ClientSidePlayer player)
+    {
+        player.CarChanged -= OnPlayerCarChanged;
+        if (_playerVisuals.Remove(player, out var visual))
+        {
+            _scene.Objects.Remove(visual);
+            _carVisuals.Remove(visual.Car);
+            visual.Dispose();
+        }
+    }
+
+    private void OnPlayerCarChanged(ClientSidePlayer player, IInGameCar? car)
+    {
+        if (_playerVisuals.Remove(player, out var oldVisual))
+        {
+            _scene.Objects.Remove(oldVisual);
+            _carVisuals.Remove(oldVisual.Car);
+            oldVisual.Dispose();
+        }
+
+        if (car is not null)
+            CreatePlayerVisual(player, car);
+    }
+
+    private void CreatePlayerVisual(ClientSidePlayer player, IInGameCar car)
+    {
+        _playerVisuals[player] = GetCarVisual(car);
+    }
+
+    private void PlayersOnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        switch (e.Action)
+        {
+            case NotifyCollectionChangedAction.Add:
+                foreach (ClientSidePlayer player in e.NewItems!)
+                    AttachPlayer(player);
+                break;
+            case NotifyCollectionChangedAction.Remove:
+                foreach (ClientSidePlayer player in e.OldItems!)
+                    DetachPlayer(player);
+                break;
+            case NotifyCollectionChangedAction.Replace:
+                foreach (ClientSidePlayer player in e.OldItems!)
+                    DetachPlayer(player);
+                foreach (ClientSidePlayer player in e.NewItems!)
+                    AttachPlayer(player);
+                break;
+            case NotifyCollectionChangedAction.Move:
+                // Visuals are tracked by player reference, not index.
+                break;
+            case NotifyCollectionChangedAction.Reset:
+                if (_players is not { } players)
+                    break;
+                foreach (var player in players)
+                    DetachPlayer(player);
+                foreach (var player in players)
+                    AttachPlayer(player);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
     /// <summary>
@@ -213,6 +314,13 @@ public class ClientStage : IDisposable
         _disposed = true;
 
         _cars.CollectionChanged -= CarsOnCollectionChanged;
+
+        if (_players is { } players)
+        {
+            players.CollectionChanged -= PlayersOnCollectionChanged;
+            foreach (var player in players)
+                DetachPlayer(player);
+        }
 
         foreach (var visual in _carVisuals.Values)
             visual.Dispose();

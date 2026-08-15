@@ -1,4 +1,4 @@
-﻿﻿﻿﻿using Microsoft.Xna.Framework.Graphics;
+﻿﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay.Gamemodes;
@@ -123,8 +123,8 @@ public class InMultiplayerRacePhase : BaseRacePhase
                     var carIndex = _session.Players
                         .First(e => e.Value.Id == playerState.PlayerId)
                         .Key;
-                    var car = CarsInRace[carIndex];
-                    if (playerState.State.Ticks <= _lastTick[carIndex])
+                    var car = (GamemodeInstance as BaseClientGamemode)?.Players[carIndex].Car;
+                    if (car is null || playerState.State.Ticks <= _lastTick[carIndex])
                         break;
                     _lastTick[carIndex] = playerState.State.Ticks;
                     PlayerState.ApplyTo(playerState.State, car);
@@ -150,7 +150,7 @@ public class InMultiplayerRacePhase : BaseRacePhase
 
         if (RaceState == RaceState.InProgress)
         {
-            var myCar = CarsInRace.FirstOrDefault(c => c.Player.IsClientPlayer);
+            var myCar = (GamemodeInstance as BaseClientGamemode)?.ClientPlayer.Car;
             if (myCar is not null)
             {
                 _transport.SendPacketToServer(new C2S_PlayerState()

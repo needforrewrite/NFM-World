@@ -35,6 +35,22 @@ public class ObservableUnlimitedArray<T> : UnlimitedArray<T>,
     INotifyCollectionChanged
 {
     // ------------------------------------------------------------------
+    // Constructors
+    // ------------------------------------------------------------------
+
+    public ObservableUnlimitedArray()
+    {
+    }
+
+    public ObservableUnlimitedArray(int capacity) : base(capacity)
+    {
+    }
+
+    public ObservableUnlimitedArray(IEnumerable<T> items) : base(items)
+    {
+    }
+
+    // ------------------------------------------------------------------
     // Cached event-args singletons (avoid per-call allocations)
     // ------------------------------------------------------------------
 

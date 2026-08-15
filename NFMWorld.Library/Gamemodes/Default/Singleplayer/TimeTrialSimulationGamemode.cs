@@ -19,7 +19,7 @@ public class TimeTrialSimulationGamemode(GamemodeParameters gamemodeParameters, 
 
     protected override void TimeTrialInRace()
     {
-        CarsInRace[PlayerCarIndex].Control.Decode(timeTrial.GetTick(_tick) ?? (false, false, false, false, false));
+        Players[PlayerCarIndex].Car!.Control.Decode(timeTrial.GetTick(_tick) ?? (false, false, false, false, false));
         base.TimeTrialInRace();
         _tick++;
     }

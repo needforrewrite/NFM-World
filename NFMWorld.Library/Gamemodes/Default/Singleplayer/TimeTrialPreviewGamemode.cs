@@ -39,11 +39,11 @@ public class TimeTrialPreviewGamemode(
         {
             if (_tick < timeTrial.DemoData.Ticks.Count && _tick > 0)
             {
-                timeTrial.DemoData.Ticks[_tick - 1].ApplyToCar(CarsInRace[0]);
+                timeTrial.DemoData.Ticks[_tick - 1].ApplyToCar(Players[0].Car!);
             }
         }
 
-        CarsInRace[PlayerCarIndex].Control
+        Players[PlayerCarIndex].Car!.Control
             .Decode(timeTrial.GetTick(_tick) ?? (false, false, false, false, false));
         base.TimeTrialInRace();
 
