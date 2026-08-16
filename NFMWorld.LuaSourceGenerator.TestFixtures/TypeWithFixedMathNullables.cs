@@ -10,15 +10,15 @@ namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 [LuaVisible]
 public partial class TypeWithFixedMathNullables
 {
-    public Fixed64? NullableFixed { get; set; }
-    public Vector3d? NullableVec3 { get; set; }
+    [LuaName] public Fixed64? NullableFixed { get; set; }
+    [LuaName] public Vector3d? NullableVec3 { get; set; }
 
-    public Fixed64 NormalFixed { get; set; }
-    public Vector3d NormalVec3 { get; set; }
+    [LuaName] public Fixed64 NormalFixed { get; set; }
+    [LuaName] public Vector3d NormalVec3 { get; set; }
 
-    public TypeWithFixedMathNullables() { }
+    [LuaName] public TypeWithFixedMathNullables() { }
 
-    public Fixed64? GetOptionalValue(bool returnValue)
+    [LuaName] public Fixed64? GetOptionalValue(bool returnValue)
     {
         return returnValue ? NormalFixed : null;
     }

@@ -6,34 +6,34 @@ namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 public static partial class StaticClass
 {
     // Static field
-    public static int StaticField = 42;
+    [LuaName] public static int StaticField = 42;
 
     // Static property with getter and setter
-    public static string StaticProperty { get; set; } = "Initial";
+    [LuaName] public static string StaticProperty { get; set; } = "Initial";
 
     // Read-only static property
-    public static double ReadOnlyProperty => 3.14159;
+    [LuaName] public static double ReadOnlyProperty => 3.14159;
 
     // Static method with no parameters
-    public static int GetMagicNumber()
+    [LuaName] public static int GetMagicNumber()
     {
         return 123;
     }
 
     // Static method with parameters
-    public static int Add(int a, int b)
+    [LuaName] public static int Add(int a, int b)
     {
         return a + b;
     }
 
     // Static method returning string
-    public static string Greet(string name)
+    [LuaName] public static string Greet(string name)
     {
         return $"Hello, {name}!";
     }
 
     // Static method with multiple parameters and return value
-    public static double Calculate(double x, double y, string operation)
+    [LuaName] public static double Calculate(double x, double y, string operation)
     {
         return operation switch
         {
@@ -49,7 +49,7 @@ public static partial class StaticClass
     public static event Action<string>? OnMessage;
 
     // Static method to raise event
-    public static void RaiseMessage(string message)
+    [LuaName] public static void RaiseMessage(string message)
     {
         OnMessage?.Invoke(message);
     }

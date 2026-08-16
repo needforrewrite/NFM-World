@@ -22,4 +22,5 @@ public partial class TypeWithEnum
     [LuaName] public void SetColor(TestColor color) => Color = color;
     [LuaName] public bool IsPrimary(TestColor color) => color is TestColor.Red or TestColor.Green or TestColor.Blue;
     [LuaName] public TestColor DefaultColor => TestColor.Red;
+    [LuaName] public TestColor? GetNullableColor(bool returnValue) => returnValue ? TestColor.Blue : null;
 }

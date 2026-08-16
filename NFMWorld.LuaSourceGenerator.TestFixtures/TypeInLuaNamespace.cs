@@ -9,16 +9,16 @@ namespace NFMWorld.LuaSourceGenerator.TestFixtures.Lua;
 [LuaVisible]
 public partial class TypeInLuaNamespace
 {
-    public string Name { get; set; } = "";
-    public int Value { get; set; }
+    [LuaName] public string Name { get; set; } = "";
+    [LuaName] public int Value { get; set; }
 
-    public TypeInLuaNamespace() { }
+    [LuaName] public TypeInLuaNamespace() { }
 
-    public TypeInLuaNamespace(string name, int value)
+    [LuaName] public TypeInLuaNamespace(string name, int value)
     {
         Name = name;
         Value = value;
     }
 
-    public string GetDescription() => $"{Name}:{Value}";
+    [LuaName] public string GetDescription() => $"{Name}:{Value}";
 }

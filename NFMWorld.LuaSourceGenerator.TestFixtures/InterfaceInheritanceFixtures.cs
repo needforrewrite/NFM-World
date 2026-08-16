@@ -9,14 +9,14 @@ namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 
 public interface IBaseAnimal
 {
-    string Name { get; set; }
-    int Age { get; set; }
+    [LuaName] string Name { get; set; }
+    [LuaName] int Age { get; set; }
 }
 
 [LuaVisible]
 public partial interface IDog : IBaseAnimal
 {
-    string Breed { get; set; }
+    [LuaName] string Breed { get; set; }
 }
 
 /// <summary>Concrete impl of IDog — NOT LuaVisible, relies on IDog's metatable.</summary>
@@ -34,22 +34,22 @@ public class Dog : IDog
 
 public interface IFixtureTransform
 {
-    double X { get; set; }
-    double Y { get; set; }
-    double Z { get; set; }
+    [LuaName] double X { get; set; }
+    [LuaName] double Y { get; set; }
+    [LuaName] double Z { get; set; }
 }
 
 public interface IFixtureVehicle : IFixtureTransform
 {
-    int Speed { get; set; }
-    string? DriverName { get; set; }
+    [LuaName] int Speed { get; set; }
+    [LuaName] string? DriverName { get; set; }
 }
 
 [LuaVisible]
 public partial interface IFixtureCar : IFixtureVehicle
 {
-    string Model { get; set; }
-    bool IsElectric { get; set; }
+    [LuaName] string Model { get; set; }
+    [LuaName] bool IsElectric { get; set; }
 }
 
 /// <summary>Concrete impl of IFixtureCar — NOT LuaVisible, relies on IFixtureCar's metatable.</summary>
@@ -70,20 +70,20 @@ public class FixtureCar : IFixtureCar
 
 public interface IHasName
 {
-    string GetName();
-    void SetName(string name);
+    [LuaName] string GetName();
+    [LuaName] void SetName(string name);
 }
 
 public interface IHasAge
 {
-    int GetAge();
-    void SetAge(int age);
+    [LuaName] int GetAge();
+    [LuaName] void SetAge(int age);
 }
 
 [LuaVisible]
 public partial interface IPerson : IHasName, IHasAge
 {
-    string? Email { get; set; }
+    [LuaName] string? Email { get; set; }
 }
 
 public class Person : IPerson

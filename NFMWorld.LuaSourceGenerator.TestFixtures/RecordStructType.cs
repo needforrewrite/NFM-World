@@ -8,20 +8,20 @@ namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 [LuaVisible]
 public partial record struct RecordStructType
 {
-    public int X { get; set; }
-    public int Y { get; set; }
+    [LuaName] public int X { get; set; }
+    [LuaName] public int Y { get; set; }
 
-    public RecordStructType()
+    [LuaName] public RecordStructType()
     {
         X = 0;
         Y = 0;
     }
 
-    public RecordStructType(int x, int y)
+    [LuaName] public RecordStructType(int x, int y)
     {
         X = x;
         Y = y;
     }
 
-    public int Sum() => X + Y;
+    [LuaName] public int Sum() => X + Y;
 }

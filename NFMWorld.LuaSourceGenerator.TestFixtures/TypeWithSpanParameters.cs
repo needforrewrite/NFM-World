@@ -10,7 +10,9 @@ namespace NFMWorld.LuaSourceGenerator.TestFixtures;
 [LuaVisible]
 public partial class TypeWithSpanParameters
 {
-    public string Name { get; set; } = "";
+    [LuaName] public TypeWithSpanParameters() { }
+
+    [LuaName] public string Name { get; set; } = "";
 
     // Method with ReadOnlySpan param — should be SKIPPED by the generator
     public int Sum(ReadOnlySpan<int> values)
@@ -34,7 +36,7 @@ public partial class TypeWithSpanParameters
     }
 
     // Normal method (no ref struct params) — should be INCLUDED
-    public string GetName() => Name;
+    [LuaName] public string GetName() => Name;
 
     // Method with mix of normal and ref struct params — should be SKIPPED
     public int CountMatching(ReadOnlySpan<int> values, int target)

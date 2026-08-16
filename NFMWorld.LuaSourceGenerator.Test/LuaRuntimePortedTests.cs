@@ -994,6 +994,54 @@ public class LuaRuntimePortedTests
         Assert.AreEqual("Red", results[0].Read<string>());
     }
 
+    [TestMethod]
+    public async Task Enum_Nullable_ReadNull()
+    {
+        var obj = new TypeWithEnum();
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var results = await _state.DoStringAsync("return obj.nullableColor");
+        Assert.AreEqual(LuaValueType.Nil, results[0].Type);
+    }
+
+    [TestMethod]
+    public async Task Enum_Nullable_SetAndRead()
+    {
+        var obj = new TypeWithEnum();
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var greenVal = LuaVisibleHelper.Wrap(TestColor.Green);
+        _state.Environment["greenColor"] = greenVal;
+        await _state.DoStringAsync("obj.nullableColor = greenColor");
+        Assert.AreEqual(TestColor.Green, obj.NullableColor);
+
+        var results = await _state.DoStringAsync("return tostring(obj.nullableColor)");
+        Assert.AreEqual("Green", results[0].Read<string>());
+    }
+
+    [TestMethod]
+    public async Task Enum_Nullable_SetToNil()
+    {
+        var obj = new TypeWithEnum { NullableColor = TestColor.Red };
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        await _state.DoStringAsync("obj.nullableColor = nil");
+        Assert.IsNull(obj.NullableColor);
+    }
+
+    [TestMethod]
+    public async Task Enum_Nullable_MethodReturn()
+    {
+        var obj = new TypeWithEnum();
+        _state.Environment["obj"] = LuaValue.FromUserData(obj);
+
+        var some = await _state.DoStringAsync("return tostring(obj:getNullableColor(true))");
+        Assert.AreEqual("Blue", some[0].Read<string>());
+
+        var none = await _state.DoStringAsync("return obj:getNullableColor(false)");
+        Assert.AreEqual(LuaValueType.Nil, none[0].Type);
+    }
+
     // ===================================================================
     // Overload resolution tests — runtime dispatch by argument count + types
     // ===================================================================

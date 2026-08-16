@@ -798,6 +798,15 @@ internal abstract class BaseLuaTypeGenerator
             return variable;
         }
 
+        // Nullable<T> marshals as the underlying value, or nil when null.
+        // (Built-in nullables like int?/Fixed64? are handled above via the raw pass.)
+        if (variableType.IsNullableValueType)
+        {
+            var underlying = variableType.NullableUnderlyingType!;
+            var inner = MarshalToLua($"{variable}.Value", underlying);
+            return $"({variable}.HasValue ? {inner} : global::Lua.LuaValue.Nil)";
+        }
+
         // enums can't implement interfaces! and metatables are specific to a generic instantiation
         if (variableType.IsILuaUserData || (variableType.HasLuaVisibleAttr && !variableType.IsEnum && !variableType.IsOpenGeneric && !variableType.IsConstructedGeneric))
         {

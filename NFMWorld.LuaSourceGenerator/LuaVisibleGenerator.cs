@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -19,6 +20,10 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         var symbolReferences = context.CompilationProvider
             .Select((compilation, token) => SymbolReferences.Create(compilation))
             .WithTrackingName("SymbolReferences");
+
+        var asmName = context.CompilationProvider
+            .Select((compilation, token) => compilation.AssemblyName)
+            .WithTrackingName("AsmName");
 
         var typeProvider = context.SyntaxProvider.ForAttributeWithMetadataName(
             LuaVisibleAttrName,
@@ -101,13 +106,13 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
             .Where(tm => tm?.IsCandidate == true)
             .WithTrackingName("AssemblyLuaTypeMetadatas");
 
-        var combined = luaTypeMetadatas.Collect().Combine(luaTypeMetadatas2.Collect()).Combine(assemblyLuaTypeMetadatas.Collect()).Combine(stubsOutputDir);
+        var combined = luaTypeMetadatas.Collect().Combine(luaTypeMetadatas2.Collect()).Combine(assemblyLuaTypeMetadatas.Collect()).Combine(stubsOutputDir).Combine(asmName);
         
         context.RegisterSourceOutput(
             combined,
             (spc, pairs) =>
             {
-                var (((visible, memberVisible), assemblyVisible), stubsOutputDir) = pairs;
+                var ((((visible, memberVisible), assemblyVisible), stubsOutputDir), asmName) = pairs;
 
                 var list = new Dictionary<string, LuaTypeMetadata>();
                 foreach (var meta in visible)
@@ -328,14 +333,16 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
 
                 if (stubsOutputDir != null)
                 {
+                    var codes = new StringBuilder();
                     foreach (var type in list.Values)
                     {
                         var initGenerator = new LuaStubsGenerator(type);
                         var code = initGenerator.GenerateCode();
-#pragma warning disable RS1035
-                        File.WriteAllText(Path.Combine(stubsOutputDir ?? "", type.LuaName + ".lua"), code);
-#pragma warning restore RS1035
+                        codes.AppendLine(code);
                     }
+#pragma warning disable RS1035
+                    File.WriteAllText(Path.Combine(stubsOutputDir ?? "", asmName + ".lua"), codes.ToString());
+#pragma warning restore RS1035
                 }
             });
     }
