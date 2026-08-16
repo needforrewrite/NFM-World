@@ -6,7 +6,12 @@
         <Nullable>enable</Nullable>
         <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
         <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+        <LuaVisibleGenerator_StubsOutputDirectory>$(MSBuildProjectDirectory)\GeneratedStubs</LuaVisibleGenerator_StubsOutputDirectory>
     </PropertyGroup>
+
+    <ItemGroup>
+        <CompilerVisibleProperty Include="LuaVisibleGenerator_StubsOutputDirectory" />
+    </ItemGroup>
 
     <ItemGroup>
         <!-- Exclude emitted source-generator files from implicit *.cs glob to prevent double compilation -->

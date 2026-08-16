@@ -354,9 +354,14 @@ internal sealed class SymbolReferences
     public INamedTypeSymbol? LuaNameAttribute { get; }
     public INamedTypeSymbol? LuaHiddenAttribute { get; }
     public INamedTypeSymbol? MemberLuaVisibleAttribute { get; }
+    public INamedTypeSymbol? LuaShimTypeAttribute { get; }
     public INamedTypeSymbol? LuaOverloadPriorityAttribute { get; }
     public INamedTypeSymbol? InlineArrayAttribute { get; }
     public INamedTypeSymbol? ILuaUserData { get; }
+    public INamedTypeSymbol? LuaTable { get; }
+    public INamedTypeSymbol? LuaValue { get; }
+    public INamedTypeSymbol? LuaThread { get; }
+    public INamedTypeSymbol? LuaFunction { get; }
     public INamedTypeSymbol? Fixed64Vector3 { get; }
     public INamedTypeSymbol? Fixed64 { get; }
     public INamedTypeSymbol? Fixed64AngleSingle { get; }
@@ -370,9 +375,14 @@ internal sealed class SymbolReferences
         LuaNameAttribute = compilation.GetTypeByMetadataName("nfm_world_library.Lua.LuaNameAttribute");
         LuaHiddenAttribute = compilation.GetTypeByMetadataName("nfm_world_library.Lua.LuaHiddenAttribute");
         MemberLuaVisibleAttribute = compilation.GetTypeByMetadataName("nfm_world_library.Lua.MemberLuaVisibleAttribute");
+        LuaShimTypeAttribute = compilation.GetTypeByMetadataName("nfm_world_library.Lua.LuaShimTypeAttribute");
         LuaOverloadPriorityAttribute = compilation.GetTypeByMetadataName("nfm_world_library.Lua.LuaOverloadPriorityAttribute");
         InlineArrayAttribute = compilation.GetTypeByMetadataName("System.Runtime.CompilerServices.InlineArrayAttribute");
         ILuaUserData = compilation.GetTypeByMetadataName("Lua.ILuaUserData");
+        LuaTable = compilation.GetTypeByMetadataName("Lua.LuaTable");
+        LuaValue = compilation.GetTypeByMetadataName("Lua.LuaValue");
+        LuaThread = compilation.GetTypeByMetadataName("Lua.LuaThread");
+        LuaFunction = compilation.GetTypeByMetadataName("Lua.LuaFunction");
         Fixed64 = compilation.GetTypeByMetadataName("FixedMathSharp.Fixed64");
         Fixed64Vector3 = compilation.GetTypeByMetadataName("FixedMathSharp.Vector3d");
         Fixed64AngleSingle = compilation.GetTypeByMetadataName("NFMWorldLibrary.FixedMath.f64AngleSingle");

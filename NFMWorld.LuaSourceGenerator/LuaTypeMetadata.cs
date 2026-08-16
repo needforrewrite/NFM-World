@@ -32,6 +32,10 @@ internal class BaseLuaTypeMetadata
     public bool IsFixed64AngleSingle { get; }
     public bool IsFixed64Euler { get; }
     public bool IsFixed64Vector3 { get; }
+    public bool IsLuaTable { get; }
+    public bool IsLuaFunction { get; }
+    public bool IsLuaValue { get; }
+    public bool IsLuaThread { get; }
     
     [MemberNotNullWhen(true, nameof(IEnumerableType))]
     public bool IsArray { get; }
@@ -41,6 +45,15 @@ internal class BaseLuaTypeMetadata
     public bool IsEnum { get; }
 
     public string SanitizedTypeName { get; }
+
+    /// <summary>Raw value of <c>[LuaShimType]</c>, or null if the type has no shim override.</summary>
+    public string? ShimType { get; private set; }
+
+    /// <summary>Type parameter names (e.g. "T", "TView") to substitute in <see cref="ShimType"/>.</summary>
+    public string[]? ShimTypeTypeParameterNames { get; private set; }
+
+    /// <summary>Type argument metadata parallel to <see cref="ShimTypeTypeParameterNames"/>.</summary>
+    public BaseLuaTypeMetadata[]? ShimTypeTypeArguments { get; private set; }
 
     public bool IsBuiltIn => SpecialType is
                                  SpecialType.System_Boolean or
@@ -62,6 +75,10 @@ internal class BaseLuaTypeMetadata
                              IsFixed64AngleSingle ||
                              IsFixed64Euler ||
                              IsFixed64Vector3 ||
+                             IsLuaTable ||
+                             IsLuaFunction ||
+                             IsLuaValue ||
+                             IsLuaThread ||
                              NullableUnderlyingType?.IsBuiltIn == true;
     
     public BaseLuaTypeMetadata? NullableUnderlyingType { get; }
@@ -115,6 +132,10 @@ internal class BaseLuaTypeMetadata
         IsFixed64AngleSingle = SymbolEqualityComparer.Default.Equals(symbol, references.Fixed64AngleSingle);
         IsFixed64Euler = SymbolEqualityComparer.Default.Equals(symbol, references.Fixed64Euler);
         IsFixed64Vector3 = SymbolEqualityComparer.Default.Equals(symbol, references.Fixed64Vector3);
+        IsLuaTable = SymbolEqualityComparer.Default.Equals(symbol, references.LuaTable);
+        IsLuaFunction = SymbolEqualityComparer.Default.Equals(symbol, references.LuaValue);
+        IsLuaValue = SymbolEqualityComparer.Default.Equals(symbol, references.LuaThread);
+        IsLuaThread = SymbolEqualityComparer.Default.Equals(symbol, references.LuaFunction);
 
         var luaVisibleAttr = GetAttr(symbol, references.LuaVisibleAttribute);
         var hasLuaVisibleAttr = luaVisibleAttr != null && symbol.GetAttributes().Any(attr => SymbolEqualityComparer.Default.Equals(attr.AttributeClass, luaVisibleAttr.AttributeClass));
@@ -166,6 +187,35 @@ internal class BaseLuaTypeMetadata
                 IsIEnumerableOfKeyValuePair = true;
                 IEnumerableKeyType = new BaseLuaTypeMetadata(kvpKey, references);
                 IEnumerableValueType = new BaseLuaTypeMetadata(kvpValue, references);
+            }
+        }
+
+        ApplyShimTypeOverride(symbol, references, GetAttr(symbol, references.LuaShimTypeAttribute));
+    }
+
+    /// <summary>
+    /// Applies a <c>[LuaShimType]</c> override to this metadata. Used both for
+    /// type-level attributes (read from the type symbol) and for member-level
+    /// attributes on parameters, fields, properties, and return values.
+    /// </summary>
+    internal void ApplyShimTypeOverride(ITypeSymbol symbol, SymbolReferences references, AttributeData? attr)
+    {
+        if (attr?.ConstructorArguments.FirstOrDefault().Value is not string shimType)
+            return;
+
+        ShimType = shimType;
+
+        // For constructed generic types, record the type parameter names and the
+        // corresponding type argument metadata so ResolveShimType can substitute
+        // e.g. "T" with the shim name of the actual type argument.
+        if (symbol is INamedTypeSymbol { IsGenericType: true, IsDefinition: false } shimNamedType)
+        {
+            var typeParams = shimNamedType.OriginalDefinition.TypeParameters;
+            var typeArgs = shimNamedType.TypeArguments;
+            if (typeParams.Length == typeArgs.Length)
+            {
+                ShimTypeTypeParameterNames = typeParams.Select(p => p.Name).ToArray();
+                ShimTypeTypeArguments = typeArgs.Select(a => new BaseLuaTypeMetadata(a, references)).ToArray();
             }
         }
     }
@@ -286,6 +336,8 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     public LuaFieldMetadata[] StaticFields { get; }
     public LuaConstructorMetadata[] Constructors { get; }
     public LuaEnumMemberMetadata[] EnumMembers { get; }
+    
+    public bool HasParameterlessConstructor { get; }
 
     // Instance methods dispatch through __index too, so method-only types
     // (e.g. interfaces or calculators) still need an __index metamethod.
@@ -644,6 +696,10 @@ internal class LuaMethodMetadata
         LuaName = attr?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.MethodKind == MethodKind.Constructor ? "new" : Camel(Name));
         Parameters = s.Parameters.Select(p => new LuaParameterMetadata(p, references)).ToArray();
         ReturnType = new BaseLuaTypeMetadata(s.ReturnType, references);
+        var returnShimTypeAttr = s.GetReturnTypeAttributes()
+            .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, references.LuaShimTypeAttribute));
+        if (returnShimTypeAttr != null)
+            ReturnType.ApplyShimTypeOverride(s.ReturnType, references, returnShimTypeAttr);
         DeclaringType = s.ContainingType != null ? new BaseLuaTypeMetadata(s.ContainingType, references) : null;
         IsStatic = s.IsStatic;
         IsVoid = s.ReturnsVoid;
@@ -689,14 +745,24 @@ internal sealed class LuaParameterMetadata(IParameterSymbol p, SymbolReferences 
     public bool IsNullableReferenceType { get; } = p.Type.IsReferenceType && p.Type.NullableAnnotation == NullableAnnotation.Annotated;
     public bool IsNullableValueType { get; } = p.Type.Name.EndsWith("?");
 
-    public BaseLuaTypeMetadata Type { get; } = new BaseLuaTypeMetadata(p.Type, references);
+    public BaseLuaTypeMetadata Type { get; } = CreateType(p, references);
+
+    private static BaseLuaTypeMetadata CreateType(IParameterSymbol p, SymbolReferences references)
+    {
+        var meta = new BaseLuaTypeMetadata(p.Type, references);
+        var shimTypeAttr = p.GetAttributes()
+            .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, references.LuaShimTypeAttribute));
+        if (shimTypeAttr != null)
+            meta.ApplyShimTypeOverride(p.Type, references, shimTypeAttr);
+        return meta;
+    }
 }
 
 internal class LuaPropertyMetadata(IPropertySymbol s, SymbolReferences references)
 {
     public string Name { get; } = s.Name;
     public string PropertyTypeName { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-    public BaseLuaTypeMetadata PropertyType { get; } = new BaseLuaTypeMetadata(s.Type, references);
+    public BaseLuaTypeMetadata PropertyType { get; } = CreatePropertyType(s, references);
     public bool HasGetter { get; } = s.GetMethod != null;
     public bool HasSetter { get; } = s.SetMethod != null && !s.SetMethod.IsInitOnly;
     public bool IsNullableReferenceType { get; } = s.Type.IsReferenceType && s.Type.NullableAnnotation == NullableAnnotation.Annotated;
@@ -705,6 +771,16 @@ internal class LuaPropertyMetadata(IPropertySymbol s, SymbolReferences reference
         .GetAttributes()
         .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, references.LuaNameAttribute))
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);
+
+    private static BaseLuaTypeMetadata CreatePropertyType(IPropertySymbol s, SymbolReferences references)
+    {
+        var meta = new BaseLuaTypeMetadata(s.Type, references);
+        var shimTypeAttr = s.GetAttributes()
+            .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, references.LuaShimTypeAttribute));
+        if (shimTypeAttr != null)
+            meta.ApplyShimTypeOverride(s.Type, references, shimTypeAttr);
+        return meta;
+    }
 }
 
 internal sealed class LuaIndexerMetadata(IPropertySymbol s, SymbolReferences references) : LuaPropertyMetadata(s, references)
@@ -718,7 +794,7 @@ internal sealed class LuaFieldMetadata(IFieldSymbol s, SymbolReferences referenc
 {
     public string Name { get; } = s.Name;
     public string FieldTypeName { get; } = s.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-    public BaseLuaTypeMetadata FieldType { get; } = new BaseLuaTypeMetadata(s.Type, references);
+    public BaseLuaTypeMetadata FieldType { get; } = CreateFieldType(s, references);
     public bool IsReadOnly { get; } = s.IsReadOnly || s.IsConst;
     public bool IsNullableReferenceType { get; } = s.Type.IsReferenceType && s.Type.NullableAnnotation == NullableAnnotation.Annotated;
     public bool IsNullableValueType { get; } = s.Type.Name.EndsWith("?");
@@ -726,6 +802,16 @@ internal sealed class LuaFieldMetadata(IFieldSymbol s, SymbolReferences referenc
         .GetAttributes()
         .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, references.LuaNameAttribute))
         ?.ConstructorArguments.FirstOrDefault().Value as string ?? (s.Name.Length > 0 ? char.ToLowerInvariant(s.Name[0]) + s.Name[1..] : s.Name);
+
+    private static BaseLuaTypeMetadata CreateFieldType(IFieldSymbol s, SymbolReferences references)
+    {
+        var meta = new BaseLuaTypeMetadata(s.Type, references);
+        var shimTypeAttr = s.GetAttributes()
+            .FirstOrDefault(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, references.LuaShimTypeAttribute));
+        if (shimTypeAttr != null)
+            meta.ApplyShimTypeOverride(s.Type, references, shimTypeAttr);
+        return meta;
+    }
 }
 
 internal sealed class LuaEnumMemberMetadata(IFieldSymbol s, SymbolReferences references)

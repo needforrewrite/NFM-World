@@ -128,16 +128,6 @@ internal sealed class LuaStubsGenerator(BaseLuaTypeMetadata type)
 
         if (luaTypeMetadata.IsStatic || luaTypeMetadata.IsInterface) return;
 
-        if (luaTypeMetadata.Constructors.Length == 0)
-        {
-            // Default parameterless constructor for classes/structs
-            sb.AppendLine();
-            sb.AppendLine($"---Creates a new {luaName}");
-            sb.AppendLine($"---@return {luaName}");
-            sb.AppendLine($"function {luaName}.new() end");
-            return;
-        }
-
         foreach (var ctor in luaTypeMetadata.Constructors)
         {
             sb.AppendLine();
@@ -156,6 +146,14 @@ internal sealed class LuaStubsGenerator(BaseLuaTypeMetadata type)
 
     private static string ToLuaTypeName(BaseLuaTypeMetadata t)
     {
+        var suff = t.IsNullableReferenceType || t.IsNullableValueType ? "|nil" : "";
+
+        // A shim override (type-level or member-level) always wins over the
+        // default rendering below, so [LuaShimType] can remap e.g. LuaTable to
+        // a domain-specific Lua type name.
+        if (t.ShimType is { } shimType)
+            return ResolveShimType(shimType, t) + suff;
+
         if (t.SpecialType is SpecialType.System_Boolean) return "boolean";
         if (t.SpecialType is SpecialType.System_Char) return "integer";
         if (t.SpecialType is SpecialType.System_SByte) return "integer";
@@ -178,15 +176,13 @@ internal sealed class LuaStubsGenerator(BaseLuaTypeMetadata type)
         
         if (t.IsNullableValueType) return $"{ToLuaTypeName(t.NullableUnderlyingType!)}|nil";
 
-        var suff = t.IsNullableReferenceType ? "|nil" : "";
-
         if (t.IsArray)
         {
-            return $"{ToLuaTypeName(t.IEnumerableType)}[]{suff}";
+            return $"{{ [integer]: {ToLuaTypeName(t.IEnumerableType)}}}{suff}";
         }
         if (t.IsInlineArray)
         {
-            return $"{ToLuaTypeName(t.InlineArrayElementType)}[]{suff}";
+            return $"{{ [integer]: {ToLuaTypeName(t.InlineArrayElementType)}}}{suff}";
         }
 
         if (t.FullTypeName == "global::Lua.LuaTable") return $"table{suff}";
@@ -194,6 +190,22 @@ internal sealed class LuaStubsGenerator(BaseLuaTypeMetadata type)
         if (t.FullTypeName == "global::Lua.LuaValue") return $"any{suff}";
 
         return t.LuaName + suff;
+    }
+
+    private static string ResolveShimType(string shimType, BaseLuaTypeMetadata t)
+    {
+        var names = t.ShimTypeTypeParameterNames;
+        var args = t.ShimTypeTypeArguments;
+        if (names is null || args is null || names.Length != args.Length)
+            return shimType;
+
+        var result = shimType;
+        // Replace longer parameter names first so "T" doesn't corrupt "TView".
+        var pairs = names.Select((n, i) => (Name: n, Arg: args[i])).OrderByDescending(p => p.Name.Length);
+        foreach (var (name, arg) in pairs)
+            result = result.Replace(name, ToLuaTypeName(arg));
+
+        return result;
     }
 
     private static string ParamName(LuaParameterMetadata p, int idx) =>
