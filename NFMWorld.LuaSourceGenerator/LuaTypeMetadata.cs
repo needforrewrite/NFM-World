@@ -35,9 +35,6 @@ internal class BaseLuaTypeMetadata
     
     [MemberNotNullWhen(true, nameof(IEnumerableType))]
     public bool IsArray { get; }
-
-    /// <summary>Rank of the array type (1 = vector, 2 = matrix, ...); 0 for non-array types.</summary>
-    public int ArrayRank { get; }
     public bool IsRefStruct { get; }
     public bool IsConstructedGeneric { get; }
     public bool IsOpenGeneric { get; }
@@ -132,7 +129,6 @@ internal class BaseLuaTypeMetadata
             LuaName = nameOverride;
 
         IsArray = symbol.TypeKind == TypeKind.Array;
-        ArrayRank = (symbol as IArrayTypeSymbol)?.Rank ?? 0;
         IsRefStruct = symbol is { IsValueType: true, IsRefLikeType: true };
         IsConstructedGeneric = symbol is INamedTypeSymbol { IsGenericType: true, TypeArguments.Length: > 0, IsDefinition: false }; // List<int>, not List<>
         IsOpenGeneric = symbol is INamedTypeSymbol { IsGenericType: true, IsDefinition: true }; // List<>, GenericWrapper<>
@@ -294,15 +290,13 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
 
     // Instance methods dispatch through __index too, so method-only types
     // (e.g. interfaces or calculators) still need an __index metamethod.
-    // Arrays and inline arrays get __index/__newindex even though they declare no public
-    // members — indexing is synthesized from the element type in the binding generator.
-    public bool HasIndex => (IsArray && ArrayRank == 1) || IsInlineArray || InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0 || InstanceMethods.Length > 0; // todo check if any readable members exist
-    public bool HasNewIndex => (IsArray && ArrayRank == 1) || IsInlineArray || InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0; // todo check if any writable members exist
+    public bool HasIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0 || InstanceMethods.Length > 0; // todo check if any readable members exist
+    public bool HasNewIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceIndexers.Length > 0; // todo check if any writable members exist
 
     public bool HasStaticIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any readable members exist
     public bool HasStaticNewIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any writable members exist
 
-    public bool HasPairsAndIPairs => (IsArray && ArrayRank == 1) || IsInlineArray || IsIEnumerable;
+    public bool HasPairsAndIPairs => IsArray || IsInlineArray || IsIEnumerable;
 
     public bool HasLength { get; }
     public bool HasCount { get; }

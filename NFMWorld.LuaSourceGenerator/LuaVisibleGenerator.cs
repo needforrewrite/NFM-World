@@ -51,24 +51,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
         var typeProvider2 = context.SyntaxProvider.ForAttributeWithMetadataName(
             MemberLuaVisibleAttrName,
             static (node, _) => node is PropertyDeclarationSyntax or FieldDeclarationSyntax or MethodDeclarationSyntax or ConstructorDeclarationSyntax,
-            static (ctx, ct) =>
-            {
-                // [MemberLuaVisible] makes the types referenced by the member implicitly
-                // Lua-visible: the field/property type, or the return type and parameter
-                // types of a method/constructor. The containing type is NOT made visible.
-                return ctx.TargetSymbol switch
-                {
-                    IFieldSymbol field => new[] { field.Type },
-                    IPropertySymbol property => new[] { property.Type },
-                    IMethodSymbol { MethodKind: MethodKind.Constructor } constructor =>
-                        constructor.Parameters.Select(p => p.Type).ToArray(),
-                    IMethodSymbol method => method.ReturnType.SpecialType == SpecialType.System_Void
-                        ? method.Parameters.Select(p => p.Type).ToArray()
-                        : new[] { method.ReturnType }.Concat(method.Parameters.Select(p => p.Type)).ToArray(),
-                    _ => Array.Empty<ITypeSymbol>(),
-                };
-            })
-            .SelectMany(static (types, _) => types)
+            static (ctx, ct) => ctx.TargetSymbol.ContainingType)
             .WithTrackingName("MemberLuaVisibleTypes");
 
         var luaTypeMetadatas2 = typeProvider2.Combine(symbolReferences)
@@ -103,8 +86,7 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                     typeSymbol = attr.ConstructorArguments[0].Value as ITypeSymbol;
                 }
 
-                // Keep ITypeSymbol (not INamedTypeSymbol) so array types (int[], float[,], ...) work too.
-                return typeSymbol;
+                return typeSymbol as INamedTypeSymbol;
             })
             .Where(ts => ts != null)
             .WithTrackingName("AssemblyLuaVisibleTypes");
@@ -147,29 +129,6 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                 var stubTypes = new Dictionary<string, BaseLuaTypeMetadata>();
                 foreach (var type in list.Values)
                 {
-                    // Enumerable/inline-array element types must have metatables too —
-                    // pairs/ipairs marshal elements (e.g. KeyValuePair<,>) through them.
-                    if (type.IEnumerableType is { IsCandidate: true } enumerableElement &&
-                        !list.ContainsKey(enumerableElement.FullTypeName) && !stubTypes.ContainsKey(enumerableElement.FullTypeName))
-                    {
-                        stubTypes[enumerableElement.FullTypeName] = enumerableElement;
-                    }
-                    if (type.IEnumerableKeyType is { IsCandidate: true } enumerableKey &&
-                        !list.ContainsKey(enumerableKey.FullTypeName) && !stubTypes.ContainsKey(enumerableKey.FullTypeName))
-                    {
-                        stubTypes[enumerableKey.FullTypeName] = enumerableKey;
-                    }
-                    if (type.IEnumerableValueType is { IsCandidate: true } enumerableValue &&
-                        !list.ContainsKey(enumerableValue.FullTypeName) && !stubTypes.ContainsKey(enumerableValue.FullTypeName))
-                    {
-                        stubTypes[enumerableValue.FullTypeName] = enumerableValue;
-                    }
-                    if (type.InlineArrayElementType is { IsCandidate: true } inlineArrayElement &&
-                        !list.ContainsKey(inlineArrayElement.FullTypeName) && !stubTypes.ContainsKey(inlineArrayElement.FullTypeName))
-                    {
-                        stubTypes[inlineArrayElement.FullTypeName] = inlineArrayElement;
-                    }
-
                     foreach (var field in type.InstanceFields)
                     {
                         if (field.FieldType.IsCandidate && !list.ContainsKey(field.FieldType.FullTypeName) && !stubTypes.ContainsKey(field.FieldType.FullTypeName))
