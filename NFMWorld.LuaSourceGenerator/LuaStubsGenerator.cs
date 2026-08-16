@@ -8,7 +8,7 @@ namespace NFMWorld.LuaSourceGenerator;
 /// Generates Lua Language Server (LuaLS) annotation stubs for [LuaVisible] types.
 /// Outputs ---@class, ---@field, ---@param, ---@return annotations for IDE autocomplete.
 /// </summary>
-internal sealed class LuaStubsGenerator(BaseLuaTypeMetadata type, bool isVisible)
+internal sealed class LuaStubsGenerator(BaseLuaTypeMetadata type)
 {
     public string GenerateCode()
     {
@@ -18,8 +18,7 @@ internal sealed class LuaStubsGenerator(BaseLuaTypeMetadata type, bool isVisible
         GenerateInstanceClass(sb);
 
         // Static/class annotation (for TypeTable access)
-        if (isVisible)
-            GenerateClassAnnotation(sb);
+        GenerateClassAnnotation(sb);
 
         return sb.ToString();
     }
@@ -28,36 +27,31 @@ internal sealed class LuaStubsGenerator(BaseLuaTypeMetadata type, bool isVisible
     {
         var luaName = type.LuaName;
 
-        if (isVisible)
+        // Build base type list for ---@class, filtering self-references and ILuaUserData
+        var baseTypes = new List<string>();
+        if (type is LuaTypeMetadata { BaseType: { } baseType })
         {
-            // Build base type list for ---@class, filtering self-references and ILuaUserData
-            var baseTypes = new List<string>();
-            if (type is LuaTypeMetadata { BaseType: { } baseType })
-            {
-                var baseStub = baseType.LuaName;
-                if (baseStub != luaName)
-                    baseTypes.Add(baseStub);
-            }
-
-            if (type is LuaTypeMetadata { Interfaces: { } intfs })
-            {
-                foreach (var iface in intfs)
-                {
-                    var ifaceStub = iface.LuaName;
-                    if (ifaceStub != luaName && ifaceStub != "Lua.ILuaUserData")
-                        baseTypes.Add(ifaceStub);
-                }
-            }
-
-            if (baseTypes.Count > 0)
-                sb.AppendLine($"---@class {luaName} : {string.Join(", ", baseTypes)}");
-            else
-                sb.AppendLine($"---@class {luaName}");
+            var baseStub = baseType.LuaName;
+            if (baseStub != luaName)
+                baseTypes.Add(baseStub);
         }
+
+        if (type is LuaTypeMetadata { Interfaces: { } intfs })
+        {
+            foreach (var iface in intfs)
+            {
+                var ifaceStub = iface.LuaName;
+                if (ifaceStub != luaName && ifaceStub != "Lua.ILuaUserData")
+                    baseTypes.Add(ifaceStub);
+            }
+        }
+
+        if (baseTypes.Count > 0)
+            sb.AppendLine($"---@class {luaName} : {string.Join(", ", baseTypes)}");
         else
             sb.AppendLine($"---@class {luaName}");
 
-        if (isVisible && type is LuaTypeMetadata luaTypeMetadata)
+        if (type is LuaTypeMetadata luaTypeMetadata)
         {
             // Fields and properties
             foreach (var prop in luaTypeMetadata.InstanceProperties.Where(p => p.HasGetter))

@@ -125,89 +125,6 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                     if (!list.ContainsKey(meta!.FullTypeName))
                         list[meta.FullTypeName] = meta;
                 }
-
-                var stubTypes = new Dictionary<string, BaseLuaTypeMetadata>();
-                foreach (var type in list.Values)
-                {
-                    foreach (var field in type.InstanceFields)
-                    {
-                        if (field.FieldType.IsCandidate && !list.ContainsKey(field.FieldType.FullTypeName) && !stubTypes.ContainsKey(field.FieldType.FullTypeName))
-                        {
-                            stubTypes[field.FieldType.FullTypeName] = field.FieldType;
-                        }
-                    }
-
-                    foreach (var field in type.StaticFields)
-                    {
-                        if (field.FieldType.IsCandidate && !list.ContainsKey(field.FieldType.FullTypeName) && !stubTypes.ContainsKey(field.FieldType.FullTypeName))
-                        {
-                            stubTypes[field.FieldType.FullTypeName] = field.FieldType;
-                        }
-                    }
-                    
-                    foreach (var prop in type.InstanceProperties)
-                    {
-                        if (prop.PropertyType.IsCandidate && !list.ContainsKey(prop.PropertyType.FullTypeName) && !stubTypes.ContainsKey(prop.PropertyType.FullTypeName))
-                        {
-                            stubTypes[prop.PropertyType.FullTypeName] = prop.PropertyType;
-                        }
-                    }
-                    
-                    foreach (var prop in type.StaticProperties)
-                    {
-                        if (prop.PropertyType.IsCandidate && !list.ContainsKey(prop.PropertyType.FullTypeName) && !stubTypes.ContainsKey(prop.PropertyType.FullTypeName))
-                        {
-                            stubTypes[prop.PropertyType.FullTypeName] = prop.PropertyType;
-                        }
-                    }
-                    
-                    foreach (var method in type.InstanceMethods)
-                    {
-                        foreach (var param in method.Parameters)
-                        {
-                            if (param.Type.IsCandidate && !list.ContainsKey(param.Type.FullTypeName) && !stubTypes.ContainsKey(param.Type.FullTypeName))
-                            {
-                                stubTypes[param.Type.FullTypeName] = param.Type;
-                            }
-                        }
-                        if (method.ReturnType.IsCandidate && !list.ContainsKey(method.ReturnType!.FullTypeName) && !stubTypes.ContainsKey(method.ReturnType.FullTypeName))
-                        {
-                            stubTypes[method.ReturnType.FullTypeName] = method.ReturnType;
-                        }
-                    }
-                    
-                    foreach (var method in type.StaticMethods)
-                    {
-                        foreach (var param in method.Parameters)
-                        {
-                            if (param.Type.IsCandidate && !list.ContainsKey(param.Type.FullTypeName) && !stubTypes.ContainsKey(param.Type.FullTypeName))
-                            {
-                                stubTypes[param.Type.FullTypeName] = param.Type;
-                            }
-                        }
-                        if (method.ReturnType.IsCandidate && !list.ContainsKey(method.ReturnType!.FullTypeName) && !stubTypes.ContainsKey(method.ReturnType.FullTypeName))
-                        {
-                            stubTypes[method.ReturnType.FullTypeName] = method.ReturnType;
-                        }
-                    }
-                }
-                
-                var luaStubTypes = new Dictionary<string, BaseLuaTypeMetadata>();
-                foreach (var type in list.Values)
-                {
-                    // TODO walk base types and interfaces recursively
-                    if (type.BaseType != null)
-                    {
-                        if (!list.ContainsKey(type.BaseType.FullTypeName) && !stubTypes.ContainsKey(type.BaseType.FullTypeName))
-                            luaStubTypes[type.BaseType.FullTypeName] = type.BaseType;
-                    }
-                    
-                    foreach (var intf in type.Interfaces)
-                    {
-                        if (!list.ContainsKey(intf.FullTypeName) && !stubTypes.ContainsKey(intf.FullTypeName))
-                            luaStubTypes[intf.FullTypeName] = intf;
-                    }
-                }
                 
                 foreach (var type in list.Values)
                 {
@@ -223,19 +140,6 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                         var code = generator.GenerateCode();
                         spc.AddSource($"{type.SanitizedTypeName}.cs", code);
                     }
-                }
-                
-                foreach (var type in stubTypes.Values)
-                {
-                    var generator = new LuaBindingStubTypeGenerator(type);
-                    var code = generator.GenerateCode();
-                    spc.AddSource($"{type.SanitizedTypeName}.cs", code);
-                }
-                
-                {
-                    var initGenerator = new LuaBindingInitGenerator(list.Values.ToArray(), stubTypes.Values.ToArray());
-                    var code = initGenerator.GenerateCode();
-                    spc.AddSource("_init.cs", code);
                 }
 
                 {
@@ -415,21 +319,18 @@ public partial class LuaVisibleGenerator : IIncrementalGenerator
                         """;
                     spc.AddSource("LuaVisibleHelper.cs", code);
                 }
+                
+                {
+                    var initGenerator = new LuaBindingInitGenerator(list.Values.ToArray());
+                    var code = initGenerator.GenerateCode();
+                    spc.AddSource("_init.cs", code);
+                }
 
                 if (stubsOutputDir != null)
                 {
                     foreach (var type in list.Values)
                     {
-                        var initGenerator = new LuaStubsGenerator(type, true);
-                        var code = initGenerator.GenerateCode();
-#pragma warning disable RS1035
-                        File.WriteAllText(Path.Combine(stubsOutputDir ?? "", type.LuaName + ".lua"), code);
-#pragma warning restore RS1035
-                    }
-
-                    foreach (var type in stubTypes.Values.Concat(luaStubTypes.Values))
-                    {
-                        var initGenerator = new LuaStubsGenerator(type, false);
+                        var initGenerator = new LuaStubsGenerator(type);
                         var code = initGenerator.GenerateCode();
 #pragma warning disable RS1035
                         File.WriteAllText(Path.Combine(stubsOutputDir ?? "", type.LuaName + ".lua"), code);

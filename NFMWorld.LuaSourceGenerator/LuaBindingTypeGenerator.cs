@@ -331,7 +331,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
         }
     }
 
-    private void EmitMethod(IndentedStringBuilder sb, LuaMethodMetadata[] overloads)
+    private void EmitMethod(IndentedStringBuilder sb, IReadOnlyList<LuaMethodMetadata> overloads)
     {
         // Stable sort by OverloadPriority — ties keep collection (declaration) order,
         // which is the fallback order overload resolution tries candidates in.
@@ -343,7 +343,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
         sb.AppendLine($"internal static readonly global::Lua.LuaFunction {GetFunctionName(baseMethod)} = new(\"{baseMethod.LuaName}\", (context, ct) =>");
         using (sb.Block(end: "});"))
         {
-            if (overloads.Length == 1)
+            if (overloads.Count == 1)
             {
                 EmitSingleOverloadBody(sb, baseMethod, argOffset);
             }
@@ -391,7 +391,7 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
     /// Emits runtime overload resolution: disambiguate overloads by the provided argument count,
     /// probe each candidate's parameters in priority order with TryRead, and execute the first match.
     /// </summary>
-    private void EmitOverloadResolutionBody(IndentedStringBuilder sb, LuaMethodMetadata[] overloads, int argOffset)
+    private void EmitOverloadResolutionBody(IndentedStringBuilder sb, IReadOnlyList<LuaMethodMetadata> overloads, int argOffset)
     {
         var baseMethod = overloads[0];
         if (!baseMethod.IsStatic && !baseMethod.IsInstanceConstructor)
@@ -573,15 +573,6 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             }
 
             sb.AppendLine("var key = context.GetArgument(1);");
-            if (!isStatic && type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
-            {
-                sb.AppendLine($"if (key.TryRead<{indexer.Key.Type.FullTypeName}>(out var indexerKey))");
-                using (sb.Block())
-                {
-                    sb.AppendLine($"return new global::System.Threading.Tasks.ValueTask<int>(context.Return({MarshalToLua($"{instanceExpression}[indexerKey]", indexer.PropertyType)}));");
-                }
-            }
-
             sb.AppendLine("if (key.TryRead<string>(out var stringKey))");
             using (sb.Block())
             {
@@ -641,29 +632,6 @@ internal sealed class LuaBindingTypeGenerator(LuaTypeMetadata type) : BaseLuaTyp
             }
             
             sb.AppendLine("var key = context.GetArgument(1);");
-            if (!isStatic && type.InstanceIndexers.FirstOrDefault() is {} indexer && indexer.HasGetter)
-            {
-                sb.AppendLine($"if (key.TryRead<{indexer.Key.Type.FullTypeName}>(out var indexerKey))");
-                using (sb.Block())
-                {
-                    var t = indexer.PropertyType;
-                    if (t.IsReferenceType)
-                    {
-                        sb.AppendLine($"var value = context.GetArgumentOrNullClass<{t.FullTypeName}>(2);");
-                    }
-                    else if (t.IsNullableValueType)
-                    {
-                        sb.AppendLine($"var value = context.GetArgumentOrNull<{t.FullTypeName[..^1]}>(2);");
-                    }
-                    else
-                    {
-                        sb.AppendLine($"var value = context.GetArgument<{t.FullTypeName}>(2);");
-                    }
-
-                    sb.AppendLine($"{instanceExpression}[indexerKey] = value;");
-                }
-            }
-
             sb.AppendLine("if (key.TryRead<string>(out var stringKey))");
             using (sb.Block())
             {

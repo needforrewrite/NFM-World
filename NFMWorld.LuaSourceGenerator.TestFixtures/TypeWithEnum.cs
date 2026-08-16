@@ -14,12 +14,12 @@ public enum TestColor
 [LuaVisible]
 public partial class TypeWithEnum
 {
-    public TestColor Color { get; set; } = TestColor.Red;
-    public TestColor ReadOnlyColor => TestColor.Blue;
-    public TestColor? NullableColor { get; set; }
+    [LuaName] public TestColor Color { get; set; } = TestColor.Red;
+    [LuaName] public TestColor ReadOnlyColor => TestColor.Blue;
+    [LuaName] public TestColor? NullableColor { get; set; }
 
-    public TestColor GetColor() => Color;
-    public void SetColor(TestColor color) => Color = color;
-    public bool IsPrimary(TestColor color) => color is TestColor.Red or TestColor.Green or TestColor.Blue;
-    public TestColor DefaultColor => TestColor.Red;
+    [LuaName] public TestColor GetColor() => Color;
+    [LuaName] public void SetColor(TestColor color) => Color = color;
+    [LuaName] public bool IsPrimary(TestColor color) => color is TestColor.Red or TestColor.Green or TestColor.Blue;
+    [LuaName] public TestColor DefaultColor => TestColor.Red;
 }

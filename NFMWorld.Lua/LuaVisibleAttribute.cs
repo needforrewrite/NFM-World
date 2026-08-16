@@ -30,10 +30,10 @@ public sealed class LuaHiddenAttribute : Attribute;
 /// <summary>
 /// Marks a method or property with a custom Lua name.
 /// </summary>
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field)]
-public sealed class LuaNameAttribute(string name) : Attribute
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Constructor)]
+public sealed class LuaNameAttribute(string? name = null) : Attribute
 {
-    public string Name { get; } = name;
+    public string? Name { get; } = name;
 }
 
 /// <summary>

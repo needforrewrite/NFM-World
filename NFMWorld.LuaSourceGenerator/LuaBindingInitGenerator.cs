@@ -3,8 +3,7 @@
 namespace NFMWorld.LuaSourceGenerator;
 
 internal sealed class LuaBindingInitGenerator(
-    IReadOnlyList<BaseLuaTypeMetadata> types,
-    IReadOnlyList<BaseLuaTypeMetadata> stubTypes
+    IReadOnlyList<BaseLuaTypeMetadata> types
 ) : BaseLuaTypeGenerator
 {
     public string GenerateCode()
@@ -39,14 +38,6 @@ internal sealed class LuaBindingInitGenerator(
                         }
 
                         sb.AppendLine($"init_{GetTypeTableName(type)}();");
-                    }
-
-                    // Stub types have metatables but no type tables — initialize and
-                    // register them so marshal code never passes a null metatable.
-                    foreach (var type in stubTypes)
-                    {
-                        sb.AppendLine($"init_{GetMetatableName(type)}();");
-                        sb.AppendLine($"global::NFMWorld.LuaSourceGenerator.Generator.LuaVisibleTypeMetatableRegistry<{type.FullTypeName}>.Register({GetMetatableName(type)});");
                     }
 
                     sb.AppendLine("init_Namespaces();");
