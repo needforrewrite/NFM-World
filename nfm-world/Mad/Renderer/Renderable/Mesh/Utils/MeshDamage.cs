@@ -1,4 +1,5 @@
 ﻿using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 using Random = NFMWorldLibrary.Util.Random;
@@ -7,7 +8,7 @@ namespace NFMWorld;
 
 public static class MeshDamage
 {
-    public static void NewCar(IInGameCar car, CarVisual visual)
+    public static void NewCar(BackendCar car, CarVisual visual)
     {
         visual.Mesh.Polys = Array.ConvertAll(visual.Mesh.OriginalPolys, static poly => poly.SafeClone());
         
@@ -21,7 +22,7 @@ public static class MeshDamage
     
     public static void DamageX(
         CarStats stat,
-        IInGameCar car,
+        BackendCar car,
         CarVisual visual,
         int wheelIdx,
         float damageFactor
@@ -119,7 +120,7 @@ public static class MeshDamage
 
     public static void DamageY(
         CarStats stat,
-        IInGameCar car,
+        BackendCar car,
         CarVisual visual,
         int wheelIdx,
         float damageFactor,
@@ -305,7 +306,7 @@ public static class MeshDamage
 
     public static void DamageZ(
         CarStats stat,
-        IInGameCar car,
+        BackendCar car,
         CarVisual visual,
         int wheelIdx,
         float damageFactor

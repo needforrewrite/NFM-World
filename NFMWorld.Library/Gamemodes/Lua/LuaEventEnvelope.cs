@@ -1,4 +1,6 @@
+using Lua;
 using MemoryPack;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Gamemodes.Lua;
 
@@ -15,6 +17,6 @@ public readonly partial struct LuaEventEnvelope
     public required string Type { get; init; }
 
     /// <summary>JSON-encoded event payload (UTF-8).</summary>
-    [MemoryPackOrder(1)]
-    public required byte[] JsonPayload { get; init; }
+    [MemoryPackOrder(1), LuaValueMemoryPackFormatter]
+    public required LuaValue Payload { get; init; }
 }

@@ -1,118 +1,65 @@
 using Lua;
 using Lua.Standard;
 using MemoryPack;
+using nfm_world_library.Lua;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Util;
 using NFMWorld.LuaSourceGenerator.Generator;
+using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Multiplayer.Packets.C2S;
 
 namespace NFMWorldLibrary.Gamemodes.Lua;
 
-/// <summary>
-/// Runs a Lua server gamemode script (<c>data/gamemodes/{path}/server.lua</c>).
-///
-/// The script receives:
-/// <list type="bullet">
-/// <item><c>server</c> — <see cref="LuaServerData"/> (players, positions)</item>
-/// <item><c>stage</c> — <see cref="LuaStage"/></item>
-/// <item><c>broadcast_event(type, table)</c> — send an event to all clients</item>
-/// <item><c>finish_race(standings)</c> — end the race with results</item>
-/// </list>
-///
-/// Lifecycle callbacks: <c>on_begin</c>, <c>on_start_race</c>, <c>on_end</c>,
-/// <c>on_game_tick</c>, and <c>on_client_event(playerId, type, table)</c>.
-/// </summary>
-public class LuaServerGamemode : IServerGamemode
+[LuaVisible, LuaName("ServerGamemodeContext")]
+public partial class LuaServerGamemodeContext(LuaServerGamemode gamemode, IServerGamemodeData data)
 {
-    private readonly string _scriptPath;
-    private LuaState? _state;
-    private IServerGamemodeData? _data;
-    private GameStateSnapshot? _snapshot;
+    /// <summary>The stage being raced on (checkpoints, lap count, geometry).</summary>
+    [LuaName]
+    public BackendStage CurrentStage => data.CurrentStage;
 
-    public string GamemodeId { get; }
+    /// <summary>Ordered list of player IDs in this race.</summary>
+    [LuaName]
+    public ReadOnlyLuaView<Guid, string> PlayerIds { get; } = new(data.PlayerIds, static guid => guid.ToString("D"));
 
-    public LuaServerGamemode(string gamemodeId, string scriptPath)
+    /// <summary>Map of player index → player info (names, vehicles, etc.).</summary>
+    [LuaName]
+    public ReadOnlyLuaDictionary<byte, PlayerInfo> PlayerInfos { get; } = new(data.PlayerInfos);
+
+    /// <summary>
+    /// Gets the latest relayed position for a player, or null if not yet received.
+    /// Position data flows from <see cref="C2S_PlayerState"/> relay.
+    /// </summary>
+    [LuaName]
+    public f64Vector3? GetPlayerPosition(string playerId)
     {
-        GamemodeId = gamemodeId;
-        _scriptPath = scriptPath;
+        return data.GetPlayerPosition(Guid.Parse(playerId));
     }
 
-    public void Begin(IServerGamemodeData data)
+    [LuaName]
+    public void BroadcastEvent(string type, LuaTable payload)
     {
-        _data = data;
-        _snapshot = null;
-
-        _state = LuaState.Create(LuaNfmwPlatform.Instance);
-        _state.OpenStandardLibraries();
-        LuaVisibleTypeRegistry.RegisterAll(_state);
-
-        _state.Environment["server"] = LuaValue.FromObject(new LuaServerData(data));
-        _state.Environment["stage"] = LuaValue.FromObject(new LuaStage(data.CurrentStage));
-
-        RegisterFunction("broadcast_event", (context, ct) =>
+        data.BroadcastEvent(MemoryPackSerializer.Serialize(new LuaEventEnvelope
         {
-            var type = context.GetArgument<string>(0);
-            var payload = context.HasArgument(1) ? context.GetArgument(1) : LuaValue.Nil;
+            Type = type,
+            Payload = payload
+        }));
+    }
 
-            var json = payload.Type == LuaValueType.Table
-                ? LuaJson.ToJson(payload.Read<LuaTable>())
-                : Array.Empty<byte>();
-
-            data.BroadcastEvent(MemoryPackSerializer.Serialize(new LuaEventEnvelope
-            {
-                Type = type,
-                JsonPayload = json
-            }));
-
-            return new(context.Return());
-        });
-
-        RegisterFunction("finish_race", (context, ct) =>
+    [LuaName]
+    public void FinishRace([LuaShimType("RaceStandings")] LuaTable standings)
+    {
+        gamemode._snapshot = new GameStateSnapshot
         {
-            var standings = context.GetArgument<LuaTable>(0);
-            _snapshot = new GameStateSnapshot
+            IsFinished = true,
+            Results = new RaceResults
             {
-                IsFinished = true,
-                Results = new RaceResults
-                {
-                    GamemodeId = GamemodeId,
-                    RaceDuration = TimeSpan.Zero,
-                    Standings = ParseStandings(standings)
-                }
-            };
-            return new(context.Return());
-        });
-
-        RegisterFunction("countdown_interval", (context, ct) =>
-            new(context.Return((int)(10 * (1 / Physics.PHYSICS_MULTIPLIER)))));
-
-        _state.DoFile($"data/gamemodes/{_scriptPath}/server.lua");
-        Call("on_begin");
+                GamemodeId = gamemode.GamemodeId,
+                RaceDuration = TimeSpan.Zero,
+                Standings = ParseStandings(standings)
+            }
+        };
     }
-
-    public void StartRace() => Call("on_start_race");
-
-    public void End()
-    {
-        Call("on_end");
-        _state?.Dispose();
-        _state = null;
-    }
-
-    public void GameTick() => Call("on_game_tick");
-
-    public void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
-    {
-        var envelope = MemoryPackSerializer.Deserialize<LuaEventEnvelope>(payload);
-
-        var table = envelope.JsonPayload is { Length: > 0 } json
-            ? LuaJson.FromJson(json)
-            : new LuaTable();
-
-        Call("on_client_event", new LuaValue(clientId.ToString()), new LuaValue(envelope.Type), new LuaValue(table));
-    }
-
-    public GameStateSnapshot? GetStateSnapshot() => _snapshot;
-
+    
     private static RaceStanding[] ParseStandings(LuaTable table)
     {
         var standings = new List<RaceStanding>();
@@ -140,32 +87,93 @@ public class LuaServerGamemode : IServerGamemode
 
         return standings.OrderBy(s => s.FinishPosition).ToArray();
     }
+    
+    [LuaName]
+    public int CountdownInterval => (int)(10 * (1 / Physics.PHYSICS_MULTIPLIER));
+}
+
+/// <summary>
+/// Runs a Lua server gamemode script (<c>data/gamemodes/{path}/server.lua</c>).
+///
+/// The script receives:
+/// <list type="bullet">
+/// <item><c>SGM</c> — <see cref="LuaServerGamemodeContext"/></item>
+/// </list>
+///
+/// Lifecycle callbacks: <c>OnBegin</c>, <c>OnStartRace</c>, <c>OnEnd</c>,
+/// <c>OnGameTick</c>, and <c>OnClientEvent(playerId, type, table)</c>.
+/// </summary>
+public class LuaServerGamemode : IServerGamemode
+{
+    private readonly string _scriptPath;
+    private LuaState? _state;
+    private IServerGamemodeData? _data;
+    internal GameStateSnapshot? _snapshot;
+
+    public string GamemodeId { get; }
+
+    public LuaServerGamemode(string gamemodeId, string scriptPath)
+    {
+        GamemodeId = gamemodeId;
+        _scriptPath = scriptPath;
+    }
+
+    public void Begin(IServerGamemodeData data)
+    {
+        _data = data;
+        _snapshot = null;
+
+        _state = LuaState.Create(LuaNfmwPlatform.Instance);
+        _state.OpenStandardLibraries();
+        LuaVisibleTypeRegistry.RegisterAll(_state);
+
+        _state.Environment["SGM"] = new LuaServerGamemodeContext(this, data);
+
+        _state.DoFile($"data/gamemodes/{_scriptPath}/server.lua");
+        Call("OnBegin");
+    }
+
+    public void StartRace() => Call("OnStartRace");
+
+    public void End()
+    {
+        Call("OnEnd");
+        _state?.Dispose();
+        _state = null;
+    }
+
+    public void GameTick() => Call("OnGameTick");
+
+    public void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
+    {
+        var envelope = MemoryPackSerializer.Deserialize<LuaEventEnvelope>(payload);
+
+        Call("OnClientEvent", clientId.ToString(), envelope.Type, envelope.Payload);
+    }
+
+    public GameStateSnapshot? GetStateSnapshot() => _snapshot;
 
     private void RegisterFunction(string name, Func<LuaFunctionExecutionContext, CancellationToken, ValueTask<int>> fn)
         => _state!.Environment[name] = new LuaFunction(name, fn);
 
-    private void Call(string name, params LuaValue[] arguments)
+    private LuaValue[] Call(string name, params ReadOnlySpan<LuaValue> arguments)
     {
         var state = _state;
         if (state == null ||
             !state.Environment.TryGetValue(name, out var value) ||
             !value.TryRead<LuaFunction>(out var function))
         {
-            return;
+            return [LuaValue.Nil];
         }
 
         try
         {
-            foreach (var argument in arguments)
-                state.Push(argument);
-
-            var resultCount = state.Run(function, arguments.Length);
-            if (resultCount > 0)
-                state.Pop(resultCount);
+            return state.Call(function, arguments);
         }
         catch (Exception ex)
         {
-            Logging.Error($"[LuaServerGamemode:{_scriptPath}] {name} failed: {ex.Message}");
+            Logging.Error($"[LuaGamemode:{_scriptPath}] {name} failed: {ex.Message}");
         }
+        return [LuaValue.Nil];
     }
 }

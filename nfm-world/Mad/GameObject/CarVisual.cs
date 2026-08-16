@@ -2,8 +2,6 @@ using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Sfx;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
-using NFMWorldLibrary.FixedMath;
-using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
 
@@ -14,12 +12,10 @@ namespace NFMWorld;
 /// </summary>
 public class CarVisual : MeshedGameObject, IDisposable
 {
-    private readonly IInGameCar _car;
-
     /// <summary>
     /// The backend car this visual is bound to.
     /// </summary>
-    public IInGameCar Car => _car;
+    public BackendCar Car { get; }
 
     /// <summary>
     /// Visual properties that gamemodes can modify via <see cref="IClientCarCallbacks"/>.
@@ -46,12 +42,12 @@ public class CarVisual : MeshedGameObject, IDisposable
     private byte _fixTimer;
     private int _fixTick = 0;
 
-    public CarVisual(GraphicsDevice graphicsDevice, IInGameCar car)
+    public CarVisual(GraphicsDevice graphicsDevice, BackendCar car)
         : base(new CarMesh(graphicsDevice, car.Rad))
     {
         Bfase = new float[Mesh.Polys.Length];
 
-        _car = car;
+        Car = car;
         _wheels = car.Wheels
             .Select(wheel => new WheelMeshBuilder(wheel, car.Rad.Rims).BuildGameObject(graphicsDevice, this))
             .ToArray();
@@ -88,17 +84,17 @@ public class CarVisual : MeshedGameObject, IDisposable
 
     private void OnDamagedX(CarStats stat, int wheelnum, fix64 amount)
     {
-        MeshDamage.DamageX(stat, _car, this, wheelnum, (float)amount);
+        MeshDamage.DamageX(stat, Car, this, wheelnum, (float)amount);
     }
 
     private void OnDamagedY(CarStats stat, int wheelnum, fix64 amount, bool mtouch, int nbsq, int squash)
     {
-        MeshDamage.DamageY(stat, _car, this, wheelnum, (float)amount, mtouch, ref nbsq, ref squash);
+        MeshDamage.DamageY(stat, Car, this, wheelnum, (float)amount, mtouch, ref nbsq, ref squash);
     }
 
     private void OnDamagedZ(CarStats stat, int wheelnum, fix64 amount)
     {
-        MeshDamage.DamageZ(stat, _car, this, wheelnum, (float)amount);
+        MeshDamage.DamageZ(stat, Car, this, wheelnum, (float)amount);
     }
 
     private void OnSparked(float wheelx, float wheely, float wheelz, float scx, float scy, float scz, int type, int wheelGround)
@@ -133,15 +129,15 @@ public class CarVisual : MeshedGameObject, IDisposable
         Chips.ChipWasted();
     }
 
-    public override void GameTick(IStage? stage = null)
+    public override void GameTick(BackendStage? stage = null)
     {
         // IMPORTANT: call base first to snapshot the OLD position into PreviousState
         // for interpolation. Then sync the NEW position from the backend car.
         base.GameTick(stage);
 
         // Sync position/rotation from backend car
-        Position = _car.Position;
-        Rotation = _car.Rotation;
+        Position = Car.Position;
+        Rotation = Car.Rotation;
 
         // Per-tick visual overrides from gamemode (moved from GetRenderData)
         CastsShadow = Visuals.CastsShadow;
@@ -154,14 +150,14 @@ public class CarVisual : MeshedGameObject, IDisposable
         {
             var wheel = _wheels[i];
             wheel.Parent = this;
-            wheel.Rotation = _car.Wheels[i].Rotates == 11 ? _car.TurningWheelAngle : _car.WheelAngle;
+            wheel.Rotation = Car.Wheels[i].Rotates == 11 ? Car.TurningWheelAngle : Car.WheelAngle;
             wheel.GameTick(stage);
         }
         Flames.GameTick();
         Dust.GameTick(stage);
         Chips.GameTick();
         Sparks.GameTick();
-        Sfx?.Tick(_car.Control, _car.CarPhysics, _car.Stats);
+        Sfx?.Tick(Car.Control, Car.CarPhysics, Car.Stats);
 
         IterateFix();
     }
@@ -214,7 +210,7 @@ public class CarVisual : MeshedGameObject, IDisposable
                     _fixTimer = 0;
                     _fixing = false;
                     FixFlare.DeleteFixFx();
-                    MeshDamage.NewCar(_car, this);
+                    MeshDamage.NewCar(Car, this);
                 }
                 else
                 {

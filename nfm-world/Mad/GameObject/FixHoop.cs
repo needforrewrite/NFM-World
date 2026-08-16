@@ -196,7 +196,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
 
     private int _tick;
 
-    public override void GameTick(IStage? stage = null)
+    public override void GameTick(BackendStage? stage = null)
     {
         base.GameTick(stage);
         

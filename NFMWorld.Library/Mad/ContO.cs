@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary;
@@ -6,7 +7,7 @@ namespace NFMWorldLibrary;
 // temp conto for nfmm compatibility
 public readonly struct ContO
 {
-    private readonly IInGameCar _car;
+    private readonly BackendCar _car;
         
     public fix64 X 
     {
@@ -64,7 +65,7 @@ public readonly struct ContO
 
     public int MaxR => _car.MaxRadius;
 
-    public ContO(IInGameCar car)
+    public ContO(BackendCar car)
     {
         _car = car;
 

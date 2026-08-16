@@ -513,7 +513,7 @@ public partial class StageEditorPhase
                         var instance = new StagePieceInstance(newMesh, ActiveTab.GetNextPieceId());
                         PushUndoSnapshot();
                         ActiveTab.ScenePieces.Add(instance);
-                        ActiveTab.Stage.pieces[ActiveTab.Stage.stagePartCount] = newMesh;
+                        ActiveTab.Stage.Pieces[ActiveTab.Stage.StagePartCount] = newMesh;
                         ActiveTab.ActivePieceId = instance.Id;
                         ActiveTab.SelectedPieceIds.Clear();
                         ActiveTab.SelectedPieceIds.Add(instance.Id);

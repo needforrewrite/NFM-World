@@ -68,10 +68,10 @@ public partial class StageEditorPhase
         // Sync Stage.pieces order (only non-wall pieces end up there)
         if (ActiveTab.Stage != null)
         {
-            ActiveTab.Stage.pieces.Clear();
+            ActiveTab.Stage.Pieces.Clear();
             foreach (var p in ActiveTab.ScenePieces)
                 if (!p.PiecePlacement.IsWall)
-                    ActiveTab.Stage.pieces.Add(p.Obj);
+                    ActiveTab.Stage.Pieces.Add(p.Obj);
         }
 
         ActiveTab.HasUnsavedChanges = true;

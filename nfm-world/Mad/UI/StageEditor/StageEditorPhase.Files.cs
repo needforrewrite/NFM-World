@@ -74,7 +74,7 @@ public partial class StageEditorPhase
                 instance.Position = startPos;
                 instance.Rotation = f64Euler.Identity;
                 tab.ScenePieces.Add(instance);
-                tab.Stage.pieces.Add(startMesh);
+                tab.Stage.Pieces.Add(startMesh);
                 Logging.Info($"Placed start piece '{startPartName}' at origin.");
             }
             else
@@ -594,12 +594,12 @@ public partial class StageEditorPhase
             // Remove all wall pieces from the stage BEFORE creating the ClientStageRenderer
             // so it never includes them as children
             int removedCount = 0;
-            for (int i = tab.Stage.pieces.Count - 1; i >= 0; i--)
+            for (int i = tab.Stage.Pieces.Count - 1; i >= 0; i--)
             {
-                var piece = tab.Stage.pieces[i];
+                var piece = tab.Stage.Pieces[i];
                 if (piece is StageObject collisionObject && (collisionObject.FileName == "thewall" || collisionObject.FileName.Contains("wall")))
                 {
-                    tab.Stage.pieces.RemoveAt(i);
+                    tab.Stage.Pieces.RemoveAt(i);
                     removedCount++;
                 }
             }
@@ -607,7 +607,7 @@ public partial class StageEditorPhase
             
             tab.StageRenderer = new ClientStageRenderer(_graphicsDevice, tab.Stage);
             
-            var stageLoader = tab.Stage.stageLoader;
+            var stageLoader = tab.Stage.StageLoader;
 
             tab.UngroupedOrderIndex = stageLoader.UngroupedOrderIndex;
             tab.UnknownParameters.AddRange(stageLoader.unknownParameters);
@@ -619,7 +619,7 @@ public partial class StageEditorPhase
             }
             
             // Populate editor pieces from loaded stage
-            foreach (var piece in tab.Stage.pieces)
+            foreach (var piece in tab.Stage.Pieces)
             {
                 if (piece is not StageObject collisionObject)
                     continue;

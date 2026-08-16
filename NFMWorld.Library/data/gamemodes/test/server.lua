@@ -3,19 +3,19 @@
 
 local finished = false
 
-function on_begin()
+function OnBegin()
     -- nothing to set up
 end
 
-function on_start_race()
-    broadcast_event("started", { serverTime = 0 })
+function OnStartRace()
+    SGM:broadcastEvent("started", { serverTime = 0 })
 end
 
-function on_game_tick()
+function OnGameTick()
     -- no-op: server gamemodes advance via client events
 end
 
-function on_client_event(playerId, type, payload)
+function OnClientEvent(playerId, type, payload)
     -- Echo the event back to everyone, tagged with the sender.
-    broadcast_event("echo", { from = playerId, type = type, payload = payload })
+    SGM:broadcastEvent("echo", { from = playerId, type = type, payload = payload })
 end

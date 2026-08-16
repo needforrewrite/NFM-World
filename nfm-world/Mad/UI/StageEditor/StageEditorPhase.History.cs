@@ -57,9 +57,9 @@ public partial class StageEditorPhase
         // Rebuild Stage.pieces to match snapshot order (for Save correctness)
         if (needsRebuild)
         {
-            ActiveTab.Stage.pieces.Clear();
+            ActiveTab.Stage.Pieces.Clear();
             foreach (var s in snapshot.Pieces)
-                ActiveTab.Stage.pieces.Add(s.Obj);
+                ActiveTab.Stage.Pieces.Add(s.Obj);
         }
 
         // Rebuild ScenePieces list

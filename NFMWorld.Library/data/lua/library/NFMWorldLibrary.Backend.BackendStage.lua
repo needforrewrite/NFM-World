@@ -1,2 +1,0 @@
----@class NFMWorldLibrary.Backend.BackendStage
-

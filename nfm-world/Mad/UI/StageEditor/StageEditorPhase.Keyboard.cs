@@ -97,8 +97,8 @@ public partial class StageEditorPhase
                     var piece = ActiveTab.ScenePieces.GetValueOrDefault(deleteId);
                     if (piece == null) continue;
                     if (ActiveTab.Stage != null)
-                        for (int i = 0; i < ActiveTab.Stage.pieces.Count; i++)
-                            if (ActiveTab.Stage.pieces[i] == piece.Obj) { ActiveTab.Stage.pieces.RemoveAt(i); break; }
+                        for (int i = 0; i < ActiveTab.Stage.Pieces.Count; i++)
+                            if (ActiveTab.Stage.Pieces[i] == piece.Obj) { ActiveTab.Stage.Pieces.RemoveAt(i); break; }
                     ActiveTab.ScenePieces.Remove(piece);
                     foreach (var grp in ActiveTab.HierarchyGroups) grp.PieceIds.Remove(piece.Id);
                 }
@@ -173,7 +173,7 @@ public partial class StageEditorPhase
                 }
                 var worldPos = new f64Vector3((fix64)wx, (fix64)wy, (fix64)wz);
                 var mesh = new StageObject(clip.Rad, worldPos, clip.Rotation, new PiecePlacement(clip.PlacementType, clip.Rad, worldPos, clip.Rotation, clip.AiNodeKind, IsSpecial: clip.IsSpecial));
-                ActiveTab.Stage.pieces[ActiveTab.Stage.stagePartCount] = mesh;
+                ActiveTab.Stage.Pieces[ActiveTab.Stage.StagePartCount] = mesh;
                 var instance = new StagePieceInstance(mesh, ActiveTab.GetNextPieceId())
                 {
                     Position = worldPos,

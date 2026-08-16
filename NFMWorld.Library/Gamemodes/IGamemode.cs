@@ -36,12 +36,6 @@ public interface IGamemode
     /// </summary>
     void OnServerEvent(ReadOnlySpan<byte> payload);
 
-    /// <summary>
-    /// Called by the host to inject a callback for sending events to the server.
-    /// The payload should be a MemoryPack-serialized gamemode-specific event.
-    /// </summary>
-    void SetEventSender(Action<ReadOnlyMemory<byte>> sendToServer);
-
     // ── Client-only members ───────────────────────────────────────────
 
     void KeyPressed(Key key, in Keys keys);

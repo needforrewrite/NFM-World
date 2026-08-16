@@ -4,8 +4,10 @@ using System.Runtime.CompilerServices;
 using FixedMathSharp;
 using FixedMathSharp.Utility;
 using Lua;
+using Lua.Runtime;
 using Microsoft.Extensions.Logging;
 using nfm_world_library.Lua;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
@@ -31,18 +33,19 @@ namespace NFMWorldLibrary;
 // }
 
 [LuaVisible]
+public enum SurfaceType
+{
+    Road = 0,
+    OffTrack = 1,
+    OffRoad = 2,
+    Bump = 3,
+    BumpySides = 4,
+    Spikes = 5
+}
+
+[LuaVisible]
 public partial class CarPhysics
 {
-    public enum SurfaceType
-    {
-        Road = 0,
-        OffTrack = 1,
-        OffRoad = 2,
-        Bump = 3,
-        BumpySides = 4,
-        Spikes = 5
-    }
-    
     private static readonly fix64 _tickRate = Physics.PHYSICS_MULTIPLIER_F64;
     private static readonly fix64 _oneOverTickRate = 1 / _tickRate;
     
@@ -59,7 +62,7 @@ public partial class CarPhysics
     public bool BadLanding;
     
     [LuaName("caught")]
-    public readonly UnlimitedArray<bool> _caught = [];
+    public readonly LuaArray<bool> _caught = new(new UnlimitedArray<bool>());
     
     [LuaName("stat")]
     public CarStats Stat;
@@ -203,13 +206,13 @@ public partial class CarPhysics
     public bool RightTabletop;
     
     [LuaName("scx")]
-    public fix64[] Scx = new fix64[4];
+    public LuaArray<fix64> Scx = new(4);
     
     [LuaName("scy")]
-    public fix64[] Scy = new fix64[4];
+    public LuaArray<fix64> Scy = new(4);
     
     [LuaName("scz")]
-    public fix64[] Scz = new fix64[4];
+    public LuaArray<fix64> Scz = new(4);
     
     [LuaName("shakedam")]
     public int Shakedam;
@@ -265,47 +268,15 @@ public partial class CarPhysics
     [LuaName("py")]
     internal fix64 py = 0;
 
-    [LuaHidden] public event EventHandler<(float f, int i)>? SfxPlayCrash;
-    [LuaHidden] public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
-    [LuaHidden] public event EventHandler<(int i, int i2, int i3)>? SfxPlayScrape;
-    [LuaHidden] public event EventHandler<(int i, int i2, int i3)>? SfxPlayGscrape;
-    [LuaHidden] public event EventHandler<float>? PowerUp;
+    public event EventHandler<(float f, int i)>? SfxPlayCrash;
+    public event EventHandler<(SurfaceType i, float f)>? SfxPlaySkid;
+    public event EventHandler<(int i, int i2, int i3)>? SfxPlayScrape;
+    public event EventHandler<(int i, int i2, int i3)>? SfxPlayGscrape;
+    public event EventHandler<float>? PowerUp;
 
-    private static f64Vector3 Up => new(0, -1, 0);
-    private static f64Vector3 Forward => new(0, 0, 1);
-    private static f64Vector3 Right => new(1, 0, 0);
-
-    // private InlineArray2<CollisionSubstep> collisionSubsteps;
-    // private bool collisionSubstepSwitch; // if false: [0] is current, if true: [1] is current
-    // private const int NumSubsteps = 2;
-    //
-    // // Gets collision substeps in order [previous, current]
-    // private void GetCollisionSubsteps(out InlineArray2<CollisionSubstep> substeps)
-    // {
-    //     if (collisionSubstepSwitch)
-    //     {
-    //         substeps = collisionSubsteps;
-    //         return;
-    //     }
-    //     substeps = new InlineArray2<CollisionSubstep>();
-    //     substeps[0] = collisionSubsteps[1];
-    //     substeps[1] = collisionSubsteps[0];
-    // }
-    //
-    // // Call this at the end of the collision step to set the current substep's wheel positions for use in the next tick's collisions
-    // private void SetCurrentCollisionSubstep(in CollisionSubstep currentSubstep)
-    // {
-    //     if (collisionSubstepSwitch)
-    //     {
-    //         collisionSubsteps[0] = currentSubstep;
-    //     }
-    //     else
-    //     {
-    //         collisionSubsteps[1] = currentSubstep;
-    //     }
-    //
-    //     collisionSubstepSwitch = !collisionSubstepSwitch;
-    // }
+    [LuaName("up")] private static f64Vector3 Up => new(0, -1, 0);
+    [LuaName("forward")] private static f64Vector3 Forward => new(0, 0, 1);
+    [LuaName("right")] private static f64Vector3 Right => new(1, 0, 0);
 
     public CarPhysics(CarStats stat, int im, bool isClientPlayer)
     {
@@ -314,8 +285,7 @@ public partial class CarPhysics
         IsClientPlayer = isClientPlayer;
     }
 
-    [LuaName("collide")]
-    public void Collide(IInGameCar self, CarPhysics othermad, IInGameCar other)
+    public void Collide(BackendCar self, CarPhysics othermad, BackendCar other)
     {
         ContO conto = new ContO(self);
         ContO otherconto = new ContO(other);
@@ -610,8 +580,7 @@ public partial class CarPhysics
             Scy[wi] = (fix64)(-1) * Scy[wi] * (rebound - fix64.One);
     }
 
-    [LuaName("drive")]
-    public void Drive(Control control, IInGameCar car, IStage stage)
+    public void Drive(Control control, BackendCar car, BackendStage stage)
     {
         ContO conto = new ContO(car);
         DeterministicRandom random = new((ulong)(conto.X.rawValue ^ conto.Y.rawValue ^ conto.Z.rawValue));
@@ -2426,7 +2395,7 @@ public partial class CarPhysics
     // input: number of grounded wheels to medium
     // output: hitVertical when colliding against a wall
     private void PhyTrackPieceCollision(
-        IStage stage, Control control, ContO conto,
+        BackendStage stage, Control control, ContO conto,
         Span<fix64> wheelx, Span<fix64> wheely, Span<fix64> wheelz,
         fix64 groundY, fix64 wheelYThreshold, fix64 wheelGround, ref int nGroundedWheels, bool wasMtouch,
         SurfaceType surfaceType, out bool hitVertical, Span<bool> isWheelGrounded, Span<f64Vector3> wheelContactNormal,
@@ -3080,8 +3049,7 @@ public partial class CarPhysics
     }
 }
 
-[LuaVisible]
-public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>
+public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>, ILuaUserData
 {
     private struct ArrayEnumerator : IEnumerator<T>, ICloneable
     {
@@ -3178,5 +3146,76 @@ public readonly struct Array2D<T>(int rows, int columns) : IEnumerable<T>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return _arr.GetEnumerator();
+    }
+    
+    // ------------------------------------------------------------------
+    // ILuaUserData — table-like behaviour via metatable
+    // ------------------------------------------------------------------
+
+    LuaTable? ILuaUserData.Metatable
+    {
+        get => SharedMetatable;
+        set => throw new InvalidOperationException("Cannot set this object's metatable");
+    }
+
+    /// <summary>Shared metatable for all <see cref="UnlimitedArray{T}"/> instances of the same T.</summary>
+    private static LuaTable SharedMetatable
+    {
+        get
+        {
+            if (field != null)
+                return field;
+
+            var mt = new LuaTable(0, 3);
+            mt[Metamethods.Index] = new LuaFunction("__index", IndexMetamethodImpl);
+            mt[Metamethods.NewIndex] = new LuaFunction("__newindex", NewIndexMetamethodImpl);
+            mt[Metamethods.Len] = new LuaFunction("__len", LenMetamethodImpl);
+
+            Interlocked.CompareExchange(ref field, mt, null);
+            return field!;
+        }
+    }
+
+    private static ValueTask<int> IndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
+    {
+        var arr = context.GetArgument<LuaArray<T>>(0);
+        var key = context.GetArgument(1);
+
+        // Integer key → array index (Lua is 1-indexed)
+        if (key.TryRead<double>(out var num) && LuaHelpers.IsLuaIndex(num, out var index))
+        {
+            if ((uint)index < (uint)arr.Value.Count)
+            {
+                return new(context.Return(LuaHelpers.ToLuaValue(arr[index]!)));
+            }
+        }
+
+        return new(context.Return(LuaValue.Nil));
+    }
+
+    private static ValueTask<int> NewIndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
+    {
+        var arr = context.GetArgument<LuaArray<T>>(0);
+        var key = context.GetArgument(1);
+        var value = context.GetArgument(2);
+
+        // Integer key → array index (Lua is 1-indexed)
+        if (key.TryRead<double>(out var num) && LuaHelpers.IsLuaIndex(num, out var index))
+        {
+            if (!value.TryRead<T>(out var typedValue))
+            {
+                // Fallback: try number → T conversion for common numeric types
+                typedValue = LuaHelpers.ConvertLuaValue<T>(value);
+            }
+            arr[index] = typedValue;
+        }
+
+        return new(context.Return());
+    }
+
+    private static ValueTask<int> LenMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
+    {
+        var arr = context.GetArgument<LuaArray<T>>(0);
+        return new(context.Return((double)arr.Value.Count));
     }
 }

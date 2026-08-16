@@ -426,16 +426,13 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallback
         CurrentStage.Renderer.UpdateCheckpointGlow(currentCheckpoint, isFinish);
     }
 
-    IClientCarCallbacks IClientCallbacks.GetClientCarCallbacks(int index)
+    IClientCarCallbacks IClientCallbacks.GetClientCarCallbacks(BackendCar car)
     {
-        return GetCarVisual(index).Visuals;
+        return GetCarVisual(car).Visuals;
     }
 
     void IGamemodeData.SendServerEvent(ReadOnlySpan<byte> payload)
     {
-        // The gamemode's event sender (injected via SetEventSender) routes
-        // through the host; this fallback is for gamemodes that call
-        // IGamemodeData.SendServerEvent directly.
         _host.SendServerEvent(payload.ToArray());
     }
 

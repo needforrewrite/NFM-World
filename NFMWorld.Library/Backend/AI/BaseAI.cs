@@ -1,11 +1,16 @@
-﻿namespace NFMWorldLibrary.Backend.AI;
+﻿using nfm_world_library.Lua;
+using NFMWorldLibrary.Gamemodes;
+
+namespace NFMWorldLibrary.Backend.AI;
 
 /// <summary>
 /// Base AI class for gamemode-specific AI implementations.
 /// </summary>
-public abstract class BaseAi
+[LuaVisible]
+public abstract partial class BaseAi
 {
-    public abstract void RunAi(IInGameCar car, int currentCarIndex);
+    [LuaName]
+    public abstract void RunAi();
 }
 
 // End of ReLitAi class

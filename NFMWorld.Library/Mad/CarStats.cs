@@ -239,17 +239,17 @@ public partial struct Int3 : IEquatable<Int3>
     /// <summary>
     /// The X component of the vector.
     /// </summary>
-    [JsonPropertyName("x")] public int X;
+    [JsonPropertyName("x")] [LuaName] public int X;
 
     /// <summary>
     /// The Y component of the vector.
     /// </summary>
-    [JsonPropertyName("y")] public int Y;
+    [JsonPropertyName("y")] [LuaName] public int Y;
 
     /// <summary>
     /// The Z component of the vector.
     /// </summary>
-    [JsonPropertyName("z")] public int Z;
+    [JsonPropertyName("z")] [LuaName] public int Z;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="Int3"/> struct.

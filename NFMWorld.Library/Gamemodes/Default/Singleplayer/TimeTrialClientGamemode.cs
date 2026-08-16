@@ -57,15 +57,15 @@ public class TimeTrialClientGamemode1(GamemodeParameters gamemodeParameters, IGa
             };
             Players.Add(ghostPlayer);
 
-            gamemodeData.ClientCallbacks.GetClientCarCallbacks(GhostCarIndex).AlphaOverride = 0.2f;
+            gamemodeData.ClientCallbacks.GetClientCarCallbacks(ghostCar).AlphaOverride = 0.2f;
         }
 
         _currentTimeTrial = new SavedTimeTrial(Players[PlayerCarIndex].Parameters.CarName, CurrentStage.Path,
-            CurrentStage.stageLoader, Players[PlayerCarIndex].Car!.Rad);
+            CurrentStage.StageLoader, Players[PlayerCarIndex].Car!.Rad);
 
         gamemodeData.ClientCallbacks.ResetCheckpointGlow();
         SetTimeText();
-        HudState = new HudStateData { Lap = 1, TotalLaps = CurrentStage.nlaps };
+        HudState = new HudStateData { Lap = 1, TotalLaps = CurrentStage.Nlaps };
         IBackend.Backend.StopAllSounds();
 
         _lastLapSplitDiff = 0;
@@ -128,19 +128,19 @@ public class TimeTrialClientGamemode1(GamemodeParameters gamemodeParameters, IGa
 
             long currentLapSplitDiff = 0;
             if (_lastLap > 0 && _bestTimeTrial != null && _currentTimeTrial != null)
-                currentLapSplitDiff = _currentTimeTrial.GetLapTime(CurrentStage.checkpoints.Count, _lastLap) -
-                                      _bestTimeTrial.GetLapTime(CurrentStage.checkpoints.Count, _lastLap - 1);
+                currentLapSplitDiff = _currentTimeTrial.GetLapTime(CurrentStage.Checkpoints.Count, _lastLap) -
+                                      _bestTimeTrial.GetLapTime(CurrentStage.Checkpoints.Count, _lastLap - 1);
 
             _currentTimeTrial?.RecordSplit(_raceTimer.ElapsedMilliseconds);
 
             if (_lastLap != car.CurrentLap)
             {
                 _lastLapSplitDiff = currentLapSplitDiff;
-                _lastLapTime = _currentTimeTrial?.GetLapTime(CurrentStage.checkpoints.Count, _lastLap) ?? 0;
+                _lastLapTime = _currentTimeTrial?.GetLapTime(CurrentStage.Checkpoints.Count, _lastLap) ?? 0;
             }
         }
 
-        if (car.CurrentLap >= CurrentStage.nlaps)
+        if (car.CurrentLap >= CurrentStage.Nlaps)
             _raceTimer.Stop();
 
         _tick++;

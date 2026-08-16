@@ -1,5 +1,4 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Maxine.Extensions.UnionGen;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
@@ -129,7 +128,7 @@ public readonly struct CollisionShapeRef : IQuadObject
 {
     public readonly int Index;
 
-    public readonly CarPhysics.SurfaceType SurfaceType;
+    public readonly SurfaceType SurfaceType;
     public readonly fix64 TractionMultiplier;
     public readonly int Damage;
     public readonly bool NotWall;

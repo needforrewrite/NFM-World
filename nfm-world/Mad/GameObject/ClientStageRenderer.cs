@@ -64,15 +64,15 @@ public class ClientStageRenderer : GameObject, IDisposable
         World.ResetValues();
         try
         {
-            var stageLoader = backendStage.stageLoader;
+            var stageLoader = backendStage.StageLoader;
 
             ApplyValues();
 
             if (stageLoader.DrawPolys)
             {
                 polys?.Dispose();
-                polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.stagePartCount, graphicsDevice);
-                _polysKey = (stageLoader.DrawPolys, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.stagePartCount);
+                polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount, graphicsDevice);
+                _polysKey = (stageLoader.DrawPolys, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount);
             }
             else
             {
@@ -101,7 +101,7 @@ public class ClientStageRenderer : GameObject, IDisposable
                 _mountainsKey = (false, 0, 0, 0, 0);
             }
             
-            foreach (var piece in backendStage.pieces)
+            foreach (var piece in backendStage.Pieces)
             {
                 if (piece is StageObject obj)
                 {
@@ -155,7 +155,7 @@ public class ClientStageRenderer : GameObject, IDisposable
     {
         var seenObjects = new List<StageObject>();
         
-        var stageLoader = backendStage.stageLoader;
+        var stageLoader = backendStage.StageLoader;
         
         (bool drawPolys, int sx, int ncx, int sz, int ncz, int stagePartCount) polysKey;
         (bool drawClouds, int maxl, int maxr, int maxb, int maxt) cloudsKey;
@@ -163,7 +163,7 @@ public class ClientStageRenderer : GameObject, IDisposable
 
         if (stageLoader.DrawPolys)
         {
-            polysKey = (stageLoader.DrawPolys, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.stagePartCount);
+            polysKey = (stageLoader.DrawPolys, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount);
         }
         else
         {
@@ -190,7 +190,7 @@ public class ClientStageRenderer : GameObject, IDisposable
 
         if (_polysKey != polysKey)
         {
-            polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.stagePartCount, _graphicsDevice);
+            polys = Environment.MakePolys(backendStage, stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb, backendStage.StagePartCount, _graphicsDevice);
             _polysKey = polysKey;
         }
 
@@ -206,7 +206,7 @@ public class ClientStageRenderer : GameObject, IDisposable
             _mountainsKey = mountainsKey;
         }
 
-        foreach (var piece in backendStage.pieces)
+        foreach (var piece in backendStage.Pieces)
         {
             if (piece is StageObject obj)
             {
@@ -266,7 +266,7 @@ public class ClientStageRenderer : GameObject, IDisposable
 
     public void ApplyValues()
     {
-        foreach (var instruction in backendStage.stageLoader.EnvironmentInstructions)
+        foreach (var instruction in backendStage.StageLoader.EnvironmentInstructions)
         {
             switch (instruction)
             {
@@ -298,44 +298,44 @@ public class ClientStageRenderer : GameObject, IDisposable
             }
         }
 
-        World.DrawPolys = backendStage.stageLoader.DrawPolys;
-        World.HasPolys = backendStage.stageLoader.DrawPolys && World.HasPolys;
+        World.DrawPolys = backendStage.StageLoader.DrawPolys;
+        World.HasPolys = backendStage.StageLoader.DrawPolys && World.HasPolys;
 
-        World.DrawClouds = backendStage.stageLoader.DrawClouds;
-        World.HasClouds = backendStage.stageLoader.DrawClouds && World.HasClouds;
+        World.DrawClouds = backendStage.StageLoader.DrawClouds;
+        World.HasClouds = backendStage.StageLoader.DrawClouds && World.HasClouds;
 
-        if (backendStage.stageLoader.CloudCoverage is { } cloudCoverage)
+        if (backendStage.StageLoader.CloudCoverage is { } cloudCoverage)
         {
             World.CloudCoverage = cloudCoverage;
         }
 
-        if (backendStage.stageLoader.FogDensity is { } fogDensity)
+        if (backendStage.StageLoader.FogDensity is { } fogDensity)
         {
             World.FogDensity = fogDensity;
         }
 
-        if (backendStage.stageLoader.FadeFrom is { } fadeFrom)
+        if (backendStage.StageLoader.FadeFrom is { } fadeFrom)
         {
             World.FadeFrom = fadeFrom;
         }
 
-        if (backendStage.stageLoader.LightsOn)
+        if (backendStage.StageLoader.LightsOn)
         {
             World.LightsOn = true;
         }
 
-        World.DrawMountains = backendStage.stageLoader.DrawMountains;
-        if (backendStage.stageLoader.MountainSeed is { } mountainSeed)
+        World.DrawMountains = backendStage.StageLoader.DrawMountains;
+        if (backendStage.StageLoader.MountainSeed is { } mountainSeed)
         {
             World.MountainSeed = mountainSeed;
         }
 
-        if (backendStage.stageLoader.MountainCoverage is { } mountainCoverage)
+        if (backendStage.StageLoader.MountainCoverage is { } mountainCoverage)
         {
             World.MountainCoverage = mountainCoverage;
         }
 
-        if (backendStage.stageLoader.LightDirection is { } lightDirection)
+        if (backendStage.StageLoader.LightDirection is { } lightDirection)
         {
             World.LightDirection = lightDirection;
         }
@@ -366,7 +366,7 @@ public class ClientStageRenderer : GameObject, IDisposable
 
     public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish)
     {
-        var checkpointStageObject = backendStage.checkpoints[currentCheckpoint];
+        var checkpointStageObject = backendStage.Checkpoints[currentCheckpoint];
         
         ResetCheckpointGlow();
 

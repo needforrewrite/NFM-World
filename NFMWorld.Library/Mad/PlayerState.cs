@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 using MemoryPack;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Files.Demo;
 
 namespace NFMWorldLibrary;
@@ -19,12 +20,12 @@ public struct PlayerState
         set => _currentTimeInMs = (ulong)value.ToUnixTimeMilliseconds();
     }
     
-    public static void ApplyTo(PlayerState state, IInGameCar c)
+    public static void ApplyTo(PlayerState state, BackendCar c)
     {
         state.CarFrame.ApplyToCar(c);
     }
     
-    public static PlayerState CreateFrom(uint ticks, IInGameCar car)
+    public static PlayerState CreateFrom(uint ticks, BackendCar car)
     {
         return new PlayerState
         {

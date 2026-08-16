@@ -571,7 +571,7 @@ public partial class StageEditorPhase : BasePhase
                                     break;
                             }
 
-                            tab.Stage.pieces.Add(StageObject.CreateDefaultObject(wallPart.Rad, position, rotation, isWall: true));
+                            tab.Stage.Pieces.Add(StageObject.CreateDefaultObject(wallPart.Rad, position, rotation, isWall: true));
                         }
                     }
                 }

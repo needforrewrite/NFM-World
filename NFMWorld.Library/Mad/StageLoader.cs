@@ -1,6 +1,7 @@
-﻿﻿﻿using System.Runtime.CompilerServices;
+﻿﻿﻿﻿﻿﻿﻿﻿using System.Runtime.CompilerServices;
 using Maxine.Extensions.Collections;
 using MemoryPack;
+using nfm_world_library.Lua;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
@@ -8,17 +9,18 @@ using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary;
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible]
 public readonly partial record struct PiecePlacement(
-    [property: MemoryPackOrder(0)] PiecePlacementType Type,
-    [property: MemoryPackOrder(1)] Rad3d Object,
-    [property: MemoryPackOrder(2)] f64Vector3 Position,
-    [property: MemoryPackOrder(3)] f64Euler Rotation,
-    [property: MemoryPackOrder(4)] AiNodeKind? NodeKind = null,
-    [property: MemoryPackOrder(5)] bool IsSpecial = false,
-    [property: MemoryPackOrder(6)] bool IsWall = false
+    [property: MemoryPackOrder(0), LuaName] PiecePlacementType Type,
+    [property: MemoryPackOrder(1), LuaName] Rad3d Object,
+    [property: MemoryPackOrder(2), LuaName] f64Vector3 Position,
+    [property: MemoryPackOrder(3), LuaName] f64Euler Rotation,
+    [property: MemoryPackOrder(4), LuaName] AiNodeKind? NodeKind = null,
+    [property: MemoryPackOrder(5), LuaName] bool IsSpecial = false,
+    [property: MemoryPackOrder(6), LuaName] bool IsWall = false
 );
 
+[LuaVisible]
 public enum PiecePlacementType : byte
 {
     CollisionObject,
@@ -29,9 +31,15 @@ public enum PiecePlacementType : byte
 // count = n parameter
 // position = o parameter
 // offset = p parameter
-[MemoryPackable(GenerateType.VersionTolerant)]
-public partial record StageWall([property: MemoryPackOrder(0)] WallDirection Direction, [property: MemoryPackOrder(1)] int Count, [property: MemoryPackOrder(2)] int Position, [property: MemoryPackOrder(3)] int Offset);
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible]
+public partial record StageWall(
+    [property: MemoryPackOrder(0), LuaName] WallDirection Direction,
+    [property: MemoryPackOrder(1), LuaName] int Count,
+    [property: MemoryPackOrder(2), LuaName] int Position,
+    [property: MemoryPackOrder(3), LuaName] int Offset
+);
 
+[LuaVisible]
 public enum WallDirection : byte
 {
     Right,
@@ -40,12 +48,12 @@ public enum WallDirection : byte
     Bottom
 }
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible]
 public readonly partial record struct HierarchyGroup(
-    [property: MemoryPackOrder(0)] string Name,
-    [property: MemoryPackOrder(1)] UnlimitedArray<PiecePlacement> Pieces,
+    [property: MemoryPackOrder(0), LuaName] string Name,
+    [property: MemoryPackOrder(1), LuaName] UnlimitedArray<PiecePlacement> Pieces,
     // Old group format: #editor_group(Name,x:z,...)
-    [property: MemoryPackOrder(2)] UnlimitedArray<string> CoordinateKeys
+    [property: MemoryPackOrder(2), LuaName] UnlimitedArray<string> CoordinateKeys
 );
 
 // colors have to be processed in order, so we provide a list of instructions in order
@@ -57,67 +65,71 @@ public readonly partial record struct HierarchyGroup(
 [MemoryPackUnion(4, typeof(GroundInstruction))]
 [MemoryPackUnion(5, typeof(TextureInstruction))]
 [MemoryPackUnion(6, typeof(PolysInstruction))]
+[LuaVisible]
 public abstract partial record EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant)] [method: MemoryPackConstructor] public partial record SnapInstruction([property: MemoryPackOrder(0)] Color3 Color) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant)] [method: MemoryPackConstructor] public partial record SkyInstruction([property: MemoryPackOrder(0)] Color3 Color) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant)] [method: MemoryPackConstructor] public partial record FogInstruction([property: MemoryPackOrder(0)] Color3 Color) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant)] [method: MemoryPackConstructor] public partial record CloudsInstruction([property: MemoryPackOrder(0)] InlineArray5Ex<int> Clouds) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant)] [method: MemoryPackConstructor] public partial record GroundInstruction([property: MemoryPackOrder(0)] Color3 Color) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant)] [method: MemoryPackConstructor] public partial record TextureInstruction([property: MemoryPackOrder(0)] InlineArray4Ex<int> Texture) : EnvironmentInstruction;
-[MemoryPackable(GenerateType.VersionTolerant)] [method: MemoryPackConstructor] public partial record PolysInstruction([property: MemoryPackOrder(0)] Color3 Color) : EnvironmentInstruction;
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible] [method: MemoryPackConstructor] public partial record SnapInstruction([property: MemoryPackOrder(0), LuaName] Color3 Color) : EnvironmentInstruction;
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible] [method: MemoryPackConstructor] public partial record SkyInstruction([property: MemoryPackOrder(0), LuaName] Color3 Color) : EnvironmentInstruction;
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible] [method: MemoryPackConstructor] public partial record FogInstruction([property: MemoryPackOrder(0), LuaName] Color3 Color) : EnvironmentInstruction;
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible] [method: MemoryPackConstructor] public partial record CloudsInstruction([property: MemoryPackOrder(0), LuaName] LuaArray<int> Clouds) : EnvironmentInstruction;
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible] [method: MemoryPackConstructor] public partial record GroundInstruction([property: MemoryPackOrder(0), LuaName] Color3 Color) : EnvironmentInstruction;
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible] [method: MemoryPackConstructor] public partial record TextureInstruction([property: MemoryPackOrder(0), LuaName] LuaArray<int> Texture) : EnvironmentInstruction;
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible] [method: MemoryPackConstructor] public partial record PolysInstruction([property: MemoryPackOrder(0), LuaName] Color3 Color) : EnvironmentInstruction;
 
-[MemoryPackable(GenerateType.CircularReference)]
+[LuaVisible]
+public readonly partial record struct LuaVector3([property: LuaName] float X, [property: LuaName] float Y, [property: LuaName] float Z);
+
+[MemoryPackable(GenerateType.CircularReference), LuaVisible]
 public partial class StageLoader
 {
-    [MemoryPackOrder(0)] public string Path;
+    [MemoryPackOrder(0), LuaName] public string Path;
 
-    [MemoryPackOrder(1)] public ushort nlaps = 3;
+    [MemoryPackOrder(1), LuaName] public ushort nlaps = 3;
 
     // soundtrack(folder,fileName)
-    [MemoryPackOrder(2)] public string musicPath = "";
+    [MemoryPackOrder(2), LuaName] public string musicPath = "";
 
     // soundtrackremaster(folder,fileName)
-    [MemoryPackOrder(3)] public string remasteredMusicPath = "";
+    [MemoryPackOrder(3), LuaName] public string remasteredMusicPath = "";
 
     // soundtrackfreqmul(mul)
-    [MemoryPackOrder(4)] public double musicFreqMul = 1.0d;
-    [MemoryPackOrder(5)] public double musicTempoMul = 1.0d;
-    [MemoryPackOrder(6)] public string Name = "hogan rewish";
-    [MemoryPackOrder(7)] public int indexOffset = 10;
+    [MemoryPackOrder(4), LuaName] public double musicFreqMul = 1.0d;
+    [MemoryPackOrder(5), LuaName] public double musicTempoMul = 1.0d;
+    [MemoryPackOrder(6), LuaName] public string Name = "hogan rewish";
+    [MemoryPackOrder(7), LuaName] public int indexOffset = 10;
 
     private bool swapYandRot = false;
     private bool reverseChkY = false;
 
     // left
-    [MemoryPackOrder(8)] public int Sx;
+    [MemoryPackOrder(8), LuaName] public int Sx;
 
     // top
-    [MemoryPackOrder(9)] public int Sz;
+    [MemoryPackOrder(9), LuaName] public int Sz;
 
     // width
-    [MemoryPackOrder(10)] public int Ncx;
+    [MemoryPackOrder(10), LuaName] public int Ncx;
 
     // height
-    [MemoryPackOrder(11)] public int Ncz;
+    [MemoryPackOrder(11), LuaName] public int Ncz;
 
-    [MemoryPackOrder(21)] public float? CloudCoverage;
-    [MemoryPackOrder(22)] public int? FogDensity;
-    [MemoryPackOrder(23)] public int? FadeFrom;
-    [MemoryPackOrder(24)] public bool LightsOn;
-    [MemoryPackOrder(25)] public bool DrawMountains = true;
-    [MemoryPackOrder(26)] public int? MountainSeed;
-    [MemoryPackOrder(27)] public float? MountainCoverage;
-    [MemoryPackOrder(28)] public Vector3? LightDirection;
-    [MemoryPackOrder(29)] public UnlimitedArray<PiecePlacement> pieces = new();
-    [MemoryPackOrder(30)] public UnlimitedArray<Rad3dBoxDef> walls = new();
-    [MemoryPackOrder(31)] public int maxr = 0;
-    [MemoryPackOrder(32)] public int maxl = 100;
-    [MemoryPackOrder(33)] public int maxt = 0;
-    [MemoryPackOrder(34)] public int maxb = 100;
+    [MemoryPackOrder(21), LuaName] public float? CloudCoverage;
+    [MemoryPackOrder(22), LuaName] public int? FogDensity;
+    [MemoryPackOrder(23), LuaName] public int? FadeFrom;
+    [MemoryPackOrder(24), LuaName] public bool LightsOn;
+    [MemoryPackOrder(25), LuaName] public bool DrawMountains = true;
+    [MemoryPackOrder(26), LuaName] public int? MountainSeed;
+    [MemoryPackOrder(27), LuaName] public float? MountainCoverage;
+    [MemoryPackOrder(28), LuaName] public LuaVector3? LightDirection;
+    [MemoryPackOrder(29), LuaName] public LuaUnlimitedArray<PiecePlacement> pieces = new();
+    [MemoryPackOrder(30), LuaName] public LuaUnlimitedArray<Rad3dBoxDef> walls = new();
+    [MemoryPackOrder(31), LuaName] public int maxr = 0;
+    [MemoryPackOrder(32), LuaName] public int maxl = 100;
+    [MemoryPackOrder(33), LuaName] public int maxt = 0;
+    [MemoryPackOrder(34), LuaName] public int maxb = 100;
 
-    [MemoryPackOrder(35)] public UnlimitedArray<EnvironmentInstruction> EnvironmentInstructions = new();
-    [MemoryPackOrder(36)] public bool DrawPolys = true;
-    [MemoryPackOrder(37)] public bool DrawClouds = true;
+    [MemoryPackOrder(35), LuaName] public LuaUnlimitedArray<EnvironmentInstruction> EnvironmentInstructions = new();
+    [MemoryPackOrder(36), LuaName] public bool DrawPolys = true;
+    [MemoryPackOrder(37), LuaName] public bool DrawClouds = true;
 
     [MemoryPackIgnore] public UnlimitedArray<StageWall> wallDefs = [];
 
@@ -226,11 +238,13 @@ public partial class StageLoader
 
                 else if (line.StartsWith("texture"))
                 {
-                    var texture = new InlineArray4Ex<int>();
-                    texture[0] = Utility.GetInt("texture", line, 0);
-                    texture[1] = Utility.GetInt("texture", line, 1);
-                    texture[2] = Utility.GetInt("texture", line, 2);
-                    texture[3] = Utility.GetInt("texture", line, 3);
+                    var texture = new LuaArray<int>(4)
+                    {
+                        [0] = Utility.GetInt("texture", line, 0),
+                        [1] = Utility.GetInt("texture", line, 1),
+                        [2] = Utility.GetInt("texture", line, 2),
+                        [3] = Utility.GetInt("texture", line, 3)
+                    };
                     EnvironmentInstructions.Add(new TextureInstruction(texture));
                 }
 
@@ -250,12 +264,14 @@ public partial class StageLoader
                         }
                         else // clouds(param1,param2,...) format
                         {
-                            var clouds = new InlineArray5<int>();
-                            clouds[0] = Utility.GetInt("clouds", line, 0);
-                            clouds[1] = Utility.GetInt("clouds", line, 1);
-                            clouds[2] = Utility.GetInt("clouds", line, 2);
-                            clouds[3] = Utility.GetInt("clouds", line, 3);
-                            clouds[4] = Utility.GetInt("clouds", line, 4);
+                            var clouds = new LuaArray<int>(5)
+                            {
+                                [0] = Utility.GetInt("clouds", line, 0),
+                                [1] = Utility.GetInt("clouds", line, 1),
+                                [2] = Utility.GetInt("clouds", line, 2),
+                                [3] = Utility.GetInt("clouds", line, 3),
+                                [4] = Utility.GetInt("clouds", line, 4)
+                            };
                             EnvironmentInstructions.Add(new CloudsInstruction(clouds));
                         }
                     }
@@ -314,7 +330,7 @@ public partial class StageLoader
 
                 else if (line.StartsWith("lightdir"))
                 {
-                    LightDirection = new Vector3(
+                    LightDirection = new LuaVector3(
                         Utility.GetFloat("lightdir", line, 0),
                         Utility.GetFloat("lightdir", line, 1),
                         Utility.GetFloat("lightdir", line, 2)

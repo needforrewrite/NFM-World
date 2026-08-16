@@ -167,8 +167,8 @@ public partial class StageEditorPhase
                         var dp = ActiveTab.ScenePieces.GetValueOrDefault(did);
                         if (dp == null) continue;
                         if (ActiveTab.Stage != null)
-                            for (int si = 0; si < ActiveTab.Stage.pieces.Count; si++)
-                                if (ActiveTab.Stage.pieces[si] == dp.Obj) { ActiveTab.Stage.pieces.RemoveAt(si); break; }
+                            for (int si = 0; si < ActiveTab.Stage.Pieces.Count; si++)
+                                if (ActiveTab.Stage.Pieces[si] == dp.Obj) { ActiveTab.Stage.Pieces.RemoveAt(si); break; }
                         ActiveTab.ScenePieces.Remove(dp);
                         foreach (var grp in ActiveTab.HierarchyGroups) grp.PieceIds.Remove(dp.Id);
                     }
@@ -395,11 +395,11 @@ public partial class StageEditorPhase
                 {
                     if (ActiveTab.Stage != null)
                     {
-                        for (int i = 0; i < ActiveTab.Stage.pieces.Count; i++)
+                        for (int i = 0; i < ActiveTab.Stage.Pieces.Count; i++)
                         {
-                            if (ActiveTab.Stage.pieces[i] == piece.Obj)
+                            if (ActiveTab.Stage.Pieces[i] == piece.Obj)
                             {
-                                ActiveTab.Stage.pieces.RemoveAt(i);
+                                ActiveTab.Stage.Pieces.RemoveAt(i);
                                 break;
                             }
                         }
@@ -664,11 +664,11 @@ public partial class StageEditorPhase
                             var newMesh = StageObject.CreateDefaultObject(part, swapPiece.Position, newRot);
                             if (ActiveTab.Stage != null)
                             {
-                                for (int si = 0; si < ActiveTab.Stage.pieces.Count; si++)
+                                for (int si = 0; si < ActiveTab.Stage.Pieces.Count; si++)
                                 {
-                                    if (ActiveTab.Stage.pieces[si] == swapPiece.Obj)
+                                    if (ActiveTab.Stage.Pieces[si] == swapPiece.Obj)
                                     {
-                                        ActiveTab.Stage.pieces[si] = newMesh;
+                                        ActiveTab.Stage.Pieces[si] = newMesh;
                                         break;
                                     }
                                 }

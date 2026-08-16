@@ -19,7 +19,7 @@ public class StageObjectGameObject : MeshedGameObject, IDisposable
         Children = [_collisionDebug];
     }
 
-    public override void GameTick(IStage? stage = null)
+    public override void GameTick(BackendStage? stage = null)
     {
         base.GameTick(stage);
         Position = _obj.Position;

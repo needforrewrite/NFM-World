@@ -8,22 +8,23 @@ local clientTick = 0
 local lastCheckpoint = -1
 local lastLap = 0
 
-local function setup_cars()
-    for i = 0, players.count - 1 do
-        local car = create_car(i, -500 + (400 * i), 0)
+local function setupCars()
+    for i = 1, #GM.players do
+        local car = GM:createCar(i, fixed64(-500 + (400 * i)), fixed64(0))
         car.currentCheckpoint = 0
         car.currentLap = 0
 
-        local player = players:get(i)
+        local player = GM.players[i]
         if player ~= nil and player.parameters.isBot then
-            attach_bot(i)
+            -- TODO: attach bot AI
+            -- attach_bot(i)
         end
     end
 end
 
-function on_begin()
-    reset_client_state()
-    setup_cars()
+function OnBegin()
+    GM:clientReset()
+    setupCars()
     state = "countdown"
     countdown = 3
     inner = 0
@@ -32,17 +33,17 @@ function on_begin()
     lastLap = 0
 end
 
-function on_reset()
-    on_begin()
+function OnReset()
+    OnBegin()
 end
 
-function on_game_tick()
+function OnGameTick()
     if state == "countdown" then
         inner = inner - 1
         if inner <= 0 then
-            inner = countdown_interval()
+            inner = GM.countdownInterval
             countdown = countdown - 1
-            hud.countdownTimer = countdown
+            GM.hudState.countdownTimer = countdown
             if countdown <= 0 then
                 state = "inProgress"
             end
@@ -51,24 +52,28 @@ function on_game_tick()
     end
 
     if state == "inProgress" then
-        physics_tick()
+        GM.physics:gameTick()
 
-        for i = 0, players.count - 1 do
-            handle_fix_hoops(i)
-            handle_checkpoint(i)
+        for i = 1, #GM.players do
+            if GM.players[i] ~= nil and GM.players[i].car ~= nil then
+                ---@type BackendCar
+                local car = GM.players[i].car
+                GM:handleFixHoops(car)
+                GM:handleCheckPoint(car)
+            end
         end
 
-        calculate_positions()
+        GM:calculatePositions()
 
-        local myCar = players:get(client_index()).car
+        local myCar = GM.clientPlayer.car
         if myCar ~= nil then
             -- Client-side finish fallback (server result is authoritative).
-            if myCar.currentLap >= stage.nlaps then
+            if myCar.currentLap >= GM.stage.nlaps then
                 state = "finished"
             end
 
             if myCar.currentCheckpoint ~= lastCheckpoint or myCar.currentLap ~= lastLap then
-                send_event("checkpoint", {
+                GM:sendEvent("checkpoint", {
                     index = myCar.currentCheckpoint,
                     lap = myCar.currentLap,
                     tick = clientTick
@@ -79,21 +84,26 @@ function on_game_tick()
         end
 
         clientTick = clientTick + 1
-        update_hud(client_index())
+
+        if myCar ~= nil then
+            GM:updateHudAndSounds(myCar)
+        end
         return
     end
 
     if state == "finished" then
-        physics_tick()
+        GM.physics:gameTick()
     end
 end
 
-function on_server_event(type, payload)
+---@param type string
+---@param payload table
+function OnServerEvent(type, payload)
     if type == "standings" and payload ~= nil then
-        local me = payload[tostring(client_index())]
+        local me = payload[tostring(GM.clientPlayer.index)]
         if me ~= nil and me.position ~= nil then
-            hud.position = me.position
-            hud.totalRacers = players.count
+            GM.hudState.position = me.position
+            GM.hudState.totalRacers = #GM.players
         end
     end
 

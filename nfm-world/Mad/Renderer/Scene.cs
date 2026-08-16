@@ -94,7 +94,7 @@ public class Scene : IDisposable
         }
     }
 
-    public void GameTick(IStage currentStage)
+    public void GameTick(BackendStage currentStage)
     {
         foreach (var obj in Objects)
         {

@@ -43,7 +43,7 @@ function fixed64(value) end
 ---@return fixed64vector3
 function fixed64vector3(x, y, z) end
 
-local fixed64vec3 = {}
+fixed64vec3 = {}
 
 --- Returns a normalized (unit-length) copy of the vector.
 ---@param v fixed64vector3
@@ -169,7 +169,7 @@ function f64angle(value) end
 ---@return f64euler
 function f64euler(yaw, pitch, roll) end
 
-local f64anglelib = {}
+f64anglelib = {}
 
 --- Creates an f64AngleSingle from a radian value.
 ---@param radians fixed64
@@ -213,7 +213,7 @@ function f64anglelib.degrees(a) end
 ---@return fixed64
 function f64anglelib.radians(a) end
 
-local f64eulerlib = {}
+f64eulerlib = {}
 
 --- Wraps each component (yaw, pitch, roll) to [-180°, 180°] ([-π, π] rad).
 ---@param e f64euler
@@ -233,6 +233,160 @@ function f64eulerlib.wrap_positive(e) end
 ---@overload fun(v: f64euler): "f64euler"
 function type(v) end
 
----@class Players : {[integer]: PlayerParametersInstance}
+f64math = {}
 
----@class Cars : {[integer]: IInGameCarInstance}
+--- The largest representable fixed64 value.
+---@type fixed64
+f64math.maxValue = nil
+
+--- The smallest representable fixed64 value.
+---@type fixed64
+f64math.minValue = nil
+
+--- pi (π).
+---@type fixed64
+f64math.pi = nil
+
+--- Half of pi (π/2).
+---@type fixed64
+f64math.halfpi = nil
+
+--- Two times pi (2π).
+---@type fixed64
+f64math.twopi = nil
+
+--- Returns the sine of x (radians).
+---@param x fixed64
+---@return fixed64
+function f64math.sin(x) end
+
+--- Returns the cosine of x (radians).
+---@param x fixed64
+---@return fixed64
+function f64math.cos(x) end
+
+--- Returns the tangent of x (radians).
+---@param x fixed64
+---@return fixed64
+function f64math.tan(x) end
+
+--- Returns the arc-sine of x (radians).
+---@param x fixed64
+---@return fixed64
+function f64math.asin(x) end
+
+--- Returns the arc-cosine of x (radians).
+---@param x fixed64
+---@return fixed64
+function f64math.acos(x) end
+
+--- Returns the arc-tangent of x (radians).
+---@param x fixed64
+---@return fixed64
+function f64math.atan(x) end
+
+--- Returns the angle whose tangent is y / x (radians).
+---@param y fixed64
+---@param x fixed64
+---@return fixed64
+function f64math.atan2(y, x) end
+
+--- Returns the square root of x.
+---@param x fixed64
+---@return fixed64
+function f64math.sqrt(x) end
+
+--- Returns b raised to the power e.
+---@param b fixed64
+---@param e fixed64
+---@return fixed64
+function f64math.pow(b, e) end
+
+--- Returns the natural logarithm of x.
+---@param x fixed64
+---@return fixed64
+function f64math.ln(x) end
+
+--- Returns the base-2 logarithm of x.
+---@param x fixed64
+---@return fixed64
+function f64math.log2(x) end
+
+--- Returns the absolute value of x.
+---@param x fixed64
+---@return fixed64
+function f64math.abs(x) end
+
+--- Returns the largest integral value less than or equal to x.
+---@param x fixed64
+---@return fixed64
+function f64math.floor(x) end
+
+--- Returns the smallest integral value greater than or equal to x.
+---@param x fixed64
+---@return fixed64
+function f64math.ceil(x) end
+
+--- Rounds x to the nearest integral value (banker's rounding).
+---@param x fixed64
+---@return fixed64
+function f64math.round(x) end
+
+--- Returns the smaller of two values.
+---@param a fixed64
+---@param b fixed64
+---@return fixed64
+function f64math.min(a, b) end
+
+--- Returns the larger of two values.
+---@param a fixed64
+---@param b fixed64
+---@return fixed64
+function f64math.max(a, b) end
+
+--- Clamps v to the inclusive range [min, max].
+---@param v fixed64
+---@param min fixed64
+---@param max fixed64
+---@return fixed64
+function f64math.clamp(v, min, max) end
+
+--- Clamps v to the range [0, 1].
+---@param v fixed64
+---@return fixed64
+function f64math.clamp01(v) end
+
+--- Returns the sign of x (-1, 0, or 1).
+---@param x fixed64
+---@return fixed64
+function f64math.sign(x) end
+
+--- Linearly interpolates between a and b by t (0 = a, 1 = b).
+---@param a fixed64
+---@param b fixed64
+---@param t fixed64
+---@return fixed64
+function f64math.lerp(a, b, t) end
+
+--- Returns sqrt(a^2 + b^2).
+---@param a fixed64
+---@param b fixed64
+---@return fixed64
+function f64math.hypot(a, b) end
+
+--- Converts degrees to radians.
+---@param x fixed64
+---@return fixed64
+function f64math.deg2rad(x) end
+
+--- Converts radians to degrees.
+---@param x fixed64
+---@return fixed64
+function f64math.rad2deg(x) end
+
+---@class RaceStandings {[integer]: Standing}
+
+---@class Standing
+---@field playerId string
+---@field position integer
+---@field finished boolean

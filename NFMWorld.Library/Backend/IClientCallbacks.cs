@@ -7,5 +7,5 @@ public interface IClientCallbacks
 {
     void ResetCheckpointGlow();
     void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish);
-    IClientCarCallbacks GetClientCarCallbacks(int index);
+    IClientCarCallbacks GetClientCarCallbacks(BackendCar car);
 }

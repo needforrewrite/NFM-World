@@ -1,67 +1,69 @@
 ﻿using System.Text.Json.Serialization;
 using FixedMathSharp;
 using MemoryPack;
+using nfm_world_library.Lua;
 using NFMWorldLibrary.FixedMath;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Rad;
 
 // init properties aren't compatible with CircularReference, so can't use record
-[MemoryPackable(GenerateType.CircularReference)]
+[MemoryPackable(GenerateType.CircularReference), LuaVisible]
 public sealed partial class Rad3d(
-    Color3[] Colors,
-    CarStats Stats,
-    Rad3dWheelDef[] Wheels,
-    Rad3dRimsDef? Rims,
-    Rad3dBoxDef[] Boxes,
-    Rad3dPoly[] Polys,
-    bool CastsShadow,
-    Vector2[] Atp,
-    string FileName = "hogan rewish",
-    SrcRad3dCollisionMesh? CollisionMesh = null,
-    SrcRad3dCollisionHull? CollisionHull = null,
-    Rad3dAttachmentLine[]? AtLines = null
+    Color3[] colors,
+    CarStats stats,
+    Rad3dWheelDef[] wheels,
+    Rad3dRimsDef? rims,
+    Rad3dBoxDef[] boxes,
+    Rad3dPoly[] polys,
+    bool castsShadow,
+    LuaVector2[] atp,
+    string fileName = "hogan rewish",
+    SrcRad3dCollisionMesh? collisionMesh = null,
+    SrcRad3dCollisionHull? collisionHull = null,
+    Rad3dAttachmentLine[]? atLines = null
 )
 {
-    [MemoryPackIgnore] public int MaxRadius { get; } = CalculateMaxRadius(Polys);
+    [MemoryPackIgnore, LuaName] public int MaxRadius { get; } = CalculateMaxRadius(polys);
 
-    [JsonPropertyName("colors"), MemoryPackOrder(0)]
-    public Color3[] Colors { get; set; } = Colors;
+    [JsonPropertyName("colors"), MemoryPackOrder(0), LuaName]
+    public LuaArray<Color3> Colors { get; set; } = colors;
 
-    [JsonPropertyName("stats"), MemoryPackOrder(1)]
-    public CarStats Stats { get; set; } = Stats;
+    [JsonPropertyName("stats"), MemoryPackOrder(1), LuaName]
+    public CarStats Stats { get; set; } = stats;
 
-    [JsonPropertyName("wheels"), MemoryPackOrder(2)]
-    public Rad3dWheelDef[] Wheels { get; set; } = Wheels;
+    [JsonPropertyName("wheels"), MemoryPackOrder(2), LuaName]
+    public LuaArray<Rad3dWheelDef> Wheels { get; set; } = wheels;
 
-    [JsonPropertyName("rims"), MemoryPackOrder(3)]
-    public Rad3dRimsDef? Rims { get; set; } = Rims;
+    [JsonPropertyName("rims"), MemoryPackOrder(3), LuaName]
+    public Rad3dRimsDef? Rims { get; set; } = rims;
 
-    [JsonPropertyName("boxes"), MemoryPackOrder(4)]
-    public Rad3dBoxDef[] Boxes { get; set; } = Boxes;
+    [JsonPropertyName("boxes"), MemoryPackOrder(4), LuaName]
+    public LuaArray<Rad3dBoxDef> Boxes { get; set; } = boxes;
 
-    [JsonPropertyName("polys"), MemoryPackOrder(5)]
-    public Rad3dPoly[] Polys { get; set; } = Polys;
+    [JsonPropertyName("polys"), MemoryPackOrder(5), LuaName]
+    public LuaArray<Rad3dPoly> Polys { get; set; } = polys;
 
-    [JsonPropertyName("shadow"), MemoryPackOrder(6)]
-    public bool CastsShadow { get; set; } = CastsShadow;
+    [JsonPropertyName("shadow"), MemoryPackOrder(6), LuaName]
+    public bool CastsShadow { get; set; } = castsShadow;
 
-    [JsonPropertyName("atp"), MemoryPackOrder(7)]
-    public Vector2[] Atp { get; set; } = Atp;
+    [JsonPropertyName("atp"), MemoryPackOrder(7), LuaName]
+    public LuaArray<LuaVector2> Atp { get; set; } = atp;
 
-    [JsonPropertyName("fileName"), MemoryPackOrder(8)]
-    public string FileName { get; set; } = FileName;
+    [JsonPropertyName("fileName"), MemoryPackOrder(8), LuaName]
+    public string FileName { get; set; } = fileName;
 
     [JsonPropertyName("collisionMesh"), MemoryPackOrder(9)]
-    public SrcRad3dCollisionMesh? CollisionMesh { get; set; } = CollisionMesh;
+    public SrcRad3dCollisionMesh? CollisionMesh { get; set; } = collisionMesh;
 
     [JsonPropertyName("collisionHull"), MemoryPackOrder(10)]
-    public SrcRad3dCollisionHull? CollisionHull { get; set; } = CollisionHull;
+    public SrcRad3dCollisionHull? CollisionHull { get; set; } = collisionHull;
 
-    [JsonPropertyName("atLines"), MemoryPackOrder(11)]
-    public Rad3dAttachmentLine[]? AtLines { get; set; } = AtLines;
+    [JsonPropertyName("atLines"), MemoryPackOrder(11), LuaName]
+    public LuaArray<Rad3dAttachmentLine>? AtLines { get; set; } = atLines != null ? new LuaArray<Rad3dAttachmentLine>(atLines) : null;
 
-    private readonly int _hashCode = CalculateHashCode(Colors, Stats, Wheels, Rims, Boxes, Polys, CastsShadow, Atp, CollisionMesh, CollisionHull, AtLines);
-    private readonly int _visualHashCode = CalculateVisualHashCode(Colors, Wheels, Rims, Polys, CastsShadow);
+    private readonly int _hashCode = CalculateHashCode(colors, stats, wheels, rims, boxes, polys, castsShadow, atp, collisionMesh, collisionHull, atLines);
+    private readonly int _visualHashCode = CalculateVisualHashCode(colors, wheels, rims, polys, castsShadow);
 
     private static int CalculateMaxRadius(Rad3dPoly[] polys)
     {
@@ -113,7 +115,7 @@ public sealed partial class Rad3d(
         Rad3dBoxDef[] boxes,
         Rad3dPoly[] polys,
         bool castsShadow,
-        Vector2[] atp,
+        LuaVector2[] atp,
         SrcRad3dCollisionMesh? colMesh,
         SrcRad3dCollisionHull? colHull,
         Rad3dAttachmentLine[]? atLines
@@ -221,20 +223,7 @@ public sealed partial class Rad3d(
             return obj._visualHashCode;
         }
     }
-
-    public void Deconstruct(out Color3[] Colors, out CarStats Stats, out Rad3dWheelDef[] Wheels, out Rad3dRimsDef? Rims, out Rad3dBoxDef[] Boxes, out Rad3dPoly[] Polys, out bool CastsShadow, out Vector2[] Atp, out string FileName, out SrcRad3dCollisionMesh? CollisionMesh, out SrcRad3dCollisionHull? CollisionHull, out Rad3dAttachmentLine[]? AtLines)
-    {
-        Colors = this.Colors;
-        Stats = this.Stats;
-        Wheels = this.Wheels;
-        Rims = this.Rims;
-        Boxes = this.Boxes;
-        Polys = this.Polys;
-        CastsShadow = this.CastsShadow;
-        Atp = this.Atp;
-        FileName = this.FileName;
-        CollisionMesh = this.CollisionMesh;
-        CollisionHull = this.CollisionHull;
-        AtLines = this.AtLines;
-    }
 }
+
+[LuaVisible]
+public partial record struct LuaVector2([property: LuaName] float X, [property: LuaName] float Y);

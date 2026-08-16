@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.Runtime.InteropServices;
+using nfm_world_library.Lua;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
@@ -8,22 +9,18 @@ using NFMWorld.Sentry;
 
 namespace NFMWorldLibrary.Backend;
 
-public class BackendStage : IStage
+[LuaVisible]
+public partial class BackendStage
 {
-    IReadOnlyList<ITransform> IStage.pieces => pieces;
-    IReadOnlyList<IAiNode> IStage.nodes => nodes;
-    IReadOnlyList<IAiNode> IStage.checkpoints => checkpoints;
-    IReadOnlyList<IAiNode> IStage.fixHoops => fixHoops;
+    [LuaName] public LuaUnlimitedArray<BackendGameObject> Pieces { get; } = [];
+    [LuaName] public LuaUnlimitedArray<StageObject> Nodes { get; } = [];
+    [LuaName] public LuaUnlimitedArray<StageObject> Checkpoints { get; } = [];
+    [LuaName] public LuaUnlimitedArray<StageObject> FixHoops { get; } = [];
+    [LuaName] public ushort Nlaps { get; set; }
 
-    public UnlimitedArray<ITransform> pieces { get; } = [];
-    public UnlimitedArray<StageObject> nodes { get; } = [];
-    public UnlimitedArray<StageObject> checkpoints { get; } = [];
-    public UnlimitedArray<StageObject> fixHoops { get; } = [];
-    public ushort nlaps { get; set; }
+    [LuaName] public string Name = "hogan rewish";
 
-    public string Name = "hogan rewish";
-
-    public readonly string Path;
+    [LuaName] public readonly string Path;
     
     // left
     public int Sx;
@@ -34,15 +31,15 @@ public class BackendStage : IStage
     // height
     public int Ncz;
 
-    public int stagePartCount => pieces.Count;
+    public int StagePartCount => Pieces.Count;
 
-    public readonly StageLoader stageLoader;
+    [LuaName] public readonly StageLoader StageLoader;
 
     protected BackendStage()
     {
         // Creates an empty stage for inheritance
         Path = "~empty~";
-        stageLoader = new StageLoader();
+        StageLoader = new StageLoader();
     }
 
     public BackendStage(string stageName, StageLoader? stageLoader = null) : this()
@@ -50,8 +47,8 @@ public class BackendStage : IStage
         Path = stageName;
         try
         {
-            this.stageLoader = stageLoader ?? new StageLoader(stageName);
-            LoadStageInternal(this.stageLoader);
+            this.StageLoader = stageLoader ?? new StageLoader(stageName);
+            LoadStageInternal(this.StageLoader);
         }
         catch (StageLoadException exception)
         {
@@ -79,10 +76,10 @@ public class BackendStage : IStage
                         piece.Rotation,
                         piece
                     );
-                    pieces[stagePartCount] = obj;
+                    Pieces[StagePartCount] = obj;
                     if (piece.NodeKind is { } nodeKind)
                     {
-                        nodes[nodes.Count] = obj;
+                        Nodes[Nodes.Count] = obj;
                         obj.Kind = nodeKind;
                     }
 
@@ -99,9 +96,9 @@ public class BackendStage : IStage
                     {
                         Kind = AiNodeKind.CheckPoint
                     };
-                    pieces[stagePartCount] = obj;
-                    nodes[nodes.Count] = obj;
-                    checkpoints[checkpoints.Count] = obj;
+                    Pieces[StagePartCount] = obj;
+                    Nodes[Nodes.Count] = obj;
+                    Checkpoints[Checkpoints.Count] = obj;
 
                     break;
                 }
@@ -116,10 +113,10 @@ public class BackendStage : IStage
                     {
                         Kind = AiNodeKind.FixHoop
                     };
-                    pieces[stagePartCount] = fix;
+                    Pieces[StagePartCount] = fix;
 
-                    fixHoops[fixHoops.Count] = fix;
-                    nodes[nodes.Count] = fix;
+                    FixHoops[FixHoops.Count] = fix;
+                    Nodes[Nodes.Count] = fix;
                     if (piece.IsSpecial)
                     {
                         fix.IsSpecial = true;
@@ -134,13 +131,13 @@ public class BackendStage : IStage
             }
         }
 
-        nlaps = stageLoader.nlaps;
+        Nlaps = stageLoader.nlaps;
         Name = stageLoader.Name;
             
         // stage walls
         if (stageLoader.walls.Count > 0)
         {
-            pieces[stagePartCount] = new WallCollision([..stageLoader.walls]);
+            Pieces[StagePartCount] = new WallCollision([..stageLoader.walls]);
         }
 
         SetBounds(stageLoader.maxl, stageLoader.maxr - stageLoader.maxl, stageLoader.maxb, stageLoader.maxt - stageLoader.maxb);
@@ -161,15 +158,15 @@ public class BackendStage : IStage
             Ncz = 1;
         }
         
-        CollisionQuadTree = new QuadTree<CollisionShapeRef>(sx, sz, ncx, ncz);
-        foreach (var piece in pieces)
+        _collisionQuadTree = new QuadTree<CollisionShapeRef>(sx, sz, ncx, ncz);
+        foreach (var piece in Pieces)
         {
             if (piece is ICollidable collidable)
             {
                 AddToQuadTree(collidable);
             }
         }
-        CollisionQuadTree.TrimExcess();
+        _collisionQuadTree.TrimExcess();
     }
 
     public ITransform CreateObject(string objectName, int x, int y, int z, int r)
@@ -184,7 +181,7 @@ public class BackendStage : IStage
         var position = new f64Vector3(x, 250 - y, z);
         var rotation = new f64Euler(f64AngleSingle.FromDegrees(r), f64AngleSingle.ZeroAngle, f64AngleSingle.ZeroAngle);
         var mesh = StageObject.CreateDefaultObject(part.Rad, position, rotation);
-        pieces[stagePartCount] = mesh;
+        Pieces[StagePartCount] = mesh;
 
         Logging.Info($"Created {objectName} at ({x}, {y}, {z}), rotation: {r}");
 
@@ -193,7 +190,7 @@ public class BackendStage : IStage
         return mesh;
     }
     
-    private QuadTree<CollisionShapeRef> CollisionQuadTree = new(0,0,0,0);
+    private QuadTree<CollisionShapeRef> _collisionQuadTree = new(0,0,0,0);
     private int _quadTreeInsertionIndex = 0;
 
     private void AddToQuadTree(ICollidable mesh)
@@ -212,7 +209,7 @@ public class BackendStage : IStage
         
         foreach (var box in mesh.Boxes)
         {
-            CollisionQuadTree.Insert(new CollisionShapeRef(
+            _collisionQuadTree.Insert(new CollisionShapeRef(
                 gameObjectX: x,
                 gameObjectY: y,
                 gameObjectZ: z,
@@ -226,7 +223,7 @@ public class BackendStage : IStage
         if (mesh.CollisionMesh is { } colMesh)
         {
             var maxR = mesh.MaxRadius;
-            CollisionQuadTree.Insert(new CollisionShapeRef(
+            _collisionQuadTree.Insert(new CollisionShapeRef(
                 gameObjectX: x,
                 gameObjectY: y,
                 gameObjectZ: z,
@@ -240,7 +237,7 @@ public class BackendStage : IStage
         if (mesh.CollisionHull is { } colHull)
         {
             var maxR = mesh.MaxRadius;
-            CollisionQuadTree.Insert(new CollisionShapeRef(
+            _collisionQuadTree.Insert(new CollisionShapeRef(
                 gameObjectX: x,
                 gameObjectY: y,
                 gameObjectZ: z,
@@ -252,26 +249,28 @@ public class BackendStage : IStage
         }
     }
     
-    private List<CollisionShapeRef> _tempTrackers = new();
-
+    private readonly List<CollisionShapeRef> _tempTrackers = new();
     public ReadOnlySpan<CollisionShapeRef> RetrievePointCollidables(fix64 x, fix64 z)
     {
         _tempTrackers.Clear();
-        CollisionQuadTree.RetrievePoint(_tempTrackers, x, z);
+        _collisionQuadTree.RetrievePoint(_tempTrackers, x, z);
         var span = CollectionsMarshal.AsSpan(_tempTrackers);
         span.Sort(static (a, b) => a.Index.CompareTo(b.Index));
         return span;
     }
 }
 
-public class WallCollision : ITransform, ICollidable
+[LuaVisible]
+public partial class WallCollision : BackendGameObject, ICollidable
 {
-    public IReadOnlyList<ITransform> ChildTransforms => [];
-    public f64Vector3 Position { get; set; }
-    public f64Euler Rotation { get; set; }
-    public ITransform? Parent => null;
-    public Rad3dBoxDef[] Boxes { get; }
+    [LuaName]
+    public LuaArray<Rad3dBoxDef> Boxes { get; }
+    
+    IReadOnlyList<Rad3dBoxDef> ICollidable.Boxes => Boxes;
+    
+    [LuaName]
     public int MaxRadius { get; }
+
     public SrcRad3dCollisionMesh? CollisionMesh => null;
     public SrcRad3dCollisionHull? CollisionHull => null;
 
@@ -292,19 +291,29 @@ public class WallCollision : ITransform, ICollidable
     }
 }
 
-public class StageObject(Rad3d rad) : ITransform, IAiNode, ICollidable
+[LuaVisible]
+public partial class StageObject(Rad3d rad) : BackendGameObject, IAiNode, ICollidable
 {
+    [LuaName("originalPlacement")]
     public PiecePlacement OriginalPlacement { get; set; }
 
+    [LuaName("rad")]
     public Rad3d Rad { get; } = rad;
-    public IReadOnlyList<ITransform> ChildTransforms => [];
-    public f64Vector3 Position { get; set; }
-    public f64Euler Rotation { get; set; }
-    public ITransform? Parent { get; set; }
+    
+    [LuaName("nodeKind")]
     public AiNodeKind Kind { get; set; } = AiNodeKind.Auto;
+    
+    [LuaName]
     public bool IsSpecial { get; set; }
-    public Rad3dBoxDef[] Boxes { get; } = rad.Boxes;
+    
+    [LuaName]
+    public LuaArray<Rad3dBoxDef> Boxes { get; } = rad.Boxes;
+    IReadOnlyList<Rad3dBoxDef> ICollidable.Boxes => Boxes;
+    
+    [LuaName]
     public int MaxRadius { get; } = rad.MaxRadius;
+    
+    [LuaName]
     public string FileName => Rad.FileName;
 
     public SrcRad3dCollisionMesh? CollisionMesh { get; set; } = rad.CollisionMesh;
@@ -320,9 +329,5 @@ public class StageObject(Rad3d rad) : ITransform, IAiNode, ICollidable
     public static StageObject CreateDefaultObject(Rad3d rad, f64Vector3 position, f64Euler rotation, PiecePlacementType placementType = PiecePlacementType.CollisionObject, AiNodeKind? aiNodeKind = null, bool isSpecial = false, bool isWall = false)
     {
         return new StageObject(rad, position, rotation, new PiecePlacement(placementType, rad, position, rotation, aiNodeKind, isSpecial, isWall));
-    }
-
-    public void GameTick()
-    {
     }
 }

@@ -1,30 +1,31 @@
-﻿using NFMWorldLibrary.Backend.AI;
-using NFMWorldLibrary.Backend.Gamemodes;
+﻿using nfm_world_library.Lua;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Rad;
 using NFMWorld.Sentry;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Backend;
 
-public class BackendCar : BackendGameObject, IInGameCar
+[LuaVisible]
+public partial class BackendCar : BackendGameObject
 {
-    public int GroundAt { get; }
-    public int MaxRadius { get; }
-    public f64Euler WheelAngle { get; set; }
-    public f64Euler TurningWheelAngle { get; set; }
-    public IReadOnlyList<Rad3dWheelDef> Wheels { get; }
+    [LuaName] public int GroundAt { get; }
+    [LuaName] public int MaxRadius { get; }
+    [LuaName] public f64Euler WheelAngle { get; set; }
+    [LuaName] public f64Euler TurningWheelAngle { get; set; }
+    [LuaName] public ReadOnlyLuaArray<Rad3dWheelDef> Wheels { get; }
 
-    public CarPhysics CarPhysics { get; }
-    public Control Control { get; }
-    public ushort CurrentCheckpoint { get; set; }
-    public byte CurrentLap { get; set; } // mad.nlaps
-    public int TotalCheckpoint { get; set; } // mad.clear
-    public int LastCheckpointNode { get; set; } = -1; // resets on new lap
-    public int Placement { get; set; } // cp.pos
-    public Rad3d Rad { get; }
-    public CarStats Stats { get; }
-    public bool Wasted => CarPhysics.Wasted;
+    [LuaName] public CarPhysics CarPhysics { get; }
+    [LuaName] public Control Control { get; }
+    [LuaName] public ushort CurrentCheckpoint { get; set; }
+    [LuaName] public byte CurrentLap { get; set; } // mad.nlaps
+    [LuaName] public int TotalCheckpoint { get; set; } // mad.clear
+    [LuaName] public int LastCheckpointNode { get; set; } = -1; // resets on new lap
+    [LuaName] public int Placement { get; set; } // cp.pos
+    [LuaName] public Rad3d Rad { get; }
+    [LuaName] public CarStats Stats { get; }
+    [LuaName] public bool Wasted => CarPhysics.Wasted;
 
     public event DamageFunc? DamagedX;
     public event RoofDamageFunc? DamagedY;
@@ -33,14 +34,14 @@ public class BackendCar : BackendGameObject, IInGameCar
     public event DustFunc? Dusted;
     public event Action? Fixed;
 
-    public ClientSidePlayerParameters Player { get; }
+    [LuaName] public ClientSidePlayerParameters Player { get; }
     
     private bool _fixing;
     private byte _fixTimer;
     private int _fixTick = 0;
-
+    
     public BackendCar(
-        IInGameCar other,
+        BackendCar other,
         int im,
         bool isClientPlayer
     ) : this(
@@ -65,7 +66,7 @@ public class BackendCar : BackendGameObject, IInGameCar
 
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
         MaxRadius = rad.MaxRadius;
-        Wheels = rad.Wheels;
+        Wheels = new(rad.Wheels);
         
         CarPhysics = new CarPhysics(Stats, im, isClientPlayer);
         CarPhysics.Reseto(CarPhysics.Im, this);
@@ -84,7 +85,8 @@ public class BackendCar : BackendGameObject, IInGameCar
         };
     }
 
-    public void Drive(IStage stage)
+    [LuaName]
+    public void Drive(BackendStage stage)
     {
         var transaction = SentrySdk.StartTransaction("BackendCar.Drive", "drive-car");
         CarPhysics.Drive(Control, this, stage);
@@ -115,7 +117,7 @@ public class BackendCar : BackendGameObject, IInGameCar
         }
     }
 
-    public void Collide(IInGameCar otherCar)
+    public void Collide(BackendCar otherCar)
     {
         var transaction = SentrySdk.StartTransaction("BackendCar.Collide", "car-collide");
         CarPhysics.Collide(this, otherCar.CarPhysics, otherCar);
@@ -135,27 +137,69 @@ public class BackendCar : BackendGameObject, IInGameCar
         Fixed?.Invoke();
     }
 
+    /// <summary>
+    /// Generates dust at the given position and velocity
+    /// </summary>
+    /// <param name="wheelidx"></param>
+    /// <param name="x"></param>
+    /// <param name="y"></param>
+    /// <param name="z"></param>
+    /// <param name="scx"></param>
+    /// <param name="scz"></param>
+    /// <param name="simag"></param>
+    /// <param name="tilt"></param>
+    /// <param name="onRoof"></param>
+    /// <param name="wheelGround"></param>
     public void AddDust(int wheelidx, float x, float y, float z, int scx, int scz, float simag, int tilt,
         bool onRoof, int wheelGround)
     {
         Dusted?.Invoke(wheelidx, x, y, z, scx, scz, simag, tilt, onRoof, wheelGround);
     }
 
+    /// <summary>
+    /// Generates spark at the given position and velocity
+    /// </summary>
+    /// <param name="x">The X coordinate of the spark</param>
+    /// <param name="y">The Y coordinate of the spark</param>
+    /// <param name="z">The Z coordinate of the spark</param>
+    /// <param name="scx">The X component of the spark's velocity</param>
+    /// <param name="scy">The Y component of the spark's velocity</param>
+    /// <param name="scz">The Z component of the spark's velocity</param>
+    /// <param name="type">0 = wall, 1 = roof, 2 = player</param>
+    /// <param name="wheelGround">The wheel ground</param>
     public void Spark(float x, float y, float z, float scx, float scy, float scz, int type, int wheelGround)
     {
         Sparked?.Invoke(x, y, z, scx, scy, scz, type, wheelGround);
     }
 
+    /// <summary>
+    /// Applies visual damage to the car on the X axis.
+    /// </summary>
+    /// <param name="wheelnum">The wheel index that the damage originates from</param>
+    /// <param name="amount">The amount of damage in hit points</param>
     public void DamageX(int wheelnum, fix64 amount)
     {
         DamagedX?.Invoke(Stats, wheelnum, amount);
     }
 
+    /// <summary>
+    /// Applies visual damage to the car on the Y axis.
+    /// </summary>
+    /// <param name="wheelnum">The wheel index that the damage originates from</param>
+    /// <param name="amount">The amount of damage in hit points</param>
+    /// <param name="mtouch">Mtouch physics parameter</param>
+    /// <param name="nbsq">Nbsq physics parameter</param>
+    /// <param name="squash">Roof squash physics parameter</param>
     public void DamageY(int wheelnum, fix64 amount, bool mtouch, int nbsq, int squash)
     {
         DamagedY?.Invoke(Stats, wheelnum, amount, mtouch, nbsq, squash);
     }
 
+    /// <summary>
+    /// Applies visual damage to the car on the Z axis.
+    /// </summary>
+    /// <param name="wheelnum">The wheel index that the damage originates from</param>
+    /// <param name="amount">The amount of damage in hit points</param>
     public void DamageZ(int wheelnum, fix64 amount)
     {
         DamagedZ?.Invoke(Stats, wheelnum, amount);

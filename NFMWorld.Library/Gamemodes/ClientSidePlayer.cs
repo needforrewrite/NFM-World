@@ -1,4 +1,6 @@
-﻿using nfm_world_library.Lua;
+﻿using Lua;
+using nfm_world_library.Lua;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.AI;
 
 namespace NFMWorldLibrary.Gamemodes;
@@ -12,47 +14,45 @@ namespace NFMWorldLibrary.Gamemodes;
 [LuaVisible]
 public partial class ClientSidePlayer(ClientSidePlayerParameters parameters, int index, bool isFake = false)
 {
-    private IInGameCar? _car;
-
     /// <summary>
     /// The player parameters.
     /// </summary>
-    public ClientSidePlayerParameters Parameters { get; } = parameters;
+    [LuaName] public ClientSidePlayerParameters Parameters { get; } = parameters;
     
     /// <summary>
     /// The zero-based index of the player.
     /// </summary>
-    public int Index { get; } = index;
+    [LuaName] public int Index { get; } = index;
 
     /// <summary>
     /// Raised when <see cref="Car"/> is assigned a different car.
     /// The client stage uses this to create/swap the player's visual.
     /// </summary>
-    public event Action<ClientSidePlayer, IInGameCar?>? CarChanged;
+    public event Action<ClientSidePlayer, BackendCar?>? CarChanged;
 
     /// <summary>
     /// A reference to the car for the player if the player has a car.
     /// </summary>
-    public IInGameCar? Car
+    [LuaName] public BackendCar? Car
     {
-        get => _car;
+        get;
         set
         {
-            if (ReferenceEquals(_car, value))
+            if (ReferenceEquals(field, value))
                 return;
 
-            _car = value;
+            field = value;
             CarChanged?.Invoke(this, value);
         }
     }
-    
+
     /// <summary>
     /// If this player is a bot, the bot object.
     /// </summary>
-    public BaseAi? Bot { get; set; }
+    [LuaName] public BaseAi? Bot { get; set; }
     
     /// <summary>
     /// True if the player was created by the gamemode.
     /// </summary>
-    public bool IsFake { get; } = isFake;
+    [LuaName] public bool IsFake { get; } = isFake;
 }

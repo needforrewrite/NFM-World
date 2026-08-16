@@ -16,9 +16,9 @@ namespace NFMWorld;
 public class ClientStage : IDisposable
 {
     private readonly GraphicsDevice _graphicsDevice;
-    private readonly Dictionary<IInGameCar, CarVisual> _carVisuals = new();
+    private readonly Dictionary<BackendCar, CarVisual> _carVisuals = new();
     private readonly Dictionary<ClientSidePlayer, CarVisual> _playerVisuals = new();
-    private ObservableUnlimitedArray<IInGameCar> _cars;
+    private ObservableUnlimitedArray<BackendCar> _cars;
     private ObservableUnlimitedArray<ClientSidePlayer>? _players;
     private Scene _scene;
     private bool _disposed;
@@ -37,7 +37,7 @@ public class ClientStage : IDisposable
     public ClientStage(
         GraphicsDevice graphicsDevice,
         string stageName,
-        ObservableUnlimitedArray<IInGameCar> cars,
+        ObservableUnlimitedArray<BackendCar> cars,
         Camera camera,
         IReadOnlyList<Camera> lightCameras)
     {
@@ -54,10 +54,10 @@ public class ClientStage : IDisposable
         _scene = new Scene(graphicsDevice, [Renderer], camera, lightCameras);
 
         // ── Music metadata ──
-        MusicPath = Backend.stageLoader.musicPath;
-        RemasteredMusicPath = Backend.stageLoader.remasteredMusicPath;
-        MusicFreqMul = Backend.stageLoader.musicFreqMul;
-        MusicTempoMul = Backend.stageLoader.musicTempoMul;
+        MusicPath = Backend.StageLoader.musicPath;
+        RemasteredMusicPath = Backend.StageLoader.remasteredMusicPath;
+        MusicFreqMul = Backend.StageLoader.musicFreqMul;
+        MusicTempoMul = Backend.StageLoader.musicTempoMul;
 
         if (string.IsNullOrEmpty(MusicPath))
             Logging.Error("No music is defined for this stage!");
@@ -68,7 +68,7 @@ public class ClientStage : IDisposable
     /// <summary>
     /// Replace the set of backend cars this stage tracks.
     /// </summary>
-    public void SetCars(ObservableUnlimitedArray<IInGameCar> cars)
+    public void SetCars(ObservableUnlimitedArray<BackendCar> cars)
     {
         _cars.CollectionChanged -= CarsOnCollectionChanged;
         _cars = cars;
@@ -99,7 +99,7 @@ public class ClientStage : IDisposable
     /// Gets or creates the <see cref="CarVisual"/> for a backend car.
     /// The visual is added to the scene immediately.
     /// </summary>
-    public CarVisual GetCarVisual(IInGameCar car)
+    public CarVisual GetCarVisual(BackendCar car)
     {
         if (!_carVisuals.TryGetValue(car, out var visual))
         {
@@ -128,7 +128,7 @@ public class ClientStage : IDisposable
     /// <summary>
     /// The backend cars currently tracked by this stage.
     /// </summary>
-    public IReadOnlyCollection<IInGameCar> Cars => _cars;
+    public IReadOnlyCollection<BackendCar> Cars => _cars;
 
     // ── Scene lifecycle ──
 
@@ -157,7 +157,7 @@ public class ClientStage : IDisposable
         }
     }
 
-    private void OnPlayerCarChanged(ClientSidePlayer player, IInGameCar? car)
+    private void OnPlayerCarChanged(ClientSidePlayer player, BackendCar? car)
     {
         if (_playerVisuals.Remove(player, out var oldVisual))
         {
@@ -170,7 +170,7 @@ public class ClientStage : IDisposable
             CreatePlayerVisual(player, car);
     }
 
-    private void CreatePlayerVisual(ClientSidePlayer player, IInGameCar car)
+    private void CreatePlayerVisual(ClientSidePlayer player, BackendCar car)
     {
         _playerVisuals[player] = GetCarVisual(car);
     }
@@ -218,7 +218,7 @@ public class ClientStage : IDisposable
         switch (e.Action)
         {
             case NotifyCollectionChangedAction.Add:
-                foreach (IInGameCar car in e.NewItems!)
+                foreach (BackendCar car in e.NewItems!)
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {
@@ -228,7 +228,7 @@ public class ClientStage : IDisposable
                 }
                 break;
             case NotifyCollectionChangedAction.Remove:
-                foreach (IInGameCar car in e.OldItems!)
+                foreach (BackendCar car in e.OldItems!)
                 {
                     if (_carVisuals.Remove(car, out var visual))
                     {
@@ -238,7 +238,7 @@ public class ClientStage : IDisposable
                 }
                 break;
             case NotifyCollectionChangedAction.Replace:
-                foreach (IInGameCar car in e.OldItems!)
+                foreach (BackendCar car in e.OldItems!)
                 {
                     if (_carVisuals.Remove(car, out var visual))
                     {
@@ -247,7 +247,7 @@ public class ClientStage : IDisposable
                     }
                 }
                 
-                foreach (IInGameCar car in e.NewItems!)
+                foreach (BackendCar car in e.NewItems!)
                 {
                     if (!_carVisuals.ContainsKey(car))
                     {

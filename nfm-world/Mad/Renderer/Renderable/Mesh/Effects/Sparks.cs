@@ -2,6 +2,7 @@
 using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
 using NFMWorld.Sentry;
+using NFMWorldLibrary.Backend;
 
 namespace NFMWorld;
 
@@ -35,7 +36,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
     private readonly DynamicIndexBuffer _indexBuffer;
     private readonly VertexBuffer _instanceBuffer;
 
-    public Sparks(IInGameCar car, CarVisual visual, GraphicsDevice graphicsDevice)
+    public Sparks(BackendCar car, CarVisual visual, GraphicsDevice graphicsDevice)
     {
         _visual = visual;
         _graphicsDevice = graphicsDevice;

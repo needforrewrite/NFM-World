@@ -14,7 +14,7 @@ using URandom = URandom;
 public class Environment
 {
     public static GroundPolys MakePolys(
-        IStage stage,
+        BackendStage stage,
         int sx, int ncx, int sz, int ncz, int stagePartCount, // newpolys
         GraphicsDevice graphicsDevice
     )

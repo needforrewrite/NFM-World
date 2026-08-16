@@ -3,41 +3,41 @@
 
 local countdown = 3
 
-function on_begin()
-    hud.totalLaps = stage.nlaps
-    hud.lap = 1
-    hud.position = 1
-    hud.totalRacers = players.count
+function OnBegin()
+    GM.hudState.totalLaps = GM.stage.nlaps
+    GM.hudState.lap = 1
+    GM.hudState.position = 1
+    GM.hudState.totalRacers = #GM.players
 end
 
-function on_reset()
+function OnReset()
     countdown = 3
-    local car = create_car(0, 0, 0)
+    local car = GM:createCar(0, fixed64(0), fixed64(0))
     car.currentCheckpoint = 0
     car.currentLap = 0
-    hud.lap = 1
-    hud.totalLaps = stage.nlaps
+    GM.hudState.lap = 1
+    GM.hudState.totalLaps = GM.stage.nlaps
 end
 
-function on_game_tick()
+function OnGameTick()
     if countdown > 0 then
         countdown = countdown - 1
-        hud.countdownTimer = countdown
+        GM.hudState.countdownTimer = countdown
         return
     end
 
-    physics_tick()
-    handle_fix_hoops(0)
-    handle_checkpoint(0)
-    calculate_positions()
+    GM.physics:gameTick()
+    GM:handleFixHoops(GM.players[1].car)
+    GM:handleCheckPoint(GM.players[1].car)
+    GM:calculatePositions()
 
-    local player = players[0]
+    local player = GM.players[1]
     if player ~= nil and player.car ~= nil then
-        hud.lap = player.car.currentLap + 1
-        hud.position = player.car.placement + 1
+        GM.hudState.lap = player.car.currentLap + 1
+        GM.hudState.position = player.car.placement + 1
     end
 end
 
-function on_server_event(type, payload)
+function OnServerEvent(type, payload)
     -- no-op: client-only test gamemode
 end

@@ -8,33 +8,33 @@ local perPlayer = {}          -- playerId -> { lap, checkpoint, finished, positi
 local finishCounter = 0
 local done = false
 
-function on_begin()
+function OnBegin()
     perPlayer = {}
     finishCounter = 0
     done = false
     state = "waitingToStart"
 
-    for i = 0, server.playerCount - 1 do
+    for i = 0, #SGM.playerIds - 1 do
         local id = server:playerId(i)
         perPlayer[id] = { lap = 0, checkpoint = -1, finished = false, position = -1 }
     end
 end
 
-function on_start_race()
+function OnStartRace()
     state = "countdown"
     countdown = 3
     inner = 0
 end
 
-function on_game_tick()
+function OnGameTick()
     if state == "countdown" then
         inner = inner - 1
         if inner <= 0 then
-            inner = countdown_interval()
+            inner = SGM.countdownInterval
             countdown = countdown - 1
             if countdown <= 0 then
                 state = "inProgress"
-                broadcast_event("countdown_go", {})
+                SGM:broadcastEvent("countdown_go", {})
             end
         end
     end
@@ -42,8 +42,8 @@ end
 
 local function broadcast_standings()
     local standings = {}
-    for i = 0, server.playerCount - 1 do
-        local id = server:playerId(i)
+    for i = 1, #SGM.playerIds do
+        local id = SGM.playerIds[i]
         local s = perPlayer[id]
         standings[tostring(i)] = {
             position = s.finished and s.position or 0,
@@ -51,13 +51,13 @@ local function broadcast_standings()
             lap = s.lap
         }
     end
-    broadcast_event("standings", standings)
+    SGM:broadcastEvent("standings", standings)
 end
 
 local function complete_race()
     local results = {}
-    for i = 0, server.playerCount - 1 do
-        local id = server:playerId(i)
+    for i = 1, #SGM.playerIds do
+        local id = SGM.playerIds[i]
         local s = perPlayer[id]
         table.insert(results, {
             playerId = id,
@@ -67,11 +67,11 @@ local function complete_race()
     end
 
     -- C# global: builds the authoritative GameStateSnapshot.
-    finish_race(results)
+    SGM:finishRace(results)
     done = true
 end
 
-function on_client_event(playerId, type, payload)
+function OnClientEvent(playerId, type, payload)
     if state ~= "inProgress" or type ~= "checkpoint" or payload == nil then
         return
     end
@@ -83,7 +83,7 @@ function on_client_event(playerId, type, payload)
 
     local cp = payload.index
     local lap = payload.lap
-    local checkpointCount = stage.checkpointCount
+    local checkpointCount = #SGM.currentStage.checkpoints
 
     -- Lap must be current or next.
     if lap ~= ps.lap and lap ~= ps.lap + 1 then
@@ -100,7 +100,7 @@ function on_client_event(playerId, type, payload)
 
     if cp == 0 and lap == ps.lap then
         ps.lap = ps.lap + 1
-        if ps.lap >= stage.nlaps and not ps.finished then
+        if ps.lap >= SGM.currentStage.nlaps and not ps.finished then
             ps.finished = true
             finishCounter = finishCounter + 1
             ps.position = finishCounter

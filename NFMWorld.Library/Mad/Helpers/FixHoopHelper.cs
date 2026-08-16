@@ -1,4 +1,5 @@
-﻿using NFMWorldLibrary.FixedMath;
+﻿using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Helpers;
@@ -7,12 +8,12 @@ public class FixHoopHelper
 {
     // TODO fix car, play car fixed sound
     public static bool HandleFixHoops(
-        IStage currentStage,
-        IInGameCar car)
+        BackendStage currentStage,
+        BackendCar car)
     {
-        for (var i = 0; i < currentStage.fixHoops.Count; i++)
+        for (var i = 0; i < currentStage.FixHoops.Count; i++)
         {
-            var fixhoop = currentStage.fixHoops[i];
+            var fixhoop = currentStage.FixHoops[i];
             if (fixhoop.Rotation.Xz.Degrees == 0)
             {
                 if (fix64.Abs(car.Position.Z - fixhoop.Position.Z) < 200 &&

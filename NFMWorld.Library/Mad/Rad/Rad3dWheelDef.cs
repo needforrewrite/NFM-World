@@ -1,15 +1,16 @@
 ﻿using System.Text.Json.Serialization;
 using MemoryPack;
+using nfm_world_library.Lua;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary.Rad;
 
-[MemoryPackable(GenerateType.VersionTolerant)]
+[MemoryPackable(GenerateType.VersionTolerant), LuaVisible]
 public readonly partial record struct Rad3dWheelDef(
-    [property: JsonPropertyName("pos"), MemoryPackOrder(0)] f64Vector3 Position,
-    [property: JsonPropertyName("rotates"), MemoryPackOrder(1)] int Rotates,
-    [property: JsonPropertyName("w"), MemoryPackOrder(2)] fix64 Width,
-    [property: JsonPropertyName("h"), MemoryPackOrder(3)] fix64 Height,
+    [property: JsonPropertyName("pos"), MemoryPackOrder(0), LuaName] f64Vector3 Position,
+    [property: JsonPropertyName("rotates"), MemoryPackOrder(1), LuaName] int Rotates,
+    [property: JsonPropertyName("w"), MemoryPackOrder(2), LuaName] fix64 Width,
+    [property: JsonPropertyName("h"), MemoryPackOrder(3), LuaName] fix64 Height,
     [property: JsonPropertyName("polys"), MemoryPackOrder(4)] Rad3dPoly[]? Polys
 )
 {

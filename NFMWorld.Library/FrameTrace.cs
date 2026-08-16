@@ -1,17 +1,19 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
+using nfm_world_library.Lua;
 
 namespace NFMWorldLibrary;
 
 // helpful little utility for showing information on screen without cluttering the console. messages are cleared
 // at the start of a frame.
-public static class FrameTrace
+[LuaVisible]
+public static partial class FrameTrace
 {
     internal static readonly StringBuilder stringBuilder = new();
 
     public static bool IsEnabled = true;
 
+    [LuaName]
     public static void AddMessage(string message)
     {
         stringBuilder.AppendLine(message);

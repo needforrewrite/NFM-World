@@ -1,3 +1,4 @@
+using nfm_world_library.Lua;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Sfx;
@@ -57,23 +58,14 @@ public abstract class BaseClientGamemode : IGamemode
         OnServerRaceFinished(results);
     }
 
-    /// <inheritdoc />
-    public virtual void SetEventSender(Action<ReadOnlyMemory<byte>> sendToServer)
-        => _sendToServer = sendToServer;
-
     /// <summary>
     /// Sends a gamemode-specific event to the server using the sender injected
     /// by the host, falling back to <see cref="IGamemodeData.SendServerEvent"/>.
     /// </summary>
-    protected void SendServerEvent(ReadOnlySpan<byte> payload)
+    protected internal void SendServerEvent(ReadOnlySpan<byte> payload)
     {
-        if (_sendToServer is { } send)
-            send(payload.ToArray());
-        else
-            GamemodeData.SendServerEvent(payload);
+        GamemodeData.SendServerEvent(payload);
     }
-
-    private Action<ReadOnlyMemory<byte>>? _sendToServer;
 
     /// <summary>
     /// Called to awake the gamemode.
@@ -198,11 +190,11 @@ public abstract class BaseClientGamemode : IGamemode
     /// <summary>
     /// Convenience function to reset HUD state, visual FX and sounds.
     /// </summary>
-    protected virtual void ClientReset()
+    protected internal virtual void ClientReset()
     {
         GamemodeData.ClientCallbacks.ResetCheckpointGlow();
 
-        HudState = new HudStateData { Lap = 1, TotalLaps = CurrentStage.nlaps };
+        HudState = new HudStateData { Lap = 1, TotalLaps = CurrentStage.Nlaps };
         IBackend.Backend.StopAllSounds();
     }
 
@@ -210,7 +202,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// Convenience function to update HUD state and play sounds based on the given car's state.
     /// </summary>
     /// <param name="car">The client car</param>
-    protected virtual void UpdateHudAndSounds(IInGameCar car)
+    protected internal virtual void UpdateHudAndSounds(BackendCar car)
     {
         var diffx = (float)(car.Position.X - _lcarx);
         var diffz  = (float)(car.Position.Z - _lcarz);
@@ -230,7 +222,7 @@ public abstract class BaseClientGamemode : IGamemode
 
         GamemodeData.ClientCallbacks.UpdateCheckpointGlow(
             car.CurrentCheckpoint,
-            car.CurrentCheckpoint == CurrentStage.checkpoints.Count - 1 && car.CurrentLap == CurrentStage.nlaps - 1
+            car.CurrentCheckpoint == CurrentStage.Checkpoints.Count - 1 && car.CurrentLap == CurrentStage.Nlaps - 1
         );
     }
 

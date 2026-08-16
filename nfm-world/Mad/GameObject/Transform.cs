@@ -39,7 +39,7 @@ public abstract class Transform : ITransform
 
     public Matrix MatrixWorld { get; private set; }
 
-    public virtual void GameTick(IStage? stage = null)
+    public virtual void GameTick(BackendStage? stage = null)
     {
         PreviousState = new TransformState(Position, Rotation);
     }

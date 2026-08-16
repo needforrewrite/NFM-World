@@ -112,6 +112,11 @@ public abstract class BaseStageRenderingPhase : BasePhase
         return CurrentStage.GetCarVisual(index);
     }
 
+    public CarVisual GetCarVisual(BackendCar car)
+    {
+        return CurrentStage.GetCarVisual(car);
+    }
+
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
     {
         base.KeyPressed(key, imguiWantsKeyboard, keys);

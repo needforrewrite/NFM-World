@@ -87,7 +87,7 @@ public class Dust : IDisposable, IImmediateRenderElement
         }
     }
 
-    public void GameTick(IStage? stage)
+    public void GameTick(BackendStage? stage)
     {
         _vertexCount = 0;
         _indexCount = 0;
@@ -106,7 +106,7 @@ public class Dust : IDisposable, IImmediateRenderElement
         }
     }
 
-    private void TickDust(IStage? stage, int dust)
+    private void TickDust(BackendStage? stage, int dust)
     {
         Span<int> baseColor = stackalloc int[3];
         if (Stg[dust] == 1)

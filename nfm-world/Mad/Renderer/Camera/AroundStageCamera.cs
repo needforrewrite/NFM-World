@@ -29,7 +29,7 @@ public class AroundStageCamera
         _fallen = 0f;
     }
 
-    public void AroundStage(PerspectiveCamera camera, IStage stage)
+    public void AroundStage(PerspectiveCamera camera, BackendStage stage)
     {
         if (_hit > 5000f)
         {
@@ -52,7 +52,7 @@ public class AroundStageCamera
         camera.LookAt = location;
     }
 
-    private void FollowStage(PerspectiveCamera camera, IStage stage)
+    private void FollowStage(PerspectiveCamera camera, BackendStage stage)
     {
         camera.Fov = 90f * _focus;
         if(Math.Abs(_focus - _gofocus) > 0.005)
@@ -70,17 +70,17 @@ public class AroundStageCamera
             _gofocus = 0.35f + (float)URandom.Double() * 1.3f;
         }
 
-        if (_point < stage.nodes.Count)
+        if (_point < stage.Nodes.Count)
         {
-            _targetX -= (_targetX - (float)stage.nodes[_point].Position.X) / 10f * Physics.PHYSICS_MULTIPLIER;
-            _targetY -= (_targetY - (float)stage.nodes[_point].Position.Y) / 10f * Physics.PHYSICS_MULTIPLIER;
-            _targetZ -= (_targetZ - (float)stage.nodes[_point].Position.Z) / 10f * Physics.PHYSICS_MULTIPLIER;
+            _targetX -= (_targetX - (float)stage.Nodes[_point].Position.X) / 10f * Physics.PHYSICS_MULTIPLIER;
+            _targetY -= (_targetY - (float)stage.Nodes[_point].Position.Y) / 10f * Physics.PHYSICS_MULTIPLIER;
+            _targetZ -= (_targetZ - (float)stage.Nodes[_point].Position.Z) / 10f * Physics.PHYSICS_MULTIPLIER;
         }
 
         if (_pointCount >= 45 * Physics.PHYSICS_MULTIPLIER)
         {
             _point++;
-            if (_point >= stage.nodes.Count)
+            if (_point >= stage.Nodes.Count)
             {
                 _point = 0;
             }
@@ -98,12 +98,12 @@ public class AroundStageCamera
         };
     }
 
-    private void FallIntoPlace(IStage stage)
+    private void FallIntoPlace(BackendStage stage)
     {
-        if (_hit == 45000f && stage.nodes.Count > 0)
+        if (_hit == 45000f && stage.Nodes.Count > 0)
         {
-            _startX = ((float)stage.nodes[0].Position.X - _targetX) / 116f;
-            _startZ = ((float)stage.nodes[0].Position.Z - _targetZ) / 116f;
+            _startX = ((float)stage.Nodes[0].Position.X - _targetX) / 116f;
+            _startZ = ((float)stage.Nodes[0].Position.Z - _targetZ) / 116f;
         }
 
         _hit -= _fallen;

@@ -1,4 +1,5 @@
-﻿using NFMWorldLibrary.Collision;
+﻿using NFMWorldLibrary.Backend;
+using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Util;
@@ -8,7 +9,7 @@ namespace NFMWorldLibrary.Helpers;
 public class CheckPointHelper
 {
     public static void CalculatePositions(
-        IStage currentStage,
+        BackendStage currentStage,
         IReadOnlyList<ClientSidePlayer> players
     )
     {
@@ -39,22 +40,22 @@ public class CheckPointHelper
                 else
                 {
                     int c = car1.CurrentCheckpoint + 1;
-                    if (c >= currentStage.checkpoints.Count)
+                    if (c >= currentStage.Checkpoints.Count)
                     {
                         c = 0;
                     }
 
                     if (UMath.Py(
                             car1.Position.X / 100,
-                            currentStage.checkpoints[c].Position.X / 100,
+                            currentStage.Checkpoints[c].Position.X / 100,
                             car1.Position.Z / 100,
-                            currentStage.checkpoints[c].Position.Z / 100
+                            currentStage.Checkpoints[c].Position.Z / 100
                         ) >
                         UMath.Py(
                             car2.Position.X / 100,
-                            currentStage.checkpoints[c].Position.X / 100,
+                            currentStage.Checkpoints[c].Position.X / 100,
                             car2.Position.Z / 100,
-                            currentStage.checkpoints[c].Position.Z / 100
+                            currentStage.Checkpoints[c].Position.Z / 100
                         )
                        )
                     {
@@ -70,13 +71,13 @@ public class CheckPointHelper
     }
 
     public static bool HandleCheckPoint(
-        IStage currentStage,
-        IInGameCar car)
+        BackendStage currentStage,
+        BackendCar car)
     {
-        if (car.CurrentCheckpoint >= currentStage.checkpoints.Count)
+        if (car.CurrentCheckpoint >= currentStage.Checkpoints.Count)
             return false;
 
-        var nextCheckpoint = currentStage.checkpoints[car.CurrentCheckpoint];
+        var nextCheckpoint = currentStage.Checkpoints[car.CurrentCheckpoint];
         f64Vector3 carPos = car.Position;
         var mad = car.CarPhysics;
         f64Vector3 velocity = new f64Vector3(
@@ -92,7 +93,7 @@ public class CheckPointHelper
         if (box.ResolveCollision(carPos) is not null)
         {
             car.CurrentCheckpoint++;
-            if (car.CurrentCheckpoint >= currentStage.checkpoints.Count)
+            if (car.CurrentCheckpoint >= currentStage.Checkpoints.Count)
             {
                 car.LastCheckpointNode = -1;
                 car.CurrentCheckpoint = 0;
@@ -100,10 +101,10 @@ public class CheckPointHelper
             }
             else
             {
-                car.LastCheckpointNode = currentStage.nodes.IndexOf(nextCheckpoint);
+                car.LastCheckpointNode = currentStage.Nodes.IndexOf(nextCheckpoint);
             }
 
-            car.TotalCheckpoint = car.CurrentCheckpoint + car.CurrentLap * currentStage.checkpoints.Count;
+            car.TotalCheckpoint = car.CurrentCheckpoint + car.CurrentLap * currentStage.Checkpoints.Count;
             return true;
         }
 

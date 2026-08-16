@@ -9,9 +9,9 @@ namespace NFMWorldLibrary.Util;
 
 [MemoryPackable, LuaVisible]
 public partial record struct Color3(
-    [property: JsonPropertyName("r"), LuaMember("r")] short R,
-    [property: JsonPropertyName("g"), LuaMember("g")] short G,
-    [property: JsonPropertyName("b"), LuaMember("b")] short B
+    [property: JsonPropertyName("r"), LuaName("r")] short R,
+    [property: JsonPropertyName("g"), LuaName("g")] short G,
+    [property: JsonPropertyName("b"), LuaName("b")] short B
 )
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

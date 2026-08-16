@@ -2,8 +2,7 @@
 
 namespace NFMWorldLibrary;
 
-[LuaVisible]
-public partial interface IAiNode : ITransform
+public interface IAiNode : ITransform
 {
     AiNodeKind Kind { get; }
     bool IsSpecial { get; }

@@ -28,7 +28,7 @@ public class GameObject : Transform, IRenderable
         }
     }
 
-    public override void GameTick(IStage? stage = null)
+    public override void GameTick(BackendStage? stage = null)
     {
         base.GameTick(stage);
         foreach (var child in Children)

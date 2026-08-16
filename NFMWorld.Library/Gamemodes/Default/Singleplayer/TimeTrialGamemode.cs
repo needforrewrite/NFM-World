@@ -89,13 +89,13 @@ public abstract class TimeTrialGamemode(GamemodeParameters gamemodeParameters, I
         var car = Players[PlayerCarIndex].Car!;
         car.Drive(CurrentStage);
 
-        if (CurrentStage.checkpoints.Count == 0)
+        if (CurrentStage.Checkpoints.Count == 0)
             return;
 
         FixHoopHelper.HandleFixHoops(CurrentStage, car);
         CheckPointHelper.HandleCheckPoint(CurrentStage, car);
 
-        if (car.CurrentLap >= CurrentStage.nlaps)
+        if (car.CurrentLap >= CurrentStage.Nlaps)
             _currentState = TimeTrialState.Finished;
 
         OnAfterPhysics();

@@ -1,14 +1,12 @@
 ﻿using Lua;
-using nfm_world_library.Lua;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary;
 
-[LuaVisible]
 public partial interface ITransform
 {
     IReadOnlyList<ITransform> ChildTransforms { get; }
-
+    
     f64Vector3 Position { get; set; }
     f64Euler Rotation { get; set; }
     

@@ -4,8 +4,7 @@ using nfm_world_library.Lua;
 
 namespace NFMWorldLibrary.Util.Lua;
 
-[LuaVisible]
-[LuaName("DeterministicRandom")]
+[LuaVisible, LuaName("DeterministicRandom")]
 public partial class LuaDeterministicRandom(fix64 value)
 {
     private DeterministicRandom _random = new((ulong)value.rawValue);
@@ -14,6 +13,12 @@ public partial class LuaDeterministicRandom(fix64 value)
     public int Next()
     {
         return _random.Next();
+    }
+
+    [LuaName("nextBetween")]
+    public int NextBetween(int min, int max)
+    {
+        return _random.Next(min, max);
     }
 
     [LuaName("nextf64")]

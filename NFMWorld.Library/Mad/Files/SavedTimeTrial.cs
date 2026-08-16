@@ -4,6 +4,7 @@ using Maxine.Extensions;
 using Maxine.Extensions.Io;
 using MemoryPack;
 using MemoryPack.Compression;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Files.Demo;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
@@ -127,7 +128,7 @@ public partial class SavedTimeTrial
         compressor.CopyTo(fileStream.AsBufferWriter<byte>());
     }
 
-    public void RecordTick(IInGameCar car)
+    public void RecordTick(BackendCar car)
     {
         CarFrame entry = CarFrame.Create(car);
         DemoData.AddEntry(entry);

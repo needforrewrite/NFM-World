@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Maxine.Extensions;
 using MemoryPack;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary;
@@ -47,7 +48,7 @@ public partial struct CarFrame
     public (fix64 Mxz, fix64 Txz) XzReadings;
     public BitFlags TheBitFlags;
 
-    public static CarFrame Create(IInGameCar car)
+    public static CarFrame Create(BackendCar car)
     {
         CarFrame entry = new CarFrame();
 
@@ -100,7 +101,7 @@ public partial struct CarFrame
         return entry;
     }
 
-    public readonly void ApplyToCar(IInGameCar car)
+    public readonly void ApplyToCar(BackendCar car)
     {
         car.Control.Up = TheBitFlags.Up;
         car.Control.Down = TheBitFlags.Down;

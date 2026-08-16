@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Util;
@@ -10,7 +11,7 @@ namespace NFMWorld;
 
 public class FixFlare : IDisposable, IImmediateRenderElement
 {
-    private readonly IInGameCar _car;
+    private readonly BackendCar _car;
     private readonly CarVisual _visual;
     private readonly GraphicsDevice _graphicsDevice;
 
@@ -27,7 +28,7 @@ public class FixFlare : IDisposable, IImmediateRenderElement
     private readonly DynamicVertexBuffer _vertexBuffer;
     private readonly IndexBuffer _indexBuffer;
 
-    public FixFlare(IInGameCar car, CarVisual visual, GraphicsDevice graphicsDevice)
+    public FixFlare(BackendCar car, CarVisual visual, GraphicsDevice graphicsDevice)
     {
         _car = car;
         _visual = visual;
