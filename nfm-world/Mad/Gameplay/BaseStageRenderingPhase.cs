@@ -1,8 +1,7 @@
-using System.Collections.ObjectModel;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
-using NFMWorld.Util;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Util;
@@ -25,7 +24,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
         new OrthoLightCamera { Width = 65536, Height = 65536 }
     ];
 
-    public ClientStage CurrentStage = null!;
+    public ClientStage? CurrentStage;
     public ObservableUnlimitedArray<BackendCar> CarsInRace { get; protected set; } = [];
 
     private IRadicalMusic? _stageMusic;
@@ -95,10 +94,10 @@ public abstract class BaseStageRenderingPhase : BasePhase
     {
         if ((reloadIfLoaded && GameSparker.CurrentMusic != null) || _stageMusic == null)
         {
-            Logging.Debug("playing stage music: " + CurrentStage.MusicPath);
+            Logging.Debug($"playing stage music: {CurrentStage!.MusicPath}");
 
-            bool useRemastered = GameSparker.UseRemasteredMusic && !string.IsNullOrEmpty(CurrentStage.RemasteredMusicPath);
-            string path = useRemastered ? CurrentStage.RemasteredMusicPath : CurrentStage.MusicPath;
+            bool useRemastered = GameSparker.UseRemasteredMusic && !string.IsNullOrEmpty(CurrentStage!.RemasteredMusicPath);
+            string path = useRemastered ? CurrentStage!.RemasteredMusicPath : CurrentStage!.MusicPath;
             double tempoMul = !useRemastered ? CurrentStage.MusicTempoMul : 1d;
             double freqMul = !useRemastered ? CurrentStage.MusicFreqMul : 1d;
 
@@ -109,12 +108,12 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
     public CarVisual GetCarVisual(int index)
     {
-        return CurrentStage.GetCarVisual(index);
+        return CurrentStage!.GetCarVisual(index);
     }
 
     public CarVisual GetCarVisual(BackendCar car)
     {
-        return CurrentStage.GetCarVisual(car);
+        return CurrentStage!.GetCarVisual(car);
     }
 
     public override void KeyPressed(Key key, bool imguiWantsKeyboard, in Keys keys)
@@ -170,9 +169,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
         if (DebugDisplay)
         {
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullCounterClockwise);
-            if (WorldGame.ShadowRenderTargets[0] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[0], new Microsoft.Xna.Framework.Rectangle(0, 0, 128, 128), Color.White);
-            if (WorldGame.ShadowRenderTargets[1] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[1], new Microsoft.Xna.Framework.Rectangle(0, 128, 128, 128), Color.White);
-            if (WorldGame.ShadowRenderTargets[2] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[2], new Microsoft.Xna.Framework.Rectangle(0, 256, 128, 128), Color.White);
+            if (WorldGame.ShadowRenderTargets[0] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[0], new Rectangle(0, 0, 128, 128), Color.White);
+            if (WorldGame.ShadowRenderTargets[1] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[1], new Rectangle(0, 128, 128, 128), Color.White);
+            if (WorldGame.ShadowRenderTargets[2] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[2], new Rectangle(0, 256, 128, 128), Color.White);
             _spriteBatch.End();
         }
 

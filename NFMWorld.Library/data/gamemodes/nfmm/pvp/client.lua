@@ -18,7 +18,7 @@ local function setupCars()
         car.currentLap = 0
 
         local player = GM.players[i]
-        if player ~= nil and player.parameters.isBot then
+        if player ~= nil and player.info.isBot then
             -- TODO: attach bot AI
             -- attach_bot(i)
         end

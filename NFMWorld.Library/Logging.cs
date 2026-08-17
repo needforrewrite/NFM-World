@@ -42,38 +42,22 @@ public static class Logging
 
     private static readonly ILogger General = LoggerFactory.CreateLogger("general");
 
-    public static void Info(string message) => General.LogInformation(message);
-    public static void Warning(string message) => General.LogWarning(message);
-    public static void Error(string message) => General.LogError(message);
-    public static void Debug(string message) => General.LogDebug(message);
-    public static void Info(object message)
-    {
-        if (General.IsEnabled(LogLevel.Information))
-        {
-            General.LogInformation("{Object}", message);
-        }
-    }
-    public static void Warning(object message)
-    {
-        if (General.IsEnabled(LogLevel.Warning))
-        {
-            General.LogWarning("{Object}", message);
-        }
-    }
-    public static void Error(object message)
-    {
-        if (General.IsEnabled(LogLevel.Error))
-        {
-            General.LogError("{Object}", message);
-        }
-    }
-    public static void Debug(object message)
-    {
-        if (General.IsEnabled(LogLevel.Debug))
-        {
-            General.LogDebug("{Object}", message);
-        }
-    }
+    public static void Info(string message, object? context = null, [CallerMemberName] string? memberName = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = 0)
+        => Info($"{message}", memberName: memberName, filePath: filePath, lineNumber: lineNumber);
+    public static void Warning(string message, object? context = null, [CallerMemberName] string? memberName = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = 0)
+        => Warning($"{message}", memberName: memberName, filePath: filePath, lineNumber: lineNumber);
+    public static void Error(string message, object? context = null, [CallerMemberName] string? memberName = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = 0)
+        => Error($"{message}", memberName: memberName, filePath: filePath, lineNumber: lineNumber);
+    public static void Debug(string message, object? context = null, [CallerMemberName] string? memberName = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = 0)
+        => Debug($"{message}", memberName: memberName, filePath: filePath, lineNumber: lineNumber);
+    public static void Info(object message, object? context = null, [CallerMemberName] string? memberName = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = 0)
+        => Info($"{message}", memberName: memberName, filePath: filePath, lineNumber: lineNumber);
+    public static void Warning(object message, object? context = null, [CallerMemberName] string? memberName = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = 0)
+        => Warning($"{message}", memberName: memberName, filePath: filePath, lineNumber: lineNumber);
+    public static void Error(object message, object? context = null, [CallerMemberName] string? memberName = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = 0)
+        => Error($"{message}", memberName: memberName, filePath: filePath, lineNumber: lineNumber);
+    public static void Debug(object message, object? context = null, [CallerMemberName] string? memberName = null, [CallerFilePath] string? filePath = null, [CallerLineNumber] int lineNumber = 0)
+        => Debug($"{message}", memberName: memberName, filePath: filePath, lineNumber: lineNumber);
 
     #region InterpolatedStringHandler
     

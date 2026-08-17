@@ -156,7 +156,6 @@ public partial class SavedTimeTrial
         int startIndex = lap * checkpointsInLap;
         int endIndex = startIndex + checkpointsInLap;
 
-        Logging.Debug(lap);
         if (startIndex >= Splits.SplitTimes.Count) return 0;
 
         long startTime = startIndex == 0 ? 0 : Splits.SplitTimes[startIndex - 1];

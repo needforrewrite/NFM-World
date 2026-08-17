@@ -34,7 +34,7 @@ namespace NFMWorld;
 /// </summary>
 public class WorldGame : Game
 {
-    public static UnlimitedArray<RenderTarget2D> ShadowRenderTargets = [];
+    public static UnlimitedArray<RenderTarget2D?> ShadowRenderTargets = [];
 
     public GraphicsDeviceManager Graphics;
     public static ImGuiRenderer ImguiRenderer;

@@ -302,15 +302,6 @@ TypeWithInlineArray = {}
 TypeWithIntIndexer = {}
 
 
----@class TypeWithMemberShimOverrides
----@field myProperty CustomProperty
----@field myField CustomField
----@field methodWithParamShim fun(self: TypeWithMemberShimOverrides, value: CustomParam): integer
----@field methodWithReturnShim fun(self: TypeWithMemberShimOverrides): CustomReturn
-
-TypeWithMemberShimOverrides = {}
-
-
 ---@class TypeWithMethodDeduplication : NFMWorld.LuaSourceGenerator.Test.SampleTypes.CalculatorBase, NFMWorld.LuaSourceGenerator.Test.SampleTypes.ICalculator
 
 TypeWithMethodDeduplication = {}
@@ -432,6 +423,15 @@ function TypeWithTupleOverloads.new() end
 ---@class Vec3
 
 Vec3 = {}
+
+
+---@class TypeWithMemberShimOverrides
+---@field myProperty CustomProperty
+---@field myField CustomField
+---@field methodWithParamShim fun(self: TypeWithMemberShimOverrides, value: CustomParam): integer
+---@field methodWithReturnShim fun(self: TypeWithMemberShimOverrides): CustomReturn
+
+TypeWithMemberShimOverrides = {}
 
 
 ---@class System.Collections.Generic.List_int_Enumerator : System.Collections.Generic.IEnumerator_int, System.Collections.IEnumerator, System.IDisposable

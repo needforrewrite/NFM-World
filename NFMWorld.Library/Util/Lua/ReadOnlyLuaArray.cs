@@ -98,7 +98,7 @@ public partial class ReadOnlyLuaArray<T> : ILuaUserData, IReadOnlyList<T>
 
     private static ValueTask<int> IndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
     {
-        var arr = context.GetArgument<LuaArray<T>>(0);
+        var arr = context.GetArgument<ReadOnlyLuaArray<T>>(0);
         var key = context.GetArgument(1);
 
         // Integer key → array index (Lua is 1-indexed)
@@ -115,7 +115,7 @@ public partial class ReadOnlyLuaArray<T> : ILuaUserData, IReadOnlyList<T>
 
     private static ValueTask<int> LenMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
     {
-        var arr = context.GetArgument<LuaArray<T>>(0);
+        var arr = context.GetArgument<ReadOnlyLuaArray<T>>(0);
         return new(context.Return((double)arr.Value.Count));
     }
 
