@@ -2,6 +2,7 @@ using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Multiplayer;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Gamemodes.RaceHost;
 
@@ -27,13 +28,10 @@ public sealed class LocalRaceHost : IRaceHost
     public event Action<ReadOnlyMemory<byte>>? ServerEventReceived;
     public event Action<RaceResults>? GameFinished;
 
-    private LocalRaceHost(string stageName, GamemodeParameters parameters)
+    private LocalRaceHost(string stageName, ClientGamemodeParameters parameters, ServerSidePlayerInfo serverSidePlayerInfo)
     {
-        _context = new LocalServerContext(stageName, parameters, BroadcastToClient);
-        _localPlayerId = _context.PlayerIds[
-            parameters.Players
-                .Select((p, i) => (p, i))
-                .First(e => e.p.IsClientPlayer).i];
+        _context = new LocalServerContext(stageName, BroadcastToClient);
+        _localPlayerId = serverSidePlayerInfo.Id;
     }
 
     /// <summary>
@@ -43,12 +41,29 @@ public sealed class LocalRaceHost : IRaceHost
     public static LocalRaceHost Create(
         string stageName,
         BaseGamemodeFactory factory,
-        GamemodeParameters parameters)
+        ClientGamemodeParameters parameters)
     {
-        var host = new LocalRaceHost(stageName, parameters);
+        var ids = new List<ServerSidePlayerInfo>(parameters.Players.Count);
+        for (byte i = 0; i < parameters.Players.Count; i++)
+        {
+            var player = parameters.Players[i];
+            var id = Guid.NewGuid();
+            ids.Add(new ServerSidePlayerInfo
+            {
+                Id = id,
+                PlayerName = player.PlayerName,
+                CarName = player.CarName,
+                Color = player.Color
+            });
+        }
+        
+        var host = new LocalRaceHost(stageName, parameters, ids[parameters.Players.FindIndex(e => e.IsBot)]);
 
         // TODO this is a bit janky and could probably be improved
-        var serverGamemode = factory.CreateServerGamemode(parameters, host._context);
+        var serverGamemode = factory.CreateServerGamemode(new ServerGamemodeParameters
+        {
+            Players = ids
+        }, host._context);
         host._serverGamemode = serverGamemode;
         serverGamemode?.Begin();
 
@@ -105,45 +120,18 @@ public sealed class LocalRaceHost : IRaceHost
     /// Server-side data context for the local race. Backs
     /// <see cref="IServerGamemodeData"/> without any networking.
     /// </summary>
-    private sealed class LocalServerContext : IServerGamemodeData
+    private sealed class LocalServerContext(string stageName, Action<ReadOnlyMemory<byte>> broadcast)
+        : IServerGamemodeData
     {
         private readonly Dictionary<Guid, f64Vector3> _positions = new();
-        private readonly Action<ReadOnlyMemory<byte>> _broadcast;
 
-        public BackendStage CurrentStage { get; }
-        public IReadOnlyList<Guid> PlayerIds { get; }
-        public IReadOnlyDictionary<byte, PlayerInfo> PlayerInfos { get; }
-
-        public LocalServerContext(string stageName, GamemodeParameters parameters, Action<ReadOnlyMemory<byte>> broadcast)
-        {
-            CurrentStage = new BackendStage(stageName);
-            _broadcast = broadcast;
-
-            var ids = new List<Guid>(parameters.Players.Count);
-            var infos = new Dictionary<byte, PlayerInfo>();
-            for (byte i = 0; i < parameters.Players.Count; i++)
-            {
-                var player = parameters.Players[i];
-                var id = Guid.NewGuid();
-                ids.Add(id);
-                infos[i] = new PlayerInfo
-                {
-                    Id = id,
-                    Name = player.PlayerName,
-                    Vehicle = player.CarName,
-                    Color = player.Color
-                };
-            }
-
-            PlayerIds = ids;
-            PlayerInfos = infos;
-        }
+        public BackendStage CurrentStage { get; } = new(stageName);
 
         public f64Vector3? GetPlayerPosition(Guid playerId)
             => _positions.TryGetValue(playerId, out var pos) ? pos : null;
 
         public void BroadcastEvent(ReadOnlyMemory<byte> payload)
-            => _broadcast(payload);
+            => broadcast(payload);
 
         public void RecordPlayerState(Guid playerId, fix64 x, fix64 y, fix64 z)
             => _positions[playerId] = new f64Vector3(x, y, z);

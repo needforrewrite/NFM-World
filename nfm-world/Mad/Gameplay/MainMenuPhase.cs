@@ -87,7 +87,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
         {
             ["constraint"] = "both"
         });
-        ClientSidePlayerParameters[] players = [
+        ClientSidePlayerInfo[] players = [
             new()
             {
                 CarName = "nfmm/radicalone",
@@ -106,7 +106,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             }
         ];
         var inRace = new RacePhase(GraphicsDevice, "nfm2/9_majestic", factory, players,
-            LocalRaceHost.Create("nfm2/9_majestic", factory, new GamemodeParameters { Players = players }));
+            LocalRaceHost.Create("nfm2/9_majestic", factory, new ClientGamemodeParameters { Players = players }));
         inRace.Exited += (sender, args) =>
         {
             GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -135,7 +135,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             gp.CarSelected += (sender, car) =>
             {
                 var factory = new LuaGamemodeFactory("nfmm/timetrial");
-                ClientSidePlayerParameters[] players = [
+                ClientSidePlayerInfo[] players = [
                     new()
                     {
                         CarName = car.FileName,
@@ -146,7 +146,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     }
                 ];
                 var inRace = new RacePhase(GraphicsDevice, stageName, factory, players,
-                    LocalRaceHost.Create(stageName, factory, new GamemodeParameters { Players = players }));
+                    LocalRaceHost.Create(stageName, factory, new ClientGamemodeParameters { Players = players }));
                 inRace.Exited += (sender, args) =>
                 {
                     GameSparker.PopGroup(PhaseManager.Groups.Event);

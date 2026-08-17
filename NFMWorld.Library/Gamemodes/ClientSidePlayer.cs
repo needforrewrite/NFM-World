@@ -8,16 +8,16 @@ namespace NFMWorldLibrary.Gamemodes;
 /// <summary>
 /// A player belonging to the client gamemode.
 /// </summary>
-/// <param name="parameters">The player parameters.</param>
+/// <param name="info">The player parameters.</param>
 /// <param name="index">The zero-based index of the player.</param>
 /// <param name="isFake">True if the player was created by the gamemode, such as the ball in football.</param>
 [LuaVisible]
-public partial class ClientSidePlayer(ClientSidePlayerParameters parameters, int index, bool isFake = false)
+public partial class ClientSidePlayer(ClientSidePlayerInfo info, int index, bool isFake = false)
 {
     /// <summary>
-    /// The player parameters.
+    /// The player info.
     /// </summary>
-    [LuaName] public ClientSidePlayerParameters Parameters { get; } = parameters;
+    [LuaName] public ClientSidePlayerInfo Info { get; } = info;
     
     /// <summary>
     /// The zero-based index of the player.

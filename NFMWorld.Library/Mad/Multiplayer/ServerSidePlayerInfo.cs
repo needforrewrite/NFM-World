@@ -10,7 +10,7 @@ namespace NFMWorldLibrary.Multiplayer;
 [StructLayout(LayoutKind.Sequential)]
 [MemoryPackable]
 [LuaVisible]
-public partial struct PlayerInfo
+public partial struct ServerSidePlayerInfo
 {
     /// <summary>
     /// Unique player ID. 
@@ -27,12 +27,12 @@ public partial struct PlayerInfo
     /// <summary>
     /// Player username. For instance, in chat.
     /// </summary>
-    [MemoryPackOrder(1), LuaName] public required string Name { get; set; }
+    [MemoryPackOrder(1), LuaName] public required string PlayerName { get; set; }
     
     /// <summary>
     /// The vehicle the player has selected.
     /// </summary>
-    [MemoryPackOrder(2), LuaName] public required string Vehicle { get; set; }
+    [MemoryPackOrder(2), LuaName] public required string CarName { get; set; }
     
     /// <summary>
     /// The color of the player's vehicle.

@@ -21,17 +21,17 @@ namespace NFMWorld.Gameplay;
 /// <see cref="IRaceHost"/> connects it to a host: in-process
 /// (<see cref="LocalRaceHost"/>) for singleplayer, remote for multiplayer.
 /// </summary>
-public class RacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallbacks
+public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallbacks
 {
     public readonly BaseGamemodeFactory Gamemode;
-    public readonly IReadOnlyList<ClientSidePlayerParameters> Players;
+    public readonly IReadOnlyList<ClientSidePlayerInfo> Players;
     public IGamemode? GamemodeInstance { get; protected set; }
 
     private readonly IRaceHost _host;
     private uint _ticks;
     private readonly UnlimitedArray<uint> _lastTick = [];
 
-    BackendStage IGamemodeData.CurrentStage => CurrentStage.Backend;
+    BackendStage IGamemodeContext.CurrentStage => CurrentStage.Backend;
 
     /// <summary>
     /// HUD bridge for in-race overlay. Set in constructor so base.Enter()
@@ -45,7 +45,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallback
         GraphicsDevice graphicsDevice,
         string stageName,
         BaseGamemodeFactory gamemode,
-        IReadOnlyList<ClientSidePlayerParameters> players,
+        IReadOnlyList<ClientSidePlayerInfo> players,
         IRaceHost host) : base(graphicsDevice, stageName)
     {
         Gamemode = gamemode;
@@ -110,7 +110,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallback
 
     public RaceResults? RaceResults { get; private set; }
 
-    IClientCallbacks IGamemodeData.ClientCallbacks => this;
+    IClientCallbacks IGamemodeContext.ClientCallbacks => this;
 
     public event EventHandler<RaceState>? RaceStateChanged;
     
@@ -214,7 +214,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallback
 
     protected IGamemode ReloadGamemode()
     {
-        return Gamemode.CreateGameMode(new GamemodeParameters
+        return Gamemode.CreateGameMode(new ClientGamemodeParameters
         {
             Players = Players
         }, this);
@@ -429,12 +429,12 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallback
         return GetCarVisual(car).Visuals;
     }
 
-    void IGamemodeData.SendServerEvent(ReadOnlySpan<byte> payload)
+    void IGamemodeContext.SendServerEvent(ReadOnlySpan<byte> payload)
     {
         _host.SendServerEvent(payload.ToArray());
     }
 
-    void IGamemodeData.UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
+    void IGamemodeContext.UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
     {
         // Server-driven player roster updates; wired up when the server can
         // change rosters mid-race.

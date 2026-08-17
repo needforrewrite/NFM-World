@@ -17,11 +17,11 @@ public static class LuaTimeTrialSimulator
 {
     public static int? Run(string stageName, SavedTimeTrial replay, string carName, int tickLimit)
     {
-        var parameters = new GamemodeParameters
+        var parameters = new ClientGamemodeParameters
         {
             Players =
             [
-                new ClientSidePlayerParameters
+                new ClientSidePlayerInfo
                 {
                     PlayerName = "Player",
                     CarName = carName,
@@ -39,7 +39,7 @@ public static class LuaTimeTrialSimulator
 
         var host = LocalRaceHost.Create(stageName, factory, parameters);
 
-        var data = new BackendGamemodeData
+        var context = new BackendGamemodeContext
         {
             CurrentStage = replay.StageData is { } stageData
                 ? new BackendStage(stageName, stageData)
@@ -48,7 +48,7 @@ public static class LuaTimeTrialSimulator
             ServerEventSink = host.SendServerEvent
         };
 
-        var client = factory.CreateGameMode(parameters, data);
+        var client = factory.CreateGameMode(parameters, context);
 
         var finished = false;
         host.GameFinished += _ => finished = true;

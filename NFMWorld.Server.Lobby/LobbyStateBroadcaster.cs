@@ -23,16 +23,16 @@ public class LobbyStateBroadcaster(
     /// <summary>Builds a <see cref="S2C_LobbyState"/> for a specific client.</summary>
     public S2C_LobbyState BuildSnapshot(Guid playerId)
     {
-        var playerList = new List<PlayerInfo>();
+        var playerList = new List<ServerSidePlayerInfo>();
         var sessionList = new List<S2C_LobbyState.GameSession>();
 
         foreach (var (id, client) in players.All)
         {
-            playerList.Add(new PlayerInfo
+            playerList.Add(new ServerSidePlayerInfo
             {
                 Id = client.Id,
-                Name = client.Name,
-                Vehicle = client.Vehicle,
+                PlayerName = client.Name,
+                CarName = client.Vehicle,
                 Color = client.Color
             });
         }

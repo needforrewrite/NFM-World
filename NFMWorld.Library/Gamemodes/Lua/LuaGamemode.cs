@@ -72,14 +72,14 @@ public partial class LuaGamemodeContext(LuaGamemode gamemode)
     public LuaTable? Config { get; } = gamemode.Config;
 
     [LuaName]
-    public LuaClientContext Client { get; } = new(gamemode.GamemodeData.ClientCallbacks);
+    public LuaClientContext Client { get; } = new(gamemode.GamemodeContext.ClientCallbacks);
     
     [LuaName]
     public BackendCar CreateCar(int playerIndex, fix64 x, fix64 z)
     {
         playerIndex -= 1; // lua starts counting at 1
         var player = Players[playerIndex];
-        var car = new BackendCar(player.Parameters, playerIndex, (fix64)x, (fix64)z);
+        var car = new BackendCar(player.Info, playerIndex, (fix64)x, (fix64)z);
         player.Car = car;
         return car;
     }
@@ -142,7 +142,7 @@ public partial class LuaGamemodeContext(LuaGamemode gamemode)
     {
         var ghostIndex = Players.Count;
         var source = basedOnPlayer.Car;
-        var ghost = new ClientSidePlayer(basedOnPlayer.Parameters, ghostIndex, isFake: true);
+        var ghost = new ClientSidePlayer(basedOnPlayer.Info, ghostIndex, isFake: true);
         if (source is not null)
             ghost.Car = new BackendCar(source, ghostIndex, false);
         Players.Add(ghost);
@@ -171,8 +171,8 @@ public sealed class LuaGamemode : BaseClientGamemode
 
     public override string GamemodeId { get; }
 
-    public LuaGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData, string gamemodeId, LuaTable? config = null)
-        : base(gamemodeParameters, gamemodeData)
+    public LuaGamemode(ClientGamemodeParameters clientGamemodeParameters, IGamemodeContext gamemodeContext, string gamemodeId, LuaTable? config = null)
+        : base(clientGamemodeParameters, gamemodeContext)
     {
         GamemodeId = gamemodeId;
 
@@ -185,8 +185,8 @@ public sealed class LuaGamemode : BaseClientGamemode
         _state.DoFile($"data/gamemodes/{gamemodeId}/client.lua");
     }
 
-    public LuaGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData, string gamemodeId, RadpackLua radpack, LuaTable? config = null)
-        : base(gamemodeParameters, gamemodeData)
+    public LuaGamemode(ClientGamemodeParameters clientGamemodeParameters, IGamemodeContext gamemodeContext, string gamemodeId, RadpackLua radpack, LuaTable? config = null)
+        : base(clientGamemodeParameters, gamemodeContext)
     {
         GamemodeId = gamemodeId;
 

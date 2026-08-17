@@ -45,20 +45,6 @@ WallCollision = {}
 StageObject = {}
 
 
----@class IGamemodeData
-
-IGamemodeData = {}
-
-
----@class PlayerInfo
----@field id string
----@field name string
----@field vehicle string
----@field color Color3
-
-PlayerInfo = {}
-
-
 ---@class AttachmentLineDirection : System.Enum, System.IComparable, System.IConvertible, System.ISpanFormattable, System.IFormattable
 
 AttachmentLineDirection = {}
@@ -425,23 +411,13 @@ FrameTrace = {}
 function FrameTrace.addMessage(message) end
 
 ---@class ClientSidePlayer
----@field parameters ClientSidePlayerParameters
+---@field info ClientSidePlayerInfo
 ---@field index integer
 ---@field car BackendCar|nil
 ---@field bot BaseAi|nil
 ---@field isFake boolean
 
 ClientSidePlayer = {}
-
-
----@class ClientSidePlayerParameters
----@field playerName string
----@field carName string
----@field color Color3
----@field isBot boolean
----@field isClientPlayer boolean
-
-ClientSidePlayerParameters = {}
 
 
 ---@class PhysicsController
@@ -492,8 +468,7 @@ GamemodeContext = {}
 
 ---@class ServerGamemodeContext
 ---@field currentStage BackendStage
----@field playerIds { [integer]: string }
----@field playerInfos { [integer]: PlayerInfo }
+---@field players { [integer]: ServerSidePlayerInfo }
 ---@field config table|nil
 ---@field countdownInterval integer
 ---@field getPlayerPosition fun(self: ServerGamemodeContext, playerId: string): fixed64vector3|nil
@@ -561,7 +536,7 @@ HudStateData = {}
 ---@field rad Rad3d
 ---@field stats CarStats
 ---@field wasted boolean
----@field player ClientSidePlayerParameters
+---@field player ClientSidePlayerInfo
 ---@field drive fun(self: BackendCar, stage: BackendStage)
 
 BackendCar = {}
@@ -595,4 +570,28 @@ function Stopwatch.new() end
 
 ---@return Stopwatch
 function Stopwatch.startNew() end
+
+---@class IGamemodeContext
+
+IGamemodeContext = {}
+
+
+---@class ClientSidePlayerInfo
+---@field playerName string
+---@field carName string
+---@field color Color3
+---@field isBot boolean
+---@field isClientPlayer boolean
+
+ClientSidePlayerInfo = {}
+
+
+---@class ServerSidePlayerInfo
+---@field id string
+---@field playerName string
+---@field carName string
+---@field color Color3
+
+ServerSidePlayerInfo = {}
+
 

@@ -3,7 +3,7 @@ using NFMWorldLibrary.Gamemodes;
 
 namespace NFMWorldLibrary.Backend;
 
-public class BackendGamemodeData : IGamemodeData
+public class BackendGamemodeContext : IGamemodeContext
 {
     public required BackendStage CurrentStage { get; init; }
     public required RaceState RaceState { get; init; }
@@ -32,18 +32,18 @@ public class BackendGamemodeData : IGamemodeData
     public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
         => PlayerUpdateSink?.Invoke(players);
 
-    public static BackendGamemodeData Create(string stage)
+    public static BackendGamemodeContext Create(string stage)
     {
-        return new BackendGamemodeData
+        return new BackendGamemodeContext
         {
             CurrentStage = new BackendStage(stage),
             RaceState = RaceState.InProgress
         };
     }
 
-    public static BackendGamemodeData Create(string stage, StageLoader stageData)
+    public static BackendGamemodeContext Create(string stage, StageLoader stageData)
     {
-        return new BackendGamemodeData
+        return new BackendGamemodeContext
         {
             CurrentStage = new BackendStage(stage, stageData),
             RaceState = RaceState.InProgress

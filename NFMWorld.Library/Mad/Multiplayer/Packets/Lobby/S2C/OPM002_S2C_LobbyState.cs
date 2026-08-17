@@ -8,7 +8,7 @@ namespace NFMWorldLibrary.Multiplayer.Packets.S2C;
 public partial struct S2C_LobbyState : IPacketServerToClient<S2C_LobbyState>
 {
     [MemoryPackOrder(0)] public required Guid ClientId { get; set; }
-    [MemoryPackOrder(1)] public required IList<PlayerInfo> Players { get; set; }
+    [MemoryPackOrder(1)] public required IList<ServerSidePlayerInfo> Players { get; set; }
     [MemoryPackOrder(2)] public required IList<GameSession> ActiveSessions { get; set; }
     
     [StructLayout(LayoutKind.Sequential)]

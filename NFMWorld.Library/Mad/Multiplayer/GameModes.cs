@@ -10,13 +10,13 @@ namespace NFMWorldLibrary.Multiplayer;
 
 public abstract class BaseGamemodeFactory
 {
-    public abstract IGamemode CreateGameMode(GamemodeParameters parameters, IGamemodeData gamemodeData);
+    public abstract IGamemode CreateGameMode(ClientGamemodeParameters parameters, IGamemodeContext gamemodeContext);
 
     /// <summary>
     /// Creates a server-side gamemode for this factory's gamemode type.
     /// Returns null if this gamemode has no server-side logic (e.g., singleplayer-only).
     /// </summary>
-    public virtual IServerGamemode? CreateServerGamemode(GamemodeParameters parameters, IServerGamemodeData data)
+    public virtual IServerGamemode? CreateServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeData data)
         => null;
 
     /// <summary>
@@ -89,17 +89,17 @@ public class LuaGamemodeFactory(string gamemodeId, LuaTable? config = null) : Ba
     public override string GamemodeId => gamemodeId;
     public override bool HasServerGamemode => true;
 
-    public override LuaGamemode CreateGameMode(GamemodeParameters parameters, IGamemodeData gamemodeData)
+    public override LuaGamemode CreateGameMode(ClientGamemodeParameters parameters, IGamemodeContext gamemodeContext)
     {
         return _radpack != null
-            ? new LuaGamemode(parameters, gamemodeData, gamemodeId, _radpack, config)
-            : new LuaGamemode(parameters, gamemodeData, gamemodeId, config);
+            ? new LuaGamemode(parameters, gamemodeContext, gamemodeId, _radpack, config)
+            : new LuaGamemode(parameters, gamemodeContext, gamemodeId, config);
     }
 
-    public override LuaServerGamemode CreateServerGamemode(GamemodeParameters parameters, IServerGamemodeData data)
+    public override LuaServerGamemode CreateServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeData data)
     {
         return _radpack != null
-            ? new LuaServerGamemode(data, gamemodeId, _radpack, config)
-            : new LuaServerGamemode(data, gamemodeId, config);
+            ? new LuaServerGamemode(parameters, data, gamemodeId, _radpack, config)
+            : new LuaServerGamemode(parameters, data, gamemodeId, config: config);
     }
 }

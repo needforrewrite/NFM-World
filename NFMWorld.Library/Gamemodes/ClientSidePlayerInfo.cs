@@ -5,10 +5,10 @@ using nfm_world_library.Lua;
 namespace NFMWorldLibrary.Gamemodes;
 
 /// <summary>
-/// The parameters used to construct a <see cref="ClientSidePlayer"/> in the client gamemode.
+/// The information for <see cref="ClientSidePlayer"/> in the client gamemode.
 /// </summary>
 [LuaVisible]
-public partial class ClientSidePlayerParameters
+public partial class ClientSidePlayerInfo
 {
     [LuaName] public required string PlayerName { get; init; } = "Player";
     [LuaName] public required string CarName { get; init; } = "nfmm/radicalone";
@@ -22,13 +22,13 @@ public partial class ClientSidePlayerParameters
     /// </summary>
     [LuaName] public required bool IsClientPlayer { get; init; } = false;
 
-    public ClientSidePlayerParameters()
+    public ClientSidePlayerInfo()
     {
     }
 
     [SetsRequiredMembers]
     [LuaName("new")]
-    public ClientSidePlayerParameters(string playerName, string carName, Color3 color, bool isBot, bool isClientPlayer)
+    public ClientSidePlayerInfo(string playerName, string carName, Color3 color, bool isBot, bool isClientPlayer)
     {
         PlayerName = playerName;
         CarName = carName;

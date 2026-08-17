@@ -9,7 +9,7 @@ namespace NFMWorldLibrary.Backend;
 /// Mutable data for the gamemode.
 /// </summary>
 [LuaVisible]
-public partial interface IGamemodeData
+public partial interface IGamemodeContext
 {
     BackendStage CurrentStage { get; }
     RaceState RaceState { get; }

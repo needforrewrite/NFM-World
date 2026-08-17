@@ -11,7 +11,7 @@ function OnClientEvent(playerId, type, payload)
     if type == 'finished' then
         SGM:finishRace({
             {
-                playerId = SGM.playerIds[1],
+                playerId = SGM.players[1].id,
                 position = 0,
                 finished = true
             }

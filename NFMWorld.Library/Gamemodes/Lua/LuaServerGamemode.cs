@@ -5,6 +5,7 @@ using nfm_world_library.Lua;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Util;
 using NFMWorld.LuaSourceGenerator.Generator;
+using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
 using NFMWorldLibrary.Radpack;
@@ -18,13 +19,11 @@ public partial class LuaServerGamemodeContext(LuaServerGamemode gamemode, IServe
     [LuaName]
     public BackendStage CurrentStage => data.CurrentStage;
 
-    /// <summary>Ordered list of player IDs in this race.</summary>
+    /// <summary>
+    /// Ordered list of players participating in the race.
+    /// </summary>
     [LuaName]
-    public ReadOnlyLuaView<Guid, string> PlayerIds { get; } = new(data.PlayerIds, static guid => guid.ToString("D"));
-
-    /// <summary>Map of player index → player info (names, vehicles, etc.).</summary>
-    [LuaName]
-    public ReadOnlyLuaDictionary<byte, PlayerInfo> PlayerInfos { get; } = new(data.PlayerInfos);
+    public ReadOnlyLuaArray<ServerSidePlayerInfo> Players { get; } = new(gamemode.Players);
 
     [LuaName]
     public LuaTable? Config { get; } = gamemode.Config;
@@ -115,11 +114,15 @@ public sealed class LuaServerGamemode : BaseServerGamemode
 
     public override string GamemodeId { get; }
 
-    public LuaServerGamemode(IServerGamemodeData data, string gamemodeId, LuaTable? config = null)
+    public IReadOnlyList<ServerSidePlayerInfo> Players { get; set; }
+
+    public LuaServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeData data, string gamemodeId,
+        LuaTable? config = null)
     {
         _data = data;
         GamemodeId = gamemodeId;
         Config = config;
+        Players = parameters.Players;
         
         _state = LuaHelpers.OpenState();
 
@@ -128,7 +131,8 @@ public sealed class LuaServerGamemode : BaseServerGamemode
         _state.DoFile($"data/gamemodes/{gamemodeId}/server.lua");
     }
 
-    public LuaServerGamemode(IServerGamemodeData data, string gamemodeId, RadpackLua radpack, LuaTable? config = null)
+    public LuaServerGamemode(ServerGamemodeParameters parameters, IServerGamemodeData data, string gamemodeId,
+        RadpackLua radpack, LuaTable? config = null)
     {
         _data = data;
         GamemodeId = gamemodeId;

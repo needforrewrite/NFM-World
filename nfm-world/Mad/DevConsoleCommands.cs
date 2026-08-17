@@ -65,7 +65,7 @@ public static class DevConsoleCommands
             {
                 var factory = new LuaGamemodeFactory(args[0]);
                 var inRace = new RacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName!, factory, inRacePhase.Players,
-                    LocalRaceHost.Create(inRacePhase.StageName!, factory, new GamemodeParameters { Players = inRacePhase.Players }));
+                    LocalRaceHost.Create(inRacePhase.StageName!, factory, new ClientGamemodeParameters { Players = inRacePhase.Players }));
                 inRace.Exited += (sender, args) =>
                 {
                     GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -361,7 +361,7 @@ public static class DevConsoleCommands
         {
             Logging.Info($"Switched to stage '{stageName}'");
             var inRace = new RacePhase(GameSparker.GraphicsDevice, stageName, inRacePhase.Gamemode, inRacePhase.Players,
-                LocalRaceHost.Create(stageName, inRacePhase.Gamemode, new GamemodeParameters { Players = inRacePhase.Players }));
+                LocalRaceHost.Create(stageName, inRacePhase.Gamemode, new ClientGamemodeParameters { Players = inRacePhase.Players }));
             inRace.Exited += (sender, args) =>
             {
                 GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -390,7 +390,7 @@ public static class DevConsoleCommands
         if (GameSparker.CurrentPhase is RacePhase inRacePhase)
         {
             var newPlayers = inRacePhase.Players.Select(p => p.IsClientPlayer
-                ? new ClientSidePlayerParameters
+                ? new ClientSidePlayerInfo
                 {
                     CarName = car.FileName,
                     Color = p.Color,
@@ -404,7 +404,7 @@ public static class DevConsoleCommands
                 inRacePhase.StageName!,
                 inRacePhase.Gamemode,
                 newPlayers,
-                LocalRaceHost.Create(inRacePhase.StageName!, inRacePhase.Gamemode, new GamemodeParameters { Players = newPlayers }));
+                LocalRaceHost.Create(inRacePhase.StageName!, inRacePhase.Gamemode, new ClientGamemodeParameters { Players = newPlayers }));
             inRace.Exited += (sender, args) =>
             {
                 GameSparker.PopGroup(PhaseManager.Groups.Event);

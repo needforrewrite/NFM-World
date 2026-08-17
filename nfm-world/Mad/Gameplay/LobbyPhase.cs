@@ -24,7 +24,7 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
     }
 
     // Dummy data
-    private List<PlayerInfo> _players = [];
+    private List<ServerSidePlayerInfo> _players = [];
 
     private List<S2C_LobbyState.GameSession> _activeSessions = [];
 
@@ -59,7 +59,7 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
                         Sender = chatMessage.Sender, 
                         Message = chatMessage.Message,
                         Color = _players
-                            .Select(e => (PlayerInfo?)e)
+                            .Select(e => (ServerSidePlayerInfo?)e)
                             .FirstOrDefault(p => p!.Value.Id == chatMessage.SenderId, null)
                             ?.Color ?? new Color3(255, 255, 255)
                     });
@@ -82,11 +82,11 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
 
                     var session = raceStarted.MatchGameplayInfo;
                     var players = session.Players
-                        .Select(c => new ClientSidePlayerParameters
+                        .Select(c => new ClientSidePlayerInfo
                         {
-                            CarName = c.Value.Vehicle,
+                            CarName = c.Value.CarName,
                             Color = c.Value.Color,
-                            PlayerName = c.Value.Name,
+                            PlayerName = c.Value.PlayerName,
                             IsBot = false,
                             IsClientPlayer = c.Value.Id == _player.Id
                         })
@@ -169,11 +169,11 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
         foreach (var player in _players)
         {
             ImGui.PushStyleColor(ImGuiCol.Text, player.Color);
-            ImGui.Text($"� {player.Name}");
+            ImGui.Text($"� {player.PlayerName}");
             ImGui.PopStyleColor();
             
             ImGui.Indent(20);
-            ImGui.TextDisabled($"Vehicle: {BackendGameSparker.GetCar(player.Vehicle).Rad?.Stats.Name}");
+            ImGui.TextDisabled($"Vehicle: {BackendGameSparker.GetCar(player.CarName).Rad?.Stats.Name}");
             ImGui.Unindent(20);
             ImGui.Spacing();
         }

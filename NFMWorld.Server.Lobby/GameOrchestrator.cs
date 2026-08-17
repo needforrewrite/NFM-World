@@ -226,17 +226,17 @@ public class GameOrchestrator
         var session = _sessions.Get(sessionId);
         if (session is null) return;
 
-        var playerInfos = new Dictionary<byte, PlayerInfo>();
+        var playerInfos = new Dictionary<byte, ServerSidePlayerInfo>();
         foreach (var (index, pid) in session.Players)
         {
             var p = _players.Get(pid);
             if (p is null)
                 return;
-            playerInfos[index] = new PlayerInfo
+            playerInfos[index] = new ServerSidePlayerInfo
             {
                 Id = p.Id,
-                Name = p.Name,
-                Vehicle = p.Vehicle,
+                PlayerName = p.Name,
+                CarName = p.Vehicle,
                 Color = p.Color
             };
         }

@@ -13,11 +13,11 @@ public abstract class BaseClientGamemode : IGamemode
     /// <summary>Gamemode identifier (e.g., "nfmm/pvp").</summary>
     public abstract string GamemodeId { get; }
 
-    protected internal GamemodeParameters GamemodeParameters { get; }
-    protected internal IGamemodeData GamemodeData { get; }
+    protected internal ClientGamemodeParameters ClientGamemodeParameters { get; }
+    protected internal IGamemodeContext GamemodeContext { get; }
 
     public ObservableUnlimitedArray<ClientSidePlayer> Players { get; }
-    public BackendStage CurrentStage => GamemodeData.CurrentStage;
+    public BackendStage CurrentStage => GamemodeContext.CurrentStage;
     public int NumPlayers => Players.Count;
     
     /// <summary>
@@ -30,14 +30,14 @@ public abstract class BaseClientGamemode : IGamemode
     
     public ClientSidePlayer ClientPlayer { get; }
 
-    protected BaseClientGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData)
+    protected BaseClientGamemode(ClientGamemodeParameters clientGamemodeParameters, IGamemodeContext gamemodeContext)
     {
-        GamemodeParameters = gamemodeParameters;
-        GamemodeData = gamemodeData;
+        ClientGamemodeParameters = clientGamemodeParameters;
+        GamemodeContext = gamemodeContext;
         Players = new ObservableUnlimitedArray<ClientSidePlayer>();
-        foreach (var (parameters, idx) in gamemodeParameters.Players.Select((p, idx) => (p, idx)))
+        foreach (var (parameters, idx) in clientGamemodeParameters.Players.Select((p, idx) => (p, idx)))
             Players.Add(new ClientSidePlayer(parameters, idx));
-        ClientPlayer = Players.Single(p => p.Parameters.IsClientPlayer);
+        ClientPlayer = Players.Single(p => p.Info.IsClientPlayer);
     }
 
     /// <summary>
@@ -60,11 +60,11 @@ public abstract class BaseClientGamemode : IGamemode
 
     /// <summary>
     /// Sends a gamemode-specific event to the server using the sender injected
-    /// by the host, falling back to <see cref="IGamemodeData.SendServerEvent"/>.
+    /// by the host, falling back to <see cref="IGamemodeContext.SendServerEvent"/>.
     /// </summary>
     protected internal void SendServerEvent(ReadOnlySpan<byte> payload)
     {
-        GamemodeData.SendServerEvent(payload);
+        GamemodeContext.SendServerEvent(payload);
     }
 
     /// <summary>
@@ -192,7 +192,7 @@ public abstract class BaseClientGamemode : IGamemode
     /// </summary>
     protected internal virtual void ClientReset()
     {
-        GamemodeData.ClientCallbacks.ResetCheckpointGlow();
+        GamemodeContext.ClientCallbacks.ResetCheckpointGlow();
 
         HudState = new HudStateData { Lap = 1, TotalLaps = CurrentStage.Nlaps };
         IBackend.Backend.StopAllSounds();
@@ -220,7 +220,7 @@ public abstract class BaseClientGamemode : IGamemode
             SfxLibrary.checkpoint?.Play();
         }
 
-        GamemodeData.ClientCallbacks.UpdateCheckpointGlow(
+        GamemodeContext.ClientCallbacks.UpdateCheckpointGlow(
             car.CurrentCheckpoint,
             car.CurrentCheckpoint == CurrentStage.Checkpoints.Count - 1 && car.CurrentLap == CurrentStage.Nlaps - 1
         );

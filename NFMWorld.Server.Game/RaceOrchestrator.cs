@@ -1,4 +1,4 @@
-﻿﻿using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using NFMWorldLibrary.Backend;
@@ -222,34 +222,21 @@ public class RaceOrchestrator : IDisposable
             _joinTokens.TryAdd(token, (session, playerIndex, playerInfo.Id));
         }
 
-        // Create server gamemode if a factory exists for this gamemode type
         var factory = new LuaGamemodeFactory(raceParams.MatchGameplayInfo.Gamemode, raceParams.MatchGameplayInfo.Parameters);
-        if (factory.HasServerGamemode)
-        {
-            var context = new OrchestratorServerContext(
-                session,
-                raceParams.MatchGameplayInfo.StageName,
-                payload => _transport.BroadcastPacket(new S2C_ServerEvent { Payload = payload }, reliable: true));
+        var context = new OrchestratorServerContext(
+            session,
+            raceParams.MatchGameplayInfo.StageName,
+            payload => _transport.BroadcastPacket(new S2C_ServerEvent { Payload = payload }, reliable: true));
 
-            // TODO this is a bit janky and could probably be improved
-            var gm = factory.CreateServerGamemode(new GamemodeParameters
-            {
-                Players = raceParams.MatchGameplayInfo.Players
-                    .Select(kvp => new ClientSidePlayerParameters
-                    {
-                        CarName = kvp.Value.Vehicle,
-                        PlayerName = kvp.Value.Name,
-                        IsBot = false,
-                        IsClientPlayer = false,
-                        Color = default
-                    })
-                    .ToList()
-            }, context);
-            
-            session.ServerGamemode = gm;
-            
-            gm?.Begin();
-        }
+        // TODO this is a bit janky and could probably be improved
+        var gm = factory.CreateServerGamemode(new ServerGamemodeParameters()
+        {
+            Players = raceParams.MatchGameplayInfo.Players.Values.ToArray()
+        }, context);
+        
+        session.ServerGamemode = gm;
+        
+        gm.Begin();
 
         _sessions.TryAdd(sessionId, session);
 
@@ -310,7 +297,7 @@ public class RaceOrchestrator : IDisposable
         public ConcurrentDictionary<uint, Guid> Clients { get; set; } = [];
         public IServerGamemode? ServerGamemode { get; set; }
         public ConcurrentDictionary<Guid, f64Vector3> PlayerPositions { get; set; } = [];
-        public IDictionary<byte, PlayerInfo> PlayerInfos { get; set; } = new Dictionary<byte, PlayerInfo>();
+        public IDictionary<byte, ServerSidePlayerInfo> PlayerInfos { get; set; } = new Dictionary<byte, ServerSidePlayerInfo>();
         public bool ResultsBroadcasted { get; set; }
     }
 
@@ -325,11 +312,6 @@ public class RaceOrchestrator : IDisposable
     {
         public BackendStage CurrentStage { get; } = new(stageName);
 
-        public IReadOnlyList<Guid> PlayerIds =>
-            session.PlayerInfos.Values.Select(p => p.Id).ToList();
-
-        public IReadOnlyDictionary<byte, PlayerInfo> PlayerInfos =>
-            session.PlayerInfos.AsReadOnly();
 
         public f64Vector3? GetPlayerPosition(Guid playerId) =>
             session.PlayerPositions.TryGetValue(playerId, out var pos) ? pos : null;

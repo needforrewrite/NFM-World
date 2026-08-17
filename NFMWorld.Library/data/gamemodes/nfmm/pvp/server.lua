@@ -14,8 +14,8 @@ function OnBegin()
     done = false
     state = "waitingToStart"
 
-    for i = 1, #SGM.playerIds do
-        local id = SGM.playerIds[i]
+    for i = 1, #SGM.players do
+        local id = SGM.players[i].id
         perPlayer[id] = { lap = 0, checkpoint = -1, finished = false, position = -1 }
     end
 end
@@ -42,8 +42,8 @@ end
 
 local function broadcast_standings()
     local standings = {}
-    for i = 1, #SGM.playerIds do
-        local id = SGM.playerIds[i]
+    for i = 1, #SGM.players do
+        local id = SGM.players[i].id
         local s = perPlayer[id]
         standings[tostring(i)] = {
             position = s.finished and s.position or 0,
@@ -56,8 +56,8 @@ end
 
 local function complete_race()
     local results = {}
-    for i = 1, #SGM.playerIds do
-        local id = SGM.playerIds[i]
+    for i = 1, #SGM.players do
+        local id = SGM.players[i].id
         local s = perPlayer[id]
         table.insert(results, {
             playerId = id,
