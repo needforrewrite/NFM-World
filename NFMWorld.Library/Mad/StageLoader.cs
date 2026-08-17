@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using Maxine.Extensions.Collections;
 using MemoryPack;
 using nfm_world_library.Lua;
@@ -76,7 +76,14 @@ public abstract partial record EnvironmentInstruction;
 [MemoryPackable(GenerateType.VersionTolerant), LuaVisible] [method: MemoryPackConstructor] public partial record PolysInstruction([property: MemoryPackOrder(0), LuaName] Color3 Color) : EnvironmentInstruction;
 
 [LuaVisible]
-public readonly partial record struct LuaVector3([property: LuaName] float X, [property: LuaName] float Y, [property: LuaName] float Z);
+public readonly partial record struct LuaVector3(
+    [property: LuaName] float X,
+    [property: LuaName] float Y,
+    [property: LuaName] float Z)
+{
+    public static implicit operator Vector3(LuaVector3 vec3) => new(vec3.X, vec3.Y, vec3.Z);
+    public static implicit operator LuaVector3(Vector3 vec3) => new(vec3.X, vec3.Y, vec3.Z);
+}
 
 [MemoryPackable(GenerateType.CircularReference), LuaVisible]
 public partial class StageLoader

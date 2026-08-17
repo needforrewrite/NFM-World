@@ -22,7 +22,7 @@ public class WallCollision : GameObject, ICollidable
         MaxRadius = maxRadius;
     }
 
-    public Rad3dBoxDef[] Boxes { get; }
+    public IReadOnlyList<Rad3dBoxDef> Boxes { get; }
 
     public int MaxRadius { get; }
     

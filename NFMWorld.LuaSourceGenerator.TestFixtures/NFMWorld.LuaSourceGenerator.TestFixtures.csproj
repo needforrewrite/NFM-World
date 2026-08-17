@@ -24,4 +24,8 @@
       <ProjectReference Include="..\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="GeneratedStubs\" />
+    </ItemGroup>
+
 </Project>

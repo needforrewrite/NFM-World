@@ -85,10 +85,10 @@ public class MainMenuPhase : BaseStageRenderingPhase
     {
         var factory = new LuaGamemodeFactory("pvp", new Dictionary<string, object>()
         {
-            "constraint" = "both"
+            ["constraint"] = "both"
         });
         ClientSidePlayerParameters[] players = [
-            new ClientSidePlayerParameters
+            new()
             {
                 CarName = "nfmm/radicalone",
                 IsClientPlayer = true,
@@ -96,7 +96,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                 Color = default,
                 IsBot = false
             },
-            new ClientSidePlayerParameters
+            new()
             {
                 CarName = "nfmm/audir8",
                 IsClientPlayer = true,
@@ -134,9 +134,9 @@ public class MainMenuPhase : BaseStageRenderingPhase
             GaragePhase gp = new(GraphicsDevice, stageName);
             gp.CarSelected += (sender, car) =>
             {
-                var factory = new TimeTrialGamemodeFactory();
+                var factory = new LuaGamemodeFactory("timetrial");
                 ClientSidePlayerParameters[] players = [
-                    new ClientSidePlayerParameters()
+                    new()
                     {
                         CarName = car.FileName,
                         Color = default,

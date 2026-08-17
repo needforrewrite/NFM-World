@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+﻿﻿using System.Runtime.InteropServices;
 using MemoryPack;
 
 namespace NFMWorldLibrary.Multiplayer;
@@ -19,6 +19,8 @@ public partial struct MatchGameplayInfo()
     [MemoryPackOrder(1)] public required IDictionary<byte, PlayerInfo> Players { get; set; }
 
     [MemoryPackOrder(2)] public required string Gamemode { get; set; } = DefaultGamemodes.Sandbox;
+    
+    [MemoryPackOrder(3)] public Dictionary<string, object> Parameters { get; set; } = [];
 }
 
 public static class DefaultGamemodes

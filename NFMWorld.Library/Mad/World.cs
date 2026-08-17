@@ -1,4 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
+using Maxine.Extensions.Collections;
 
 namespace NFMWorldLibrary;
 
@@ -17,7 +18,7 @@ public static class World
     public static bool HasClouds;
     public static bool HasTexture;
     public static float FogDensity = 6;
-    public static Vector3 LightDirection = new Vector3(0, 1, 0);
+    public static LuaVector3 LightDirection = new LuaVector3(0, 1, 0);
     public static int FadeFrom;
     public static float BlackPoint = 0.37f;
     public static float WhitePoint = 0.63f;
@@ -134,7 +135,14 @@ public static class World
         // }
     }
 
-    public static void SetTexture(InlineArray4<int> texture) {
+    public static void SetTexture(IReadOnlyList<int> inTexture)
+    {
+        var texture = new InlineArray4Ex<int>();
+        texture[0] = inTexture[0];
+        texture[1] = inTexture[1];
+        texture[2] = inTexture[2];
+        texture[3] = inTexture[3];
+        
         if (texture[3] < 20) {
             texture[3] = 20;
         }

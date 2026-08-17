@@ -458,17 +458,7 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
 
     private static BaseGamemodeFactory GetGameModeFactory(MatchGameplayInfo matchGameplayInfo)
     {
-        switch (matchGameplayInfo.Gamemode)
-        {
-            case DefaultGamemodes.Racing:
-                return new PvpGamemodeFactory(PvpConstraint.Racing);
-            case DefaultGamemodes.Wasting:
-                return new PvpGamemodeFactory(PvpConstraint.Wasting);
-            case DefaultGamemodes.Both:
-                return new PvpGamemodeFactory(PvpConstraint.Both);
-            default:
-                throw new ArgumentOutOfRangeException(nameof(matchGameplayInfo.Gamemode), matchGameplayInfo.Gamemode, "Unknown gamemode");
-        }
+        return new LuaGamemodeFactory(matchGameplayInfo.Gamemode, matchGameplayInfo.Parameters);
     }
 }
 
