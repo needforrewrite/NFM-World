@@ -140,7 +140,7 @@ public partial class LuaGamemodeContext(LuaGamemode gamemode)
     }
 
     [LuaName]
-    public ClientSidePlayer AddGhostPlayer(ClientSidePlayer basedOnPlayer)
+    public ClientSidePlayer ClonePlayer(ClientSidePlayer basedOnPlayer)
     {
         var ghostIndex = Players.Count;
         var source = basedOnPlayer.Car;

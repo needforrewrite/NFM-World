@@ -10,7 +10,8 @@ using MemoryPack;
 
 namespace NFMWorldLibrary.Util;
 
-public class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>, IMemoryPackable<UnlimitedArray<T>>, ILuaUserData
+[MemoryPackable(GenerateType.Collection)]
+public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>, ILuaUserData
 {
     private protected T[] _items = [];
     private protected int _size = 0;
@@ -407,58 +408,11 @@ public class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>, IMemoryPackable<Unl
         return new(context.Return((double)arr.Count));
     }
 
-    public static void RegisterFormatter()
-    {
-        MemoryPackFormatterProvider.Register(UnlimitedArrayFormatter<T>.Instance);
-    }
-
-    public static void Serialize<TBufferWriter>(ref MemoryPackWriter<TBufferWriter> writer, scoped ref UnlimitedArray<T>? value) where TBufferWriter : IBufferWriter<byte>
-    {
-        UnlimitedArrayFormatter<T>.Instance.Serialize(ref writer, ref value);
-    }
-
-    public static void Deserialize(ref MemoryPackReader reader, scoped ref UnlimitedArray<T>? value)
-    {
-        UnlimitedArrayFormatter<T>.Instance.Deserialize(ref reader, ref value);
-    }
-
     internal static UnlimitedArray<T> MarshalFrom(T[] arr)
     {
         return new UnlimitedArray<T>
         {
             _items = arr
         };
-    }
-}
-    
-public sealed class UnlimitedArrayFormatter<T> : MemoryPackFormatter<UnlimitedArray<T>?>
-{
-    public static readonly MemoryPackFormatter<UnlimitedArray<T>?> Instance = new UnlimitedArrayFormatter<T>();
-
-    public override void Serialize<TBufferWriter>(
-        ref MemoryPackWriter<TBufferWriter> writer,
-        scoped ref UnlimitedArray<T>? value)
-    {
-        if (value == null)
-        {
-            writer.WriteNullObjectHeader();
-            return;
-        }
-
-        writer.WriteSpan(value.GetSpan()!);
-    }
-
-    public override void Deserialize(ref MemoryPackReader reader, scoped ref UnlimitedArray<T>? value)
-    {
-        if (reader.PeekIsNull())
-        {
-            reader.Advance(1); // skip null block
-            value = null;
-            return;
-        }
-
-        T[] arr = [];
-        reader.ReadArray(ref arr!);
-        value = UnlimitedArray<T>.MarshalFrom(arr);
     }
 }

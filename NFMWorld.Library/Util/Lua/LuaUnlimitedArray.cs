@@ -1,9 +1,11 @@
-﻿using nfm_world_library.Lua;
+﻿using MemoryPack;
+using nfm_world_library.Lua;
 
 namespace NFMWorldLibrary.Util;
 
 [LuaShimType("{ [integer]: T }")]
-public class LuaUnlimitedArray<T>() : LuaArray<T>(new UnlimitedArray<T>())
+[MemoryPackable(GenerateType.Collection)]
+public partial class LuaUnlimitedArray<T>() : LuaArray<T>(new UnlimitedArray<T>())
 {
     /// <inheritdoc cref="IList{T}.Insert"/>
     public void Insert(int index, T item) => Value.Insert(index, item);

@@ -8,7 +8,7 @@ local tick = 0
 local written = false
 
 local function setupPlayer()
-    local car = GM:createCar(0, fixed64(0), fixed64(0))
+    local car = GM:createCar(1, fixed64(0), fixed64(0))
     car.currentCheckpoint = 0
     car.currentLap = 0
     GM.hudState.lap = 1
@@ -35,8 +35,9 @@ function OnReset()
     GM:removeFakePlayers()
     setupPlayer()
 
-    if GM.timeTrial:hasGhost() then
-        local ghost = GM:addGhostPlayer(GM.players[1])
+    if GM.timeTrial.hasGhost then
+        local ghost = GM:clonePlayer(GM.players[1])
+        GM.client:getClientCarCallbacks(ghost.car).alphaOverride = 0.5
         ghost.car.currentLap = 0
     end
 end
@@ -74,7 +75,7 @@ function OnGameTick()
 
             GM.timeTrial:record(car)
 
-            if GM.timeTrial:hasGhost() then
+            if GM.timeTrial.hasGhost then
                 local ghost = GM.players[2]
                 if ghost ~= nil and ghost.car ~= nil then
                     GM.timeTrial:applyGhost(ghost.car, tick)

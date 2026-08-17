@@ -4,13 +4,8 @@ namespace NFMWorldLibrary.Util;
 
 public static class MemoryPackHelpers
 {
-    public static MemoryPackSerializerOptions Options = new MemoryPackSerializerOptions
+    public static MemoryPackSerializerOptions Options = new()
     {
         StringEncoding = StringEncoding.Utf8
     };
-
-    static MemoryPackHelpers()
-    {
-        MemoryPackFormatterProvider.RegisterGenericType(typeof(UnlimitedArray<>), typeof(UnlimitedArrayFormatter<>));
-    }
 }

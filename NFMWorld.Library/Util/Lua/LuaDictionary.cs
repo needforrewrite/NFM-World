@@ -2,12 +2,14 @@
 using System.Diagnostics.CodeAnalysis;
 using Lua;
 using Lua.Runtime;
+using MemoryPack;
 using nfm_world_library.Lua;
 
 namespace NFMWorldLibrary.Util;
 
 [LuaShimType("{ [TKey]: TValue }")]
-public class LuaDictionary<TKey, TValue> : ILuaUserData, IDictionary<TKey, TValue> where TKey : notnull
+[MemoryPackable(GenerateType.Collection)]
+public partial class LuaDictionary<TKey, TValue> : ILuaUserData, IDictionary<TKey, TValue> where TKey : notnull
 {
     public readonly IDictionary<TKey, TValue> Value;
 

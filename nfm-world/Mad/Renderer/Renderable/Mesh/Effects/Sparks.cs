@@ -239,9 +239,9 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 // the Line.fx vertex shader.
                 if (lineLenSq is >= 0.01f and < 0.05f)
                 {
-                    Logging.Info(
-                        $"Sparks: near-degenerate line at slot {i} | " +
-                        $"lenSq={lineLenSq:F4} start=({start.X:F2},{start.Y:F2},{start.Z:F2}) end=({end.X:F2},{end.Y:F2},{end.Z:F2})");
+                    // Logging.Info(
+                    //     $"Sparks: near-degenerate line at slot {i} | " +
+                    //     $"lenSq={lineLenSq:F4} start=({start.X:F2},{start.Y:F2},{start.Z:F2}) end=({end.X:F2},{end.Y:F2},{end.Z:F2})");
                     
                     SentrySdk.CaptureMessage(
                         $"Sparks: near-degenerate line at slot {i} | " +
@@ -253,9 +253,9 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 var greenChannel = (short)(197 - 30 * _rtg[i]);
                 if (greenChannel <= 0)
                 {
-                    Logging.Info(
-                        $"Sparks: dark/black spark at slot {i} | " +
-                        $"rtg={_rtg[i]} green={greenChannel} color=({color.R},{color.G},{color.B})");
+                    // Logging.Info(
+                    //     $"Sparks: dark/black spark at slot {i} | " +
+                    //     $"rtg={_rtg[i]} green={greenChannel} color=({color.R},{color.G},{color.B})");
                     
                     SentrySdk.CaptureMessage(
                         $"Sparks: dark/black spark at slot {i} | " +

@@ -486,7 +486,7 @@ LuaClientCarContext = {}
 ---@field sendEvent fun(self: GamemodeContext, type: string, payload: table)
 ---@field updateHudAndSounds fun(self: GamemodeContext, car: BackendCar)
 ---@field removeFakePlayers fun(self: GamemodeContext)
----@field addGhostPlayer fun(self: GamemodeContext, basedOnPlayer: ClientSidePlayer): ClientSidePlayer
+---@field clonePlayer fun(self: GamemodeContext, basedOnPlayer: ClientSidePlayer): ClientSidePlayer
 
 GamemodeContext = {}
 
