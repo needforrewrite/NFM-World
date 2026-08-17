@@ -57,7 +57,7 @@ public sealed class LocalRaceHost : IRaceHost
             });
         }
         
-        var host = new LocalRaceHost(stageName, parameters, ids[parameters.Players.FindIndex(e => e.IsBot)]);
+        var host = new LocalRaceHost(stageName, parameters, ids[parameters.Players.FindIndex(e => e.IsClientPlayer)]);
 
         // TODO this is a bit janky and could probably be improved
         var serverGamemode = factory.CreateServerGamemode(new ServerGamemodeParameters
