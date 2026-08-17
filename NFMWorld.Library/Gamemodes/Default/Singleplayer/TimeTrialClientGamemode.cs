@@ -122,7 +122,7 @@ public class TimeTrialClientGamemode1(GamemodeParameters gamemodeParameters, IGa
 
         if (car.CurrentCheckpoint != _lastCurrentCheckpoint)
         {
-            if (_bestTimeTrial != null && _currentTimeTrial is { Splits.SplitTimes.Count: > PlayerCarIndex })
+            if (_bestTimeTrial != null && _currentTimeTrial is { Splits.SplitTimes.Count: > 0 })
                 _lastCheckpointSplitDiff = _currentTimeTrial.GetSplitDiff(_bestTimeTrial,
                     _currentTimeTrial.Splits.SplitTimes.Count - 1);
 

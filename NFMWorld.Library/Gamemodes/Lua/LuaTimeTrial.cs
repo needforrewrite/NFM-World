@@ -35,6 +35,41 @@ public sealed partial class LuaTimeTrial(BackendStage stage)
             ghostCar.Control.Decode(controls);
     }
 
+    [LuaName]
+    public double? GetSplitDiff(int splitIndex)
+    {
+        if (_current is null || _best is null) return null;
+        return TimeSpan.FromMilliseconds(_current.GetSplitDiff(_best, splitIndex)).TotalSeconds;
+    }
+
+    [LuaName]
+    public double? GetLastSplitDiff()
+    {
+        if (_current is null || _best is null) return null;
+        return TimeSpan.FromMilliseconds(_current.GetSplitDiff(_best, _current.Splits.SplitTimes.Count - 1)).TotalSeconds;
+    }
+
+    [LuaName]
+    public double? GetLapDiff(int lapIndex)
+    {
+        if (_current is null || _best is null) return null;
+        var diff = _current.GetLapTime(stage.Checkpoints.Count, lapIndex) -
+                   _best.GetLapTime(stage.Checkpoints.Count, lapIndex - 1);
+        return TimeSpan.FromMilliseconds(diff).TotalSeconds;
+    }
+
+    [LuaName]
+    public void RecordSplit(double splitTime)
+        => _current?.RecordSplit((long) TimeSpan.FromSeconds(splitTime).TotalMilliseconds);
+
+    [LuaName]
+    public double? GetLapTime(int lapIndex)
+    {
+        if (_current is null) return null;
+        var time = _current.GetLapTime(stage.Checkpoints.Count, lapIndex);
+        return TimeSpan.FromMilliseconds(time).TotalSeconds;
+    }
+
     /// <summary>Records the player car's state for the current tick.</summary>
     [LuaName("record")]
     public void Record(BackendCar car)
@@ -46,6 +81,7 @@ public sealed partial class LuaTimeTrial(BackendStage stage)
     {
         if (_best is null ||
             (_current is not null &&
+             _current.Splits.SplitTimes.Count > 0 &&
              _current.GetSplitDiff(_best, _current.Splits.SplitTimes.Count - 1) < 0))
         {
             _current?.Save();

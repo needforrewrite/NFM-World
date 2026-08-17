@@ -6,6 +6,15 @@ local countdown = 3
 local inner = 0
 local tick = 0
 local written = false
+local timer = Stopwatch.new()
+
+-- Split/diff tracking (ported from TimeTrialClientGamemode).
+-- Values are milliseconds, matching HudStateData's *DiffMs fields.
+local lastCheckpoint = 0
+local lastLap = 0
+local recordedSplitCount = 0
+local lastCheckpointSplitDiff = 0   -- cumulative diff at the previous checkpoint
+local lastLapSplitDiff = 0          -- diff of the last completed lap
 
 local function setupPlayer()
     local car = GM:createCar(1, fixed64(0), fixed64(0))
@@ -15,6 +24,37 @@ local function setupPlayer()
     GM.hudState.totalLaps = GM.stage.nlaps
     GM.client:resetCheckpointGlow()
     GM.timeTrial:begin(car)
+end
+
+-- Mirrors TimeTrialClientGamemode.RenderInfo: refreshes the checkpoint and
+-- lap diff HUD fields each tick.
+local function renderInfo()
+    local car = GM.players[1].car
+
+    -- Checkpoint diff (chkDiffMs / lastChkDiffMs).
+    if car ~= nil and (car.currentCheckpoint ~= 0 or car.currentLap ~= 0)
+        and GM.timeTrial.hasGhost and recordedSplitCount > 0 then
+        local diff = GM.timeTrial:getLastSplitDiff() -- seconds
+        if diff ~= nil then
+            diff = diff
+            GM.hudState.chkDiffMs = math.floor(diff * 1000)
+            GM.hudState.lastChkDiffMs = math.floor((diff - lastCheckpointSplitDiff) * 1000)
+        end
+    else
+        GM.hudState.chkDiffMs = 0
+        GM.hudState.lastChkDiffMs = 0
+    end
+
+    -- Lap diff (lapDiffMs / lastLapDiffMs).
+    if GM.timeTrial.hasGhost and car ~= nil and car.currentLap > 0 then
+        local lapDiff = GM.timeTrial:getLapDiff(car.currentLap) -- seconds
+        if lapDiff ~= nil then
+            GM.hudState.lapDiffMs = math.floor(lapDiff * 1000)
+        end
+    else
+        GM.hudState.lapDiffMs = 0
+    end
+    GM.hudState.lastLapDiffMs = math.floor(lastLapSplitDiff)
 end
 
 function OnBegin()
@@ -31,6 +71,13 @@ function OnReset()
     inner = 0
     tick = 0
     written = false
+    timer:reset()
+
+    lastCheckpoint = 0
+    lastLap = 0
+    recordedSplitCount = 0
+    lastCheckpointSplitDiff = 0
+    lastLapSplitDiff = 0
 
     GM:removeFakePlayers()
     setupPlayer()
@@ -56,24 +103,56 @@ function OnGameTick()
             GM.hudState.countdownTimer = countdown
             if countdown <= 0 then
                 state = "inProgress"
+                timer:start()
             end
         end
+        renderInfo()
         return
     end
 
     if state == "inProgress" then
         local car = GM.players[1].car
         if car ~= nil then
+            -- Snapshot before checkpoint handling (TimeTrialGamemode.OnBeforePhysics).
+            lastCheckpoint = car.currentCheckpoint
+            lastLap = car.currentLap
+
             GM:handleFixHoops(car)
             GM:handleCheckPoint(car)
             car:drive(GM.stage)
 
             GM:updateHudAndSounds(car)
             GM.hudState.lap = car.currentLap + 1
-            GM.client:updateCheckpointGlow(car.currentCheckpoint,
-            car.currentCheckpoint == #GM.stage.checkpoints - 1 and car.currentLap == GM.stage.nlaps - 1)
+            GM.hudState.lapTime = math.floor(timer.elapsed * 1000)
+            GM.client:updateCheckpointGlow(car.currentCheckpoint, car.currentCheckpoint == #GM.stage.checkpoints - 1 and car.currentLap == GM.stage.nlaps - 1)
 
             GM.timeTrial:record(car)
+
+            -- On checkpoint change: record the split and update lap diff tracking
+            -- (TimeTrialClientGamemode.OnAfterPhysics).
+            if car.currentCheckpoint ~= lastCheckpoint then
+                if GM.timeTrial.hasGhost and recordedSplitCount > 0 then
+                    local diff = GM.timeTrial:getLastSplitDiff() -- seconds
+                    if diff ~= nil then
+                        lastCheckpointSplitDiff = diff
+                    end
+                end
+
+                local currentLapSplitDiff = 0
+                if GM.timeTrial.hasGhost and lastLap > 0 then
+                    local lapDiff = GM.timeTrial:getLapDiff(lastLap) -- seconds
+                    if lapDiff ~= nil then
+                        currentLapSplitDiff = lapDiff
+                    end
+                end
+
+                GM.timeTrial:recordSplit(timer.elapsed) -- seconds
+                recordedSplitCount = recordedSplitCount + 1
+
+                if lastLap ~= car.currentLap then
+                    lastLapSplitDiff = currentLapSplitDiff
+                end
+            end
 
             if GM.timeTrial.hasGhost then
                 local ghost = GM.players[2]
@@ -87,10 +166,12 @@ function OnGameTick()
                 state = "finished"
                 car.carPhysics.halted = true
                 GM:sendEvent('finished', {})
+                timer:stop()
             end
         end
 
         tick = tick + 1
+        renderInfo()
         return
     end
 
@@ -101,6 +182,7 @@ function OnGameTick()
             GM.timeTrial:save()
             GM.hudState.stateText = "Finished!"
         end
+        renderInfo()
     end
 end
 

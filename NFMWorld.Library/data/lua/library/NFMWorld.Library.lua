@@ -508,6 +508,11 @@ ServerGamemodeContext = {}
 ---@field hasGhost boolean
 ---@field begin fun(self: TimeTrial, car: BackendCar)
 ---@field applyGhost fun(self: TimeTrial, ghostCar: BackendCar, tick: integer)
+---@field getSplitDiff fun(self: TimeTrial, splitIndex: integer): number|nil
+---@field getLastSplitDiff fun(self: TimeTrial): number|nil
+---@field getLapDiff fun(self: TimeTrial, lapIndex: integer): number|nil
+---@field recordSplit fun(self: TimeTrial, splitTime: number)
+---@field getLapTime fun(self: TimeTrial, lapIndex: integer): number|nil
 ---@field record fun(self: TimeTrial, car: BackendCar)
 ---@field save fun(self: TimeTrial)
 
@@ -564,4 +569,24 @@ BackendCar = {}
 
 AiContext = {}
 
+
+---@class Stopwatch
+---@field isRunning boolean
+---@field elapsed number
+---@field elapsedMilliseconds integer
+---@field elapsedMicroseconds integer
+---@field stop fun(self: Stopwatch)
+---@field start fun(self: Stopwatch)
+---@field restart fun(self: Stopwatch)
+---@field reset fun(self: Stopwatch)
+
+Stopwatch = {}
+
+
+---Creates a new Stopwatch
+---@return Stopwatch
+function Stopwatch.new() end
+
+---@return Stopwatch
+function Stopwatch.startNew() end
 
