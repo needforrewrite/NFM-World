@@ -184,6 +184,7 @@ public class SessionManager(IMultiplayerServerTransport transport, PlayerRegistr
         public ConcurrentDictionary<byte, Guid> Players { get; set; } = [];
         public DateTimeOffset? StartTime { get; set; }
         public SessionState State { get; set; } = SessionState.NotStarted;
-        public string Gamemode { get; set; } = DefaultGamemodes.Racing;
+        public string Gamemode { get; set; } = DefaultGamemodes.PvP;
+        public Dictionary<string, object> GamemodeParameters { get; set; } = [];
     }
 }

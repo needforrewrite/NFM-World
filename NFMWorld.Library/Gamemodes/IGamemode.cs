@@ -9,6 +9,9 @@ namespace NFMWorldLibrary.Gamemodes;
 /// </summary>
 public interface IGamemode
 {
+    /// <summary>Gamemode identifier (e.g., "nfmm/pvp").</summary>
+    string GamemodeId { get; }
+
     /// <summary>Called once when the gamemode is created.</summary>
     void Begin();
 

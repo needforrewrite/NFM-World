@@ -14,14 +14,11 @@ namespace NFMWorldLibrary.Gamemodes;
 /// </summary>
 public abstract class BaseServerGamemode : IServerGamemode
 {
-    protected IServerGamemodeData Data { get; private set; } = null!;
-
-    /// <summary>Gamemode identifier (e.g., "nfmm/pvp-racing").</summary>
+    /// <summary>Gamemode identifier (e.g., "nfmm/pvp").</summary>
     public abstract string GamemodeId { get; }
 
     /// <summary>Called once when the race session is created.</summary>
-    public virtual void Begin(IServerGamemodeData data)
-        => Data = data;
+    public virtual void Begin() { }
 
     /// <summary>
     /// Called when all players have loaded and the race is about to start.

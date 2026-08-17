@@ -7,6 +7,7 @@ using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Gamemodes.Lua;
 using NFMWorldLibrary.Radpack;
 using NFMWorld.Sentry;
 
@@ -222,30 +223,17 @@ public static class UnmanagedEntryPoints
         {
             using var timeTrialMemory =
                 new UnmanagedMemoryManager<byte>(args->TimeTrialData, args->TimeTrialDataLength);
-            var timeTrial = SavedTimeTrial.Load(timeTrialMemory.Memory);
+            var timeTrial = SavedTimeTrial.Load(timeTrialMemory.Memory)!;
 
-            var simulator = timeTrial.StageData is { } stageData
-                ? BackendGamemodeData.Create(Encoding.UTF8.GetString(args->StageName), stageData)
-                : BackendGamemodeData.Create(Encoding.UTF8.GetString(args->StageName));
+            var stageName = Encoding.UTF8.GetString(args->StageName);
+            var carName = Encoding.UTF8.GetString(args->Cars[0].CarName);
 
-            var gamemode = new TimeTrialSimulationGamemode(new GamemodeParameters()
-            {
-                Players =
-                [
-                    new ClientSidePlayerParameters()
-                    {
-                        PlayerName = "Player",
-                        CarName = Encoding.UTF8.GetString(args->Cars[0].CarName),
-                        Color = new Color3(255, 0, 0),
-                        IsBot = false,
-                        IsClientPlayer = false
-                    }
-                ]
-            }, simulator, timeTrial);
+            var elapsedTicks = LuaTimeTrialSimulator.Run(
+                stageName, timeTrial, carName, timeTrial.DemoData.Ticks.Count + 500);
 
             return new SimulateTimeTrialResult
             {
-                ElapsedTicks = gamemode.SimulateToCompletion(timeTrial.DemoData.Ticks.Count + 500) ?? -1,
+                ElapsedTicks = elapsedTicks ?? -1,
                 ExpectedTicks = timeTrial.DemoData.Ticks.Count,
             };
         });

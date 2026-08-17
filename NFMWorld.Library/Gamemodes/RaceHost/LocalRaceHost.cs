@@ -13,7 +13,7 @@ namespace NFMWorldLibrary.Gamemodes.RaceHost;
 /// </summary>
 public sealed class LocalRaceHost : IRaceHost
 {
-    private readonly IServerGamemode? _serverGamemode;
+    private IServerGamemode? _serverGamemode;
     private readonly LocalServerContext _context;
     private readonly Guid _localPlayerId;
     private bool _started;
@@ -27,16 +27,13 @@ public sealed class LocalRaceHost : IRaceHost
     public event Action<ReadOnlyMemory<byte>>? ServerEventReceived;
     public event Action<RaceResults>? GameFinished;
 
-    public LocalRaceHost(string stageName, GamemodeParameters parameters, IServerGamemode? serverGamemode)
+    private LocalRaceHost(string stageName, GamemodeParameters parameters)
     {
-        _serverGamemode = serverGamemode;
         _context = new LocalServerContext(stageName, parameters, BroadcastToClient);
         _localPlayerId = _context.PlayerIds[
             parameters.Players
                 .Select((p, i) => (p, i))
                 .First(e => e.p.IsClientPlayer).i];
-
-        _serverGamemode?.Begin(_context);
     }
 
     /// <summary>
@@ -46,10 +43,16 @@ public sealed class LocalRaceHost : IRaceHost
     public static LocalRaceHost Create(
         string stageName,
         BaseGamemodeFactory factory,
-        IReadOnlyList<ClientSidePlayerParameters> players)
+        GamemodeParameters parameters)
     {
-        var parameters = new GamemodeParameters { Players = players };
-        return new LocalRaceHost(stageName, parameters, factory.CreateServerGamemode(parameters));
+        var host = new LocalRaceHost(stageName, parameters);
+
+        // TODO this is a bit janky and could probably be improved
+        var serverGamemode = factory.CreateServerGamemode(parameters, host._context);
+        host._serverGamemode = serverGamemode;
+        serverGamemode?.Begin();
+
+        return host;
     }
 
     /// <summary>

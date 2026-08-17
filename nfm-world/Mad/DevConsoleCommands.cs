@@ -2,12 +2,10 @@ using System.Reflection;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Gameplay;
-using NFMWorld.Gameplay.Gamemodes;
 using NFMWorld.UI;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
-using NFMWorldLibrary.Files;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.RaceHost;
@@ -67,7 +65,7 @@ public static class DevConsoleCommands
             {
                 var factory = new LuaGamemodeFactory(args[0]);
                 var inRace = new RacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName!, factory, inRacePhase.Players,
-                    LocalRaceHost.Create(inRacePhase.StageName!, factory, inRacePhase.Players));
+                    LocalRaceHost.Create(inRacePhase.StageName!, factory, new GamemodeParameters { Players = inRacePhase.Players }));
                 inRace.Exited += (sender, args) =>
                 {
                     GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -81,7 +79,6 @@ public static class DevConsoleCommands
         console.RegisterCommand("ui_open_devcam", (c, args) => ToggleCameraSettings(c));
         console.RegisterCommand("ui_open_devmsg", ShowMessageTest);
 
-        console.RegisterCommand("demo_playback", DemoPlayback);
         console.RegisterCommand("music_remastered", RemasteredMusic);
 
 #if DEBUG
@@ -131,40 +128,13 @@ public static class DevConsoleCommands
         // map command: only autocomplete first argument (position 0)
         console.RegisterArgumentAutocompleter("map", (args, position) => 
             position == 0 ? GameSparker.GetAvailableStages() : []);
-        
-        console.RegisterArgumentAutocompleter("replay_trial", (args, position) =>
-        {
-            _tts ??= SavedTimeTrial.GetTimeTrials().ToArray();
-
-            if (position == 0)
-            {
-                return _tts.Select(tt => tt.carName).Distinct().ToArray();
-            }
-
-            if (position == 1)
-            {
-                var carName = args[0];
-                return _tts.Where(tt => tt.carName == carName).Select(tt => tt.stageName).Distinct().ToArray();
-            }
-
-            return [];
-        });
     }
-
-    private static (string stageName, string carName, string fileName)[]? _tts;
 
     private static void RemasteredMusic(DevConsole console, string[] args)
     {
         GameSparker.UseRemasteredMusic = !GameSparker.UseRemasteredMusic;
         Logging.Info($"Remastered music is now {(GameSparker.UseRemasteredMusic ? "enabled" : "disabled")}.");
         Logging.Info("Change stage for the change to teka effect.");
-    }
-
-    private static void DemoPlayback(DevConsole console, string[] args)
-    {
-        TimeTrialClientGamemode1.PlaybackOnReset = !TimeTrialClientGamemode1.PlaybackOnReset;
-        Logging.Info($"Playback set to {TimeTrialClientGamemode1.PlaybackOnReset}, for maps with a saved demo file.");
-        Logging.Info("Restart the time trial for changes to take effect.");
     }
 
     private static void WastePlayer(DevConsole console, string[] args)
@@ -391,7 +361,7 @@ public static class DevConsoleCommands
         {
             Logging.Info($"Switched to stage '{stageName}'");
             var inRace = new RacePhase(GameSparker.GraphicsDevice, stageName, inRacePhase.Gamemode, inRacePhase.Players,
-                LocalRaceHost.Create(stageName, inRacePhase.Gamemode, inRacePhase.Players));
+                LocalRaceHost.Create(stageName, inRacePhase.Gamemode, new GamemodeParameters { Players = inRacePhase.Players }));
             inRace.Exited += (sender, args) =>
             {
                 GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -434,7 +404,7 @@ public static class DevConsoleCommands
                 inRacePhase.StageName!,
                 inRacePhase.Gamemode,
                 newPlayers,
-                LocalRaceHost.Create(inRacePhase.StageName!, inRacePhase.Gamemode, newPlayers));
+                LocalRaceHost.Create(inRacePhase.StageName!, inRacePhase.Gamemode, new GamemodeParameters { Players = newPlayers }));
             inRace.Exited += (sender, args) =>
             {
                 GameSparker.PopGroup(PhaseManager.Groups.Event);

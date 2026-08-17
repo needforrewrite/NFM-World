@@ -377,9 +377,13 @@ public class LobbyPhase(GraphicsDevice graphicsDevice, IMultiplayerClientTranspo
             {
                 transport.SendPacketToServer(new C2S_CreateSession()
                 {
-                    GameMode = DefaultGamemodes.Racing,
+                    GameMode = DefaultGamemodes.PvP,
                     StageName = stages[_selectedStage].Split("##")[0],
-                    MaxPlayers = (byte)_maxPlayers
+                    MaxPlayers = (byte)_maxPlayers,
+                    GameModeParameters = new Dictionary<string, object>()
+                    {
+                        ["constraint"] = "both"
+                    }
                 });
                 _showCreateGameDialog = false;
                 ImGui.CloseCurrentPopup();

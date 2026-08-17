@@ -4,6 +4,10 @@
 ---@type { simulation?: boolean }
 local config = GM.config
 
+-- Headless replay-validation mode (set by the TT simulator). Skips the
+-- countdown and disables recording/ghost/save -- inputs are applied externally.
+local simulation = config ~= nil and config.simulation
+
 local state = "notStarted"
 local countdown = 3
 local inner = 0
@@ -13,7 +17,7 @@ local timer = Stopwatch.new()
 
 ---@type TimeTrial?
 local timeTrial
-if config ~= nil and config.simulation then
+if not simulation then
     timeTrial = TimeTrial.new(GM.stage)
 end
 
@@ -134,12 +138,18 @@ function OnBegin()
 end
 
 function OnReset()
-    state = "countdown"
-    countdown = 3
-    inner = 0
     tick = 0
     written = false
     timer:reset()
+
+    if simulation then
+        state = "inProgress"
+        timer:start()
+    else
+        state = "countdown"
+        countdown = 3
+        inner = 0
+    end
 
     lastCheckpoint = 0
     lastLap = 0

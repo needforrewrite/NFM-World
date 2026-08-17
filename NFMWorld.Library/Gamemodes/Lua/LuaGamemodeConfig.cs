@@ -1,6 +1,7 @@
 ﻿using Lua;
 using Lua.Standard;
 using NFMWorld.LuaSourceGenerator.Generator;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Gamemodes.Lua;
@@ -13,12 +14,10 @@ public class LuaGamemodeConfig
 
     public static LuaGamemodeConfig LoadConfig(string path)
     {
-        var state = LuaState.Create(LuaNfmwPlatform.Instance);
-        state.OpenStandardLibraries();
-        LuaVisibleTypeRegistry.RegisterAll(state);
+        var state = LuaHelpers.OpenState();
 
         LuaGamemodeConfig? config = null;
-        RegisterFunction("DefineGamemodeConfig", (context, ct) =>
+        RegisterFunction(state, "DefineGamemodeConfig", (context, ct) =>
         {
             var table = context.GetArgument<LuaTable>(0);
 
@@ -34,30 +33,34 @@ public class LuaGamemodeConfig
             Name = "N/A",
             Description = "N/A"
         };
-
-        void RegisterFunction(string name, Func<LuaFunctionExecutionContext, CancellationToken, ValueTask<int>> fn)
-            => state!.Environment[name] = new LuaFunction(name, fn);
-
-        LuaValue[] Call(string name, params ReadOnlySpan<LuaValue> arguments)
-        {
-            if (state == null ||
-                !state.Environment.TryGetValue(name, out var value) ||
-                !value.TryRead<LuaFunction>(out var function))
-            {
-                return [LuaValue.Nil];
-            }
-
-            try
-            {
-                return state.Call(function, arguments);
-            }
-            catch (Exception ex)
-            {
-                Logging.Error($"[LuaGamemode:{path}] {name} failed: {ex.Message}", ex);
-            }
-            return [LuaValue.Nil];
-        }
     }
+
+    public static LuaGamemodeConfig LoadConfig(RadpackLua lua)
+    {
+        var state = LuaHelpers.OpenState();
+
+        LuaGamemodeConfig? config = null;
+        RegisterFunction(state, "DefineGamemodeConfig", (context, ct) =>
+        {
+            var table = context.GetArgument<LuaTable>(0);
+
+            config = MarshalConfig(table);
+
+            return ValueTask.FromResult(context.Return());
+        });
+
+        state.ModuleLoader = new RadpackModuleLoader(lua.Files);
+        state.DoString(lua.Files["config"]);
+
+        return config ?? new LuaGamemodeConfig()
+        {
+            Name = "N/A",
+            Description = "N/A"
+        };
+    }
+
+    private static void RegisterFunction(LuaState state, string name, Func<LuaFunctionExecutionContext, CancellationToken, ValueTask<int>> fn)
+        => state.Environment[name] = new LuaFunction(name, fn);
 
     private static LuaGamemodeConfig MarshalConfig(LuaTable table)
     {
@@ -168,6 +171,67 @@ public class LuaGamemodeConfig
         table["properties"] = properties;
 
         return table;
+    }
+
+    public bool IsCompatible(IReadOnlyDictionary<string, object> config)
+    {
+        foreach (var property in Properties)
+        {
+            if (!config.TryGetValue(property.Name, out var value))
+            {
+                return false;
+            }
+
+            switch (property.Type)
+            {
+                case LuaGamemodePropertyType.String:
+                    if (value is not string)
+                    {
+                        return false;
+                    }
+                    break;
+                case LuaGamemodePropertyType.Number:
+                    if (value is not double and not byte and not sbyte and not short and not ushort and not int and not uint and not long and not ulong and not float and not double)
+                    {
+                        return false;
+                    }
+                    break;
+                case LuaGamemodePropertyType.Boolean:
+                    if (value is not bool)
+                    {
+                        return false;
+                    }
+                    break;
+                default:
+                    return false;
+            }
+
+            if (property.Options.Count > 0)
+            {
+                object? luaCompatibleValue;
+                switch (value)
+                {
+                    case string:
+                        luaCompatibleValue = value;
+                        break;
+                    case byte or sbyte or short or ushort or int or uint or long or ulong or float or double:
+                        luaCompatibleValue = Convert.ToDouble(value);
+                        break;
+                    case bool:
+                        luaCompatibleValue = value;
+                        break;
+                    default:
+                        return false;
+                }
+
+                if (!property.Options.Any(option => Equals(option.Value, luaCompatibleValue)))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
 

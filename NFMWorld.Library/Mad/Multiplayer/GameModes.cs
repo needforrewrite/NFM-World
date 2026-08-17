@@ -1,10 +1,10 @@
 ﻿using Lua;
-using NFMWorld.Gameplay.Gamemodes;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Files;
 using NFMWorldLibrary.Gamemodes;
 using NFMWorldLibrary.Gamemodes.Lua;
+using NFMWorldLibrary.Radpack;
 
 namespace NFMWorldLibrary.Multiplayer;
 
@@ -16,7 +16,7 @@ public abstract class BaseGamemodeFactory
     /// Creates a server-side gamemode for this factory's gamemode type.
     /// Returns null if this gamemode has no server-side logic (e.g., singleplayer-only).
     /// </summary>
-    public virtual IServerGamemode? CreateServerGamemode(GamemodeParameters parameters)
+    public virtual IServerGamemode? CreateServerGamemode(GamemodeParameters parameters, IServerGamemodeData data)
         => null;
 
     /// <summary>
@@ -24,6 +24,8 @@ public abstract class BaseGamemodeFactory
     /// Used by server-side gamemode lookup.
     /// </summary>
     public abstract string GamemodeId { get; }
+    
+    public abstract bool HasServerGamemode { get; }
 }
 
 /// <summary>
@@ -33,8 +35,33 @@ public abstract class BaseGamemodeFactory
 /// </summary>
 public class LuaGamemodeFactory(string gamemodeId, LuaTable? config = null) : BaseGamemodeFactory
 {
+    private readonly RadpackLua? _radpack;
+
     public LuaGamemodeFactory(string gamemodeId, IReadOnlyDictionary<string, object> config) : this(gamemodeId, ToLuaTable(config))
     {
+        var radpackPath = $"data/gamemodes/{gamemodeId}.radpack";
+        if (VFS.FileExists(radpackPath))
+        {
+            var radpack = RadpackSerializer.Deserialize(VFS.ReadAllBytes(radpackPath));
+            if (radpack is not RadpackLua lua)
+            {
+                throw new InvalidOperationException("Radpack does not contain a Lua Script Package");
+            }
+            
+            if (!LuaGamemodeConfig.LoadConfig(lua).IsCompatible(config))
+            {
+                throw new InvalidOperationException("Provided gamemode config is not compatible with the gamemode.");
+            }
+
+            _radpack = lua;
+        }
+        else
+        {
+            if (!LuaGamemodeConfig.LoadConfig(gamemodeId).IsCompatible(config))
+            {
+                throw new InvalidOperationException("Provided gamemode config is not compatible with the gamemode.");
+            }
+        }
     }
 
     private static LuaTable ToLuaTable(IReadOnlyDictionary<string, object> dict)
@@ -60,10 +87,19 @@ public class LuaGamemodeFactory(string gamemodeId, LuaTable? config = null) : Ba
     }
 
     public override string GamemodeId => gamemodeId;
+    public override bool HasServerGamemode => true;
 
-    public override IGamemode CreateGameMode(GamemodeParameters parameters, IGamemodeData gamemodeData)
-        => new LuaGamemode(parameters, gamemodeData, gamemodeId, config);
+    public override LuaGamemode CreateGameMode(GamemodeParameters parameters, IGamemodeData gamemodeData)
+    {
+        return _radpack != null
+            ? new LuaGamemode(parameters, gamemodeData, gamemodeId, _radpack, config)
+            : new LuaGamemode(parameters, gamemodeData, gamemodeId, config);
+    }
 
-    public override IServerGamemode? CreateServerGamemode(GamemodeParameters parameters)
-        => new LuaServerGamemode(gamemodeId, gamemodeId, config);
+    public override LuaServerGamemode CreateServerGamemode(GamemodeParameters parameters, IServerGamemodeData data)
+    {
+        return _radpack != null
+            ? new LuaServerGamemode(data, gamemodeId, _radpack, config)
+            : new LuaServerGamemode(data, gamemodeId, config);
+    }
 }

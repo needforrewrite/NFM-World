@@ -6,6 +6,7 @@ using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
 using NFMWorld.Sentry;
+using NFMWorldLibrary.Radpack;
 
 namespace NFMWorldLibrary.Backend;
 
@@ -47,8 +48,30 @@ public partial class BackendStage
         Path = stageName;
         try
         {
-            this.StageLoader = stageLoader ?? new StageLoader(stageName);
-            LoadStageInternal(this.StageLoader);
+            if (stageLoader == null)
+            {
+                var radpackPath = $"data/stages/{stageName}.radpack";
+                if (VFS.FileExists(radpackPath))
+                {
+                    var radpack = RadpackSerializer.Deserialize(VFS.ReadAllBytes(radpackPath));
+                    if (radpack is not RadpackTrack track)
+                    {
+                        throw new InvalidOperationException("Radpack does not contain a Track");
+                    }
+
+                    StageLoader = track.Stage;
+                }
+                else
+                {
+                    StageLoader = new StageLoader(stageName);
+                }
+            }
+            else
+            {
+                StageLoader = stageLoader;
+            }
+
+            LoadStageInternal(StageLoader);
         }
         catch (StageLoadException exception)
         {

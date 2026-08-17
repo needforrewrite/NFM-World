@@ -89,6 +89,7 @@ public static class RadpackSerializer
 [MemoryPackUnion(0, typeof(RadpackTrack))]
 [MemoryPackUnion(1, typeof(RadpackRad3d))]
 [MemoryPackUnion(2, typeof(RadpackTexture))]
+[MemoryPackUnion(3, typeof(RadpackLua))]
 public abstract partial class RadpackAsset
 {
     [MemoryPackOrder(0)] public required RadpackMetadata Metadata { get; set; }
@@ -127,6 +128,19 @@ public partial class RadpackTexture : RadpackAsset
     public RadTextureFormat TextureFormat;
 }
 
+public enum LuaScriptKind : byte
+{
+    Gamemode,
+    Ai
+}
+
+[MemoryPackable(GenerateType.VersionTolerant)]
+public partial class RadpackLua : RadpackAsset
+{
+    [MemoryPackOrder(1)] public required LuaScriptKind Kind;
+    [MemoryPackOrder(2)] public required Dictionary<string, string> Files;
+}
+
 public enum RadTextureFormat : byte
 {
     Png,
@@ -141,5 +155,6 @@ public enum RadpackType : byte
     Texture,
     Campaign,
     Wheel,
-    Max = Wheel
+    LuaScript,
+    Max = LuaScript
 }

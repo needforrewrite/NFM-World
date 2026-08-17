@@ -10,6 +10,9 @@ namespace NFMWorldLibrary.Backend.Gamemodes;
 
 public abstract class BaseClientGamemode : IGamemode
 {
+    /// <summary>Gamemode identifier (e.g., "nfmm/pvp").</summary>
+    public abstract string GamemodeId { get; }
+
     protected internal GamemodeParameters GamemodeParameters { get; }
     protected internal IGamemodeData GamemodeData { get; }
 

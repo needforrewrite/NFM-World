@@ -10,6 +10,7 @@ using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Helpers;
 using NFMWorldLibrary.Util;
 using NFMWorld.LuaSourceGenerator.Generator;
+using NFMWorldLibrary.Radpack;
 
 namespace NFMWorldLibrary.Gamemodes.Lua;
 
@@ -162,28 +163,41 @@ public partial class LuaGamemodeContext(LuaGamemode gamemode)
 /// <c>OnRender</c>, <c>OnKeyPressed(key)</c>, <c>OnKeyReleased(key)</c>,
 /// <c>OnKeyTyped(char)</c>, <c>OnServerEvent(type, table)</c>.
 /// </summary>
-public class LuaGamemode : BaseClientGamemode
+public sealed class LuaGamemode : BaseClientGamemode
 {
-    private readonly string _scriptPath;
     private readonly LuaState _state;
 
     public LuaTable? Config { get; }
 
-    public LuaGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData, string scriptPath, LuaTable? config = null)
+    public override string GamemodeId { get; }
+
+    public LuaGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData, string gamemodeId, LuaTable? config = null)
         : base(gamemodeParameters, gamemodeData)
     {
-        _scriptPath = scriptPath;
-
-        _state = LuaState.Create(LuaNfmwPlatform.Instance);
-        _state.OpenStandardLibraries();
-        LuaVisibleTypeRegistry.RegisterAll(_state);
-        LuaKeysLibrary.Register(_state);
-
-        _state.Environment["GM"] = new LuaGamemodeContext(this);
+        GamemodeId = gamemodeId;
 
         Config = config;
 
-        _state.DoFile($"data/gamemodes/{_scriptPath}/client.lua");
+        _state = LuaHelpers.OpenState();
+
+        _state.Environment["GM"] = new LuaGamemodeContext(this);
+
+        _state.DoFile($"data/gamemodes/{gamemodeId}/client.lua");
+    }
+
+    public LuaGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData, string gamemodeId, RadpackLua radpack, LuaTable? config = null)
+        : base(gamemodeParameters, gamemodeData)
+    {
+        GamemodeId = gamemodeId;
+
+        Config = config;
+
+        _state = LuaHelpers.OpenState();
+
+        _state.Environment["GM"] = new LuaGamemodeContext(this);
+
+        _state.ModuleLoader = new RadpackModuleLoader(radpack.Files);
+        _state.DoString(radpack.Files["client"]);
     }
 
     // ── Lifecycle callbacks ────────────────────────────────────────
@@ -287,7 +301,7 @@ public class LuaGamemode : BaseClientGamemode
         }
         catch (Exception ex)
         {
-            Logging.Error($"[LuaGamemode:{_scriptPath}] {name} failed: {ex.Message}", ex);
+            Logging.Error($"[LuaGamemode:{GamemodeId}] {name} failed: {ex.Message}", ex);
         }
         return [LuaValue.Nil];
     }

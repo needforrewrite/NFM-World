@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+﻿﻿using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using NFMWorldLibrary.Backend;
@@ -223,8 +223,16 @@ public class RaceOrchestrator : IDisposable
         }
 
         // Create server gamemode if a factory exists for this gamemode type
-        var factory = GamemodeRegistry.Get(raceParams.MatchGameplayInfo.Gamemode);
-        if (factory?.CreateServerGamemode(new GamemodeParameters
+        var factory = new LuaGamemodeFactory(raceParams.MatchGameplayInfo.Gamemode, raceParams.MatchGameplayInfo.Parameters);
+        if (factory.HasServerGamemode)
+        {
+            var context = new OrchestratorServerContext(
+                session,
+                raceParams.MatchGameplayInfo.StageName,
+                payload => _transport.BroadcastPacket(new S2C_ServerEvent { Payload = payload }, reliable: true));
+
+            // TODO this is a bit janky and could probably be improved
+            var gm = factory.CreateServerGamemode(new GamemodeParameters
             {
                 Players = raceParams.MatchGameplayInfo.Players
                     .Select(kvp => new ClientSidePlayerParameters
@@ -236,14 +244,11 @@ public class RaceOrchestrator : IDisposable
                         Color = default
                     })
                     .ToList()
-            }) is { } serverGm)
-        {
-            var context = new OrchestratorServerContext(
-                session,
-                raceParams.MatchGameplayInfo.StageName,
-                payload => _transport.BroadcastPacket(new S2C_ServerEvent { Payload = payload }, reliable: true));
-            serverGm.Begin(context);
-            session.ServerGamemode = serverGm;
+            }, context);
+            
+            session.ServerGamemode = gm;
+            
+            gm?.Begin();
         }
 
         _sessions.TryAdd(sessionId, session);

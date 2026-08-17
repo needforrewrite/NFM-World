@@ -1,11 +1,23 @@
 ﻿using System.Runtime.CompilerServices;
 using Lua;
+using Lua.Standard;
+using NFMWorld.LuaSourceGenerator.Generator;
 using NFMWorldLibrary.FixedMath;
 
 namespace NFMWorldLibrary.Util;
 
 public static class LuaHelpers
 {
+    public static LuaState OpenState()
+    {
+        var state = LuaState.Create(LuaNfmwPlatform.Instance);
+        state.OpenStandardLibraries();
+        LuaVisibleTypeRegistry.RegisterAll(state);
+        LuaKeysLibrary.Register(state);
+
+        return state;
+    }
+    
     public static LuaValue ToLuaValue<T>(T value)
     {
         if (value is null) return LuaValue.Nil;

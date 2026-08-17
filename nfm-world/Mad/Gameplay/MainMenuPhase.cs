@@ -106,7 +106,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             }
         ];
         var inRace = new RacePhase(GraphicsDevice, "nfm2/9_majestic", factory, players,
-            LocalRaceHost.Create("nfm2/9_majestic", factory, players));
+            LocalRaceHost.Create("nfm2/9_majestic", factory, new GamemodeParameters { Players = players }));
         inRace.Exited += (sender, args) =>
         {
             GameSparker.PopGroup(PhaseManager.Groups.Event);
@@ -146,7 +146,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
                     }
                 ];
                 var inRace = new RacePhase(GraphicsDevice, stageName, factory, players,
-                    LocalRaceHost.Create(stageName, factory, players));
+                    LocalRaceHost.Create(stageName, factory, new GamemodeParameters { Players = players }));
                 inRace.Exited += (sender, args) =>
                 {
                     GameSparker.PopGroup(PhaseManager.Groups.Event);

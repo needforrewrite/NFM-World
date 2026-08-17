@@ -1,6 +1,5 @@
 ﻿using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
-using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary.Backend;
 
@@ -8,37 +7,66 @@ public class BackendGamemodeData : IGamemodeData
 {
     public required BackendStage CurrentStage { get; init; }
     public required RaceState RaceState { get; init; }
-    public IClientCallbacks ClientCallbacks => ClientServer.AccidentallyCalledClientMethodOnServer<IClientCallbacks>();
+
+    /// <summary>
+    /// Headless client callbacks. Rendering/visual hooks are no-ops in the
+    /// backend context, so gamemodes can run without a live client phase.
+    /// </summary>
+    public IClientCallbacks ClientCallbacks { get; init; } = NoOpClientCallbacks.Instance;
+
+    /// <summary>
+    /// Sink for <see cref="SendServerEvent"/>. Wired to the in-process local
+    /// host during singleplayer (single-path rework).
+    /// </summary>
+    public Action<ReadOnlyMemory<byte>>? ServerEventSink { get; init; }
+
+    /// <summary>
+    /// Sink for <see cref="UpdatePlayers"/>. Wired when the server drives the
+    /// player roster (Players as the single source of truth).
+    /// </summary>
+    public Action<IReadOnlyList<ClientSidePlayer>>? PlayerUpdateSink { get; init; }
 
     public void SendServerEvent(ReadOnlySpan<byte> payload)
-    {
-        // Wired up when the singleplayer local host exists (single-path rework).
-    }
+        => ServerEventSink?.Invoke(payload.ToArray());
 
     public void UpdatePlayers(IReadOnlyList<ClientSidePlayer> players)
-    {
-        // Wired up when Players becomes the single source of truth.
-    }
+        => PlayerUpdateSink?.Invoke(players);
 
     public static BackendGamemodeData Create(string stage)
     {
-        var backendStage = new BackendStage(stage);
-
         return new BackendGamemodeData
         {
-            CurrentStage = backendStage,
+            CurrentStage = new BackendStage(stage),
             RaceState = RaceState.InProgress
         };
     }
 
-    public static IGamemodeData Create(string stage, StageLoader stageData)
+    public static BackendGamemodeData Create(string stage, StageLoader stageData)
     {
-        var backendStage = new BackendStage(stage, stageData);
-
         return new BackendGamemodeData
         {
-            CurrentStage = backendStage,
+            CurrentStage = new BackendStage(stage, stageData),
             RaceState = RaceState.InProgress
         };
+    }
+
+    private sealed class NoOpClientCallbacks : IClientCallbacks
+    {
+        public static readonly NoOpClientCallbacks Instance = new();
+
+        public void ResetCheckpointGlow() { }
+        public void UpdateCheckpointGlow(ushort currentCheckpoint, bool isFinish) { }
+        public IClientCarCallbacks GetClientCarCallbacks(BackendCar car) => NoOpClientCarCallbacks.Instance;
+    }
+
+    private sealed class NoOpClientCarCallbacks : IClientCarCallbacks
+    {
+        public static readonly NoOpClientCarCallbacks Instance = new();
+
+        public bool CastsShadow { get; set; }
+        public bool? GetsShadowed { get; set; }
+        public float? AlphaOverride { get; set; }
+        public bool? Glow { get; set; }
+        public bool? Finish { get; set; }
     }
 }

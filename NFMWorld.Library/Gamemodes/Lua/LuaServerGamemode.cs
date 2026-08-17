@@ -7,6 +7,7 @@ using NFMWorldLibrary.Util;
 using NFMWorld.LuaSourceGenerator.Generator;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Multiplayer.Packets.C2S;
+using NFMWorldLibrary.Radpack;
 
 namespace NFMWorldLibrary.Gamemodes.Lua;
 
@@ -105,57 +106,67 @@ public partial class LuaServerGamemodeContext(LuaServerGamemode gamemode, IServe
 /// Lifecycle callbacks: <c>OnBegin</c>, <c>OnStartRace</c>, <c>OnEnd</c>,
 /// <c>OnGameTick</c>, and <c>OnClientEvent(playerId, type, table)</c>.
 /// </summary>
-public class LuaServerGamemode : IServerGamemode
+public sealed class LuaServerGamemode : BaseServerGamemode
 {
-    private readonly string _scriptPath;
     private LuaState? _state;
     private IServerGamemodeData? _data;
     internal GameStateSnapshot? _snapshot;
     public LuaTable? Config { get; }
 
-    public string GamemodeId { get; }
+    public override string GamemodeId { get; }
 
-    public LuaServerGamemode(string gamemodeId, string scriptPath, LuaTable? config = null)
-    {
-        GamemodeId = gamemodeId;
-        _scriptPath = scriptPath;
-        Config = config;
-    }
-
-    public void Begin(IServerGamemodeData data)
+    public LuaServerGamemode(IServerGamemodeData data, string gamemodeId, LuaTable? config = null)
     {
         _data = data;
-        _snapshot = null;
-
-        _state = LuaState.Create(LuaNfmwPlatform.Instance);
-        _state.OpenStandardLibraries();
-        LuaVisibleTypeRegistry.RegisterAll(_state);
+        GamemodeId = gamemodeId;
+        Config = config;
+        
+        _state = LuaHelpers.OpenState();
 
         _state.Environment["SGM"] = new LuaServerGamemodeContext(this, data);
 
-        _state.DoFile($"data/gamemodes/{_scriptPath}/server.lua");
+        _state.DoFile($"data/gamemodes/{gamemodeId}/server.lua");
+    }
+
+    public LuaServerGamemode(IServerGamemodeData data, string gamemodeId, RadpackLua radpack, LuaTable? config = null)
+    {
+        _data = data;
+        GamemodeId = gamemodeId;
+        Config = config;
+        
+        _state = LuaHelpers.OpenState();
+
+        _state.Environment["SGM"] = new LuaServerGamemodeContext(this, data);
+
+        _state.ModuleLoader = new RadpackModuleLoader(radpack.Files);
+        _state.DoString(radpack.Files["server"]);
+    }
+
+    public override void Begin()
+    {
+        _snapshot = null;
         Call("OnBegin");
     }
 
-    public void StartRace() => Call("OnStartRace");
+    public override void StartRace() => Call("OnStartRace");
 
-    public void End()
+    public override void End()
     {
         Call("OnEnd");
         _state?.Dispose();
         _state = null;
     }
 
-    public void GameTick() => Call("OnGameTick");
+    public override void GameTick() => Call("OnGameTick");
 
-    public void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
+    public override void OnClientEvent(Guid clientId, ReadOnlySpan<byte> payload)
     {
         var envelope = MemoryPackSerializer.Deserialize<LuaEventEnvelope>(payload);
 
         Call("OnClientEvent", clientId.ToString(), envelope.Type, envelope.Payload);
     }
 
-    public GameStateSnapshot? GetStateSnapshot() => _snapshot;
+    public override GameStateSnapshot? GetStateSnapshot() => _snapshot;
 
     private void RegisterFunction(string name, Func<LuaFunctionExecutionContext, CancellationToken, ValueTask<int>> fn)
         => _state!.Environment[name] = new LuaFunction(name, fn);
@@ -176,7 +187,7 @@ public class LuaServerGamemode : IServerGamemode
         }
         catch (Exception ex)
         {
-            Logging.Error($"[LuaGamemode:{_scriptPath}] {name} failed: {ex.Message}", ex);
+            Logging.Error($"[LuaServerGamemode:{GamemodeId}] {name} failed: {ex.Message}", ex);
         }
         return [LuaValue.Nil];
     }

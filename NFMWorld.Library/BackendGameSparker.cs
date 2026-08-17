@@ -1,5 +1,4 @@
-﻿
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using NFMWorld.CrashReporter;
@@ -7,6 +6,7 @@ using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 using NFMWorld.Sentry;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Radpack;
 using NFMWorldLibrary.Util;
 
 namespace NFMWorldLibrary;
@@ -304,6 +304,29 @@ public static class BackendGameSparker
         {
             return dynRad;
         }
+        
+        var radpackPath = $"data/models/{name}.radpack";
+        if (VFS.FileExists(radpackPath))
+        {
+            try
+            {
+                total += dynamic_models.Count;
+                var radpack = RadpackSerializer.Deserialize(VFS.ReadAllBytes(radpackPath));
+                if (radpack is not RadpackRad3d rad)
+                {
+                    throw new InvalidOperationException("Radpack does not contain a Rad3d Model");
+                }
+                return dynamic_models[name] = (total, rad.Rad);
+            }
+            catch (Exception ex)
+            {
+                SentrySdk.CaptureEvent(new SentryEvent(ex)
+                {
+                    Message = $"Error loading dynamic model '{name}'"
+                });
+                Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
+            }
+        }
 
         var relativePath = $"data/models/{name}.rad";
         if (VFS.FileExists(relativePath))
@@ -344,6 +367,29 @@ public static class BackendGameSparker
                 }
 
                 total++;
+            }
+        }
+
+        var radpackPath = $"data/models/{name}.radpack";
+        if (VFS.FileExists(radpackPath))
+        {
+            try
+            {
+                total += dynamic_models.Count;
+                var radpack = RadpackSerializer.Deserialize(VFS.ReadAllBytes(radpackPath));
+                if (radpack is not RadpackRad3d rad)
+                {
+                    throw new InvalidOperationException("Radpack does not contain a Rad3d Model");
+                }
+                return dynamic_models[name] = (total, rad.Rad);
+            }
+            catch (Exception ex)
+            {
+                SentrySdk.CaptureEvent(new SentryEvent(ex)
+                {
+                    Message = $"Error loading dynamic model '{name}'"
+                });
+                Logging.Info($"Error loading dynamic model '{name}': {ex.Message}\n{ex.StackTrace}");
             }
         }
 
