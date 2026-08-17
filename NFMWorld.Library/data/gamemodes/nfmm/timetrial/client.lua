@@ -119,6 +119,7 @@ function OnBegin()
     GM.hudState.totalLaps = GM.stage.nlaps
     GM.hudState.position = 1
     GM.hudState.totalRacers = 1
+    GM.hudState.stateText = nil
 end
 
 function OnReset()
