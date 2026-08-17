@@ -84,11 +84,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallback
         host.GameFinished += results =>
         {
             GamemodeInstance?.SetServerResults(results);
+            RaceResults = results;
             RaceState = RaceState.Finished;
         };
-
-        // Route gamemode → host events through the host, not the transport.
-        GamemodeInstance?.SetEventSender(_host.SendServerEvent);
 
         // Singleplayer has no loading sync — start immediately.
         if (host is LocalRaceHost localHost)
@@ -98,7 +96,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallback
     /// <summary>
     /// The local client player's car, or null if the gamemode hasn't assigned one yet.
     /// </summary>
-    public IInGameCar? ClientCar => (GamemodeInstance as BaseClientGamemode)?.ClientPlayer.Car;
+    public BackendCar? ClientCar => (GamemodeInstance as BaseClientGamemode)?.ClientPlayer.Car;
 
     public RaceState RaceState
     {
@@ -110,7 +108,7 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeData, IClientCallback
         }
     } = RaceState.WaitingToStart;
 
-    public RaceResults? RaceResults => GamemodeInstance?.GetResults();
+    public RaceResults? RaceResults { get; private set; }
 
     IClientCallbacks IGamemodeData.ClientCallbacks => this;
 

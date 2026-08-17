@@ -5,6 +5,11 @@ namespace NFMWorldLibrary.Util;
 [LuaShimType("{ [integer]: T }")]
 public class LuaUnlimitedArray<T>() : LuaArray<T>(new UnlimitedArray<T>())
 {
+    /// <inheritdoc cref="IList{T}.Insert"/>
+    public void Insert(int index, T item) => Value.Insert(index, item);
+    /// <inheritdoc cref="IList{T}.RemoveAt"/>
+    public void RemoveAt(int index) => Value.RemoveAt(index);
+
     /// <inheritdoc cref="ICollection{T}.Add"/>
     public void Add(T item) => Value.Add(item);
     /// <inheritdoc cref="ICollection{T}.Clear"/>

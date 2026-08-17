@@ -44,25 +44,6 @@ public static class DevConsoleCommands
         console.RegisterCommand("waste", WastePlayer);
         console.RegisterCommand("connect", Connect);
         
-        console.RegisterCommand("replay_trial", (c, args) =>
-        {
-            var factory = new TimeTrialPreviewGamemodeFactory(SavedTimeTrial.Load(args[0], args[1])!);
-            ClientSidePlayerParameters[] players = [
-                new ClientSidePlayerParameters
-                {
-                    CarName = args[0],
-                    Color = new Color3(255, 0, 0),
-                    PlayerName = "Player",
-                    IsBot = false,
-                    IsClientPlayer = true
-                }
-            ];
-            var inRace = new RacePhase(GameSparker.GraphicsDevice, args[1], factory, players,
-                LocalRaceHost.Create(args[1], factory, players));
-            GameSparker.PopToRoot();
-            GameSparker.PushPhase(inRace, PhaseManager.Groups.Event);
-        });
-            
         // rendering
         console.RegisterCommand("r_frametrace", SetFrameTrace);
         console.RegisterCommand("r_blackpoint", SetBlackPoint);
@@ -74,34 +55,6 @@ public static class DevConsoleCommands
         });
             
         // gamemode
-        console.RegisterCommand("go_tt", (c, args) =>
-        {
-            if (GameSparker.CurrentPhase is RacePhase inRacePhase)
-            {
-                var factory = new TimeTrialGamemodeFactory();
-                var inRace = new RacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName!, factory, inRacePhase.Players,
-                    LocalRaceHost.Create(inRacePhase.StageName!, factory, inRacePhase.Players));
-                inRace.Exited += (sender, args) =>
-                {
-                    GameSparker.PopGroup(PhaseManager.Groups.Event);
-                };
-                GameSparker.SetPhase(inRace);
-            }
-        });
-        console.RegisterCommand("go_race", (c, args) =>
-        {
-            if (GameSparker.CurrentPhase is RacePhase inRacePhase)
-            {
-                var factory = new PvpGamemodeFactory(PvpConstraint.Racing);
-                var inRace = new RacePhase(GameSparker.GraphicsDevice, inRacePhase.StageName!, factory, inRacePhase.Players,
-                    LocalRaceHost.Create(inRacePhase.StageName!, factory, inRacePhase.Players));
-                inRace.Exited += (sender, args) =>
-                {
-                    GameSparker.PopGroup(PhaseManager.Groups.Event);
-                };
-                GameSparker.SetPhase(inRace);
-            }
-        });
         console.RegisterCommand("go_lua", (c, args) =>
         {
             if (args.Length < 1)

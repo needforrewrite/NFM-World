@@ -50,7 +50,7 @@ local sequence = nil
 
 local targetFixRoadStartNode = nil
 local bouncing = false
-local _targetNode = 0
+local _targetNode = 1
 
 -- Obstacle avoidance state
 local _stuckCounter = 0
@@ -163,20 +163,23 @@ end
 ---@param mad CarPhysics
 ---@param random DeterministicRandom
 local function findDrivingTarget(car, rubberbandingFactor, mad, random)
+    -- stage.nodes / stage.checkpoints are 1-based in Lua, but car.lastCheckpointNode
+    -- and car.currentCheckpoint are 0-based C# values, so convert at the boundary.
     local numNodes = #AI.stage.nodes
     local targetNodeIndex = _targetNode
 
     -- Ensure we're targeting at least the next checkpoint
-    if targetNodeIndex < car.lastCheckpointNode + 1 then
-        targetNodeIndex = car.lastCheckpointNode + 1
-        if targetNodeIndex >= numNodes then
-            targetNodeIndex = 0
+    local lastCheckpointNode = car.lastCheckpointNode + 1
+    if targetNodeIndex < lastCheckpointNode + 1 then
+        targetNodeIndex = lastCheckpointNode + 1
+        if targetNodeIndex > numNodes then
+            targetNodeIndex = 1
         end
     end
 
-    -- Find final checkpoint node
+    -- Find final checkpoint node (last checkpoint in the 1-based list)
     local numCheckpoints = #AI.stage.checkpoints
-    local finalCheckpoint = AI.stage.checkpoints[numCheckpoints - 1]
+    local finalCheckpoint = AI.stage.checkpoints[numCheckpoints]
     local finalCheckpointNodeIndex = 0
     for i = 1, numNodes do
         if AI.stage.nodes[i] == finalCheckpoint then
@@ -187,19 +190,18 @@ local function findDrivingTarget(car, rubberbandingFactor, mad, random)
 
     -- Skip fix hoop nodes after final checkpoint
     if targetNodeIndex > finalCheckpointNodeIndex then
-        targetNodeIndex = 0
+        targetNodeIndex = 1
     end
 
     -- Special case: new lap starting
     if targetNodeIndex == finalCheckpointNodeIndex and car.lastCheckpointNode == -1 then
-        targetNodeIndex = 0
+        targetNodeIndex = 1
     end
 
     -- Check if we're close to any node ahead (natural skip-ahead for ramps/shortcuts)
-    local nextCheckpointIndex = car.currentCheckpoint + 1
-    local nextCheckpoint = AI.stage.checkpoints[nextCheckpointIndex]
+    local nextCheckpoint = AI.stage.checkpoints[car.currentCheckpoint + 1]
     local nextCheckpointNodeIndex = 0
-    for i = 0, numNodes - 1 do
+    for i = 1, numNodes do
         if AI.stage.nodes[i] == nextCheckpoint then
             nextCheckpointNodeIndex = i
             break
@@ -208,7 +210,7 @@ local function findDrivingTarget(car, rubberbandingFactor, mad, random)
 
     for i = targetNodeIndex + 1, nextCheckpointNodeIndex do
         local nodeIndex = i
-        if nodeIndex >= numNodes then
+        if nodeIndex > numNodes then
             nodeIndex = nodeIndex - numNodes
         end
 
@@ -237,8 +239,8 @@ local function findDrivingTarget(car, rubberbandingFactor, mad, random)
             kind ~= AiNodeKind.ramp and kind ~= AiNodeKind.halfpipe and
             kind ~= AiNodeKind.auto then
                 targetNodeIndex = targetNodeIndex + 1
-                if targetNodeIndex >= numNodes then
-                    targetNodeIndex = 0
+                if targetNodeIndex > numNodes then
+                    targetNodeIndex = 1
                 end
             else
                 local distanceToTargetSq = pyo(car.position.x, targetNode.position.x,
@@ -248,8 +250,8 @@ local function findDrivingTarget(car, rubberbandingFactor, mad, random)
 
                 if distanceToTargetSq < threshold then
                     targetNodeIndex = targetNodeIndex + 1
-                    if targetNodeIndex >= numNodes then
-                        targetNodeIndex = 0
+                    if targetNodeIndex > numNodes then
+                        targetNodeIndex = 1
                     end
                 else
                     break
@@ -276,15 +278,15 @@ local function findDrivingTarget(car, rubberbandingFactor, mad, random)
                 end
 
                 targetNodeIndex = targetNodeIndex + 1
-                if targetNodeIndex >= numNodes then
-                    targetNodeIndex = 0
+                if targetNodeIndex > numNodes then
+                    targetNodeIndex = 1
                 end
             end
         end
 
         -- Check for sequence start
         if AI.stage.nodes[targetNodeIndex].nodeKind == AiNodeKind.sequenceStart then
-            for i = targetNodeIndex + 1, numNodes - 1 do
+            for i = targetNodeIndex + 1, numNodes do
                 if AI.stage.nodes[i].nodeKind == AiNodeKind.sequenceEnd then
                     sequence = {
                         startNode = targetNodeIndex,
@@ -304,7 +306,7 @@ local function findDrivingTarget(car, rubberbandingFactor, mad, random)
         if wantFix then
             -- Find all fix road nodes
             local fixRoadNodes = {}
-            for i = 0, numNodes - 1 do
+            for i = 1, numNodes do
                 local kind = AI.stage.nodes[i].nodeKind
                 if kind == AiNodeKind.fixRoadStart or kind == AiNodeKind.fixRoadEnd then
                     table.insert(fixRoadNodes, i)
@@ -312,14 +314,14 @@ local function findDrivingTarget(car, rubberbandingFactor, mad, random)
             end
 
             if #fixRoadNodes > 0 then
-                local selectedIndex = random:nextBetween(0, #fixRoadNodes - 1)
+                local selectedIndex = random:nextBetween(0, #fixRoadNodes)
                 targetFixRoadStartNode = fixRoadNodes[selectedIndex + 1]
                 targetNodeIndex = targetFixRoadStartNode
 
                 local kind = AI.stage.nodes[targetNodeIndex].nodeKind
                 if kind == AiNodeKind.fixRoadStart then
                     -- Find corresponding FixRoadEnd
-                    for i = targetNodeIndex + 1, numNodes - 1 do
+                    for i = targetNodeIndex + 1, numNodes do
                         if AI.stage.nodes[i].nodeKind == AiNodeKind.fixRoadEnd then
                             sequence = {
                                 startNode = targetNodeIndex,
@@ -332,7 +334,7 @@ local function findDrivingTarget(car, rubberbandingFactor, mad, random)
                     end
                 elseif kind == AiNodeKind.fixRoadEnd then
                     -- Find corresponding FixRoadStart (traverse backwards)
-                    for i = targetNodeIndex - 1, 0, -1 do
+                    for i = targetNodeIndex - 1, 1, -1 do
                         if AI.stage.nodes[i].nodeKind == AiNodeKind.fixRoadStart then
                             sequence = {
                                 startNode = i,

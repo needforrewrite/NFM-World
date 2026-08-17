@@ -8,6 +8,9 @@ local clientTick = 0
 local lastCheckpoint = -1
 local lastLap = 0
 
+---@type { constraint: "racing" | "wasting" | "both" }
+local config = GM.config
+
 local function setupCars()
     for i = 1, #GM.players do
         local car = GM:createCar(i, fixed64(-500 + (400 * i)), fixed64(0))

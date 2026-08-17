@@ -3,7 +3,7 @@ using MemoryPack;
 namespace NFMWorldLibrary.Gamemodes;
 
 /// <summary>
-/// Results of a completed race. Returned by <see cref="IGamemode.GetResults"/>
+/// Results of a completed race. Returned by <see cref="IServerGamemode.GetStateSnapshot"/>
 /// and delivered by the race host on finish.
 /// </summary>
 [MemoryPackable]
@@ -39,8 +39,4 @@ public readonly partial struct RaceStanding
     /// <summary>Total race time, or null if the player did not finish.</summary>
     [MemoryPackOrder(2)]
     public TimeSpan? FinishTime { get; init; }
-
-    /// <summary>True if this standing belongs to the local client player.</summary>
-    [MemoryPackOrder(3)]
-    public bool IsClientPlayer { get; init; }
 }

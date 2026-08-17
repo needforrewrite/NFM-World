@@ -36,8 +36,8 @@ function OnReset()
     setupPlayer()
 
     if GM.timeTrial:hasGhost() then
-        local ghostIndex = GM:addGhostPlayer(GM.players[1])
-        GM.players[ghostIndex].car.currentLap = 0
+        local ghost = GM:addGhostPlayer(GM.players[1])
+        ghost.car.currentLap = 0
     end
 end
 
@@ -70,7 +70,7 @@ function OnGameTick()
             GM:updateHudAndSounds(car)
             GM.hudState.lap = car.currentLap + 1
             GM.client:updateCheckpointGlow(car.currentCheckpoint,
-                car.currentCheckpoint == #GM.stage.checkpoints - 1 and car.currentLap == GM.stage.nlaps - 1)
+            car.currentCheckpoint == #GM.stage.checkpoints - 1 and car.currentLap == GM.stage.nlaps - 1)
 
             GM.timeTrial:record(car)
 
@@ -85,6 +85,7 @@ function OnGameTick()
             if car.currentLap >= GM.stage.nlaps then
                 state = "finished"
                 car.carPhysics.halted = true
+                GM:sendEvent('finished', {})
             end
         end
 
@@ -104,5 +105,7 @@ end
 
 ---@param key integer
 function OnKeyPressed(key)
-    -- Escape etc. handled by the race phase.
+    if key == Key.R then
+        OnReset()
+    end
 end

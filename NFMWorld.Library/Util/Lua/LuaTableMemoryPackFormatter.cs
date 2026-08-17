@@ -1,7 +1,4 @@
 ﻿using System.Buffers;
-using System.Collections;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using Lua;
 using MemoryPack;
 using NFMWorldLibrary.FixedMath;
@@ -12,66 +9,49 @@ public class LuaValueMemoryPackFormatterAttribute : MemoryPackCustomFormatterAtt
 {
     public class Formatter : IMemoryPackFormatter<LuaValue>
     {
-        private static readonly IWrappedLuaValue.IWrappedLuaValueFormatter TheFormatter = new();
-
+        private const ushort TagNil = 0;
+        private const ushort TagFalse = 1;
+        private const ushort TagTrue = 2;
+        private const ushort TagStr = 3;
+        private const ushort TagNum = 4;
+        private const ushort TagTab = 5;
+        private const ushort TagFix64 = 6;
+        private const ushort TagFix64V = 7;
+        private const ushort TagFix64A = 8;
+        private const ushort TagFix64E = 9;
+        
         public void Serialize<TBufferWriter>(ref MemoryPackWriter<TBufferWriter> writer, scoped ref LuaValue value) where TBufferWriter : IBufferWriter<byte>
         {
-            var iWrappedLuaValue = ToIWrappedLuaValue(value);
-            TheFormatter.Serialize(ref writer, ref iWrappedLuaValue);
+            WriteLuaValue(ref writer, ref value);
         }
 
-        public void Deserialize(ref MemoryPackReader reader, scoped ref LuaValue value)
-        {
-            IWrappedLuaValue? result = null;
-            TheFormatter.Deserialize(ref reader, ref result);
-            value = result != null ? FromIWrappedLuaValue(result) : LuaValue.Nil;
-        }
-
-        private static LuaValue FromIWrappedLuaValue(IWrappedLuaValue value)
-        {
-            switch (value)
-            {
-                case WrappedLuaBooleanValue wrappedLuaBooleanValue:
-                    return new(wrappedLuaBooleanValue.Value);
-                case WrappedLuaFixed64AngleValue wrappedLuaFixed64AngleValue:
-                    return new(wrappedLuaFixed64AngleValue.Value);
-                case WrappedLuaFixed64EulerValue wrappedLuaFixed64EulerValue:
-                    return new(wrappedLuaFixed64EulerValue.Value);
-                case WrappedLuaFixed64Value wrappedLuaFixed64Value:
-                    return new(wrappedLuaFixed64Value.Value);
-                case WrappedLuaFixed64Vector3Value wrappedLuaFixed64Vector3Value:
-                    return new(wrappedLuaFixed64Vector3Value.Value);
-                case WrappedLuaNilValue:
-                    return LuaValue.Nil;
-                case WrappedLuaNumberValue wrappedLuaNumberValue:
-                    return new(wrappedLuaNumberValue.Value);
-                case WrappedLuaStringValue wrappedLuaStringValue:
-                    return new(wrappedLuaStringValue.Value);
-                case WrappedLuaTableValue wrappedLuaTableValue:
-                    var luaTable = new LuaTable();
-                    foreach (var (k, v) in wrappedLuaTableValue)
-                    {
-                        luaTable[FromIWrappedLuaValue(k)] = FromIWrappedLuaValue(v);
-                    }
-
-                    return luaTable;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(value));
-            }
-        }
-
-        private static IWrappedLuaValue ToIWrappedLuaValue(LuaValue value)
+        private static void WriteLuaValue<TBufferWriter>(ref MemoryPackWriter<TBufferWriter> writer, scoped ref readonly LuaValue value) where TBufferWriter : IBufferWriter<byte>
         {
             switch (value.Type)
             {
                 case LuaValueType.Nil:
-                    return new WrappedLuaNilValue();
+                    writer.WriteUnionHeader(TagNil);
+                    break;
                 case LuaValueType.Boolean:
-                    return new WrappedLuaBooleanValue { Value = value.ToBoolean() };
+                    if (value.ToBoolean())
+                    {
+                        writer.WriteUnionHeader(TagTrue);
+                    }
+                    else
+                    {
+                        writer.WriteUnionHeader(TagFalse);
+                    }
+                    break;
                 case LuaValueType.String:
-                    return new WrappedLuaStringValue { Value = value.ToString() };
+                    var str = value.ToString();
+                    writer.WriteUnionHeader(TagStr);
+                    writer.WriteString(str);
+                    break;
                 case LuaValueType.Number:
-                    return new WrappedLuaNumberValue { Value = value.Read<double>() };
+                    var num = value.Read<double>();
+                    writer.WriteUnionHeader(TagNum);
+                    writer.WriteUnmanaged(num);
+                    break;
                 case LuaValueType.Function:
                     throw new InvalidOperationException("Type function not serializable!");
                 case LuaValueType.Thread:
@@ -81,128 +61,107 @@ public class LuaValueMemoryPackFormatterAttribute : MemoryPackCustomFormatterAtt
                 case LuaValueType.UserData:
                     throw new InvalidOperationException("Type userdata not serializable!");
                 case LuaValueType.Table:
-                    var dict = new Dictionary<IWrappedLuaValue, IWrappedLuaValue>();
-                    foreach (var (k, v) in value.Read<LuaTable>())
+                    var t = value.Read<LuaTable>();
+                    var len = t.Count();
+                    writer.WriteUnionHeader(TagTab);
+                    writer.WriteCollectionHeader(len);
+                    foreach (var (k, v) in t)
                     {
-                        dict[ToIWrappedLuaValue(k)] = ToIWrappedLuaValue(v);
+                        WriteLuaValue(ref writer, in k);
+                        WriteLuaValue(ref writer, in v);
                     }
-                    return new WrappedLuaTableValue(dict);
+                    break;
                 case LuaValueType.Fixed64:
-                    return new WrappedLuaFixed64Value { Value = value.Read<fix64>() };
+                    var fixed64 = value.Read<fix64>();
+                    writer.WriteUnionHeader(TagFix64);
+                    writer.WriteUnmanaged(fixed64);
+                    break;
                 case LuaValueType.Fixed64Vector3:
-                    return new WrappedLuaFixed64Vector3Value { Value = value.Read<f64Vector3>() };
+                    var fixed64Vec3 = value.Read<f64Vector3>();
+                    writer.WriteUnionHeader(TagFix64V);
+                    writer.WriteUnmanaged(fixed64Vec3);
+                    break;
                 case LuaValueType.Fixed64Angle:
-                    return new WrappedLuaFixed64AngleValue { Value = value.Read<f64AngleSingle>() };
+                    var fixed64Ang = value.Read<f64AngleSingle>();
+                    writer.WriteUnionHeader(TagFix64A);
+                    writer.WriteUnmanaged(fixed64Ang);
+                    break;
                 case LuaValueType.Fixed64Euler:
-                    return new WrappedLuaFixed64EulerValue { Value = value.Read<f64Euler>() };
+                    var fixed64Eul = value.Read<f64Euler>();
+                    writer.WriteUnionHeader(TagFix64E);
+                    writer.WriteUnmanaged(fixed64Eul);
+                    break;
                 case LuaValueType.UserData2:
                     throw new InvalidOperationException("Type userdata not serializable!");
                 default:
                     throw new InvalidOperationException("Type not serializable!");
             }
         }
+
+        public void Deserialize(ref MemoryPackReader reader, scoped ref LuaValue value)
+        {
+            ReadLuaValue(ref reader, ref value);
+        }
+
+        private static void ReadLuaValue(ref MemoryPackReader reader, scoped ref LuaValue value)
+        {
+            if (!reader.TryReadUnionHeader(out var tag))
+                throw new InvalidOperationException("Type not deserializable!");
+
+            switch (tag)
+            {
+                case TagNil:
+                    value = LuaValue.Nil;
+                    break;
+                case TagFalse:
+                    value = new(false);
+                    break;
+                case TagTrue:
+                    value = new(true);
+                    break;
+                case TagStr:
+                    value = reader.ReadString();
+                    break;
+                case TagNum:
+                    value = reader.ReadUnmanaged<double>();
+                    break;
+                case TagTab:
+                    if (!reader.TryReadCollectionHeader(out var len))
+                    {
+                        throw new InvalidOperationException("Type not deserializable!");
+                    }
+
+                    var t = new LuaTable();
+
+                    for (var i = 0; i < len; i++)
+                    {
+                        LuaValue k = default;
+                        LuaValue v = default;
+                        ReadLuaValue(ref reader, ref k);
+                        ReadLuaValue(ref reader, ref v);
+
+                        t[k] = v;
+                    }
+                    
+                    value = t;
+                    break;
+                case TagFix64:
+                    value = reader.ReadUnmanaged<fix64>();
+                    break;
+                case TagFix64V:
+                    value = reader.ReadUnmanaged<f64Vector3>();
+                    break;
+                case TagFix64A:
+                    value = reader.ReadUnmanaged<f64AngleSingle>();
+                    break;
+                case TagFix64E:
+                    value = reader.ReadUnmanaged<f64Euler>();
+                    break;
+                default:
+                    throw new InvalidOperationException("Type not deserializable!");
+            }
+        }
     }
 
     public override Formatter GetFormatter() => new();
-}
-
-[MemoryPackable]
-[MemoryPackUnion(0, typeof(WrappedLuaNilValue))]
-[MemoryPackUnion(1, typeof(WrappedLuaBooleanValue))]
-[MemoryPackUnion(2, typeof(WrappedLuaStringValue))]
-[MemoryPackUnion(3, typeof(WrappedLuaNumberValue))]
-[MemoryPackUnion(4, typeof(WrappedLuaFixed64Value))]
-[MemoryPackUnion(5, typeof(WrappedLuaFixed64Vector3Value))]
-[MemoryPackUnion(6, typeof(WrappedLuaFixed64AngleValue))]
-[MemoryPackUnion(7, typeof(WrappedLuaFixed64EulerValue))]
-[MemoryPackUnion(8, typeof(WrappedLuaTableValue))]
-public partial interface IWrappedLuaValue;
-
-[MemoryPackable] public partial class WrappedLuaNilValue : IWrappedLuaValue;
-[MemoryPackable] public partial class WrappedLuaBooleanValue : IWrappedLuaValue { public bool Value { get; set; } }
-[MemoryPackable] public partial class WrappedLuaStringValue : IWrappedLuaValue { public required string Value { get; set; } }
-[MemoryPackable] public partial class WrappedLuaNumberValue : IWrappedLuaValue { public double Value { get; set; } }
-
-// Added NFMW types
-[MemoryPackable] public partial class WrappedLuaFixed64Value : IWrappedLuaValue { public fix64 Value { get; set; } }
-[MemoryPackable] public partial class WrappedLuaFixed64Vector3Value : IWrappedLuaValue { public f64Vector3 Value { get; set; } }
-[MemoryPackable] public partial class WrappedLuaFixed64AngleValue : IWrappedLuaValue { public f64AngleSingle Value { get; set; } }
-[MemoryPackable] public partial class WrappedLuaFixed64EulerValue : IWrappedLuaValue { public f64Euler Value { get; set; } }
-
-[MemoryPackable(GenerateType.Collection)]
-public partial class WrappedLuaTableValue(IDictionary<IWrappedLuaValue, IWrappedLuaValue> dictionaryImplementation)
-    : IWrappedLuaValue, IDictionary<IWrappedLuaValue, IWrappedLuaValue>
-{
-    public WrappedLuaTableValue() : this(new Dictionary<IWrappedLuaValue, IWrappedLuaValue>())
-    {
-    }
-
-    public IEnumerator<KeyValuePair<IWrappedLuaValue, IWrappedLuaValue>> GetEnumerator()
-    {
-        return dictionaryImplementation.GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return ((IEnumerable)dictionaryImplementation).GetEnumerator();
-    }
-
-    public void Add(KeyValuePair<IWrappedLuaValue, IWrappedLuaValue> item)
-    {
-        dictionaryImplementation.Add(item);
-    }
-
-    public void Clear()
-    {
-        dictionaryImplementation.Clear();
-    }
-
-    public bool Contains(KeyValuePair<IWrappedLuaValue, IWrappedLuaValue> item)
-    {
-        return dictionaryImplementation.Contains(item);
-    }
-
-    public void CopyTo(KeyValuePair<IWrappedLuaValue, IWrappedLuaValue>[] array, int arrayIndex)
-    {
-        dictionaryImplementation.CopyTo(array, arrayIndex);
-    }
-
-    public bool Remove(KeyValuePair<IWrappedLuaValue, IWrappedLuaValue> item)
-    {
-        return dictionaryImplementation.Remove(item);
-    }
-
-    public int Count => dictionaryImplementation.Count;
-
-    public bool IsReadOnly => dictionaryImplementation.IsReadOnly;
-
-    public void Add(IWrappedLuaValue key, IWrappedLuaValue value)
-    {
-        dictionaryImplementation.Add(key, value);
-    }
-
-    public bool ContainsKey(IWrappedLuaValue key)
-    {
-        return dictionaryImplementation.ContainsKey(key);
-    }
-
-    public bool Remove(IWrappedLuaValue key)
-    {
-        return dictionaryImplementation.Remove(key);
-    }
-
-    public bool TryGetValue(IWrappedLuaValue key, [MaybeNullWhen(false)] out IWrappedLuaValue value)
-    {
-        return dictionaryImplementation.TryGetValue(key, out value);
-    }
-
-    public IWrappedLuaValue this[IWrappedLuaValue key]
-    {
-        get => dictionaryImplementation[key];
-        set => dictionaryImplementation[key] = value;
-    }
-
-    public ICollection<IWrappedLuaValue> Keys => dictionaryImplementation.Keys;
-
-    public ICollection<IWrappedLuaValue> Values => dictionaryImplementation.Values;
 }

@@ -21,12 +21,9 @@ public interface IGamemode
     /// <summary>User-callable reset used to (re)start the gamemode.</summary>
     void Reset();
 
-    /// <summary>Returns the race results if the race has finished, or null otherwise.</summary>
-    RaceResults? GetResults();
-
     /// <summary>
     /// Called by the host when authoritative server results arrive
-    /// (<c>S2C_GameFinished</c>). Default is a no-op for singleplayer.
+    /// (<c>S2C_GameFinished</c>).
     /// </summary>
     void SetServerResults(RaceResults results);
 
@@ -35,6 +32,11 @@ public interface IGamemode
     /// The payload is a MemoryPack-serialized gamemode-specific event.
     /// </summary>
     void OnServerEvent(ReadOnlySpan<byte> payload);
+
+    /// <summary>
+    /// Gets the client player.
+    /// </summary>
+    ClientSidePlayer ClientPlayer { get; }
 
     // ── Client-only members ───────────────────────────────────────────
 

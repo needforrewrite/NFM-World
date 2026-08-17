@@ -1,5 +1,6 @@
 using NFMWorld.Util;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
 
 namespace NFMWorld.Gameplay;
 
@@ -26,7 +27,7 @@ public sealed class RaceCameraDirector
     public void CycleViewMode()
         => CurrentViewMode = (ViewMode)(((int)CurrentViewMode + 1) % Enum.GetValues<ViewMode>().Length);
 
-    public void Update(PerspectiveCamera camera, IInGameCar car)
+    public void Update(PerspectiveCamera camera, BackendCar car)
     {
         switch (CurrentViewMode)
         {

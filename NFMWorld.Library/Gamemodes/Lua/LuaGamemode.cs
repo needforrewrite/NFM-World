@@ -169,9 +169,9 @@ public class LuaGamemode : BaseClientGamemode
     private readonly string _scriptPath;
     private readonly LuaState _state;
 
-    public LuaTable? Config { get; set; }
+    public LuaTable? Config { get; }
 
-    public LuaGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData, string scriptPath, string? configJson = null)
+    public LuaGamemode(GamemodeParameters gamemodeParameters, IGamemodeData gamemodeData, string scriptPath, LuaTable? config = null)
         : base(gamemodeParameters, gamemodeData)
     {
         _scriptPath = scriptPath;
@@ -179,11 +179,11 @@ public class LuaGamemode : BaseClientGamemode
         _state = LuaState.Create(LuaNfmwPlatform.Instance);
         _state.OpenStandardLibraries();
         LuaVisibleTypeRegistry.RegisterAll(_state);
+        LuaKeysLibrary.Register(_state);
 
         _state.Environment["GM"] = new LuaGamemodeContext(this);
 
-        if (!string.IsNullOrEmpty(configJson))
-            Config = LuaJson.FromJson(System.Text.Encoding.UTF8.GetBytes(configJson));
+        Config = config;
 
         _state.DoFile($"data/gamemodes/{_scriptPath}/client.lua");
     }
@@ -239,6 +239,37 @@ public class LuaGamemode : BaseClientGamemode
         Call("OnServerEvent", envelope.Type, envelope.Payload);
     }
 
+    public override void OnServerRaceFinished(RaceResults results)
+    {
+        Call("OnServerEvent", new LuaTable()
+        {
+            ["raceDuration"] = results.RaceDuration.TotalSeconds,
+            ["gamemodeId"] = results.GamemodeId,
+            ["standings"] = MarshalStandings(results.Standings)
+        });
+    }
+    
+    /// <summary>
+    /// Marshals standings back into a <see cref="LuaTable"/>, mirroring the shape read by
+    /// <c>LuaServerGamemode.ParseStandings</c>. Each entry is <c>{ playerId, position, finished }</c>.
+    /// </summary>
+    private static LuaTable MarshalStandings(RaceStanding[] standings)
+    {
+        var table = new LuaTable();
+        var index = 1;
+        foreach (var standing in standings)
+        {
+            table[index++] = new LuaTable
+            {
+                ["playerId"] = standing.PlayerId.ToString("D"),
+                ["position"] = (double)standing.FinishPosition,
+                ["finished"] = standing.FinishTime.HasValue
+            };
+        }
+
+        return table;
+    }
+    
     // ── Script invocation ──────────────────────────────────────────
 
     private void RegisterFunction(string name, Func<LuaFunctionExecutionContext, CancellationToken, ValueTask<int>> fn)

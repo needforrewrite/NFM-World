@@ -1,14 +1,14 @@
-﻿using System;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary.FixedMath;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Util;
 
 // This duplicates some code from CollisionObject, no workaround
 namespace NFMWorld;
 
 public class EditorObject : StaticMeshObject, IDisposable
 {
-    public Rad3dBoxDef[] Boxes { get; }
+    public LuaArray<Rad3dBoxDef> Boxes { get; }
 
     private readonly CollisionDebugMesh? _collisionDebugMesh;
 
@@ -16,13 +16,13 @@ public class EditorObject : StaticMeshObject, IDisposable
 
     public IReadOnlyList<MeshedGameObject> WheelObjects => _wheels;
 
-    public Rad3dWheelDef[] Wheels { get; }
+    public LuaArray<Rad3dWheelDef> Wheels { get; }
 
     public EditorObject(GraphicsDevice graphicsDevice, Rad3d rad) : base(graphicsDevice, rad)
     {
         Boxes = rad.Boxes;
         Wheels = rad.Wheels;
-        if (rad.Boxes.Length > 0)
+        if (rad.Boxes.Count > 0)
         {
             _collisionDebugMesh = new CollisionDebugMesh(rad.Boxes)
             {

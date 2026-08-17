@@ -939,7 +939,7 @@ public class ModelEditorPhase : BasePhase
 
     private int PerformCollisionPicking(int screenX, int screenY, ModelEditorTab tab)
     {
-        if (tab.Object == null || tab.Object.Boxes.Length == 0) return -1;
+        if (tab.Object == null || tab.Object.Boxes.Count == 0) return -1;
 
         var viewport = GameSparker.GraphicsDevice.Viewport;
 
@@ -983,7 +983,7 @@ public class ModelEditorPhase : BasePhase
         float closestDistance = float.MaxValue;
         int closestBoxIndex = -1;
 
-        for (int i = 0; i < tab.Object.Boxes.Length; i++)
+        for (int i = 0; i < tab.Object.Boxes.Count; i++)
         {
             var box = tab.Object.Boxes[i];
 
@@ -1703,7 +1703,7 @@ public class ModelEditorPhase : BasePhase
                                 if (result == MessageWindow.MessageResult.Custom2) {
                                     ExitModelViewer();
                                 }
-                        });
+                            });
                     } else {
                         ExitModelViewer();
                     }
@@ -1947,10 +1947,10 @@ public class ModelEditorPhase : BasePhase
                 // Collision editing UI
                 else if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision)
                 {
-                    if (tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Object.Boxes.Length)
+                    if (tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Object.Boxes.Count)
                     {
                         var box = tab.Object.Boxes[tab.SelectedCollisionIndex];
-                        ImGui.Text($"[ Collision {tab.SelectedCollisionIndex + 1} of {tab.Object.Boxes.Length} selected ]");
+                        ImGui.Text($"[ Collision {tab.SelectedCollisionIndex + 1} of {tab.Object.Boxes.Count} selected ]");
                         ImGui.SameLine();
 
                         if (ImGui.Button("Edit Collision"))
@@ -2438,7 +2438,7 @@ public class ModelEditorPhase : BasePhase
         {
             if (editingCollision)
             {
-                ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Object?.Boxes.Length ?? 0}");
+                ImGui.Text($"Editing collision {tab.SelectedCollisionIndex + 1} of {tab.Object?.Boxes.Count ?? 0}");
             }
             else if (tab.PolygonEditorIsWheel)
             {
@@ -2846,7 +2846,7 @@ public class ModelEditorPhase : BasePhase
 
         // Render selected collision box overlay
         if (tab.EditMode == ModelEditorTab.EditModeEnum.Collision &&
-            tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Object.Boxes.Length)
+            tab.SelectedCollisionIndex >= 0 && tab.SelectedCollisionIndex < tab.Object.Boxes.Count)
         {
             RenderCollisionSelectionOverlay(camera, tab);
         }

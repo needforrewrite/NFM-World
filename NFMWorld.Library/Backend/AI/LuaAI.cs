@@ -32,7 +32,7 @@ public class LuaAi : BaseAi
 
     public LuaTable? Config { get; set; }
 
-    public LuaAi(BaseClientGamemode gamemode, ClientSidePlayer aiPlayer, string scriptPath, string? configJson = null)
+    public LuaAi(BaseClientGamemode gamemode, ClientSidePlayer aiPlayer, string scriptPath, LuaTable? config = null)
     {
         _scriptPath = scriptPath;
 
@@ -42,8 +42,7 @@ public class LuaAi : BaseAi
 
         _state.Environment["AI"] = new LuaAiContext(gamemode, aiPlayer, this);
 
-        if (!string.IsNullOrEmpty(configJson))
-            Config = LuaJson.FromJson(System.Text.Encoding.UTF8.GetBytes(configJson));
+        Config = config;
 
         _state.DoFile($"data/ais/{_scriptPath}.lua");
     }

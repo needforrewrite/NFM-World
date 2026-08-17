@@ -4,12 +4,13 @@ using HoleyDiver;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary.Rad;
+using NFMWorldLibrary.Util;
 
 namespace NFMWorld;
 
 public class Mesh : IDisposable
 {
-    public Rad3dPoly[] OriginalPolys;
+    public LuaArray<Rad3dPoly> OriginalPolys;
     public Rad3dPoly[] Polys;
 
     public readonly GraphicsDevice GraphicsDevice;
@@ -35,7 +36,7 @@ public class Mesh : IDisposable
     {
         // make a copy of points for damageable meshes
         OriginalPolys = rad.Polys;
-        Polys = Array.ConvertAll(rad.Polys, static poly => poly.SafeClone());
+        Polys = rad.Polys.Select(static poly => poly.SafeClone()).ToArray();
         GroundAt = rad.Wheels.FirstOrDefault().Ground;
 
         GraphicsDevice = graphicsDevice;

@@ -6,6 +6,7 @@ using NFMWorld.UI.Cef;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Gamemodes;
+using NFMWorldLibrary.Gamemodes.Lua;
 using NFMWorldLibrary.Gamemodes.RaceHost;
 using NFMWorldLibrary.Multiplayer;
 using NFMWorldLibrary.Util;
@@ -82,7 +83,10 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnFreePlayClicked()
     {
-        var factory = new PvpGamemodeFactory(PvpConstraint.Both);
+        var factory = new LuaGamemodeFactory("pvp", new Dictionary<string, object>()
+        {
+            "constraint" = "both"
+        });
         ClientSidePlayerParameters[] players = [
             new ClientSidePlayerParameters
             {

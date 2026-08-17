@@ -14,17 +14,17 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
     private readonly int lineVertexCount;
     private VertexBuffer? lineInstanceBuffer;
 
-    public CollisionDebugMesh(Span<Rad3dBoxDef> boxes)
+    public CollisionDebugMesh(IReadOnlyList<Rad3dBoxDef> boxes)
     {
-        if (boxes.Length < 1) return;
+        if (boxes.Count < 1) return;
         
         #region Debug boxes
         
         // disp 0
         const int linesPerPolygon = 16;
         
-        var data = new List<LineMesh.LineMeshVertexAttribute>(LineMeshHelpers.VerticesPerLine * linesPerPolygon * boxes.Length);
-        var indices = new List<int>(LineMeshHelpers.IndicesPerLine * linesPerPolygon * boxes.Length);
+        var data = new List<LineMesh.LineMeshVertexAttribute>(LineMeshHelpers.VerticesPerLine * linesPerPolygon * boxes.Count);
+        var indices = new List<int>(LineMeshHelpers.IndicesPerLine * linesPerPolygon * boxes.Count);
         void AddLine(Vector3 p0, Vector3 p1, Color3 color, float mult = 1)
         {
             // Create two quads for each line segment to give it some thickness
@@ -37,7 +37,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
             data.AddRange(verts);
         }
         
-        for (var i = 0; i < boxes.Length; i++)
+        for (var i = 0; i < boxes.Count; i++)
         {
             var box = boxes[i];
             var center = (Vector3)box.Translation;

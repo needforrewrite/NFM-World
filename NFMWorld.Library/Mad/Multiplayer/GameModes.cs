@@ -1,4 +1,5 @@
-﻿using NFMWorld.Gameplay.Gamemodes;
+﻿using Lua;
+using NFMWorld.Gameplay.Gamemodes;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Backend.Gamemodes;
 using NFMWorldLibrary.Files;
@@ -25,113 +26,44 @@ public abstract class BaseGamemodeFactory
     public abstract string GamemodeId { get; }
 }
 
-public class TimeTrialGamemodeFactory : BaseGamemodeFactory
-{
-    public override string GamemodeId => "nfmm/timetrial";
-    public override IGamemode CreateGameMode(GamemodeParameters parameters, IGamemodeData gamemodeData)
-        => new LuaGamemode(parameters, gamemodeData, "timetrial");
-}
-public class TimeTrialPreviewGamemodeFactory(SavedTimeTrial timeTrial) : BaseGamemodeFactory
-{
-    public override string GamemodeId => "nfmm/timetrial-preview";
-    public override IGamemode CreateGameMode(GamemodeParameters parameters, IGamemodeData gamemodeData)
-        => new TimeTrialPreviewGamemode(parameters, gamemodeData, timeTrial);
-}
-public class PvpGamemodeFactory(PvpConstraint constraint) : BaseGamemodeFactory
-{
-    public override string GamemodeId => constraint switch
-    {
-        PvpConstraint.Racing => DefaultGamemodes.Racing,
-        PvpConstraint.Wasting => DefaultGamemodes.Wasting,
-        PvpConstraint.Both => DefaultGamemodes.Both,
-        _ => DefaultGamemodes.Racing
-    };
-    public override IGamemode CreateGameMode(GamemodeParameters parameters, IGamemodeData gamemodeData)
-        => new LuaGamemode(
-            parameters,
-            gamemodeData,
-            "pvp",
-            $"{{\"constraint\":\"{constraint.ToString().ToLowerInvariant()}\"}}");
-
-    public override IServerGamemode? CreateServerGamemode(GamemodeParameters parameters)
-        => new LuaServerGamemode(GamemodeId, "pvp");
-}
-public enum PvpConstraint
-{
-    Racing, Wasting, Both
-}
-
 /// <summary>
 /// Factory for Lua-driven gamemodes. Loads
 /// <c>data/gamemodes/{scriptRelativePath}/client.lua</c> (and, once the server
 /// framework lands, <c>server.lua</c>).
 /// </summary>
-public class LuaGamemodeFactory : BaseGamemodeFactory
+public class LuaGamemodeFactory(string gamemodeId, LuaTable? config = null) : BaseGamemodeFactory
 {
-    private readonly string _gamemodeId;
-    private readonly string _scriptRelativePath;
-
-    public LuaGamemodeFactory(string scriptRelativePath)
+    public LuaGamemodeFactory(string gamemodeId, IReadOnlyDictionary<string, object> config) : this(gamemodeId, ToLuaTable(config))
     {
-        _scriptRelativePath = scriptRelativePath;
-        _gamemodeId = $"nfmm/lua:{scriptRelativePath}";
     }
 
-    public LuaGamemodeFactory(string gamemodeId, string scriptRelativePath)
+    private static LuaTable ToLuaTable(IReadOnlyDictionary<string, object> dict)
     {
-        _gamemodeId = gamemodeId;
-        _scriptRelativePath = scriptRelativePath;
+        var table = new LuaTable();
+        foreach (var (k, obj) in dict)
+        {
+            if (obj is LuaValue val) table[k] = val;
+            else if (obj is string str) table[k] = str;
+            else if (obj is bool b) table[k] = b;
+            else if (obj is byte by) table[k] = by;
+            else if (obj is sbyte sby) table[k] = sby;
+            else if (obj is short s) table[k] = s;
+            else if (obj is ushort u) table[k] = u;
+            else if (obj is int i) table[k] = i;
+            else if (obj is uint ui) table[k] = ui;
+            else if (obj is long l) table[k] = l;
+            else if (obj is ulong ul) table[k] = ul;
+            else if (obj is float f) table[k] = f;
+            else if (obj is double d) table[k] = d;
+        }
+        return table;
     }
 
-    public override string GamemodeId => _gamemodeId;
+    public override string GamemodeId => gamemodeId;
 
     public override IGamemode CreateGameMode(GamemodeParameters parameters, IGamemodeData gamemodeData)
-        => new LuaGamemode(parameters, gamemodeData, _scriptRelativePath);
+        => new LuaGamemode(parameters, gamemodeData, gamemodeId, config);
 
     public override IServerGamemode? CreateServerGamemode(GamemodeParameters parameters)
-        => new LuaServerGamemode(_gamemodeId, _scriptRelativePath);
-}
-
-/// <summary>
-/// Registry mapping gamemode IDs (e.g., "nfmm/racing") to their factories.
-/// Used by server-side code to create server gamemodes from string IDs.
-/// </summary>
-public static class GamemodeRegistry
-{
-    private static readonly Dictionary<string, BaseGamemodeFactory> _factories = new();
-
-    static GamemodeRegistry()
-    {
-        Register(new TimeTrialGamemodeFactory());
-        Register(new PvpGamemodeFactory(PvpConstraint.Racing));
-        Register(new PvpGamemodeFactory(PvpConstraint.Wasting));
-        Register(new PvpGamemodeFactory(PvpConstraint.Both));
-    }
-
-    public static void Register(BaseGamemodeFactory factory)
-        => _factories[factory.GamemodeId] = factory;
-
-    public static BaseGamemodeFactory? Get(string gamemodeId)
-        => _factories.GetValueOrDefault(gamemodeId);
-
-    /// <summary>
-    /// Registers a Lua-driven gamemode from <c>data/gamemodes/{scriptRelativePath}</c>.
-    /// The gamemode ID is derived as <c>nfmm/lua:{scriptRelativePath}</c>.
-    /// </summary>
-    public static LuaGamemodeFactory RegisterLua(string scriptRelativePath)
-    {
-        var factory = new LuaGamemodeFactory(scriptRelativePath);
-        Register(factory);
-        return factory;
-    }
-
-    /// <summary>
-    /// Registers a Lua-driven gamemode with a custom gamemode ID.
-    /// </summary>
-    public static LuaGamemodeFactory RegisterLua(string gamemodeId, string scriptRelativePath)
-    {
-        var factory = new LuaGamemodeFactory(gamemodeId, scriptRelativePath);
-        Register(factory);
-        return factory;
-    }
+        => new LuaServerGamemode(gamemodeId, gamemodeId, config);
 }

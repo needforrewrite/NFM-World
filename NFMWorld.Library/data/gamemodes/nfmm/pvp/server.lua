@@ -14,8 +14,8 @@ function OnBegin()
     done = false
     state = "waitingToStart"
 
-    for i = 0, #SGM.playerIds - 1 do
-        local id = server:playerId(i)
+    for i = 1, #SGM.playerIds do
+        local id = SGM.playerIds[i]
         perPlayer[id] = { lap = 0, checkpoint = -1, finished = false, position = -1 }
     end
 end
@@ -71,6 +71,9 @@ local function complete_race()
     done = true
 end
 
+---@param playerId string
+---@param type string
+---@param payload table
 function OnClientEvent(playerId, type, payload)
     if state ~= "inProgress" or type ~= "checkpoint" or payload == nil then
         return

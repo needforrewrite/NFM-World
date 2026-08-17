@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary;
+using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
 using NFMWorldLibrary.FixedMath;
 
@@ -140,9 +141,9 @@ public class Dust : IDisposable, IImmediateRenderElement
                         {
                             _sbln[dust] = tracker.SurfaceType switch
                             {
-                                (NFMWorldLibrary.CarPhysics.SurfaceType)0 => 0.2F,
-                                (NFMWorldLibrary.CarPhysics.SurfaceType)1 => 0.4F,
-                                (NFMWorldLibrary.CarPhysics.SurfaceType)2 => 0.45F,
+                                (SurfaceType)0 => 0.2F,
+                                (SurfaceType)1 => 0.4F,
+                                (SurfaceType)2 => 0.45F,
                                 _ => _sbln[dust]
                             };
 

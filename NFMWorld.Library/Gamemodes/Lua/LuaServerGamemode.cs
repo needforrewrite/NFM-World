@@ -25,6 +25,9 @@ public partial class LuaServerGamemodeContext(LuaServerGamemode gamemode, IServe
     [LuaName]
     public ReadOnlyLuaDictionary<byte, PlayerInfo> PlayerInfos { get; } = new(data.PlayerInfos);
 
+    [LuaName]
+    public LuaTable? Config { get; } = gamemode.Config;
+
     /// <summary>
     /// Gets the latest relayed position for a player, or null if not yet received.
     /// Position data flows from <see cref="C2S_PlayerState"/> relay.
@@ -80,8 +83,7 @@ public partial class LuaServerGamemodeContext(LuaServerGamemode gamemode, IServe
             {
                 PlayerId = playerId,
                 FinishPosition = position,
-                FinishTime = finished ? TimeSpan.Zero : null,
-                IsClientPlayer = false
+                FinishTime = finished ? TimeSpan.Zero : null
             });
         }
 
@@ -109,13 +111,15 @@ public class LuaServerGamemode : IServerGamemode
     private LuaState? _state;
     private IServerGamemodeData? _data;
     internal GameStateSnapshot? _snapshot;
+    public LuaTable? Config { get; }
 
     public string GamemodeId { get; }
 
-    public LuaServerGamemode(string gamemodeId, string scriptPath)
+    public LuaServerGamemode(string gamemodeId, string scriptPath, LuaTable? config = null)
     {
         GamemodeId = gamemodeId;
         _scriptPath = scriptPath;
+        Config = config;
     }
 
     public void Begin(IServerGamemodeData data)

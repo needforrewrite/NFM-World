@@ -491,33 +491,17 @@ LuaClientCarContext = {}
 GamemodeContext = {}
 
 
----@class LuaPlayers
----@field count integer
----@field get fun(self: LuaPlayers, index: integer): ClientSidePlayer|nil
-
-LuaPlayers = {}
-
-
 ---@class ServerGamemodeContext
 ---@field currentStage BackendStage
 ---@field playerIds { [integer]: string }
 ---@field playerInfos { [integer]: PlayerInfo }
+---@field config table|nil
 ---@field countdownInterval integer
 ---@field getPlayerPosition fun(self: ServerGamemodeContext, playerId: string): fixed64vector3|nil
 ---@field broadcastEvent fun(self: ServerGamemodeContext, type: string, payload: table)
 ---@field finishRace fun(self: ServerGamemodeContext, standings: RaceStandings)
 
 ServerGamemodeContext = {}
-
-
----@class LuaServerData
----@field playerCount integer
----@field playerId fun(self: LuaServerData, index: integer): string
----@field playerName fun(self: LuaServerData, index: integer): string
----@field playerVehicle fun(self: LuaServerData, index: integer): string
----@field playerPosition fun(self: LuaServerData, playerId: string): fixed64vector3|nil
-
-LuaServerData = {}
 
 
 ---@class TimeTrial

@@ -26,7 +26,7 @@ public abstract class BaseStageRenderingPhase : BasePhase
     ];
 
     public ClientStage CurrentStage = null!;
-    public ObservableUnlimitedArray<IInGameCar> CarsInRace { get; protected set; } = [];
+    public ObservableUnlimitedArray<BackendCar> CarsInRace { get; protected set; } = [];
 
     private IRadicalMusic? _stageMusic;
     public string? StageName;

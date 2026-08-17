@@ -10,7 +10,7 @@ public static class MeshDamage
 {
     public static void NewCar(BackendCar car, CarVisual visual)
     {
-        visual.Mesh.Polys = Array.ConvertAll(visual.Mesh.OriginalPolys, static poly => poly.SafeClone());
+        visual.Mesh.Polys = visual.Mesh.OriginalPolys.Select(static poly => poly.SafeClone()).ToArray();
         
         for (var i = 0; i < visual.Mesh.Polys.Length; i++)
         {

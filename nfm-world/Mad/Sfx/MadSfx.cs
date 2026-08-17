@@ -428,11 +428,11 @@ public class MadSfx
         }
     }
 
-    private void SfxPlaySkid(object? sender, (CarPhysics.SurfaceType surfaceType, float skidIntensity) skidData)
+    private void SfxPlaySkid(object? sender, (SurfaceType surfaceType, float skidIntensity) skidData)
     {
         if (!Mute && bfcrash == 0 && bfskid == 0 && skidData.skidIntensity > 150.0F)
         {
-            if (skidData.surfaceType == CarPhysics.SurfaceType.Road)
+            if (skidData.surfaceType == SurfaceType.Road)
             {
                 SfxLibrary.skid[skflg].Play();
                 if (skidup)

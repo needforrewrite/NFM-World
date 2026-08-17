@@ -49,9 +49,6 @@ public abstract class BaseClientGamemode : IGamemode
     public virtual void OnServerRaceFinished(RaceResults results) { }
 
     /// <inheritdoc />
-    public virtual RaceResults? GetResults() => Results;
-
-    /// <inheritdoc />
     public virtual void SetServerResults(RaceResults results)
     {
         Results = results;
