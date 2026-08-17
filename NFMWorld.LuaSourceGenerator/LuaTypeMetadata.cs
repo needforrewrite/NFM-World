@@ -337,8 +337,6 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     public LuaConstructorMetadata[] Constructors { get; }
     public LuaEnumMemberMetadata[] EnumMembers { get; }
     
-    public bool HasParameterlessConstructor { get; }
-
     // Instance methods dispatch through __index too, so method-only types
     // (e.g. interfaces or calculators) still need an __index metamethod.
     public bool HasIndex => InstanceFields.Length > 0 || InstanceProperties.Length > 0 || InstanceMethods.Length > 0; // todo check if any readable members exist
@@ -347,12 +345,6 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
     public bool HasStaticIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any readable members exist
     public bool HasStaticNewIndex => StaticFields.Length > 0 || StaticProperties.Length > 0; // todo check if any writable members exist
 
-    public bool HasPairsAndIPairs => IsArray || IsInlineArray || IsIEnumerable;
-
-    public bool HasLength { get; }
-    public bool HasCount { get; }
-    public bool HasLengthOrCount => HasLength || IsInlineArray || HasCount || IsIEnumerable;
-    
     public LuaTypeMetadata(ITypeSymbol symbol, SymbolReferences references) : base(symbol, references)
     {
         var luaVisibleAttr = GetAttr(symbol, references.LuaVisibleAttribute);
@@ -459,13 +451,6 @@ internal sealed class LuaTypeMetadata : BaseLuaTypeMetadata
             InstanceFields = [.. InstanceFields, .. inheritedFields];
             InstanceMethods = [.. InstanceMethods, .. inheritedMethods];
         }
-
-        HasLength = IsArray || symbol
-            .GetMembers("Length")
-            .Any(s => s is IPropertySymbol prop && prop.Type.SpecialType is SpecialType.System_Int32);
-        HasCount = symbol
-            .GetMembers("Count")
-            .Any(s => s is IPropertySymbol prop && prop.Type.SpecialType is SpecialType.System_Int32);
     }
 
     private static LuaEnumMemberMetadata[] CollectEnumMembers(ImmutableArray<ISymbol> members, SymbolReferences references)
