@@ -1,12 +1,21 @@
 -- Time trial gamemode (client-only).
 -- State machine: notStarted -> countdown -> inProgress -> finished.
 
+---@type { simulation?: boolean }
+local config = GM.config
+
 local state = "notStarted"
 local countdown = 3
 local inner = 0
 local tick = 0
 local written = false
 local timer = Stopwatch.new()
+
+---@type TimeTrial?
+local timeTrial
+if config ~= nil and config.simulation then
+    timeTrial = TimeTrial.new(GM.stage)
+end
 
 -- Split/diff tracking (ported from TimeTrialClientGamemode).
 -- Stored in seconds (the unit LuaTimeTrial helpers return); HudStateData's
@@ -24,7 +33,9 @@ local function setupPlayer()
     GM.hudState.lap = 1
     GM.hudState.totalLaps = GM.stage.nlaps
     GM.client:resetCheckpointGlow()
-    GM.timeTrial:begin(car)
+    if timeTrial ~= nil then
+        timeTrial:begin(car)
+    end
 end
 
 -- Mirrors TimeTrialClientGamemode.RenderInfo: refreshes the checkpoint and
@@ -34,8 +45,8 @@ local function renderInfo()
 
     -- Checkpoint diff (chkDiffMs / lastChkDiffMs).
     if car ~= nil and (car.currentCheckpoint ~= 0 or car.currentLap ~= 0)
-        and GM.timeTrial.hasGhost and recordedSplitCount > 0 then
-        local diff = GM.timeTrial:getLastSplitDiff() -- seconds
+        and timeTrial ~= nil and timeTrial.hasGhost and recordedSplitCount > 0 then
+        local diff = timeTrial:getLastSplitDiff() -- seconds
         if diff ~= nil then
             diff = diff
             GM.hudState.chkDiffMs = math.floor(diff * 1000)
@@ -47,8 +58,8 @@ local function renderInfo()
     end
 
     -- Lap diff (lapDiffMs / lastLapDiffMs).
-    if GM.timeTrial.hasGhost and car ~= nil and car.currentLap > 0 then
-        local lapDiff = GM.timeTrial:getLapDiff(car.currentLap) -- seconds
+    if timeTrial ~= nil and timeTrial.hasGhost and car ~= nil and car.currentLap > 0 then
+        local lapDiff = timeTrial:getLapDiff(car.currentLap) -- seconds
         if lapDiff ~= nil then
             GM.hudState.lapDiffMs = math.floor(lapDiff * 1000)
         end
@@ -80,10 +91,10 @@ local function renderFinishedText()
     local text = "Finished! Time: " .. formatElapsed(math.floor(timer.elapsed * 1000))
 
     local newBest = false
-    if not GM.timeTrial.hasGhost then
+    if timeTrial == nil or not timeTrial.hasGhost then
         newBest = true
     elseif recordedSplitCount > 0 then
-        local diff = GM.timeTrial:getLastSplitDiff() -- seconds
+        local diff = timeTrial:getLastSplitDiff() -- seconds
         newBest = diff ~= nil and diff < 0
     end
 
@@ -91,9 +102,9 @@ local function renderFinishedText()
         text = text .. "\nNew best time!"
     end
 
-    if GM.timeTrial.hasGhost or newBest then
-        local currentLastSplit = GM.timeTrial:getLastSplitTime()  -- seconds or nil
-        local bestLastSplit = GM.timeTrial:getBestLastSplitTime() -- seconds or nil
+    if (timeTrial ~= nil and timeTrial.hasGhost) or newBest then
+        local currentLastSplit = timeTrial ~= nil and timeTrial:getLastSplitTime() or nil  -- seconds or nil
+        local bestLastSplit = timeTrial ~= nil and timeTrial:getBestLastSplitTime() or nil -- seconds or nil
 
         local bestTimeMs
         if currentLastSplit ~= nil and bestLastSplit ~= nil then
@@ -139,7 +150,7 @@ function OnReset()
     GM:removeFakePlayers()
     setupPlayer()
 
-    if GM.timeTrial.hasGhost then
+    if timeTrial ~= nil and timeTrial.hasGhost then
         local ghost = GM:clonePlayer(GM.players[1])
         GM.client:getClientCarCallbacks(ghost.car).alphaOverride = 0.5
         ghost.car.currentLap = 0
@@ -183,27 +194,31 @@ function OnGameTick()
             GM.hudState.lapTime = math.floor(timer.elapsed * 1000)
             GM.client:updateCheckpointGlow(car.currentCheckpoint, car.currentCheckpoint == #GM.stage.checkpoints - 1 and car.currentLap == GM.stage.nlaps - 1)
 
-            GM.timeTrial:record(car)
+            if timeTrial ~= nil then
+                timeTrial:record(car)
+            end
 
             -- On checkpoint change: record the split and update lap diff tracking
             -- (TimeTrialClientGamemode.OnAfterPhysics).
             if car.currentCheckpoint ~= lastCheckpoint then
-                if GM.timeTrial.hasGhost and recordedSplitCount > 0 then
-                    local diff = GM.timeTrial:getLastSplitDiff() -- seconds
+                if timeTrial ~= nil and timeTrial.hasGhost and recordedSplitCount > 0 then
+                    local diff = timeTrial:getLastSplitDiff() -- seconds
                     if diff ~= nil then
                         lastCheckpointSplitDiff = diff
                     end
                 end
 
                 local currentLapSplitDiff = 0
-                if GM.timeTrial.hasGhost and lastLap > 0 then
-                    local lapDiff = GM.timeTrial:getLapDiff(lastLap) -- seconds
+                if timeTrial ~= nil and timeTrial.hasGhost and lastLap > 0 then
+                    local lapDiff = timeTrial:getLapDiff(lastLap) -- seconds
                     if lapDiff ~= nil then
                         currentLapSplitDiff = lapDiff
                     end
                 end
 
-                GM.timeTrial:recordSplit(timer.elapsed) -- seconds
+                if timeTrial ~= nil then
+                    timeTrial:recordSplit(timer.elapsed) -- seconds
+                end
                 recordedSplitCount = recordedSplitCount + 1
 
                 if lastLap ~= car.currentLap then
@@ -211,10 +226,10 @@ function OnGameTick()
                 end
             end
 
-            if GM.timeTrial.hasGhost then
+            if timeTrial ~= nil and timeTrial.hasGhost then
                 local ghost = GM.players[2]
                 if ghost ~= nil and ghost.car ~= nil then
-                    GM.timeTrial:applyGhost(ghost.car, tick)
+                    timeTrial:applyGhost(ghost.car, tick)
                     ghost.car:drive(GM.stage)
                 end
             end
@@ -236,7 +251,9 @@ function OnGameTick()
         GM.players[1].car:drive(GM.stage)
         if not written then
             written = true
-            GM.timeTrial:save()
+            if timeTrial ~= nil then
+                timeTrial:save()
+            end
             renderFinishedText()
         end
         renderInfo()

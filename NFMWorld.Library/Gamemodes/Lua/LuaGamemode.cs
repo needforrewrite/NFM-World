@@ -67,9 +67,6 @@ public partial class LuaGamemodeContext(LuaGamemode gamemode)
     [LuaName("physics")]
     public PhysicsController Physics { get; } = new(gamemode.Players, gamemode.CurrentStage);
 
-    [LuaName("timeTrial")]
-    public LuaTimeTrial TimeTrial { get; } = new(gamemode.CurrentStage);
-
     [LuaName]
     public LuaTable? Config { get; } = gamemode.Config;
 

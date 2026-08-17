@@ -11,6 +11,7 @@ namespace NFMWorldLibrary.Gamemodes.Lua;
 /// </summary>
 [LuaVisible]
 [LuaName("TimeTrial")]
+[method: LuaName]
 public sealed partial class LuaTimeTrial(BackendStage stage)
 {
     private SavedTimeTrial? _best;
