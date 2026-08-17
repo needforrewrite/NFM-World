@@ -9,7 +9,8 @@ local written = false
 local timer = Stopwatch.new()
 
 -- Split/diff tracking (ported from TimeTrialClientGamemode).
--- Values are milliseconds, matching HudStateData's *DiffMs fields.
+-- Stored in seconds (the unit LuaTimeTrial helpers return); HudStateData's
+-- *DiffMs fields are written in milliseconds.
 local lastCheckpoint = 0
 local lastLap = 0
 local recordedSplitCount = 0
@@ -54,7 +55,62 @@ local function renderInfo()
     else
         GM.hudState.lapDiffMs = 0
     end
-    GM.hudState.lastLapDiffMs = math.floor(lastLapSplitDiff)
+    GM.hudState.lastLapDiffMs = math.floor(lastLapSplitDiff * 1000)
+end
+
+-- Mirrors TimeTrialClientGamemode.RenderFinishedText.
+local function timeParts(totalMs)
+    local minutes = math.floor(totalMs / 60000)
+    local seconds = math.floor((totalMs % 60000) / 1000)
+    local millis = math.floor(totalMs % 1000)
+    return minutes, seconds, millis
+end
+
+local function formatElapsed(totalMs)
+    local minutes, seconds, millis = timeParts(totalMs)
+    return string.format("%02d:%02d.%03d", minutes, seconds, millis)
+end
+
+local function formatBest(totalMs)
+    local minutes, seconds, millis = timeParts(totalMs)
+    return string.format("%02d:%02d:%02d", minutes, seconds, millis)
+end
+
+local function renderFinishedText()
+    local text = "Finished! Time: " .. formatElapsed(math.floor(timer.elapsed * 1000))
+
+    local newBest = false
+    if not GM.timeTrial.hasGhost then
+        newBest = true
+    elseif recordedSplitCount > 0 then
+        local diff = GM.timeTrial:getLastSplitDiff() -- seconds
+        newBest = diff ~= nil and diff < 0
+    end
+
+    if newBest then
+        text = text .. "\nNew best time!"
+    end
+
+    if GM.timeTrial.hasGhost or newBest then
+        local currentLastSplit = GM.timeTrial:getLastSplitTime()  -- seconds or nil
+        local bestLastSplit = GM.timeTrial:getBestLastSplitTime() -- seconds or nil
+
+        local bestTimeMs
+        if currentLastSplit ~= nil and bestLastSplit ~= nil then
+            bestTimeMs = math.min(currentLastSplit, bestLastSplit) * 1000
+        elseif currentLastSplit ~= nil then
+            bestTimeMs = currentLastSplit * 1000
+        elseif bestLastSplit ~= nil then
+            bestTimeMs = bestLastSplit * 1000
+        end
+
+        if bestTimeMs ~= nil then
+            text = text .. "\nBest time: " .. formatBest(bestTimeMs)
+        end
+    end
+
+    text = text .. "\nPress R to restart"
+    GM.hudState.stateText = text
 end
 
 function OnBegin()
@@ -180,7 +236,7 @@ function OnGameTick()
         if not written then
             written = true
             GM.timeTrial:save()
-            GM.hudState.stateText = "Finished!"
+            renderFinishedText()
         end
         renderInfo()
     end

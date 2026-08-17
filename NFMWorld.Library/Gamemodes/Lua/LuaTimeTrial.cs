@@ -70,6 +70,22 @@ public sealed partial class LuaTimeTrial(BackendStage stage)
         return TimeSpan.FromMilliseconds(time).TotalSeconds;
     }
 
+    /// <summary>Total elapsed time of the current run at the last recorded split (seconds).</summary>
+    [LuaName]
+    public double? GetLastSplitTime()
+    {
+        if (_current is null || _current.Splits.SplitTimes.Count == 0) return null;
+        return TimeSpan.FromMilliseconds(_current.Splits.SplitTimes[^1]).TotalSeconds;
+    }
+
+    /// <summary>Total elapsed time of the best saved run at its last split (seconds).</summary>
+    [LuaName]
+    public double? GetBestLastSplitTime()
+    {
+        if (_best is null || _best.Splits.SplitTimes.Count == 0) return null;
+        return TimeSpan.FromMilliseconds(_best.Splits.SplitTimes[^1]).TotalSeconds;
+    }
+
     /// <summary>Records the player car's state for the current tick.</summary>
     [LuaName("record")]
     public void Record(BackendCar car)
