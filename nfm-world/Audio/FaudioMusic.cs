@@ -147,6 +147,7 @@ public sealed class FaudioMusic : IRadicalMusic
         _instance?.Dispose();
         _instance = _effect.CreateInstance();
         _instance.IsLooped = true;
+        _instance.Volume = IRadicalMusic.CurrentVolume;
         _instance.Play();
     }
 

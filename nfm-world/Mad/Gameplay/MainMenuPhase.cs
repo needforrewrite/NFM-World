@@ -83,7 +83,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
 
     private void OnFreePlayClicked()
     {
-        var factory = new LuaGamemodeFactory("pvp", new Dictionary<string, object>()
+        var factory = new LuaGamemodeFactory("nfmm/pvp", new Dictionary<string, object>()
         {
             ["constraint"] = "both"
         });
@@ -99,7 +99,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             new()
             {
                 CarName = "nfmm/audir8",
-                IsClientPlayer = true,
+                IsClientPlayer = false,
                 PlayerName = "ElStupido",
                 Color = default,
                 IsBot = true
@@ -134,7 +134,7 @@ public class MainMenuPhase : BaseStageRenderingPhase
             GaragePhase gp = new(GraphicsDevice, stageName);
             gp.CarSelected += (sender, car) =>
             {
-                var factory = new LuaGamemodeFactory("timetrial");
+                var factory = new LuaGamemodeFactory("nfmm/timetrial");
                 ClientSidePlayerParameters[] players = [
                     new()
                     {

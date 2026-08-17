@@ -22,6 +22,8 @@ namespace NFMWorldLibrary.Util;
 public class LuaView<T, TView>(IList<T> innerList, Func<T, TView> factory, Func<TView, T> reverseFactory) : ILuaUserData
 {
     public readonly IList<T> Value = innerList;
+    private readonly Func<T, TView> _factory = factory;
+    private readonly Func<TView, T> _reverseFactory = reverseFactory;
 
     public T this[int index]
     {
@@ -40,7 +42,7 @@ public class LuaView<T, TView>(IList<T> innerList, Func<T, TView> factory, Func<
     }
 
     /// <summary>Shared metatable for all <see cref="UnlimitedArray{T}"/> instances of the same T.</summary>
-    private LuaTable SharedMetatable
+    private static LuaTable SharedMetatable
     {
         get
         {
@@ -53,11 +55,11 @@ public class LuaView<T, TView>(IList<T> innerList, Func<T, TView> factory, Func<
             mt[Metamethods.Len] = new LuaFunction("__len", LenMetamethodImpl);
 
             Interlocked.CompareExchange(ref field, mt, null);
-            return field!;
+            return field;
         }
     }
 
-    private ValueTask<int> IndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
+    private static ValueTask<int> IndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
     {
         var arr = context.GetArgument<LuaView<T, TView>>(0);
         var key = context.GetArgument(1);
@@ -67,14 +69,14 @@ public class LuaView<T, TView>(IList<T> innerList, Func<T, TView> factory, Func<
         {
             if ((uint)index < (uint)arr.Value.Count)
             {
-                return new(context.Return(LuaHelpers.ToLuaValue(LuaProxies.GetOrAdd(arr[index]!, factory))));
+                return new(context.Return(LuaHelpers.ToLuaValue(LuaProxies.GetOrAdd(arr[index]!, arr._factory))));
             }
         }
 
         return new(context.Return(LuaValue.Nil));
     }
 
-    private ValueTask<int> NewIndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
+    private static ValueTask<int> NewIndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
     {
         var arr = context.GetArgument<LuaView<T, TView>>(0);
         var key = context.GetArgument(1);
@@ -88,7 +90,7 @@ public class LuaView<T, TView>(IList<T> innerList, Func<T, TView> factory, Func<
                 // Fallback: try number → T conversion for common numeric types
                 typedValue = LuaHelpers.ConvertLuaValue<TView>(value);
             }
-            arr[index] = LuaProxies.GetOrAdd(typedValue, reverseFactory);
+            arr[index] = LuaProxies.GetOrAdd(typedValue, arr._reverseFactory);
         }
 
         return new(context.Return());

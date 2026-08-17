@@ -48,6 +48,7 @@ public sealed class FaudioSoundClip : ISoundClip
         _instance?.Dispose();
         _instance = _effect.CreateInstance();
         _instance.IsLooped = false;
+        _instance.Volume = IRadicalMusic.CurrentVolume;
         _instance.Play();
     }
 
@@ -57,6 +58,7 @@ public sealed class FaudioSoundClip : ISoundClip
         _instance?.Dispose();
         _instance = _effect.CreateInstance();
         _instance.IsLooped = true;
+        _instance.Volume = IRadicalMusic.CurrentVolume;
         _instance.Play();
     }
 

@@ -84,22 +84,6 @@ public static class LuaHelpers
         if (value.TryRead<T>(out var result))
             return result;
 
-        // For numeric types, try reading as double and converting
-        if (value.TryRead<double>(out var num))
-        {
-            var targetType = typeof(T);
-            if (targetType == typeof(float))  { var v = (float)num;  return Unsafe.As<float, T>(ref v); }
-            if (targetType == typeof(int))    { var v = (int)num;    return Unsafe.As<int, T>(ref v); }
-            if (targetType == typeof(long))   { var v = (long)num;   return Unsafe.As<long, T>(ref v); }
-            if (targetType == typeof(uint))   { var v = (uint)num;   return Unsafe.As<uint, T>(ref v); }
-            if (targetType == typeof(ulong))  { var v = (ulong)num;  return Unsafe.As<ulong, T>(ref v); }
-            if (targetType == typeof(short))  { var v = (short)num;  return Unsafe.As<short, T>(ref v); }
-            if (targetType == typeof(ushort)) { var v = (ushort)num; return Unsafe.As<ushort, T>(ref v); }
-            if (targetType == typeof(byte))   { var v = (byte)num;   return Unsafe.As<byte, T>(ref v); }
-            if (targetType == typeof(sbyte))  { var v = (sbyte)num;  return Unsafe.As<sbyte, T>(ref v); }
-            if (targetType == typeof(double)) { return Unsafe.As<double, T>(ref num); }
-        }
-
         return default!;
     }
 

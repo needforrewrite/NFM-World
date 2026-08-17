@@ -176,7 +176,7 @@ public class LuaServerGamemode : IServerGamemode
         }
         catch (Exception ex)
         {
-            Logging.Error($"[LuaGamemode:{_scriptPath}] {name} failed: {ex.Message}");
+            Logging.Error($"[LuaGamemode:{_scriptPath}] {name} failed: {ex.Message}", ex);
         }
         return [LuaValue.Nil];
     }

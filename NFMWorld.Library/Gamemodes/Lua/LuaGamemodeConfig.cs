@@ -53,7 +53,7 @@ public class LuaGamemodeConfig
             }
             catch (Exception ex)
             {
-                Logging.Error($"[LuaGamemode:{path}] {name} failed: {ex.Message}");
+                Logging.Error($"[LuaGamemode:{path}] {name} failed: {ex.Message}", ex);
             }
             return [LuaValue.Nil];
         }

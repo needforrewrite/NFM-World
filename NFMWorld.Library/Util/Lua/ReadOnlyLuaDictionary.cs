@@ -12,10 +12,7 @@ public class ReadOnlyLuaDictionary<TKey, TValue>(IReadOnlyDictionary<TKey, TValu
 {
     public readonly IReadOnlyDictionary<TKey, TValue> Value = value;
 
-    public TValue this[TKey key]
-    {
-        get => Value[key];
-    }
+    public TValue this[TKey key] => Value[key];
 
     // ------------------------------------------------------------------
     // ILuaUserData — table-like behaviour via metatable
@@ -48,7 +45,7 @@ public class ReadOnlyLuaDictionary<TKey, TValue>(IReadOnlyDictionary<TKey, TValu
 
     private static ValueTask<int> IndexMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
     {
-        var arr = context.GetArgument<LuaDictionary<TKey, TValue>>(0);
+        var arr = context.GetArgument<ReadOnlyLuaDictionary<TKey, TValue>>(0);
         var key = context.GetArgument(1);
 
         if (key.TryRead<TKey>(out var typedValue))
@@ -61,7 +58,7 @@ public class ReadOnlyLuaDictionary<TKey, TValue>(IReadOnlyDictionary<TKey, TValu
 
     private static ValueTask<int> LenMetamethodImpl(LuaFunctionExecutionContext context, CancellationToken ct)
     {
-        var arr = context.GetArgument<LuaDictionary<TKey, TValue>>(0);
+        var arr = context.GetArgument<ReadOnlyLuaDictionary<TKey, TValue>>(0);
         return new(context.Return((double)arr.Value.Count));
     }
 

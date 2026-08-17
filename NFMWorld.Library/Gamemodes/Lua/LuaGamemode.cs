@@ -79,6 +79,7 @@ public partial class LuaGamemodeContext(LuaGamemode gamemode)
     [LuaName]
     public BackendCar CreateCar(int playerIndex, fix64 x, fix64 z)
     {
+        playerIndex -= 1; // lua starts counting at 1
         var player = Players[playerIndex];
         var car = new BackendCar(player.Parameters, playerIndex, (fix64)x, (fix64)z);
         player.Car = car;
@@ -289,7 +290,7 @@ public class LuaGamemode : BaseClientGamemode
         }
         catch (Exception ex)
         {
-            Logging.Error($"[LuaGamemode:{_scriptPath}] {name} failed: {ex.Message}");
+            Logging.Error($"[LuaGamemode:{_scriptPath}] {name} failed: {ex.Message}", ex);
         }
         return [LuaValue.Nil];
     }
