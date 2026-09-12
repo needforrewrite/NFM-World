@@ -22,6 +22,15 @@
 
   <ItemGroup>
     <None Include="scripts\**\*.luau" CopyToOutputDirectory="PreserveNewest" />
+    <None Remove="TraceAnalyzer\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="TraceAnalyzer\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Remove="TraceAnalyzer\**" />
   </ItemGroup>
 
 </Project>

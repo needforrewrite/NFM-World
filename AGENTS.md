@@ -164,6 +164,45 @@ Gamemodes are written in **Luau** and share one code path for singleplayer and m
 
 ---
 
+## Lua Table Storage (`Lua-CSharp`)
+
+`LuaTable` splits its storage three ways: a dense array part (integer keys near the array
+length), an **embedded struct** `LuaStringDictionary` (string keys — the common
+record-shaped case, so it costs no separate object per table), and a lazily created
+`LuaValueDictionary` class (everything else, including sparse integers). Both dictionaries
+use the same **signature-bucket** layout, ported from Faster.Map's `BlitzMap`:
+
+- A bucket is one `ulong`: `next << 32 | (signature | slot)`. `signature = hash & ~mask`, so
+  it is a multiple of the power-of-two bucket length and its low bits are free for the slot
+  index. An empty bucket is all ones; `next == 0xFFFFFFFF` ends a chain.
+- `FindValue` filters with `packed ^ signature <= mask`, which is an **exact** signature
+  match (not probabilistic) because both signatures are mask-aligned. A mismatch therefore
+  costs no entries-array access — that is the entire point of the layout.
+- The bucket length is a power of two and at least 2, so a signature is always even and can
+  never equal the all-ones empty marker. This is load-bearing: don't "simplify" the marker.
+- Entries are compact in slot order and removal **swap-erases** the last slot into the hole,
+  repairing the bucket that pointed at it. There is no free list and no stored hash.
+- Iteration order is array part → string dictionary → generic dictionary, and is stable
+  across a resize because slots are preserved.
+- `T` (`hash & mask`) must be ≤ 0.8 of the bucket array so `FindEmptyBucket` always has slack;
+  growth lands on exact powers of two (`maxCount = length / 2`).
+- `Entry` is 48 bytes for string keys (vs 56 before) and 80 for `LuaValue` keys (vs 96), at
+  the cost of a `ulong[]` bucket array. Net allocation is ~+4-7% (measured) for all three
+  table shapes in `LuaTableBenchmark`.
+
+### Lua table gotchas
+
+| Gotcha | Rule |
+|---|---|
+| nil assignment | Stores a **dead entry** (keeps the key findable so `next` can continue from it) instead of removing it. Never change this to a real remove — `tests-lua/nextvar.lua` clears keys mid-`pairs` and expects every key to be visited. |
+| Liveness | Counted, not derived: `LiveCount` scans slots. `Count` includes dead entries, so never use it as a "size". |
+| Resizing re-hashes | Entries don't store their hash, so the bucket rebuild (and `Insert`'s owner check) re-invokes `GetHashCode` on stored keys. Keep stored-key hashing off the hot read/update path. |
+| Sentinel safety | `signature != 0xFFFFFFFF` relies on the bucket length being a power of two ≥ 2. A length of 1 would make every live bucket look empty. |
+| Hash quality | `double.GetHashCode()` leaves the low ~20 bits of small integers zero, so `hash & mask` is 0 for all of them and sparse numeric keys (`t[1000]`) collapse into one chain. Measured ~15x slower than string lookups. A hash-mixing step in `ComputeHash` would fix it if it ever matters. |
+| Load factor | `_maxCount` must keep at least ~1/5 of the bucket array free, or `FindEmptyBucket` degrades to a long scan. |
+
+---
+
 ## Fine-Grained Reactive UI (Sx)
 
 A SolidJS/dom-expressions-style fine-grained reactivity UI framework for the Lua `UiLib`,

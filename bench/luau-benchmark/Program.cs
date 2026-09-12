@@ -46,6 +46,23 @@ switch (scenario)
     case "vmcore":
         RunVmcore(host, scripts, runs);
         break;
+    case "profile-preact-small":
+        RunPreactProfile(host, scripts, name: "preact-small", size: 16, fresh: true, iterations: 10000);
+        break;
+    case "profile-preact-large":
+        RunPreactProfile(host, scripts, name: "preact-large", size: 1024, fresh: false, iterations: 100);
+        break;
+    case "trace-preact-large":
+        RunPreactAllocTrace(host, scripts, name: "preact-large", size: 1024, fresh: false, iterations: 20);
+        break;
+    case "trace-preact-small":
+        RunPreactAllocTrace(host, scripts, name: "preact-small", size: 16, fresh: true, iterations: 2000);
+        break;
+    case "trace-preact-large-mount":
+        // Isolate first-render (initial mount, diffing against an empty tree) cost:
+        // no warmup call at all, single iteration.
+        RunPreactMountTrace(host, scripts, size: 1024);
+        break;
     default:
         RunFixed64(host, scripts, runs);
         RunPreact(host, scripts, runs, "preact-small", 16, true, 10000);
@@ -89,6 +106,81 @@ static void RunPreact(BenchmarkHost host, string scripts, int runs, string name,
         if (cpu < bestCpu) { bestCpu = cpu; bestWall = wall; }
     }
     PrintResult(name, bestCpu, bestWall);
+    Console.WriteLine();
+}
+
+static void RunPreactProfile(BenchmarkHost host, string scripts, string name, int size, bool fresh, int iterations)
+{
+    var path = Path.Combine(scripts, "preact_render.luau");
+    var mode = fresh ? "fresh-props (interop-bound)" : "stable-props (reconciler-bound)";
+    Console.WriteLine($"{name} (alloc profile) : {iterations} re-renders x {size}-node tree, {mode}");
+
+    // Warm up (JIT tiering, first-render allocations) before measuring.
+    host.RunScript(path, new LuaValue((double)iterations), new LuaValue((double)size), new LuaValue(fresh));
+
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    GC.WaitForPendingFinalizers();
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+
+    var gen0Before = GC.CollectionCount(0);
+    var gen1Before = GC.CollectionCount(1);
+    var gen2Before = GC.CollectionCount(2);
+    var allocBefore = GC.GetAllocatedBytesForCurrentThread();
+    var sw = System.Diagnostics.Stopwatch.StartNew();
+
+    var (cpu, wall, _) = host.RunScript(path, new LuaValue((double)iterations), new LuaValue((double)size), new LuaValue(fresh));
+
+    sw.Stop();
+    var allocAfter = GC.GetAllocatedBytesForCurrentThread();
+    var gen0After = GC.CollectionCount(0);
+    var gen1After = GC.CollectionCount(1);
+    var gen2After = GC.CollectionCount(2);
+
+    var totalAlloc = allocAfter - allocBefore;
+    Console.WriteLine($"  CPU {cpu * 1000,9:F3} ms | wall {wall * 1000,9:F3} ms (measured wall {sw.Elapsed.TotalMilliseconds,9:F3} ms)");
+    Console.WriteLine($"  Allocated: {totalAlloc,14:N0} bytes total | {totalAlloc / (double)iterations,10:N0} bytes/render");
+    Console.WriteLine($"  GC collections during run: Gen0={gen0After - gen0Before} Gen1={gen1After - gen1Before} Gen2={gen2After - gen2Before}");
+    Console.WriteLine();
+}
+
+static void RunPreactAllocTrace(BenchmarkHost host, string scripts, string name, int size, bool fresh, int iterations)
+{
+    var path = Path.Combine(scripts, "preact_render.luau");
+    Console.WriteLine($"{name} (alloc type trace) : {iterations} re-renders x {size}-node tree");
+
+    // Warm up (JIT tiering) before tracing.
+    host.RunScript(path, new LuaValue((double)iterations), new LuaValue((double)size), new LuaValue(fresh));
+
+    using var tracker = new AllocationTracker();
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    GC.WaitForPendingFinalizers();
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    tracker.Reset();
+
+    var (cpu, wall, _) = host.RunScript(path, new LuaValue((double)iterations), new LuaValue((double)size), new LuaValue(fresh));
+
+    Console.WriteLine($"  CPU {cpu * 1000,9:F3} ms | wall {wall * 1000,9:F3} ms");
+    tracker.PrintReport();
+    Console.WriteLine();
+}
+
+static void RunPreactMountTrace(BenchmarkHost host, string scripts, int size)
+{
+    var path = Path.Combine(scripts, "preact_render.luau");
+    Console.WriteLine($"preact-large (mount-only alloc trace) : 1 render (initial mount, no warmup) x {size}-node tree");
+
+    using var tracker = new AllocationTracker();
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    GC.WaitForPendingFinalizers();
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    tracker.Reset();
+
+    var allocBefore = GC.GetAllocatedBytesForCurrentThread();
+    var (cpu, wall, _) = host.RunScript(path, new LuaValue(1.0), new LuaValue((double)size), new LuaValue(false));
+    var allocAfter = GC.GetAllocatedBytesForCurrentThread();
+
+    Console.WriteLine($"  CPU {cpu * 1000,9:F3} ms | wall {wall * 1000,9:F3} ms | allocated {allocAfter - allocBefore,14:N0} bytes");
+    tracker.PrintReport();
     Console.WriteLine();
 }
 

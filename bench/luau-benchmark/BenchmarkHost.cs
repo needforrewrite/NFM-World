@@ -162,7 +162,7 @@ public sealed class BenchmarkHost : IDisposable
     /// </summary>
     LuaValue LoadSx()
     {
-        var sxPath = Path.Combine(_libraryRoot, "sx", "init.luau");
+        var sxPath = Path.Combine(_libraryRoot, "sx", "index.luau");
         var code = File.ReadAllText(sxPath);
         var closure = _state.Load(code, "sx/index.luau");
         var results = _state.Call(closure, []);
