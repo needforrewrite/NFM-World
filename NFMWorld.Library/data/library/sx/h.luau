@@ -175,7 +175,36 @@ export type Styles = {
 	zIndex: number | nil,
 }
 
-export type TextStyles = Styles & {
+-- Luau checks an object literal against each side of `A & B` independently, so
+-- a plain `Styles & { textOnlyField: T }` rejects a literal that only sets
+-- `textOnlyField` (it isn't a `Styles`) and loses fields entirely when it flows
+-- through a further generic (e.g. `Propify` below only forwards a field's raw
+-- declared type, so an unflattened intersection carries its two-sided shape
+-- into every consumer instead of behaving like one merged table). Flatten it
+-- into a single table type up front so every consumer — Propify, WithVariants,
+-- a plain `: TextStyles` annotation — sees the same flat shape a literal can
+-- actually match.
+type function flattenTable(t)
+	local result = types.newtable()
+
+	local function collect(ty)
+		if ty:is("table") then
+			for k, v in ty:properties() do
+				result:setproperty(k, v.read)
+			end
+		elseif ty:is("intersection") then
+			for _, part in ty:components() do
+				collect(part)
+			end
+		end
+	end
+
+	collect(t)
+
+	return result
+end
+
+export type TextStyles = flattenTable<Styles & {
 	color: string?,
 	strokeColor: string?,
 	fontFamily: string?,
@@ -183,12 +212,12 @@ export type TextStyles = Styles & {
 	fontStyle: 'bold' | 'italic' | 'plain' | 'bold italic' | nil,
 	verticalAlign: "top" | "bottom" | "middle" | nil,
 	textAlign: "left" | "right" | "center" | nil,
-}
+}>
 
-export type ViewProps = {
+type ViewPropsWithStyle<T> = {
 	name: Signalish<string?>,
-	ref: Signalish<{ current: Component? }?>,
-	style: Signalish<Styles?>,
+	ref: Signalish<{ current: Component? }?> | ((ref: Component) -> ())?,
+	style: Signalish<T?>,
 	onanimationframebegan: Signalish<(() -> ())?>,
 	active: Signalish<boolean?>,
 	focused: Signalish<boolean?>,
@@ -208,23 +237,22 @@ export type ViewProps = {
 	children: Signalish<{any}?>,
 }
 
-export type ImageProps = ViewProps & {
+export type ViewProps = ViewPropsWithStyle<Styles>;
+
+export type ImageProps = ViewPropsWithStyle<Styles> & {
 	src: Signalish<string?>,
 	scale: Signalish<number?>,
 }
 
-export type TextProps = ViewProps & {
-	style: Signalish<TextStyles?>,
-}
+export type TextProps = ViewPropsWithStyle<TextStyles>;
 
-export type TextInputStyles = TextStyles & {
+export type TextInputStyles = flattenTable<TextStyles & {
 	cursorColor: string?,
 	selectionColor: string?,
 	placeholderColor: string?,
-}
+}>
 
-export type TextInputProps = ViewProps & {
-	style: Signalish<TextInputStyles?>,
+export type TextInputProps = ViewPropsWithStyle<TextInputStyles> & {
 	value: Signalish<string?>,
 	placeholder: Signalish<string?>,
 	onsubmit: ((value: string) -> ())?,
