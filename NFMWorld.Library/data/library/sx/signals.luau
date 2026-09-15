@@ -422,10 +422,21 @@ local function onCleanup(fn: () -> ()): ()
     end
 end
 
+-- Run `fn` once, AFTER the current mount pass. createEffect runs its body eagerly, so
+-- calling it here would run `fn` while the component body is still executing — before the
+-- descriptor it returns has been turned into host nodes, so refs are still empty and
+-- nothing is in the tree yet. Instead the computation is queued (never tracked: it is
+-- created STALE, run once by the flush, and then stays CLEAN since it subscribes to
+-- nothing under untrack). The queue is drained by the flush that follows the mount —
+-- render()'s flushSync for the initial tree, or the in-progress flushEffects pass for a
+-- subtree mounted later by Show/For/Switch, whose while-loop picks up newly queued nodes.
 local function onMount(fn: () -> ()): ()
-    createEffect(function()
+    local node = createComputation(function()
         untrack(fn)
-    end)
+    end, true)
+    node.state = STALE
+    queueEffect(node)
+    scheduleFlush()
 end
 
 local function getOwner(): any?
