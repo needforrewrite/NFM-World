@@ -5,6 +5,9 @@
 
 local Sx = require("../library/sx/index")
 local x = Sx.x
+local View = Sx.View
+local Switch = Sx.Switch
+local Match = Sx.Match
 
 local MainMenu = require("./routes/mainmenu")
 local Garage = require("./routes/garage")
@@ -25,7 +28,7 @@ local function Router()
 	end)
 
 	return (
-		x(Sx.View) {
+		x(View)({
 			style = {
 				width = "100%",
 				height = "100%",
@@ -33,33 +36,29 @@ local function Router()
 				display = "flex",
 				flexDirection = "column",
 			},
-			x(Sx.Switch) {
-				x(Sx.Match) {
-					when = function() return route() == "main-menu" end,
-					x(MainMenu) {},
-				},
-				x(Sx.Match) {
-					when = function() return route() == "garage" end,
-					x(Garage) {},
-				},
-				x(Sx.Match) {
-					when = function() return route() == "race" end,
-					x(RaceHud) {},
-				},
-				x(Sx.Match) {
-					when = function() return route() == "test" end,
-					x(TestPage) {},
-				},
-				-- Fallback: any unhandled route shows the default page (main menu)
-				x(Sx.Match) {
-					when = function() return true end,
-					x(MainMenu) {},
-				},
-			},
-			-- DevTools overlay (top-right inspector for the Sx renderer).
-			x(DevTools) {},
-		}
+			x(Switch)({
+				x(Match)({ when = function() return route() == "main-menu" end,
+					x(MainMenu)({}),
+				}),
+				x(Match)({ when = function() return route() == "garage" end,
+					x(Garage)({}),
+				}),
+				x(Match)({ when = function() return route() == "race" end,
+					x(RaceHud)({}),
+				}),
+				x(Match)({ when = function() return route() == "test" end,
+					x(TestPage)({}),
+				}),
+				--[[ Fallback: any unhandled route shows the default page (main menu) ]]
+				x(Match)({ when = true,
+					x(MainMenu)({}),
+				}),
+			}),
+
+			--[[ DevTools overlay (top-right inspector for the Sx renderer). ]]
+			x(DevTools)({}),
+		})
 	)
 end
 
-Sx.render(x(Router) {})
+Sx.render(x(Router)({}))

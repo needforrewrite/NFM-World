@@ -1,0 +1,81 @@
+--!strict
+-- TextField — reusable fine-grained reactive text input for Sx.
+--
+-- Styled wrapper around the host `Sx.TextInput` with an optional reactive `label`,
+-- a focus highlight, and placeholder color. `value` / `placeholder` are Signalish;
+-- `onChange` / `onSubmit` are optional callbacks. Focus is tracked with a signal so
+-- the border only re-sets when focus actually changes.
+
+local Sx = require("../../library/sx/index")
+local x = Sx.x
+local theme = require("../../library/ui/theme")
+
+export type TextFieldProps = {
+	value: Sx.Signalish<string?>,
+	placeholder: Sx.Signalish<string>?,
+	label: Sx.Signalish<string>?,
+	onChange: ((string) -> ())?,
+	onSubmit: ((string) -> ())?,
+	width: number?,
+	disabled: boolean?,
+}
+
+local function TextField(props: TextFieldProps)
+	local focus, setFocus = Sx.createSignal(false)
+	local hovered, setHovered = Sx.createSignal(false)
+	local disabled = props.disabled == true
+
+	return <Sx.View
+		style={{
+			display = "flex",
+			flexDirection = "column",
+			alignItems = "flex-start",
+			gap = 6,
+			width = props.width or "100%",
+		}}>
+		<Sx.Show when={function() return props.label ~= nil end}>
+			<Sx.Text style={{ fontSize = 12, color = "rgba(255,255,255,0.6)" }}>
+				{function()
+					local label = props.label
+					if label == nil then return "" end
+					return Sx.read(label)
+				end}
+			</Sx.Text>
+		</Sx.Show>
+		<Sx.TextInput
+			style={Sx.createMemo(function(): Sx.TextInputStyles
+				local isFocused = focus()
+				return {
+					paddingTop = 10,
+					paddingBottom = 10,
+					paddingLeft = 14,
+					paddingRight = 14,
+					backgroundColor = "rgba(255,255,255,0.08)",
+					borderWidth = 1,
+					borderColor = isFocused and "rgba(79,195,247,0.7)" or (hovered() and "rgba(255,255,255,0.4)" or "rgba(255,255,255,0.12)"),
+					borderRadius = 8,
+					placeholderColor = "rgba(255,255,255,0.35)",
+					cursorColor = theme.accent,
+				}
+			end)}
+			value={props.value}
+			placeholder={props.placeholder}
+			onchange={props.onChange}
+			onsubmit={props.onSubmit}
+			onfocus={function()
+				setFocus(true)
+			end}
+			onblur={function()
+				setFocus(false)
+			end}
+			onmouseenter={function()
+				setHovered(true)
+			end}
+			onmouseleave={function()
+				setHovered(false)
+			end}
+		/>
+	</Sx.View>
+end
+
+return TextField

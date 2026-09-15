@@ -1,0 +1,41 @@
+# luaux configuration. Every setting is optional.
+
+# Where the build reads and writes, and which files it considers.
+# [build]
+# in = "src"
+# out = "build"
+# include = ["**"]
+# exclude = ["**/*.spec.luaux"]
+# clean = true             # delete outputs whose source is gone
+
+# Output is line-for-line with the source so stack traces and luau-lsp
+# diagnostics point at the right .luaux line, and comments are always carried
+# through. Run stylua over the output if you want it formatted; luaux does not
+# reformat your Luau.
+
+# Rename elements. An override retires the original spelling, so once TextLabel
+# is renamed, <TextLabel> is an error and <text> is the name.
+# [elements]
+# TextLabel = "text"
+
+# Rename properties for every class.
+# [properties]
+# TextColor3 = "textColor"
+
+# Rename properties for one class. Beats the table above, so mapping a name to
+# itself opts that class out of a global rename.
+# [properties.Frame]
+# BackgroundColor3 = "bgColor"
+
+# off | warn | error. Warns when a child expression contains LuauX that no function
+# encloses, since it is built once and will not update. Defaults off under the
+# element backend, where the component body re-runs and a bare conditional child
+# is ordinary.
+# [lints]
+# static_conditional_child = "warn"
+
+[factory]
+backend = "curried"                   # F(class)(propsAndChildren)
+create = "x"                   # or "vide.create", if you keep it in one binding
+wrap_calls = true
+wrap_calls_in_children = true

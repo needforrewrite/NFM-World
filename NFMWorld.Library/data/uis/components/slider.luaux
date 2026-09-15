@@ -1,0 +1,114 @@
+--!strict
+-- Slider — reusable fine-grained reactive slider for Sx.
+--
+-- Controlled component: `value` (signal/accessor) + `onValue`. Maps pointer X across
+-- a track of `width` px to [min, max], snapped to `step`. Both click and drag update.
+-- Generalizes the hardcoded-track slider from settings.luau (`width` replaces TRACK_W).
+
+local Sx = require("../../library/sx/index")
+local x = Sx.x
+local theme = require("../../library/ui/theme")
+
+export type SliderProps = {
+	min: number?,
+	max: number?,
+	step: number?,
+	value: Sx.Signalish<number>,
+	onValue: (number) -> (),
+	width: number?,
+	disabled: boolean?,
+}
+
+local function clamp01(v: number)
+	if v < 0 then return 0 end
+	if v > 1 then return 1 end
+	return v
+end
+
+local function Slider(props: SliderProps)
+	local min = props.min or 0
+	local max = props.max or 1
+	local step = props.step or 1
+	local trackW = props.width or 160
+	local disabled = props.disabled == true
+	local hovered, setHovered = Sx.createSignal(false)
+
+	local KNOB = 14
+	local TRACK_H = 4
+	local OUTER_H = 20
+	local TRACK_TOP = (OUTER_H - TRACK_H) / 2
+	local KNOB_TOP = (OUTER_H - KNOB) / 2
+
+	local function setFromX(px: number)
+		local frac = clamp01(px / trackW)
+		local raw = min + frac * (max - min)
+		local stepped = raw
+		if step > 0 then
+			stepped = math.floor((raw - min) / step + 0.5) * step + min
+		end
+		if stepped < min then stepped = min end
+		if stepped > max then stepped = max end
+		props.onValue(stepped)
+	end
+
+	return <Sx.View
+		style={{
+			width = trackW,
+			height = OUTER_H,
+			position = "relative",
+		}}
+		onmousedown={function(event)
+			if disabled then return end
+			setFromX(event.relativePosition.x)
+		end}
+		onmousedrag={function(event)
+			if disabled then return end
+			setFromX(event.relativePosition.x)
+		end}
+		onmouseenter={function()
+			setHovered(true)
+		end}
+		onmouseleave={function()
+			setHovered(false)
+		end}>
+		<Sx.View
+			style={{
+				position = "absolute",
+				left = 0,
+				right = 0,
+				top = TRACK_TOP,
+				height = TRACK_H,
+				backgroundColor = "rgba(255,255,255,0.15)",
+				borderRadius = TRACK_H / 2,
+				overflow = "hidden",
+			}}>
+			<Sx.View style={Sx.createMemo(function(): Sx.Styles
+				local value = Sx.read(props.value) or 0
+				local frac = clamp01((value - min) / (max - min))
+				return {
+					width = ("%d%%"):format(math.floor(frac * 100 + 0.5)),
+					height = "100%",
+					backgroundColor = disabled and "rgba(79,195,247,0.4)" or (hovered() and theme.accentHover or theme.accent),
+				}
+			end)} />
+		</Sx.View>
+		<Sx.View style={Sx.createMemo(function(): Sx.Styles
+			local value = Sx.read(props.value) or 0
+			local frac = clamp01((value - min) / (max - min))
+			local hov = hovered() and not disabled
+			return {
+				position = "absolute",
+				top = KNOB_TOP,
+				left = frac * trackW - KNOB / 2,
+				width = KNOB,
+				height = KNOB,
+				backgroundColor = "#ffffff",
+				borderWidth = 2,
+				borderColor = hov and "#4fc3f7" or "rgba(79,195,247,0.7)",
+				borderRadius = KNOB / 2,
+			}
+		end)} />
+	</Sx.View>
+end
+
+return Slider

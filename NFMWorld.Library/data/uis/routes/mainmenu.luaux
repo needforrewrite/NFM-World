@@ -3,7 +3,7 @@
 -- account are signals; the item list is a keyed For; reactive text children update via
 -- single commitTextUpdate calls. No vdom diffing, no per-frame re-render.
 
-local function __luaux_read(v) return if type(v) == "function" then (v :: () -> any)() else v end; local Sx = require("../../library/sx/index")
+local Sx = require("../../library/sx/index")
 local styled = Sx.styled
 local x = Sx.x
 local theme = require("../../library/ui/theme")
@@ -363,53 +363,53 @@ local MainMenu = function()
 	end)
 
 	return (
-		x(Root)({
-			--[[ Switch for conditional views ]]
-			x(Sx.Switch)({
-				--[[ Settings view ]]
-				x(Sx.Match)({ when = function() return currentView() == "settings" end,
-					x(Settings)({ onClose = function() setCurrentView("menu") end }),
-				}),
-				--[[ Menu view (default) ]]
-				x(Sx.Match)({ when = function() return currentView() == "menu" end,
-					x(PageTitle)({ name = "PageTitle",
-						function() return currentPage().title end,
-					}),
+		<Root>
+			<!-- Switch for conditional views -->
+			<Sx.Switch>
+				<!-- Settings view -->
+				<Sx.Match when={currentView() == "settings"}>
+					<Settings onClose={function() setCurrentView("menu") end} />
+				</Sx.Match>
+				<!-- Menu view (default) -->
+				<Sx.Match when={currentView() == "menu"}>
+					<PageTitle name="PageTitle">
+						{currentPage().title}
+					</PageTitle>
 
-					--[[ Welcome subtitle, shown only on the root page when logged in ]]
-					x(Sx.Show)({ when = function() return #pageStack() == 0 and account() ~= nil and (account() :: AccountData).isLoggedIn end,
-						x(Subtitle)({ name = "Subtitle", function() return `Welcome, {__luaux_read((account() :: AccountData).name)}` end,
+					<!-- Welcome subtitle, shown only on the root page when logged in -->
+					<Sx.Show when={#pageStack() == 0 and account() ~= nil and (account() :: AccountData).isLoggedIn}>
+						<Subtitle name="Subtitle">
+							Welcome, {(account() :: AccountData).name}
+						</Subtitle>
+					</Sx.Show>
 
-						}),
-					}),
-
-					--[[ Menu items (keyed For) ]]
-					x(Items)({ name = "Items",
-						x(Sx.For<<MenuItem>>)({ each = function() return currentPage().items end,
-							function(item: () -> MenuItem, index: number)
-								return x(ItemBtn)({
-									name = "ItemBtn",
-									onmousedown = function(event)
+					<!-- Menu items (keyed For) -->
+					<Items name="Items">
+						<Sx.For<<MenuItem>> each={currentPage().items}>
+							{function(item: () -> MenuItem, index: number)
+								return <ItemBtn
+									name="ItemBtn"
+									onmousedown={function(event)
 										item().action()
-									end,
-									x(ItemLabel)({ name = "ItemLabel",
-										function() return item().label end,
-									}),
-									x(ItemDesc)({ name = "ItemDesc",
-										function() return item().description end,
-									}),
-								})
-							end,
-						}),
-					}),
+									end}>
+									<ItemLabel name="ItemLabel">
+										{item().label}
+									</ItemLabel>
+									<ItemDesc name="ItemDesc">
+										{item().description}
+									</ItemDesc>
+								</ItemBtn>
+							end}
+						</Sx.For>
+					</Items>
 
-					--[[ Footer on the root page only ]]
-					x(Sx.Show)({ when = function() return #pageStack() == 0 end,
-						x(Footer)({ name = "Footer", "NFM World — Lua + React UI" }),
-					}),
-				}),
-			}),
-		})
+					<!-- Footer on the root page only -->
+					<Sx.Show when={function() return #pageStack() == 0 end}>
+						<Footer name="Footer">{"NFM World — Lua + React UI"}</Footer>
+					</Sx.Show>
+				</Sx.Match>
+			</Sx.Switch>
+		</Root>
 	)
 end
 

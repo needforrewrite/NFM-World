@@ -1,0 +1,356 @@
+--!strict
+-- Garage view (Sx port of preact garage.luau), ported from
+-- nfm-world/data/html/src/pages/Garage.tsx. Fine-grained: collections/currentCar/
+-- currentCollection/searchQuery are signals; the collection list is a keyed For; a car
+-- click updates only the cards whose selection actually changed (stable style tables +
+-- reference-compare in the renderer skip redundant setProperty).
+
+local Sx = require("../../library/sx/index")
+local styled = Sx.styled
+local x = Sx.x
+local Button = require("../../library/ui/button")
+local glasscard = require("../components/glasscard")
+local GlassCard = glasscard.GlassCard
+local StatBar = glasscard.StatBar
+
+local Root = styled(Sx.View) {
+	width = "100%",
+	height = "100%",
+	display = "flex",
+	flexDirection = "row",
+}
+
+local Sidebar = styled(Sx.View) {
+	width = 340,
+	height = "100%",
+	paddingTop = 32,
+	paddingBottom = 32,
+	paddingLeft = 24,
+	paddingRight = 24,
+	display = "flex",
+	flexDirection = "column",
+	gap = 16,
+	backgroundColor = "rgba(0,0,0,0.3)",
+	borderRightWidth = 1,
+	borderColor = "rgba(255,255,255,0.06)",
+}
+
+local Header = styled(Sx.Text) {
+	fontSize = 28,
+	fontStyle = "bold",
+}
+
+local CollectionList = styled(Sx.View) {
+	flex = 1,
+	display = "flex",
+	flexDirection = "column",
+	overflow = "scroll",
+	gap = 8,
+}
+
+local StatsPanel = styled(Sx.View) {
+	flexShrink = 0,
+	display = "flex",
+	alignItems = "center",
+	justifyContent = "center",
+}
+
+local StatsCard = styled(Sx.View) {
+	width = 280,
+	padding = 24,
+	flexDirection = "column",
+}
+
+local CarName = styled(Sx.Text) {
+	fontSize = 18,
+	fontStyle = "bold",
+	color = "#4fc3f7",
+	marginBottom = 16,
+}
+
+local Placeholder = styled(Sx.Text) {
+	fontSize = 18,
+	color = "rgba(255,255,255,0.3)",
+}
+
+local CarCardName = styled(Sx.Text) {
+	fontSize = 14,
+	fontStyle = "bold",
+	marginBottom = 4,
+}
+
+local CarCardCollection = styled(Sx.Text) {
+	fontSize = 11,
+	color = "rgba(255,255,255,0.4)",
+}
+
+local NoResults = styled(Sx.Text) {
+	fontSize = 14,
+	color = "rgba(255,255,255,0.3)",
+	textAlign = "center",
+	padding = 24,
+}
+
+-- Module-level constant style for the collection wrapper View (stable identity).
+local collectionViewStyle: Sx.Styles = { flexDirection = "column", flexShrink = 0 }
+
+-- Stable card styles: selection change swaps the reference, so unchanged cards skip
+-- setProperty (the renderer's reactive-prop effect compares references).
+local cardStyleSelected: Sx.Styles = { marginBottom = 8, opacity = 1 }
+local cardStyleUnselected: Sx.Styles = { marginBottom = 8, opacity = 0.7 }
+
+-- Card component. `selected` is an accessor; only cards whose selection changes update.
+local function CarCard(props: { name: Sx.Signalish<string>, collectionName: Sx.Signalish<string>, fileName: Sx.Signalish<string>, selected: Sx.Signalish<boolean>, onSelect: (string, string) -> () })
+	local style = Sx.createMemo(function(): Sx.Styles
+		if Sx.read(props.selected) then
+			return cardStyleSelected
+		end
+		return cardStyleUnselected
+	end)
+
+	return <GlassCard
+		name={"glasscard " .. Sx.read(props.name)}
+		color={Sx.read(props.selected) and "#4fc3f7" or "rgba(255,255,255,0.15)"}
+		style={style}
+		onmousedown={function()
+			props.onSelect(Sx.read(props.collectionName), Sx.read(props.fileName))
+		end}>
+		<CarCardName name={Sx.read(props.name)}>{props.name}</CarCardName>
+		<CarCardCollection name={Sx.read(props.collectionName)}>{props.collectionName}</CarCardCollection>
+	</GlassCard>
+end
+
+local function CollectionSection(props: { name: Sx.Signalish<string>, active: Sx.Signalish<boolean>, onSelect: (string) -> () })
+	return <Sx.View
+		name={"inner view " .. Sx.read(props.name)}
+		style={Sx.createMemo(function(): Sx.Styles
+			local active = Sx.read(props.active)
+			return {
+				marginBottom = 6,
+				paddingTop = 4,
+				paddingBottom = 4,
+				paddingLeft = 8,
+				paddingRight = 8,
+				borderRadius = 4,
+				borderLeftWidth = 2,
+				borderColor = active and "#4fc3f7" or "transparent",
+				backgroundColor = active and "rgba(79,195,247,0.08)" or "transparent",
+				flexGrow = 1,
+				flexShrink = 0,
+			}
+		end)}
+		onmousedown={function() props.onSelect(Sx.read(props.name)) end}>
+			<Sx.Text
+				style={Sx.createMemo(function(): Sx.TextStyles
+					local active = Sx.read(props.active)
+					return { fontSize = 12, color = active and "#4fc3f7" or "rgba(255,255,255,0.4)" }
+				end)}>
+				{props.name}
+			</Sx.Text>
+	</Sx.View>
+end
+
+local function Garage()
+	local currentCar, setCurrentCar = Sx.createSignal<<CarStatsData | nil>>(nil)
+	local collections, setCollections = Sx.createSignal<<CarCollectionsData | nil>>(nil)
+	local currentCollection, setCurrentCollection = Sx.createSignal<<CarCollectionData | nil>>(nil)
+	local searchQuery, setSearchQuery = Sx.createSignal<<string>>("")
+	local rootRef: { current: Component? } = { current = nil }
+
+	Sx.createEffect(function()
+		local u1 = UiLib.onEvent("garage:currentCar", function(data)
+			setCurrentCar(data)
+		end)
+		local u2 = UiLib.onEvent("garage:collections", function(data)
+			setCollections(data)
+		end)
+		local u3 = UiLib.onEvent("garage:currentCollection", function(data)
+			setCurrentCollection(data)
+		end)
+
+		UiLib.defer(function()
+			UiLib.call("requestGarageData", {})
+		end)
+
+		Sx.onCleanup(function()
+			u1()
+			u2()
+			u3()
+		end)
+	end)
+
+	local function handleSelectCar(collection, fileName)
+		UiLib.call("selectCar", { collection = collection, fileName = fileName })
+	end
+
+	local function handleSelectCollection(collection)
+		UiLib.call("selectCollection", { collection = collection })
+	end
+
+	local function handleGlobalKey(event)
+		print(tostring(event.keyCode))
+		if event.keyCode == Key.left then
+			UiLib.call("cycleCar", { direction = "left" })
+		elseif event.keyCode == Key.right then
+			UiLib.call("cycleCar", { direction = "right" })
+		elseif event.keyCode == Key.enter then
+			UiLib.call("confirm", {})
+		elseif event.keyCode == Key.escape then
+			UiLib.call("cancel", {})
+		end
+	end
+
+	-- Client-side search filter
+	local query = Sx.createMemo(function()
+		return searchQuery():lower():match("^%s*(.-)%s*$") or ""
+	end)
+
+	local filteredCollections = Sx.createMemo(function()
+		local result: {(CarCollectionData | { id: string, cars: {CarStatsData} })} = {}
+		local cols = collections()
+		if cols ~= nil then
+			local q = query()
+			if q == "" then
+				for i = 1, #cols.collections do
+					result[#result + 1] = cols.collections[i]
+				end
+			else
+				for i = 1, #cols.collections do
+					local col = cols.collections[i]
+					local matchedCars = {}
+					for j = 1, #col.cars do
+						local car = col.cars[j]
+						if car.name:lower():find(q, 1, true) ~= nil then
+							matchedCars[#matchedCars + 1] = car
+						end
+					end
+					if #matchedCars > 0 then
+						result[#result + 1] = {
+							id = col.id,
+							cars = matchedCars,
+						}
+					end
+				end
+			end
+		end
+		return result
+	end)
+
+	Sx.onMount(function()
+		print('focusing!!!')
+		if rootRef.current ~= nil then
+			print('focusing inner!!!')
+			rootRef.current:focus()
+		end
+	end)
+
+	return <Root ref={function(it)
+			print('setting root ref!!!')
+			rootRef.current = it
+			print('root ref set!!!')
+		end} tabindex={0} onkeydown={handleGlobalKey}>
+		<Sidebar>
+			<Header>Garage</Header>
+
+			<StatsPanel>
+				<Sx.Show when={currentCar() ~= nil} fallback={<Placeholder>Select a car to view stats</Placeholder>}>
+					<StatsCard>
+						<CarName>{(currentCar() :: CarStatsData).name}</CarName>
+						<StatBar label="Top Speed" value={(currentCar() :: CarStatsData).topSpeed} color="#ff6e40" />
+						<StatBar label="Acceleration" value={(currentCar() :: CarStatsData).acceleration} color="#ffd740" />
+						<StatBar label="Handling" value={(currentCar() :: CarStatsData).handling} color="#69f0ae" />
+						<StatBar label="Power Save" value={(currentCar() :: CarStatsData).powerSave} color="#40c4ff" />
+						<StatBar label="Strength" value={(currentCar() :: CarStatsData).strength} color="#ff4081" />
+						<StatBar label="Max Health" value={(currentCar() :: CarStatsData).maxHealth} color="#e040fb" />
+						<StatBar label="Stunting" value={(currentCar() :: CarStatsData).stunting} color="#ff6e40" />
+						<StatBar label="Hypergliding" value={(currentCar() :: CarStatsData).hypergliding} color="#7c4dff" />
+						<StatBar label="AB'ing" value={(currentCar() :: CarStatsData).abing} color="#448aff" />
+					</StatsCard>
+				</Sx.Show>
+			</StatsPanel>
+
+			<Sx.TextInput
+				style={{
+					width = "100%",
+					paddingTop = 10,
+					paddingBottom = 10,
+					paddingLeft = 14,
+					paddingRight = 14,
+					backgroundColor = "rgba(255,255,255,0.08)",
+					borderWidth = 1,
+					borderColor = "rgba(255,255,255,0.12)",
+					borderRadius = 8,
+					flexShrink = 0,
+				}}
+				placeholder="Search cars..."
+				value={searchQuery}
+				onchange={function(value)
+					setSearchQuery(value)
+				end}
+				onsubmit={function(value)
+					local fc = filteredCollections()
+					if #fc > 0 then
+						local firstCol = fc[1]
+						if firstCol.cars ~= nil and #firstCol.cars > 0 then
+							handleSelectCar(firstCol.id, firstCol.cars[1].fileName)
+							setSearchQuery("")
+							if rootRef.current ~= nil then
+								rootRef.current:focus()
+							end
+						end
+					end
+				end}
+				onkeydown={function(event)
+					if event.keyCode == Key.escape then
+						setSearchQuery("")
+						if rootRef.current ~= nil then
+							rootRef.current:focus()
+						end
+					end
+				end}
+			/>
+
+			<CollectionList>
+				<Sx.For<<CarCollectionData | { id: string, cars: {CarStatsData} }>> each={filteredCollections}>
+					{function(item: () -> (CarCollectionData | { id: string, cars: {CarStatsData} }), index: number)
+						return <Sx.View
+							name={"view " .. item().id}
+							style={collectionViewStyle}>
+							<CollectionSection
+								name={item().id}
+								active={currentCollection() ~= nil and (currentCollection() :: CarCollectionData).id == item().id}
+								onSelect={handleSelectCollection}
+							/>
+							<Sx.For<<CarStatsData>> each={item().cars}>
+								{function(car: () -> CarStatsData, index2: number)
+									return <CarCard
+										name={car().name}
+										collectionName={item().id}
+										fileName={car().fileName}
+										selected={currentCar() ~= nil and (currentCar() :: CarStatsData).fileName == car().fileName}
+										onSelect={handleSelectCar}
+									/>
+								end}
+							</Sx.For>
+						</Sx.View>
+					end}
+				</Sx.For>
+
+				<Sx.Show when={query() ~= "" and #filteredCollections() == 0}>
+					<NoResults>
+						No cars match match "{searchQuery()}"
+					</NoResults>
+				</Sx.Show>
+			</CollectionList>
+
+			<Button
+				label="← Back to Menu"
+				onPress={function()
+					UiLib.call("back", {})
+				end}
+			/>
+		</Sidebar>
+	</Root>
+end
+
+return Garage

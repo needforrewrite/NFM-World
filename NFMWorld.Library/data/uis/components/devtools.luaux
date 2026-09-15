@@ -1,0 +1,658 @@
+--!strict
+-- Sx devtools: an in-game inspector overlay for the Sx fine-grained renderer, inspired
+-- by solid-devtools and the ClaySharp debugger.
+--
+-- Shows two views backed by the core introspection added to sx/signals.luau and
+-- sx/dom.luau:
+--   * "Tree"  — the mounted component / flow / host-element tree (Sx.devtools.snapshot()).
+--   * "Signals" — live signal / memo / effect nodes with their current value
+--     (Sx.debug.list()). Effects and memos are registered as computations; only
+--     signals / memos are really interesting, effects are shown for completeness.
+--
+-- Enable tree capture at module load (before Sx.render), then refresh manually or turn
+-- on auto-refresh (which re-snapshots once per frame when any signal with observers is
+-- written). This is debug tooling: it intentionally runs on the same reactive host it
+-- inspects, so treat its own signals as noise.
+
+local Sx = require("../../library/sx/index")
+local styled = Sx.styled
+local x = Sx.x
+local theme = require("../../library/ui/theme")
+
+-- Enable component-tree capture before the app renders.
+Sx.devtools.enable()
+
+-- ── Styled primitives ────────────────────────────────────────────
+
+local Panel = styled(Sx.View) {
+	position = "absolute",
+	top = 12,
+	right = 12,
+	zIndex = 1000000,
+	width = 400,
+	height = "90%",
+	backgroundColor = "rgba(10,12,20,0.94)",
+	borderWidth = 1,
+	borderColor = "rgba(79,195,247,0.4)",
+	borderRadius = 10,
+	display = "flex",
+	flexDirection = "column",
+	paddingTop = 8,
+	paddingBottom = 8,
+	paddingLeft = 10,
+	paddingRight = 10,
+	gap = 6,
+	overflow = "hidden",
+}
+
+local Header = styled(Sx.View) {
+	display = "flex",
+	flexDirection = "row",
+	alignItems = "center",
+	justifyContent = "space-between",
+	flexShrink = 0,
+	paddingBottom = 6,
+	borderBottomWidth = 1,
+	borderColor = "rgba(255,255,255,0.08)",
+}
+
+local Title = styled(Sx.Text) {
+	fontSize = 12,
+	fontStyle = "bold",
+	color = theme.accent,
+}
+
+local CloseBtn = styled(Sx.Text) {
+	fontSize = 13,
+	color = theme.textMuted,
+	paddingLeft = 8,
+	paddingRight = 8,
+	hover = { color = theme.textPrimary },
+}
+
+local Tabs = styled(Sx.View) {
+	display = "flex",
+	flexDirection = "row",
+	flexShrink = 0,
+	gap = 6,
+}
+
+local TabLabel = styled(Sx.Text) {
+	fontSize = 11,
+}
+
+local Toolbar = styled(Sx.View) {
+	display = "flex",
+	flexDirection = "row",
+	flexShrink = 0,
+	gap = 6,
+	alignItems = "center",
+}
+
+local ToolBtn = styled(Sx.View) {
+	paddingTop = 2,
+	paddingBottom = 2,
+	paddingLeft = 8,
+	paddingRight = 8,
+	borderRadius = 4,
+	backgroundColor = theme.surface,
+	hover = { backgroundColor = theme.accentSoftStrong },
+}
+
+local Body = styled(Sx.View) {
+	display = "flex",
+	flexDirection = "column",
+	alignItems = "stretch",
+	flexGrow = 1,
+	flexShrink = 1,
+	minHeight = 0,
+	gap = 2,
+	overflow = "scroll",
+}
+
+local Launcher = styled(Sx.View) {
+	position = "absolute",
+	top = 12,
+	right = 12,
+	paddingTop = 6,
+	paddingBottom = 6,
+	paddingLeft = 10,
+	paddingRight = 10,
+	backgroundColor = "rgba(10,12,20,0.85)",
+	borderWidth = 1,
+	borderColor = "rgba(79,195,247,0.5)",
+	borderRadius = 6,
+	hover = { backgroundColor = "rgba(79,195,247,0.25)" },
+}
+
+-- ── Formatting helpers ───────────────────────────────────────────
+
+local function nodeLabel(node: any): string
+	if node.kind == "component" then
+		return node.name
+	elseif node.kind == "host" then
+		return "<" .. node.name .. ">"
+	end
+	return "[" .. node.name .. "]"
+end
+
+local function colorFor(node: any): string
+	if node.kind == "component" then
+		return "#7ee787" -- green
+	elseif node.kind == "host" then
+		return "rgba(255,255,255,0.55)"
+	end
+	return "#d2a8ff" -- purple (flow)
+end
+
+local function fmtValue(v: any): string
+	local t = type(v)
+	if v == nil then
+		return "nil"
+	end
+	if t == "string" then
+		return '"' .. v .. '"'
+	end
+	if t == "number" or t == "boolean" then
+		return tostring(v)
+	end
+	if t == "function" then
+		return "fn"
+	end
+	if t == "table" then
+		local n = #v
+		if n > 0 then
+			return "array[" .. n .. "]"
+		end
+		return "table"
+	end
+	return tostring(v)
+end
+
+-- Formats a value into a multi-line string for the props pane. Record tables (e.g. a
+-- `style` dict) are broken out one key per line with indentation; arrays/scalars/functions
+-- use a compact inline form. Rendered in a SINGLE text node so hovering a different node
+-- only updates one commitTextUpdate (no host structural changes -> no FocusManager
+-- .ResetHover feedback loop). Depth-limited to avoid runaway nesting on recursive props.
+local function formatPropsTree(v: any, depth: number?): string
+	depth = depth or 0
+	if depth > 5 then
+		return "…"
+	end
+	local indent = string.rep("  ", depth)
+	local t = type(v)
+	if v == nil then
+		return "nil"
+	end
+	if t == "string" then
+		return '"' .. v .. '"'
+	end
+	if t == "number" or t == "boolean" then
+		return tostring(v)
+	end
+	if t == "function" then
+		return "fn"
+	end
+	if t == "table" then
+		local n = #v
+		if n > 0 and next(v, n) == nil then
+			return "array[" .. n .. "]"
+		end
+		local keys: { string } = {}
+		for k in pairs(v) do
+			if type(k) == "string" then
+				keys[#keys + 1] = k
+			end
+		end
+		table.sort(keys)
+		if #keys == 0 then
+			return "{}"
+		end
+		local lines: { string } = {}
+		for _, k in ipairs(keys) do
+			local valStr = formatPropsTree(v[k], depth + 1)
+			if string.find(valStr, "\n", 1, true) ~= nil then
+				lines[#lines + 1] = indent .. k .. "\n" .. valStr
+			else
+				lines[#lines + 1] = indent .. k .. " = " .. valStr
+			end
+		end
+		return table.concat(lines, "\n")
+	end
+	return tostring(v)
+end
+
+-- ── Tree view ────────────────────────────────────────────────────
+
+-- The tree snapshot carries a live `host` ref on host nodes; a component node resolves to
+-- its first host descendant. Hovering a tree node highlights that element by positioning
+-- an overlay at the host's layout rect (no style mutation, so no relayout).
+local function findHost(node: any): any?
+	if node == nil then
+		return nil
+	end
+	if node.host ~= nil then
+		return node.host
+	end
+	for _, c in ipairs(node.children or {}) do
+		local h = findHost(c)
+		if h ~= nil then
+			return h
+		end
+	end
+	return nil
+end
+
+local function TreeNode(props: { node: any, depth: number, onHover: ((any?) -> ())?, expandAll: () -> boolean, expandVersion: () -> number })
+	local expanded, setExpanded = Sx.createSignal<<boolean>>(props.depth < 2)
+	local hasChildren = #props.node.children > 0
+
+	-- React to the "Expand all" / "Collapse all" toolbar buttons. The version counter
+	-- makes a repeated click (e.g. after a manual toggle) re-apply the forced state.
+	Sx.createEffect(function()
+		if props.expandVersion() > 0 then
+			setExpanded(props.expandAll())
+		end
+	end)
+
+	return (
+		<Sx.View style={{ display = "flex", flexDirection = "column", alignItems = "stretch", flexShrink = 0, width = "100%" }}>
+			<Sx.View
+				style={{
+					display = "flex",
+					flexDirection = "row",
+					alignItems = "center",
+					alignSelf = "stretch",
+					width = "100%",
+					flexShrink = 0,
+					paddingLeft = props.depth * 10,
+					paddingTop = 1,
+					paddingBottom = 1,
+				}}
+				onmousedown={function()
+					if hasChildren then
+						setExpanded(not expanded())
+					end
+				end}
+				onmouseenter={function()
+					if props.onHover then
+						props.onHover(props.node)
+					end
+				end}
+				onmouseleave={function()
+					if props.onHover then
+						props.onHover(nil)
+					end
+				end}
+			>
+				<Sx.Text style={{ fontSize = 11, fontStyle = "bold", color = colorFor(props.node) }}>{function()
+					local marker = "  "
+					if hasChildren then
+						marker = expanded() and "▾ " or "▸ "
+					end
+					return marker .. nodeLabel(props.node)
+				end}</Sx.Text>
+			</Sx.View>
+			<Sx.Show when={function() return expanded() and hasChildren end}>
+				<Sx.For
+					each={function() return props.node.children end}
+				>
+					{function(item, index)
+						return <TreeNode node={item()} depth={props.depth + 1} onHover={props.onHover} expandAll={props.expandAll} expandVersion={props.expandVersion} />
+					end}
+				</Sx.For>
+			</Sx.Show>
+		</Sx.View>
+	)
+end
+
+local function TreeView(props: { snapshot: () -> any, onHover: ((any?) -> ())?, expandAll: () -> boolean, expandVersion: () -> number })
+	return (
+		<Sx.View style={{ display = "flex", flexDirection = "column", alignItems = "stretch", flexShrink = 0, width = "100%", gap = 2 }}>
+			<Sx.For<<any>>
+				each={function(): {any}
+					local root = props.snapshot()
+					if root == nil then
+						return {}
+					end
+					return { root }
+				end}
+			>
+				{function(item, index)
+					return <TreeNode node={item()} depth={0} onHover={props.onHover} expandAll={props.expandAll} expandVersion={props.expandVersion} />
+				end}
+			</Sx.For>
+		</Sx.View>
+	)
+end
+
+-- ── Props pane ───────────────────────────────────────────────────
+
+-- Renders the hovered node's props as a single multi-line text node (one
+-- commitTextUpdate per hover change), so showing different nodes never appends/removes
+-- host nodes — which would otherwise trigger FocusManager.ResetHover and fight the hover
+-- highlight. Nested record tables are broken out onto their own indented lines.
+local function PropsList(props: { node: () -> any? })
+	return (
+		<Sx.Text style={{ fontSize = 10, color = "rgba(255,255,255,0.85)", width = "100%" }}>{function()
+			local node = props.node()
+			if node == nil or node.props == nil then
+				return "(no props)"
+			end
+			return formatPropsTree(node.props)
+		end}</Sx.Text>
+	)
+end
+
+local function PropsPane(props: { node: () -> any?, visible: () -> boolean })
+	-- Permanently mounted child of the panel; visibility is toggled purely via the
+	-- `display` style so showing/hiding it never appends/removes a host node (which would
+	-- trigger FocusManager.ResetHover and fight the hover highlight).
+	return (
+		<Sx.View style={function(): Sx.Styles
+			local show = props.visible()
+			return {
+				display = if show then "flex" else "none",
+				flexDirection = "column",
+				alignItems = "stretch",
+				flexShrink = 0,
+                minHeight = '20%',
+				maxHeight = 150,
+				borderTopWidth = 1,
+				borderColor = "rgba(255,255,255,0.08)",
+				paddingTop = 4,
+				paddingBottom = 4,
+				gap = 1,
+				overflow = "scroll",
+			}
+		end}>
+			<Sx.View style={{ display = "flex", flexDirection = "row", alignItems = "center", gap = 6, flexShrink = 0 }}>
+				<Sx.Text style={{ fontSize = 10, color = "#d2a8ff", fontStyle = "bold", flexShrink = 0 }}>{"Props"}</Sx.Text>
+				<Sx.Text style={{ fontSize = 10, color = "rgba(255,255,255,0.5)", flexShrink = 0 }}>{function()
+					local node = props.node()
+					if node == nil then
+						return ""
+					end
+					return nodeLabel(node)
+				end}</Sx.Text>
+			</Sx.View>
+			<PropsList node={props.node} />
+		</Sx.View>
+	)
+end
+
+-- ── Signals view ─────────────────────────────────────────────────
+
+local function SignalsView(props: { items: () -> { any } })
+	return (
+		<Sx.View style={{ display = "flex", flexDirection = "column", alignItems = "stretch", flexShrink = 0, width = "100%", gap = 1 }}>
+			<Sx.For
+				each={function() return props.items() end}
+			>
+				{function(item, index)
+					local s = item()
+					local tag = s.kind == "signal" and "sig" or (s.isEffect and "eff" or "mem")
+					local tagColor = s.kind == "signal" and "#79b8ff" or (s.isEffect and "#ffab70" or "#f97583")
+					return (
+						<Sx.View style={{ display = "flex", flexDirection = "row", alignItems = "center", width = "100%", flexShrink = 0, gap = 6 }}>
+							<Sx.Text style={{ fontSize = 10, color = tagColor, fontStyle = "bold", width = 28 }}>{tag}</Sx.Text>
+							<Sx.Text style={{ fontSize = 10, color = "rgba(126,231,135,0.8)", fontStyle = "bold", flexGrow = 1 }}>{s.owner and s.owner or "-"}</Sx.Text>
+							<Sx.Text style={{ fontSize = 11, color = "rgba(255,255,255,0.85)", width = 80 }}>{fmtValue(s.value)}</Sx.Text>
+						</Sx.View>
+					)
+				end}
+			</Sx.For>
+		</Sx.View>
+	)
+end
+
+-- ── DevTools ─────────────────────────────────────────────────────
+
+local function DevTools()
+	local open, setOpen = Sx.createSignal<<boolean>>(true)
+	local tab, setTab = Sx.createSignal<<"tree" | "signals">>("tree")
+	local snapshot, setSnapshot = Sx.createSignal<<any | nil>>(nil)
+	local sigList, setSigList = Sx.createSignal<<{ any }>>({})
+	local auto, setAuto = Sx.createSignal<<boolean>>(false)
+	local hoverRect, setHoverRect = Sx.createSignal<<{ x: number, y: number, w: number, h: number } | nil>>(nil)
+	local hoverNode, setHoverNode = Sx.createSignal<<any | nil>>(nil)
+	local expandAll, setExpandAll = Sx.createSignal<<boolean>>(false)
+	local expandVersion, setExpandVersion = Sx.createSignal<<number>>(0)
+
+	-- Snapshot data is written into signals read by the tree / signals For components. The
+	-- `refreshing` guard stops refresh()'s own writes from re-triggering the onChange
+	-- auto-refresh hook (which would otherwise loop forever, since snapshot/sigList are
+	-- observed by the renderer). The tree only re-snapshots when its structural signature
+	-- changes, so expansion state survives value-only updates.
+	local refreshing = false
+	local dirty = false
+	local autoTick = 0
+	local lastTreeSig = ""
+
+	-- Auto-refresh is throttled: a full refresh (tree walk + signals list rebuild) is
+	-- expensive, so even though signal writes happen every frame it only runs every N
+	-- frames. Effects are also filtered out of the signals list (they are the bulk of
+	-- live nodes and aren't useful to inspect), which keeps each rebuild small.
+	local AUTOREFRESH_EVERY_N = 10
+
+	local function treeSig(node: any): string
+		if node == nil then
+			return ""
+		end
+		local s = node.kind .. ":" .. node.name .. "("
+		for _, c in ipairs(node.children) do
+			s = s .. treeSig(c) .. ","
+		end
+		return s .. ")"
+	end
+
+	local function refresh()
+		refreshing = true
+		-- The full-tree snapshot is the most expensive part; only pay for it when the
+		-- tree tab is actually visible. Hover is cleared only when the tree STRUCTURALLY
+		-- re-snapshots (the hovered node ref is stale): value-only updates (auto-refresh
+		-- picking up signal changes) keep the current hover so it doesn't flicker.
+		if tab() == "tree" then
+			local tree = Sx.devtools.snapshot()
+			local sig = treeSig(tree)
+			if sig ~= lastTreeSig then
+				lastTreeSig = sig
+				setHoverRect(nil)
+				setHoverNode(nil)
+				setSnapshot(tree)
+			end
+		end
+		local entries = Sx.debug.list()
+		local arr: { any } = {}
+		for _, e in ipairs(entries) do
+			-- Drop effects (isEffect computations): they dominate the live-node count and
+			-- aren't useful to inspect here. Only signals + memos are shown.
+			if e.kind == "signal" or (e.kind == "computation" and e.node.isEffect ~= true) then
+				arr[#arr + 1] = {
+					kind = e.kind,
+					isEffect = false,
+					value = e.node.value,
+					owner = Sx.debug.ownerName(e.node),
+				}
+			end
+		end
+		setSigList(arr)
+		refreshing = false
+	end
+
+	-- Set the hovered node + overlay rect together, suppressing the auto-refresh
+	-- onChange hook for these internal writes: hoverNode/hoverRect are observed signals,
+	-- so without this guard, merely hovering would schedule a refresh (which then clears
+	-- the hover every N frames).
+	local function applyHover(node: any?, rect: { x: number, y: number, w: number, h: number }?)
+		refreshing = true
+		setHoverNode(node)
+		setHoverRect(rect)
+		refreshing = false
+	end
+
+	local function handleHover(node: any?)
+		if node == nil then
+			applyHover(nil, nil)
+			return
+		end
+		local host = findHost(node)
+		local rect: { x: number, y: number, w: number, h: number }? = nil
+		if host ~= nil then
+			local ok, pos, size = pcall(function()
+				return host.layoutBorderPosition, host.layoutBorderSize
+			end)
+			if ok and pos ~= nil and size ~= nil then
+				rect = { x = pos.x, y = pos.y, w = size.x, h = size.y }
+			end
+		end
+		applyHover(node, rect)
+	end
+
+	-- Force every tree node to expand / collapse. The version counter makes repeated
+	-- clicks re-apply the forced state even after a manual per-node toggle.
+	local function expandAllNodes()
+		setExpandAll(true)
+		setExpandVersion(expandVersion() + 1)
+	end
+	local function collapseAllNodes()
+		setExpandAll(false)
+		setExpandVersion(expandVersion() + 1)
+	end
+
+	local function scheduleAutoRefresh()
+		if refreshing then
+			return
+		end
+		if not dirty then
+			dirty = true
+			UiLib.defer(function()
+				dirty = false
+				autoTick = autoTick + 1
+				if autoTick % AUTOREFRESH_EVERY_N == 0 then
+					refresh()
+				end
+			end)
+		end
+	end
+
+	-- First snapshot after the whole tree has mounted this frame.
+	Sx.onMount(function()
+		UiLib.defer(function()
+			refresh()
+		end)
+	end)
+
+	-- Auto-refresh: when enabled, any signal write that marks observers stale schedules ONE
+	-- refresh per frame (coalesced by the frame scheduler). refresh()'s own writes are
+	-- ignored via the `refreshing` guard, so there is no feedback loop.
+	Sx.createEffect(function()
+		if auto() then
+			Sx.debug.setOnChange(scheduleAutoRefresh)
+		else
+			Sx.debug.setOnChange(nil)
+		end
+	end)
+
+	-- Clear the hover overlay whenever the panel closes.
+	Sx.createEffect(function()
+		if not open() then
+			setHoverRect(nil)
+		end
+	end)
+
+	-- Clean up the global hook when this component unmounts.
+	Sx.onCleanup(function()
+		Sx.debug.setOnChange(nil)
+	end)
+
+	return (
+		<Sx.Fragment>
+			<Sx.Show when={not open()}>
+				<Launcher onmousedown={function() setOpen(true) end}>
+					<Sx.Text style={{ fontSize = 12, fontStyle = "bold", color = "#4fc3f7" }}>Sx</Sx.Text>
+				</Launcher>
+			</Sx.Show>
+			<Sx.Show when={open()}>
+				<Panel>
+					<Header>
+						<Title>Sx DevTools</Title>
+						<CloseBtn onmousedown={function() setOpen(false) end}>✕</CloseBtn>
+					</Header>
+					<Tabs>
+						<Sx.View
+							style={{
+								paddingTop = 3, paddingBottom = 3, paddingLeft = 8, paddingRight = 8,
+								borderRadius = 5,
+								backgroundColor = tab() == "tree" and "rgba(79,195,247,0.35)" or "rgba(255,255,255,0.05)",
+							}}
+							onmousedown={function() setTab("tree") end}
+						>
+							<TabLabel style={{ color = tab() == "tree" and "#fff" or "rgba(255,255,255,0.6)" }}>Tree</TabLabel>
+						</Sx.View>
+						<Sx.View
+							style={{
+								paddingTop = 3, paddingBottom = 3, paddingLeft = 8, paddingRight = 8,
+								borderRadius = 5,
+								backgroundColor = tab() == "signals" and "rgba(79,195,247,0.35)" or "rgba(255,255,255,0.05)",
+							}}
+							onmousedown={function() setTab("signals") end}
+						>
+							<TabLabel style={{ color = tab() == "signals" and "#fff" or "rgba(255,255,255,0.6)" }}>
+								Signals
+							</TabLabel>
+						</Sx.View>
+					</Tabs>
+					<Toolbar>
+						<ToolBtn onmousedown={refresh}>
+							<Sx.Text style={{ fontSize = 10, color = "rgba(255,255,255,0.7)" }}>Refresh</Sx.Text>
+						</ToolBtn>
+						<ToolBtn onmousedown={function() setAuto(not auto()) end}>
+							<Sx.Text style={{ fontSize = 10, color = auto() and "#4fc3f7" or "rgba(255,255,255,0.5)" }}>{auto() and "Auto: on" or "Auto: off"}</Sx.Text>
+						</ToolBtn>
+						<Sx.Show when={tab() == "tree"}>
+							<ToolBtn onmousedown={expandAllNodes}>
+								<Sx.Text style={{ fontSize = 10, color = "rgba(255,255,255,0.7)" }}>Expand</Sx.Text>
+							</ToolBtn>
+							<ToolBtn onmousedown={collapseAllNodes}>
+								<Sx.Text style={{ fontSize = 10, color = "rgba(255,255,255,0.7)" }}>Collapse</Sx.Text>
+							</ToolBtn>
+						</Sx.Show>
+					</Toolbar>
+					<Body>
+						<Sx.Show when={tab() == "tree"}>
+							<TreeView snapshot={snapshot} onHover={handleHover} expandAll={expandAll} expandVersion={expandVersion} />
+						</Sx.Show>
+						<Sx.Show when={tab() == "signals"}>
+							<SignalsView items={sigList} />
+						</Sx.Show>
+					</Body>
+					<PropsPane
+						node={hoverNode}
+						visible={tab() == "tree"}
+					/>
+				</Panel>
+			</Sx.Show>
+			<Sx.View style={function(): Sx.Styles
+				local r = hoverRect()
+				if r == nil then
+					return { position = "absolute", display = "none", pointerEvents = "none" }
+				end
+				return {
+					position = "absolute",
+					display = "flex",
+					left = r.x,
+					top = r.y,
+					width = r.w,
+					height = r.h,
+					backgroundColor = "rgba(79,195,247,0.35)",
+					borderWidth = 1,
+					borderColor = "rgba(79,195,247,1)",
+					pointerEvents = "none",
+				}
+			end} />
+		</Sx.Fragment>
+	)
+end
+
+return DevTools
