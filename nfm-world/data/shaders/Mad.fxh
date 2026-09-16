@@ -136,17 +136,20 @@ void VS_ApplyPolygonDiffuse(
     ApplyDiffuseFactor(color, diff, EnvironmentLight);
 }
 
+// FogLogDensity is log2 of the fog density, normalized on the CPU (see World.FogLogDensity).
+// pow(density, t) is exactly exp2(t * log2(density)), so folding the (uniform) log2 into the
+// constant leaves the result unchanged while replacing a per-pixel log2 + exp2 pair with a
+// single exp2.
 void VS_ApplyFog(
     inout float3 color,
-    in float3 viewPos,
+    in float ViewLength,
     in float3 FogColor,
     in float FogDistance,
-    in float FogDensity
+    in float FogLogDensity
 )
 {
 
-	float d = length(viewPos);
-	float f = pow(FogDensity, max((d - FogDistance / 2.0) / FogDistance, 0.0));
+	float f = exp2(max((ViewLength - FogDistance / 2.0) / FogDistance, 0.0) * FogLogDensity);
 
 	color = color * float3(f, f, f) + FogColor * float3(1.0 - f, 1.0 - f, 1.0 - f);
 }

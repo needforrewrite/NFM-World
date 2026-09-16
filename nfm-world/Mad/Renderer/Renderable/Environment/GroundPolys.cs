@@ -82,7 +82,7 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
         Effects.Ground.DepthBias?.SetValue(0.00005f);
         Effects.Ground.FogColor?.SetValue(World.Fog.Snap(World.Snap));
         Effects.Ground.FogDistance?.SetValue(World.FadeFrom);
-        Effects.Ground.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
+        Effects.Ground.FogLogDensity?.SetValue(World.FogLogDensity);
 
         lt?.SetShadowMapParameters(Effects.Ground.UnderlyingEffect);
 

@@ -14,7 +14,8 @@ float4x4 WorldViewProj;
 
 float3 FogColor;
 float FogDistance;
-float FogDensity;
+// log2 of the normalized fog density (see VS_ApplyFog)
+float FogLogDensity;
 
 struct VertexShaderOutput
 {
@@ -33,8 +34,7 @@ VertexShaderOutput VertexShaderFunction(
 
     float3 color = Color;
 	float3 viewPos = mul(Position, WorldView).xyz;
-    // VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogDensity);
-
+    // VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogLogDensity);
     VS_ColorCorrect(color);
 
     output.Color = float4(color, 1.0);
@@ -49,7 +49,7 @@ float4 PixelShaderFunction(VertexShaderOutput input) : SV_TARGET
 {
     float3 diffuse = input.Color.xyz;
 
-    VS_ApplyFog(diffuse, input.PositionNonInterp.z, FogColor, FogDistance, FogDensity);
+    VS_ApplyFog(diffuse, input.PositionNonInterp.z, FogColor, FogDistance, FogLogDensity);
 
     PS_ApplyShadowing(diffuse, float4(input.WorldPos.xyz, 1), float3(0, 1, 0));
 

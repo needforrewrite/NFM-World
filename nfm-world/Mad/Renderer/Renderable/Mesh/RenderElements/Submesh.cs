@@ -70,7 +70,7 @@ public class Submesh : IInstancedRenderElement, IDisposable
         Effects.Poly.LightDirection?.SetValue(World.LightDirection);
         Effects.Poly.FogColor?.SetValue(World.Fog.Snap(World.Snap));
         Effects.Poly.FogDistance?.SetValue(World.FadeFrom);
-        Effects.Poly.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
+        Effects.Poly.FogLogDensity?.SetValue(World.FogLogDensity);
         Effects.Poly.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         Effects.Poly.DepthBias?.SetValue(0.00005f);
         Effects.Poly.Alpha?.SetValue(PolyType is PolyType.Glass ? 0.7f : 1f);

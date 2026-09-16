@@ -191,7 +191,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
         Effects.Line.LightDirection?.SetValue(World.LightDirection);
         Effects.Line.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
         Effects.Line.FogDistance?.SetValue(World.FadeFrom);
-        Effects.Line.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1));
+        Effects.Line.FogLogDensity?.SetValue(World.FogLogDensity);
         Effects.Line.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
         Effects.Line.DepthBias?.SetValue(0.00005f);
         Effects.Line.Alpha?.SetValue(1f);

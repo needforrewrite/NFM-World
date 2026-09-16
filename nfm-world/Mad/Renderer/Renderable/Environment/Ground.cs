@@ -52,13 +52,13 @@ public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposab
     {
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        Effects.Ground.Parameters["WorldView"]?.SetValue(cam.ViewMatrix);
-        Effects.Ground.Parameters["WorldViewProj"]?.SetValue(cam.ViewMatrix * cam.ProjectionMatrix);
+        Effects.Ground.WorldView?.SetValue(cam.ViewMatrix);
+        Effects.Ground.WorldViewProj?.SetValue(cam.ViewMatrix * cam.ProjectionMatrix);
 
-        Effects.Ground.Parameters["DepthBias"]?.SetValue(0.00005f);
-        Effects.Ground.Parameters["FogColor"]?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        Effects.Ground.Parameters["FogDistance"]?.SetValue(World.FadeFrom);
-        Effects.Ground.Parameters["FogDensity"]?.SetValue(World.FogDensity / (World.FogDensity + 1f));
+        Effects.Ground.DepthBias?.SetValue(0.00005f);
+        Effects.Ground.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
+        Effects.Ground.FogDistance?.SetValue(World.FadeFrom);
+        Effects.Ground.FogLogDensity?.SetValue(World.FogLogDensity);
 
         lt?.SetShadowMapParameters(Effects.Ground.UnderlyingEffect);
 

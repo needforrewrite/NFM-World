@@ -82,7 +82,7 @@ public class Mountains : Transform, IRenderable, IImmediateRenderElement, IDispo
         Effects.Mountains.DepthBias?.SetValue(0.00005f);
         Effects.Mountains.FogColor?.SetValue(World.Fog.Snap(World.Snap));
         Effects.Mountains.FogDistance?.SetValue(World.FadeFrom);
-        Effects.Mountains.FogDensity?.SetValue(World.FogDensity / (World.FogDensity + 1f));
+        Effects.Mountains.FogLogDensity?.SetValue(World.FogLogDensity);
 
         lt?.SetShadowMapParameters(Effects.Mountains.UnderlyingEffect);
 
