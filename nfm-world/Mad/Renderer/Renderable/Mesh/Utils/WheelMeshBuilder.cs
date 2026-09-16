@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using System.Collections.Immutable;
+using Microsoft.Xna.Framework.Graphics;
 using NFMWorldLibrary.Rad;
 
 namespace NFMWorld;
@@ -120,7 +121,7 @@ public class WheelMeshBuilder
         y[19] = (cy - 3.3646F * h10);
         z[19] = (cz + 12.557F * h10);
 
-        AddPoly(x, z, y, 20, color, true);
+        AddPoly(x, z, y, 20, color, [0, 12, 11, 0, 17, 12, 1, 17, 0, 2, 17, 1, 2, 16, 17, 3, 16, 2, 3, 15, 16, 15, 3, 4, 12, 10, 11, 12, 9, 10, 13, 9, 12, 13, 8, 9, 13, 7, 8, 14, 7, 13, 14, 6, 7, 15, 6, 14, 4, 6, 15, 6, 4, 5], true);
         x[2] = (cx - _depth * w10);
         y[2] = cy;
         z[2] = cz;
@@ -128,32 +129,32 @@ public class WheelMeshBuilder
         z[0] = (cz + 10.0F * _size);
         y[1] = (cy + 8.66f * _size);
         z[1] = (cz + 5.0F * _size);
-        AddPoly(x, z, y, 3, _rc);
+        AddPoly(x, z, y, 3, _rc, [0, 1, 2]);
         y[0] = (cy + 8.66f * _size);
         z[0] = (cz + 5.0F * _size);
         y[1] = (cy + 8.66f * _size);
         z[1] = (cz - 5.0F * _size);
-        AddPoly(x, z, y, 3, _rc);
+        AddPoly(x, z, y, 3, _rc, [0, 1, 2]);
         y[0] = (cy + 8.66f * _size);
         z[0] = (cz - 5.0F * _size);
         y[1] = cy;
         z[1] = (cz - 10.0F * _size);
-        AddPoly(x, z, y, 3, _rc);
+        AddPoly(x, z, y, 3, _rc, [0, 1, 2]);
         y[0] = cy;
         z[0] = (cz - 10.0F * _size);
         y[1] = (cy - 8.66f * _size);
         z[1] = (cz - 5.0F * _size);
-        AddPoly(x, z, y, 3, _rc);
+        AddPoly(x, z, y, 3, _rc, [0, 1, 2]);
         y[0] = (cy - 8.66f * _size);
         z[0] = (cz - 5.0F * _size);
         y[1] = (cy - 8.66f * _size);
         z[1] = (cz + 5.0F * _size);
-        AddPoly(x, z, y, 3, _rc);
+        AddPoly(x, z, y, 3, _rc, [0, 1, 2]);
         y[0] = (cy - 8.66f * _size);
         z[0] = (cz + 5.0F * _size);
         y[1] = cy;
         z[1] = (cz + 10.0F * _size);
-        AddPoly(x, z, y, 3, _rc);
+        AddPoly(x, z, y, 3, _rc, [0, 1, 2]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy - 12.557F * h10);
         z[0] = (cz + 3.3646F * h10);
@@ -166,7 +167,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy - 12.557F * h10);
         z[3] = (cz + 3.3646F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy - 9.1923F * h10);
         z[0] = (cz - 9.1923F * h10);
@@ -179,7 +180,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy - 9.1923F * h10);
         z[3] = (cz - 9.1923F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy - 9.1923F * h10);
         z[0] = (cz - 9.1923F * h10);
@@ -192,7 +193,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy - 9.1923F * h10);
         z[3] = (cz - 9.1923F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy - 3.3646F * h10);
         z[0] = (cz - 12.557F * h10);
@@ -205,7 +206,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy - 3.3646F * h10);
         z[3] = (cz - 12.557F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy + 9.1923F * h10);
         z[0] = (cz - 9.1923F * h10);
@@ -218,7 +219,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy + 9.1923F * h10);
         z[3] = (cz - 9.1923F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy + 9.1923F * h10);
         z[0] = (cz - 9.1923F * h10);
@@ -231,7 +232,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy + 9.1923F * h10);
         z[3] = (cz - 9.1923F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy + 12.557F * h10);
         z[0] = (cz - 3.3646F * h10);
@@ -244,7 +245,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy + 12.557F * h10);
         z[3] = (cz - 3.3646F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy + 9.1923F * h10);
         z[0] = (cz + 9.1923F * h10);
@@ -257,7 +258,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy + 9.1923F * h10);
         z[3] = (cz + 9.1923F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy + 9.1923F * h10);
         z[0] = (cz + 9.1923F * h10);
@@ -270,7 +271,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy + 9.1923F * h10);
         z[3] = (cz + 9.1923F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy + 3.3646F * h10);
         z[0] = (cz + 12.557F * h10);
@@ -283,7 +284,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy + 3.3646F * h10);
         z[3] = (cz + 12.557F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy - 9.1923F * h10);
         z[0] = (cz + 9.1923F * h10);
@@ -296,7 +297,7 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy - 9.1923F * h10);
         z[3] = (cz + 9.1923F * h10);
-        AddPoly(x, z, y, 4, color);
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
         x[0] = (cx - 4.0F * w10);
         y[0] = (cy - 9.1923F * h10);
         z[0] = (cz + 9.1923F * h10);
@@ -309,11 +310,11 @@ public class WheelMeshBuilder
         x[3] = (cx + 4.0F * w10);
         y[3] = (cy - 9.1923F * h10);
         z[3] = (cz + 9.1923F * h10);
-        AddPoly(x, z, y, 4, color);
-
+        AddPoly(x, z, y, 4, color, [0, 1, 2, 0, 2, 3]);
+        
         return;
 
-        void AddPoly(Span<float> x, Span<float> z, Span<float> y, int n, Span<int> c, bool noOutline = false)
+        void AddPoly(Span<float> x, Span<float> z, Span<float> y, int n, Span<int> c, ImmutableArray<uint> tri, bool noOutline = false)
         {
             var verts = new Vector3[n];
             for (var vi = 0; vi < n; vi++)
@@ -326,7 +327,8 @@ public class WheelMeshBuilder
                 PolyType.Flat,
                 noOutline ? null : LineType.Flat,
                 0.0f,
-                verts
+                verts,
+                tri
             ));
         }
     }
