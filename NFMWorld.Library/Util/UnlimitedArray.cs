@@ -72,13 +72,13 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>, ILuaUserDat
     {
         private int _index = -1;
 
-        public T Current
+        public readonly T Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => array[_index];
         }
 
-        object? IEnumerator.Current
+        readonly object? IEnumerator.Current
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get => array[_index];
@@ -98,7 +98,7 @@ public partial class UnlimitedArray<T> : IList<T>, IReadOnlyList<T>, ILuaUserDat
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Dispose()
+        public readonly void Dispose()
         {
         }
     }
