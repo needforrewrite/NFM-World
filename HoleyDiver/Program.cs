@@ -1385,7 +1385,7 @@ public class PolygonTriangulator
         polygon.AddRange(newPolygon);
     }
 
-    public static Vector3 ComputeCentroid(IReadOnlyList<Vector3> vertices)
+    public static Vector3 ComputeCentroid<T>(T vertices) where T : IReadOnlyList<Vector3>
     {
         Vector3 sum = Vector3.Zero;
         foreach (var v in vertices)
