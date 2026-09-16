@@ -41,12 +41,18 @@ public class MeshedGameObject(Mesh mesh) : GameObject
         set;
     }
 
+    public long? Layer
+    {
+        get => field ?? (Parent is MeshedGameObject parent ? parent.Layer : null);
+        set;
+    }
+
     public RenderBucket RenderBucket { get; set; } = RenderBucket.StagePieces;
 
     public override void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
         var boundingSphere = new BoundingSphere(MatrixWorld.Translation, Mesh.MaxRadius);
-        Mesh.SubmitRenderables(queue, lighting, Finish ?? false, boundingSphere, RenderBucket, MatrixWorld, GetsShadowed ?? true, AlphaOverride ?? 1.0f, Glow ?? false, Glow ?? false);
+        Mesh.SubmitRenderables(queue, lighting, Finish ?? false, boundingSphere, RenderBucket, MatrixWorld, Layer ?? 0, GetsShadowed ?? true, AlphaOverride ?? 1.0f, Glow ?? false, Glow ?? false);
 
         base.SubmitDraws(queue, camera, lighting, pass);
     }

@@ -205,9 +205,9 @@ public class Mesh : IDisposable
         BuildMesh(GraphicsDevice);
     }
 
-    public void SubmitRenderables(RenderQueue queue, Lighting? lighting, bool finish, BoundingSphere boundingSphere, RenderBucket renderBucket, Matrix matrixWorld, bool getsShadowed = false, float alphaOverride = 1.0f, bool isFullbright = false, bool glow = false)
+    public void SubmitRenderables(RenderQueue queue, Lighting? lighting, bool finish, BoundingSphere boundingSphere, RenderBucket renderBucket, Matrix matrixWorld, long layer = 0, bool getsShadowed = false, float alphaOverride = 1.0f, bool isFullbright = false, bool glow = false)
     {
-        var instanceData = new InstanceData(matrixWorld, getsShadowed, alphaOverride, isFullbright, glow);
+        var instanceData = new InstanceData(matrixWorld, layer, getsShadowed, alphaOverride, isFullbright, glow);
 
         foreach (var submesh in Submeshes)
         {

@@ -109,7 +109,8 @@ VertexShaderOutput MainVS(
     in VertexShaderInput input,
     // instance parameters
     in float4x4 world : TEXCOORD3,
-    in float4 parameters : TEXCOORD7
+    in float4 parameters : TEXCOORD7,
+    in float4 parameters2 : TEXCOORD8
 )
 {
     bool getsShadowed;
@@ -117,6 +118,9 @@ VertexShaderOutput MainVS(
     bool isFullbright;
     bool glow;
     VS_UnpackParameters(parameters, getsShadowed, alphaOverride, isFullbright, glow);
+    
+    float layer;
+    VS_UnpackParameters2(parameters2, layer);
 
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
@@ -173,8 +177,9 @@ VertexShaderOutput MainVS(
 
     output.Position = clipPos + float4(offset * clipPos.w, 0, 0);
 
-    // Nudge outlines toward the camera so they render on top of the geometry they outline
-    output.Position.z -= 0.1;
+    // Apply layer nudge to prevent Z-fighting
+    // AWAY from the camera because it's less noticeable (won't clip against the car etc)
+    output.Position.z += 0.01 * layer;
 
     // Collapse hidden line quads outside clip space without a pixel-shader discard.
     output.Position = lerp(output.Position, float4(2.0, 2.0, 0.0, 1.0), hideLine);

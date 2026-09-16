@@ -54,7 +54,8 @@ VertexShaderOutput MainVS(
     in VertexShaderInput input,
     // instance parameters
     in float4x4 world : TEXCOORD3,
-    in float4 parameters : TEXCOORD7
+    in float4 parameters : TEXCOORD7,
+    in float4 parameters2 : TEXCOORD8
 )
 {
     bool getsShadowed;
@@ -62,6 +63,9 @@ VertexShaderOutput MainVS(
     bool isFullbright;
     bool glow;
     VS_UnpackParameters(parameters, getsShadowed, alphaOverride, isFullbright, glow);
+
+    float layer;
+    VS_UnpackParameters2(parameters2, layer);
 
 	VertexShaderOutput output = (VertexShaderOutput)0;
 
@@ -89,6 +93,14 @@ VertexShaderOutput MainVS(
     }
 
     output.Position = mul(viewPos, Projection);
+    
+    // Nudge polys away from the camera so outlines render on top of the geometry they outline
+    // We used to nudge the outline towards instead, but that was introducing ever so slight Z-fighting with unrelated geometry so let's try the other way around
+    output.Position.z += 0.1;
+    
+    // Apply layer nudge to prevent Z-fighting
+    // AWAY from the camera because it's less noticeable (won't clip against the car etc)
+    output.Position.z += 0.01 * layer;
 
     if (Darken < 1.0f)
     {

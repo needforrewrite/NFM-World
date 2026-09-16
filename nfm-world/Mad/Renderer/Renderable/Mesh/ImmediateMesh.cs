@@ -28,6 +28,6 @@ public class ImmediateMesh : Mesh, IRenderable
     public void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)
     {
         var boundingSphere = new BoundingSphere(new Vector3(0, 0, 0), MaxRadius);
-        SubmitRenderables(queue, lighting, false, boundingSphere, RenderBucket.StagePieces, Matrix.Identity, true, 1.0f, false, false);
+        SubmitRenderables(queue, lighting, false, boundingSphere, RenderBucket.StagePieces, Matrix.Identity, 0, true, 1.0f, false, false);
     }
 }

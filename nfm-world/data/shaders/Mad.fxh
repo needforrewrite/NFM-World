@@ -6,6 +6,11 @@ void VS_UnpackParameters(in float4 parameters, out bool getsShadowed, out float 
     glow = parameters.w > 0.0f;
 }
 
+void VS_UnpackParameters2(in float4 parameters, out float layer)
+{
+    layer = parameters.x;
+}
+
 // All components are in the range [0…1], including hue.
 float3 rgb2hsv(float3 c)
 {

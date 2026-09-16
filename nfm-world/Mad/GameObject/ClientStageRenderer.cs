@@ -33,6 +33,8 @@ public class ClientStageRenderer : GameObject, IDisposable
     private (bool drawClouds, int maxl, int maxr, int maxb, int maxt) _cloudsKey;
     private (bool drawMountains, int maxl, int maxr, int maxb, int maxt) _mountainsKey;
 
+    private int _lastIndex;
+
     // we use the object instance hashcode instead of the value hashcode for performance
     private class StageObjectVisualComparer : IEqualityComparer<StageObject>
     {
@@ -112,7 +114,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                     {
                         var clientObj = new StageObjectGameObject(mesh, obj)
                         {
-                            Parent = this
+                            Parent = this,
+                            Layer = _lastIndex++
                         };
                         _mutableChildren.Add(clientObj);
                         
@@ -122,7 +125,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                     {
                         var clientObj = new FixHoop(mesh, obj)
                         {
-                            Parent = this
+                            Parent = this,
+                            Layer = _lastIndex++
                         };
                         _mutableChildren.Add(clientObj);
                         
@@ -132,7 +136,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                     {
                         var clientObj = new StageObjectGameObject(mesh, obj)
                         {
-                            Parent = this
+                            Parent = this,
+                            Layer = _lastIndex++
                         };
                         _mutableChildren.Add(clientObj);
                         
@@ -218,7 +223,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                 {
                     var clientObj = new StageObjectGameObject(mesh, obj)
                     {
-                        Parent = this
+                        Parent = this,
+                        Layer = _lastIndex++,
                     };
                     _mutableChildren.Add(clientObj);
 
@@ -228,7 +234,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                 {
                     var clientObj = new FixHoop(mesh, obj)
                     {
-                        Parent = this
+                        Parent = this,
+                        Layer = _lastIndex++,
                     };
                     _mutableChildren.Add(clientObj);
 
@@ -238,7 +245,8 @@ public class ClientStageRenderer : GameObject, IDisposable
                 {
                     var clientObj = new StageObjectGameObject(mesh, obj)
                     {
-                        Parent = this
+                        Parent = this,
+                        Layer = _lastIndex++,
                     };
                     _mutableChildren.Add(clientObj);
                     
