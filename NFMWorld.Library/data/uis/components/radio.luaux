@@ -41,7 +41,7 @@ local function Radio(props: RadioProps)
 			setHovered(false)
 		end}>
 		<Sx.View
-			style={Sx.createMemo(function(): Sx.Styles
+			style={function(): Sx.Styles
 				local checked = Sx.read(props.checked)
 				local hov = hovered() and not disabled
 				return {
@@ -57,8 +57,8 @@ local function Radio(props: RadioProps)
 					borderColor = checked and theme.accent or (hov and "rgba(255,255,255,0.55)" or "rgba(255,255,255,0.3)"),
 					borderRadius = size / 2,
 				}
-			end)}>
-			<Sx.View style={Sx.createMemo(function(): Sx.Styles
+			end}>
+			<Sx.View style={function(): Sx.Styles
 				local checked = Sx.read(props.checked)
 				return {
 					width = dot,
@@ -66,9 +66,9 @@ local function Radio(props: RadioProps)
 					backgroundColor = checked and theme.accent or "transparent",
 					borderRadius = dot / 2,
 				}
-			end)} />
+			end} />
 		</Sx.View>
-		<Sx.Text style={Sx.createMemo(function(): Sx.TextStyles
+		<Sx.Text style={function(): Sx.TextStyles
 			local checked = Sx.read(props.checked)
 			return {
 				fontSize = 13,
@@ -76,7 +76,7 @@ local function Radio(props: RadioProps)
 					and "rgba(255,255,255,0.3)"
 					or (checked and "#fff" or "rgba(255,255,255,0.7)"),
 			}
-		end)}>
+		end}>
 			{function()
 				local label = props.label
 				if label == nil then return "" end

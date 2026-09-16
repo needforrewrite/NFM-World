@@ -188,7 +188,7 @@ local function Garage()
 	end
 
 	local function handleGlobalKey(event)
-		print(tostring(event.keyCode))
+		--print(tostring(event.keyCode))
 		if event.keyCode == Key.left then
 			UiLib.call("cycleCar", { direction = "left" })
 		elseif event.keyCode == Key.right then
@@ -237,17 +237,17 @@ local function Garage()
 	end)
 
 	Sx.onMount(function()
-		print('focusing!!!')
+		--print('focusing!!!')
 		if rootRef.current ~= nil then
-			print('focusing inner!!!')
+			--print('focusing inner!!!')
 			rootRef.current:focus()
 		end
 	end)
 
 	return x(Root)({ ref = function(it)
-			print('setting root ref!!!')
+			--print('setting root ref!!!')
 			rootRef.current = it
-			print('root ref set!!!')
+			--print('root ref set!!!')
 		end, tabindex = 0, onkeydown = handleGlobalKey,
 		x(Sidebar)({
 			x(Header)({ "Garage" }),

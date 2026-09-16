@@ -43,7 +43,7 @@ local function TextField(props: TextFieldProps)
 			</Sx.Text>
 		</Sx.Show>
 		<Sx.TextInput
-			style={Sx.createMemo(function(): Sx.TextInputStyles
+			style={function(): Sx.TextInputStyles
 				local isFocused = focus()
 				return {
 					paddingTop = 10,
@@ -57,7 +57,7 @@ local function TextField(props: TextFieldProps)
 					placeholderColor = "rgba(255,255,255,0.35)",
 					cursorColor = theme.accent,
 				}
-			end)}
+			end}
 			value={props.value}
 			placeholder={props.placeholder}
 			onchange={props.onChange}

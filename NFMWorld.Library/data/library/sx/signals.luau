@@ -115,13 +115,18 @@ local function trackRead(n: ReactiveNode<any>)
     table.insert(n.observers, comp)
 end
 
--- Remove `comp` from `n.observers`.
+-- Remove `comp` from `n.observers`. Order doesn't matter (it's a membership set), so this
+-- swaps the found entry with the last one and pops instead of shifting the whole tail --
+-- O(1) instead of O(n), which matters since a subtree teardown does this once per
+-- (source, observer) edge.
 local function untrackSource(n: SignalNode<any> | Computation, comp: Computation)
     if n.observers then
         local obs = n.observers
-        for i = #obs, 1, -1 do
+        local last = #obs
+        for i = last, 1, -1 do
             if obs[i] == comp then
-                table.remove(obs, i)
+                obs[i] = obs[last]
+                obs[last] = nil
                 break
             end
         end
@@ -165,9 +170,11 @@ disposeComputation = function(node: Computation)
     cleanNode(node)
     if node.owner and node.owner.owned then
         local owned = node.owner.owned
-        for i = 1, #owned do
+        local last = #owned
+        for i = 1, last do
             if owned[i] == node then
-                table.remove(owned, i)
+                owned[i] = owned[last]
+                owned[last] = nil
                 break
             end
         end

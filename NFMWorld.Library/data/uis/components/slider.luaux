@@ -82,7 +82,7 @@ local function Slider(props: SliderProps)
 				borderRadius = TRACK_H / 2,
 				overflow = "hidden",
 			}}>
-			<Sx.View style={Sx.createMemo(function(): Sx.Styles
+			<Sx.View style={function(): Sx.Styles
 				local value = Sx.read(props.value) or 0
 				local frac = clamp01((value - min) / (max - min))
 				return {
@@ -90,9 +90,9 @@ local function Slider(props: SliderProps)
 					height = "100%",
 					backgroundColor = disabled and "rgba(79,195,247,0.4)" or (hovered() and theme.accentHover or theme.accent),
 				}
-			end)} />
+			end} />
 		</Sx.View>
-		<Sx.View style={Sx.createMemo(function(): Sx.Styles
+		<Sx.View style={function(): Sx.Styles
 			local value = Sx.read(props.value) or 0
 			local frac = clamp01((value - min) / (max - min))
 			local hov = hovered() and not disabled
@@ -107,7 +107,7 @@ local function Slider(props: SliderProps)
 				borderColor = hov and "#4fc3f7" or "rgba(79,195,247,0.7)",
 				borderRadius = KNOB / 2,
 			}
-		end)} />
+		end} />
 	</Sx.View>
 end
 

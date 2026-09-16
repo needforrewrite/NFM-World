@@ -42,7 +42,7 @@ local function ToggleSwitch(props: ToggleSwitchProps)
 			setHovered(false)
 		end}>
 		<Sx.View
-			style={Sx.createMemo(function(): Sx.Styles
+			style={function(): Sx.Styles
 				local checked = Sx.read(props.checked)
 				local hov = hovered() and not disabled
 				return {
@@ -52,8 +52,8 @@ local function ToggleSwitch(props: ToggleSwitchProps)
 					backgroundColor = checked and theme.accent or (hov and "rgba(255,255,255,0.28)" or "rgba(255,255,255,0.2)"),
 					borderRadius = size / 2,
 				}
-			end)}>
-			<Sx.View style={Sx.createMemo(function(): Sx.Styles
+			end}>
+			<Sx.View style={function(): Sx.Styles
 				local checked = Sx.read(props.checked)
 				return {
 					position = "absolute",
@@ -64,9 +64,9 @@ local function ToggleSwitch(props: ToggleSwitchProps)
 					backgroundColor = "#ffffff",
 					borderRadius = knob / 2,
 				}
-			end)} />
+			end} />
 		</Sx.View>
-		<Sx.Text style={Sx.createMemo(function(): Sx.TextStyles
+		<Sx.Text style={function(): Sx.TextStyles
 			local checked = Sx.read(props.checked)
 			return {
 				fontSize = 13,
@@ -74,7 +74,7 @@ local function ToggleSwitch(props: ToggleSwitchProps)
 					and "rgba(255,255,255,0.3)"
 					or (checked and "#fff" or "rgba(255,255,255,0.7)"),
 			}
-		end)}>
+		end}>
 			{function()
 				local label = props.label
 				if label == nil then return "" end

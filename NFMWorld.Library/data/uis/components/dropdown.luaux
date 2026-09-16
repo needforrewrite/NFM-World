@@ -91,7 +91,7 @@ local function Dropdown(props: DropdownProps)
 	local function DropdownOptionRow(props: { opt: DropdownOption, value: Sx.Signalish<number?>, onSelect: (number) -> () })
 		local hovered, setHovered = Sx.createSignal(false)
 		return <Sx.View
-			style={Sx.createMemo(function(): Sx.Styles
+			style={function(): Sx.Styles
 				local v = Sx.read(props.value)
 				local selected = v ~= nil and v == props.opt.value
 				return {
@@ -103,7 +103,7 @@ local function Dropdown(props: DropdownProps)
 						or (hovered() and "rgba(255,255,255,0.08)" or "transparent"),
 					flexShrink = 0,
 				}
-			end)}
+			end}
 			onmousedown={function()
 				if disabled then return end
 				props.onSelect(props.opt.value)
@@ -116,14 +116,14 @@ local function Dropdown(props: DropdownProps)
 				setHovered(false)
 			end}>
 			<Sx.Text
-				style={Sx.createMemo(function(): Sx.TextStyles
+				style={function(): Sx.TextStyles
 					local v = Sx.read(props.value)
 					local selected = v ~= nil and v == props.opt.value
 					return {
 						fontSize = 13,
 						color = selected and theme.accent or (hovered() and "#fff" or "rgba(255,255,255,0.8)"),
 					}
-				end)}>
+				end}>
 				{props.opt.label}
 			</Sx.Text>
 		</Sx.View>
@@ -133,7 +133,7 @@ local function Dropdown(props: DropdownProps)
 		<Sx.View
 			ref={triggerRef}
 			tabindex={0}
-			style={Sx.createMemo(function(): Sx.Styles
+			style={function(): Sx.Styles
 				local isOpen = open()
 				local hov = hovered() and not disabled
 				return {
@@ -151,7 +151,7 @@ local function Dropdown(props: DropdownProps)
 					borderColor = isOpen and "rgba(79,195,247,0.6)" or (hov and "rgba(255,255,255,0.4)" or "rgba(255,255,255,0.15)"),
 					borderRadius = 6,
 				}
-			end)}
+			end}
 			onmousedown={function()
 				if disabled then return end
 				setOpenUp(computeOpenUp())
@@ -168,17 +168,17 @@ local function Dropdown(props: DropdownProps)
 				setHovered(false)
 			end}>
 			<Sx.Text
-				style={Sx.createMemo(function(): Sx.TextStyles
+				style={function(): Sx.TextStyles
 					local isOpen = open()
 					return { fontSize = 13, color = isOpen and "#fff" or "rgba(255,255,255,0.8)" }
-				end)}>
+				end}>
 				{selectedLabel()}
 			</Sx.Text>
 			<Sx.Text style={{ fontSize = 12, color = "rgba(255,255,255,0.5)", flexShrink = 0 }}>▾</Sx.Text>
 		</Sx.View>
 		<Sx.Show when={open()}>
 			<Sx.View
-				style={Sx.createMemo(function(): Sx.Styles
+				style={function(): Sx.Styles
 					local up = openUp()
 					local popupStyle: Sx.Styles = {
 						position = "absolute",
@@ -200,7 +200,7 @@ local function Dropdown(props: DropdownProps)
 						popupStyle.top = "100%"
 					end
 					return popupStyle
-				end)}>
+				end}>
 				<Sx.For<<DropdownOption>>>
 					each={rows}
 					{function(item: () -> DropdownOption, _index: number)
