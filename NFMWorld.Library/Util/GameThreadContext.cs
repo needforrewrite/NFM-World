@@ -148,6 +148,7 @@ public class GameThreadContext : SynchronizationContext
             MeasureProfiler.SaveData("ExecutePendingTasks");
 
             Logging.Debug($"Pending tasks: {stopwatch.Elapsed}");
+            GameThreadContextDiagnostics.Record(stopwatch.ElapsedTicks);
         }
 
         return hasTasks;
