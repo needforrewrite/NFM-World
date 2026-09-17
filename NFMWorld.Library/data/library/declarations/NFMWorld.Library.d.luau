@@ -101,6 +101,56 @@ end
 declare IGamemodeContext: {
 }
 
+declare extern type FrameTrace with
+end
+
+declare FrameTrace: {
+    addMessage: ((message: string) -> nil),
+}
+
+declare extern type ClientSidePlayer with
+    info: ClientSidePlayerInfo
+    index: integer
+    car: BackendCar|nil
+    bot: BaseAi|nil
+    isFake: boolean
+end
+
+declare ClientSidePlayer: {
+}
+
+declare extern type ClientSidePlayerInfo with
+    playerName: string
+    carName: string
+    color: Color3
+    isBot: boolean
+    isClientPlayer: boolean
+end
+
+declare ClientSidePlayerInfo: {
+}
+
+declare extern type HudStateData with
+    speed: number
+    power: number
+    damage: number
+    lap: integer
+    totalLaps: integer
+    lapTime: integer
+    position: integer
+    totalRacers: integer
+    stateText: string
+    lapDiffMs: integer|nil
+    lastLapDiffMs: integer|nil
+    chkDiffMs: integer|nil
+    lastChkDiffMs: integer|nil
+    countdownTimer: integer
+    stateTextEndsAt: number|nil
+end
+
+declare HudStateData: {
+}
+
 declare extern type LuaClientContext with
     resetCheckpointGlow: ((self: LuaClientContext) -> nil)
     updateCheckpointGlow: ((self: LuaClientContext, currentCheckpoint: integer, isFinish: boolean) -> nil)
@@ -176,172 +226,11 @@ declare TimeTrial: {
     new: ((stage: BackendStage) -> TimeTrial),
 }
 
-declare extern type ClientSidePlayer with
-    info: ClientSidePlayerInfo
-    index: integer
-    car: BackendCar|nil
-    bot: BaseAi|nil
-    isFake: boolean
-end
-
-declare ClientSidePlayer: {
-}
-
-declare extern type ClientSidePlayerInfo with
-    playerName: string
-    carName: string
-    color: Color3
-    isBot: boolean
-    isClientPlayer: boolean
-end
-
-declare ClientSidePlayerInfo: {
-}
-
-declare extern type HudStateData with
-    speed: number
-    power: number
-    damage: number
-    lap: integer
-    totalLaps: integer
-    lapTime: integer
-    position: integer
-    totalRacers: integer
-    stateText: string
-    lapDiffMs: integer|nil
-    lastLapDiffMs: integer|nil
-    chkDiffMs: integer|nil
-    lastChkDiffMs: integer|nil
-    countdownTimer: integer
-    stateTextEndsAt: number|nil
-end
-
-declare HudStateData: {
-}
-
 declare extern type PhysicsController with
     gameTick: ((self: PhysicsController) -> nil)
 end
 
 declare PhysicsController: {
-}
-
-declare extern type ServerSidePlayerInfo with
-    id: string
-    playerName: string
-    carName: string
-    color: Color3
-end
-
-declare ServerSidePlayerInfo: {
-}
-
-declare extern type AttachmentLineDirection with
-end
-
-declare AttachmentLineDirection: {
-    x: AttachmentLineDirection,
-    z: AttachmentLineDirection,
-}
-
-declare extern type LineType with
-end
-
-declare LineType: {
-    flat: LineType,
-    charged: LineType,
-    colored: LineType,
-    brightColored: LineType,
-    maxValue: LineType,
-}
-
-declare extern type PolyType with
-end
-
-declare PolyType: {
-    flat: PolyType,
-    light: PolyType,
-    brakeLight: PolyType,
-    reverseLight: PolyType,
-    finish: PolyType,
-    fullbright: PolyType,
-    cGround: PolyType,
-    glass: PolyType,
-    maxValue: PolyType,
-}
-
-declare extern type Rad3d with
-    maxRadius: integer
-    colors: { Color3 }
-    stats: CarStats
-    wheels: { Rad3dWheelDef }
-    rims: Rad3dRimsDef|nil
-    boxes: { Rad3dBoxDef }
-    polys: { Rad3dPoly }
-    castsShadow: boolean
-    atp: { LuaVector2 }
-    fileName: string
-    atLines: { Rad3dAttachmentLine }|nil
-end
-
-declare Rad3d: {
-}
-
-declare extern type Rad3dAttachmentLine with
-    direction: AttachmentLineDirection
-    offset: fixed64
-    __eq: ((left: Rad3dAttachmentLine, right: Rad3dAttachmentLine) -> boolean)
-end
-
-declare Rad3dAttachmentLine: {
-}
-
-declare extern type Rad3dBoxDef with
-    xy: integer
-    zy: integer
-    radius: fixed64vector3
-    translation: fixed64vector3
-    surfaceType: SurfaceType
-    damage: integer
-    notWall: boolean
-    color: Color3
-    tractionMultiplier: fixed64|nil
-    __eq: ((left: Rad3dBoxDef, right: Rad3dBoxDef) -> boolean)
-end
-
-declare Rad3dBoxDef: {
-}
-
-declare extern type Rad3dPoly with
-    color: Color3
-    colNum: integer|nil
-    polyType: PolyType
-    lineType: LineType|nil
-    __eq: ((left: Rad3dPoly, right: Rad3dPoly) -> boolean)
-end
-
-declare Rad3dPoly: {
-}
-
-declare extern type Rad3dRimsDef with
-    color: Color3
-    size: number
-    depth: number
-    __eq: ((left: Rad3dRimsDef, right: Rad3dRimsDef) -> boolean)
-end
-
-declare Rad3dRimsDef: {
-}
-
-declare extern type Rad3dWheelDef with
-    position: fixed64vector3
-    rotates: integer
-    width: fixed64
-    height: fixed64
-    __eq: ((left: Rad3dWheelDef, right: Rad3dWheelDef) -> boolean)
-end
-
-declare Rad3dWheelDef: {
 }
 
 declare extern type SurfaceType with
@@ -532,6 +421,124 @@ declare AiNodeKind: {
     reset: AiNodeKind,
 }
 
+declare extern type ServerSidePlayerInfo with
+    id: string
+    playerName: string
+    carName: string
+    color: Color3
+end
+
+declare ServerSidePlayerInfo: {
+}
+
+declare extern type AttachmentLineDirection with
+end
+
+declare AttachmentLineDirection: {
+    x: AttachmentLineDirection,
+    z: AttachmentLineDirection,
+}
+
+declare extern type LineType with
+end
+
+declare LineType: {
+    flat: LineType,
+    charged: LineType,
+    colored: LineType,
+    brightColored: LineType,
+    maxValue: LineType,
+}
+
+declare extern type PolyType with
+end
+
+declare PolyType: {
+    flat: PolyType,
+    light: PolyType,
+    brakeLight: PolyType,
+    reverseLight: PolyType,
+    finish: PolyType,
+    fullbright: PolyType,
+    cGround: PolyType,
+    glass: PolyType,
+    maxValue: PolyType,
+}
+
+declare extern type Rad3d with
+    maxRadius: integer
+    colors: { Color3 }
+    stats: CarStats
+    wheels: { Rad3dWheelDef }
+    rims: Rad3dRimsDef|nil
+    boxes: { Rad3dBoxDef }
+    polys: { Rad3dPoly }
+    castsShadow: boolean
+    atp: { LuaVector2 }
+    fileName: string
+    atLines: { Rad3dAttachmentLine }|nil
+end
+
+declare Rad3d: {
+}
+
+declare extern type Rad3dAttachmentLine with
+    direction: AttachmentLineDirection
+    offset: fixed64
+    __eq: ((left: Rad3dAttachmentLine, right: Rad3dAttachmentLine) -> boolean)
+end
+
+declare Rad3dAttachmentLine: {
+}
+
+declare extern type Rad3dBoxDef with
+    xy: integer
+    zy: integer
+    radius: fixed64vector3
+    translation: fixed64vector3
+    surfaceType: SurfaceType
+    damage: integer
+    notWall: boolean
+    color: Color3
+    tractionMultiplier: fixed64|nil
+    __eq: ((left: Rad3dBoxDef, right: Rad3dBoxDef) -> boolean)
+end
+
+declare Rad3dBoxDef: {
+}
+
+declare extern type Rad3dPoly with
+    color: Color3
+    colNum: integer|nil
+    polyType: PolyType
+    lineType: LineType|nil
+    __eq: ((left: Rad3dPoly, right: Rad3dPoly) -> boolean)
+end
+
+declare Rad3dPoly: {
+}
+
+declare extern type Rad3dRimsDef with
+    color: Color3
+    size: number
+    depth: number
+    __eq: ((left: Rad3dRimsDef, right: Rad3dRimsDef) -> boolean)
+end
+
+declare Rad3dRimsDef: {
+}
+
+declare extern type Rad3dWheelDef with
+    position: fixed64vector3
+    rotates: integer
+    width: fixed64
+    height: fixed64
+    __eq: ((left: Rad3dWheelDef, right: Rad3dWheelDef) -> boolean)
+end
+
+declare Rad3dWheelDef: {
+}
+
 declare extern type PiecePlacement with
     type: PiecePlacementType
     object: Rad3d
@@ -682,6 +689,19 @@ declare extern type StageLoader with
 end
 
 declare StageLoader: {
+}
+
+declare extern type Color3 with
+    r: integer
+    g: integer
+    b: integer
+    __add: ((a: Color3, b: Color3) -> Color3)
+    __div: ((a: Color3, b: number) -> Color3)
+    __sub: ((a: Color3, b: Color3) -> Color3)
+    __eq: ((left: Color3, right: Color3) -> boolean)
+end
+
+declare Color3: {
 }
 
 declare extern type Key with
@@ -1105,6 +1125,42 @@ declare MouseButtons: {
     xButton2: MouseButtons,
 }
 
+declare extern type LuaRect with
+    x: number
+    y: number
+    width: number
+    height: number
+    __eq: ((left: LuaRect, right: LuaRect) -> boolean)
+end
+
+declare LuaRect: {
+}
+
+declare extern type LuaVector2 with
+    x: number
+    y: number
+    __sub: ((left: LuaVector2, right: LuaVector2) -> LuaVector2)
+    __add: ((left: LuaVector2, right: LuaVector2) -> LuaVector2)
+    __div: ((left: LuaVector2, right: LuaVector2) -> LuaVector2)
+    __eq: ((left: LuaVector2, right: LuaVector2) -> boolean)
+end
+
+declare LuaVector2: {
+}
+
+declare extern type LuaVector3 with
+    x: number
+    y: number
+    z: number
+    __sub: ((left: LuaVector3, right: LuaVector3) -> LuaVector3)
+    __add: ((left: LuaVector3, right: LuaVector3) -> LuaVector3)
+    __div: ((left: LuaVector3, right: LuaVector3) -> LuaVector3)
+    __eq: ((left: LuaVector3, right: LuaVector3) -> boolean)
+end
+
+declare LuaVector3: {
+}
+
 declare extern type DeterministicRandom with
     next: ((self: DeterministicRandom) -> integer)
     nextBetween: ((self: DeterministicRandom, min: integer, max: integer) -> integer)
@@ -1309,6 +1365,15 @@ end
 declare View: {
 }
 
+declare extern type Direction with
+end
+
+declare Direction: {
+    inherit: Direction,
+    ltr: Direction,
+    rtl: Direction,
+}
+
 declare extern type BaseMouseDragEvent with
     dragStart: LuaVector2
     position: LuaVector2
@@ -1436,15 +1501,6 @@ end
 declare MouseWheelEvent: {
 }
 
-declare extern type Direction with
-end
-
-declare Direction: {
-    inherit: Direction,
-    ltr: Direction,
-    rtl: Direction,
-}
-
 declare extern type TextNode extends Node with
     visualChildren: { Node }
     text: string
@@ -1452,61 +1508,5 @@ declare extern type TextNode extends Node with
 end
 
 declare TextNode: {
-}
-
-declare extern type Color3 with
-    r: integer
-    g: integer
-    b: integer
-    __add: ((a: Color3, b: Color3) -> Color3)
-    __div: ((a: Color3, b: number) -> Color3)
-    __sub: ((a: Color3, b: Color3) -> Color3)
-    __eq: ((left: Color3, right: Color3) -> boolean)
-end
-
-declare Color3: {
-}
-
-declare extern type LuaVector2 with
-    x: number
-    y: number
-    __sub: ((left: LuaVector2, right: LuaVector2) -> LuaVector2)
-    __add: ((left: LuaVector2, right: LuaVector2) -> LuaVector2)
-    __div: ((left: LuaVector2, right: LuaVector2) -> LuaVector2)
-    __eq: ((left: LuaVector2, right: LuaVector2) -> boolean)
-end
-
-declare LuaVector2: {
-}
-
-declare extern type LuaVector3 with
-    x: number
-    y: number
-    z: number
-    __sub: ((left: LuaVector3, right: LuaVector3) -> LuaVector3)
-    __add: ((left: LuaVector3, right: LuaVector3) -> LuaVector3)
-    __div: ((left: LuaVector3, right: LuaVector3) -> LuaVector3)
-    __eq: ((left: LuaVector3, right: LuaVector3) -> boolean)
-end
-
-declare LuaVector3: {
-}
-
-declare extern type LuaRect with
-    x: number
-    y: number
-    width: number
-    height: number
-    __eq: ((left: LuaRect, right: LuaRect) -> boolean)
-end
-
-declare LuaRect: {
-}
-
-declare extern type FrameTrace with
-end
-
-declare FrameTrace: {
-    addMessage: ((message: string) -> nil),
 }
 
