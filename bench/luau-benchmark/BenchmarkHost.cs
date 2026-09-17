@@ -74,7 +74,8 @@ public sealed class BenchmarkHost : IDisposable
         };
 
         var state = LuaState.Create(platform);
-        state.OpenStandardLibraries();          // includes fixed64 / f64math
+        state.OpenStandardLibraries();
+        state.OpenFixedMathLibrary();
         LuaVisibleTypeRegistry.RegisterAll(state);
         state.Environment["unpack"] = new LuaFunction("unpack", TableLibrary.Unpack);
         return state;
@@ -193,6 +194,30 @@ public sealed class BenchmarkHost : IDisposable
             cpu = c;
         }
         return (cpu, sw.Elapsed.TotalSeconds, results);
+    }
+    public Func<(double CpuSeconds, double WallSeconds, LuaValue[] Returns)> RunScriptDetached(
+        string scriptPath,
+        params LuaValue[] args)
+    {
+        var code = File.ReadAllText(scriptPath);
+        var closure = _state.Load(code, "bench_" + Path.GetFileName(scriptPath));
+        var module = _state.Call(closure, []);
+        var runFn = module.Length > 0 ? module[0] : LuaValue.Nil;
+
+        return () =>
+        {
+            var sw = Stopwatch.StartNew();
+            var results = _state.Call(runFn, args);
+            sw.Stop();
+
+            double cpu = double.NaN;
+            if (results.Length > 0 && results[0].TryRead<double>(out var c))
+            {
+                cpu = c;
+            }
+
+            return (cpu, sw.Elapsed.TotalSeconds, results);
+        };
     }
 
     // ---- Real-filesystem ILuaFileSystem rooted at data/library -----------------

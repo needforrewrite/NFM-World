@@ -13,6 +13,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The measurement engine. Same version as FixedMathSharp.Benchmarks. -->
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The real C# UI host (LuaUiLibrary), View/Component/Yoga, DummyBackend,
          LuaVisibleTypeRegistry, and the game's Lua helpers. -->
     <ProjectReference Include="..\..\NFMWorld.Library\NFMWorld.Library.csproj" />
@@ -22,15 +27,6 @@
 
   <ItemGroup>
     <None Include="scripts\**\*.luau" CopyToOutputDirectory="PreserveNewest" />
-    <None Remove="TraceAnalyzer\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Remove="TraceAnalyzer\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Remove="TraceAnalyzer\**" />
   </ItemGroup>
 
 </Project>

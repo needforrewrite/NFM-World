@@ -1,24 +1,43 @@
+using System.Reflection;
+using BenchmarkDotNet.Running;
 using Lua;
 using LuauBenchmark;
 using NFMWorldLibrary.Util;
 
-// Quiet the game's per-node Debug logging (LuaUiLibrary logs every setProperty/commitTextUpdate),
-// which would otherwise flood stdout and skew the timing. Default to Warning; override to e.g.
-// "Trace" if you want verbose logs. Must be set before the first Logging use (host creation).
-if (Environment.GetEnvironmentVariable("NFMW_LOG_MIN_LEVEL") is null)
+// CLI:
+//   LuauBenchmark <scenario> [runs]        -> the legacy console scenarios (see README.md)
+//   LuauBenchmark [BenchmarkDotNet args]   -> BenchmarkDotNet (the measurement path)
+//
+// Anything that is not a known console scenario goes to BenchmarkDotNet, so the usual
+// `dotnet run --project bench/luau-benchmark -c Release -- --filter *hud*` works.
+//
+// The console scenarios stay because they do things the BDN table does not (allocation type
+// traces, the profile-* diagnostics, the fixed64 checksum) and because they are the names in the
+// README. Their best-of-N behaviour is deliberately unchanged -- and is NOT stationary, because
+// one LuaState serves every run and every scenario in the process; see Benchmarks.cs.
+
+// Must run before the first Logging/host use. Also done by a module initializer, since
+// BenchmarkDotNet never runs this Main in its measured child processes.
+BenchSupport.QuietLogging();
+
+if (args.Length == 0 || !BenchSupport.ConsoleScenarios.Contains(args[0]))
 {
-    Environment.SetEnvironmentVariable("NFMW_LOG_MIN_LEVEL", "Warning");
+    if (args.Length > 0 && !args[0].StartsWith('-'))
+    {
+        Console.Error.WriteLine(
+            $"[luau-benchmark] '{args[0]}' is not a console scenario "
+            + $"({string.Join(" | ", BenchSupport.ConsoleScenarios)}) -- passing the arguments to BenchmarkDotNet.");
+    }
+
+    BenchmarkSwitcher.FromAssembly(Assembly.GetEntryAssembly()!).Run(args);
+    return;
 }
 
-// CLI:  LuauBenchmark <scenario> [runs]
-//   scenario: fixed64 | preact-small | preact-large | hud | hud_sx | vmcore | all   (default: all)
-//   runs    : best-of-N runs per scenario                    (default: 3)
-
-var scenario = args.Length > 0 ? args[0] : "all";
+var scenario = args[0];
 var runs = ParseInt(args, 1, 3);
 
-var root = FindRepoRoot();
-var libRoot = Path.Combine(root, "NFMWorld.Library", "data", "library");
+var root = BenchSupport.RepoRoot;
+var libRoot = BenchSupport.LibraryRoot;
 var scripts = Path.Combine(root, "bench", "luau-benchmark", "scripts");
 
 using var host = new BenchmarkHost(libRoot);
@@ -45,6 +64,9 @@ switch (scenario)
         break;
     case "vmcore":
         RunVmcore(host, scripts, runs);
+        break;
+    case "profile-hud-sx":
+        RunHudSxProfile(host, scripts);
         break;
     case "profile-preact-small":
         RunPreactProfile(host, scripts, name: "preact-small", size: 16, fresh: true, iterations: 10000);
@@ -78,19 +100,27 @@ switch (scenario)
 static void RunFixed64(BenchmarkHost host, string scripts, int runs)
 {
     var path = Path.Combine(scripts, "fixed64_kernel.luau");
-    const int iterations = 10000, nodes = 500;
-    Console.WriteLine($"fixed64 : {iterations} iters x {nodes}-node min-dist scan + trig (el_stupido kernel)");
+    const int iterations = 2000, nodeCount = 500;
+    Console.WriteLine($"fixed64 : {iterations} min-distance scans ({nodeCount} nodes each) + trig, heavy fixed64/f64math interop");
 
     double bestCpu = double.MaxValue, bestWall = double.MaxValue;
-    string? checksum = null;
+    var checksum = "";
     for (var r = 0; r < runs; r++)
     {
-        var (cpu, wall, rets) = host.RunScript(path, new LuaValue((double)iterations), new LuaValue((double)nodes));
-        if (cpu < bestCpu) { bestCpu = cpu; bestWall = wall; }
-        if (rets.Length > 1) checksum = rets[1].ToString();
+        var (cpu, wall, rets) = host.RunScript(path, new LuaValue((double)iterations), new LuaValue((double)nodeCount));
+        if (cpu < bestCpu)
+        {
+            bestCpu = cpu;
+            bestWall = wall;
+            if (rets.Length > 1 && rets[1].TryRead<string>(out var cs)) checksum = cs;
+        }
     }
+
+    // The script accumulates every scan into one fixed64 and stringifies it: the two VMs must
+    // agree on this or a timing comparison is meaningless.
+    Console.WriteLine($"  checksum {checksum}");
     PrintResult("fixed64", bestCpu, bestWall);
-    Console.WriteLine($"  checksum: {checksum}\n");
+    Console.WriteLine();
 }
 
 static void RunPreact(BenchmarkHost host, string scripts, int runs, string name, int size, bool fresh, int iterations)
@@ -181,6 +211,61 @@ static void RunPreactMountTrace(BenchmarkHost host, string scripts, int size)
 
     Console.WriteLine($"  CPU {cpu * 1000,9:F3} ms | wall {wall * 1000,9:F3} ms | allocated {allocAfter - allocBefore,14:N0} bytes");
     tracker.PrintReport();
+    Console.WriteLine();
+}
+
+static void RunHudSxProfile(BenchmarkHost host, string scripts)
+{
+    var path = Path.Combine(scripts, "hud_sx.luau");
+    const int frames = 300;
+    Console.WriteLine($"hud_sx (GC profile) : {frames} per-frame flushes -- checking whether real GC pressure (not just safepoint-poll sampling bias) explains the cost");
+
+    // Warm up (JIT tiering) before measuring.
+    host.RunScript(path, new LuaValue((double)frames));
+
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+    GC.WaitForPendingFinalizers();
+    GC.Collect(2, GCCollectionMode.Forced, true, true);
+
+    var gen0Before = GC.CollectionCount(0);
+    var gen1Before = GC.CollectionCount(1);
+    var gen2Before = GC.CollectionCount(2);
+    var allocBefore = GC.GetAllocatedBytesForCurrentThread();
+    LuaTableDiagnostics.Reset();
+    LuaCallDiagnostics.Reset();
+    GameThreadContextDiagnostics.Reset();
+    LuaVmDiagnostics.Reset();
+    LuaUiHostStats.Enabled = true;
+    LuaUiHostStats.Reset();
+
+    var (cpu, wall, _) = host.RunScript(path, new LuaValue((double)frames));
+    var setProps = LuaUiHostStats.SetPropertyCount;
+    var commits = LuaUiHostStats.CommitTextCount;
+    LuaUiHostStats.Enabled = false;
+
+    var allocAfter = GC.GetAllocatedBytesForCurrentThread();
+    var gen0After = GC.CollectionCount(0);
+    var gen1After = GC.CollectionCount(1);
+    var gen2After = GC.CollectionCount(2);
+    var setTableFast = LuaTableDiagnostics.SetTableFastCount;
+    var setTableSlow = LuaTableDiagnostics.SetTableSlowCount;
+    var setTableSlowMs = LuaTableDiagnostics.SetTableSlowMilliseconds;
+    var luaCalls = LuaCallDiagnostics.CallCount;
+    var luaCallMs = LuaCallDiagnostics.ElapsedMilliseconds;
+    var luaCrossings = LuaCallDiagnostics.TotalCrossingCount;
+    var flushCount = GameThreadContextDiagnostics.FlushCount;
+    var flushMs = GameThreadContextDiagnostics.ElapsedMilliseconds;
+    var instructionCount = LuaVmDiagnostics.InstructionCount;
+
+    var totalAlloc = allocAfter - allocBefore;
+    Console.WriteLine($"  CPU {cpu * 1000,9:F3} ms | wall {wall * 1000,9:F3} ms");
+    Console.WriteLine($"  Allocated: {totalAlloc,14:N0} bytes total | {totalAlloc / (double)frames,10:N0} bytes/frame");
+    Console.WriteLine($"  GC collections during run: Gen0={gen0After - gen0Before} Gen1={gen1After - gen1Before} Gen2={gen2After - gen2Before}");
+    Console.WriteLine($"  SetTable: fast={setTableFast} ({setTableFast / (double)frames:F1}/frame), slow={setTableSlow} ({setTableSlow / (double)frames:F1}/frame), slow-path time={setTableSlowMs:F3} ms total ({setTableSlowMs * 1_000_000.0 / Math.Max(setTableSlow, 1):F1} ns/call, {setTableSlowMs * 1000.0 / frames:F2} us/frame)");
+    Console.WriteLine($"  RunSyncCore: {luaCalls} outermost calls/run ({luaCalls / (double)frames:F1}/frame), {luaCrossings} total crossings incl. nested ({luaCrossings / (double)frames:F1}/frame), outermost-only wall time {luaCallMs:F3} ms ({luaCallMs * 1000.0 / frames:F2} us/frame) -- non-overlapping, Stopwatch-measured, not sampled");
+    Console.WriteLine($"  GameThreadContext.ExecutePendingTasks (\"GTC\"): {flushCount} non-empty flushes ({flushCount / (double)frames:F2}/frame), {flushMs:F3} ms total ({flushMs * 1000.0 / frames:F2} us/frame) -- the exact boundary the in-game FPS overlay's GTC figure measures");
+    Console.WriteLine($"  setProp {setProps / (double)frames:F1}/frame, commitText {commits / (double)frames:F1}/frame");
+    Console.WriteLine($"  VM instructions executed: {instructionCount:N0} total ({instructionCount / (double)frames:N0}/frame) -- {flushMs * 1_000_000.0 / instructionCount:F1} ns/instruction if all of GTC time were dispatch cost");
     Console.WriteLine();
 }
 
@@ -292,10 +377,11 @@ static void RunHudSx(BenchmarkHost host, string scripts, int runs)
     double bestCpu = double.MaxValue, bestWall = double.MaxValue;
     long setProps = 0, commits = 0, creates = 0, structures = 0;
     double hostUs = 0;
+    var run = host.RunScriptDetached(path, new LuaValue((double)frames));
     for (var r = 0; r < runs; r++)
     {
         LuaUiHostStats.Reset();
-        var (cpu, wall, _) = host.RunScript(path, new LuaValue((double)frames));
+        var (cpu, wall, _) = run();
         if (cpu < bestCpu)
         {
             bestCpu = cpu;
@@ -324,20 +410,6 @@ static void PrintResult(string name, double cpuSec, double wallSec)
 }
 
 // ---------------------------------------------------------------- helpers
-
-static string FindRepoRoot()
-{
-    var dir = new DirectoryInfo(AppContext.BaseDirectory);
-    while (dir != null)
-    {
-        if (Directory.Exists(Path.Combine(dir.FullName, "NFMWorld.Library", "data", "library")))
-        {
-            return dir.FullName;
-        }
-        dir = dir.Parent;
-    }
-    throw new DirectoryNotFoundException("repo root not found (NFMWorld.Library/data/library)");
-}
 
 static int ParseInt(string[] args, int index, int fallback)
 {

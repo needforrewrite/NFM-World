@@ -1,0 +1,159 @@
+W:\projects\NFM-World\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj : warning NU1510: PackageReference System.Text.Json will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item. [W:\projects\NFM-World\bench\luau-benchmark\LuauBenchmark.csproj]
+W:\projects\NFM-World\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj : warning NU1510: PackageReference System.IO.Pipelines will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item. [W:\projects\NFM-World\bench\luau-benchmark\LuauBenchmark.csproj]
+W:\projects\NFM-World\FixedMathSharp\src\FixedMathSharp\FixedMathSharp.csproj : warning NU1510: PackageReference System.Text.Json will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item.
+W:\projects\NFM-World\Maxine.Extensions\Maxine.Extensions\Maxine.Extensions.csproj : warning NU1510: PackageReference System.IO.Pipelines will not be pruned. This package is automatically available and does not need to be referenced explicitly. Remove the PackageReference item.
+C:\Users\Maxine\.nuget\packages\polyfill\10.5.1\build\Polyfill.targets(142,5): warning PolyfillMemoryVersion: Polyfill: System.Memory version 4.5.4 is installed, but 4.5.5 or newer is required to enable FeatureMemory. [W:\projects\NFM-World\NFMWorld.LuaSourceGenerator\NFMWorld.LuaSourceGenerator.csproj]
+// Validating benchmarks:
+// ***** BenchmarkRunner: Start   *****
+// ***** Found 1 benchmark(s) in total *****
+// ***** Building 1 exe(s) in Parallel: Start   *****
+// start dotnet  restore --nodeReuse:false /p:UseSharedCompilation=false /p:Deterministic=true /p:Optimize=true /p:ArtifactsPath="W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1/" /p:OutDir="W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1\bin\Release\net10.0/" /p:OutputPath="W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1\bin\Release\net10.0/" /p:PublishDir="W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1\publish/" in W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1
+// command took 3.91 sec and exited with 0
+// start dotnet  build -c Release --no-restore --nodeReuse:false /p:UseSharedCompilation=false /p:Deterministic=true /p:Optimize=true /p:ArtifactsPath="W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1/" /p:OutDir="W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1\bin\Release\net10.0/" /p:OutputPath="W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1\bin\Release\net10.0/" /p:PublishDir="W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1\publish/" --output "W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1\bin\Release\net10.0/" in W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1
+// command took 36.62 sec and exited with 0
+// ***** Done, took 00:00:41 (41.17 sec)   *****
+// Found 1 benchmarks:
+//   VmcoreBenchmark.'vmcore, 1200 reconciler-core walks (depth 8, no host)': Job-MJLQTR(InvocationCount=1, IterationCount=5, UnrollFactor=1, WarmupCount=3)
+
+Setup power plan (GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c FriendlyName: High performance)
+// **************************
+// Benchmark: VmcoreBenchmark.'vmcore, 1200 reconciler-core walks (depth 8, no host)': Job-MJLQTR(InvocationCount=1, IterationCount=5, UnrollFactor=1, WarmupCount=3)
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet LuauBenchmark-Job-MJLQTR-1.dll --anonymousPipes 12344 6160 --benchmarkName LuauBenchmark.VmcoreBenchmark.Walk --job "InvocationCount=1, IterationCount=5, UnrollFactor=1, WarmupCount=3" --benchmarkId 0 in W:\projects\NFM-World\bench\luau-benchmark\bin\Release\net10.0\LuauBenchmark-Job-MJLQTR-1\bin\Release\net10.0
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// BenchmarkDotNet v0.15.8
+// Runtime=.NET 10.0.5 (10.0.5, 10.0.526.15411), X64 RyuJIT x86-64-v4
+// GC=Concurrent Workstation
+// HardwareIntrinsics=AVX512 BITALG+VBMI2+VNNI+VPOPCNTDQ,AVX512 IFMA+VBMI,AVX512 F+BW+CD+DQ+VL,AVX2+BMI1+BMI2+F16C+FMA+LZCNT+MOVBE,AVX,SSE3+SSSE3+SSE4.1+SSE4.2+POPCNT,X86Base+SSE+SSE2,AES+PCLMUL,AvxVnni VectorSize=256
+// Job: Job-MJLQTR(InvocationCount=1, IterationCount=5, UnrollFactor=1, WarmupCount=3)
+
+OverheadJitting  1: 1200 op, 143000.00 ns, 119.1667 ns/op
+// LUAU_BENCH cpuNs=364583.3333333333
+WorkloadJitting  1: 1200 op, 347908100.00 ns, 289.9234 us/op
+
+OverheadWarmup   1: 1200 op, 500.00 ns, 0.4167 ns/op
+OverheadWarmup   2: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadWarmup   3: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadWarmup   4: 1200 op, 100.00 ns, 0.0833 ns/op
+OverheadWarmup   5: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadWarmup   6: 1200 op, 300.00 ns, 0.2500 ns/op
+
+OverheadActual   1: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadActual   2: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadActual   3: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadActual   4: 1200 op, 200.00 ns, 0.1667 ns/op
+OverheadActual   5: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadActual   6: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadActual   7: 1200 op, 200.00 ns, 0.1667 ns/op
+OverheadActual   8: 1200 op, 100.00 ns, 0.0833 ns/op
+OverheadActual   9: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadActual  10: 1200 op, 200.00 ns, 0.1667 ns/op
+OverheadActual  11: 1200 op, 200.00 ns, 0.1667 ns/op
+OverheadActual  12: 1200 op, 200.00 ns, 0.1667 ns/op
+OverheadActual  13: 1200 op, 100.00 ns, 0.0833 ns/op
+OverheadActual  14: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadActual  15: 1200 op, 200.00 ns, 0.1667 ns/op
+OverheadActual  16: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadActual  17: 1200 op, 200.00 ns, 0.1667 ns/op
+OverheadActual  18: 1200 op, 200.00 ns, 0.1667 ns/op
+OverheadActual  19: 1200 op, 300.00 ns, 0.2500 ns/op
+OverheadActual  20: 1200 op, 300.00 ns, 0.2500 ns/op
+
+// LUAU_BENCH cpuNs=234375
+WorkloadWarmup   1: 1200 op, 205537500.00 ns, 171.2813 us/op
+// LUAU_BENCH cpuNs=195312.5
+WorkloadWarmup   2: 1200 op, 194826300.00 ns, 162.3553 us/op
+// LUAU_BENCH cpuNs=299479.1666666667
+WorkloadWarmup   3: 1200 op, 228828000.00 ns, 190.6900 us/op
+
+// BeforeActualRun
+// LUAU_BENCH cpuNs=195312.5
+WorkloadActual   1: 1200 op, 225386600.00 ns, 187.8222 us/op
+// LUAU_BENCH cpuNs=364583.3333333333
+WorkloadActual   2: 1200 op, 214487600.00 ns, 178.7397 us/op
+// LUAU_BENCH cpuNs=286458.3333333333
+WorkloadActual   3: 1200 op, 190335800.00 ns, 158.6132 us/op
+// LUAU_BENCH cpuNs=169270.83333333334
+WorkloadActual   4: 1200 op, 195651200.00 ns, 163.0427 us/op
+// LUAU_BENCH cpuNs=169270.83333333334
+WorkloadActual   5: 1200 op, 201049700.00 ns, 167.5414 us/op
+
+// AfterActualRun
+// LUAU_BENCH cpuNs=156250
+WorkloadResult   1: 1200 op, 225386350.00 ns, 187.8220 us/op
+WorkloadResult   2: 1200 op, 214487350.00 ns, 178.7395 us/op
+WorkloadResult   3: 1200 op, 190335550.00 ns, 158.6130 us/op
+WorkloadResult   4: 1200 op, 195650950.00 ns, 163.0425 us/op
+WorkloadResult   5: 1200 op, 201049450.00 ns, 167.5412 us/op
+// GC:  3 0 0 154333200 1200
+// Threading:  0 0 1200
+
+// AfterAll
+// Benchmark Process 67960 has exited with code 0.
+
+Mean = 171.152 us, StdErr = 5.345 us (3.12%), N = 5, StdDev = 11.953 us
+Min = 158.613 us, Q1 = 163.042 us, Median = 167.541 us, Q3 = 178.739 us, Max = 187.822 us
+IQR = 15.697 us, LowerFence = 139.497 us, UpperFence = 202.285 us
+ConfidenceInterval = [125.125 us; 217.178 us] (CI 99.9%), Margin = 46.026 us (26.89% of Mean)
+Skewness = 0.29, Kurtosis = 1.08, MValue = 2
+
+// ** Remained 0 (0.0%) benchmark(s) to run. Estimated finish 2026-09-17 6:05 (0h 0m from now) **
+Successfully reverted power plan (GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c FriendlyName: High performance)
+// ***** BenchmarkRunner: Finish  *****
+
+// * Export *
+  BenchmarkDotNet.Artifacts\results\LuauBenchmark.VmcoreBenchmark-report.csv
+  BenchmarkDotNet.Artifacts\results\LuauBenchmark.VmcoreBenchmark-report-github.md
+  BenchmarkDotNet.Artifacts\results\LuauBenchmark.VmcoreBenchmark-report.html
+
+// * Detailed results *
+VmcoreBenchmark.'vmcore, 1200 reconciler-core walks (depth 8, no host)': Job-MJLQTR(InvocationCount=1, IterationCount=5, UnrollFactor=1, WarmupCount=3)
+Runtime = .NET 10.0.5 (10.0.5, 10.0.526.15411), X64 RyuJIT x86-64-v4; GC = Concurrent Workstation
+Mean = 171.152 us, StdErr = 5.345 us (3.12%), N = 5, StdDev = 11.953 us
+Min = 158.613 us, Q1 = 163.042 us, Median = 167.541 us, Q3 = 178.739 us, Max = 187.822 us
+IQR = 15.697 us, LowerFence = 139.497 us, UpperFence = 202.285 us
+ConfidenceInterval = [125.125 us; 217.178 us] (CI 99.9%), Margin = 46.026 us (26.89% of Mean)
+Skewness = 0.29, Kurtosis = 1.08, MValue = 2
+-------------------- Histogram --------------------
+[153.903 us ; 172.252 us) | @@@
+[172.252 us ; 192.455 us) | @@
+---------------------------------------------------
+
+// * Summary *
+
+BenchmarkDotNet v0.15.8, Windows 11 (10.0.28000.2525/26H1/2026Update)
+AMD Ryzen 7 9800X3D 4.70GHz, 1 CPU, 16 logical and 8 physical cores
+.NET SDK 11.0.100-rc.1.26425.128
+  [Host]     : .NET 10.0.5 (10.0.5, 10.0.526.15411), X64 RyuJIT x86-64-v4
+  Job-MJLQTR : .NET 10.0.5 (10.0.5, 10.0.526.15411), X64 RyuJIT x86-64-v4
+
+InvocationCount=1  IterationCount=5  UnrollFactor=1  
+WarmupCount=3  
+
+| Method                                                  | Mean     | Error    | StdDev   | Gen0   | Lua CPU    | CPU RSD | Host ops | Allocated |
+|-------------------------------------------------------- |---------:|---------:|---------:|-------:|-----------:|--------:|--------- |----------:|
+| 'vmcore, 1200 reconciler-core walks (depth 8, no host)' | 171.2 us | 46.03 us | 11.95 us | 2.5000 | 229.167 us | 40.30 % | NA       |  125.6 KB |
+
+// * Legends *
+  Mean      : Arithmetic mean of all measurements
+  Error     : Half of 99.9% confidence interval
+  StdDev    : Standard deviation of all measurements
+  Gen0      : GC Generation 0 collects per 1000 operations
+  Lua CPU   : Mean in-Lua os.clock() delta per operation: process CPU time, measured inside the script, per render / frame / walk / iteration (see OperationsPerInvoke).
+  CPU RSD   : Relative standard deviation (percent) of the in-Lua CPU per operation across the measured iterations. Near zero means every iteration did the same work, which is what one fresh LuaState per iteration buys; a rising figure means state is accumulating between them.
+  Host ops  : LuaUiHostStats calls per operation: setProperty / commitText / create(instance+text) / structural(appendChild+insertBefore+removeChild). Recorded only by the HUD scenarios.
+  Allocated : Allocated memory per single operation (managed only, inclusive, 1KB = 1024B)
+  1 us      : 1 Microsecond (0.000001 sec)
+
+// * Diagnostic Output - MemoryDiagnoser *
+
+
+// ***** BenchmarkRunner: End *****
+Run time: 00:00:03 (3.26 sec), executed benchmarks: 1
+
+Global total time: 00:00:45 (45.52 sec), executed benchmarks: 1
+// * Artifacts cleanup *
+Artifacts cleanup is finished
