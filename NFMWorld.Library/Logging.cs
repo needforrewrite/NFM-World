@@ -52,7 +52,7 @@ public static class Logging
 #if DEBUG
         return LogLevel.Trace;
 #else
-        return LogLevel.Debug;
+        return LogLevel.Information;
 #endif
     }
 
