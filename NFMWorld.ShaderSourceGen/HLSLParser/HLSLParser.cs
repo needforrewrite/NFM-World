@@ -175,6 +175,8 @@ public ref struct HLSLParser(ReadOnlySpan<char> fileName, ReadOnlySpan<char> buf
         Intrinsic("sincos", HLSLBaseType.Void, HLSLBaseType.Half3, HLSLBaseType.Half3, HLSLBaseType.Half3);
         Intrinsic("sincos", HLSLBaseType.Void, HLSLBaseType.Half4, HLSLBaseType.Half4, HLSLBaseType.Half4);
 
+        Float1("exp2");
+        
         return list.ToArray();
     }
 
