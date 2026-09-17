@@ -32,7 +32,8 @@ VertexShaderOutput VertexShaderFunction(
 
     float3 color = Color;
 	float3 viewPos = mul(Position, WorldView).xyz;
-    VS_ApplyFog(color, viewPos, FogColor, FogDistance, FogLogDensity);
+    float viewLength = length(viewPos);
+    VS_ApplyFog(color, viewLength, FogColor, FogDistance, FogLogDensity);
 
     VS_ColorCorrect(color);
 
