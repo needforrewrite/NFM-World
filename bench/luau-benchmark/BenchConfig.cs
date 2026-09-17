@@ -42,7 +42,7 @@ sealed class BenchConfig : ManualConfig
     /// meaningful — that column is the CI half-width, and at two or three samples the
     /// 99.9 % t-multiplier is large enough to print an Error several times the Mean.
     /// </summary>
-    public const int IterationCount = 7;
+    public const int IterationCount = 14;
 
     public BenchConfig()
     {
