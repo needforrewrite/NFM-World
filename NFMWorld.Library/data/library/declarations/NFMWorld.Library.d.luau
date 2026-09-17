@@ -488,7 +488,6 @@ declare Collection: {
     elo: Collection,
     user: Collection,
     football: Collection,
-    skyline: Collection,
 }
 
 declare extern type Control with
@@ -1493,13 +1492,6 @@ end
 declare LuaVector3: {
 }
 
-declare extern type FrameTrace with
-end
-
-declare FrameTrace: {
-    addMessage: ((message: string) -> nil),
-}
-
 declare extern type LuaRect with
     x: number
     y: number
@@ -1509,5 +1501,12 @@ declare extern type LuaRect with
 end
 
 declare LuaRect: {
+}
+
+declare extern type FrameTrace with
+end
+
+declare FrameTrace: {
+    addMessage: ((message: string) -> nil),
 }
 
