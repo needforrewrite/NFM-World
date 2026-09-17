@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <RootNamespace>NFMWorld.Graphics.FNA3D</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
+    </ItemGroup>
+
+</Project>

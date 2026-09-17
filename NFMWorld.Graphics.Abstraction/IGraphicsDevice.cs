@@ -1,0 +1,26 @@
+namespace NFMWorld.Graphics;
+
+/// <summary>
+/// Backend-agnostic entry point for resource creation and command submission. Concrete
+/// implementations: <c>NFMWorld.Graphics.FNA3D</c> (first backend, proves the abstraction) and,
+/// later, <c>NFMWorld.Graphics.Sokol</c>.
+/// </summary>
+public interface IGraphicsDevice
+{
+    ISwapchain Swapchain { get; }
+
+    /// <summary>
+    /// Only one command buffer may be live at a time; implementations must guard against a
+    /// second acquisition before the previous one is submitted.
+    /// </summary>
+    ICommandBuffer AcquireCommandBuffer();
+
+    /// <summary>Executes the command buffer's recorded work (immediately, for an immediate-mode backend).</summary>
+    void Submit(ICommandBuffer commandBuffer);
+
+    IBuffer CreateBuffer(BufferDesc desc, ReadOnlySpan<byte> initialData = default);
+    ITexture CreateTexture(TextureDesc desc, ReadOnlySpan<byte> initialData = default);
+    IRenderTarget CreateRenderTarget(RenderTargetDesc desc);
+    ISampler CreateSampler(SamplerDesc desc);
+    IPipelineState CreatePipeline(PipelineDesc desc);
+}
