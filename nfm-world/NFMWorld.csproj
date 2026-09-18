@@ -6,7 +6,6 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <DefineConstants>USE_BASS;USE_FAUDIO</DefineConstants>
         <Version>0.0.0-dev</Version>
         <InformationalVersion>NFM-World dev</InformationalVersion>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
@@ -49,15 +48,12 @@
         <PackageReference Include="Hexa.NET.ImGui" Version="2.2.9" />
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.13" />
         <PackageReference Include="LibOpenMPT.NET" Version="0.8.6" />
-        <PackageReference Include="ManagedBass" Version="4.0.1" />
-        <PackageReference Include="ManagedBass.Fx" Version="4.0.1" />
         <None Include="data\**\*" CopyToOutputDirectory="Always" />
         <None Remove="data\html\node_modules\**" CopyToOutputDirectory="Never" />
         <None Remove="data\html\dist\**" CopyToOutputDirectory="Never" />
         <None Include="src\**\*" CopyToOutputDirectory="Always" />
         <None Remove="src\data\.git\**" CopyToOutputDirectory="Never" />
         <None Remove="src\data\.git" CopyToOutputDirectory="Never" />
-        <PackageReference Include="ManagedBass.Opus" Version="4.0.1" />
         <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
         <PackageReference Include="NAudio" Version="3.0.0-preview.18" />
         <PackageReference Include="NAudio.SoundFile" Version="3.0.0-preview.18" />
@@ -94,6 +90,7 @@
         <ProjectReference Include="..\NanoSvgSharp\NanoSvgSharp.csproj" />
         <ProjectReference Include="..\NAudio.Flac\NAudio.Flac\NAudio.Flac.csproj" />
         <ProjectReference Include="..\NFMWorld.Api\NFMWorld.Api.csproj" />
+        <ProjectReference Include="..\NFMWorld.Audio.FAudio\NFMWorld.Audio.FAudio.csproj" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
         <ProjectReference Include="..\NFMWorld.Multiplayer.Base\NFMWorld.Multiplayer.Base.csproj" />
         <ProjectReference Include="..\NFMWorld.NativeLibs\NFMWorld.NativeLibs.csproj" />

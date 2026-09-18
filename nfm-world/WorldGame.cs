@@ -2,9 +2,6 @@
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
-using ManagedBass;
-using ManagedBass.Fx;
-using ManagedBass.Opus;
 using Maxine.Extensions.Mathematics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
@@ -197,13 +194,8 @@ public class WorldGame : Game
             }
             ImguiRenderer.Dispose();
 
-#if USE_BASS
-            Bass.Free();
-#endif
-#if USE_FAUDIO
-            // FAudio is managed by FNA and cleaned up via FAudioContext.Dispose()
-            // on app domain exit. No explicit free needed.
-#endif
+            // FNA's own FAudio device is cleaned up via FAudioContext.Dispose() on app domain
+            // exit, and the direct-FAudio engine (FaudioEngine) lives for the process lifetime.
         }
     }
 
@@ -533,9 +525,6 @@ public class WorldGame : Game
 
         NativeLibrary.SetDllImportResolver(typeof(Game).Assembly, ImportResolver);
         NativeLibrary.SetDllImportResolver(typeof(WorldGame).Assembly, ImportResolver);
-        NativeLibrary.SetDllImportResolver(typeof(Bass).Assembly, ImportResolver);
-        NativeLibrary.SetDllImportResolver(typeof(BassFx).Assembly, ImportResolver);
-        NativeLibrary.SetDllImportResolver(typeof(BassOpus).Assembly, ImportResolver);
 
         SettingsMenu.LoadFnaRenderer();
 

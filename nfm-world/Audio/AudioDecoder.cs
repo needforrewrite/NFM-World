@@ -21,7 +21,7 @@ public static class AudioDecoder
 {
     /// <summary>
     /// Decode audio data from a byte array, dispatching by file extension.
-    /// Returns raw 16-bit signed PCM suitable for SoundEffect construction.
+    /// Returns raw 16-bit signed PCM suitable for submitting to an FAudio source voice.
     /// </summary>
     public static DecodeResult Decode(Stream stream, string extension)
     {

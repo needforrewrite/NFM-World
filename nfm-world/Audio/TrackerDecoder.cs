@@ -23,7 +23,7 @@ public static unsafe class TrackerDecoder
 
     /// <summary>
     /// Default repeat count: -1 means loop forever (we render the full song once
-    /// and let our own SoundEffectInstance handle looping).
+    /// and let the source voice's <c>FAudioBuffer.LoopCount</c> handle looping).
     /// </summary>
     private const int RenderRepeatCount = 0; // play once, no internal loop
 
@@ -81,7 +81,7 @@ public static unsafe class TrackerDecoder
                 }
             }
 
-            // Set repeat count: play once (we handle looping via SoundEffectInstance)
+            // Set repeat count: play once (looping is handled by the source voice's buffer)
             _ = NativeMethods.module_set_repeat_count(mod, RenderRepeatCount);
 
             // Get total duration to allocate buffer

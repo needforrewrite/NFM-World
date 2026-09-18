@@ -31,32 +31,11 @@ public class NanoVGRenderer
 
 internal sealed class WorldClientBackend(NvgContext context) : IBackend
 {
-    public IRadicalMusic LoadMusic(string file, double tempomul)
-    {
-#if USE_FAUDIO
-        return new FaudioMusic(file, tempomul);
-#else
-        return new RadicalMusic(file, tempomul);
-#endif
-    }
+    public IRadicalMusic LoadMusic(string file, double tempomul) => new FaudioMusic(file, tempomul);
 
-    public void StopAllSounds()
-    {
-#if USE_FAUDIO
-        FaudioSoundClip.StopAll();
-#else
-        SoundClip.StopAll();
-#endif
-    }
+    public void StopAllSounds() => FaudioSoundClip.StopAll();
 
-    public ISoundClip GetSound(string filePath)
-    {
-#if USE_FAUDIO
-        return new FaudioSoundClip(filePath);
-#else
-        return new SoundClip(filePath);
-#endif
-    }
+    public ISoundClip GetSound(string filePath) => new FaudioSoundClip(filePath);
 
     public IGraphics Graphics { get; } = new NvgGraphics(context);
 
@@ -369,14 +348,7 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
         }
     }
 
-    public void SetAllVolumes(float vol)
-    {
-#if USE_FAUDIO
-        FaudioSoundClip.SetAllVolumes(vol);
-#else
-        SoundClip.SetAllVolumes(vol);
-#endif
-    }
+    public void SetAllVolumes(float vol) => FaudioSoundClip.SetAllVolumes(vol);
 
     public Key GetKeyFromScancode(Key key)
     {
