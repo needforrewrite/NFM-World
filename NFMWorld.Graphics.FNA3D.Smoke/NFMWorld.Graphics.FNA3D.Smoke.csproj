@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net11.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RootNamespace>NFMWorld.Graphics.FNA3D.Smoke</RootNamespace>
+        <PlatformTarget>x64</PlatformTarget>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="SDL3-CS" Version="3.4.14.1" />
+        <PackageReference Include="SDL3-CS.Windows" Version="3.4.14.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.FNA3D\NFMWorld.Graphics.FNA3D.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <None Include="..\NFMWorld.NativeLibs\libs\x64\FNA3D.dll" Link="FNA3D.dll" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+
+</Project>
