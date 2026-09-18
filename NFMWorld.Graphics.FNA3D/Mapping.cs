@@ -1,4 +1,4 @@
-using NFMWorld.Graphics.FNA3D.Native;
+using NFMWorld.Shaders;
 
 namespace NFMWorld.Graphics.FNA3D;
 
@@ -8,7 +8,7 @@ internal static class Mapping
     public static FNA3D_SurfaceFormat ToNative(TextureFormat format) => format switch
     {
         TextureFormat.Rgba8 => FNA3D_SurfaceFormat.Color,
-        TextureFormat.Bgra8 => FNA3D_SurfaceFormat.ColorBgraExt,
+        TextureFormat.Bgra8 => FNA3D_SurfaceFormat.ColorBgraEXT,
         TextureFormat.R8 => FNA3D_SurfaceFormat.Alpha8,
         TextureFormat.Depth24Stencil8 => throw new ArgumentException("Depth24Stencil8 is a depth format, not a texture surface format; use ToNativeDepthFormat instead.", nameof(format)),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
@@ -16,7 +16,7 @@ internal static class Mapping
 
     public static FNA3D_DepthFormat ToNativeDepthFormat(TextureFormat format) => format switch
     {
-        TextureFormat.Depth24Stencil8 => FNA3D_DepthFormat.D24S8,
+        TextureFormat.Depth24Stencil8 => FNA3D_DepthFormat.Depth24Stencil8,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Not a depth format."),
     };
 
@@ -31,8 +31,8 @@ internal static class Mapping
 
     public static FNA3D_IndexElementSize ToNative(IndexFormat format) => format switch
     {
-        IndexFormat.UInt16 => FNA3D_IndexElementSize.Bits16,
-        IndexFormat.UInt32 => FNA3D_IndexElementSize.Bits32,
+        IndexFormat.UInt16 => FNA3D_IndexElementSize.SixteenBits,
+        IndexFormat.UInt32 => FNA3D_IndexElementSize.ThirtyTwoBits,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
 
@@ -42,7 +42,7 @@ internal static class Mapping
         PrimitiveTopology.TriangleStrip => FNA3D_PrimitiveType.TriangleStrip,
         PrimitiveTopology.LineList => FNA3D_PrimitiveType.LineList,
         PrimitiveTopology.LineStrip => FNA3D_PrimitiveType.LineStrip,
-        PrimitiveTopology.PointList => FNA3D_PrimitiveType.PointListExt,
+        PrimitiveTopology.PointList => FNA3D_PrimitiveType.PointListEXT,
         _ => throw new ArgumentOutOfRangeException(nameof(topology), topology, null),
     };
 
@@ -115,7 +115,7 @@ internal static class Mapping
     public static FNA3D_FillMode ToNative(FillMode mode) => mode switch
     {
         FillMode.Solid => FNA3D_FillMode.Solid,
-        FillMode.Wireframe => FNA3D_FillMode.Wireframe,
+        FillMode.Wireframe => FNA3D_FillMode.WireFrame,
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
     };
 
@@ -131,7 +131,7 @@ internal static class Mapping
         colorWriteEnable1 = FNA3D_ColorWriteChannels.All,
         colorWriteEnable2 = FNA3D_ColorWriteChannels.All,
         colorWriteEnable3 = FNA3D_ColorWriteChannels.All,
-        blendFactor = new FNA3D_Color { r = 255, g = 255, b = 255, a = 255 },
+        blendFactor = new FNA3D_Color { R = 255, G = 255, B = 255, A = 255 },
         multiSampleMask = -1,
     };
 
@@ -156,5 +156,36 @@ internal static class Mapping
     {
         cullMode = ToNative(desc.CullMode),
         fillMode = ToNative(desc.FillMode),
+    };
+
+    public static FNA3D_VertexElementFormat ToNative(VertexAttributeFormat format) => format switch
+    {
+        VertexAttributeFormat.Float1 => FNA3D_VertexElementFormat.Single,
+        VertexAttributeFormat.Float2 => FNA3D_VertexElementFormat.Vector2,
+        VertexAttributeFormat.Float3 => FNA3D_VertexElementFormat.Vector3,
+        VertexAttributeFormat.Float4 => FNA3D_VertexElementFormat.Vector4,
+        VertexAttributeFormat.Byte4Normalized => FNA3D_VertexElementFormat.Color,
+        _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
+    };
+
+    /// <summary>
+    /// Maps an HLSL semantic name (e.g. "POSITION", "TEXCOORD") to FNA3D's vertex-element usage -
+    /// any trailing digits (the usage index, e.g. the "1" in "TEXCOORD1") belong in
+    /// <see cref="VertexAttributeDesc.Slot"/> instead and are ignored here.
+    /// </summary>
+    public static FNA3D_VertexElementUsage ToNativeVertexUsage(string semantic) => semantic.TrimEnd("0123456789".ToCharArray()).ToUpperInvariant() switch
+    {
+        "POSITION" or "SV_POSITION" => FNA3D_VertexElementUsage.Position,
+        "COLOR" => FNA3D_VertexElementUsage.Color,
+        "TEXCOORD" => FNA3D_VertexElementUsage.TextureCoordinate,
+        "NORMAL" => FNA3D_VertexElementUsage.Normal,
+        "BINORMAL" => FNA3D_VertexElementUsage.Binormal,
+        "TANGENT" => FNA3D_VertexElementUsage.Tangent,
+        "BLENDINDICES" => FNA3D_VertexElementUsage.BlendIndices,
+        "BLENDWEIGHT" => FNA3D_VertexElementUsage.BlendWeight,
+        "DEPTH" => FNA3D_VertexElementUsage.Depth,
+        "FOG" => FNA3D_VertexElementUsage.Fog,
+        "PSIZE" => FNA3D_VertexElementUsage.PointSize,
+        _ => throw new ArgumentOutOfRangeException(nameof(semantic), semantic, "Unrecognized HLSL semantic."),
     };
 }

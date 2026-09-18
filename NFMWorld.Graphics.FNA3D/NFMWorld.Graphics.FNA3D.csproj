@@ -9,7 +9,16 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <!-- The smoke test talks to the raw FNA3D device (framebuffer readback for pixel-level
+             verification) rather than widening the backend-agnostic IGraphicsDevice surface with
+             a driver-specific query. -->
+        <InternalsVisibleTo Include="NFMWorld.Graphics.FNA3D.Smoke" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\NFMWorld.FNA3D\NFMWorld.FNA3D.csproj" />
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.MojoShader\NFMWorld.MojoShader.csproj" />
         <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
     </ItemGroup>
 

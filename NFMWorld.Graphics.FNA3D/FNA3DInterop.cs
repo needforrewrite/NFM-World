@@ -1,5 +1,3 @@
-using NFMWorld.Graphics.FNA3D.Native;
-
 namespace NFMWorld.Graphics.FNA3D;
 
 /// <summary>
@@ -14,5 +12,5 @@ public static class FNA3DInterop
     /// some backends) before the window is created - must be OR'd into the platform layer's own
     /// SDL_WindowFlags before calling SDL_CreateWindow.
     /// </summary>
-    public static uint PrepareWindowAttributes() => FNA3DNative.FNA3D_PrepareWindowAttributes();
+    public static uint PrepareWindowAttributes() => FNA3D_PrepareWindowAttributes();
 }

@@ -1,4 +1,4 @@
-using NFMWorld.Graphics.FNA3D.Native;
+using NFMWorld.Shaders;
 
 namespace NFMWorld.Graphics.FNA3D;
 
@@ -17,6 +17,13 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
     private bool _commandBufferAcquired;
 
     public ISwapchain Swapchain { get; }
+
+    /// <summary>
+    /// The raw <c>FNA3D_Device*</c>. Deliberately not public - it's backend-specific, so exposing
+    /// it on the interface would defeat the point of the abstraction. Available to the smoke test
+    /// (see InternalsVisibleTo) for framebuffer readback verification.
+    /// </summary>
+    internal IntPtr Handle => _device;
 
     private FNA3DGraphicsDevice(IntPtr device, FNA3DSwapchain swapchain)
     {
@@ -39,13 +46,13 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
             multiSampleCount = 0,
             deviceWindowHandle = windowHandle,
             isFullScreen = 0,
-            depthStencilFormat = FNA3D_DepthFormat.D24S8,
+            depthStencilFormat = FNA3D_DepthFormat.Depth24Stencil8,
             presentationInterval = vsync ? FNA3D_PresentInterval.One : FNA3D_PresentInterval.Immediate,
             displayOrientation = FNA3D_DisplayOrientation.Default,
             renderTargetUsage = FNA3D_RenderTargetUsage.DiscardContents,
         };
 
-        var device = FNA3DNative.FNA3D_CreateDevice(ref parameters, (byte)(debugMode ? 1 : 0));
+        var device = FNA3D_CreateDevice(ref parameters, (byte)(debugMode ? 1 : 0));
         if (device == IntPtr.Zero)
             throw new InvalidOperationException("FNA3D_CreateDevice returned null - check that the FNA3D native library and a compatible graphics driver are available.");
 
@@ -72,8 +79,8 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
         var dynamic = Mapping.ToDynamicFlag(desc.Usage);
         var usage = Mapping.ToNativeBufferUsage(desc.Usage);
         var handle = desc.Kind == BufferKind.Vertex
-            ? FNA3DNative.FNA3D_GenVertexBuffer(_device, dynamic, usage, desc.SizeInBytes)
-            : FNA3DNative.FNA3D_GenIndexBuffer(_device, dynamic, usage, desc.SizeInBytes);
+            ? FNA3D_GenVertexBuffer(_device, dynamic, usage, desc.SizeInBytes)
+            : FNA3D_GenIndexBuffer(_device, dynamic, usage, desc.SizeInBytes);
 
         var buffer = new FNA3DBuffer(_device, handle, desc);
         if (!initialData.IsEmpty)
@@ -86,13 +93,13 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
 
     public unsafe ITexture CreateTexture(TextureDesc desc, ReadOnlySpan<byte> initialData = default)
     {
-        var handle = FNA3DNative.FNA3D_CreateTexture2D(_device, Mapping.ToNative(desc.Format), desc.Width, desc.Height, desc.MipMapped ? 0 : 1, (byte)(desc.RenderTargetable ? 1 : 0));
+        var handle = FNA3D_CreateTexture2D(_device, Mapping.ToNative(desc.Format), desc.Width, desc.Height, desc.MipMapped ? 0 : 1, (byte)(desc.RenderTargetable ? 1 : 0));
         var texture = new FNA3DTexture(_device, handle, desc);
         if (!initialData.IsEmpty)
         {
             fixed (byte* ptr = initialData)
             {
-                FNA3DNative.FNA3D_SetTextureData2D(_device, handle, 0, 0, desc.Width, desc.Height, 0, (IntPtr)ptr, initialData.Length);
+                FNA3D_SetTextureData2D(_device, handle, 0, 0, desc.Width, desc.Height, 0, (IntPtr)ptr, initialData.Length);
             }
         }
         return texture;
@@ -101,15 +108,15 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
     public IRenderTarget CreateRenderTarget(RenderTargetDesc desc)
     {
         var colorTextureDesc = new TextureDesc(desc.Width, desc.Height, desc.ColorFormat, RenderTargetable: true);
-        var colorHandle = FNA3DNative.FNA3D_CreateTexture2D(_device, Mapping.ToNative(desc.ColorFormat), desc.Width, desc.Height, 1, 1);
+        var colorHandle = FNA3D_CreateTexture2D(_device, Mapping.ToNative(desc.ColorFormat), desc.Width, desc.Height, 1, 1);
         var colorTexture = new FNA3DTexture(_device, colorHandle, colorTextureDesc);
-        var colorRenderbuffer = FNA3DNative.FNA3D_GenColorRenderbuffer(_device, desc.Width, desc.Height, Mapping.ToNative(desc.ColorFormat), 0, colorHandle);
+        var colorRenderbuffer = FNA3D_GenColorRenderbuffer(_device, desc.Width, desc.Height, Mapping.ToNative(desc.ColorFormat), 0, colorHandle);
 
         IntPtr depthRenderbuffer = IntPtr.Zero;
         ITexture? depthTexture = null;
         if (desc.HasDepthStencil)
         {
-            depthRenderbuffer = FNA3DNative.FNA3D_GenDepthStencilRenderbuffer(_device, desc.Width, desc.Height, Mapping.ToNativeDepthFormat(desc.DepthStencilFormat), 0);
+            depthRenderbuffer = FNA3D_GenDepthStencilRenderbuffer(_device, desc.Width, desc.Height, Mapping.ToNativeDepthFormat(desc.DepthStencilFormat), 0);
             depthTexture = new FNA3DTexture(_device, IntPtr.Zero, new TextureDesc(desc.Width, desc.Height, desc.DepthStencilFormat));
         }
 
@@ -118,10 +125,35 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
 
     public ISampler CreateSampler(SamplerDesc desc) => new FNA3DSampler(desc);
 
-    public IPipelineState CreatePipeline(PipelineDesc desc) =>
-        throw new NotImplementedException(
-            "Pipeline creation requires resolving how FNA3D's Effect-centric shader API maps onto " +
-            "IShaderModule (see the shader-abstraction design notes) - implemented in Milestone 3.");
+    /// <summary>
+    /// Wraps a compiled D3D9 Effects Framework blob (.fxb, produced by fxc.exe) as an
+    /// <see cref="IShaderModule"/> for this backend - see <see cref="FNA3DShaderModule"/>'s doc
+    /// comments for why FNA3D represents a whole Effect as one shader module rather than separate
+    /// vertex/pixel stages. Pass the returned module for BOTH <see cref="PipelineDesc.VertexShader"/>
+    /// and <see cref="PipelineDesc.PixelShader"/> when calling <see cref="CreatePipeline"/>.
+    /// </summary>
+    public static IShaderModule LoadEffectModule(ReadOnlyMemory<byte> compiledEffectBytecode) =>
+        new FNA3DShaderModule(ShaderStage.Vertex, compiledEffectBytecode);
 
-    public void Dispose() => FNA3DNative.FNA3D_DestroyDevice(_device);
+    public IPipelineState CreatePipeline(PipelineDesc desc)
+    {
+        if (!ReferenceEquals(desc.VertexShader, desc.PixelShader))
+        {
+            throw new ArgumentException(
+                "FNA3D has no way to submit a standalone vertex or pixel shader - only a whole " +
+                "compiled Effect. Pass the same FNA3DShaderModule for both VertexShader and " +
+                "PixelShader to signal that its Bytecode is a complete Effect blob.", nameof(desc));
+        }
+
+        var bytecode = desc.VertexShader.Bytecode.ToArray();
+        FNA3D_CreateEffect(_device, bytecode, bytecode.Length, out var effect, out var effectData);
+        if (effect == IntPtr.Zero)
+            throw new InvalidOperationException("FNA3D_CreateEffect returned null - the compiled Effect blob failed to parse.");
+
+        var pipeline = new FNA3DPipelineState(_device, desc, effect, effectData);
+        FNA3D_SetEffectTechnique(_device, effect, pipeline.TechniquePointer);
+        return pipeline;
+    }
+
+    public void Dispose() => FNA3D_DestroyDevice(_device);
 }

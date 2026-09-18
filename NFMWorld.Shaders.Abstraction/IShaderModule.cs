@@ -31,7 +31,13 @@ public enum VertexAttributeFormat
     Byte4Normalized,
 }
 
-public readonly record struct VertexLayoutDesc(IReadOnlyList<VertexAttributeDesc> Attributes, int StrideInBytes);
+/// <summary>
+/// One vertex buffer stream's layout. A pipeline can bind more than one of these at different
+/// slots (see <see cref="NFMWorld.Graphics.PipelineDesc.VertexLayouts"/>) - e.g. per-vertex
+/// geometry in slot 0 plus a per-instance stream in slot 1 for hardware instancing, matching how
+/// FNA3D_VertexBufferBinding pairs a declaration with an instance step rate per stream.
+/// </summary>
+public readonly record struct VertexLayoutDesc(IReadOnlyList<VertexAttributeDesc> Attributes, int StrideInBytes, int InstanceStepRate = 0);
 
 /// <summary>
 /// Parsed once at shader build/import time - not re-derived from HLSL text at runtime - so
@@ -56,5 +62,4 @@ public interface IShaderModule
 {
     ShaderStage Stage { get; }
     ReadOnlyMemory<byte> Bytecode { get; }
-    ShaderReflection Reflection { get; }
 }

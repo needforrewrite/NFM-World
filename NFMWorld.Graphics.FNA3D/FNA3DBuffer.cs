@@ -1,5 +1,3 @@
-using NFMWorld.Graphics.FNA3D.Native;
-
 namespace NFMWorld.Graphics.FNA3D;
 
 internal sealed class FNA3DBuffer : IBuffer
@@ -25,9 +23,9 @@ internal sealed class FNA3DBuffer : IBuffer
     {
         if (Handle == IntPtr.Zero) return;
         if (Kind == BufferKind.Vertex)
-            FNA3DNative.FNA3D_AddDisposeVertexBuffer(Device, Handle);
+            FNA3D_AddDisposeVertexBuffer(Device, Handle);
         else
-            FNA3DNative.FNA3D_AddDisposeIndexBuffer(Device, Handle);
+            FNA3D_AddDisposeIndexBuffer(Device, Handle);
         Handle = IntPtr.Zero;
     }
 }

@@ -1,5 +1,3 @@
-using NFMWorld.Graphics.FNA3D.Native;
-
 namespace NFMWorld.Graphics.FNA3D;
 
 internal sealed class FNA3DTexture : ITexture
@@ -22,7 +20,7 @@ internal sealed class FNA3DTexture : ITexture
     public void Dispose()
     {
         if (Handle == IntPtr.Zero) return;
-        FNA3DNative.FNA3D_AddDisposeTexture(Device, Handle);
+        FNA3D_AddDisposeTexture(Device, Handle);
         Handle = IntPtr.Zero;
     }
 }

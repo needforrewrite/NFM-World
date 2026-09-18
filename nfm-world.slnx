@@ -71,6 +71,7 @@
     <Project Path="MonoGame.ImGuiNet/MonoGame.ImGuiNet/Monogame.ImGuiNet.csproj" />
   </Folder>
   <Folder Name="/Lua-CSharp/">
+    <Project Path="Lua-CSharp/sandbox/Benchmark/LuaBenchmark.csproj" />
     <Project Path="Lua-CSharp/sandbox/ConsoleApp1/ConsoleApp1.csproj" />
     <Project Path="Lua-CSharp/src/Lua.Annotations/Lua.Annotations.csproj" />
     <Project Path="Lua-CSharp/src/Lua.SourceGenerator/Lua.SourceGenerator.csproj" />
@@ -105,6 +106,9 @@
     <Project Path="NvgSharp/src/NvgSharp.Text/NvgSharp.Text.FNA.Core.csproj" />
     <Project Path="NvgSharp/src/XNA/NvgSharp.FNA.Core.csproj" />
   </Folder>
+  <Project Path="Apos.Shapes/Example/Platforms/FNA/FNA.csproj" />
+  <Project Path="Apos.Shapes/Source/Apos.Shapes.FNA.csproj" />
+  <Project Path="FNA/lib/SDL3-CS/SDL3/SDL3.Core.csproj" />
   <Project Path="LibTessDotNet/LibTessDotNet/LibTessDotNet.csproj" />
   <Project Path="Microsoft.UI.Reactor.Yoga/Microsoft.UI.Reactor.Yoga.csproj" />
   <Project Path="NanoSvgSharp.Test/NanoSvgSharp.Test.csproj" />
@@ -115,7 +119,12 @@
   <Project Path="NFMWorld.Api/NFMWorld.Api.csproj" />
   <Project Path="NFMWorld.ClientOnlyAnalyzer/NFMWorld.ClientOnlyAnalyzer.csproj" />
   <Project Path="NFMWorld.CrashReporter/NFMWorld.CrashReporter.csproj" />
+  <Project Path="NFMWorld.Audio.FAudio/NFMWorld.Audio.FAudio.csproj" />
+  <Project Path="NFMWorld.FNA3D/NFMWorld.FNA3D.csproj" />
   <Project Path="NFMWorld.GenerateHmacKey/NFMWorld.GenerateHmacKey.csproj" />
+  <Project Path="NFMWorld.Graphics.Abstraction/NFMWorld.Graphics.Abstraction.csproj" />
+  <Project Path="NFMWorld.Graphics.FNA3D/NFMWorld.Graphics.FNA3D.csproj" />
+  <Project Path="NFMWorld.Graphics.FNA3D.Smoke/NFMWorld.Graphics.FNA3D.Smoke.csproj" />
   <Project Path="NFMWorld.Library.Test/NFMWorld.Library.Test.csproj" />
   <Project Path="NFMWorld.Library/NFMWorld.Library.csproj" />
   <Project Path="NFMWorld.Lua/NFMWorld.Lua.csproj" />
@@ -123,10 +132,12 @@
   <Project Path="NFMWorld.LuaSourceGenerator.TestFixtures/NFMWorld.LuaSourceGenerator.TestFixtures.csproj" />
   <Project Path="NFMWorld.LuaSourceGenerator/NFMWorld.LuaSourceGenerator.csproj" />
   <Project Path="NFMWorld.Math/NFMWorld.Math.csproj" />
+  <Project Path="NFMWorld.MojoShader/NFMWorld.MojoShader.csproj" />
   <Project Path="NFMWorld.Multiplayer.Base/NFMWorld.Multiplayer.Base.csproj" />
   <Project Path="NFMWorld.NativeLibs/NFMWorld.NativeLibs.csproj" />
   <Project Path="NFMWorld.OpcodeSourceGen/NFMWorld.OpcodeSourceGen.csproj" />
   <Project Path="NFMWorld.PhysicsFS/NFMWorld.PhysicsFS.csproj" />
+  <Project Path="NFMWorld.Platform.SDL3/NFMWorld.Platform.SDL3.csproj" />
   <Project Path="NFMWorld.Reactor.ObservableCollections/NFMWorld.Reactor.ObservableCollections.csproj" />
   <Project Path="NFMWorld.RustBindGen/NFMWorld.RustBindGen.csproj" />
   <Project Path="NFMWorld.Server.Game/NFMWorld.Server.Game.csproj" />
@@ -134,5 +145,6 @@
   <Project Path="NFMWorld.Sentry/NFMWorld.Sentry.csproj" />
   <Project Path="NFMWorld.Server.SharedMemory/NFMWorld.Server.SharedMemory.csproj" />
   <Project Path="NFMWorld.ShaderSourceGen/NFMWorld.ShaderSourceGen.csproj" />
+  <Project Path="NFMWorld.Shaders.Abstraction/NFMWorld.Shaders.Abstraction.csproj" />
   <Project Path="SoundTouch.Net.NAudioSupport/SoundTouch.Net.NAudioSupport.csproj" />
 </Solution>

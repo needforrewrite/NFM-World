@@ -1,5 +1,3 @@
-using NFMWorld.Graphics.FNA3D.Native;
-
 namespace NFMWorld.Graphics.FNA3D;
 
 internal sealed class FNA3DRenderTarget : IRenderTarget
@@ -25,12 +23,12 @@ internal sealed class FNA3DRenderTarget : IRenderTarget
         DepthStencilTexture?.Dispose();
         if (ColorRenderbuffer != IntPtr.Zero)
         {
-            FNA3DNative.FNA3D_AddDisposeRenderbuffer(Device, ColorRenderbuffer);
+            FNA3D_AddDisposeRenderbuffer(Device, ColorRenderbuffer);
             ColorRenderbuffer = IntPtr.Zero;
         }
         if (DepthStencilRenderbuffer != IntPtr.Zero)
         {
-            FNA3DNative.FNA3D_AddDisposeRenderbuffer(Device, DepthStencilRenderbuffer);
+            FNA3D_AddDisposeRenderbuffer(Device, DepthStencilRenderbuffer);
             DepthStencilRenderbuffer = IntPtr.Zero;
         }
     }

@@ -15,11 +15,35 @@
         <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
         <ProjectReference Include="..\NFMWorld.Graphics.FNA3D\NFMWorld.Graphics.FNA3D.csproj" />
         <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj" />
+        <ProjectReference Include="..\NFMWorld.Shaders.Abstraction\NFMWorld.Shaders.Abstraction.csproj" />
     </ItemGroup>
 
     <ItemGroup>
         <None Include="..\NFMWorld.NativeLibs\libs\x64\FNA3D.dll" Link="FNA3D.dll" CopyToOutputDirectory="PreserveNewest" />
         <None Include="..\NFMWorld.NativeLibs\libs\x64\SDL3.dll" Link="SDL3.dll" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
+
+    <!--
+        Milestone 3: compile nfm-world's real Line.fx (D3D9 Effects Framework HLSL, the same file
+        the main game uses) to a .fxb blob with the same fxc.exe/fx_2_0 pipeline nfm-world's own
+        csproj uses, so this smoke test proves the FNA3D Effect-blob path against production
+        shader source rather than a synthetic stand-in.
+    -->
+    <ItemGroup>
+        <LineShader Include="..\nfm-world\data\shaders\Line.fx" />
+    </ItemGroup>
+
+    <PropertyGroup>
+        <FxcCommandLine Condition="'$(FxcCommandLine)' == '' AND Exists('..\nfm-world\tools\fxc.exe')">"..\nfm-world\tools\fxc.exe"</FxcCommandLine>
+    </PropertyGroup>
+
+    <Target Name="BuildLineShader" BeforeTargets="Compile" Inputs="@(LineShader)" Outputs="$(OutputPath)data\shaders\Line.fxb">
+        <Error Text="Unable to find fxc.exe at nfm-world\tools\fxc.exe." Condition="'$(FxcCommandLine)' == ''" />
+        <MakeDir Directories="$(OutputPath)data\shaders" />
+        <Exec Command="$(FxcCommandLine) /nologo /Vd /T fx_2_0 /Fo &quot;$(OutputPath)data\shaders\Line.fxb&quot; &quot;%(LineShader.Identity)&quot;" />
+        <ItemGroup>
+            <FileWrites Include="$(OutputPath)data\shaders\Line.fxb" />
+        </ItemGroup>
+    </Target>
 
 </Project>
