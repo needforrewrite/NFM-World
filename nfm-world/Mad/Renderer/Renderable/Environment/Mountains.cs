@@ -28,7 +28,7 @@ public class Mountains : Transform, IRenderable, IImmediateRenderElement, IDispo
             var baseIndex = (uint)data.Count;
             foreach (var point in poly.Points)
             {
-                var color = poly.Color;
+                var color = ((Color)poly.Color).ToXna();
                 data.Add(new VertexPositionColor(point, color));
             }
 

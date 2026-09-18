@@ -1650,7 +1650,7 @@ public class ModelEditorPhase : BasePhase
     {
         base.Render(alpha);
 
-        _graphicsDevice.Clear(new Color(135, 206, 235));
+        _graphicsDevice.Clear(new Color(135, 206, 235).ToXna());
     }
 
     public override void RenderImgui()
@@ -2809,7 +2809,7 @@ public class ModelEditorPhase : BasePhase
             _graphicsDevice.BlendState = BlendState.AlphaBlend;
 
             // Clear depth buffer and disable depth testing so reference car always renders in front
-            _graphicsDevice.Clear(ClearOptions.DepthBuffer, Color.Transparent, 1.0f, 0);
+            _graphicsDevice.Clear(ClearOptions.DepthBuffer, Color.Transparent.ToXna(), 1.0f, 0);
             var depthOff = new DepthStencilState
             {
                 DepthBufferEnable = false,

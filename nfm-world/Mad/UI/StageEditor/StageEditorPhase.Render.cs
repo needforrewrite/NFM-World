@@ -28,12 +28,12 @@ public partial class StageEditorPhase
         if (ActiveTab.ViewMode == StageEditorTab.ViewModeEnum.TopDown)
         {
             // Gray background for top-down view
-            _graphicsDevice.Clear(new Color(128, 128, 128));
+            _graphicsDevice.Clear(new Color(128, 128, 128).ToXna());
         }
         else
         {
             // Sky blue background for 3D scene view
-            _graphicsDevice.Clear(new Color(135, 206, 235));
+            _graphicsDevice.Clear(new Color(135, 206, 235).ToXna());
         }
         
         // Set up scissor rectangle to only render within the viewport area
@@ -132,7 +132,7 @@ public partial class StageEditorPhase
         // Clear the depth buffer so ImGui always renders on top of the 3D scene.
         // Without this, geometry close to the camera writes near-zero depth values and
         // ImGui pixels (rendered later with DepthRead) fail the depth test at those positions.
-        _graphicsDevice.Clear(ClearOptions.DepthBuffer, Color.Black, 1.0f, 0);
+        _graphicsDevice.Clear(ClearOptions.DepthBuffer, Color.Black.ToXna(), 1.0f, 0);
     }
     
 }

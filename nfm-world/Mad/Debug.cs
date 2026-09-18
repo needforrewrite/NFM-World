@@ -50,7 +50,7 @@ public static class Debug
             for (int i = 0; i < localOutline.Length; i++)
             {
                 var world = Vector3.Transform(localOutline[i], rotationMatrix) + position;
-                _selectionOutlineVertices[cursor++] = new VertexPositionColor(world, color);
+                _selectionOutlineVertices[cursor++] = new VertexPositionColor(world, color.ToXna());
             }
         }
 
@@ -148,18 +148,18 @@ public static class Debug
         VertexEffect.World = Matrix.Identity;
         
         // Colors: red=X, yellow=Y(up), blue=Z, green=RotY ring
-        var colX = gizmoHovered == GizmoAxis.X || gizmoDragging == GizmoAxis.X
+        var colX = (gizmoHovered == GizmoAxis.X || gizmoDragging == GizmoAxis.X
             ? new Color(1f, 0.6f, 0.6f, 1f)
-            : new Color(1f, 0.1f, 0.1f, 1f);
-        var colY = gizmoHovered == GizmoAxis.Y || gizmoDragging == GizmoAxis.Y
+            : new Color(1f, 0.1f, 0.1f, 1f)).ToXna();
+        var colY = (gizmoHovered == GizmoAxis.Y || gizmoDragging == GizmoAxis.Y
             ? new Color(1f, 1f, 0.6f, 1f)
-            : new Color(1f, 0.9f, 0.1f, 1f);
-        var colZ = gizmoHovered == GizmoAxis.Z || gizmoDragging == GizmoAxis.Z
+            : new Color(1f, 0.9f, 0.1f, 1f)).ToXna();
+        var colZ = (gizmoHovered == GizmoAxis.Z || gizmoDragging == GizmoAxis.Z
             ? new Color(0.6f, 0.6f, 1f, 1f)
-            : new Color(0.1f, 0.1f, 1f, 1f);
-        var colRot = gizmoHovered == GizmoAxis.RotY || gizmoDragging == GizmoAxis.RotY
+            : new Color(0.1f, 0.1f, 1f, 1f)).ToXna();
+        var colRot = (gizmoHovered == GizmoAxis.RotY || gizmoDragging == GizmoAxis.RotY
             ? new Color(0.6f, 1f, 0.6f, 1f)
-            : new Color(0.1f, 0.9f, 0.1f, 1f);
+            : new Color(0.1f, 0.9f, 0.1f, 1f)).ToXna();
         
         // Arrowhead side fins and tip offsets for each axis
         var xSide     = new Vector3(0, gizmoMetrics.ArrowThickness * 2, 0);
@@ -372,7 +372,7 @@ public static class Debug
             var startIndex = (uint)fillVerts.Count;
             for (int i = 0; i < poly.Points.Length; i++)
             {
-                fillVerts.Add(new(poly.Points[i], fillColor));
+                fillVerts.Add(new(poly.Points[i], fillColor.ToXna()));
             }
             
             foreach (var idx in poly.Triangles)
@@ -408,8 +408,8 @@ public static class Debug
             for (int i = 0; i < poly.Points.Length; i++)
             {
                 int next = (i + 1) % poly.Points.Length;
-                wireVerts.Add(new(poly.Points[i], wireColor));
-                wireVerts.Add(new(poly.Points[next], wireColor));
+                wireVerts.Add(new(poly.Points[i], wireColor.ToXna()));
+                wireVerts.Add(new(poly.Points[next], wireColor.ToXna()));
             }
         }
         

@@ -28,7 +28,7 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
             var baseIndex = (uint)data.Count;
             foreach (var point in poly.Points)
             {
-                var color = poly.Color;
+                var color = ((Color)poly.Color).ToXna();
                 data.Add(new VertexPositionColor(point, color));
             }
 

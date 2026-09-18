@@ -143,12 +143,12 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
             {
                 throw new NotImplementedException("Custom color positions are not supported currently.");
             }
-            
+
             _color1 = colors[0];
             _color2 = colors[1];
-            var icol = colors[0] with { A = (byte)(_color1.A / 255f * _alpha * 255f) };
-            var ocol = colors[1] with { A = (byte)(_color2.A / 255f * _alpha * 255f) };
-            
+            var icol = colors[0].ToXna() with { A = (byte)(_color1.A / 255f * _alpha * 255f) };
+            var ocol = colors[1].ToXna() with { A = (byte)(_color2.A / 255f * _alpha * 255f) };
+
             var gradientPaint = _context.LinearGradient(x, y, x + width, y + height, icol, ocol);
             _paint = gradientPaint;
             _context.FillPaint(_paint);
@@ -164,10 +164,10 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
         {
             _color1 = c;
             _color2 = c;
-            
-            c = c with { A = (byte)(_color1.A / 255f * _alpha * 255f) };
-            
-            _paint = new Paint(c);
+
+            var xnaColor = c.ToXna() with { A = (byte)(_color1.A / 255f * _alpha * 255f) };
+
+            _paint = new Paint(xnaColor);
             _context.FillPaint(_paint);
             _context.StrokePaint(_paint);
         }
@@ -228,8 +228,8 @@ internal sealed class WorldClientBackend(NvgContext context) : IBackend
             {
                 _alpha = value;
                 
-                var icol = _color1 with { A = (byte)(_color1.A / 255f * _alpha * 255f) };
-                var ocol = _color2 with { A = (byte)(_color2.A / 255f * _alpha * 255f) };
+                var icol = (_color1 with { A = (byte)(_color1.A / 255f * _alpha * 255f) }).ToXna();
+                var ocol = (_color2 with { A = (byte)(_color2.A / 255f * _alpha * 255f) }).ToXna();
                 _paint.InnerColor = icol;
                 _paint.OuterColor = ocol;
                 _context.FillPaint(_paint);

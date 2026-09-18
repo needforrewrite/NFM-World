@@ -1,7 +1,6 @@
 ﻿using System.Numerics;
 using System.Text;
 using Maxine.Extensions;
-using Microsoft.Xna.Framework;
 using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 

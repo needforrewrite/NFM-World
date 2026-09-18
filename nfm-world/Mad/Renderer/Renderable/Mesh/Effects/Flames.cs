@@ -192,7 +192,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                             b = 0;
                         }
 
-                        var outerColor = new Color3((short)r, (short)g, (short)b);
+                        var outerColor = ((Color)new Color3((short)r, (short)g, (short)b)).ToXna();
                         
                         // inner flame
                         
@@ -259,7 +259,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                             b = 0;
                         }
                         
-                        var innerColor = new Color3((short)r, (short)g, (short)b);
+                        var innerColor = ((Color)new Color3((short)r, (short)g, (short)b)).ToXna();
                         
                         // We build the outer flame out of two triangles, so that it doesn't overlap with the inner flame.
                         // These triangles share a vertex with the inner flame's center triangle.

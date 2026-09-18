@@ -269,7 +269,7 @@ public partial class StageEditorPhase
         
         var prevRTs = _graphicsDevice.GetRenderTargets();
         _graphicsDevice.SetRenderTarget(rt);
-        _graphicsDevice.Clear(new Color(45, 45, 48));
+        _graphicsDevice.Clear(new Color(45, 45, 48).ToXna());
         
         // Set up a simple isometric-ish view camera for the preview
         float camDist = maxR * 3f;
@@ -491,6 +491,7 @@ public partial class StageEditorPhase
 
     private static void AddWireBoxLines(List<VertexPositionColor> verts, Vector3 min, Vector3 max, Color color)
     {
+        var xnaColor = color.ToXna();
         var p000 = new Vector3(min.X, min.Y, min.Z);
         var p001 = new Vector3(min.X, min.Y, max.Z);
         var p010 = new Vector3(min.X, max.Y, min.Z);
@@ -501,22 +502,22 @@ public partial class StageEditorPhase
         var p111 = new Vector3(max.X, max.Y, max.Z);
 
         // Bottom rectangle
-        verts.Add(new VertexPositionColor(p000, color)); verts.Add(new VertexPositionColor(p001, color));
-        verts.Add(new VertexPositionColor(p001, color)); verts.Add(new VertexPositionColor(p101, color));
-        verts.Add(new VertexPositionColor(p101, color)); verts.Add(new VertexPositionColor(p100, color));
-        verts.Add(new VertexPositionColor(p100, color)); verts.Add(new VertexPositionColor(p000, color));
+        verts.Add(new VertexPositionColor(p000, xnaColor)); verts.Add(new VertexPositionColor(p001, xnaColor));
+        verts.Add(new VertexPositionColor(p001, xnaColor)); verts.Add(new VertexPositionColor(p101, xnaColor));
+        verts.Add(new VertexPositionColor(p101, xnaColor)); verts.Add(new VertexPositionColor(p100, xnaColor));
+        verts.Add(new VertexPositionColor(p100, xnaColor)); verts.Add(new VertexPositionColor(p000, xnaColor));
 
         // Top rectangle
-        verts.Add(new VertexPositionColor(p010, color)); verts.Add(new VertexPositionColor(p011, color));
-        verts.Add(new VertexPositionColor(p011, color)); verts.Add(new VertexPositionColor(p111, color));
-        verts.Add(new VertexPositionColor(p111, color)); verts.Add(new VertexPositionColor(p110, color));
-        verts.Add(new VertexPositionColor(p110, color)); verts.Add(new VertexPositionColor(p010, color));
+        verts.Add(new VertexPositionColor(p010, xnaColor)); verts.Add(new VertexPositionColor(p011, xnaColor));
+        verts.Add(new VertexPositionColor(p011, xnaColor)); verts.Add(new VertexPositionColor(p111, xnaColor));
+        verts.Add(new VertexPositionColor(p111, xnaColor)); verts.Add(new VertexPositionColor(p110, xnaColor));
+        verts.Add(new VertexPositionColor(p110, xnaColor)); verts.Add(new VertexPositionColor(p010, xnaColor));
 
         // Vertical edges
-        verts.Add(new VertexPositionColor(p000, color)); verts.Add(new VertexPositionColor(p010, color));
-        verts.Add(new VertexPositionColor(p001, color)); verts.Add(new VertexPositionColor(p011, color));
-        verts.Add(new VertexPositionColor(p100, color)); verts.Add(new VertexPositionColor(p110, color));
-        verts.Add(new VertexPositionColor(p101, color)); verts.Add(new VertexPositionColor(p111, color));
+        verts.Add(new VertexPositionColor(p000, xnaColor)); verts.Add(new VertexPositionColor(p010, xnaColor));
+        verts.Add(new VertexPositionColor(p001, xnaColor)); verts.Add(new VertexPositionColor(p011, xnaColor));
+        verts.Add(new VertexPositionColor(p100, xnaColor)); verts.Add(new VertexPositionColor(p110, xnaColor));
+        verts.Add(new VertexPositionColor(p101, xnaColor)); verts.Add(new VertexPositionColor(p111, xnaColor));
     }
 
     private void RenderSelectedWallHighlight(StageEditorTab tab)

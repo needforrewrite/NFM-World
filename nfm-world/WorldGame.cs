@@ -348,7 +348,7 @@ public class WorldGame : Game
         for (int i = 0; i < NumCascades; i++)
         {
             GraphicsDevice.SetRenderTarget(ShadowRenderTargets[i]);
-            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.White, 1.0f, 0);
+            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.White.ToXna(), 1.0f, 0);
             GraphicsDevice.SetRenderTarget(null);
         }
     }
@@ -491,7 +491,7 @@ public class WorldGame : Game
 
         var alpha = LowLatency ? 1f : (float)((double)gameTime.ElapsedGameTime.Ticks / TargetElapsedTime.Ticks);
 
-        GraphicsDevice.Clear(Color.CornflowerBlue);
+        GraphicsDevice.Clear(Color.CornflowerBlue.ToXna());
 
         var t = Stopwatch.StartNew();
 

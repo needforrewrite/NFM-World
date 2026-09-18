@@ -318,7 +318,7 @@ public partial class StageEditorPhase
         {
             _graphicsDevice.SetRenderTarget(rt);
             _graphicsDevice.Viewport = new Microsoft.Xna.Framework.Graphics.Viewport(0, 0, _exportWidth, _exportHeight);
-            _graphicsDevice.Clear(Color.Transparent);
+            _graphicsDevice.Clear(Color.Transparent.ToXna());
 
             // Build a dedicated ortho camera sized to cover the whole stage
             var exportCam = new OrthoCamera

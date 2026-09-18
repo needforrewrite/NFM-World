@@ -136,8 +136,8 @@ public class FixFlare : IDisposable, IImmediateRenderElement
         // ──────────────────────────────────────────────────────
         for (int i = 0; i < 8; i++)
         {
-            _verts[i]     = new VertexPositionColor(outer[i], outerColor);
-            _verts[i + 8] = new VertexPositionColor(inner[i], innerColor);
+            _verts[i]     = new VertexPositionColor(outer[i], outerColor.ToXna());
+            _verts[i + 8] = new VertexPositionColor(inner[i], innerColor.ToXna());
         }
 
         _vertexBuffer.SetDataEXT(_verts);

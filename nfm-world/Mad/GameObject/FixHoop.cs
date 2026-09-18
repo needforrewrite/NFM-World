@@ -137,7 +137,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         }
         r = (r * 2 + 214 * (_elc[idx] - 1)) / (_elc[idx] + 1);
         g = (g * 2 + 236 * (_elc[idx] - 1)) / (_elc[idx] + 1);
-        var color = new Color3((short)r,(short) g, (short)b);
+        var color = ((Color)new Color3((short)r,(short) g, (short)b)).ToXna();
 
         int startVertIdx = idx * 8;
         _vertices[startVertIdx + 0] = new VertexPositionColor(new Vector3(x[0], y[0], z[0]), color);

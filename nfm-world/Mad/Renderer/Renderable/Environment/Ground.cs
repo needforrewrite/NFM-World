@@ -16,7 +16,7 @@ public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposab
         // Generate a quad on World.Ground extending infinitely in X and Z
         _graphicsDevice = graphicsDevice;
         const int size = 1_000_000;
-        var color = World.GroundColor.Snap(World.Snap);
+        var color = ((Color)World.GroundColor.Snap(World.Snap)).ToXna();
         Span<VertexPositionColor> data =
         [
             new(new Vector3(-size, World.Ground, -size), color),

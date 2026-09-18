@@ -169,9 +169,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
         if (DebugDisplay)
         {
             _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullCounterClockwise);
-            if (WorldGame.ShadowRenderTargets[0] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[0], new Rectangle(0, 0, 128, 128), Color.White);
-            if (WorldGame.ShadowRenderTargets[1] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[1], new Rectangle(0, 128, 128, 128), Color.White);
-            if (WorldGame.ShadowRenderTargets[2] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[2], new Rectangle(0, 256, 128, 128), Color.White);
+            if (WorldGame.ShadowRenderTargets[0] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[0], new Rectangle(0, 0, 128, 128), Color.White.ToXna());
+            if (WorldGame.ShadowRenderTargets[1] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[1], new Rectangle(0, 128, 128, 128), Color.White.ToXna());
+            if (WorldGame.ShadowRenderTargets[2] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[2], new Rectangle(0, 256, 128, 128), Color.White.ToXna());
             _spriteBatch.End();
         }
 

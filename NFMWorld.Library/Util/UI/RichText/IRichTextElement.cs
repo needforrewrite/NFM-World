@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using NFMWorld.DriverInterface;
+﻿using NFMWorld.DriverInterface;
 using NFMWorld.DriverInterface.DriverInterface;
 
 namespace NFMWorld.Reactor;

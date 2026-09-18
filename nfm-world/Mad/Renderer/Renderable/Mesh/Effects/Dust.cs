@@ -205,7 +205,7 @@ public class Dust : IDisposable, IImmediateRenderElement
         var color = new Color3((short)r, (short)g, (short)b);
         var alpha = _sbln[dust] - Stg[dust] * (_sbln[dust] / 8.0F);
 
-        var xnaColor = new Color(color.R / 255f, color.G / 255f, color.B / 255f, alpha);
+        var xnaColor = new Color(color.R / 255f, color.G / 255f, color.B / 255f, alpha).ToXna();
 
         // ais = new int[8];
         // var is223 = new int[8];

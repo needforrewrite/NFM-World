@@ -493,7 +493,7 @@ public partial class StageEditorPhase : BasePhase
         foreach (var rt in WorldGame.ShadowRenderTargets)
         {
             _graphicsDevice.SetRenderTarget(rt);
-            _graphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.White, 1.0f, 0);
+            _graphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.White.ToXna(), 1.0f, 0);
         }
         _graphicsDevice.SetRenderTarget(null);
 

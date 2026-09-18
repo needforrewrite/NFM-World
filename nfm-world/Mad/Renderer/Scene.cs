@@ -53,7 +53,7 @@ public class Scene : IDisposable
             for (var cascade = 0; cascade < totalCascades; cascade++)
             {
                 _graphicsDevice.SetRenderTarget(WorldGame.ShadowRenderTargets[cascade]);
-                _graphicsDevice.Clear(Color.White);
+                _graphicsDevice.Clear(Color.White.ToXna());
 
                 RenderInternal(RenderPass.Shadow(cascade, totalCascades));
             }
@@ -63,7 +63,7 @@ public class Scene : IDisposable
 
         // DRAW WITH SHADOW MAP
         if (clearRenderBuffer)
-            _graphicsDevice.Clear(Color.CornflowerBlue);
+            _graphicsDevice.Clear(Color.CornflowerBlue.ToXna());
 
         for (var i = 0; i < 16; i++)
             _graphicsDevice.SamplerStates[i] = SamplerState.PointClamp;
