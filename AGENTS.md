@@ -141,6 +141,7 @@ Gamemodes are written in **Luau** and share one code path for singleplayer and m
 - Callback contract (invoked synchronously each tick): `on_begin`, `on_end`, `on_reset`, `on_game_tick`, `on_render`, `on_key_pressed(key)` / `on_key_released(key)` / `on_key_typed(char)` (keys passed as ints), `on_server_event(type, table)` / `on_client_event(playerId, type, table)` (server), `on_ai_tick(car, index)` (bots via `LuaBot`).
 - Events between client and server are `LuaEventEnvelope { Type, JsonPayload }` (MemoryPack + JSON Lua table) — not MemoryPack unions. `LuaJson` handles Lua table ↔ JSON.
 - `wait()`-style coroutine suspension is **not** supported yet — callbacks must be synchronous per-tick (countdown is tick-counted in Lua).
+- Lua-CSharp does not support __gc or __mode in metatables, so weak tables must be either managed in C# or avoided entirely.
 
 ### Lua binding pipeline
 
