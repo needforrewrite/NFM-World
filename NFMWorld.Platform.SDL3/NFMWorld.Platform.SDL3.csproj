@@ -4,15 +4,14 @@
         <TargetFramework>net11.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>NFMWorld.Platform.SDL3</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="SDL3-CS" Version="3.4.14.1" />
-        <PackageReference Include="SDL3-CS.Windows" Version="3.4.14.1" />
-    </ItemGroup>
-
-    <ItemGroup>
+        <!-- FNA's own vendored SDL3-CS (not the unrelated NuGet package of the same name) -
+             kept for its marshaling style, matching what FNA's SDL3_FNAPlatform.cs itself uses. -->
+        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
     </ItemGroup>
 

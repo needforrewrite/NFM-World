@@ -49,7 +49,7 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
         if (device == IntPtr.Zero)
             throw new InvalidOperationException("FNA3D_CreateDevice returned null - check that the FNA3D native library and a compatible graphics driver are available.");
 
-        return new FNA3DGraphicsDevice(device, new FNA3DSwapchain(device, backBufferWidth, backBufferHeight));
+        return new FNA3DGraphicsDevice(device, new FNA3DSwapchain(device, windowHandle, backBufferWidth, backBufferHeight));
     }
 
     public ICommandBuffer AcquireCommandBuffer()

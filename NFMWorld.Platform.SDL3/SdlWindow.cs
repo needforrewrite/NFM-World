@@ -1,13 +1,179 @@
+using System.Runtime.InteropServices;
+using NFMWorld.DriverInterface;
+using SDL3;
+
 namespace NFMWorld.Platform.SDL3;
 
 /// <summary>
-/// Placeholder for the SDL3-backed window/event-pump layer. Milestone 2 fills this in:
-/// window creation/resize/fullscreen via SDL_CreateWindow/SDL_SetWindowSize/SDL_SetWindowFullscreen,
-/// an event pump translating SDL_EVENT_WINDOW_RESIZED/SDL_EVENT_TEXT_INPUT/keyboard/mouse events
-/// into NFMWorld.DriverInterface.Key/Keys/MouseButtons, and exposing the raw native window handle
-/// so NFMWorld.Graphics.FNA3D can create its device against the same window.
+/// SDL3-backed window/event-pump layer: window creation/resize/fullscreen, an event pump
+/// translating SDL_EVENT_WINDOW_RESIZED/SDL_EVENT_TEXT_INPUT/keyboard/mouse events into
+/// NFMWorld.DriverInterface.Key/Keys/MouseButtons, and the raw native window handle so
+/// NFMWorld.Graphics.FNA3D (or another backend) can create its device against the same window.
+/// Replaces FNA's Game/GraphicsDeviceManager window ownership (see WorldGame.cs).
 /// </summary>
 public sealed class SdlWindow : IDisposable
 {
-    public void Dispose() => throw new NotImplementedException("Implemented in Milestone 2.");
+    private readonly IntPtr _window;
+    private bool _disposed;
+
+    public IntPtr Handle => _window;
+    public int Width { get; private set; }
+    public int Height { get; private set; }
+    public bool ShouldQuit { get; private set; }
+
+    /// <summary>Raised on SDL_EVENT_WINDOW_RESIZED with the new client size, in pixels.</summary>
+    public event Action<int, int>? Resized;
+
+    /// <summary>Raised on SDL_EVENT_KEY_DOWN/SDL_EVENT_KEY_UP.</summary>
+    public event Action<Key, bool /* down */, bool /* repeat */>? KeyChanged;
+
+    /// <summary>Raised on SDL_EVENT_TEXT_INPUT, once per decoded character.</summary>
+    public event Action<char>? TextInput;
+
+    public event Action<MouseButtons, int, int>? MouseButtonDown;
+    public event Action<MouseButtons, int, int>? MouseButtonUp;
+    public event Action<int, int>? MouseMoved;
+
+    /// <summary>Raised on SDL_EVENT_MOUSE_WHEEL with (x, y) scroll amounts.</summary>
+    public event Action<float, float>? MouseWheel;
+
+    private SdlWindow(IntPtr window, int width, int height)
+    {
+        _window = window;
+        Width = width;
+        Height = height;
+    }
+
+    /// <summary>
+    /// Creates an SDL3 window. <paramref name="extraFlags"/> lets a graphics backend inject the
+    /// window flags it needs at creation time (e.g. SDL_WINDOW_OPENGL) without SdlWindow itself
+    /// depending on any particular graphics backend.
+    /// </summary>
+    public static SdlWindow Create(string title, int width, int height, bool resizable = true,
+        bool highPixelDensity = true, SDL.SDL_WindowFlags extraFlags = default)
+    {
+        if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+            throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
+
+        var flags = extraFlags;
+        if (resizable) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
+        if (highPixelDensity) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
+
+        var window = SDL.SDL_CreateWindow(title, width, height, flags);
+        if (window == IntPtr.Zero)
+            throw new InvalidOperationException($"SDL_CreateWindow failed: {SDL.SDL_GetError()}");
+
+        SDL.SDL_StartTextInput(window);
+
+        return new SdlWindow(window, width, height);
+    }
+
+    public bool Fullscreen
+    {
+        get => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0;
+        set
+        {
+            if (!SDL.SDL_SetWindowFullscreen(_window, value))
+                throw new InvalidOperationException($"SDL_SetWindowFullscreen failed: {SDL.SDL_GetError()}");
+        }
+    }
+
+    public void SetSize(int width, int height)
+    {
+        if (!SDL.SDL_SetWindowSize(_window, width, height))
+            throw new InvalidOperationException($"SDL_SetWindowSize failed: {SDL.SDL_GetError()}");
+        Width = width;
+        Height = height;
+    }
+
+    public void SetTitle(string title) => SDL.SDL_SetWindowTitle(_window, title);
+
+    /// <summary>Polls all pending SDL events and dispatches them; sets <see cref="ShouldQuit"/> on quit/close.</summary>
+    public unsafe void PumpEvents()
+    {
+        while (SDL.SDL_PollEvent(out var e))
+        {
+            switch (e.type)
+            {
+                case (uint)SDL.SDL_EventType.SDL_EVENT_QUIT:
+                case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                    ShouldQuit = true;
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_WINDOW_RESIZED:
+                    Width = e.window.data1;
+                    Height = e.window.data2;
+                    Resized?.Invoke(Width, Height);
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_KEY_DOWN:
+                    KeyChanged?.Invoke(SdlKeyMap.FromScancode(e.key.scancode), true, e.key.repeat);
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_KEY_UP:
+                    KeyChanged?.Invoke(SdlKeyMap.FromScancode(e.key.scancode), false, false);
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_TEXT_INPUT:
+                    if (TextInput is not null && e.text.text is not null)
+                    {
+                        var text = Marshal.PtrToStringUTF8((IntPtr)e.text.text);
+                        if (text is not null)
+                        {
+                            foreach (var c in text)
+                                TextInput(c);
+                        }
+                    }
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_MOTION:
+                    MouseMoved?.Invoke((int)e.motion.x, (int)e.motion.y);
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN:
+                    MouseButtonDown?.Invoke(SdlKeyMap.FromButtonIndex(e.button.button), (int)e.button.x, (int)e.button.y);
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
+                    MouseButtonUp?.Invoke(SdlKeyMap.FromButtonIndex(e.button.button), (int)e.button.x, (int)e.button.y);
+                    break;
+
+                case (uint)SDL.SDL_EventType.SDL_EVENT_MOUSE_WHEEL:
+                    MouseWheel?.Invoke(e.wheel.x, e.wheel.y);
+                    break;
+            }
+        }
+    }
+
+    /// <summary>Polling-style full keyboard state, replacing FNA's Keyboard.GetState().</summary>
+    public static Keys GetKeyboardState()
+    {
+        var state = SDL.SDL_GetKeyboardState();
+        var keys = default(Keys);
+        for (var i = 0; i < state.Length; i++)
+        {
+            if (state[i])
+            {
+                var key = SdlKeyMap.FromScancode((SDL.SDL_Scancode)i);
+                if (key != Key.None)
+                    keys |= key;
+            }
+        }
+        return keys;
+    }
+
+    /// <summary>Polling-style mouse state, replacing FNA's Mouse.GetState().</summary>
+    public static (MouseButtons Buttons, int X, int Y) GetMouseState()
+    {
+        var flags = SDL.SDL_GetMouseState(out var x, out var y);
+        return (SdlKeyMap.FromButtonFlags(flags), (int)x, (int)y);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        SDL.SDL_DestroyWindow(_window);
+        SDL.SDL_Quit();
+    }
 }
