@@ -57,11 +57,14 @@ public class CarVisual : MeshedGameObject, IDisposable
         foreach (var w in _wheels)
             w.RenderBucket = RenderBucket.Cars;
 
-        Flames = new Flames(this, graphicsDevice);
-        Dust = new Dust(this, graphicsDevice);
-        Chips = new Chips(this, graphicsDevice);
-        Sparks = new Sparks(car, this, graphicsDevice);
-        FixFlare = new FixFlare(car, this, graphicsDevice);
+        // Flames/Dust/Chips/Sparks/FixFlare now take NFMWorld.Graphics.IGraphicsDevice, not this
+        // ctor's own (still XNA-typed) graphicsDevice parameter - see GameSparker.NewGraphicsDevice's
+        // doc comment.
+        Flames = new Flames(this, GameSparker.NewGraphicsDevice);
+        Dust = new Dust(this, GameSparker.NewGraphicsDevice);
+        Chips = new Chips(this, GameSparker.NewGraphicsDevice);
+        Sparks = new Sparks(car, this, GameSparker.NewGraphicsDevice);
+        FixFlare = new FixFlare(car, this, GameSparker.NewGraphicsDevice);
 
         Visuals.ApplyDefaultsFrom(this);
 

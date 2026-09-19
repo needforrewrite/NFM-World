@@ -1,4 +1,6 @@
-﻿using System.Diagnostics;
+extern alias SDL3New;
+
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Hexa.NET.ImGui;
@@ -6,9 +8,11 @@ using Maxine.Extensions.Mathematics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using MonoGame.ImGuiNet;
 using NFMWorld.DriverInterface;
+using NFMWorld.Graphics;
+using NFMWorld.Graphics.FNA3D;
+using NFMWorld.Platform.SDL3;
 using NFMWorld.UI;
 using NFMWorld.Util;
 using NFMWorldLibrary;
@@ -17,6 +21,7 @@ using Keys = NFMWorld.DriverInterface.Keys;
 using Logging = NFMWorldLibrary.Logging;
 using NFMWorld.Sentry;
 using WorldXaml.UI.Yoga;
+using ClearOptions = NFMWorld.Graphics.ClearOptions;
 
 namespace NFMWorld;
 
@@ -24,12 +29,31 @@ namespace NFMWorld;
 /// This sample demonstrates how to load a Direct2D1 bitmap from a file.
 /// This method will be part of a future version of SharpDX API.
 /// </summary>
-public class WorldGame : Game
+/// <remarks>
+/// Milestone 5 Stage A: window/input/device ownership moved off FNA's <c>Game</c>/
+/// <c>GraphicsDeviceManager</c> onto <see cref="SdlWindow"/> + <see cref="FNA3DGraphicsDevice"/>,
+/// following the pattern proven in <c>NFMWorld.Graphics.FNA3D.Smoke/Program.cs</c>. Everything that
+/// still needs an XNA <c>GraphicsDevice</c> (<see cref="GameSparker.Load"/>, <c>Effects.Initialize</c>,
+/// <see cref="RebuildCascades"/>, <see cref="ImGuiRenderer"/>, <see cref="UiRenderer"/>,
+/// <see cref="NanoVGRenderer"/>, and everything downstream of <see cref="GameSparker.CurrentPhase"/>,
+/// which throws until a phase is pushed) is deliberately NOT constructed/called yet - that's
+/// Milestone 5 Stage B (converting <c>Scene</c>/<c>RenderQueue</c> and the renderer files to the
+/// command-buffer model). This stage only proves window creation, input, resize, and device
+/// lifetime against the real game entry point; no gameplay/UI renders yet.
+/// </remarks>
+public class WorldGame : IDisposable
 {
     public static UnlimitedArray<RenderTarget2D?> ShadowRenderTargets = [];
 
-    public GraphicsDeviceManager Graphics;
-    public static ImGuiRenderer ImguiRenderer;
+    /// <summary>Stage A compatibility shim for <c>Mad/UI/SettingsMenu.cs</c>'s existing settings-application logic. See <see cref="GraphicsSettingsShim"/>.</summary>
+    public GraphicsSettingsShim Graphics;
+
+    /// <summary>The SDL3 window this game owns. Replaces FNA's <c>Game.Window</c>/<c>GraphicsDeviceManager</c>.</summary>
+    public SdlWindow Window;
+
+    private readonly FNA3DGraphicsDevice _device;
+
+    public static ImGuiRenderer? ImguiRenderer;
     private UiRenderer? _uiRenderer;
 
     internal static long LastFrameTime;
@@ -45,7 +69,7 @@ public class WorldGame : Game
     // primary button + pointer movement since the press.
     private bool _mouseDragging;
     private Int2 _mouseDragStart;
-    private NanoVGRenderer _nvg;
+    private NanoVGRenderer? _nvg;
     private TimeStep _tickTimeStep = new((1000f / Physics.TargetTps) / 1000f);
     public static bool LowLatency = false;
     public static int NumCascades = 3;
@@ -56,40 +80,42 @@ public class WorldGame : Game
 
     private int _yogaDebugPage = -1;
 
-    private static readonly Microsoft.Xna.Framework.Input.Keys[] XnaKeys = Enum.GetValues<Microsoft.Xna.Framework.Input.Keys>();
+    /// <summary>Whether the window currently has input focus. Replaces FNA's <c>Game.IsActive</c>.</summary>
+    public bool IsActive => Window.HasFocus;
+
+    /// <summary>Replaces FNA's <c>Game.IsFixedTimeStep</c> - read by the manual loop in <see cref="Main"/>.</summary>
+    public bool IsFixedTimeStep { get; set; } = false;
+
+    /// <summary>Replaces FNA's <c>Game.TargetElapsedTime</c> - read by the manual loop in <see cref="Main"/> and by <see cref="Draw"/>'s alpha calculation.</summary>
+    public TimeSpan TargetElapsedTime { get; set; } = TimeSpan.FromMilliseconds(1000 / Physics.TargetTps);
+
+    /// <summary>All real key codes in <see cref="Key"/> (excludes the <c>KeyCode</c>/<c>Modifiers</c>/<c>Shift</c>/<c>Control</c>/<c>Alt</c> bitmask sentinels), for <see cref="UpdateInput"/>'s per-frame diff. Replaces enumerating <c>Microsoft.Xna.Framework.Input.Keys</c>.</summary>
+    private static readonly Key[] AllKeys = Enum.GetValues<Key>().Where(k => (uint)k <= 0xFE).ToArray();
+
+    private bool _disposed;
 
     private WorldGame()
     {
         GameThreadContext.Install();
 
-        Graphics = new GraphicsDeviceManager(this);
-        Graphics.GraphicsProfile = GraphicsProfile.Reach;
-        Graphics.PreferredDepthStencilFormat = DepthFormat.Depth24Stencil8;
-        Content.RootDirectory = "Content";
-        IsMouseVisible = true;
+        // Uses the raw-bitmask overload rather than SDL3.Core's SDL.SDL_WindowFlags directly: this
+        // project also references FNA (transitively, via NvgSharp.FNA.Core), whose own vendored
+        // SDL3 bindings define a same-named SDL type in a different assembly, and referencing
+        // SDL3.Core directly here would make every "SDL" reference in this project ambiguous.
+        Window = SdlWindow.Create("NFM World", 1280, 720, FNA3DInterop.PrepareWindowAttributes());
+        _device = FNA3DGraphicsDevice.Create(Window.Handle, Window.Width, Window.Height, vsync: true, debugMode: true);
+        Graphics = new GraphicsSettingsShim(Window);
 
-        Graphics.SynchronizeWithVerticalRetrace = true;
-        IsFixedTimeStep = false;
-        TargetElapsedTime = TimeSpan.FromMilliseconds(1000 / Physics.TargetTps);
-        Graphics.PreferredBackBufferWidth = 1280;
-        Graphics.PreferredBackBufferHeight = 720;
-        Graphics.PreferMultiSampling = true;
-
-        // IBackend.Backend = new DummyBackend();
-        Window.AllowUserResizing = true;
-        Window.ClientSizeChanged += (sender, args) =>
+        Window.Resized += (w, h) =>
         {
-            var viewport = new Viewport(0, 0, Window.ClientBounds.Width, Window.ClientBounds.Height);
-            GraphicsDevice.Viewport = viewport;
-            // _skia.RemakeRenderTarget(Window.ClientBounds.Width, Window.ClientBounds.Height);
-            GameSparker.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
-            GameSparker.CurrentPhase.WindowSizeChanged(Window.ClientBounds.Width, Window.ClientBounds.Height);
-            G.Scale = Window.ClientBounds.Height / 720f;
+            GameSparker.WindowSizeChanged(w, h);
+            GameSparker.CurrentPhase.WindowSizeChanged(w, h);
+            G.Scale = h / 720f;
         };
 
-        TextInputEXT.TextInput += character =>
+        Window.TextInput += character =>
         {
-            var imguiWantsKeyboard = ImGui.GetIO().WantCaptureKeyboard;
+            var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
             if (!imguiWantsKeyboard)
             {
                 GameSparker.UiRenderer?.HandleKeyTyped(character);
@@ -99,9 +125,8 @@ public class WorldGame : Game
         };
     }
 
-    protected override void Update(GameTime gameTime)
+    private void Update(GameTime gameTime)
     {
-        base.Update(gameTime);
         FPSCounter.Update(gameTime, LastTickTime, LastFrameTime, LastAsyncTime);
 
         UpdateInput();
@@ -119,7 +144,7 @@ public class WorldGame : Game
         {
             LastTickTime = 0;
 
-            for (int i = 0; i < timesToTick; i++)
+            for (var i = 0; i < timesToTick; i++)
             {
                 var tick = new MicroStopwatch();
                 tick.Start();
@@ -151,210 +176,81 @@ public class WorldGame : Game
         GameSparker.Phases.FlushDisposals();
     }
 
-    protected override void Initialize()
+    private void Initialize()
     {
-        ImguiRenderer = new ImGuiRenderer(this);
+        // TODO(Stage B): construct ImguiRenderer/UiRenderer/NanoVGRenderer here once they (and the
+        // GraphicsDevice they need) are converted to the new graphics abstraction.
 
-        // Initialize UI renderer after GraphicsDevice is ready.
-        _uiRenderer = new UiRenderer(this);
-        GameSparker.UiRenderer = _uiRenderer;
-
-        _oldKeyState = Keys.FromState(Keyboard.GetState());
-        var mouseState = Mouse.GetState();
-        _oldMouseState = MouseButtons.FromState(mouseState);
-        _oldMousePosition = new Int2(mouseState.X, mouseState.Y);
-        _oldScrollValue = mouseState.ScrollWheelValue;
-
-        _nvg = new NanoVGRenderer(GraphicsDevice);
-
-        // MSAA is set by SettingsMenu.LoadConfig -> ApplySettings at startup.
-        // Fallback: ensure MSAA is at least enabled if no config file exists.
-        if (GraphicsDevice.PresentationParameters.MultiSampleCount == 0)
-        {
-            GraphicsDevice.PresentationParameters.MultiSampleCount = 8;
-            Graphics.ApplyChanges();
-        }
-
-        base.Initialize();
+        _oldKeyState = SdlWindow.GetKeyboardState();
+        var (mouseButtons, mouseX, mouseY) = SdlWindow.GetMouseState();
+        _oldMouseState = mouseButtons;
+        _oldMousePosition = new Int2(mouseX, mouseY);
+        _oldScrollValue = 0;
     }
 
-    protected override void Dispose(bool disposing)
+    public void Dispose()
     {
-        base.Dispose(disposing);
+        if (_disposed) return;
+        _disposed = true;
 
-        if (disposing)
-        {
-            // Dispose all phases before tearing down CEF and graphics.
-            GameSparker.Phases.Shutdown();
+        // Dispose all phases before tearing down CEF and graphics.
+        GameSparker.Phases.Shutdown();
 
-            _uiRenderer?.Dispose();
-            foreach (var shadowRenderTarget in ShadowRenderTargets)
-            {
-                shadowRenderTarget?.Dispose();
-            }
-            ImguiRenderer.Dispose();
-
-            // FNA's own FAudio device is cleaned up via FAudioContext.Dispose() on app domain
-            // exit, and the direct-FAudio engine (FaudioEngine) lives for the process lifetime.
-        }
-    }
-
-    protected override void LoadContent()
-    {
-        GameSparker.Load(this);
-
-        ImguiRenderer.RebuildFontAtlas();
-
-        Effects.Initialize(GraphicsDevice);
-
-        RebuildCascades();
-
-        SettingsMenu.LoadConfig();
-
-        #region Imgui
-
-        // Initialize ImGui
-        ImGui.CreateContext();
-        ImGui.StyleColorsDark();
-
-
-        // custom style
-        var style = ImGui.GetStyle();
-
-        // Rounding
-        style.WindowRounding = 4.0f;
-        style.FrameRounding = 6.0f;
-        style.GrabRounding = 4.0f;
-        style.PopupRounding = 6.0f;
-        style.ScrollbarRounding = 6.0f;
-        style.TabRounding = 4.0f;
-
-        // Spacing and padding
-        style.WindowPadding = new Vector2(12, 12);
-        style.FramePadding = new Vector2(8, 4);
-        style.ItemSpacing = new Vector2(8, 6);
-
-        // Border
-        style.WindowBorderSize = 2.0f;
-        style.FrameBorderSize = 2.0f;
-
-        var colors = style.Colors;
-
-        // Windows and backgrounds
-        colors[(int)ImGuiCol.WindowBg] = Rgb(31, 26, 46, 0.95f);          // Dark purple
-        colors[(int)ImGuiCol.ChildBg] = Rgb(26, 20, 38, 0.90f);           // Darker purple
-        colors[(int)ImGuiCol.PopupBg] = Rgb(26, 20, 38, 0.95f);           // Darker purple
-        colors[(int)ImGuiCol.MenuBarBg] = Rgb(38, 31, 56, 1.0f);          // Medium purple
-
-        // Borders
-        colors[(int)ImGuiCol.Border] = Rgb(230, 128, 26, 0.8f);           // Orange
-        colors[(int)ImGuiCol.BorderShadow] = Rgb(0, 0, 0, 0.5f);          // Black shadow
-
-        // Text
-        colors[(int)ImGuiCol.Text] = Rgb(255, 191, 51, 1.0f);             // Light orange/yellow
-        colors[(int)ImGuiCol.TextDisabled] = Rgb(153, 115, 38, 1.0f);     // Dimmed orange
-
-        // Title bar
-        colors[(int)ImGuiCol.TitleBg] = Rgb(38, 31, 64, 1.0f);            // Dark purple
-        colors[(int)ImGuiCol.TitleBgActive] = Rgb(51, 38, 89, 1.0f);      // Medium purple
-        colors[(int)ImGuiCol.TitleBgCollapsed] = Rgb(31, 26, 51, 0.75f);  // Very dark purple
-
-        // Frames (inputs, etc)
-        colors[(int)ImGuiCol.FrameBg] = Rgb(38, 31, 56, 0.9f);            // Medium purple
-        colors[(int)ImGuiCol.FrameBgHovered] = Rgb(64, 51, 89, 1.0f);     // Lighter purple
-        colors[(int)ImGuiCol.FrameBgActive] = Rgb(77, 64, 102, 1.0f);     // Even lighter purple
-
-        // Buttons (dark with orange on hover)
-        colors[(int)ImGuiCol.Button] = Rgb(38, 31, 64, 1.0f);             // Dark purple
-        colors[(int)ImGuiCol.ButtonHovered] = Rgb(64, 51, 89, 1.0f);      // Lighter purple
-        colors[(int)ImGuiCol.ButtonActive] = Rgb(128, 77, 3, 0.8f);       // Dark orange
-
-        // Headers
-        colors[(int)ImGuiCol.Header] = Rgb(51, 38, 77, 1.0f);             // Medium purple
-        colors[(int)ImGuiCol.HeaderHovered] = Rgb(230, 128, 26, 0.6f);    // Orange
-        colors[(int)ImGuiCol.HeaderActive] = Rgb(128, 77, 3, 0.8f);       // Dark orange
-
-        // Tabs
-        colors[(int)ImGuiCol.Tab] = Rgb(38, 31, 64, 1.0f);                     // Dark purple (inactive)
-        colors[(int)ImGuiCol.TabHovered] = Rgb(230, 128, 26, 0.8f);            // Orange (hovered)
-        colors[(int)ImGuiCol.TabSelected] = Rgb(128, 77, 3, 1.0f);           // Orange (active/selected)
-        colors[(int)ImGuiCol.TabDimmed] = Rgb(31, 26, 51, 1.0f);               // Very dark purple (unfocused)
-        colors[(int)ImGuiCol.TabDimmedSelected] = Rgb(128, 77, 26, 0.8f);      // Dimmed orange (unfocused selected)
-        colors[(int)ImGuiCol.TabDimmedSelectedOverline] = Rgb(230, 128, 26, 1.0f); // Orange underline
-        colors[(int)ImGuiCol.TabSelectedOverline] = Rgb(230, 128, 26, 1.0f);   // Orange underline (focused)
-
-        // Checkmarks and sliders (orange)
-        colors[(int)ImGuiCol.CheckMark] = Rgb(255, 179, 51, 1.0f);        // Light orange
-        colors[(int)ImGuiCol.SliderGrab] = Rgb(230, 128, 26, 1.0f);       // Orange
-        colors[(int)ImGuiCol.SliderGrabActive] = Rgb(255, 166, 51, 1.0f); // Lighter orange
-
-        // Scrollbar
-        colors[(int)ImGuiCol.ScrollbarBg] = Rgb(26, 20, 38, 0.9f);        // Dark purple
-        colors[(int)ImGuiCol.ScrollbarGrab] = Rgb(64, 51, 89, 1.0f);      // Medium purple
-        colors[(int)ImGuiCol.ScrollbarGrabHovered] = Rgb(89, 71, 115, 1.0f); // Lighter purple
-        colors[(int)ImGuiCol.ScrollbarGrabActive] = Rgb(230, 128, 26, 1.0f); // Orange
-
-        // Separators (orange)
-        colors[(int)ImGuiCol.Separator] = Rgb(230, 128, 26, 0.5f);        // Orange
-        colors[(int)ImGuiCol.SeparatorHovered] = Rgb(230, 128, 26, 0.8f); // Orange
-        colors[(int)ImGuiCol.SeparatorActive] = Rgb(255, 153, 51, 1.0f);  // Lighter orange
-
-        // Resize grip
-        colors[(int)ImGuiCol.ResizeGrip] = Rgb(230, 128, 26, 0.3f);       // Orange
-        colors[(int)ImGuiCol.ResizeGripHovered] = Rgb(230, 128, 26, 0.6f); // Orange
-        colors[(int)ImGuiCol.ResizeGripActive] = Rgb(255, 153, 51, 1.0f);  // Lighter orange
-        style.FrameRounding = 3.0f;
-        style.WindowPadding = new Vector2(10, 10);
-        style.FramePadding = new Vector2(5, 3);
-        style.ItemSpacing = new Vector2(8, 4);
-
-        #endregion
-
-        return;
-
-        static Vector4 Rgb(int r, int g, int b, float a = 1.0f) => new(r / 255f, g / 255f, b / 255f, a);
-    }
-
-    public void RebuildCascades()
-    {
+        _uiRenderer?.Dispose();
         foreach (var shadowRenderTarget in ShadowRenderTargets)
         {
             shadowRenderTarget?.Dispose();
         }
+        ImguiRenderer?.Dispose();
 
-        // Create floating point render target
-        for (int i = NumCascades - 1; i >= 0; i--)
-        {
-            ShadowRenderTargets[i] = new RenderTarget2D(
-                GraphicsDevice,
-                ShadowResolution,
-                ShadowResolution,
-                false,
-                SurfaceFormat.Single,
-                DepthFormat.Depth24,
-                0,
-                RenderTargetUsage.DiscardContents);
-        }
+        _device.Dispose();
+        Window.Dispose();
 
-        // Clear all render targets AFTER creating them all
-        for (int i = 0; i < NumCascades; i++)
-        {
-            GraphicsDevice.SetRenderTarget(ShadowRenderTargets[i]);
-            GraphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.White.ToXna(), 1.0f, 0);
-            GraphicsDevice.SetRenderTarget(null);
-        }
+        // FNA's own FAudio device is cleaned up via FAudioContext.Dispose() on app domain
+        // exit, and the direct-FAudio engine (FaudioEngine) lives for the process lifetime.
+    }
+
+    private void LoadContent()
+    {
+        // TODO(Stage C / Milestone 6): ImguiRenderer.RebuildFontAtlas(), the ImGui style block,
+        // and NanoVGRenderer construction all need a live XNA GraphicsDevice/Game (ImGuiRenderer's
+        // ctor takes an FNA Game, which no longer exists) or a converted 2D UI backend - none of
+        // which exist yet. Left uncalled; 2D UI (menus/HUD/dev console) doesn't render yet.
+
+        // GameSparker.NewGraphicsDevice must be set before Effects.Initialize/GameSparker.Load,
+        // since both transitively construct render elements (Ground/Sky/meshes/...) that read it
+        // directly (see that field's doc comment).
+        GameSparker.NewGraphicsDevice = _device;
+        Effects.Initialize(_device);
+
+        // TODO(Stage C / Milestone 6): IBackend.Backend is still whatever BackendGameSparker.Load's
+        // earlier server-side data load left it as (ServerBackend, which throws on client-only
+        // calls like GetSound) - normally NanoVGRenderer's constructor overwrites it with the real
+        // client WorldClientBackend, but that's a hard blocker (needs a live XNA GraphicsDevice/
+        // NvgContext) until 2D UI is converted. DummyBackend is a safe, fully-inert stand-in (silent
+        // audio, no-op 2D drawing) so GameSparker.Load's SfxLibrary.LoadSounds() and anything else
+        // touching IBackend.Backend/G doesn't crash - not a real fix, just keeps this stage's scope
+        // (3D rendering) from being blocked by 2D UI/audio-backend work that belongs in Stage C.
+        NFMWorld.DriverInterface.DriverInterface.IBackend.Backend = new NFMWorld.DriverInterface.DriverInterface.DummyBackend();
+
+        GameSparker.Load(this);
+
+        SettingsMenu.LoadConfig();
+    }
+
+    public void RebuildCascades()
+    {
+        // TODO(Stage B): port shadow-cascade render targets to IRenderTarget. Not called yet -
+        // see LoadContent.
     }
 
     private void UpdateInput()
     {
-        var newState = Keyboard.GetState();
+        var keys = SdlWindow.GetKeyboardState();
 
-        var keys = Keys.FromState(newState);
-
-        foreach (var xnaKey in XnaKeys)
+        foreach (var nfmKey in AllKeys)
         {
-            var nfmKey = Key.FromXna(xnaKey);
-            var imguiWantsKeyboard = ImGui.GetIO().WantCaptureKeyboard;
+            var imguiWantsKeyboard = ImguiRenderer is not null && ImGui.GetIO().WantCaptureKeyboard;
             if (keys[nfmKey] && !_oldKeyState[nfmKey])
             {
                 GameSparker.KeyPressed(nfmKey);
@@ -392,15 +288,16 @@ public class WorldGame : Game
     private static readonly MouseButtons[] MouseButtonsArray = Enum.GetValues<MouseButtons>();
     private void UpdateMouse()
     {
-        var newState = Mouse.GetState();
-        var buttons = MouseButtons.FromState(newState);
-        var mousePosition = new Int2(newState.X, newState.Y);
-        var scrollValue = newState.ScrollWheelValue;
+        var (buttons, mouseX, mouseY) = SdlWindow.GetMouseState();
+        var mousePosition = new Int2(mouseX, mouseY);
+        // TODO(Stage B): SdlWindow doesn't expose a polling scroll accumulator yet (only the
+        // per-event MouseWheel delta) - scroll handling is wired up properly once UiRenderer exists.
+        var scrollValue = _oldScrollValue;
 
         var ctrlKey = _oldKeyState[Key.LControlKey] || _oldKeyState[Key.RControlKey];
         var shiftKey = _oldKeyState[Key.LShiftKey] || _oldKeyState[Key.RShiftKey];
         var altKey = _oldKeyState[Key.Alt];
-        var wantCaptureMouse = ImGui.GetIO().WantCaptureMouse;
+        var wantCaptureMouse = ImguiRenderer is not null && ImGui.GetIO().WantCaptureMouse;
 
         foreach (var button in MouseButtonsArray)
         {
@@ -419,7 +316,7 @@ public class WorldGame : Game
             {
                 if (!wantCaptureMouse)
                 {
-                    GameSparker.UiRenderer?.HandleMousePressed(newState.X, newState.Y, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+                    GameSparker.UiRenderer?.HandleMousePressed(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
                     if (nfmButton == MouseButton.Primary)
                     {
                         _mouseDragging = true;
@@ -427,13 +324,13 @@ public class WorldGame : Game
                     }
                 }
 
-                GameSparker.CurrentPhase.MousePressed(newState.X, newState.Y, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+                GameSparker.CurrentPhase.MousePressed(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
             }
             else if (!buttons.HasFlag(button) && _oldMouseState.HasFlag(button))
             {
                 if (!wantCaptureMouse)
                 {
-                    GameSparker.UiRenderer?.HandleMouseReleased(newState.X, newState.Y, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+                    GameSparker.UiRenderer?.HandleMouseReleased(mouseX, mouseY, nfmButton, buttons, ctrlKey, shiftKey, altKey);
                 }
 
                 if (nfmButton == MouseButton.Primary)
@@ -441,7 +338,7 @@ public class WorldGame : Game
                     _mouseDragging = false;
                 }
 
-                GameSparker.CurrentPhase.MouseReleased(newState.X, newState.Y, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
+                GameSparker.CurrentPhase.MouseReleased(mouseX, mouseY, wantCaptureMouse, nfmButton, buttons, ctrlKey, shiftKey, altKey);
             }
         }
 
@@ -449,14 +346,14 @@ public class WorldGame : Game
         {
             if (!wantCaptureMouse)
             {
-                GameSparker.UiRenderer?.HandleMouseMoved(newState.X, newState.Y, buttons, ctrlKey, shiftKey, altKey);
+                GameSparker.UiRenderer?.HandleMouseMoved(mouseX, mouseY, buttons, ctrlKey, shiftKey, altKey);
                 if (_mouseDragging)
                 {
-                    GameSparker.UiRenderer?.HandleMouseDragged(newState.X, newState.Y, _mouseDragStart.X, _mouseDragStart.Y, MouseButton.Primary, buttons, ctrlKey, shiftKey, altKey);
+                    GameSparker.UiRenderer?.HandleMouseDragged(mouseX, mouseY, _mouseDragStart.X, _mouseDragStart.Y, MouseButton.Primary, buttons, ctrlKey, shiftKey, altKey);
                 }
             }
 
-            GameSparker.CurrentPhase.MouseMoved(mousePosition.X, mousePosition.Y, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+            GameSparker.CurrentPhase.MouseMoved(mouseX, mouseY, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
             YogaDebugger.MouseMove(mousePosition.X, mousePosition.Y);
         }
 
@@ -466,10 +363,10 @@ public class WorldGame : Game
 
             if (!wantCaptureMouse)
             {
-                GameSparker.UiRenderer?.HandleMouseScrolled(newState.X, newState.Y, delta, buttons, ctrlKey, shiftKey, altKey);
+                GameSparker.UiRenderer?.HandleMouseScrolled(mouseX, mouseY, delta, buttons, ctrlKey, shiftKey, altKey);
             }
 
-            GameSparker.CurrentPhase.MouseScrolled(mousePosition.X, mousePosition.Y, delta, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
+            GameSparker.CurrentPhase.MouseScrolled(mouseX, mouseY, delta, wantCaptureMouse, buttons, ctrlKey, shiftKey, altKey);
         }
 
         _oldMouseState = buttons;
@@ -477,39 +374,29 @@ public class WorldGame : Game
         _oldScrollValue = scrollValue;
     }
 
-    protected override void Draw(GameTime gameTime)
+    private void Draw(GameTime gameTime)
     {
         var transaction = SentrySdk.StartTransaction("GameDraw", "gameloop.draw");
 
         var alpha = LowLatency ? 1f : (float)((double)gameTime.ElapsedGameTime.Ticks / TargetElapsedTime.Ticks);
 
-        GraphicsDevice.Clear(Color.CornflowerBlue.ToXna());
-
         var t = Stopwatch.StartNew();
 
-        GameSparker.Render();
+        // TODO(Stage C / Milestone 6): _uiRenderer.Render()/YogaDebugger.Render()/FPSCounter.Render()/
+        // _nvg.Render()/GameSparker.Render3DOverlays()/ImguiRenderer's layout+RenderImgui all need
+        // either a converted 2D UI backend or ImguiRenderer, neither of which exist yet (see
+        // LoadContent's TODO). 3D rendering (GameSparker.Render, below) doesn't depend on any of
+        // them.
+        var cb = _device.AcquireCommandBuffer();
+        cb.Clear(ClearOptions.Color | ClearOptions.Depth,
+            new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
+        cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, Window.Width, Window.Height));
 
-        // Render based on game state
-        GameSparker.CurrentPhase.Render(alpha);
+        GameSparker.Render(cb, alpha);
 
-        // Render UI overlay
-        _uiRenderer?.Render();
+        _device.Submit(cb);
+        _device.Swapchain.Present();
 
-        if (_yogaDebugPage >= 0)
-            YogaDebugger.Render(_yogaDebugPage);
-
-        FPSCounter.Render();
-
-        _nvg.Render();
-
-        GameSparker.Render3DOverlays();
-
-        // // Render ImGui
-        ImguiRenderer.BeginLayout(gameTime);
-        GameSparker.RenderImgui();
-        ImguiRenderer.EndLayout();
-
-        base.Draw(gameTime);
         LastFrameTime = t.ElapsedMilliseconds;
 
         transaction.Finish();
@@ -523,8 +410,18 @@ public class WorldGame : Game
             Process.GetCurrentProcess().Kill(false);
         };
 
+        // NativeLibrary.SetDllImportResolver is scoped to the assembly that DECLARES the
+        // [DllImport], not the assembly that calls it - so every project with its own P/Invoke
+        // declarations against a "libs/<arch>/..." deployment layout needs its own registration.
+        // FNA.dll's own internal P/Invokes (e.g. from NvgSharp.FNA.Core/Effect.cs, still compiled
+        // into this exe even though Stage A doesn't exercise those paths yet) still need this too.
+        // NFMWorld.Audio.FAudioBindings.FAudio's assembly registers its own resolver in
+        // FaudioEngine's static ctor (a resolver can only be set once per assembly) - not
+        // registered again here.
         NativeLibrary.SetDllImportResolver(typeof(Game).Assembly, ImportResolver);
         NativeLibrary.SetDllImportResolver(typeof(WorldGame).Assembly, ImportResolver);
+        NativeLibrary.SetDllImportResolver(typeof(NFMWorld.FNA3D.FNA3D).Assembly, ImportResolver);
+        NativeLibrary.SetDllImportResolver(typeof(SDL3New::SDL3.SDL).Assembly, ImportResolver);
 
         SettingsMenu.LoadFnaRenderer();
 
@@ -545,7 +442,37 @@ public class WorldGame : Game
         BackendGameSparker.Load(isHeadless: false);
 
         var program = new WorldGame();
-        program.Run();
+        GameSparker.Game = program;
+        program.Initialize();
+        program.LoadContent();
+
+        // Manual game loop replacing XNA's Game.Run(). The game's own tick pacing lives in
+        // TimeStep (see _tickTimeStep), not in this loop's Update/Draw call frequency, so this
+        // only needs to approximate XNA's variable-timestep behavior (IsFixedTimeStep = false is
+        // WorldGame's default) plus an optional frame-rate cap when IsFixedTimeStep is set (see
+        // SettingsMenu.cs's FPS limiter).
+        var stopwatch = Stopwatch.StartNew();
+        var lastElapsed = TimeSpan.Zero;
+        while (!program.Window.ShouldQuit)
+        {
+            program.Window.PumpEvents();
+
+            var now = stopwatch.Elapsed;
+            var frameElapsed = now - lastElapsed;
+            if (program.IsFixedTimeStep && frameElapsed < program.TargetElapsedTime)
+            {
+                Thread.Sleep(program.TargetElapsedTime - frameElapsed);
+                now = stopwatch.Elapsed;
+                frameElapsed = now - lastElapsed;
+            }
+            lastElapsed = now;
+
+            var gameTime = new GameTime(now, frameElapsed);
+            program.Update(gameTime);
+            program.Draw(gameTime);
+        }
+
+        program.Dispose();
     }
 
     private static IntPtr ImportResolver(string libraryName, Assembly assembly, DllImportSearchPath? searchPath)

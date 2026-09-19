@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 
@@ -6,30 +7,30 @@ namespace NFMWorld;
 
 public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDisposable
 {
-    private readonly GraphicsDevice _graphicsDevice;
-    private readonly VertexBuffer _vertexBuffer;
-    private readonly IndexBuffer _indexBuffer;
+    private readonly IGraphicsDevice _graphicsDevice;
+    private readonly IBuffer _vertexBuffer;
+    private readonly IBuffer _indexBuffer;
     private readonly int _triangleCount;
     private readonly int _vertexCount;
 
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
-    public GroundPolys(GraphicsDevice graphicsDevice, Rad3dPoly[] polys)
+    public GroundPolys(IGraphicsDevice graphicsDevice, Rad3dPoly[] polys)
     {
         _graphicsDevice = graphicsDevice;
-        
-        var data = new List<VertexPositionColor>();
+
+        var data = new List<PositionColorVertex>();
         var indices = new List<uint>();
-        
+
         for (var i = 0; i < polys.Length; i++)
         {
             var poly = polys[i];
 
             var baseIndex = (uint)data.Count;
+            var color = (Color)poly.Color;
             foreach (var point in poly.Points)
             {
-                var color = ((Color)poly.Color).ToXna();
-                data.Add(new VertexPositionColor(point, color));
+                data.Add(new PositionColorVertex(point, color));
             }
 
             for (var index = 0; index < poly.Triangles.Length; index += 3)
@@ -42,23 +43,18 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
             }
         }
 
-        _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Count, BufferUsage.None)
-        {
-            Name = "Ground Polys Vertex Buffer",
-            Tag = this
-        };
-        _vertexBuffer.SetDataEXT(data);
+        var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
+        _vertexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
 
-        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None)
-        {
-            Name = "Ground Polys Index Buffer",
-            Tag = this
-        };
-        _indexBuffer.SetDataEXT(indices);
+        var indexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(indices));
+        _indexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32), indexBytes);
+
         _triangleCount = indices.Count / 3;
         _vertexCount = data.Count;
     }
-    
+
     ~GroundPolys()
     {
         Dispose(false);
@@ -71,28 +67,23 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
         queue.AddImmediate(SortKey.Create(RenderBucket.GroundPolys), this);
     }
 
-    public void Render(Camera cam, Lighting? lt)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting)
     {
-        _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-        _graphicsDevice.Indices = _indexBuffer;
-        _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        Effects.Ground.WorldView?.SetValue(cam.ViewMatrix);
-        Effects.Ground.WorldViewProj?.SetValue(cam.ViewMatrix * cam.ProjectionMatrix);
+        var p = Effects.GroundParameters;
 
-        Effects.Ground.DepthBias?.SetValue(0.00005f);
-        Effects.Ground.FogColor?.SetValue(World.Fog.Snap(World.Snap));
-        Effects.Ground.FogDistance?.SetValue(World.FadeFrom);
-        Effects.Ground.FogLogDensity?.SetValue(World.FogLogDensity);
+        cb.SetPipeline(Effects.GroundPipeline);
+        cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
+        cb.SetIndexBuffer(_indexBuffer);
 
-        lt?.SetShadowMapParameters(Effects.Ground.UnderlyingEffect);
+        p.WorldView.SetValue(cb, camera.ViewMatrix);
+        p.WorldViewProj.SetValue(cb, camera.ViewMatrix * camera.ProjectionMatrix);
+        p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
+        p.FogDistance.SetValue(cb, World.FadeFrom);
+        p.FogLogDensity.SetValue(cb, World.FogLogDensity);
 
-        foreach (var pass in Effects.Ground.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-            _graphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, _vertexCount, 0, _triangleCount);
-        }
+        lighting?.SetShadowMapParameters(cb, Effects.GroundPipeline.Reflection);
 
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+        cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: _triangleCount);
     }
 
     private void ReleaseUnmanagedResources()

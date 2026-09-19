@@ -66,7 +66,7 @@ public abstract class BasePhase : IDisposable
     /// Use <see cref="G"/> here to draw 2D overlays.
     /// Use <see cref="Scene"/> here to draw 3D content.
     /// </summary>
-    public virtual void Render(float alpha)
+    public virtual void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
         // UI rendering handled by CEF overlay
     }

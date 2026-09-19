@@ -50,8 +50,9 @@ public class ClientStage : IDisposable
         Renderer = new ClientStageRenderer(graphicsDevice, Backend);
         Renderer.ApplyValues();
 
-        // Scene starts with just the stage renderer — car visuals are added lazily in GameTick()
-        _scene = new Scene(graphicsDevice, [Renderer], camera, lightCameras);
+        // Scene starts with just the stage renderer — car visuals are added lazily in GameTick().
+        // ClientStageRenderer is itself a GameObject.
+        _scene = new Scene(GameSparker.NewGraphicsDevice, [Renderer], camera, lightCameras);
 
         // ── Music metadata ──
         MusicPath = Backend.StageLoader.musicPath;
@@ -297,11 +298,11 @@ public class ClientStage : IDisposable
             obj.GameTick(Backend);
     }
 
-    public void Render(float alpha, bool useShadowMapping = true, bool clearRenderBuffer = true)
+    public void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha, bool useShadowMapping = true, bool clearRenderBuffer = true)
     {
         Renderer.ApplyValues();
         _scene.ActiveCamera = Camera;
-        _scene.Render(alpha, useShadowMapping, clearRenderBuffer);
+        _scene.Render(cb, alpha, useShadowMapping, clearRenderBuffer);
     }
 
     #region IDisposable

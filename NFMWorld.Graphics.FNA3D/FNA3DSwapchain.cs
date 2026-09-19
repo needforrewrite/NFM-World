@@ -1,20 +1,10 @@
 namespace NFMWorld.Graphics.FNA3D;
 
-internal sealed class FNA3DSwapchain : ISwapchain
+internal sealed class FNA3DSwapchain(IntPtr device, IntPtr windowHandle, int width, int height)
+    : ISwapchain
 {
-    private readonly IntPtr _device;
-    private readonly IntPtr _windowHandle;
-
-    public int Width { get; private set; }
-    public int Height { get; private set; }
-
-    public FNA3DSwapchain(IntPtr device, IntPtr windowHandle, int width, int height)
-    {
-        _device = device;
-        _windowHandle = windowHandle;
-        Width = width;
-        Height = height;
-    }
+    public int Width { get; private set; } = width;
+    public int Height { get; private set; } = height;
 
     public void Present()
     {
@@ -22,12 +12,12 @@ internal sealed class FNA3DSwapchain : ISwapchain
         // cache one internally - but FNA3D's SDLGPU driver has no such fallback and requires the
         // real window handle on every call (SDLGPU_SwapBuffers casts this straight to SDL_Window*
         // with no null check), so it must always be passed explicitly.
-        FNA3D_SwapBuffers(_device, IntPtr.Zero, IntPtr.Zero, _windowHandle);
+        FNA3D_SwapBuffers(device, IntPtr.Zero, IntPtr.Zero, windowHandle);
     }
 
     public void RefreshSize()
     {
-        FNA3D_GetBackbufferSize(_device, out var w, out var h);
+        FNA3D_GetBackbufferSize(device, out var w, out var h);
         Width = w;
         Height = h;
     }

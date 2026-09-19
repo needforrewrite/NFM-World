@@ -334,9 +334,9 @@ public class RacePhase : BaseStageRenderingPhase, IGamemodeContext, IClientCallb
         Camera.Height = height;
     }
 
-    public override void Render(float alpha)
+    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
-        base.Render(alpha);
+        base.Render(cb, alpha);
 
         if (DebugDisplay)
         {

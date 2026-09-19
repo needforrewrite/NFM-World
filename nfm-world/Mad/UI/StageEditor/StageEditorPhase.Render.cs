@@ -19,7 +19,7 @@ namespace NFMWorld.UI;
 
 public partial class StageEditorPhase
 {
-    public override void Render(float alpha)
+    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
         if (!_isOpen) return;
         if (ActiveTab == null) return;
@@ -86,7 +86,7 @@ public partial class StageEditorPhase
                 World.FadeFrom = Math.Max(oldFadeFrom, topDownFadeFrom);
                 
                 // Render with lighting preserved
-                ActiveTab?.Scene.Render(alpha, false);
+                ActiveTab?.Scene.Render(null!, alpha, false); // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null; never reached today.
                 
                 // Restore environment elements
                 ActiveTab?.StageRenderer.ground = oldGround;
@@ -99,7 +99,7 @@ public partial class StageEditorPhase
             else
             {
                 // Normal 3D view with lighting and ground
-                ActiveTab?.Scene.Render(alpha, false);
+                ActiveTab?.Scene.Render(null!, alpha, false); // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null; never reached today.
             }
         }
         

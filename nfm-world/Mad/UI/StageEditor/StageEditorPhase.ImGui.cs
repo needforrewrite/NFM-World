@@ -28,8 +28,8 @@ public partial class StageEditorPhase
     
     private void RenderImGuiUI()
     {
-        var screenWidth = GameSparker.Game.GraphicsDevice.Viewport.Width;
-        var screenHeight = GameSparker.Game.GraphicsDevice.Viewport.Height;
+        var screenWidth = GameSparker.Game.Window.Width;
+        var screenHeight = GameSparker.Game.Window.Height;
         
         // Menu bar at the top
         if (ImGui.BeginMainMenuBar())
@@ -364,7 +364,10 @@ public partial class StageEditorPhase
             {
                 // Live preview
                 World.Sky = _editSkyColor;
-                if (ActiveTab?.StageRenderer != null) ActiveTab.StageRenderer.sky = new Sky(_graphicsDevice);
+                // TODO(Milestone 5 Stage B follow-up): _graphicsDevice here is still FNA's
+                // XNA-typed GraphicsDevice (StageEditorPhase is out of scope for this pass); Sky
+                // now takes IGraphicsDevice. Not reached today since GameSparker.Load never runs.
+                if (ActiveTab?.StageRenderer != null) ActiveTab.StageRenderer.sky = new Sky(GameSparker.NewGraphicsDevice);
             }
             
             ImGui.Text("Fog Color:");
@@ -379,7 +382,8 @@ public partial class StageEditorPhase
             {
                 // Live preview
                 World.GroundColor = _editGroundColor;
-                ActiveTab?.StageRenderer?.ground = new Ground(_graphicsDevice);
+                // TODO(Milestone 5 Stage B follow-up): see the sky-color handler's identical TODO above.
+                ActiveTab?.StageRenderer?.ground = new Ground(GameSparker.NewGraphicsDevice);
             }
             
             ImGui.Separator();

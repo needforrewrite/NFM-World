@@ -41,9 +41,9 @@ internal sealed class FNA3DPipelineState : IPipelineState
         _device = device;
         Desc = desc;
         EffectHandle = effectHandle;
-        BlendState = Mapping.ToNative(desc.BlendState);
-        DepthStencilState = Mapping.ToNative(desc.DepthStencilState);
-        RasterizerState = Mapping.ToNative(desc.RasterizerState);
+        BlendState = desc.BlendState.ToNative();
+        DepthStencilState = desc.DepthStencilState.ToNative();
+        RasterizerState = desc.RasterizerState.ToNative();
 
         TechniquePointer = MojoShaderEffectReflection.FindTechnique(effectData, techniqueName, out var passCount);
         PassCount = passCount;
@@ -65,7 +65,7 @@ internal sealed class FNA3DPipelineState : IPipelineState
                 elements[i] = new FNA3D_VertexElement
                 {
                     Offset = attr.OffsetInBytes,
-                    VertexElementFormat = Mapping.ToNative(attr.Format),
+                    VertexElementFormat = attr.Format.ToNative(),
                     VertexElementUsage = Mapping.ToNativeVertexUsage(attr.Semantic),
                     UsageIndex = attr.Slot,
                 };

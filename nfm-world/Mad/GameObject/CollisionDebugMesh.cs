@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
@@ -9,26 +10,26 @@ namespace NFMWorld;
 public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRenderElement
 {
     private int lineTriangleCount;
-    private IndexBuffer? lineIndexBuffer;
-    private VertexBuffer? lineVertexBuffer;
+    private IBuffer? lineIndexBuffer;
+    private IBuffer? lineVertexBuffer;
     private readonly int lineVertexCount;
-    private VertexBuffer? lineInstanceBuffer;
+    private IBuffer? lineInstanceBuffer;
 
     public CollisionDebugMesh(IReadOnlyList<Rad3dBoxDef> boxes)
     {
         if (boxes.Count < 1) return;
-        
+
         #region Debug boxes
-        
+
         // disp 0
         const int linesPerPolygon = 16;
-        
+
         var data = new List<LineMesh.LineMeshVertexAttribute>(LineMeshHelpers.VerticesPerLine * linesPerPolygon * boxes.Count);
         var indices = new List<int>(LineMeshHelpers.IndicesPerLine * linesPerPolygon * boxes.Count);
         void AddLine(Vector3 p0, Vector3 p1, Color3 color, float mult = 1)
         {
             // Create two quads for each line segment to give it some thickness
-            
+
             Span<LineMesh.LineMeshVertexAttribute> verts = stackalloc LineMesh.LineMeshVertexAttribute[LineMeshHelpers.VerticesPerLine];
             Span<int> inds = stackalloc int[LineMeshHelpers.IndicesPerLine];
 
@@ -36,7 +37,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
             indices.AddRange(inds);
             data.AddRange(verts);
         }
-        
+
         for (var i = 0; i < boxes.Count; i++)
         {
             var box = boxes[i];
@@ -44,7 +45,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
             var radius = (Vector3)box.Radius;
 
             // Define the 8 corners of the box
-            ReadOnlySpan<Vector3> corners = 
+            ReadOnlySpan<Vector3> corners =
             [
                 new(center.X - radius.X, center.Y - radius.Y, center.Z - radius.Z), // 0: left-bottom-back
                 new(center.X + radius.X, center.Y - radius.Y, center.Z - radius.Z), // 1: right-bottom-back
@@ -69,7 +70,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
 
             // Check if this is a selected box (yellow color = 255,255,0)
             bool isSelected = box.Color.R == 255 && box.Color.G == 255 && box.Color.B == 0;
-            
+
             var normalColor = box.Radius.Y <= 1 ? new Color3(255, 0, 0) : new Color3(255, 255, 255);
             var solidSideColor = new Color3(0, 255, 0);
             var flatColor = new Color3(0, 0, 255);
@@ -86,10 +87,10 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
             {
                 var p0 = corners[i0];
                 var p1 = corners[i1];
-                
+
                 // Determine color based on which face the edge belongs to
                 var edgeColor = normalColor;
-                
+
                 // If this box is selected, override all colors with yellow
                 if (isSelected)
                 {
@@ -118,7 +119,7 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
                     var flatP1 = new Vector3(p1.X, center.Y, p1.Z);
 
                     var angle = new Euler(AngleSingle.ZeroAngle, AngleSingle.FromDegrees(180 - box.Zy), AngleSingle.FromDegrees(180 - box.Xy));
-                    
+
                     // Rotate around center
                     var rotationMatrix = Matrix.CreateFromEuler(angle);
                     var translatedP0 = flatP0 - center;
@@ -133,29 +134,20 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
             }
         }
 
-        lineVertexBuffer = new VertexBuffer(GameSparker.GraphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None)
-        {
-            Name = "Collision Debug Mesh Vertex Buffer",
-            Tag = this
-        };
-        lineVertexBuffer.SetDataEXT(data);
-	    
-        lineIndexBuffer = new IndexBuffer(GameSparker.GraphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None)
-        {
-            Name = "Collision Debug Mesh Index Buffer",
-            Tag = this
-        };
-        lineIndexBuffer.SetDataEXT(indices);
-	    
+        var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
+        lineVertexBuffer = GameSparker.NewGraphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
+
+        var indexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(indices));
+        lineIndexBuffer = GameSparker.NewGraphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32), indexBytes);
+
         lineTriangleCount = indices.Count / 3;
         lineVertexCount = data.Count;
-        
-        lineInstanceBuffer = new DynamicVertexBuffer(GameSparker.GraphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.WriteOnly)
-        {
-            Name = "Collision Debug Mesh Instance Buffer",
-            Tag = this
-        };
-        lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);
+
+        lineInstanceBuffer = GameSparker.NewGraphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, InstanceData.Stride),
+            MemoryMarshal.AsBytes((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]));
 
         #endregion
     }
@@ -168,52 +160,48 @@ public sealed class CollisionDebugMesh : GameObject, IDisposable, IImmediateRend
     /// <summary>
     /// Legacy immediate render path for editor usage.
     /// </summary>
-    public void Render(Camera camera, Lighting? lighting)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting)
     {
         if (lighting?.IsCreateShadowMap == true || !GameSparker.devRenderTrackers) return;
         if (lineInstanceBuffer == null || lineVertexBuffer == null || lineIndexBuffer == null) return;
 
-        lineInstanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]);
+        cb.UpdateBuffer(lineInstanceBuffer, MemoryMarshal.AsBytes((ReadOnlySpan<InstanceData>)[new InstanceData(MatrixWorld)]));
 
-        GameSparker.GraphicsDevice.SetVertexBuffers(lineVertexBuffer, new VertexBufferBinding(lineInstanceBuffer, 0, 1));
-        GameSparker.GraphicsDevice.Indices = lineIndexBuffer;
+        var p = Effects.LineParameters;
 
-        Effects.Line.SnapColor?.SetValue(new Color3(100, 100, 100));
-        Effects.Line.IsFullbright?.SetValue(true);
-        Effects.Line.UseBaseColor?.SetValue(false);
-        Effects.Line.BaseColor?.SetValue(new Vector3(0, 0, 0));
-        Effects.Line.ChargedBlinkAmount?.SetValue(0.0f);
-        Effects.Line.HalfThickness?.SetValue(World.OutlineThickness);
+        cb.SetPipeline(Effects.LinePipeline);
+        cb.SetVertexBuffer(0, lineVertexBuffer, LineMesh.LineMeshVertexAttribute.Stride);
+        cb.SetVertexBuffer(1, lineInstanceBuffer, InstanceData.Stride);
+        cb.SetIndexBuffer(lineIndexBuffer);
+
+        p.SnapColor.SetValue(cb, new Color3(100, 100, 100));
+        p.IsFullbright.SetValue(cb, true);
+        p.UseBaseColor.SetValue(cb, false);
+        p.BaseColor.SetValue(cb, new Vector3(0, 0, 0));
+        p.ChargedBlinkAmount.SetValue(cb, 0.0f);
+        p.HalfThickness.SetValue(cb, World.OutlineThickness);
 
         // Collision debug lines are editor/debug overlays, so gameplay outline modes must not hide them.
-        LineEffectDistantOutlineSettings.Apply(DistantOutlineBehavior.AlwaysRender);
+        LineEffectDistantOutlineSettings.Apply(cb, DistantOutlineBehavior.AlwaysRender);
 
-        Effects.Line.LightDirection?.SetValue(World.LightDirection);
-        Effects.Line.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        Effects.Line.FogDistance?.SetValue(World.FadeFrom);
-        Effects.Line.FogLogDensity?.SetValue(World.FogLogDensity);
-        Effects.Line.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        Effects.Line.DepthBias?.SetValue(0.00005f);
-        Effects.Line.Alpha?.SetValue(1f);
+        p.LightDirection.SetValue(cb, World.LightDirection);
+        p.FogColor.SetValue(cb, (Vector3)World.Fog.Snap(World.Snap));
+        p.FogDistance.SetValue(cb, World.FadeFrom);
+        p.FogLogDensity.SetValue(cb, World.FogLogDensity);
+        p.EnvironmentLight.SetValue(cb, new Vector2(World.BlackPoint, World.WhitePoint));
+        p.DepthBias.SetValue(cb, 0.00005f);
+        p.Alpha.SetValue(cb, 1f);
 
-        Effects.Line.View?.SetValue(camera.ViewMatrix);
-        Effects.Line.Projection?.SetValue(camera.ProjectionMatrix);
-        Effects.Line.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        Effects.Line.CameraPosition?.SetValue(camera.Position);
+        p.View.SetValue(cb, camera.ViewMatrix);
+        p.Projection.SetValue(cb, camera.ProjectionMatrix);
+        p.ViewProj.SetValue(cb, camera.ViewMatrix * camera.ProjectionMatrix);
+        p.CameraPosition.SetValue(cb, camera.Position);
 
-        Effects.Line.CurrentTechnique = Effects.Line.Techniques["Basic"];
+        p.Expand.SetValue(cb, false);
+        p.Darken.SetValue(cb, 1.0f);
+        p.RandomFloat.SetValue(cb, URandom.Single());
 
-        Effects.Line.Expand?.SetValue(false);
-        Effects.Line.Darken?.SetValue(1.0f);
-        Effects.Line.RandomFloat?.SetValue(URandom.Single());
-
-        GameSparker.GraphicsDevice.RasterizerState = RasterizerState.CullNone;
-        foreach (var pass in Effects.Line.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-            GameSparker.GraphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, lineVertexCount, 0, lineTriangleCount, 1);
-        }
-        GameSparker.GraphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+        cb.DrawIndexedInstanced(baseVertex: 0, startIndex: 0, primitiveCount: lineTriangleCount, instanceCount: 1);
     }
 
     public override void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)

@@ -16,6 +16,11 @@ public readonly record struct BlendStateDesc(
 {
     public static readonly BlendStateDesc Opaque = new(Enabled: false);
     public static readonly BlendStateDesc AlphaBlend = new(Enabled: true, SourceColor: BlendFactor.One, DestinationColor: BlendFactor.InverseSourceAlpha);
+
+    /// <summary>Matches XNA's <c>BlendState.NonPremultiplied</c> - for straight (non-premultiplied) alpha, as opposed to <see cref="AlphaBlend"/>'s premultiplied-alpha assumption.</summary>
+    public static readonly BlendStateDesc NonPremultiplied = new(Enabled: true,
+        SourceColor: BlendFactor.SourceAlpha, DestinationColor: BlendFactor.InverseSourceAlpha,
+        SourceAlpha: BlendFactor.SourceAlpha, DestinationAlpha: BlendFactor.InverseSourceAlpha);
 }
 
 public enum CompareFunction { Always, Never, Less, LessEqual, Equal, NotEqual, GreaterEqual, Greater }
@@ -25,7 +30,15 @@ public readonly record struct DepthStencilStateDesc(
     bool DepthWriteEnabled = true,
     CompareFunction DepthCompare = CompareFunction.LessEqual)
 {
-    public static readonly DepthStencilStateDesc Default = new();
+    // NOTE: every argument is spelled out rather than using `new()`. For a struct, `new()` binds to
+    // the implicit parameterless (zeroing) constructor, NOT to the primary constructor with its
+    // default arguments - so `Default = new()` silently yields (false, false, Always), i.e. depth
+    // testing *and* writing switched OFF on every pipeline that used it.
+    public static readonly DepthStencilStateDesc Default = new(
+        DepthTestEnabled: true,
+        DepthWriteEnabled: true,
+        DepthCompare: CompareFunction.LessEqual);
+
     public static readonly DepthStencilStateDesc None = new(DepthTestEnabled: false, DepthWriteEnabled: false);
 }
 
@@ -36,7 +49,8 @@ public readonly record struct RasterizerStateDesc(
     CullMode CullMode = CullMode.Back,
     FillMode FillMode = FillMode.Solid)
 {
-    public static readonly RasterizerStateDesc Default = new();
+    /// <summary>XNA's <c>RasterizerState.CullCounterClockwise</c> - see <see cref="DepthStencilStateDesc.Default"/> for why the arguments are spelled out instead of <c>new()</c>.</summary>
+    public static readonly RasterizerStateDesc Default = new(CullMode: CullMode.Back, FillMode: FillMode.Solid);
 }
 
 /// <summary>
@@ -50,6 +64,13 @@ public readonly record struct RasterizerStateDesc(
 /// but hardware-instanced draws bind a second, per-instance stream at slot 1 with its own
 /// <see cref="VertexLayoutDesc.InstanceStepRate"/>.
 /// </summary>
+/// <param name="TechniqueName">
+/// Selects which named technique of the underlying Effect blob this pipeline binds to
+/// (null = the first technique in the file). Most shaders only declare one technique, so
+/// this can be left null; shaders with more than one (e.g. Poly.fx's "CreateShadowMap" vs.
+/// "Basic") need a separate <see cref="IPipelineState"/> per technique, each created with its
+/// own <see cref="TechniqueName"/>.
+/// </param>
 public readonly record struct PipelineDesc(
     IShaderModule VertexShader,
     IShaderModule PixelShader,
@@ -57,7 +78,8 @@ public readonly record struct PipelineDesc(
     BlendStateDesc BlendState,
     DepthStencilStateDesc DepthStencilState,
     RasterizerStateDesc RasterizerState,
-    PrimitiveTopology Topology = PrimitiveTopology.TriangleList);
+    PrimitiveTopology Topology = PrimitiveTopology.TriangleList,
+    string? TechniqueName = null);
 
 public interface IPipelineState : IDisposable
 {

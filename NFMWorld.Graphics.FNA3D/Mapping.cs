@@ -5,7 +5,7 @@ namespace NFMWorld.Graphics.FNA3D;
 /// <summary>Translates NFMWorld.Graphics abstraction enums to/from FNA3D's native enums.</summary>
 internal static class Mapping
 {
-    public static FNA3D_SurfaceFormat ToNative(TextureFormat format) => format switch
+    public static FNA3D_SurfaceFormat ToNative(this TextureFormat format) => format switch
     {
         TextureFormat.Rgba8 => FNA3D_SurfaceFormat.Color,
         TextureFormat.Bgra8 => FNA3D_SurfaceFormat.ColorBgraEXT,
@@ -14,29 +14,29 @@ internal static class Mapping
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
 
-    public static FNA3D_DepthFormat ToNativeDepthFormat(TextureFormat format) => format switch
+    public static FNA3D_DepthFormat ToNativeDepthFormat(this TextureFormat format) => format switch
     {
         TextureFormat.Depth24Stencil8 => FNA3D_DepthFormat.Depth24Stencil8,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "Not a depth format."),
     };
 
-    public static FNA3D_BufferUsage ToNativeBufferUsage(BufferUsage usage) => usage switch
+    public static FNA3D_BufferUsage ToNativeBufferUsage(this BufferUsage usage) => usage switch
     {
         BufferUsage.Immutable => FNA3D_BufferUsage.WriteOnly,
         BufferUsage.Dynamic => FNA3D_BufferUsage.WriteOnly,
         _ => throw new ArgumentOutOfRangeException(nameof(usage), usage, null),
     };
 
-    public static byte ToDynamicFlag(BufferUsage usage) => usage == BufferUsage.Dynamic ? (byte)1 : (byte)0;
+    public static byte ToDynamicFlag(this BufferUsage usage) => usage == BufferUsage.Dynamic ? (byte)1 : (byte)0;
 
-    public static FNA3D_IndexElementSize ToNative(IndexFormat format) => format switch
+    public static FNA3D_IndexElementSize ToNative(this IndexFormat format) => format switch
     {
         IndexFormat.UInt16 => FNA3D_IndexElementSize.SixteenBits,
         IndexFormat.UInt32 => FNA3D_IndexElementSize.ThirtyTwoBits,
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, null),
     };
 
-    public static FNA3D_PrimitiveType ToNative(PrimitiveTopology topology) => topology switch
+    public static FNA3D_PrimitiveType ToNative(this PrimitiveTopology topology) => topology switch
     {
         PrimitiveTopology.TriangleList => FNA3D_PrimitiveType.TriangleList,
         PrimitiveTopology.TriangleStrip => FNA3D_PrimitiveType.TriangleStrip,
@@ -46,7 +46,7 @@ internal static class Mapping
         _ => throw new ArgumentOutOfRangeException(nameof(topology), topology, null),
     };
 
-    public static FNA3D_ClearOptions ToNative(ClearOptions options)
+    public static FNA3D_ClearOptions ToNative(this ClearOptions options)
     {
         FNA3D_ClearOptions result = 0;
         if (options.HasFlag(ClearOptions.Color)) result |= FNA3D_ClearOptions.Target;
@@ -55,14 +55,14 @@ internal static class Mapping
         return result;
     }
 
-    public static FNA3D_TextureFilter ToNative(TextureFilter filter) => filter switch
+    public static FNA3D_TextureFilter ToNative(this TextureFilter filter) => filter switch
     {
         TextureFilter.Point => FNA3D_TextureFilter.Point,
         TextureFilter.Linear => FNA3D_TextureFilter.Linear,
         _ => throw new ArgumentOutOfRangeException(nameof(filter), filter, null),
     };
 
-    public static FNA3D_TextureAddressMode ToNative(TextureAddressMode mode) => mode switch
+    public static FNA3D_TextureAddressMode ToNative(this TextureAddressMode mode) => mode switch
     {
         TextureAddressMode.Wrap => FNA3D_TextureAddressMode.Wrap,
         TextureAddressMode.Clamp => FNA3D_TextureAddressMode.Clamp,
@@ -70,7 +70,7 @@ internal static class Mapping
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
     };
 
-    public static FNA3D_Blend ToNative(BlendFactor factor) => factor switch
+    public static FNA3D_Blend ToNative(this BlendFactor factor) => factor switch
     {
         BlendFactor.Zero => FNA3D_Blend.Zero,
         BlendFactor.One => FNA3D_Blend.One,
@@ -81,7 +81,7 @@ internal static class Mapping
         _ => throw new ArgumentOutOfRangeException(nameof(factor), factor, null),
     };
 
-    public static FNA3D_BlendFunction ToNative(BlendOperation op) => op switch
+    public static FNA3D_BlendFunction ToNative(this BlendOperation op) => op switch
     {
         BlendOperation.Add => FNA3D_BlendFunction.Add,
         BlendOperation.Subtract => FNA3D_BlendFunction.Subtract,
@@ -91,7 +91,7 @@ internal static class Mapping
         _ => throw new ArgumentOutOfRangeException(nameof(op), op, null),
     };
 
-    public static FNA3D_CompareFunction ToNative(CompareFunction fn) => fn switch
+    public static FNA3D_CompareFunction ToNative(this CompareFunction fn) => fn switch
     {
         CompareFunction.Always => FNA3D_CompareFunction.Always,
         CompareFunction.Never => FNA3D_CompareFunction.Never,
@@ -104,7 +104,7 @@ internal static class Mapping
         _ => throw new ArgumentOutOfRangeException(nameof(fn), fn, null),
     };
 
-    public static FNA3D_CullMode ToNative(CullMode mode) => mode switch
+    public static FNA3D_CullMode ToNative(this CullMode mode) => mode switch
     {
         CullMode.None => FNA3D_CullMode.None,
         CullMode.Front => FNA3D_CullMode.CullClockwiseFace,
@@ -112,34 +112,34 @@ internal static class Mapping
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
     };
 
-    public static FNA3D_FillMode ToNative(FillMode mode) => mode switch
+    public static FNA3D_FillMode ToNative(this FillMode mode) => mode switch
     {
         FillMode.Solid => FNA3D_FillMode.Solid,
         FillMode.Wireframe => FNA3D_FillMode.WireFrame,
         _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null),
     };
 
-    public static FNA3D_BlendState ToNative(BlendStateDesc desc) => new()
+    public static FNA3D_BlendState ToNative(this BlendStateDesc desc) => new()
     {
-        colorSourceBlend = ToNative(desc.SourceColor),
-        colorDestinationBlend = ToNative(desc.DestinationColor),
-        colorBlendFunction = ToNative(desc.ColorOperation),
-        alphaSourceBlend = ToNative(desc.SourceAlpha),
-        alphaDestinationBlend = ToNative(desc.DestinationAlpha),
-        alphaBlendFunction = ToNative(desc.AlphaOperation),
+        colorSourceBlend = desc.SourceColor.ToNative(),
+        colorDestinationBlend = desc.DestinationColor.ToNative(),
+        colorBlendFunction = desc.ColorOperation.ToNative(),
+        alphaSourceBlend = desc.SourceAlpha.ToNative(),
+        alphaDestinationBlend = desc.DestinationAlpha.ToNative(),
+        alphaBlendFunction = desc.AlphaOperation.ToNative(),
         colorWriteEnable = FNA3D_ColorWriteChannels.All,
         colorWriteEnable1 = FNA3D_ColorWriteChannels.All,
         colorWriteEnable2 = FNA3D_ColorWriteChannels.All,
         colorWriteEnable3 = FNA3D_ColorWriteChannels.All,
-        blendFactor = new FNA3D_Color { R = 255, G = 255, B = 255, A = 255 },
+        blendFactor = new FNA3D_Color(255, 255, 255, 255),
         multiSampleMask = -1,
     };
 
-    public static FNA3D_DepthStencilState ToNative(DepthStencilStateDesc desc) => new()
+    public static FNA3D_DepthStencilState ToNative(this DepthStencilStateDesc desc) => new()
     {
         depthBufferEnable = (byte)(desc.DepthTestEnabled ? 1 : 0),
         depthBufferWriteEnable = (byte)(desc.DepthWriteEnabled ? 1 : 0),
-        depthBufferFunction = ToNative(desc.DepthCompare),
+        depthBufferFunction = desc.DepthCompare.ToNative(),
         stencilFunction = FNA3D_CompareFunction.Always,
         ccwStencilFunction = FNA3D_CompareFunction.Always,
         stencilPass = FNA3D_StencilOperation.Keep,
@@ -148,17 +148,18 @@ internal static class Mapping
         ccwStencilPass = FNA3D_StencilOperation.Keep,
         ccwStencilFail = FNA3D_StencilOperation.Keep,
         ccwStencilDepthBufferFail = FNA3D_StencilOperation.Keep,
-        stencilMask = -1,
-        stencilWriteMask = -1,
+        stencilMask = int.MaxValue,
+        stencilWriteMask = int.MaxValue,
+        referenceStencil = 0,
     };
 
-    public static FNA3D_RasterizerState ToNative(RasterizerStateDesc desc) => new()
+    public static FNA3D_RasterizerState ToNative(this RasterizerStateDesc desc) => new()
     {
-        cullMode = ToNative(desc.CullMode),
-        fillMode = ToNative(desc.FillMode),
+        cullMode = desc.CullMode.ToNative(),
+        fillMode = desc.FillMode.ToNative(),
     };
 
-    public static FNA3D_VertexElementFormat ToNative(VertexAttributeFormat format) => format switch
+    public static FNA3D_VertexElementFormat ToNative(this VertexAttributeFormat format) => format switch
     {
         VertexAttributeFormat.Float1 => FNA3D_VertexElementFormat.Single,
         VertexAttributeFormat.Float2 => FNA3D_VertexElementFormat.Vector2,
@@ -173,7 +174,7 @@ internal static class Mapping
     /// any trailing digits (the usage index, e.g. the "1" in "TEXCOORD1") belong in
     /// <see cref="VertexAttributeDesc.Slot"/> instead and are ignored here.
     /// </summary>
-    public static FNA3D_VertexElementUsage ToNativeVertexUsage(string semantic) => semantic.TrimEnd("0123456789".ToCharArray()).ToUpperInvariant() switch
+    public static FNA3D_VertexElementUsage ToNativeVertexUsage(string semantic) => semantic.TrimEnd('0', '1', '2', '3', '4', '5', '6', '7', '8', '9').ToUpperInvariant() switch
     {
         "POSITION" or "SV_POSITION" => FNA3D_VertexElementUsage.Position,
         "COLOR" => FNA3D_VertexElementUsage.Color,

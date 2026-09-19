@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 
 namespace NFMWorld;
@@ -16,28 +17,28 @@ public class Chips : IDisposable, IImmediateRenderElement
         public Vector3 Velocity;
         public Color3 Color;
     }
-    
+
     private readonly CarVisual _car;
-    private readonly GraphicsDevice _graphicsDevice;
-    
+    private readonly IGraphicsDevice _graphicsDevice;
+
     private Chip[] _chips;
-    private readonly VertexPositionColor[] _triangles;
+    private readonly PositionColorVertex[] _triangles;
     private int _triangleCount;
 
-    private DynamicVertexBuffer _triangleBuffer;
+    // Upload happens in Render() rather than GameTick() - see Sparks.cs's identical pattern for why.
+    private bool _dirty;
+    private readonly IBuffer _triangleBuffer;
 
-    public Chips(CarVisual car, GraphicsDevice graphicsDevice)
+    public Chips(CarVisual car, IGraphicsDevice graphicsDevice)
     {
         _car = car;
         _graphicsDevice = graphicsDevice;
         _chips = new Chip[_car.Mesh.Polys.Length];
-        
-        _triangles = new VertexPositionColor[3 * _car.Mesh.Polys.Length];
-        _triangleBuffer = new DynamicVertexBuffer(_graphicsDevice, VertexPositionColor.VertexDeclaration, _triangles.Length, BufferUsage.WriteOnly)
-        {
-            Name = "Chips Vertex Buffer"
-        };
-        _triangleBuffer.SetDataEXT(_triangles, SetDataOptions.Discard);
+
+        _triangles = new PositionColorVertex[3 * _car.Mesh.Polys.Length];
+        var maxBytes = _triangles.Length * PositionColorVertex.Stride;
+        _triangleBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxBytes), new byte[maxBytes]);
     }
 
     public void GameTick()
@@ -123,11 +124,11 @@ public class Chips : IDisposable, IImmediateRenderElement
 
                 // NFMM doesn't have this but it looks much better with it
                 chip.Color = chip.Color.Snap(World.Snap);
-            
-                var chipXnaColor = ((Color)chip.Color).ToXna();
-                _triangles[tri++] = new VertexPositionColor(chip.V0, chipXnaColor);
-                _triangles[tri++] = new VertexPositionColor(chip.V1, chipXnaColor);
-                _triangles[tri++] = new VertexPositionColor(chip.V2, chipXnaColor);
+
+                var chipColor = (Color)chip.Color;
+                _triangles[tri++] = new PositionColorVertex(chip.V0, chipColor);
+                _triangles[tri++] = new PositionColorVertex(chip.V1, chipColor);
+                _triangles[tri++] = new PositionColorVertex(chip.V2, chipColor);
                 _triangleCount++;
 
                 chip.State++;
@@ -137,34 +138,33 @@ public class Chips : IDisposable, IImmediateRenderElement
                 }
             }
         }
-        
+
         if (_triangleCount > 0)
         {
-            _triangleBuffer.SetDataEXT(_triangles.AsSpan(0, _triangleCount * 3), SetDataOptions.Discard);
+            _dirty = true;
         }
     }
 
-    public void Render(Camera camera, Lighting? _)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
         if (_triangleCount == 0) return;
 
-        Effects.Chip.World = _car.MatrixWorld;
-        Effects.Chip.View = camera.ViewMatrix;
-        Effects.Chip.Projection = camera.ProjectionMatrix;
-        
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        _graphicsDevice.SetVertexBuffer(_triangleBuffer);
-        foreach (var pass in Effects.Chip.CurrentTechnique.Passes)
+        if (_dirty)
         {
-            pass.Apply();
-
-            _graphicsDevice.DrawPrimitives(
-                PrimitiveType.TriangleList,
-                0,
-                _triangleCount
-            );
+            cb.UpdateBuffer(_triangleBuffer, MemoryMarshal.AsBytes(_triangles.AsSpan(0, _triangleCount * 3)));
+            _dirty = false;
         }
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+
+        var p = Effects.ParticleParameters;
+
+        cb.SetPipeline(Effects.ParticleOpaquePipeline);
+        cb.SetVertexBuffer(0, _triangleBuffer, PositionColorVertex.Stride);
+
+        p.World.SetValue(cb, _car.MatrixWorld);
+        p.View.SetValue(cb, camera.ViewMatrix);
+        p.Projection.SetValue(cb, camera.ProjectionMatrix);
+
+        cb.Draw(startVertex: 0, primitiveCount: _triangleCount);
     }
 
     public void AddChip(int polyIdx, float breakFactor)

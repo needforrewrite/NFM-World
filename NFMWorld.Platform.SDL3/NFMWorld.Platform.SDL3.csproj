@@ -10,8 +10,13 @@
 
     <ItemGroup>
         <!-- FNA's own vendored SDL3-CS (not the unrelated NuGet package of the same name) -
-             kept for its marshaling style, matching what FNA's SDL3_FNAPlatform.cs itself uses. -->
-        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" />
+             kept for its marshaling style, matching what FNA's SDL3_FNAPlatform.cs itself uses.
+             Aliased (not under the default "global" alias) because consumers of this project - in
+             particular nfm-world, which still references FNA transitively via NvgSharp.FNA.Core
+             for its 2D UI until Milestone 5 Stage C - would otherwise see this project's copy of
+             the SDL3.SDL type collide (CS0433) with FNA's own private, separately-compiled copy of
+             the same type. Everything in this project that needs it uses "extern alias SDL3New". -->
+        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
         <ProjectReference Include="..\NFMWorld.Library\NFMWorld.Library.csproj" />
     </ItemGroup>
 

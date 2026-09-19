@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Util;
 using NFMWorld.Sentry;
@@ -9,7 +10,7 @@ namespace NFMWorld;
 public class Sparks : IDisposable, IImmediateRenderElement
 {
     private readonly CarVisual _visual;
-    private readonly GraphicsDevice _graphicsDevice;
+    private readonly IGraphicsDevice _graphicsDevice;
 
     internal int Sprk;
     private int _sprkat;
@@ -26,49 +27,41 @@ public class Sparks : IDisposable, IImmediateRenderElement
     private float[] _vrx = new float[100];
     private float[] _vry = new float[100];
     private float[] _vrz = new float[100];
-    
+
     private LineMesh.LineMeshVertexAttribute[] _lineVertices = new LineMesh.LineMeshVertexAttribute[100 * LineMeshHelpers.VerticesPerLine];
     private int[] _lineIndices = new int[100 * LineMeshHelpers.IndicesPerLine];
     private int _vertexCount;
     private int _triangleCount;
     private int _sparkCount;
-    private readonly DynamicVertexBuffer _vertexBuffer;
-    private readonly DynamicIndexBuffer _indexBuffer;
-    private readonly VertexBuffer _instanceBuffer;
+    // Upload happens in Render() rather than GameTick(): ICommandBuffer.UpdateBuffer needs a live
+    // command buffer, which only exists during the draw pass - GameTick() runs outside of it. The
+    // CPU-side arrays above are still built during GameTick() as before; _dirty just defers the
+    // GPU upload to the next Render() call.
+    private bool _dirty;
+    private readonly IBuffer _vertexBuffer;
+    private readonly IBuffer _indexBuffer;
+    private readonly IBuffer _instanceBuffer;
 
-    public Sparks(BackendCar car, CarVisual visual, GraphicsDevice graphicsDevice)
+    public Sparks(BackendCar car, CarVisual visual, IGraphicsDevice graphicsDevice)
     {
         _visual = visual;
         _graphicsDevice = graphicsDevice;
 
         _sprkat = car.Wheels[0].Sparkat;
 
-        _vertexBuffer = new DynamicVertexBuffer(graphicsDevice, LineMesh.LineMeshVertexAttribute.VertexDeclaration,
-            100 * LineMeshHelpers.VerticesPerLine, BufferUsage.WriteOnly)
-        {
-            Name = "Sparks Vertex Buffer",
-            Tag = this
-        };
-        _indexBuffer = new DynamicIndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits,
-            100 * LineMeshHelpers.IndicesPerLine, BufferUsage.WriteOnly)
-        {
-            Name = "Sparks Index Buffer",
-            Tag = this
-        };
-        _instanceBuffer = new VertexBuffer(graphicsDevice, InstanceData.InstanceDeclaration, 1, BufferUsage.None)
-        {
-            Name = "Sparks Instance Buffer",
-            Tag = this
-        };
-        _instanceBuffer.SetDataEXT((ReadOnlySpan<InstanceData>)[new InstanceData(Matrix.Identity)]);
-
-        // Initialize GPU buffers with zeroed data to prevent rendering of uninitialized memory.
-        // DynamicVertexBuffer/DynamicIndexBuffer created with WriteOnly do not guarantee
-        // zeroed backing storage on all GPU drivers.
-        _vertexBuffer.SetDataEXT(_lineVertices.AsSpan(0, 8), SetDataOptions.Discard);
-        _indexBuffer.SetDataEXT(_lineIndices.AsSpan(0, 12), SetDataOptions.Discard);
+        // Zero-initialized (rather than left uninitialized) to prevent rendering garbage GPU
+        // memory before the first GameTick's upload.
+        var maxVertexBytes = 100 * LineMeshHelpers.VerticesPerLine * LineMesh.LineMeshVertexAttribute.Stride;
+        var maxIndexBytes = 100 * LineMeshHelpers.IndicesPerLine * sizeof(int);
+        _vertexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes), new byte[maxVertexBytes]);
+        _indexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt32), new byte[maxIndexBytes]);
+        _instanceBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, InstanceData.Stride),
+            MemoryMarshal.AsBytes((ReadOnlySpan<InstanceData>)[new InstanceData(Matrix.Identity)]));
     }
-    
+
     ~Sparks()
     {
         Dispose(false);
@@ -138,7 +131,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 }
             }
         }
-        
+
         if (_sparkCount == 0)
         {
             // Fast exit if no sparks are active
@@ -242,7 +235,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                     // Logging.Info(
                     //     $"Sparks: near-degenerate line at slot {i} | " +
                     //     $"lenSq={lineLenSq:F4} start=({start.X:F2},{start.Y:F2},{start.Z:F2}) end=({end.X:F2},{end.Y:F2},{end.Z:F2})");
-                    
+
                     SentrySdk.CaptureMessage(
                         $"Sparks: near-degenerate line at slot {i} | " +
                         $"lenSq={lineLenSq:F4} start=({start.X:F2},{start.Y:F2},{start.Z:F2}) end=({end.X:F2},{end.Y:F2},{end.Z:F2})",
@@ -256,7 +249,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                     // Logging.Info(
                     //     $"Sparks: dark/black spark at slot {i} | " +
                     //     $"rtg={_rtg[i]} green={greenChannel} color=({color.R},{color.G},{color.B})");
-                    
+
                     SentrySdk.CaptureMessage(
                         $"Sparks: dark/black spark at slot {i} | " +
                         $"rtg={_rtg[i]} green={greenChannel} color=({color.R},{color.G},{color.B})",
@@ -268,9 +261,9 @@ public class Sparks : IDisposable, IImmediateRenderElement
                     // Console.WriteLine("Degenerate line!!!");
                     continue;
                 }
-                
+
                 // TODO apply fog to color
-                
+
                 // draw line
                 LineMeshHelpers.CreateLineMesh(start, end, _vertexCount, default, default, color, 0f, verts, inds);
 
@@ -291,7 +284,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
                 }
                 _vertexCount += LineMeshHelpers.VerticesPerLine;
                 _triangleCount += LineMeshHelpers.IndicesPerLine / 3;
-                
+
                 _vrx[i] *= 0.8F;
                 _vry[i] *= 0.8F;
                 _vrz[i] *= 0.8F;
@@ -309,52 +302,58 @@ public class Sparks : IDisposable, IImmediateRenderElement
 
         if (_vertexCount > 0 && _triangleCount > 0)
         {
-            _vertexBuffer.SetDataEXT(_lineVertices.AsSpan(0, _vertexCount), SetDataOptions.Discard);
-            _indexBuffer.SetDataEXT(_lineIndices.AsSpan(0, _triangleCount * 3), SetDataOptions.Discard);
+            _dirty = true;
         }
         Sprk = 0;
     }
 
-    public void Render(Camera camera, Lighting? _)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
         if (_vertexCount == 0 || _triangleCount == 0) return;
-        
-        _graphicsDevice.SetVertexBuffers(_vertexBuffer, new VertexBufferBinding(_instanceBuffer, 0, 1));
-        _graphicsDevice.Indices = _indexBuffer;
 
-        // If a parameter is null that means the HLSL compiler optimized it out.
-        Effects.Line.SnapColor?.SetValue((Vector3)new Color3(100, 100, 100));
-        Effects.Line.IsFullbright?.SetValue(true);
-        Effects.Line.UseBaseColor?.SetValue(false);
-        Effects.Line.BaseColor?.SetValue(new Vector3(0, 0, 0));
-        Effects.Line.ChargedBlinkAmount?.SetValue(0.0f);
-        Effects.Line.HalfThickness?.SetValue(World.OutlineThickness);
+        if (_dirty)
+        {
+            cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_lineVertices.AsSpan(0, _vertexCount)));
+            cb.UpdateBuffer(_indexBuffer, MemoryMarshal.AsBytes(_lineIndices.AsSpan(0, _triangleCount * 3)));
+            _dirty = false;
+        }
+
+        var p = Effects.LineParameters;
+
+        cb.SetPipeline(Effects.LinePipeline);
+        cb.SetVertexBuffer(0, _vertexBuffer, LineMesh.LineMeshVertexAttribute.Stride);
+        cb.SetVertexBuffer(1, _instanceBuffer, InstanceData.Stride);
+        cb.SetIndexBuffer(_indexBuffer);
+
+        // If a parameter's slot is -1 that means the HLSL compiler optimized it out.
+        p.SnapColor.SetValue(cb, (Vector3)new Color3(100, 100, 100));
+        p.IsFullbright.SetValue(cb, true);
+        p.UseBaseColor.SetValue(cb, false);
+        p.BaseColor.SetValue(cb, new Vector3(0, 0, 0));
+        p.ChargedBlinkAmount.SetValue(cb, 0.0f);
+        p.HalfThickness.SetValue(cb, World.OutlineThickness);
 
         // Spark segments are effects rather than mesh outlines, so gameplay outline modes must not hide them.
-        LineEffectDistantOutlineSettings.Apply(DistantOutlineBehavior.AlwaysRender);
+        LineEffectDistantOutlineSettings.Apply(cb, DistantOutlineBehavior.AlwaysRender);
 
-        Effects.Line.LightDirection?.SetValue(World.LightDirection);
-        Effects.Line.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        Effects.Line.FogDistance?.SetValue(World.FadeFrom);
-        Effects.Line.FogLogDensity?.SetValue(World.FogLogDensity);
-        Effects.Line.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        Effects.Line.DepthBias?.SetValue(0.00005f);
-        Effects.Line.Alpha?.SetValue(1f);
+        p.LightDirection.SetValue(cb, World.LightDirection);
+        p.FogColor.SetValue(cb, (Vector3)World.Fog.Snap(World.Snap));
+        p.FogDistance.SetValue(cb, World.FadeFrom);
+        p.FogLogDensity.SetValue(cb, World.FogLogDensity);
+        p.EnvironmentLight.SetValue(cb, new Vector2(World.BlackPoint, World.WhitePoint));
+        p.DepthBias.SetValue(cb, 0.00005f);
+        p.Alpha.SetValue(cb, 1f);
 
-        Effects.Line.View?.SetValue(camera.ViewMatrix);
-        Effects.Line.Projection?.SetValue(camera.ProjectionMatrix);
-        Effects.Line.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        Effects.Line.CameraPosition?.SetValue(camera.Position);
+        p.View.SetValue(cb, camera.ViewMatrix);
+        p.Projection.SetValue(cb, camera.ProjectionMatrix);
+        p.ViewProj.SetValue(cb, camera.ViewMatrix * camera.ProjectionMatrix);
+        p.CameraPosition.SetValue(cb, camera.Position);
 
-        Effects.Line.CurrentTechnique = Effects.Line.Techniques["Basic"];
+        p.Expand.SetValue(cb, false);
+        p.Darken.SetValue(cb, 1.0f);
+        p.RandomFloat.SetValue(cb, URandom.Single());
 
-        Effects.Line.Expand?.SetValue(false);
-        Effects.Line.Darken?.SetValue(1.0f);
-        Effects.Line.RandomFloat?.SetValue(URandom.Single());
-
-        Effects.Line.Resolution?.SetValue(new Vector2(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height));
-
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
+        p.Resolution.SetValue(cb, new Vector2(_graphicsDevice.Swapchain.Width, _graphicsDevice.Swapchain.Height));
 
 #if DEBUG
         // Diagnostic: detect default (uninitialized) vertex colors reaching the GPU.
@@ -378,21 +377,7 @@ public class Sparks : IDisposable, IImmediateRenderElement
         }
 #endif
 
-        foreach (var pass in Effects.Line.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-
-            _graphicsDevice.DrawInstancedPrimitives(
-                PrimitiveType.TriangleList,
-                0,
-                0,
-                _vertexCount,
-                0,
-                _triangleCount,
-                1
-            );
-        }
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+        cb.DrawIndexedInstanced(baseVertex: 0, startIndex: 0, primitiveCount: _triangleCount, instanceCount: 1);
     }
 
     private void ReleaseUnmanagedResources()

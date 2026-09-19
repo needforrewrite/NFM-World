@@ -1,5 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Graphics;
+using NFMWorld.Shaders;
 using NFMWorldLibrary;
 
 namespace NFMWorld;
@@ -62,58 +65,92 @@ public class Lighting
 
     public Camera? CascadeLightCamera;
 
-    public void SetShadowMapParameters(Effect effect)
+    /// <summary>
+    /// Sets the shadow-related uniforms shared by every shader that samples the cascade shadow
+    /// maps, resolving each by name against <paramref name="reflection"/> the same way the
+    /// generated <c>*EffectParameters</c> types do (see <c>Shaders/Parameters.cs</c>'s doc comment).
+    /// </summary>
+    /// <remarks>
+    /// TODO(Milestone 5 Stage B follow-up): the ShadowMap0/1/2 texture bindings are not set here -
+    /// <c>NFMWorld.Graphics.FNA3D.MojoShaderEffectReflection</c> doesn't populate
+    /// <c>ShaderReflection.Textures</c>/<c>Samplers</c> yet (always empty lists), so there's no
+    /// slot to bind them against, and <see cref="WorldGame.RebuildCascades"/> (which would create
+    /// the actual shadow render targets) is itself still stubbed from Milestone 5 Stage A. Only the
+    /// scalar/matrix uniforms below are wired up.
+    /// </remarks>
+    public void SetShadowMapParameters(ICommandBuffer cb, ShaderReflection reflection)
     {
+        int SlotOf(string name)
+        {
+            foreach (var uniform in reflection.Uniforms)
+            {
+                if (uniform.Name == name) return uniform.Offset;
+            }
+            return -1;
+        }
+
+        void SetMatrix(string name, Matrix m)
+        {
+            var slot = SlotOf(name);
+            if (slot < 0) return;
+            Span<float> v =
+            [
+                m.M11, m.M12, m.M13, m.M14,
+                m.M21, m.M22, m.M23, m.M24,
+                m.M31, m.M32, m.M33, m.M34,
+                m.M41, m.M42, m.M43, m.M44,
+            ];
+            cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
+        }
+
+        void SetInt(string name, int value)
+        {
+            var slot = SlotOf(name);
+            if (slot < 0) return;
+            Span<int> v = [value];
+            cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
+        }
+
+        void SetFloat3(string name, Vector3 value)
+        {
+            var slot = SlotOf(name);
+            if (slot < 0) return;
+            Span<float> v = [value.X, value.Y, value.Z];
+            cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
+        }
+
         if (LightCameras.Count > 0)
         {
-            effect.Parameters["LightViewProj0"]?.SetValue(LightCameras[0].ViewProjectionMatrix);
+            SetMatrix("LightViewProj0", LightCameras[0].ViewProjectionMatrix);
         }
 
         if (LightCameras.Count > 1)
         {
-            effect.Parameters["LightViewProj1"]?.SetValue(LightCameras[1].ViewProjectionMatrix);
+            SetMatrix("LightViewProj1", LightCameras[1].ViewProjectionMatrix);
         }
 
         if (LightCameras.Count > 2)
         {
-            effect.Parameters["LightViewProj2"]?.SetValue(LightCameras[2].ViewProjectionMatrix);
+            SetMatrix("LightViewProj2", LightCameras[2].ViewProjectionMatrix);
         }
 
-        if (!IsCreateShadowMap)
+        // NumCascades gates shadow-map *sampling* in Mad.fxh's PS_IsShadowed. It must only be
+        // non-zero when the cascade textures are actually bound: this backend can't bind textures
+        // yet (see this method's remarks) and ShadowMaps is empty today, so leaving it at the
+        // pass's cascade count made every shader sample an unbound sampler - which D3D11 reads as
+        // 0, i.e. "the shadow map is empty, everything is in shadow" - halving the brightness of
+        // anything inside the light frustum (PS_ApplyShadowing) and flattening the whole scene.
+        var usableShadowMaps = 0;
+        for (var i = 0; i < ShadowMaps.Count && i < TotalCascades; i++)
         {
-            if (TotalCascades > 0)
+            if (ShadowMaps[i] is not null)
             {
-                effect.Parameters["ShadowMap0"]?.SetValue(ShadowMaps[0]);
-
-                if (TotalCascades > 1)
-                {
-                    effect.Parameters["ShadowMap1"]?.SetValue(ShadowMaps[1]);
-                    
-                    if (TotalCascades > 2)
-                    {
-                        effect.Parameters["ShadowMap2"]?.SetValue(ShadowMaps[2]);
-                    }
-                    else
-                    {
-                        effect.Parameters["ShadowMap2"]?.SetValue((Texture?)null);
-                    }
-                }
-                else
-                {
-                    effect.Parameters["ShadowMap1"]?.SetValue((Texture?)null);
-                    effect.Parameters["ShadowMap2"]?.SetValue((Texture?)null);
-                }
-            }
-            else
-            {
-                effect.Parameters["ShadowMap0"]?.SetValue((Texture?)null);
-                effect.Parameters["ShadowMap1"]?.SetValue((Texture?)null);
-                effect.Parameters["ShadowMap2"]?.SetValue((Texture?)null);
+                usableShadowMaps++;
             }
         }
-        
-        effect.Parameters["NumCascades"]?.SetValue(TotalCascades);
 
-        effect.Parameters["LightDirection"]?.SetValue(World.LightDirection);
+        SetInt("NumCascades", usableShadowMaps);
+
+        SetFloat3("LightDirection", World.LightDirection);
     }
 }

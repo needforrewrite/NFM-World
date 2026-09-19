@@ -1,6 +1,7 @@
-﻿using System.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
@@ -13,11 +14,11 @@ public class FixFlare : IDisposable, IImmediateRenderElement
 {
     private readonly BackendCar _car;
     private readonly CarVisual _visual;
-    private readonly GraphicsDevice _graphicsDevice;
+    private readonly IGraphicsDevice _graphicsDevice;
 
-    private readonly VertexPositionColor[] _verts = new VertexPositionColor[16];
+    private readonly PositionColorVertex[] _verts = new PositionColorVertex[16];
     private int _vertexCount;
-    private static readonly short[] Indices =
+    private static readonly ushort[] Indices =
     [
         // Outer octagon (verts 0-7)  — triangle fan → list
         0,1,2, 0,2,3, 0,3,4, 0,4,5, 0,5,6, 0,6,7,
@@ -25,26 +26,30 @@ public class FixFlare : IDisposable, IImmediateRenderElement
         8,9,10, 8,10,11, 8,11,12, 8,12,13, 8,13,14, 8,14,15
     ];
     private int _indexCount = 36;
-    private readonly DynamicVertexBuffer _vertexBuffer;
-    private readonly IndexBuffer _indexBuffer;
+    // Upload happens in Render() rather than SetFixFx() - see Sparks.cs's identical pattern for why.
+    private bool _dirty;
+    private readonly IBuffer _vertexBuffer;
+    private readonly IBuffer _indexBuffer;
 
-    public FixFlare(BackendCar car, CarVisual visual, GraphicsDevice graphicsDevice)
+    public FixFlare(BackendCar car, CarVisual visual, IGraphicsDevice graphicsDevice)
     {
         _car = car;
         _visual = visual;
         _graphicsDevice = graphicsDevice;
-        
-        _vertexBuffer = new DynamicVertexBuffer(graphicsDevice, VertexPositionColor.VertexDeclaration, 16, BufferUsage.WriteOnly);
-        _indexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.SixteenBits, 36, BufferUsage.WriteOnly);
-        _vertexBuffer.SetDataEXT(_verts);
-        _indexBuffer.SetDataEXT(Indices);
+
+        var maxVertexBytes = _verts.Length * PositionColorVertex.Stride;
+        _vertexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes), new byte[maxVertexBytes]);
+        _indexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, Indices.Length * sizeof(ushort), IndexFormat.UInt16),
+            MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)Indices));
     }
 
     public void DeleteFixFx()
     {
         _vertexCount = 0;
     }
-    
+
     public void SetFixFx(int fcnt)
     {
         // ──────────────────────────────────────────────────────
@@ -132,18 +137,18 @@ public class FixFlare : IDisposable, IImmediateRenderElement
             Math.Clamp((int)(255 + 255 * (World.Snap[2] / 350f)), 0, 255));
 
         // ──────────────────────────────────────────────────────
-        // Step 5: upload to vertex buffer
+        // Step 5: stage for upload (Render() does the actual GPU upload)
         // ──────────────────────────────────────────────────────
         for (int i = 0; i < 8; i++)
         {
-            _verts[i]     = new VertexPositionColor(outer[i], outerColor.ToXna());
-            _verts[i + 8] = new VertexPositionColor(inner[i], innerColor.ToXna());
+            _verts[i]     = new PositionColorVertex(outer[i], outerColor);
+            _verts[i + 8] = new PositionColorVertex(inner[i], innerColor);
         }
 
-        _vertexBuffer.SetDataEXT(_verts);
         _vertexCount = 16;
+        _dirty = true;
     }
-    
+
     /// <summary>
     /// Builds an 8-vertex octagon around `center` in the XY plane at center.Z.
     /// Matches the original vertex layout:
@@ -219,42 +224,34 @@ public class FixFlare : IDisposable, IImmediateRenderElement
         pt.Y = dx * sin + dy * cos;
     }
 
-    public void Render(Camera camera, Lighting? _)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
         if (_vertexCount == 0 || _indexCount == 0)
         {
             return;
         }
-        
-        Effects.Dust.World = Matrix.CreateBillboard(
+
+        if (_dirty)
+        {
+            cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_verts.AsSpan(0, _vertexCount)));
+            _dirty = false;
+        }
+
+        var p = Effects.ParticleParameters;
+
+        cb.SetPipeline(Effects.ParticleNoDepthPipeline);
+        cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
+        cb.SetIndexBuffer(_indexBuffer);
+
+        p.World.SetValue(cb, Matrix.CreateBillboard(
             (Vector3)_visual.Position,
             camera.Position,
             Vector3.Up,
-            null);
-        Effects.Dust.View = camera.ViewMatrix;
-        Effects.Dust.Projection = camera.ProjectionMatrix;
-        
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        _graphicsDevice.DepthStencilState = DepthStencilState.None;
-        _graphicsDevice.BlendState = BlendState.NonPremultiplied;
-        _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-        _graphicsDevice.Indices = _indexBuffer;
-        foreach (var pass in Effects.Dust.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-            
-            _graphicsDevice.DrawIndexedPrimitives(
-                PrimitiveType.TriangleList,
-                0,
-                0,
-                _vertexCount,
-                0,
-                _indexCount / 3
-            );
-        }
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
-        _graphicsDevice.BlendState = BlendState.Opaque;
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+            null));
+        p.View.SetValue(cb, camera.ViewMatrix);
+        p.Projection.SetValue(cb, camera.ProjectionMatrix);
+
+        cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: _indexCount / 3);
     }
 
     private void ReleaseUnmanagedResources()

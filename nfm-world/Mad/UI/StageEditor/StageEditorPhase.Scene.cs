@@ -23,15 +23,13 @@ public partial class StageEditorPhase
     {
         if (ActiveTab?.Stage == null || ActiveTab?.StageRenderer == null) return;
         
-        // Create scene with the stage renderer and all current wall meshes
-        var sceneObjects = new List<GameObject> { ActiveTab.StageRenderer };
-        sceneObjects.AddRange(ActiveTab.WallMeshes);
-        ActiveTab.Scene = new Scene(
-            _graphicsDevice,
-            sceneObjects,
-            activeCamera,
-            [] // No shadow cameras for now
-        );
+        // TODO(Milestone 5 Stage B follow-up): Scene now takes NFMWorld.Graphics.IGraphicsDevice,
+        // not FNA's GraphicsDevice - StageEditorPhase's own _graphicsDevice field (and its wider
+        // direct-GraphicsDevice usage) isn't converted yet, so this leaves ActiveTab.Scene null
+        // (its declared type is already nullable) rather than constructing a real Scene. Nothing
+        // exercises the stage editor today (GameSparker.Load isn't called - see WorldGame.cs's
+        // Stage A TODOs).
+        ActiveTab.Scene = null;
     }
     
     /// <summary>
@@ -86,8 +84,11 @@ public partial class StageEditorPhase
     private void RecreateEnvironment()
     {
         if (ActiveTab?.StageRenderer == null) return;
-        ActiveTab.StageRenderer.sky = new Sky(_graphicsDevice);
-        ActiveTab.StageRenderer.ground = new Ground(_graphicsDevice);
+        // TODO(Milestone 5 Stage B follow-up): _graphicsDevice here is still FNA's XNA-typed
+        // GraphicsDevice (StageEditorPhase is out of scope for this pass); Sky/Ground now take
+        // IGraphicsDevice. Not reached today since GameSparker.Load never runs.
+        ActiveTab.StageRenderer.sky = new Sky(GameSparker.NewGraphicsDevice);
+        ActiveTab.StageRenderer.ground = new Ground(GameSparker.NewGraphicsDevice);
         if (ActiveTab.PolysEnabled && ActiveTab.Stage != null)
         {
             if (_autoGeneratePolys)

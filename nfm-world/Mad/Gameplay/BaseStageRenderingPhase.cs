@@ -13,8 +13,6 @@ public abstract class BaseStageRenderingPhase : BasePhase
     protected int? FovOverride = null;
     public static bool DebugDisplay = false;
 
-    private readonly SpriteBatch _spriteBatch;
-
     public readonly GraphicsDevice GraphicsDevice;
 
     public PerspectiveCamera Camera = new();
@@ -33,7 +31,6 @@ public abstract class BaseStageRenderingPhase : BasePhase
     // please don't pass null except for stage select
     protected BaseStageRenderingPhase(GraphicsDevice graphicsDevice, string? stageName = null)
     {
-        _spriteBatch = new SpriteBatch(graphicsDevice);
         GraphicsDevice = graphicsDevice;
         StageName = stageName;
 
@@ -48,8 +45,8 @@ public abstract class BaseStageRenderingPhase : BasePhase
     {
         base.Enter();
 
-        Camera.Width = GameSparker.Game.GraphicsDevice.Viewport.Width;
-        Camera.Height = GameSparker.Game.GraphicsDevice.Viewport.Height;
+        Camera.Width = GameSparker.Game.Window.Width;
+        Camera.Height = GameSparker.Game.Window.Height;
 
         // Resume stage music that was paused by Exit().
         if (_stageMusic != null)
@@ -149,9 +146,9 @@ public abstract class BaseStageRenderingPhase : BasePhase
         CurrentStage?.GameTick();
     }
 
-    public override void Render(float alpha)
+    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
-        base.Render(alpha);
+        base.Render(cb, alpha);
 
         if (CurrentStage == null)
             return;
@@ -164,18 +161,12 @@ public abstract class BaseStageRenderingPhase : BasePhase
 
         Camera.Fov = FovOverride ?? Camera.Fov;
 
-        CurrentStage.Render(alpha, useShadowMapping: true);
+        CurrentStage.Render(cb, alpha, useShadowMapping: true);
 
-        if (DebugDisplay)
-        {
-            _spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullCounterClockwise);
-            if (WorldGame.ShadowRenderTargets[0] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[0], new Rectangle(0, 0, 128, 128), Color.White.ToXna());
-            if (WorldGame.ShadowRenderTargets[1] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[1], new Rectangle(0, 128, 128, 128), Color.White.ToXna());
-            if (WorldGame.ShadowRenderTargets[2] != null) _spriteBatch.Draw(WorldGame.ShadowRenderTargets[2], new Rectangle(0, 256, 128, 128), Color.White.ToXna());
-            _spriteBatch.End();
-        }
-
-        GraphicsDevice.Textures[0] = null;
-        GraphicsDevice.SamplerStates[0] = SamplerState.LinearWrap;
+        // TODO(Milestone 5 Stage D follow-up): the shadow-map debug overlay (SpriteBatch blit of
+        // WorldGame.ShadowRenderTargets) needed a live XNA GraphicsDevice/SpriteBatch, neither of
+        // which exist anymore - dropped rather than converted since it can't show anything useful
+        // yet anyway (WorldGame.RebuildCascades is still a no-op, so ShadowRenderTargets are always
+        // null). Re-add once shadow-cascade rendering itself is converted.
     }
 }

@@ -17,12 +17,15 @@ public class ImmediateMesh : Mesh, IRenderable
     {
     }
 
+    // TODO(Milestone 5 Stage B follow-up): RenderQueue.Flush now needs a live ICommandBuffer,
+    // which this method (an ad hoc, editor-only immediate-render path with no caller-supplied
+    // command buffer) has no way to acquire on its own - IGraphicsDevice only allows one command
+    // buffer live at a time (see IGraphicsDevice.AcquireCommandBuffer's doc comment), so acquiring
+    // one here would conflict with whatever the real per-frame render pass is doing. Stubbed
+    // (no-op) so the project compiles; not reached today since GameSparker.Load never runs (see
+    // WorldGame.cs's Stage A TODOs).
     public void Render(Camera camera, Lighting? lighting)
     {
-        var renderQueue = new RenderQueue(GraphicsDevice);
-        renderQueue.Begin(camera, lighting);
-        SubmitDraws(renderQueue, camera, lighting, RenderPass.Main());
-        renderQueue.Flush();
     }
 
     public void SubmitDraws(RenderQueue queue, Camera camera, Lighting? lighting, RenderPass pass)

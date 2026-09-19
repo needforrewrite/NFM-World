@@ -97,6 +97,20 @@
         <ProjectReference Include="..\NvgSharp\src\NvgSharp.Text\NvgSharp.Text.FNA.Core.csproj" />
         <ProjectReference Include="..\NvgSharp\src\XNA\NvgSharp.FNA.Core.csproj" />
 
+        <!--
+            Milestone 5 Stage A: window/device ownership via SDL3 + FNA3D instead of FNA's
+            Game/GraphicsDeviceManager. This project also still references FNA transitively (via
+            NvgSharp.FNA.Core, until Stage C), whose own private, separately-compiled copy of
+            SDL3.Core's SDL type would otherwise collide (CS0433) with SDL3.Core's - SDK-style
+            transitive project references don't carry NFMWorld.Platform.SDL3's own <Aliases> on its
+            SDL3.Core reference through to this project, so it's aliased again, explicitly, here.
+            Nothing in nfm-world's own code needs to reference the SDL3New-aliased type directly.
+        -->
+        <ProjectReference Include="..\FNA\lib\SDL3-CS\SDL3\SDL3.Core.csproj" Aliases="SDL3New" />
+        <ProjectReference Include="..\NFMWorld.Graphics.Abstraction\NFMWorld.Graphics.Abstraction.csproj" />
+        <ProjectReference Include="..\NFMWorld.Graphics.FNA3D\NFMWorld.Graphics.FNA3D.csproj" />
+        <ProjectReference Include="..\NFMWorld.Platform.SDL3\NFMWorld.Platform.SDL3.csproj" />
+
         <!-- Reference NFMWorld.ShaderSourceGen for XAML source generation -->
         <ProjectReference Include="..\NFMWorld.ShaderSourceGen\NFMWorld.ShaderSourceGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
         <ProjectReference Include="..\Maxine.Extensions\Maxine.Extensions.UnionGen\Maxine.Extensions.UnionGen.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />

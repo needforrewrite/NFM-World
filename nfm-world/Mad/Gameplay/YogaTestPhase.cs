@@ -25,9 +25,9 @@ public sealed class YogaTestPhase : BasePhase
         _root = TestView.Render(ref _counter);
     }
 
-    public override void Render(float alpha)
+    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
-        base.Render(alpha);
+        base.Render(cb, alpha);
         _root.Update();
         _root.LayoutAndRender(G.Viewport);
     }

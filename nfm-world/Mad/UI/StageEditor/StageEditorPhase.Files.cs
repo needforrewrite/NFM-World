@@ -358,7 +358,9 @@ public partial class StageEditorPhase
 
             try
             {
-                ActiveTab.Scene.Render(1f, false);
+                // TODO(Milestone 5 Stage B follow-up): ActiveTab.Scene is currently always null
+                // (see StageEditorPhase.Scene.cs's RecreateScene); never reached today.
+                ActiveTab.Scene.Render(null!, 1f, false);
             }
             finally
             {

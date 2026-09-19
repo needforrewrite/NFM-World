@@ -152,8 +152,12 @@ public class ClientStageRenderer : GameObject, IDisposable
             Logging.Error($"Error in stage: {backendStage.Name}");
             Logging.Error(exception.ToString());
         }
-        sky = new Sky(graphicsDevice);
-        ground = new Ground(graphicsDevice);
+        // TODO(Milestone 5 Stage B follow-up): graphicsDevice here is still FNA's XNA-typed
+        // GraphicsDevice (this whole class is out of scope for this pass - see ClientStage.cs's
+        // TODO); Sky/Ground now take IGraphicsDevice, so use the new static device directly.
+        // Not reached today since GameSparker.Load never runs.
+        sky = new Sky(GameSparker.NewGraphicsDevice);
+        ground = new Ground(GameSparker.NewGraphicsDevice);
     }
 
     public void DetectChanges(bool updateEnvironment = false)

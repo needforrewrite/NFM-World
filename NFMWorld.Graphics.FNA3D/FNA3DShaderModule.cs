@@ -12,14 +12,8 @@ namespace NFMWorld.Graphics.FNA3D;
 /// <see cref="PipelineDesc.PixelShader"/> to signal this; <see cref="FNA3DGraphicsDevice.CreatePipeline"/>
 /// rejects anything else.
 /// </summary>
-internal sealed class FNA3DShaderModule : IShaderModule
+internal sealed class FNA3DShaderModule(ShaderStage stage, ReadOnlyMemory<byte> bytecode) : IShaderModule
 {
-    public ShaderStage Stage { get; }
-    public ReadOnlyMemory<byte> Bytecode { get; }
-
-    public FNA3DShaderModule(ShaderStage stage, ReadOnlyMemory<byte> bytecode)
-    {
-        Stage = stage;
-        Bytecode = bytecode;
-    }
+    public ShaderStage Stage { get; } = stage;
+    public ReadOnlyMemory<byte> Bytecode { get; } = bytecode;
 }

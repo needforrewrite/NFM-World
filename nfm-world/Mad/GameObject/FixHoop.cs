@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.FixedMath;
@@ -7,35 +8,39 @@ namespace NFMWorld;
 
 public class FixHoop : StageObjectGameObject, IImmediateRenderElement
 {
-    private readonly GraphicsDevice _graphicsDevice;
-    
+    private readonly IGraphicsDevice _graphicsDevice;
+
     private const int CntLines = 4;
-    
+
     private readonly int[] _edl = new int[CntLines];
     private readonly int[] _edr = new int[CntLines];
     private readonly int[] _elc = new int[CntLines];
 
-    private VertexPositionColor[] _vertices = new VertexPositionColor[8*CntLines];
-    private short[] _indices = new short[18*CntLines];
-    private DynamicVertexBuffer _vertexBuffer;
-    private DynamicIndexBuffer _indexBuffer;
+    private PositionColorVertex[] _vertices = new PositionColorVertex[8*CntLines];
+    private ushort[] _indices = new ushort[18*CntLines];
+    // Upload happens in Render() rather than MakeElectrifiedMesh() - see Sparks.cs's identical
+    // pattern for why.
+    private bool _dirty;
+    private readonly IBuffer _vertexBuffer;
+    private readonly IBuffer _indexBuffer;
 
     public FixHoop(Mesh mesh, StageObject obj) : base(mesh, obj)
     {
-        _graphicsDevice = mesh.GraphicsDevice;
+        // Mesh.GraphicsDevice is still FNA's XNA-typed GraphicsDevice (Mesh itself isn't fully
+        // converted) - use the new static device directly, matching GameSparker.NewGraphicsDevice's
+        // doc comment.
+        _graphicsDevice = GameSparker.NewGraphicsDevice;
 
-        _vertexBuffer = new DynamicVertexBuffer(_graphicsDevice, VertexPositionColor.VertexDeclaration, _vertices.Length, BufferUsage.WriteOnly)
-        {
-            Name = "FixHoopVertexBuffer"
-        };
-        _indexBuffer = new DynamicIndexBuffer(_graphicsDevice, IndexElementSize.SixteenBits, _indices.Length, BufferUsage.WriteOnly)
-        {
-            Name = "FixHoopIndexBuffer"
-        };
-        
+        var maxVertexBytes = _vertices.Length * PositionColorVertex.Stride;
+        var maxIndexBytes = _indices.Length * sizeof(ushort);
+        _vertexBuffer = _graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes), new byte[maxVertexBytes]);
+        _indexBuffer = _graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt16), new byte[maxIndexBytes]);
+
         MakeElectrifiedMesh();
     }
-    
+
     ~FixHoop()
     {
         _vertexBuffer.Dispose();
@@ -44,30 +49,27 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
 
     public bool IsSpecial { get; set; }
 
-    public void Render(Camera camera, Lighting? _)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        Effects.FixHoop.World = Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
-                               Matrix.CreateTranslation((Vector3)Position);
-        Effects.FixHoop.View = camera.ViewMatrix;
-        Effects.FixHoop.Projection = camera.ProjectionMatrix;
-        
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        _graphicsDevice.Indices = _indexBuffer;
-        _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-        foreach (var pass in Effects.FixHoop.CurrentTechnique.Passes)
+        if (_dirty)
         {
-            pass.Apply();
-
-            _graphicsDevice.DrawIndexedPrimitives(
-                PrimitiveType.TriangleList,
-                0,
-                0,
-                8*CntLines,
-                0,
-                6*CntLines
-            );
+            cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes((ReadOnlySpan<PositionColorVertex>)_vertices));
+            cb.UpdateBuffer(_indexBuffer, MemoryMarshal.AsBytes((ReadOnlySpan<ushort>)_indices));
+            _dirty = false;
         }
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+
+        var p = Effects.ParticleParameters;
+
+        cb.SetPipeline(Effects.ParticleOpaquePipeline);
+        cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
+        cb.SetIndexBuffer(_indexBuffer);
+
+        p.World.SetValue(cb, Matrix.CreateRotationY((float)Rotation.Xz.Radians) *
+                              Matrix.CreateTranslation((Vector3)Position));
+        p.View.SetValue(cb, camera.ViewMatrix);
+        p.Projection.SetValue(cb, camera.ProjectionMatrix);
+
+        cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: 6 * CntLines);
     }
 
     private void PrepareLine(int idx)
@@ -107,7 +109,7 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         y[6] = -yl + 5 + URandom.Int(0, 5);
         x[7] = -504;
         y[7] = -_edl[idx] + 5 + URandom.Int(0, 5);
-        
+
         var r = (int) (160.0F + 160.0F * (World.Snap[0] / 500.0F));
         if (r > 255)
         {
@@ -137,40 +139,40 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         }
         r = (r * 2 + 214 * (_elc[idx] - 1)) / (_elc[idx] + 1);
         g = (g * 2 + 236 * (_elc[idx] - 1)) / (_elc[idx] + 1);
-        var color = ((Color)new Color3((short)r,(short) g, (short)b)).ToXna();
+        var color = (Color)new Color3((short)r,(short) g, (short)b);
 
         int startVertIdx = idx * 8;
-        _vertices[startVertIdx + 0] = new VertexPositionColor(new Vector3(x[0], y[0], z[0]), color);
-        _vertices[startVertIdx + 1] = new VertexPositionColor(new Vector3(x[1], y[1], z[1]), color);
-        _vertices[startVertIdx + 2] = new VertexPositionColor(new Vector3(x[2], y[2], z[2]), color);
-        _vertices[startVertIdx + 3] = new VertexPositionColor(new Vector3(x[3], y[3], z[3]), color);
-        _vertices[startVertIdx + 4] = new VertexPositionColor(new Vector3(x[4], y[4], z[4]), color);
-        _vertices[startVertIdx + 5] = new VertexPositionColor(new Vector3(x[5], y[5], z[5]), color);
-        _vertices[startVertIdx + 6] = new VertexPositionColor(new Vector3(x[6], y[6], z[6]), color);
-        _vertices[startVertIdx + 7] = new VertexPositionColor(new Vector3(x[7], y[7], z[7]), color);
-        
+        _vertices[startVertIdx + 0] = new PositionColorVertex(new Vector3(x[0], y[0], z[0]), color);
+        _vertices[startVertIdx + 1] = new PositionColorVertex(new Vector3(x[1], y[1], z[1]), color);
+        _vertices[startVertIdx + 2] = new PositionColorVertex(new Vector3(x[2], y[2], z[2]), color);
+        _vertices[startVertIdx + 3] = new PositionColorVertex(new Vector3(x[3], y[3], z[3]), color);
+        _vertices[startVertIdx + 4] = new PositionColorVertex(new Vector3(x[4], y[4], z[4]), color);
+        _vertices[startVertIdx + 5] = new PositionColorVertex(new Vector3(x[5], y[5], z[5]), color);
+        _vertices[startVertIdx + 6] = new PositionColorVertex(new Vector3(x[6], y[6], z[6]), color);
+        _vertices[startVertIdx + 7] = new PositionColorVertex(new Vector3(x[7], y[7], z[7]), color);
+
         // vertices represents an outline of a polygon with 8 vertices
         // we need to create indices for 4 triangles to fill the shape
 
         int startTriIdx = idx * 18;
-        _indices[startTriIdx + 0] = (short)(startVertIdx + 0);
-        _indices[startTriIdx + 1] = (short)(startVertIdx + 1);
-        _indices[startTriIdx + 2] = (short)(startVertIdx + 7);
-        _indices[startTriIdx + 3] = (short)(startVertIdx + 1);
-        _indices[startTriIdx + 4] = (short)(startVertIdx + 6);
-        _indices[startTriIdx + 5] = (short)(startVertIdx + 7);
-        _indices[startTriIdx + 6] = (short)(startVertIdx + 1);
-        _indices[startTriIdx + 7] = (short)(startVertIdx + 2);
-        _indices[startTriIdx + 8] = (short)(startVertIdx + 6);
-        _indices[startTriIdx + 9] = (short)(startVertIdx + 2);
-        _indices[startTriIdx + 10] = (short)(startVertIdx + 5);
-        _indices[startTriIdx + 11] = (short)(startVertIdx + 6);
-        _indices[startTriIdx + 12] = (short)(startVertIdx + 2);
-        _indices[startTriIdx + 13] = (short)(startVertIdx + 3);
-        _indices[startTriIdx + 14] = (short)(startVertIdx + 5);
-        _indices[startTriIdx + 15] = (short)(startVertIdx + 3);
-        _indices[startTriIdx + 16] = (short)(startVertIdx + 4);
-        _indices[startTriIdx + 17] = (short)(startVertIdx + 5);
+        _indices[startTriIdx + 0] = (ushort)(startVertIdx + 0);
+        _indices[startTriIdx + 1] = (ushort)(startVertIdx + 1);
+        _indices[startTriIdx + 2] = (ushort)(startVertIdx + 7);
+        _indices[startTriIdx + 3] = (ushort)(startVertIdx + 1);
+        _indices[startTriIdx + 4] = (ushort)(startVertIdx + 6);
+        _indices[startTriIdx + 5] = (ushort)(startVertIdx + 7);
+        _indices[startTriIdx + 6] = (ushort)(startVertIdx + 1);
+        _indices[startTriIdx + 7] = (ushort)(startVertIdx + 2);
+        _indices[startTriIdx + 8] = (ushort)(startVertIdx + 6);
+        _indices[startTriIdx + 9] = (ushort)(startVertIdx + 2);
+        _indices[startTriIdx + 10] = (ushort)(startVertIdx + 5);
+        _indices[startTriIdx + 11] = (ushort)(startVertIdx + 6);
+        _indices[startTriIdx + 12] = (ushort)(startVertIdx + 2);
+        _indices[startTriIdx + 13] = (ushort)(startVertIdx + 3);
+        _indices[startTriIdx + 14] = (ushort)(startVertIdx + 5);
+        _indices[startTriIdx + 15] = (ushort)(startVertIdx + 3);
+        _indices[startTriIdx + 16] = (ushort)(startVertIdx + 4);
+        _indices[startTriIdx + 17] = (ushort)(startVertIdx + 5);
 
         if (_elc[idx] > URandom.Single() * 60.0F)
         {
@@ -199,14 +201,14 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
     public override void GameTick(BackendStage? stage = null)
     {
         base.GameTick(stage);
-        
+
         _rotAccumulator += 11 * Physics.PHYSICS_MULTIPLIER_F64;
         if (_rotAccumulator > 360)
         {
             _rotAccumulator -= 360;
         }
         Rotation = Rotation with { Xy = f64AngleSingle.FromDegrees(Rotation.Xy.Degrees + _rotAccumulator) };
-        
+
         if (++_tick == Physics.OriginalTicksPerNewTick) // delay all operations by 3 ticks because of the adjusted tickrate
         {
             MakeElectrifiedMesh();
@@ -221,7 +223,6 @@ public class FixHoop : StageObjectGameObject, IImmediateRenderElement
         {
             PrepareLine(i);
         }
-        _vertexBuffer.SetDataEXT(_vertices, SetDataOptions.Discard);
-        _indexBuffer.SetDataEXT(_indices, SetDataOptions.Discard);
+        _dirty = true;
     }
 }

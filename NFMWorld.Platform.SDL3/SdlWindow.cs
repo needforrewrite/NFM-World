@@ -1,6 +1,8 @@
+extern alias SDL3New;
+
 using System.Runtime.InteropServices;
 using NFMWorld.DriverInterface;
-using SDL3;
+using SDL3New::SDL3;
 
 namespace NFMWorld.Platform.SDL3;
 
@@ -56,6 +58,29 @@ public sealed class SdlWindow : IDisposable
             throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
 
         var flags = extraFlags;
+        return CreateCore(title, width, height, resizable, highPixelDensity, flags);
+    }
+
+    /// <summary>
+    /// Same as <see cref="Create(string,int,int,bool,bool,SDL.SDL_WindowFlags)"/>, but takes the
+    /// extra window flags as a raw bitmask instead of <c>SDL3.Core</c>'s <c>SDL.SDL_WindowFlags</c>
+    /// enum. Lets a caller that can't reference <c>SDL3.Core</c> directly (e.g. because it also
+    /// references FNA, whose own vendored SDL3 bindings define a same-named, different <c>SDL</c>
+    /// type in a different assembly - see <c>NFMWorld.Graphics.FNA3D.FNA3DInterop.PrepareWindowAttributes</c>'s
+    /// callers) still pass backend-specific flags through without a type collision.
+    /// </summary>
+    public static SdlWindow Create(string title, int width, int height, ulong extraFlagsRaw,
+        bool resizable = true, bool highPixelDensity = true)
+    {
+        if (!SDL.SDL_Init(SDL.SDL_InitFlags.SDL_INIT_VIDEO))
+            throw new InvalidOperationException($"SDL_Init failed: {SDL.SDL_GetError()}");
+
+        return CreateCore(title, width, height, resizable, highPixelDensity, (SDL.SDL_WindowFlags)extraFlagsRaw);
+    }
+
+    private static SdlWindow CreateCore(string title, int width, int height, bool resizable,
+        bool highPixelDensity, SDL.SDL_WindowFlags flags)
+    {
         if (resizable) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_RESIZABLE;
         if (highPixelDensity) flags |= SDL.SDL_WindowFlags.SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
@@ -68,6 +93,9 @@ public sealed class SdlWindow : IDisposable
         return new SdlWindow(window, width, height);
     }
 
+    /// <summary>Whether the window currently has input focus. Replaces FNA's <c>Game.IsActive</c>.</summary>
+    public bool HasFocus => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_INPUT_FOCUS) != 0;
+
     public bool Fullscreen
     {
         get => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN) != 0;
@@ -75,6 +103,17 @@ public sealed class SdlWindow : IDisposable
         {
             if (!SDL.SDL_SetWindowFullscreen(_window, value))
                 throw new InvalidOperationException($"SDL_SetWindowFullscreen failed: {SDL.SDL_GetError()}");
+        }
+    }
+
+    /// <summary>Whether the window has no title bar/border. Replaces FNA's <c>GameWindow.IsBorderlessEXT</c>.</summary>
+    public bool IsBorderlessEXT
+    {
+        get => (SDL.SDL_GetWindowFlags(_window) & SDL.SDL_WindowFlags.SDL_WINDOW_BORDERLESS) != 0;
+        set
+        {
+            if (!SDL.SDL_SetWindowBordered(_window, !value))
+                throw new InvalidOperationException($"SDL_SetWindowBordered failed: {SDL.SDL_GetError()}");
         }
     }
 

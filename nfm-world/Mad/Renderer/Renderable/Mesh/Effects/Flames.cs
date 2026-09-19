@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
-using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 
 namespace NFMWorld;
@@ -8,27 +9,27 @@ public class Flames : IDisposable, IImmediateRenderElement
 {
     private int _embos;
     private readonly CarVisual _car;
-    private readonly GraphicsDevice _graphicsDevice;
+    private readonly IGraphicsDevice _graphicsDevice;
     private int[] _pa, _pb;
 
-    private VertexPositionColor[] _triangles;
-    private DynamicVertexBuffer _vertexBuffer;
+    private PositionColorVertex[] _triangles;
+    // Upload happens in Render() rather than GameTick() - see Sparks.cs's identical pattern for why.
+    private bool _dirty;
+    private readonly IBuffer _vertexBuffer;
 
     private int _tick;
 
-    public Flames(CarVisual car, GraphicsDevice graphicsDevice)
+    public Flames(CarVisual car, IGraphicsDevice graphicsDevice)
     {
         _car = car;
         _graphicsDevice = graphicsDevice;
         _pa = new int[car.Mesh.Polys.Length];
         _pb = new int[car.Mesh.Polys.Length];
-        
-        _triangles = new VertexPositionColor[9 * car.Mesh.Polys.Length];
-        _vertexBuffer = new DynamicVertexBuffer(graphicsDevice, VertexPositionColor.VertexDeclaration, _triangles.Length, BufferUsage.WriteOnly)
-        {
-            Name = "Flames Vertex Buffer"
-        };
-        _vertexBuffer.SetDataEXT(_triangles);
+
+        _triangles = new PositionColorVertex[9 * car.Mesh.Polys.Length];
+        var maxBytes = _triangles.Length * PositionColorVertex.Stride;
+        _vertexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxBytes), new byte[maxBytes]);
     }
 
     public void GameTick()
@@ -192,7 +193,7 @@ public class Flames : IDisposable, IImmediateRenderElement
                             b = 0;
                         }
 
-                        var outerColor = ((Color)new Color3((short)r, (short)g, (short)b)).ToXna();
+                        var outerColor = (Color)new Color3((short)r, (short)g, (short)b);
                         
                         // inner flame
                         
@@ -259,8 +260,8 @@ public class Flames : IDisposable, IImmediateRenderElement
                             b = 0;
                         }
                         
-                        var innerColor = ((Color)new Color3((short)r, (short)g, (short)b)).ToXna();
-                        
+                        var innerColor = (Color)new Color3((short)r, (short)g, (short)b);
+
                         // We build the outer flame out of two triangles, so that it doesn't overlap with the inner flame.
                         // These triangles share a vertex with the inner flame's center triangle.
                         var triBase = i * 9;
@@ -270,49 +271,47 @@ public class Flames : IDisposable, IImmediateRenderElement
                         var inner0 = new Vector3(innerX[0], innerY[0], innerZ[0]); // anchor left
                         var inner1 = new Vector3(innerX[1], innerY[1], innerZ[1]); // anchor right
                         var inner2 = new Vector3(innerX[2], innerY[2], innerZ[2]); // top
-                        
+
                         // cutout of the outer flame
-                        _triangles[triBase + 0] = new VertexPositionColor(outer0, outerColor);
-                        _triangles[triBase + 1] = new VertexPositionColor(outer2, outerColor);
-                        _triangles[triBase + 2] = new VertexPositionColor(inner2, outerColor);
-                        _triangles[triBase + 3] = new VertexPositionColor(outer1, outerColor);
-                        _triangles[triBase + 4] = new VertexPositionColor(outer2, outerColor);
-                        _triangles[triBase + 5] = new VertexPositionColor(inner2, outerColor);
-                        
+                        _triangles[triBase + 0] = new PositionColorVertex(outer0, outerColor);
+                        _triangles[triBase + 1] = new PositionColorVertex(outer2, outerColor);
+                        _triangles[triBase + 2] = new PositionColorVertex(inner2, outerColor);
+                        _triangles[triBase + 3] = new PositionColorVertex(outer1, outerColor);
+                        _triangles[triBase + 4] = new PositionColorVertex(outer2, outerColor);
+                        _triangles[triBase + 5] = new PositionColorVertex(inner2, outerColor);
+
                          // inner flame
-                        _triangles[triBase + 6] = new VertexPositionColor(inner0, innerColor);
-                        _triangles[triBase + 7] = new VertexPositionColor(inner1, innerColor);
-                        _triangles[triBase + 8] = new VertexPositionColor(inner2, innerColor);
+                        _triangles[triBase + 6] = new PositionColorVertex(inner0, innerColor);
+                        _triangles[triBase + 7] = new PositionColorVertex(inner1, innerColor);
+                        _triangles[triBase + 8] = new PositionColorVertex(inner2, innerColor);
                     }
-                    
-                    _vertexBuffer.SetDataEXT(_triangles.AsSpan(), SetDataOptions.Discard);
+
+                    _dirty = true;
                 }
             }
         }
     }
 
-    public void Render(Camera camera, Lighting? _)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (_embos >= 16)
-        {
-            Effects.Flame.World = _car.MatrixWorld;
-            Effects.Flame.View = camera.ViewMatrix;
-            Effects.Flame.Projection = camera.ProjectionMatrix;
-        
-            _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-            _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-            foreach (var pass in Effects.Flame.CurrentTechnique.Passes)
-            {
-                pass.Apply();
+        if (_embos < 16) return;
 
-                _graphicsDevice.DrawPrimitives(
-                    PrimitiveType.TriangleList,
-                    0,
-                    _triangles.Length / 3
-                );
-            }
-            _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+        if (_dirty)
+        {
+            cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_triangles.AsSpan()));
+            _dirty = false;
         }
+
+        var p = Effects.ParticleParameters;
+
+        cb.SetPipeline(Effects.ParticleOpaquePipeline);
+        cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
+
+        p.World.SetValue(cb, _car.MatrixWorld);
+        p.View.SetValue(cb, camera.ViewMatrix);
+        p.Projection.SetValue(cb, camera.ProjectionMatrix);
+
+        cb.Draw(startVertex: 0, primitiveCount: _triangles.Length / 3);
     }
 
     private void ReleaseUnmanagedResources()

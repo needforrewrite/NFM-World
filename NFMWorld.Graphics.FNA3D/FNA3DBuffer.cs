@@ -1,25 +1,15 @@
 namespace NFMWorld.Graphics.FNA3D;
 
-internal sealed class FNA3DBuffer : IBuffer
+internal sealed class FNA3DBuffer(IntPtr device, IntPtr handle, BufferDesc desc) : TrackLeaks, IBuffer
 {
-    public IntPtr Device { get; }
-    public IntPtr Handle { get; private set; }
-    public BufferKind Kind { get; }
-    public BufferUsage Usage { get; }
-    public int SizeInBytes { get; }
-    public IndexFormat IndexFormat { get; }
-
-    public FNA3DBuffer(IntPtr device, IntPtr handle, BufferDesc desc)
-    {
-        Device = device;
-        Handle = handle;
-        Kind = desc.Kind;
-        Usage = desc.Usage;
-        SizeInBytes = desc.SizeInBytes;
-        IndexFormat = desc.IndexFormat;
-    }
-
-    public void Dispose()
+    public IntPtr Device { get; } = device;
+    public IntPtr Handle { get; private set; } = handle;
+    public BufferKind Kind { get; } = desc.Kind;
+    public BufferUsage Usage { get; } = desc.Usage;
+    public int SizeInBytes { get; } = desc.SizeInBytes;
+    public IndexFormat IndexFormat { get; } = desc.IndexFormat;
+    
+    public override void Dispose()
     {
         if (Handle == IntPtr.Zero) return;
         if (Kind == BufferKind.Vertex)
@@ -27,5 +17,6 @@ internal sealed class FNA3DBuffer : IBuffer
         else
             FNA3D_AddDisposeIndexBuffer(Device, Handle);
         Handle = IntPtr.Zero;
+        GC.SuppressFinalize(this);
     }
 }

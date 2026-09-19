@@ -2,7 +2,7 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Maxine.Extensions.Mathematics;
-using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using BoundingSphere = Microsoft.Xna.Framework.BoundingSphere;
 
@@ -13,15 +13,17 @@ namespace NFMWorld;
 /// and immediate draws (deferred, sorted by <see cref="SortKey"/>). Replaces the
 /// <c>RenderDataCache</c> inner class of <c>Scene</c>.
 /// </summary>
-public class RenderQueue(GraphicsDevice graphicsDevice) : IDisposable
+public class RenderQueue(IGraphicsDevice graphicsDevice) : IDisposable
 {
+    private const int InstanceStrideBytes = InstanceData.Stride;
+
     // ── Instanced queue (migrated from RenderDataCache) ──
 
     private sealed class CachedInstancedGroup(List<InstanceData> instances)
     {
         public readonly List<InstanceData> Instances = instances;
         public readonly List<InstanceData> OldInstances = [];
-        public DynamicVertexBuffer? VertexBuffer;
+        public IBuffer? VertexBuffer;
         public int HashCode;
     }
 
@@ -73,7 +75,7 @@ public class RenderQueue(GraphicsDevice graphicsDevice) : IDisposable
                     }
                 }
             }
-            
+
             drawCall.ImmediateDraws?.Clear();
         }
     }
@@ -85,18 +87,18 @@ public class RenderQueue(GraphicsDevice graphicsDevice) : IDisposable
     public void AddInstanced(IInstancedRenderElement element, in InstanceData data, SortKey key, BoundingSphere? bsphere = null)
     {
         CheckBegin();
-        
+
         if (bsphere is { } bsphereValue)
         {
             // Apply frustum culling
             if (!_camera.Frustum.Intersects(bsphereValue))
                 return;
-            
+
             // Apply distance culling
             if (Vector3.DistanceSquared(_camera.Position, bsphereValue.Center) > CameraSettings.RenderDistanceSqr + (bsphereValue.Radius * bsphereValue.Radius))
                 return;
         }
-        
+
         ref var innerCache = ref CollectionsMarshal.GetValueRefOrAddDefault(_draws, key, out var exists);
         if (!exists)
         {
@@ -127,35 +129,38 @@ public class RenderQueue(GraphicsDevice graphicsDevice) : IDisposable
         {
             values = new DrawCallList();
         }
-        
+
         var immediateDraws = values!.ImmediateDraws ??= [];
         immediateDraws.Add(element);
     }
 
     /// <summary>
-    /// Execute all queued draws in the correct order
+    /// Execute all queued draws in the correct order, recording into <paramref name="cb"/> - the
+    /// single command buffer the caller acquired for this frame/pass (see
+    /// <see cref="IGraphicsDevice.AcquireCommandBuffer"/>'s "one at a time" rule; this method
+    /// itself never acquires or submits one).
     /// </summary>
-    public void Flush()
+    public void Flush(ICommandBuffer cb)
     {
         CheckBegin();
 
         _sortKeys.Clear();
         _sortKeys.AddRange(_draws.Keys);
         _sortKeys.Sort();
-        
+
         foreach (var sortKey in _sortKeys)
         {
             var draw = _draws[sortKey];
-            
+
             // draw immediates
             if (draw.ImmediateDraws is { } immediateDraws)
             {
                 foreach (var element in immediateDraws)
                 {
-                    element.Render(_camera, _lighting);
+                    element.Render(cb, _camera, _lighting);
                 }
             }
-            
+
             // draw instanced batches
             if (draw.InstancedDraws is { } instancedDraws)
             {
@@ -175,28 +180,28 @@ public class RenderQueue(GraphicsDevice graphicsDevice) : IDisposable
                             CollectionsMarshal.AsSpan(oldInstances)))
                     {
                         var instanceSpan = CollectionsMarshal.AsSpan(instances);
+                        var instanceBytes = MemoryMarshal.AsBytes(instanceSpan);
 
                         if (cachedGroup.VertexBuffer == null ||
-                            cachedGroup.VertexBuffer.VertexCount < instances.Count)
+                            cachedGroup.VertexBuffer.SizeInBytes < instances.Count * InstanceStrideBytes)
                         {
                             cachedGroup.VertexBuffer?.Dispose();
-                            cachedGroup.VertexBuffer = new DynamicVertexBuffer(
-                                graphicsDevice, InstanceData.InstanceDeclaration,
-                                instances.Count, BufferUsage.WriteOnly)
-                            {
-                                Name = "Instance Data Vertex Buffer",
-                                Tag = this
-                            };
+                            cachedGroup.VertexBuffer = graphicsDevice.CreateBuffer(
+                                new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, instances.Count * InstanceStrideBytes),
+                                instanceBytes);
+                        }
+                        else
+                        {
+                            cb.UpdateBuffer(cachedGroup.VertexBuffer, instanceBytes);
                         }
 
-                        cachedGroup.VertexBuffer.SetDataEXT(instanceSpan, SetDataOptions.Discard);
                         cachedGroup.HashCode = currentHashCode;
 
                         CollectionsMarshal.SetCount(oldInstances, instances.Count);
                         instanceSpan.CopyTo(CollectionsMarshal.AsSpan(oldInstances));
                     }
 
-                    renderElement.Render(_camera, _lighting, cachedGroup.VertexBuffer, instances.Count);
+                    renderElement.Render(cb, _camera, _lighting, cachedGroup.VertexBuffer, instances.Count);
                 }
             }
         }
@@ -210,7 +215,7 @@ public class RenderQueue(GraphicsDevice graphicsDevice) : IDisposable
             ThrowNotBeganYet();
         }
         return;
-        
+
         [DoesNotReturn]
         static void ThrowNotBeganYet()
         {

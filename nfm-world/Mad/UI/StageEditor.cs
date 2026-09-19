@@ -499,11 +499,11 @@ public partial class StageEditorPhase : BasePhase
 
         // Initialize camera
         perspectiveCamera.Fov = 60f;
-        perspectiveCamera.Width = GameSparker.Game.GraphicsDevice.Viewport.Width;
-        perspectiveCamera.Height = GameSparker.Game.GraphicsDevice.Viewport.Height;
+        perspectiveCamera.Width = GameSparker.Game.Window.Width;
+        perspectiveCamera.Height = GameSparker.Game.Window.Height;
 
-        orthoCamera.Width = GameSparker.Game.GraphicsDevice.Viewport.Width;
-        orthoCamera.Height = GameSparker.Game.GraphicsDevice.Viewport.Height;
+        orthoCamera.Width = GameSparker.Game.Window.Width;
+        orthoCamera.Height = GameSparker.Game.Window.Height;
 
         UpdateCameraPosition();
 

@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 using HoleyDiver;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using NFMWorld.Graphics;
+using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 using NFMWorldLibrary.Util;
@@ -147,7 +149,8 @@ public class Mesh : IDisposable
             
             if (data.Count == 0 || indices.Count == 0) continue;
 
-            Submeshes[i] = new Submesh(type, this, GraphicsDevice, CollectionsMarshal.AsSpan(data), CollectionsMarshal.AsSpan(indices));
+            // GraphicsDevice property - see GameSparker.NewGraphicsDevice's doc comment.
+            Submeshes[i] = new Submesh(type, this, GameSparker.NewGraphicsDevice, CollectionsMarshal.AsSpan(data), CollectionsMarshal.AsSpan(indices));
         }
 
         LineMeshes = new LineMesh[lines.Length];
@@ -155,7 +158,9 @@ public class Mesh : IDisposable
         {
             var lineDict = lines[i];
             if (lineDict.Count == 0) continue;
-            LineMeshes[i] = new LineMesh(this, GraphicsDevice, lineDict, (LineType)i);
+            // LineMesh now takes NFMWorld.Graphics.IGraphicsDevice, not Mesh's own (still XNA-typed)
+            // GraphicsDevice property - see GameSparker.NewGraphicsDevice's doc comment.
+            LineMeshes[i] = new LineMesh(this, GameSparker.NewGraphicsDevice, lineDict, (LineType)i);
         }
     }
 
@@ -194,6 +199,23 @@ public class Mesh : IDisposable
 	        new VertexElement(36, VertexElementFormat.Color, VertexElementUsage.Color, 0),
 	        new VertexElement(40, VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0)
 	    );
+
+        /// <summary>
+        /// Same layout as <see cref="VertexDeclaration"/> (Position/Normal/Centroid float3s, Color
+        /// as a packed byte4 despite HLSL's "float3 Color : COLOR0", DecalOffset float1 - matches
+        /// Poly.fx's <c>VertexShaderInput</c>), expressed against the new graphics abstraction for
+        /// <see cref="Graphics.PipelineDesc.VertexLayouts"/>.
+        /// </summary>
+        public static readonly VertexLayoutDesc VertexLayout = new(
+            Attributes:
+            [
+                new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("NORMAL", 0, 12, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("POSITION", 1, 24, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("COLOR", 0, 36, VertexAttributeFormat.Byte4Normalized),
+                new VertexAttributeDesc("TEXCOORD", 0, 40, VertexAttributeFormat.Float1),
+            ],
+            StrideInBytes: 44);
     }
 
     public virtual void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer)

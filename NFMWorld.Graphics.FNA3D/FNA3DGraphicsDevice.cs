@@ -76,8 +76,8 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
 
     public IBuffer CreateBuffer(BufferDesc desc, ReadOnlySpan<byte> initialData = default)
     {
-        var dynamic = Mapping.ToDynamicFlag(desc.Usage);
-        var usage = Mapping.ToNativeBufferUsage(desc.Usage);
+        var dynamic = desc.Usage.ToDynamicFlag();
+        var usage = desc.Usage.ToNativeBufferUsage();
         var handle = desc.Kind == BufferKind.Vertex
             ? FNA3D_GenVertexBuffer(_device, dynamic, usage, desc.SizeInBytes)
             : FNA3D_GenIndexBuffer(_device, dynamic, usage, desc.SizeInBytes);
@@ -93,7 +93,7 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
 
     public unsafe ITexture CreateTexture(TextureDesc desc, ReadOnlySpan<byte> initialData = default)
     {
-        var handle = FNA3D_CreateTexture2D(_device, Mapping.ToNative(desc.Format), desc.Width, desc.Height, desc.MipMapped ? 0 : 1, (byte)(desc.RenderTargetable ? 1 : 0));
+        var handle = FNA3D_CreateTexture2D(_device, desc.Format.ToNative(), desc.Width, desc.Height, desc.MipMapped ? 0 : 1, (byte)(desc.RenderTargetable ? 1 : 0));
         var texture = new FNA3DTexture(_device, handle, desc);
         if (!initialData.IsEmpty)
         {
@@ -108,15 +108,15 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
     public IRenderTarget CreateRenderTarget(RenderTargetDesc desc)
     {
         var colorTextureDesc = new TextureDesc(desc.Width, desc.Height, desc.ColorFormat, RenderTargetable: true);
-        var colorHandle = FNA3D_CreateTexture2D(_device, Mapping.ToNative(desc.ColorFormat), desc.Width, desc.Height, 1, 1);
+        var colorHandle = FNA3D_CreateTexture2D(_device, desc.ColorFormat.ToNative(), desc.Width, desc.Height, 1, 1);
         var colorTexture = new FNA3DTexture(_device, colorHandle, colorTextureDesc);
-        var colorRenderbuffer = FNA3D_GenColorRenderbuffer(_device, desc.Width, desc.Height, Mapping.ToNative(desc.ColorFormat), 0, colorHandle);
+        var colorRenderbuffer = FNA3D_GenColorRenderbuffer(_device, desc.Width, desc.Height, desc.ColorFormat.ToNative(), 0, colorHandle);
 
         IntPtr depthRenderbuffer = IntPtr.Zero;
         ITexture? depthTexture = null;
         if (desc.HasDepthStencil)
         {
-            depthRenderbuffer = FNA3D_GenDepthStencilRenderbuffer(_device, desc.Width, desc.Height, Mapping.ToNativeDepthFormat(desc.DepthStencilFormat), 0);
+            depthRenderbuffer = FNA3D_GenDepthStencilRenderbuffer(_device, desc.Width, desc.Height, desc.DepthStencilFormat.ToNativeDepthFormat(), 0);
             depthTexture = new FNA3DTexture(_device, IntPtr.Zero, new TextureDesc(desc.Width, desc.Height, desc.DepthStencilFormat));
         }
 
@@ -150,7 +150,7 @@ public sealed class FNA3DGraphicsDevice : IGraphicsDevice, IDisposable
         if (effect == IntPtr.Zero)
             throw new InvalidOperationException("FNA3D_CreateEffect returned null - the compiled Effect blob failed to parse.");
 
-        var pipeline = new FNA3DPipelineState(_device, desc, effect, effectData);
+        var pipeline = new FNA3DPipelineState(_device, desc, effect, effectData, desc.TechniqueName);
         FNA3D_SetEffectTechnique(_device, effect, pipeline.TechniquePointer);
         return pipeline;
     }

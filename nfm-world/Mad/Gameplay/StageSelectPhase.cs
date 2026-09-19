@@ -99,9 +99,9 @@ public class StageSelectPhase : BaseStageRenderingPhase
         _aroundStageCamera.AroundStage(Camera, CurrentStage.Backend);
     }
 
-    public override void Render(float alpha)
+    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
-        base.Render(alpha);
+        base.Render(cb, alpha);
     }
 
     public override void RenderImgui()

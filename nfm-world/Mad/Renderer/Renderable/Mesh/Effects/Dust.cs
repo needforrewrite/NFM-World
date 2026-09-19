@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 using NFMWorldLibrary.Collision;
@@ -9,10 +10,10 @@ namespace NFMWorld;
 public class Dust : IDisposable, IImmediateRenderElement
 {
     private readonly CarVisual _car;
-    private readonly GraphicsDevice _graphicsDevice;
+    private readonly IGraphicsDevice _graphicsDevice;
 
     private int _ust;
-    
+
     private float[] Sx = new float[20];
     private float[] Sy = new float[20];
     private float[] Sz = new float[20];
@@ -23,24 +24,28 @@ public class Dust : IDisposable, IImmediateRenderElement
     private float[] _sbln = new float[20];
     private int[,] _srgb = new int[20, 3];
     private float[,] _smag = new float[20, 8];
-    private VertexPositionColor[] _verts = new VertexPositionColor[20 * 8];
+    private PositionColorVertex[] _verts = new PositionColorVertex[20 * 8];
     private int _vertexCount;
     private ushort[] _indices = new ushort[20 * 8 * 3];
     private int _indexCount;
-    private readonly DynamicVertexBuffer _vertexBuffer;
-    private readonly DynamicIndexBuffer _indexBuffer;
+    // Upload happens in Render() rather than GameTick() - see Sparks.cs's identical pattern for why.
+    private bool _dirty;
+    private readonly IBuffer _vertexBuffer;
+    private readonly IBuffer _indexBuffer;
 
-    public Dust(CarVisual car, GraphicsDevice graphicsDevice)
+    public Dust(CarVisual car, IGraphicsDevice graphicsDevice)
     {
         _car = car;
         _graphicsDevice = graphicsDevice;
-        
-        _vertexBuffer = new DynamicVertexBuffer(graphicsDevice, VertexPositionColor.VertexDeclaration, 20 * 8, BufferUsage.WriteOnly);
-        _indexBuffer = new DynamicIndexBuffer(graphicsDevice, IndexElementSize.SixteenBits, 20 * 8 * 3, BufferUsage.WriteOnly);
-        _vertexBuffer.SetDataEXT(_verts);
-        _indexBuffer.SetDataEXT(_indices);
+
+        var maxVertexBytes = _verts.Length * PositionColorVertex.Stride;
+        var maxIndexBytes = _indices.Length * sizeof(ushort);
+        _vertexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Dynamic, maxVertexBytes), new byte[maxVertexBytes]);
+        _indexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Dynamic, maxIndexBytes, IndexFormat.UInt16), new byte[maxIndexBytes]);
     }
-    
+
     public void AddDust(int wheelidx, float wheelx, float wheely, float wheelz, int scx, int scz, float simag, int tilt, bool onRoof, int wheelGround)
     {
         var noDust = false;
@@ -102,8 +107,7 @@ public class Dust : IDisposable, IImmediateRenderElement
 
         if (_vertexCount > 0 && _indexCount > 0)
         {
-            _vertexBuffer.SetDataEXT(_verts.AsSpan(0, _vertexCount), SetDataOptions.Discard);
-            _indexBuffer.SetDataEXT(_indices.AsSpan(0, _indexCount), SetDataOptions.Discard);
+            _dirty = true;
         }
     }
 
@@ -196,7 +200,7 @@ public class Dust : IDisposable, IImmediateRenderElement
         }
 
         var baseIndex = _vertexCount;
-            
+
         var r = _srgb[dust, 0];
         var g = _srgb[dust, 1];
         var b = _srgb[dust, 2];
@@ -205,75 +209,75 @@ public class Dust : IDisposable, IImmediateRenderElement
         var color = new Color3((short)r, (short)g, (short)b);
         var alpha = _sbln[dust] - Stg[dust] * (_sbln[dust] / 8.0F);
 
-        var xnaColor = new Color(color.R / 255f, color.G / 255f, color.B / 255f, alpha).ToXna();
+        var vertexColor = new Color(color.R / 255f, color.G / 255f, color.B / 255f, alpha);
 
         // ais = new int[8];
         // var is223 = new int[8];
-        
+
         // ais[0] = Xs((int) (i220 + _smag[i, 0] * 0.9238F * 1.5F), i221);
         // is223[0] = Ys((int) (i222 + _smag[i, 0] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
+        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
             Sx[dust] + _smag[dust, 0] * 0.9238F * 1.5F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] + _smag[dust, 0] * 0.3826F * 1.5F
-        ), xnaColor));
-        
+        ), vertexColor));
+
         // ais[1] = Xs((int) (i220 + _smag[i, 1] * 0.9238F * 1.5F), i221);
         // is223[1] = Ys((int) (i222 - _smag[i, 1] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
+        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
             Sx[dust] + _smag[dust, 1] * 0.9238F * 1.5F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] - _smag[dust, 1] * 0.3826F * 1.5F
-        ), xnaColor));
-        
+        ), vertexColor));
+
         // ais[2] = Xs((int) (i220 + _smag[i, 2] * 0.3826F), i221);
         // is223[2] = Ys((int) (i222 - _smag[i, 2] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
+        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
             Sx[dust] + _smag[dust, 2] * 0.3826F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] - _smag[dust, 2] * 0.9238F
-        ), xnaColor));
-        
+        ), vertexColor));
+
         // ais[3] = Xs((int) (i220 - _smag[i, 3] * 0.3826F), i221);
         // is223[3] = Ys((int) (i222 - _smag[i, 3] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
+        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
             Sx[dust] - _smag[dust, 3] * 0.3826F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] - _smag[dust, 3] * 0.9238F
-        ), xnaColor));
-        
+        ), vertexColor));
+
         // ais[4] = Xs((int) (i220 - _smag[i, 4] * 0.9238F * 1.5F), i221);
         // is223[4] = Ys((int) (i222 - _smag[i, 4] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
+        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
             Sx[dust] - _smag[dust, 4] * 0.9238F * 1.5F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] - _smag[dust, 4] * 0.3826F * 1.5F
-        ), xnaColor));
-        
+        ), vertexColor));
+
         // ais[5] = Xs((int) (i220 - _smag[i, 5] * 0.9238F * 1.5F), i221);
         // is223[5] = Ys((int) (i222 + _smag[i, 5] * 0.3826F * 1.5F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
+        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
             Sx[dust] - _smag[dust, 5] * 0.9238F * 1.5F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] + _smag[dust, 5] * 0.3826F * 1.5F
-        ), xnaColor));
-        
+        ), vertexColor));
+
         // ais[6] = Xs((int) (i220 - _smag[i, 6] * 0.3826F * 1.7F), i221);
         // is223[6] = Ys((int) (i222 + _smag[i, 6] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
+        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
             Sx[dust] - _smag[dust, 6] * 0.3826F * 1.7F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] + _smag[dust, 6] * 0.9238F
-        ), xnaColor));
-        
+        ), vertexColor));
+
         // ais[7] = Xs((int) (i220 + _smag[i, 7] * 0.3826F * 1.7F), i221);
         // is223[7] = Ys((int) (i222 + _smag[i, 7] * 0.9238F), i221);
-        _verts[_vertexCount++] = (new VertexPositionColor(new Vector3(
+        _verts[_vertexCount++] = (new PositionColorVertex(new Vector3(
             Sx[dust] + _smag[dust, 7] * 0.3826F * 1.7F,
             Sy[dust] - _smag[dust, 7],
             Sz[dust] + _smag[dust, 7] * 0.9238F
-        ), xnaColor));
-            
+        ), vertexColor));
+
         // make indices of polygon
         _indices[_indexCount++] = (ushort)(baseIndex + 0);
         _indices[_indexCount++] = (ushort)(baseIndex + 1);
@@ -312,38 +316,28 @@ public class Dust : IDisposable, IImmediateRenderElement
         }
     }
 
-    public void Render(Camera camera, Lighting? _)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? _)
     {
-        if (_vertexCount == 0 || _indexCount == 0)
+        if (_vertexCount == 0 || _indexCount == 0) return;
+
+        if (_dirty)
         {
-            return;
+            cb.UpdateBuffer(_vertexBuffer, MemoryMarshal.AsBytes(_verts.AsSpan(0, _vertexCount)));
+            cb.UpdateBuffer(_indexBuffer, MemoryMarshal.AsBytes(_indices.AsSpan(0, _indexCount)));
+            _dirty = false;
         }
-        
-        Effects.Dust.World = Matrix.Identity;
-        Effects.Dust.View = camera.ViewMatrix;
-        Effects.Dust.Projection = camera.ProjectionMatrix;
-        
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
-        _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        _graphicsDevice.BlendState = BlendState.NonPremultiplied;
-        _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-        _graphicsDevice.Indices = _indexBuffer;
-        foreach (var pass in Effects.Dust.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-            
-            _graphicsDevice.DrawIndexedPrimitives(
-                PrimitiveType.TriangleList,
-                0,
-                0,
-                _vertexCount,
-                0,
-                _indexCount / 3
-            );
-        }
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
-        _graphicsDevice.BlendState = BlendState.Opaque;
-        _graphicsDevice.RasterizerState = RasterizerState.CullCounterClockwise;
+
+        var p = Effects.ParticleParameters;
+
+        cb.SetPipeline(Effects.ParticleDepthReadPipeline);
+        cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
+        cb.SetIndexBuffer(_indexBuffer);
+
+        p.World.SetValue(cb, Matrix.Identity);
+        p.View.SetValue(cb, camera.ViewMatrix);
+        p.Projection.SetValue(cb, camera.ProjectionMatrix);
+
+        cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: _indexCount / 3);
     }
 
     private void ReleaseUnmanagedResources()

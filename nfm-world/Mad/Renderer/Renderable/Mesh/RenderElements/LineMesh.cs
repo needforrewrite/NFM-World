@@ -1,5 +1,6 @@
-﻿using System.Runtime.InteropServices;
-using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
+using NFMWorld.Shaders;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Rad;
 
@@ -8,16 +9,16 @@ namespace NFMWorld;
 public class LineMesh : IInstancedRenderElement, IDisposable
 {
     private readonly Mesh _supermesh;
-    private readonly GraphicsDevice _graphicsDevice;
-    private readonly VertexBuffer _lineVertexBuffer;
-    private readonly IndexBuffer _lineIndexBuffer;
+    private readonly IGraphicsDevice _graphicsDevice;
+    private readonly IBuffer _lineVertexBuffer;
+    private readonly IBuffer _lineIndexBuffer;
     private readonly int _lineTriangleCount;
     private readonly LineType _lineType;
     private readonly int _lineVertexCount;
 
     public LineMesh(
         Mesh supermesh,
-        GraphicsDevice graphicsDevice,
+        IGraphicsDevice graphicsDevice,
         IReadOnlyCollection<KeyValuePair<(Vector3 Point0, Vector3 Point1), (Rad3dPoly Poly, Vector3 Centroid, Vector3 Normal)>> lines,
         LineType lineType
     )
@@ -50,19 +51,14 @@ public class LineMesh : IInstancedRenderElement, IDisposable
             data.AddRange(verts);
         }
 
-        var lineVertexBuffer = new VertexBuffer(graphicsDevice, LineMeshVertexAttribute.VertexDeclaration, data.Count, BufferUsage.None)
-        {
-            Name = "Line Mesh Vertex Buffer",
-            Tag = this
-        };
-        lineVertexBuffer.SetDataEXT(data);
+        var vertexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(data));
+        var lineVertexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
 
-        var lineIndexBuffer = new IndexBuffer(graphicsDevice, IndexElementSize.ThirtyTwoBits, indices.Count, BufferUsage.None)
-        {
-            Name = "Line Mesh Index Buffer",
-            Tag = this
-        };
-        lineIndexBuffer.SetDataEXT(indices);
+        // Indices are stored as List<int> (32-bit) - matches the old IndexElementSize.ThirtyTwoBits.
+        var indexBytes = MemoryMarshal.AsBytes(CollectionsMarshal.AsSpan(indices));
+        var lineIndexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Index, BufferUsage.Immutable, indexBytes.Length, IndexFormat.UInt32), indexBytes);
 
         var lineVertexCount = data.Count;
         var lineTriangleCount = indices.Count / 3;
@@ -80,60 +76,61 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         Dispose(false);
     }
 
-    public void Render(Camera camera, Lighting? lighting, VertexBuffer instanceBuffer, int instanceCount)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting, IBuffer instanceBuffer, int instanceCount)
     {
         if (World.DistantOutlineBehavior == DistantOutlineBehavior.HideOutlines)
             return;
 
-        _graphicsDevice.SetVertexBuffers(_lineVertexBuffer, new VertexBufferBinding(instanceBuffer, 0, 1));
-        _graphicsDevice.Indices = _lineIndexBuffer;
-        _graphicsDevice.RasterizerState = RasterizerState.CullNone;
+        var p = Effects.LineParameters;
 
-        // If a parameter is null that means the HLSL compiler optimized it out.
-        Effects.Line.SnapColor?.SetValue(World.Snap);
-        Effects.Line.IsFullbright?.SetValue(false);
-        Effects.Line.UseBaseColor?.SetValue(false);
-        Effects.Line.BaseColor?.SetValue(new Vector3(0, 0, 0));
-        Effects.Line.ChargedBlinkAmount?.SetValue(_lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
-        Effects.Line.HalfThickness?.SetValue(World.OutlineThickness);
+        cb.SetPipeline(Effects.LinePipeline);
+        cb.SetVertexBuffer(0, _lineVertexBuffer, LineMeshVertexAttribute.Stride);
+        cb.SetVertexBuffer(1, instanceBuffer, InstanceData.Stride);
+        cb.SetIndexBuffer(_lineIndexBuffer);
+
+        // If a parameter's slot is -1 that means the HLSL compiler optimized it out.
+        p.SnapColor.SetValue(cb, World.Snap);
+        p.IsFullbright.SetValue(cb, false);
+        p.UseBaseColor.SetValue(cb, false);
+        p.BaseColor.SetValue(cb, new Vector3(0, 0, 0));
+        p.ChargedBlinkAmount.SetValue(cb, _lineType is LineType.Charged && World.ChargedPolyBlink ? World.ChargeAmount : 0.0f);
+        p.HalfThickness.SetValue(cb, World.OutlineThickness);
 
         // Line meshes are batched, so cutoff and falloff are evaluated per-line in the shader.
-        LineEffectDistantOutlineSettings.Apply(World.DistantOutlineBehavior);
-        Effects.Line.OutlineClassicCutoffDistance?.SetValue(World.OutlineClassicCutoffDistance);
-        Effects.Line.OutlineFalloffStartDistance?.SetValue(World.OutlineFalloffStartDistance);
+        LineEffectDistantOutlineSettings.Apply(cb, World.DistantOutlineBehavior);
+        p.OutlineClassicCutoffDistance.SetValue(cb, World.OutlineClassicCutoffDistance);
+        p.OutlineFalloffStartDistance.SetValue(cb, World.OutlineFalloffStartDistance);
         var (cutoffDistance, linearFadeStartDistance, linearFadeStartThickness, inverseLinearFadeLength) =
             GetOutlineFalloffCutoffParameters();
-        Effects.Line.OutlineFalloffCutoffDistance?.SetValue(cutoffDistance);
-        Effects.Line.OutlineFalloffLinearFadeStartDistance?.SetValue(linearFadeStartDistance);
-        Effects.Line.OutlineFalloffLinearFadeStartThickness?.SetValue(linearFadeStartThickness);
-        Effects.Line.OutlineFalloffInverseLinearFadeLength?.SetValue(inverseLinearFadeLength);
+        p.OutlineFalloffCutoffDistance.SetValue(cb, cutoffDistance);
+        p.OutlineFalloffLinearFadeStartDistance.SetValue(cb, linearFadeStartDistance);
+        p.OutlineFalloffLinearFadeStartThickness.SetValue(cb, linearFadeStartThickness);
+        p.OutlineFalloffInverseLinearFadeLength.SetValue(cb, inverseLinearFadeLength);
 
-        Effects.Line.LightDirection?.SetValue(World.LightDirection);
-        Effects.Line.FogColor?.SetValue(World.Fog.Snap(World.Snap));
-        Effects.Line.FogDistance?.SetValue(World.FadeFrom);
-        Effects.Line.FogLogDensity?.SetValue(World.FogLogDensity);
-        Effects.Line.EnvironmentLight?.SetValue(new Vector2(World.BlackPoint, World.WhitePoint));
-        Effects.Line.DepthBias?.SetValue(0.00005f);
+        p.LightDirection.SetValue(cb, World.LightDirection);
+        p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
+        p.FogDistance.SetValue(cb, World.FadeFrom);
+        p.FogLogDensity.SetValue(cb, World.FogLogDensity);
+        p.EnvironmentLight.SetValue(cb, new Vector2(World.BlackPoint, World.WhitePoint));
+        p.DepthBias.SetValue(cb, 0.00005f);
 
-        Effects.Line.View?.SetValue(camera.ViewMatrix);
-        Effects.Line.Projection?.SetValue(camera.ProjectionMatrix);
-        Effects.Line.ViewProj?.SetValue(camera.ViewMatrix * camera.ProjectionMatrix);
-        Effects.Line.CameraPosition?.SetValue(camera.Position);
+        p.View.SetValue(cb, camera.ViewMatrix);
+        p.Projection.SetValue(cb, camera.ProjectionMatrix);
+        p.ViewProj.SetValue(cb, camera.ViewMatrix * camera.ProjectionMatrix);
+        p.CameraPosition.SetValue(cb, camera.Position);
 
-        Effects.Line.CurrentTechnique = Effects.Line.Techniques["Basic"];
+        p.Expand.SetValue(cb, _supermesh.Expand);
+        p.Darken.SetValue(cb, _supermesh.Darken);
+        p.RandomFloat.SetValue(cb, URandom.Single());
+        p.Alpha.SetValue(cb, 1.0f);
 
-        Effects.Line.Expand?.SetValue(_supermesh.Expand);
-        Effects.Line.Darken?.SetValue(_supermesh.Darken);
-        Effects.Line.RandomFloat?.SetValue(URandom.Single());
-        Effects.Line.Alpha?.SetValue(1.0f);
-
-        Effects.Line.Resolution?.SetValue(new Vector2(_graphicsDevice.Viewport.Width, _graphicsDevice.Viewport.Height));
+        p.Resolution.SetValue(cb, new Vector2(_graphicsDevice.Swapchain.Width, _graphicsDevice.Swapchain.Height));
 
         if (_supermesh.PolyFixState == 2)
         {
-            Effects.Line.UseBaseColor?.SetValue(true);
-            Effects.Line.BaseColor?.SetValue(new Vector3(0, 0, 0));
-            Effects.Line.IsFullbright?.SetValue(true);
+            p.UseBaseColor.SetValue(cb, true);
+            p.BaseColor.SetValue(cb, new Vector3(0, 0, 0));
+            p.IsFullbright.SetValue(cb, true);
         }
         else if (_supermesh.PolyFixState == 1)
         {
@@ -144,10 +141,10 @@ public class LineMesh : IInstancedRenderElement, IDisposable
             short b = (short) (255F + 255F * (World.Snap[2] / 100F));
             if (b > 255) b = 255;
             if (b < 0) b = 0;
-            
-            Effects.Line.UseBaseColor?.SetValue(true);
-            Effects.Line.BaseColor?.SetValue(new Color3(r, g, b));
-            Effects.Line.IsFullbright?.SetValue(true);
+
+            p.UseBaseColor.SetValue(cb, true);
+            p.BaseColor.SetValue(cb, new Color3(r, g, b));
+            p.IsFullbright.SetValue(cb, true);
         }
         else if (_supermesh.PolyFixState == 3)
         {
@@ -158,28 +155,21 @@ public class LineMesh : IInstancedRenderElement, IDisposable
             short b = (short) (223.0F + 223.0F * (World.Snap[2] / 100.0F));
             if (b > 255) b = 255;
             if (b < 0) b = 0;
-            
-            Effects.Line.UseBaseColor?.SetValue(true);
-            Effects.Line.BaseColor?.SetValue(new Color3(r, g, b));
-            Effects.Line.IsFullbright?.SetValue(true);
+
+            p.UseBaseColor.SetValue(cb, true);
+            p.BaseColor.SetValue(cb, new Color3(r, g, b));
+            p.IsFullbright.SetValue(cb, true);
         }
         else if (_supermesh.PolyFixState == 77)
         {
-            Effects.Line.UseBaseColor?.SetValue(true);
-            Effects.Line.BaseColor?.SetValue(new Color3(16, 198, 255));
-            Effects.Line.IsFullbright?.SetValue(true);
+            p.UseBaseColor.SetValue(cb, true);
+            p.BaseColor.SetValue(cb, new Color3(16, 198, 255));
+            p.IsFullbright.SetValue(cb, true);
         }
 
-        lighting?.SetShadowMapParameters(Effects.Line.UnderlyingEffect);
-        
-        _graphicsDevice.BlendState = BlendState.NonPremultiplied;
+        lighting?.SetShadowMapParameters(cb, Effects.LinePipeline.Reflection);
 
-        foreach (var pass in Effects.Line.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-
-            _graphicsDevice.DrawInstancedPrimitives(PrimitiveType.TriangleList, 0, 0, _lineVertexCount, 0, _lineTriangleCount, instanceCount);
-        }
+        cb.DrawIndexedInstanced(baseVertex: 0, startIndex: 0, primitiveCount: _lineTriangleCount, instanceCount: instanceCount);
     }
 
     private static (
@@ -224,16 +214,27 @@ public class LineMesh : IInstancedRenderElement, IDisposable
         float DecalOffset
     )
     {
-        /// <inheritdoc cref="P:IVertexType.VertexDeclaration" />
-        public static readonly VertexDeclaration VertexDeclaration = VertexPacker.Pack(
-            new VertexPacker.Element(VertexElementFormat.Vector3, VertexElementUsage.Position, 0), // PositionA
-            new VertexPacker.Element(VertexElementFormat.Vector3, VertexElementUsage.Position, 1), // PositionB
-            new VertexPacker.Element(VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 0), // Side
-            new VertexPacker.Element(VertexElementFormat.Vector3, VertexElementUsage.Normal, 0), // Normal
-            new VertexPacker.Element(VertexElementFormat.Vector3, VertexElementUsage.Position, 2), // Centroid
-            new VertexPacker.Element(VertexElementFormat.Color, VertexElementUsage.Color, 0), // Color
-            new VertexPacker.Element(VertexElementFormat.Single, VertexElementUsage.TextureCoordinate, 1) // DecalOffset
-        );
+        public const int Stride = 60;
+
+        /// <summary>
+        /// Same field layout as this struct's own memory layout (<see cref="Stride"/> = 60 bytes:
+        /// PositionA/B float3 pairs, Side float1, Normal float3, Centroid float3, Color as a packed
+        /// byte4 despite HLSL's "float3 Color : COLOR0" - the input assembler unpacks bytes to
+        /// normalized floats before the shader runs - then DecalOffset float1), expressed against
+        /// the new graphics abstraction for <see cref="Graphics.PipelineDesc.VertexLayouts"/>.
+        /// </summary>
+        public static readonly VertexLayoutDesc VertexLayout = new(
+            Attributes:
+            [
+                new VertexAttributeDesc("POSITION", 0, 0, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("POSITION", 1, 12, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("TEXCOORD", 0, 24, VertexAttributeFormat.Float1),
+                new VertexAttributeDesc("NORMAL", 0, 28, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("POSITION", 2, 40, VertexAttributeFormat.Float3),
+                new VertexAttributeDesc("COLOR", 0, 52, VertexAttributeFormat.Byte4Normalized),
+                new VertexAttributeDesc("TEXCOORD", 1, 56, VertexAttributeFormat.Float1),
+            ],
+            StrideInBytes: Stride);
     }
 
     private void ReleaseUnmanagedResources()
@@ -256,14 +257,16 @@ public class LineMesh : IInstancedRenderElement, IDisposable
 
 internal static class LineEffectDistantOutlineSettings
 {
-    public static void Apply(DistantOutlineBehavior behavior)
+    public static void Apply(ICommandBuffer cb, DistantOutlineBehavior behavior)
     {
+        var p = Effects.LineParameters;
+
         // Independent numeric switches keep the shader path branchless.
-        Effects.Line.DistantOutlineDistanceFalloffWithCutoffMask?.SetValue(
+        p.DistantOutlineDistanceFalloffWithCutoffMask.SetValue(cb,
             behavior == DistantOutlineBehavior.DistanceFalloffWithCutoff ? 1f : 0f);
-        Effects.Line.DistantOutlineClassicCutoffMask?.SetValue(
+        p.DistantOutlineClassicCutoffMask.SetValue(cb,
             behavior == DistantOutlineBehavior.ClassicCutoff ? 1f : 0f);
-        Effects.Line.DistantOutlineDistanceFalloffMask?.SetValue(
+        p.DistantOutlineDistanceFalloffMask.SetValue(cb,
             behavior == DistantOutlineBehavior.DistanceFalloff ? 1f : 0f);
     }
 }

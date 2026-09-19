@@ -22,6 +22,15 @@ public static partial class GameSparker
 {
     public static WorldGame Game = null!;
     public static GraphicsDevice GraphicsDevice = null!;
+
+    /// <summary>
+    /// Milestone 5 Stage B: the new graphics abstraction's device, set alongside
+    /// <see cref="GraphicsDevice"/> once <see cref="Load"/> is converted (still unset - Load isn't
+    /// called yet, see WorldGame.cs's Stage A TODOs). Exists so render-element constructors that
+    /// only read a static device (e.g. <see cref="CollisionDebugMesh"/>) don't need a parameter
+    /// threaded through every one of their (currently unconverted) call sites.
+    /// </summary>
+    public static NFMWorld.Graphics.IGraphicsDevice NewGraphicsDevice = null!;
     public static readonly string version = GetVersionString();
     public static AccountManager AccountManager = new AccountManager();
 
@@ -223,7 +232,12 @@ public static partial class GameSparker
     public static void Load(WorldGame game)
     {
         Game = game;
-        GraphicsDevice = game.GraphicsDevice;
+        // GraphicsDevice (the old XNA field) is left null - WorldGame no longer owns an XNA
+        // GraphicsDevice at all (window/device ownership moved to SdlWindow/FNA3DGraphicsDevice in
+        // Stage A). It's still threaded through to Mesh/Phase constructors below only because
+        // their own signatures haven't been changed - none of them actually dereference it live
+        // anymore (buffer/pipeline creation goes through NewGraphicsDevice instead), confirmed by
+        // audit in Milestone 5 Stage D.
 
         foreach (var stageParts in (Span<UnlimitedArray<Rad3d>>)[BackendGameSparker.stage_parts, BackendGameSparker.vendor_stage_parts, BackendGameSparker.user_stage_parts])
         foreach (var stagePart in stageParts)
@@ -290,8 +304,9 @@ public static partial class GameSparker
         FrameTrace.ClearMessages();
     }
 
-    public static void Render()
+    public static void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
+        CurrentPhase.Render(cb, alpha);
     }
 
     public static void Render3DOverlays()

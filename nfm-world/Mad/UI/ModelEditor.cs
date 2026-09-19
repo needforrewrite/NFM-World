@@ -133,9 +133,15 @@ public class ModelEditorPhase : BasePhase
     public ModelEditorPhase(GraphicsDevice graphicsDevice)
     {
         _graphicsDevice = graphicsDevice;
-        scene = new Scene(graphicsDevice, [], camera, []);
-        overlayScene = new Scene(graphicsDevice, [], camera, []);
-        RefreshUserModels();
+        // TODO(Milestone 5 Stage B follow-up): Scene now takes NFMWorld.Graphics.IGraphicsDevice,
+        // not FNA's GraphicsDevice - the rest of ModelEditorPhase's extensive direct GraphicsDevice
+        // usage (BlendState/DepthStencilState swaps, Clear, etc.) isn't converted yet either, so
+        // this throws rather than silently being wrong. Nothing constructs a ModelEditorPhase today
+        // (GameSparker.Load isn't called - see WorldGame.cs's Stage A TODOs).
+        scene = null!;
+        overlayScene = null!;
+        throw new NotImplementedException(
+            $"{nameof(ModelEditorPhase)} needs IGraphicsDevice threaded through its whole render path (Milestone 5 Stage B).");
     }
 
     private void RefreshUserModels()
@@ -1646,9 +1652,9 @@ public class ModelEditorPhase : BasePhase
         UpdateTabCameraPosition(tab);
     }
 
-    public override void Render(float alpha)
+    public override void Render(NFMWorld.Graphics.ICommandBuffer cb, float alpha)
     {
-        base.Render(alpha);
+        base.Render(cb, alpha);
 
         _graphicsDevice.Clear(new Color(135, 206, 235).ToXna());
     }
@@ -2783,7 +2789,7 @@ public class ModelEditorPhase : BasePhase
         scene.Objects.Add(tab.Object);
 
         // Render main model first
-        scene.Render(1, false);
+        scene.Render(null!, 1, false); // TODO(Milestone 5 Stage B follow-up): stub Scene (see ctor); never reached today.
 
         // Render reference car overlay with transparency (rendered separately after main model)
         if (tab.ShowReferenceOverlay && tab.ReferenceCarIndex >= 0 && tab.ReferenceCarIndex < BackendGameSparker.cars[Collection.NFMM].Count)
@@ -2821,7 +2827,7 @@ public class ModelEditorPhase : BasePhase
 
             overlayScene.Objects.Clear();
             overlayScene.Objects.Add(referenceCar);
-            overlayScene.Render(1, false, false);
+            overlayScene.Render(null!, 1, false, false); // TODO(Milestone 5 Stage B follow-up): stub Scene (see ctor); never reached today.
 
             // Restore states
             _graphicsDevice.BlendState = previousBlendState;
@@ -2898,7 +2904,7 @@ public class ModelEditorPhase : BasePhase
         // Render the overlay
         overlayScene.Objects.Clear();
         overlayScene.Objects.Add(overlayMesh);
-        overlayScene.Render(1, false, false);
+        overlayScene.Render(null!, 1, false, false); // TODO(Milestone 5 Stage B follow-up): stub Scene (see ctor); never reached today.
 
         // Restore previous states
         GameSparker.GraphicsDevice.BlendState = oldBlendState;
@@ -2949,7 +2955,7 @@ public class ModelEditorPhase : BasePhase
         // Render the overlay
         overlayScene.Objects.Clear();
         overlayScene.Objects.Add(overlayMesh);
-        overlayScene.Render(1, false, false);
+        overlayScene.Render(null!, 1, false, false); // TODO(Milestone 5 Stage B follow-up): stub Scene (see ctor); never reached today.
 
         // Restore previous states
         GameSparker.GraphicsDevice.BlendState = oldBlendState;
@@ -2976,7 +2982,7 @@ public class ModelEditorPhase : BasePhase
         // Render with highlighting
         var oldDevRenderTrackers = GameSparker.devRenderTrackers;
         GameSparker.devRenderTrackers = true;
-        highlightMesh.Render(camera, null);
+        highlightMesh.Render(null!, camera, null); // TODO(Milestone 5 Stage B follow-up): never reached today.
         GameSparker.devRenderTrackers = oldDevRenderTrackers;
     }
 

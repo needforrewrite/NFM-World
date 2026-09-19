@@ -1,23 +1,24 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+using System.Runtime.InteropServices;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 
 namespace NFMWorld;
 
 public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposable
 {
-    private readonly GraphicsDevice _graphicsDevice;
-    private readonly VertexBuffer _vertexBuffer;
+    private readonly IGraphicsDevice _graphicsDevice;
+    private readonly IBuffer _vertexBuffer;
     private readonly int _triangleCount;
 
     public override IReadOnlyList<ITransform> ChildTransforms => [];
 
-    public Ground(GraphicsDevice graphicsDevice)
+    public Ground(IGraphicsDevice graphicsDevice)
     {
         // Generate a quad on World.Ground extending infinitely in X and Z
         _graphicsDevice = graphicsDevice;
         const int size = 1_000_000;
-        var color = ((Color)World.GroundColor.Snap(World.Snap)).ToXna();
-        Span<VertexPositionColor> data =
+        var color = (Color)World.GroundColor.Snap(World.Snap);
+        Span<PositionColorVertex> data =
         [
             new(new Vector3(-size, World.Ground, -size), color),
             new(new Vector3(size, World.Ground, -size), color),
@@ -27,15 +28,12 @@ public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposab
             new(new Vector3(size, World.Ground, size), color)
         ];
 
-        _vertexBuffer = new VertexBuffer(graphicsDevice, typeof(VertexPositionColor), data.Length, BufferUsage.None)
-        {
-            Name = "Ground Vertex Buffer",
-            Tag = this
-        };
-        _vertexBuffer.SetDataEXT(data);
+        var vertexBytes = MemoryMarshal.AsBytes(data);
+        _vertexBuffer = graphicsDevice.CreateBuffer(
+            new BufferDesc(BufferKind.Vertex, BufferUsage.Immutable, vertexBytes.Length), vertexBytes);
         _triangleCount = data.Length / 3;
     }
-    
+
     ~Ground()
     {
         Dispose(false);
@@ -48,27 +46,22 @@ public class Ground : Transform, IRenderable, IImmediateRenderElement, IDisposab
         queue.AddImmediate(SortKey.Create(RenderBucket.Ground), this);
     }
 
-    public void Render(Camera cam, Lighting? lt)
+    public void Render(ICommandBuffer cb, Camera camera, Lighting? lighting)
     {
-        _graphicsDevice.SetVertexBuffer(_vertexBuffer);
-        _graphicsDevice.DepthStencilState = DepthStencilState.DepthRead;
-        Effects.Ground.WorldView?.SetValue(cam.ViewMatrix);
-        Effects.Ground.WorldViewProj?.SetValue(cam.ViewMatrix * cam.ProjectionMatrix);
+        var p = Effects.GroundParameters;
 
-        Effects.Ground.DepthBias?.SetValue(0.00005f);
-        Effects.Ground.FogColor?.SetValue((Vector3)World.Fog.Snap(World.Snap));
-        Effects.Ground.FogDistance?.SetValue(World.FadeFrom);
-        Effects.Ground.FogLogDensity?.SetValue(World.FogLogDensity);
+        cb.SetPipeline(Effects.GroundPipeline);
+        cb.SetVertexBuffer(0, _vertexBuffer, PositionColorVertex.Stride);
 
-        lt?.SetShadowMapParameters(Effects.Ground.UnderlyingEffect);
+        p.WorldView.SetValue(cb, camera.ViewMatrix);
+        p.WorldViewProj.SetValue(cb, camera.ViewMatrix * camera.ProjectionMatrix);
+        p.FogColor.SetValue(cb, World.Fog.Snap(World.Snap));
+        p.FogDistance.SetValue(cb, World.FadeFrom);
+        p.FogLogDensity.SetValue(cb, World.FogLogDensity);
 
-        foreach (var pass in Effects.Ground.CurrentTechnique.Passes)
-        {
-            pass.Apply();
-            _graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0, _triangleCount);
-        }
+        lighting?.SetShadowMapParameters(cb, Effects.GroundPipeline.Reflection);
 
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+        cb.Draw(startVertex: 0, primitiveCount: _triangleCount);
     }
 
     private void ReleaseUnmanagedResources()

@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
+using NFMWorld.MojoShader;
 using NFMWorld.Shaders;
 
 namespace NFMWorld.Graphics.FNA3D;
@@ -12,7 +13,7 @@ namespace NFMWorld.Graphics.FNA3D;
 /// passed straight through to FNA3D_Set*BufferData, which performs the one unavoidable
 /// CPU-to-GPU copy itself.
 /// </summary>
-internal sealed class FNA3DCommandBuffer : ICommandBuffer
+internal sealed class FNA3DCommandBuffer(IntPtr device) : ICommandBuffer
 {
     // FNA3D_ApplyEffect writes into this every call to report render/sampler state changes the
     // Effect's technique pass made (mirrors FNA's own GraphicsDevice.effectStateChangesPtr) - it
@@ -22,22 +23,17 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
     // command buffer is enough - only one is ever live at a time by design.
     private static readonly IntPtr StateChangesBuffer = AllocateZeroedStateChanges();
 
-    private static IntPtr AllocateZeroedStateChanges()
+    private static unsafe IntPtr AllocateZeroedStateChanges()
     {
-        const int size = 64; // MOJOSHADER_effectStateChanges is 3x (uint + pointer) with padding; rounded up for safety.
-        var ptr = Marshal.AllocHGlobal(size);
-        for (var i = 0; i < size; i++) Marshal.WriteByte(ptr, i, 0);
-        return ptr;
+        return (IntPtr)NativeMemory.AllocZeroed((UIntPtr)sizeof(MOJOSHADER_effectStateChanges));
     }
 
-    private readonly IntPtr _device;
     private FNA3DPipelineState? _pipeline;
     private IntPtr[] _vertexBufferHandles = [];
     private int[] _vertexOffsets = [];
     private IntPtr _indexBufferHandle;
     private FNA3D_IndexElementSize _indexFormat;
-
-    public FNA3DCommandBuffer(IntPtr device) => _device = device;
+    private int _indexOffsetBytes;
 
     public void SetPipeline(IPipelineState pipeline)
     {
@@ -49,9 +45,9 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
         var blend = fna.BlendState;
         var depth = fna.DepthStencilState;
         var raster = fna.RasterizerState;
-        FNA3D_SetBlendState(_device, ref blend);
-        FNA3D_SetDepthStencilState(_device, ref depth);
-        FNA3D_ApplyRasterizerState(_device, ref raster);
+        FNA3D_SetBlendState(device, ref blend);
+        FNA3D_SetDepthStencilState(device, ref depth);
+        FNA3D_ApplyRasterizerState(device, ref raster);
     }
 
     public void SetVertexBuffer(int slot, IBuffer buffer, int strideBytes, int offsetBytes = 0)
@@ -65,15 +61,13 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
     {
         var fna = (FNA3DBuffer)buffer;
         _indexBufferHandle = fna.Handle;
-        _indexFormat = Mapping.ToNative(fna.IndexFormat);
-        // offsetBytes: FNA3D_DrawIndexedPrimitives takes startIndex, not a byte offset, so a
-        // non-zero index-buffer offset is folded into startIndex by the caller at draw time.
-        if (offsetBytes != 0)
-            throw new NotSupportedException("Non-zero index buffer offsets aren't supported by this backend yet - fold the offset into DrawIndexed's startIndex instead.");
+        _indexFormat = fna.IndexFormat.ToNative();
+        _indexOffsetBytes = offsetBytes;
     }
 
     public void SetShaderResource(int slot, ITexture texture, ISampler sampler) =>
-        throw new NotImplementedException("No shader ported so far binds a texture - implemented alongside the first one that does (Milestone 5).");
+        throw new NotImplementedException(
+            "No shader ported so far binds a texture - implemented alongside the first one that does (Milestone 5).");
 
     public unsafe void SetUniform(int slot, ReadOnlySpan<byte> value)
     {
@@ -84,19 +78,16 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
         var destination = (float*)_pipeline.UniformValuePointers[slot];
 
         // HLSL packs matrix parameters into constant registers column-major, while callers hold
-        // their matrices row-major (System.Numerics/XNA convention). FNA's own
-        // EffectParameter.SetValue(Matrix) bridges that by writing M11, M21, M31, M41, ... - i.e.
-        // storing the transpose - so this does the same, and ported game code can keep setting
-        // matrices exactly as it did before, with no .Transpose() sprinkled at call sites.
+        // their matrices row-major (System.Numerics/XNA convention).
         if (uniform.Type == UniformType.Matrix4x4)
         {
             if (value.Length < 16 * sizeof(float))
-                throw new ArgumentException($"{uniform.Name} is a Matrix4x4 uniform - expected at least 64 bytes, got {value.Length}.", nameof(value));
+                throw new ArgumentException(
+                    $"{uniform.Name} is a Matrix4x4 uniform - expected at least 64 bytes, got {value.Length}.",
+                    nameof(value));
 
-            var source = MemoryMarshal.Cast<byte, float>(value);
-            for (var column = 0; column < 4; column++)
-            for (var row = 0; row < 4; row++)
-                destination[column * 4 + row] = source[row * 4 + column];
+            var mat = Matrix4x4.Transpose(MemoryMarshal.Read<Matrix4x4>(value));
+            MemoryMarshal.Write(new Span<byte>(destination, value.Length), in mat);
             return;
         }
 
@@ -108,10 +99,12 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
         if (target is null)
         {
             // Null/zero-count targets the backbuffer, per FNA3D_SetRenderTargets semantics.
-            FNA3D_SetRenderTargets(_device, null, 0, IntPtr.Zero, FNA3D_DepthFormat.None, 0);
+            FNA3D_SetRenderTargets(device, null, 0, IntPtr.Zero, FNA3D_DepthFormat.None, 0);
             return;
         }
-        throw new NotImplementedException("Off-screen render target binding is implemented alongside shadow-cascade rendering in Milestone 5.");
+
+        throw new NotImplementedException(
+            "Off-screen render target binding is implemented alongside shadow-cascade rendering in Milestone 5.");
     }
 
     public void SetViewport(Viewport viewport)
@@ -125,7 +118,7 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
             minDepth = viewport.MinDepth,
             maxDepth = viewport.MaxDepth,
         };
-        FNA3D_SetViewport(_device, ref native);
+        FNA3D_SetViewport(device, ref native);
     }
 
     public unsafe void UpdateBuffer(IBuffer buffer, ReadOnlySpan<byte> data, int offsetBytes = 0)
@@ -138,11 +131,11 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
             {
                 // elementCount=byteLength, elementSizeInBytes=1, vertexStride=1 is FNA's own
                 // convention for a raw untyped copy (see GraphicsDevice.PrepareUserVertexBuffer).
-                FNA3D_SetVertexBufferData(_device, fna.Handle, offsetBytes, (IntPtr)ptr, data.Length, 1, 1, options);
+                FNA3D_SetVertexBufferData(device, fna.Handle, offsetBytes, (IntPtr)ptr, data.Length, 1, 1, options);
             }
             else
             {
-                FNA3D_SetIndexBufferData(_device, fna.Handle, offsetBytes, (IntPtr)ptr, data.Length, options);
+                FNA3D_SetIndexBufferData(device, fna.Handle, offsetBytes, (IntPtr)ptr, data.Length, options);
             }
         }
     }
@@ -150,13 +143,13 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
     public void Clear(ClearOptions options, ColorRgba color, float depth = 1f, int stencil = 0)
     {
         var native = new Vector4 { X = color.R, Y = color.G, Z = color.B, W = color.A };
-        FNA3D_Clear(_device, Mapping.ToNative(options), ref native, depth, stencil);
+        FNA3D_Clear(device, options.ToNative(), ref native, depth, stencil);
     }
 
     public void Draw(int startVertex, int primitiveCount)
     {
         ApplyVertexBuffersAndEffect(baseVertex: 0);
-        FNA3D_DrawPrimitives(_device, Mapping.ToNative(RequirePipeline().Desc.Topology), startVertex, primitiveCount);
+        FNA3D_DrawPrimitives(device, RequirePipeline().Desc.Topology.ToNative(), startVertex, primitiveCount);
     }
 
     public void DrawIndexed(int baseVertex, int startIndex, int primitiveCount)
@@ -164,9 +157,21 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
         ApplyVertexBuffersAndEffect(baseVertex);
         var pipeline = RequirePipeline();
         FNA3D_DrawIndexedPrimitives(
-            _device, Mapping.ToNative(pipeline.Desc.Topology), baseVertex,
-            minVertexIndex: 0, numVertices: 0, startIndex, primitiveCount,
-            _indexBufferHandle, _indexFormat);
+            device,
+            pipeline.Desc.Topology.ToNative(),
+            baseVertex,
+            minVertexIndex: 0,
+            numVertices: 0,
+            startIndex +
+            _indexOffsetBytes * _indexFormat switch
+            {
+                FNA3D_IndexElementSize.SixteenBits => 2,
+                FNA3D_IndexElementSize.ThirtyTwoBits => 4,
+                _ => throw new ArgumentOutOfRangeException(nameof(_indexFormat), _indexFormat, null)
+            },
+            primitiveCount,
+            _indexBufferHandle,
+            _indexFormat);
     }
 
     public void DrawIndexedInstanced(int baseVertex, int startIndex, int primitiveCount, int instanceCount)
@@ -174,13 +179,27 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
         ApplyVertexBuffersAndEffect(baseVertex);
         var pipeline = RequirePipeline();
         FNA3D_DrawInstancedPrimitives(
-            _device, Mapping.ToNative(pipeline.Desc.Topology), baseVertex,
-            minVertexIndex: 0, numVertices: 0, startIndex, primitiveCount, instanceCount,
-            _indexBufferHandle, _indexFormat);
+            device,
+            pipeline.Desc.Topology.ToNative(),
+            baseVertex,
+            minVertexIndex: 0,
+            numVertices: 0,
+            startIndex +
+            _indexOffsetBytes * _indexFormat switch
+            {
+                FNA3D_IndexElementSize.SixteenBits => 2,
+                FNA3D_IndexElementSize.ThirtyTwoBits => 4,
+                _ => throw new ArgumentOutOfRangeException(nameof(_indexFormat), _indexFormat, null)
+            },
+            primitiveCount,
+            instanceCount,
+            _indexBufferHandle,
+            _indexFormat);
     }
 
     private FNA3DPipelineState RequirePipeline() =>
-        _pipeline ?? throw new InvalidOperationException($"{nameof(SetPipeline)} must be called before issuing a draw call.");
+        _pipeline ??
+        throw new InvalidOperationException($"{nameof(SetPipeline)} must be called before issuing a draw call.");
 
     /// <summary>
     /// Applies the currently bound vertex streams and Effect pass right before a draw - Effect
@@ -191,13 +210,8 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
     {
         var pipeline = RequirePipeline();
 
-        // FNA3D_ApplyEffect must run FIRST: D3D11's ApplyVertexBufferBindings builds its input
-        // layout by querying the vertex shader currently bound to the native shader context
-        // (MOJOSHADER_d3d11GetBoundShaders), which ApplyEffect is what actually binds - calling
-        // these in the opposite order (as FNA itself never does - Effect.Apply() always precedes
-        // GraphicsDevice.DrawIndexedPrimitives()) leaves that shader pointer null/stale and
-        // segfaults on the D3D11/OpenGL drivers the first time a pipeline is applied.
-        FNA3D_ApplyEffect(_device, pipeline.EffectHandle, pass: 0, stateChanges: StateChangesBuffer);
+        // FNA3D_ApplyEffect must run FIRST
+        FNA3D_ApplyEffect(device, pipeline.EffectHandle, pass: 0, stateChanges: StateChangesBuffer);
 
         var bindings = stackalloc FNA3D_VertexBufferBinding[pipeline.VertexDeclarations.Length];
         for (var slot = 0; slot < pipeline.VertexDeclarations.Length; slot++)
@@ -210,6 +224,7 @@ internal sealed class FNA3DCommandBuffer : ICommandBuffer
                 instanceFrequency = pipeline.InstanceFrequencies[slot],
             };
         }
-        FNA3D_ApplyVertexBufferBindings(_device, bindings, pipeline.VertexDeclarations.Length, bindingsUpdated: 1, baseVertex);
+
+        FNA3D_ApplyVertexBufferBindings(device, bindings, pipeline.VertexDeclarations.Length, bindingsUpdated: 1, baseVertex);
     }
 }

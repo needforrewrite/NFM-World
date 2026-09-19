@@ -1,5 +1,6 @@
-﻿using System;
-using Microsoft.Xna.Framework.Graphics;
+using System;
+using Maxine.Extensions.Mathematics;
+using NFMWorld.Graphics;
 using NFMWorldLibrary;
 using NFMWorldLibrary.Backend;
 
@@ -7,7 +8,7 @@ namespace NFMWorld;
 
 public class Scene : IDisposable
 {
-    private readonly GraphicsDevice _graphicsDevice;
+    private readonly IGraphicsDevice _graphicsDevice;
     private Camera _camera;
     private readonly IReadOnlyList<Camera> _lightCameras;
     public readonly List<GameObject> Objects;
@@ -20,7 +21,7 @@ public class Scene : IDisposable
         set => _camera = value;
     }
 
-    public Scene(GraphicsDevice graphicsDevice, IEnumerable<GameObject> objects, Camera camera, IReadOnlyList<Camera> lightCameras)
+    public Scene(IGraphicsDevice graphicsDevice, IEnumerable<GameObject> objects, Camera camera, IReadOnlyList<Camera> lightCameras)
     {
         _graphicsDevice = graphicsDevice;
         _camera = camera;
@@ -29,7 +30,12 @@ public class Scene : IDisposable
         _renderQueue = new RenderQueue(graphicsDevice);
     }
 
-    public void Render(float alpha, bool useShadowMapping, bool clearRenderBuffer = true)
+    /// <summary>
+    /// Records this scene's draws into <paramref name="cb"/> - the single command buffer the
+    /// caller acquired for this frame (see <see cref="IGraphicsDevice.AcquireCommandBuffer"/>'s
+    /// "one at a time" rule; this method itself never acquires or submits one).
+    /// </summary>
+    public void Render(ICommandBuffer cb, float alpha, bool useShadowMapping, bool clearRenderBuffer = true)
     {
         _camera.OnBeforeRender(alpha);
         foreach (var lightCamera in _lightCameras)
@@ -42,48 +48,46 @@ public class Scene : IDisposable
             renderable.OnBeforeRender(alpha);
         }
 
-        _graphicsDevice.BlendState = BlendState.Opaque;
-        _graphicsDevice.DepthStencilState = DepthStencilState.Default;
+        // TODO(Milestone 5 Stage B follow-up): the old code set BlendState.Opaque/
+        // DepthStencilState.Default here as scene-wide defaults before each render element applied
+        // its own state. The new IPipelineState model bakes blend/depth/rasterizer state into each
+        // pipeline at creation time instead (see PipelineDesc), so there's no equivalent "set a
+        // default, let each draw override it" call on ICommandBuffer - each render element's own
+        // pipeline is now the single source of truth for its blend/depth state.
 
         var totalCascades = Math.Min(_lightCameras.Count, WorldGame.NumCascades);
 
-        // CREATE SHADOW MAP
-        if (useShadowMapping)
-        {
-            for (var cascade = 0; cascade < totalCascades; cascade++)
-            {
-                _graphicsDevice.SetRenderTarget(WorldGame.ShadowRenderTargets[cascade]);
-                _graphicsDevice.Clear(Color.White.ToXna());
+        // TODO(Milestone 5 Stage B follow-up): shadow-cascade rendering needs WorldGame.
+        // RebuildCascades converted off RenderTarget2D to IRenderTarget first (still stubbed from
+        // Milestone 5 Stage A - see WorldGame.cs), so shadow mapping is skipped entirely for now
+        // regardless of useShadowMapping.
+        _ = useShadowMapping;
 
-                RenderInternal(RenderPass.Shadow(cascade, totalCascades));
-            }
-
-            _graphicsDevice.SetRenderTarget(null);
-        }
-
-        // DRAW WITH SHADOW MAP
         if (clearRenderBuffer)
-            _graphicsDevice.Clear(Color.CornflowerBlue.ToXna());
+            cb.Clear(ClearOptions.Color | ClearOptions.Depth, new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
 
-        for (var i = 0; i < 16; i++)
-            _graphicsDevice.SamplerStates[i] = SamplerState.PointClamp;
+        // TODO(Milestone 5 Stage B follow-up): the old code force-set all 16 sampler slots to
+        // PointClamp here as a scene-wide default. ICommandBuffer has no equivalent global
+        // sampler-state call - samplers are bound per-draw via SetShaderResource(slot, texture,
+        // sampler) instead, so this becomes each render element's own responsibility once it binds
+        // a texture (none of Line.fx's consumers do yet).
 
-        RenderInternal(RenderPass.Main(totalCascades));
+        RenderInternal(cb, RenderPass.Main(totalCascades));
     }
 
-    private void RenderInternal(RenderPass pass)
+    private void RenderInternal(ICommandBuffer cb, RenderPass pass)
     {
         var lighting = new Lighting(_lightCameras, WorldGame.ShadowRenderTargets, pass);
 
         _renderQueue.Clear();
-        
+
         _renderQueue.Begin(_camera, lighting);
         foreach (var obj in Objects)
         {
             obj.SubmitDraws(_renderQueue, _camera, lighting, pass);
         }
 
-        _renderQueue.Flush();
+        _renderQueue.Flush(cb);
     }
 
     public void OnBeforeUpdate()
