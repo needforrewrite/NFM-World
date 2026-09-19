@@ -125,7 +125,11 @@ public class FnaShaderIncrementalGenerator : IIncrementalGenerator
                                 if (declaration.Type.BaseType is HLSLBaseType.Sampler or HLSLBaseType.Sampler2D or HLSLBaseType.SamplerCube)
                                     continue;
 
-                                sb.AppendLine($"{declaration.Name} = new {declaration.Type.BaseType}EffectParameter(SlotOf(reflection, \"{declaration.Name}\"));");
+                                // A "texture" declaration resolves against ShaderReflection.Textures
+                                // (its own slot space - see MojoShaderEffectReflection.Build's doc
+                                // comment on TextureEffectParameter's slot meaning), not Uniforms.
+                                var slotOfFn = declaration.Type.BaseType == HLSLBaseType.Texture ? "TextureSlotOf" : "SlotOf";
+                                sb.AppendLine($"{declaration.Name} = new {declaration.Type.BaseType}EffectParameter({slotOfFn}(reflection, \"{declaration.Name}\"));");
                             }
                         }
                     }
@@ -156,6 +160,21 @@ public class FnaShaderIncrementalGenerator : IIncrementalGenerator
                         using (sb.Indent())
                         {
                             sb.AppendLine("if (uniform.Name == name) return uniform.Offset;");
+                        }
+                        sb.AppendLine("}");
+                        sb.AppendLine("return -1;");
+                    }
+                    sb.AppendLine("}");
+                    sb.AppendLine();
+                    sb.AppendLine("private static int TextureSlotOf(ShaderReflection reflection, string name)");
+                    sb.AppendLine("{");
+                    using (sb.Indent())
+                    {
+                        sb.AppendLine("foreach (var texture in reflection.Textures)");
+                        sb.AppendLine("{");
+                        using (sb.Indent())
+                        {
+                            sb.AppendLine("if (texture.Name == name) return texture.Slot;");
                         }
                         sb.AppendLine("}");
                         sb.AppendLine("return -1;");

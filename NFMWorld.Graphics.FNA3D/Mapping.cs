@@ -157,6 +157,18 @@ internal static class Mapping
     {
         cullMode = desc.CullMode.ToNative(),
         fillMode = desc.FillMode.ToNative(),
+        scissorTestEnable = (byte)(desc.ScissorTestEnabled ? 1 : 0),
+    };
+
+    public static FNA3D_SamplerState ToNative(this SamplerDesc desc) => new()
+    {
+        filter = desc.Filter.ToNative(),
+        addressU = desc.AddressU.ToNative(),
+        addressV = desc.AddressV.ToNative(),
+        addressW = FNA3D_TextureAddressMode.Wrap,
+        mipMapLevelOfDetailBias = 0f,
+        maxAnisotropy = 4,
+        maxMipLevel = 0,
     };
 
     public static FNA3D_VertexElementFormat ToNative(this VertexAttributeFormat format) => format switch

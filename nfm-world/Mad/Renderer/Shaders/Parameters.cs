@@ -340,11 +340,9 @@ public readonly struct Uint4EffectParameter(int slot)
 }
 public readonly struct TextureEffectParameter(int slot)
 {
-    // TODO(Milestone 5 Stage B follow-up): NFMWorld.Graphics.FNA3D.MojoShaderEffectReflection
-    // doesn't populate ShaderReflection.Textures/Samplers yet (always empty lists), so there's no
-    // slot to resolve a texture uniform against - SetShaderResource needs that reflection data
-    // first. No-ops for now; no .fx file in this vertical slice (Line.fx) declares a texture.
     public void SetValue(ICommandBuffer cb, ITexture? texture, ISampler? sampler)
     {
+        if (slot < 0 || texture is null || sampler is null) return;
+        cb.SetShaderResource(slot, texture, sampler);
     }
 }

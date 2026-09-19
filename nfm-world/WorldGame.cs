@@ -8,7 +8,6 @@ using Maxine.Extensions.Mathematics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MonoGame.ImGuiNet;
 using NFMWorld.DriverInterface;
 using NFMWorld.Graphics;
 using NFMWorld.Graphics.FNA3D;
@@ -53,7 +52,7 @@ public class WorldGame : IDisposable
 
     private readonly FNA3DGraphicsDevice _device;
 
-    public static ImGuiRenderer? ImguiRenderer;
+    public static SdlImGuiRenderer? ImguiRenderer;
     private UiRenderer? _uiRenderer;
 
     internal static long LastFrameTime;
@@ -90,7 +89,12 @@ public class WorldGame : IDisposable
     public TimeSpan TargetElapsedTime { get; set; } = TimeSpan.FromMilliseconds(1000 / Physics.TargetTps);
 
     /// <summary>All real key codes in <see cref="Key"/> (excludes the <c>KeyCode</c>/<c>Modifiers</c>/<c>Shift</c>/<c>Control</c>/<c>Alt</c> bitmask sentinels), for <see cref="UpdateInput"/>'s per-frame diff. Replaces enumerating <c>Microsoft.Xna.Framework.Input.Keys</c>.</summary>
-    private static readonly Key[] AllKeys = Enum.GetValues<Key>().Where(k => (uint)k <= 0xFE).ToArray();
+    // Enum.GetValues<Key>() returns one entry per DECLARED member name, including aliases that
+    // share the same underlying value (e.g. Key.Oem3 == Key.Oemtilde == 0xC0) - iterating that
+    // directly double-fires KeyPressed/KeyReleased for any key with an alias (visible as e.g. the
+    // dev console toggling open then immediately closed again within the same frame, for keys
+    // with exactly two aliases). Distinct() collapses each physical key to a single entry.
+    private static readonly Key[] AllKeys = Enum.GetValues<Key>().Where(k => (uint)k <= 0xFE).Distinct().ToArray();
 
     private bool _disposed;
 
@@ -178,8 +182,10 @@ public class WorldGame : IDisposable
 
     private void Initialize()
     {
-        // TODO(Stage B): construct ImguiRenderer/UiRenderer/NanoVGRenderer here once they (and the
-        // GraphicsDevice they need) are converted to the new graphics abstraction.
+        ImguiRenderer = new SdlImGuiRenderer(_device, Window);
+
+        // TODO(Stage C / Milestone 6 follow-up): UiRenderer/NanoVGRenderer still need a converted
+        // 2D UI backend (NvgSharp's INvgRenderer against this abstraction) - not started yet.
 
         _oldKeyState = SdlWindow.GetKeyboardState();
         var (mouseButtons, mouseX, mouseY) = SdlWindow.GetMouseState();
@@ -212,10 +218,11 @@ public class WorldGame : IDisposable
 
     private void LoadContent()
     {
-        // TODO(Stage C / Milestone 6): ImguiRenderer.RebuildFontAtlas(), the ImGui style block,
-        // and NanoVGRenderer construction all need a live XNA GraphicsDevice/Game (ImGuiRenderer's
-        // ctor takes an FNA Game, which no longer exists) or a converted 2D UI backend - none of
-        // which exist yet. Left uncalled; 2D UI (menus/HUD/dev console) doesn't render yet.
+        ImguiRenderer!.RebuildFontAtlas();
+
+        // TODO(Stage C / Milestone 6 follow-up): the ImGui style/theme block and NanoVGRenderer
+        // construction still need a converted 2D UI backend (NanoVG side) - not started yet. 2D UI
+        // (menus/HUD via Yoga/NanoVG) doesn't render yet; the ImGui dev console does.
 
         // GameSparker.NewGraphicsDevice must be set before Effects.Initialize/GameSparker.Load,
         // since both transitively construct render elements (Ground/Sky/meshes/...) that read it
@@ -382,17 +389,20 @@ public class WorldGame : IDisposable
 
         var t = Stopwatch.StartNew();
 
-        // TODO(Stage C / Milestone 6): _uiRenderer.Render()/YogaDebugger.Render()/FPSCounter.Render()/
-        // _nvg.Render()/GameSparker.Render3DOverlays()/ImguiRenderer's layout+RenderImgui all need
-        // either a converted 2D UI backend or ImguiRenderer, neither of which exist yet (see
-        // LoadContent's TODO). 3D rendering (GameSparker.Render, below) doesn't depend on any of
-        // them.
+        // TODO(Stage C / Milestone 6 follow-up): _uiRenderer.Render()/YogaDebugger.Render()/
+        // _nvg.Render()/GameSparker.Render3DOverlays() still need a converted NanoVG-backed 2D UI
+        // backend - not started yet. FPSCounter/ImGui (dev console/message window/per-phase
+        // RenderImgui) render below.
         var cb = _device.AcquireCommandBuffer();
         cb.Clear(ClearOptions.Color | ClearOptions.Depth,
             new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
         cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, Window.Width, Window.Height));
 
         GameSparker.Render(cb, alpha);
+
+        ImguiRenderer!.BeginLayout(gameTime);
+        GameSparker.RenderImgui();
+        ImguiRenderer.EndLayout(cb);
 
         _device.Submit(cb);
         _device.Swapchain.Present();

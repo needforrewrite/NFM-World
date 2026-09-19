@@ -292,7 +292,12 @@ public partial class StageEditorPhase
         _graphicsDevice.SetRenderTargets(prevRTs);
         World.Snap = oldSnap;
         
-        var texRef = WorldGame.ImguiRenderer.BindTexture(rt);
+        // TODO(Milestone 6 follow-up): SdlImGuiRenderer.BindTexture takes NFMWorld.Graphics.ITexture,
+        // not XNA's RenderTarget2D - this whole part-preview render-to-texture path is still on the
+        // old FNA GraphicsDevice (see _graphicsDevice/SetRenderTargets above) and out of scope for
+        // this pass; not reached today since StageEditorPhase is unreachable (GameSparker.Load never
+        // pushes it). Stubbed so the project compiles.
+        var texRef = default(ImTextureRef);
         _partPreviews[name] = (rt, texRef);
     }
     

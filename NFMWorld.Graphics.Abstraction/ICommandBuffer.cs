@@ -26,11 +26,21 @@ public interface ICommandBuffer
 
     void SetViewport(Viewport viewport);
 
+    /// <summary>Only takes effect on a pipeline whose <see cref="RasterizerStateDesc.ScissorTestEnabled"/> is true.</summary>
+    void SetScissorRect(ScissorRect rect);
+
     /// <summary>
     /// Because this backend executes synchronously rather than deferring, the data is pinned
     /// and passed straight through to the native API - no extra CPU-side copy is made here.
     /// </summary>
     void UpdateBuffer(IBuffer buffer, ReadOnlySpan<byte> data, int offsetBytes = 0);
+
+    /// <summary>
+    /// Uploads pixel data into a sub-rectangle of an existing texture (e.g. streaming a growing
+    /// font atlas) - unlike <see cref="IGraphicsDevice.CreateTexture"/>'s initial-data parameter,
+    /// this can be called any number of times after creation.
+    /// </summary>
+    void UpdateTexture(ITexture texture, int x, int y, int width, int height, ReadOnlySpan<byte> data);
 
     void Clear(ClearOptions options, ColorRgba color, float depth = 1f, int stencil = 0);
     void Draw(int startVertex, int primitiveCount);

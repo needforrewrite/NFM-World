@@ -47,11 +47,15 @@ public enum FillMode { Solid, Wireframe }
 
 public readonly record struct RasterizerStateDesc(
     CullMode CullMode = CullMode.Back,
-    FillMode FillMode = FillMode.Solid)
+    FillMode FillMode = FillMode.Solid,
+    bool ScissorTestEnabled = false)
 {
     /// <summary>XNA's <c>RasterizerState.CullCounterClockwise</c> - see <see cref="DepthStencilStateDesc.Default"/> for why the arguments are spelled out instead of <c>new()</c>.</summary>
-    public static readonly RasterizerStateDesc Default = new(CullMode: CullMode.Back, FillMode: FillMode.Solid);
+    public static readonly RasterizerStateDesc Default = new(CullMode: CullMode.Back, FillMode: FillMode.Solid, ScissorTestEnabled: false);
 }
+
+/// <summary>An integer scissor rectangle in render-target pixel coordinates, set via <see cref="ICommandBuffer.SetScissorRect"/> when a pipeline's <see cref="RasterizerStateDesc.ScissorTestEnabled"/> is true.</summary>
+public readonly record struct ScissorRect(int X, int Y, int Width, int Height);
 
 /// <summary>
 /// Bundles everything that used to be set piecemeal per-draw against FNA's <c>GraphicsDevice</c>

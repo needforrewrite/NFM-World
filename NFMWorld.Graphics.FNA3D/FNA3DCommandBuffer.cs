@@ -65,9 +65,12 @@ internal sealed class FNA3DCommandBuffer(IntPtr device) : ICommandBuffer
         _indexOffsetBytes = offsetBytes;
     }
 
-    public void SetShaderResource(int slot, ITexture texture, ISampler sampler) =>
-        throw new NotImplementedException(
-            "No shader ported so far binds a texture - implemented alongside the first one that does (Milestone 5).");
+    public void SetShaderResource(int slot, ITexture texture, ISampler sampler)
+    {
+        var fnaTexture = (FNA3DTexture)texture;
+        var native = ((FNA3DSampler)sampler).Desc.ToNative();
+        FNA3D_VerifySampler(device, slot, fnaTexture.Handle, ref native);
+    }
 
     public unsafe void SetUniform(int slot, ReadOnlySpan<byte> value)
     {
@@ -119,6 +122,21 @@ internal sealed class FNA3DCommandBuffer(IntPtr device) : ICommandBuffer
             maxDepth = viewport.MaxDepth,
         };
         FNA3D_SetViewport(device, ref native);
+    }
+
+    public void SetScissorRect(ScissorRect rect)
+    {
+        var native = new NFMWorld.FNA3D.Rectangle(rect.X, rect.Y, rect.Width, rect.Height);
+        FNA3D_SetScissorRect(device, ref native);
+    }
+
+    public unsafe void UpdateTexture(ITexture texture, int x, int y, int width, int height, ReadOnlySpan<byte> data)
+    {
+        var fna = (FNA3DTexture)texture;
+        fixed (byte* ptr = data)
+        {
+            FNA3D_SetTextureData2D(device, fna.Handle, x, y, width, height, level: 0, (IntPtr)ptr, data.Length);
+        }
     }
 
     public unsafe void UpdateBuffer(IBuffer buffer, ReadOnlySpan<byte> data, int offsetBytes = 0)

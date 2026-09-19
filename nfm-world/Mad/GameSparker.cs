@@ -163,7 +163,7 @@ public static partial class GameSparker
         DebugKeyStates[key] = true;
 
         var bindings = SettingsMenu.Bindings;
-        
+
         if (key == bindings.ToggleDevConsole)
         {
             devConsole.Toggle();

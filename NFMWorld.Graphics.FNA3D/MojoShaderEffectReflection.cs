@@ -31,6 +31,8 @@ internal static class MojoShaderEffectReflection
         var effect = Marshal.PtrToStructure<MOJOSHADER_effect>(effectData);
         var uniforms = new List<UniformParam>();
         var valuePointers = new List<IntPtr>();
+        var textures = new List<ResourceBinding>();
+        var samplers = new List<ResourceBinding>();
 
         var paramSize = Marshal.SizeOf<MOJOSHADER_effectParam>();
         for (var i = 0; i < effect.param_count; i++)
@@ -39,12 +41,26 @@ internal static class MojoShaderEffectReflection
             var value = param.value;
 
             // Samplers/textures/shader objects aren't set through SetUniform - they go through
-            // ICommandBuffer.SetShaderResource instead (Milestone 5, once a shader actually needs one).
+            // ICommandBuffer.SetShaderResource instead. Their "slot" here is this parameter's
+            // enumeration order among sampler/texture params only (mirrors uniforms' "index into
+            // this reflection's list" convention) - NOT the shader's real compiled D3D9 sampler
+            // register (s0, s1, ...), which MojoShader only exposes via the current pass's parsed
+            // shader symbol table, not on MOJOSHADER_effectValue itself (see FNA's own
+            // Effect.INTERNAL_ApplyEffect, which walks per-shader `samplers[].sampler_register` to
+            // get the real register). Replicating that fully is unnecessary for a shader with a
+            // single sampler (register 0 is what fxc.exe assigns the only sampler in the effect) -
+            // revisit if/when a multi-sampler shader (e.g. Poly.fx's cascade shadow maps) needs
+            // real per-sampler register resolution.
             if (value.type.parameter_type is MOJOSHADER_SYMTYPE_SAMPLER or MOJOSHADER_SYMTYPE_SAMPLER1D
-                or MOJOSHADER_SYMTYPE_SAMPLER2D or MOJOSHADER_SYMTYPE_SAMPLER3D or MOJOSHADER_SYMTYPE_SAMPLERCUBE
-                or MOJOSHADER_SYMTYPE_TEXTURE or MOJOSHADER_SYMTYPE_TEXTURE1D or MOJOSHADER_SYMTYPE_TEXTURE2D
-                or MOJOSHADER_SYMTYPE_TEXTURE3D or MOJOSHADER_SYMTYPE_TEXTURECUBE)
+                or MOJOSHADER_SYMTYPE_SAMPLER2D or MOJOSHADER_SYMTYPE_SAMPLER3D or MOJOSHADER_SYMTYPE_SAMPLERCUBE)
             {
+                samplers.Add(new ResourceBinding(Marshal.PtrToStringAnsi(value.name) ?? string.Empty, samplers.Count));
+                continue;
+            }
+            if (value.type.parameter_type is MOJOSHADER_SYMTYPE_TEXTURE or MOJOSHADER_SYMTYPE_TEXTURE1D
+                or MOJOSHADER_SYMTYPE_TEXTURE2D or MOJOSHADER_SYMTYPE_TEXTURE3D or MOJOSHADER_SYMTYPE_TEXTURECUBE)
+            {
+                textures.Add(new ResourceBinding(Marshal.PtrToStringAnsi(value.name) ?? string.Empty, textures.Count));
                 continue;
             }
 
@@ -63,8 +79,8 @@ internal static class MojoShaderEffectReflection
         var reflection = new ShaderReflection
         {
             Uniforms = uniforms,
-            Textures = [],
-            Samplers = [],
+            Textures = textures,
+            Samplers = samplers,
         };
         return new BuiltReflection(reflection, valuePointers.ToArray());
     }
