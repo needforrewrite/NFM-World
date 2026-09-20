@@ -81,6 +81,10 @@ public class GroundPolys : Transform, IRenderable, IImmediateRenderElement, IDis
         p.FogDistance.SetValue(cb, World.FadeFrom);
         p.FogLogDensity.SetValue(cb, World.FogLogDensity);
 
+        // See Submesh.Render: the shader default (0.0005) is too large for this camera's depth
+        // range and leaves the terrain lit almost everywhere. Pre-migration GroundPolys set 0.00005 too.
+        p.DepthBias.SetValue(cb, 0.00005f);
+
         lighting?.SetShadowMapParameters(cb, Effects.GroundPipeline.Reflection);
 
         cb.DrawIndexed(baseVertex: 0, startIndex: 0, primitiveCount: _triangleCount);
