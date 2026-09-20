@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using Microsoft.Xna.Framework.Graphics;
 using NFMWorld.Graphics;
 using NFMWorld.Shaders;
 using NFMWorldLibrary;
@@ -10,7 +9,7 @@ namespace NFMWorld;
 public class Lighting
 {
     public IReadOnlyList<Camera> LightCameras;
-    public IReadOnlyList<RenderTarget2D?> ShadowMaps;
+    public IReadOnlyList<IRenderTarget?> ShadowMaps;
 
     /// <summary>
     /// Describes the current render pass (shadow cascade or main colour pass).
@@ -30,7 +29,7 @@ public class Lighting
     /// </summary>
     public Lighting(
         IReadOnlyList<Camera> lightCameras,
-        IReadOnlyList<RenderTarget2D?> shadowMaps,
+        IReadOnlyList<IRenderTarget?> shadowMaps,
         RenderPass renderPass
     )
     {
@@ -49,7 +48,7 @@ public class Lighting
     /// </summary>
     public Lighting(
         IReadOnlyList<Camera> lightCameras,
-        RenderTarget2D?[] shadowMaps,
+        IRenderTarget?[] shadowMaps,
         bool isCreateShadowMap = false,
         int numCascade = -1,
         int totalCascades = 3
@@ -70,14 +69,6 @@ public class Lighting
     /// maps, resolving each by name against <paramref name="reflection"/> the same way the
     /// generated <c>*EffectParameters</c> types do (see <c>Shaders/Parameters.cs</c>'s doc comment).
     /// </summary>
-    /// <remarks>
-    /// TODO(Milestone 5 Stage B follow-up): the ShadowMap0/1/2 texture bindings are not set here -
-    /// <c>NFMWorld.Graphics.FNA3D.MojoShaderEffectReflection</c> doesn't populate
-    /// <c>ShaderReflection.Textures</c>/<c>Samplers</c> yet (always empty lists), so there's no
-    /// slot to bind them against, and <see cref="WorldGame.RebuildCascades"/> (which would create
-    /// the actual shadow render targets) is itself still stubbed from Milestone 5 Stage A. Only the
-    /// scalar/matrix uniforms below are wired up.
-    /// </remarks>
     public void SetShadowMapParameters(ICommandBuffer cb, ShaderReflection reflection)
     {
         int SlotOf(string name)
@@ -87,6 +78,22 @@ public class Lighting
                 if (uniform.Name == name) return uniform.Offset;
             }
             return -1;
+        }
+
+        int TextureSlotOf(string name)
+        {
+            foreach (var texture in reflection.Textures)
+            {
+                if (texture.Name == name) return texture.Slot;
+            }
+            return -1;
+        }
+
+        void SetShadowMapTexture(string name, IRenderTarget? shadowMap)
+        {
+            var slot = TextureSlotOf(name);
+            if (slot < 0 || shadowMap is null) return;
+            cb.SetShaderResource(slot, shadowMap.ColorTexture, Effects.ShadowMapSampler);
         }
 
         void SetMatrix(string name, Matrix m)
@@ -103,11 +110,14 @@ public class Lighting
             cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
         }
 
-        void SetInt(string name, int value)
+        // SetUniform copies raw bytes straight into the Effect parameter's value storage with no
+        // type conversion, so the span's element type has to match the shader's declared type -
+        // a float parameter written from an int lands a denormal (3 -> 4.2e-45) and reads as 0.
+        void SetFloat(string name, float value)
         {
             var slot = SlotOf(name);
             if (slot < 0) return;
-            Span<int> v = [value];
+            Span<float> v = [value];
             cb.SetUniform(slot, MemoryMarshal.AsBytes(v));
         }
 
@@ -135,11 +145,10 @@ public class Lighting
         }
 
         // NumCascades gates shadow-map *sampling* in Mad.fxh's PS_IsShadowed. It must only be
-        // non-zero when the cascade textures are actually bound: this backend can't bind textures
-        // yet (see this method's remarks) and ShadowMaps is empty today, so leaving it at the
-        // pass's cascade count made every shader sample an unbound sampler - which D3D11 reads as
-        // 0, i.e. "the shadow map is empty, everything is in shadow" - halving the brightness of
-        // anything inside the light frustum (PS_ApplyShadowing) and flattening the whole scene.
+        // non-zero when the cascade textures are actually bound - a shader sampling an unbound
+        // sampler gets D3D11's zero-fill, i.e. "the shadow map is empty, everything is in shadow",
+        // halving the brightness of anything inside the light frustum (PS_ApplyShadowing) and
+        // flattening the whole scene. It is declared `float` in Mad.fxh; see SetFloat.
         var usableShadowMaps = 0;
         for (var i = 0; i < ShadowMaps.Count && i < TotalCascades; i++)
         {
@@ -149,7 +158,11 @@ public class Lighting
             }
         }
 
-        SetInt("NumCascades", usableShadowMaps);
+        SetFloat("NumCascades", usableShadowMaps);
+
+        if (ShadowMaps.Count > 0) SetShadowMapTexture("ShadowMap0", ShadowMaps[0]);
+        if (ShadowMaps.Count > 1) SetShadowMapTexture("ShadowMap1", ShadowMaps[1]);
+        if (ShadowMaps.Count > 2) SetShadowMapTexture("ShadowMap2", ShadowMaps[2]);
 
         SetFloat3("LightDirection", World.LightDirection);
     }
