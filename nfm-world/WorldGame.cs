@@ -42,7 +42,7 @@ namespace NFMWorld;
 /// </remarks>
 public class WorldGame : IDisposable
 {
-    public static UnlimitedArray<RenderTarget2D?> ShadowRenderTargets = [];
+    public static UnlimitedArray<Graphics.IRenderTarget?> ShadowRenderTargets = [];
 
     /// <summary>Stage A compatibility shim for <c>Mad/UI/SettingsMenu.cs</c>'s existing settings-application logic. See <see cref="GraphicsSettingsShim"/>.</summary>
     public GraphicsSettingsShim Graphics;
@@ -107,7 +107,7 @@ public class WorldGame : IDisposable
         // SDL3 bindings define a same-named SDL type in a different assembly, and referencing
         // SDL3.Core directly here would make every "SDL" reference in this project ambiguous.
         Window = SdlWindow.Create("NFM World", 1280, 720, FNA3DInterop.PrepareWindowAttributes());
-        _device = FNA3DGraphicsDevice.Create(Window.Handle, Window.Width, Window.Height, vsync: true, debugMode: true);
+        _device = FNA3DGraphicsDevice.Create(Window.Handle, Window.Width, Window.Height, vsync: true, debugMode: false);
         Graphics = new GraphicsSettingsShim(Window);
 
         Window.Resized += (w, h) =>
@@ -183,9 +183,14 @@ public class WorldGame : IDisposable
     private void Initialize()
     {
         ImguiRenderer = new SdlImGuiRenderer(_device, Window);
+        _nvg = new NanoVGRenderer(_device);
 
-        // TODO(Stage C / Milestone 6 follow-up): UiRenderer/NanoVGRenderer still need a converted
-        // 2D UI backend (NvgSharp's INvgRenderer against this abstraction) - not started yet.
+        // Must be constructed (and GameSparker.UiRenderer assigned) before GameSparker.Load()
+        // (called from LoadContent(), which runs after Initialize()) pushes MainMenuPhase - phases
+        // register their PhaseBridge with GameSparker.UiRenderer from BasePhase.Enter(), which
+        // no-ops silently if it's still null at that point.
+        _uiRenderer = new UiRenderer(this);
+        GameSparker.UiRenderer = _uiRenderer;
 
         _oldKeyState = SdlWindow.GetKeyboardState();
         var (mouseButtons, mouseX, mouseY) = SdlWindow.GetMouseState();
@@ -208,6 +213,7 @@ public class WorldGame : IDisposable
             shadowRenderTarget?.Dispose();
         }
         ImguiRenderer?.Dispose();
+        _nvg?.Dispose();
 
         _device.Dispose();
         Window.Dispose();
@@ -219,26 +225,17 @@ public class WorldGame : IDisposable
     private void LoadContent()
     {
         ImguiRenderer!.RebuildFontAtlas();
+        ImGuiTheme.Apply();
 
-        // TODO(Stage C / Milestone 6 follow-up): the ImGui style/theme block and NanoVGRenderer
-        // construction still need a converted 2D UI backend (NanoVG side) - not started yet. 2D UI
-        // (menus/HUD via Yoga/NanoVG) doesn't render yet; the ImGui dev console does.
+        // NanoVGRenderer (constructed in Initialize(), before this runs) already set
+        // IBackend.Backend to the real WorldClientBackend - no DummyBackend stand-in needed anymore.
 
         // GameSparker.NewGraphicsDevice must be set before Effects.Initialize/GameSparker.Load,
         // since both transitively construct render elements (Ground/Sky/meshes/...) that read it
         // directly (see that field's doc comment).
         GameSparker.NewGraphicsDevice = _device;
         Effects.Initialize(_device);
-
-        // TODO(Stage C / Milestone 6): IBackend.Backend is still whatever BackendGameSparker.Load's
-        // earlier server-side data load left it as (ServerBackend, which throws on client-only
-        // calls like GetSound) - normally NanoVGRenderer's constructor overwrites it with the real
-        // client WorldClientBackend, but that's a hard blocker (needs a live XNA GraphicsDevice/
-        // NvgContext) until 2D UI is converted. DummyBackend is a safe, fully-inert stand-in (silent
-        // audio, no-op 2D drawing) so GameSparker.Load's SfxLibrary.LoadSounds() and anything else
-        // touching IBackend.Backend/G doesn't crash - not a real fix, just keeps this stage's scope
-        // (3D rendering) from being blocked by 2D UI/audio-backend work that belongs in Stage C.
-        NFMWorld.DriverInterface.DriverInterface.IBackend.Backend = new NFMWorld.DriverInterface.DriverInterface.DummyBackend();
+        RebuildCascades();
 
         GameSparker.Load(this);
 
@@ -247,8 +244,18 @@ public class WorldGame : IDisposable
 
     public void RebuildCascades()
     {
-        // TODO(Stage B): port shadow-cascade render targets to IRenderTarget. Not called yet -
-        // see LoadContent.
+        foreach (var target in ShadowRenderTargets)
+        {
+            target?.Dispose();
+        }
+        ShadowRenderTargets.Clear();
+
+        for (var i = 0; i < NumCascades; i++)
+        {
+            ShadowRenderTargets.Add(_device.CreateRenderTarget(new global::NFMWorld.Graphics.RenderTargetDesc(
+                ShadowResolution, ShadowResolution, global::NFMWorld.Graphics.TextureFormat.Single,
+                HasDepthStencil: true, global::NFMWorld.Graphics.TextureFormat.Depth24Stencil8)));
+        }
     }
 
     private void UpdateInput()
@@ -297,9 +304,7 @@ public class WorldGame : IDisposable
     {
         var (buttons, mouseX, mouseY) = SdlWindow.GetMouseState();
         var mousePosition = new Int2(mouseX, mouseY);
-        // TODO(Stage B): SdlWindow doesn't expose a polling scroll accumulator yet (only the
-        // per-event MouseWheel delta) - scroll handling is wired up properly once UiRenderer exists.
-        var scrollValue = _oldScrollValue;
+        var scrollValue = SdlWindow.GetScrollWheelValue();
 
         var ctrlKey = _oldKeyState[Key.LControlKey] || _oldKeyState[Key.RControlKey];
         var shiftKey = _oldKeyState[Key.LShiftKey] || _oldKeyState[Key.RShiftKey];
@@ -389,16 +394,21 @@ public class WorldGame : IDisposable
 
         var t = Stopwatch.StartNew();
 
-        // TODO(Stage C / Milestone 6 follow-up): _uiRenderer.Render()/YogaDebugger.Render()/
-        // _nvg.Render()/GameSparker.Render3DOverlays() still need a converted NanoVG-backed 2D UI
-        // backend - not started yet. FPSCounter/ImGui (dev console/message window/per-phase
-        // RenderImgui) render below.
         var cb = _device.AcquireCommandBuffer();
-        cb.Clear(ClearOptions.Color | ClearOptions.Depth,
+        cb.Clear(ClearOptions.Color | ClearOptions.Depth | ClearOptions.Stencil,
             new ColorRgba(Color.CornflowerBlue.R / 255f, Color.CornflowerBlue.G / 255f, Color.CornflowerBlue.B / 255f));
-        cb.SetViewport(new NFMWorld.Graphics.Viewport(0, 0, Window.Width, Window.Height));
+        cb.SetViewport(new Graphics.Viewport(0, 0, Window.Width, Window.Height));
 
         GameSparker.Render(cb, alpha);
+        GameSparker.Render3DOverlays(cb);
+
+        _nvg!.BeginFrame(cb);
+        _uiRenderer?.Render();
+        if (_yogaDebugPage >= 0) YogaDebugger.Render(_yogaDebugPage);
+        
+        FPSCounter.Render();
+
+        _nvg.Render();
 
         ImguiRenderer!.BeginLayout(gameTime);
         GameSparker.RenderImgui();
@@ -410,6 +420,57 @@ public class WorldGame : IDisposable
         LastFrameTime = t.ElapsedMilliseconds;
 
         transaction.Finish();
+    }
+
+    // Ported from FNA/src/Game.cs's Tick()/AdvanceElapsedTime()/UpdateEstimatedSleepPrecision() -
+    // the manual loop below previously reset its elapsed-time tracking to `now` every iteration
+    // instead of carrying the accumulator's remainder into the next frame, and assumed a fixed
+    // 1ms Thread.Sleep precision instead of measuring it - both cause a fixed-timestep cap (e.g.
+    // 63fps) to systematically undershoot (61-62fps) since every frame's sleep/spin overshoot past
+    // TargetElapsedTime was silently discarded rather than subtracted back out of the next frame's
+    // budget. This is independent of vsync (matches the report that toggling vsync didn't help).
+    private const int PreviousSleepTimeCount = 128; // must be a power of 2 for the bitmask below
+    private const int SleepTimeMask = PreviousSleepTimeCount - 1;
+    private static readonly TimeSpan[] previousSleepTimes =
+        Enumerable.Repeat(TimeSpan.FromMilliseconds(1), PreviousSleepTimeCount).ToArray();
+    private static int sleepTimeIndex;
+    private static TimeSpan worstCaseSleepPrecision = TimeSpan.FromMilliseconds(1);
+    private static TimeSpan accumulatedElapsedTime;
+    private static long previousTicks;
+
+    private static TimeSpan AdvanceElapsedTime(Stopwatch stopwatch)
+    {
+        var currentTicks = stopwatch.Elapsed.Ticks;
+        var timeAdvanced = TimeSpan.FromTicks(currentTicks - previousTicks);
+        accumulatedElapsedTime += timeAdvanced;
+        previousTicks = currentTicks;
+        return timeAdvanced;
+    }
+
+    private static void UpdateEstimatedSleepPrecision(TimeSpan timeSpentSleeping)
+    {
+        var upperTimeBound = TimeSpan.FromMilliseconds(4);
+        if (timeSpentSleeping > upperTimeBound)
+        {
+            timeSpentSleeping = upperTimeBound;
+        }
+
+        if (timeSpentSleeping >= worstCaseSleepPrecision)
+        {
+            worstCaseSleepPrecision = timeSpentSleeping;
+        }
+        else if (previousSleepTimes[sleepTimeIndex] == worstCaseSleepPrecision)
+        {
+            var maxSleepTime = TimeSpan.MinValue;
+            foreach (var t in previousSleepTimes)
+            {
+                if (t > maxSleepTime) maxSleepTime = t;
+            }
+            worstCaseSleepPrecision = maxSleepTime;
+        }
+
+        previousSleepTimes[sleepTimeIndex] = timeSpentSleeping;
+        sleepTimeIndex = (sleepTimeIndex + 1) & SleepTimeMask;
     }
 
     public static void Main(string[] args)
@@ -456,28 +517,49 @@ public class WorldGame : IDisposable
         program.Initialize();
         program.LoadContent();
 
-        // Manual game loop replacing XNA's Game.Run(). The game's own tick pacing lives in
-        // TimeStep (see _tickTimeStep), not in this loop's Update/Draw call frequency, so this
-        // only needs to approximate XNA's variable-timestep behavior (IsFixedTimeStep = false is
-        // WorldGame's default) plus an optional frame-rate cap when IsFixedTimeStep is set (see
-        // SettingsMenu.cs's FPS limiter).
+        // Manual game loop replacing XNA's Game.Run() - timing algorithm ported from FNA's own
+        // Game.Tick() (see AdvanceElapsedTime/UpdateEstimatedSleepPrecision above) so a fixed-cap
+        // target (e.g. 63fps) holds precisely instead of drifting.
         var stopwatch = Stopwatch.StartNew();
-        var lastElapsed = TimeSpan.Zero;
         while (!program.Window.ShouldQuit)
         {
             program.Window.PumpEvents();
 
-            var now = stopwatch.Elapsed;
-            var frameElapsed = now - lastElapsed;
-            if (program.IsFixedTimeStep && frameElapsed < program.TargetElapsedTime)
-            {
-                Thread.Sleep(program.TargetElapsedTime - frameElapsed);
-                now = stopwatch.Elapsed;
-                frameElapsed = now - lastElapsed;
-            }
-            lastElapsed = now;
+            AdvanceElapsedTime(stopwatch);
 
-            var gameTime = new GameTime(now, frameElapsed);
+            if (program.IsFixedTimeStep)
+            {
+                // Coarse-sleep down to the estimated OS sleep precision, then spin-wait the rest -
+                // avoids oversleeping past the target on platforms where Sleep(1) isn't accurate.
+                while (accumulatedElapsedTime + worstCaseSleepPrecision < program.TargetElapsedTime)
+                {
+                    Thread.Sleep(1);
+                    UpdateEstimatedSleepPrecision(AdvanceElapsedTime(stopwatch));
+                }
+
+                while (accumulatedElapsedTime < program.TargetElapsedTime)
+                {
+                    Thread.SpinWait(1);
+                    AdvanceElapsedTime(stopwatch);
+                }
+            }
+
+            TimeSpan frameElapsed;
+            if (program.IsFixedTimeStep)
+            {
+                // Single fixed step per loop iteration (matches this loop's existing one-Update-
+                // per-tick architecture) - subtract, don't zero, so any overshoot past
+                // TargetElapsedTime carries into the next frame's budget instead of being lost.
+                frameElapsed = program.TargetElapsedTime;
+                accumulatedElapsedTime -= program.TargetElapsedTime;
+            }
+            else
+            {
+                frameElapsed = accumulatedElapsedTime;
+                accumulatedElapsedTime = TimeSpan.Zero;
+            }
+
+            var gameTime = new GameTime(stopwatch.Elapsed, frameElapsed);
             program.Update(gameTime);
             program.Draw(gameTime);
         }
