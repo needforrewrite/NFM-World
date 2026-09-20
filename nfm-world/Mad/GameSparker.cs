@@ -309,9 +309,9 @@ public static partial class GameSparker
         CurrentPhase.Render(cb, alpha);
     }
 
-    public static void Render3DOverlays()
+    public static void Render3DOverlays(NFMWorld.Graphics.ICommandBuffer cb)
     {
-        CurrentPhase.Render3DOverlays();
+        CurrentPhase.Render3DOverlays(cb);
     }
 
     public static void RenderImgui()

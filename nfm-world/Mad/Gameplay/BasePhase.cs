@@ -81,7 +81,7 @@ public abstract class BasePhase : IDisposable
     /// <summary>
     /// Renders after 2D overlays. Use to draw 3D content over 2D content.
     /// </summary>
-    public virtual void Render3DOverlays()
+    public virtual void Render3DOverlays(NFMWorld.Graphics.ICommandBuffer cb)
     {
     }
 
