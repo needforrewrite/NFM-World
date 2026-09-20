@@ -26,6 +26,9 @@ replay_pid*
 **/obj
 **/bin
 
+# BenchmarkDotNet writes its summaries, logs and generated projects here.
+**/BenchmarkDotNet.Artifacts/
+
 .idea
 *.user
 
@@ -37,3 +40,4 @@ replay_pid*
 
 Generated
 /nfm-world/imgui.ini
+/imgui.ini
