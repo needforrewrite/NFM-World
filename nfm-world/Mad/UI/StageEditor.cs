@@ -487,15 +487,10 @@ public partial class StageEditorPhase : BasePhase
 
         _isOpen = true;
 
-        // Clear stale shadow maps left over from any previous gameplay session.
-        // Scene.RenderInternal always passes Program.shadowRenderTargets to the shader,
-        // so old shadow data would bleed into the editor if not wiped here.
-        foreach (var rt in WorldGame.ShadowRenderTargets)
-        {
-            _graphicsDevice.SetRenderTarget(rt);
-            _graphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, Color.White.ToXna(), 1.0f, 0);
-        }
-        _graphicsDevice.SetRenderTarget(null);
+        // TODO(Milestone 5 Stage B follow-up): this editor subsystem still uses the old XNA
+        // _graphicsDevice, which can't SetRenderTarget against the new IRenderTarget WorldGame.
+        // ShadowRenderTargets now holds - never reached today (StageEditorPhase is unreachable),
+        // same scope boundary every other unconverted piece of this file already has.
 
         // Initialize camera
         perspectiveCamera.Fov = 60f;

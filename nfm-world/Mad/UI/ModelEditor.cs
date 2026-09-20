@@ -2757,9 +2757,9 @@ public class ModelEditorPhase : BasePhase
         GameSparker.ExitEditor();
     }
 
-    public override void Render3DOverlays()
+    public override void Render3DOverlays(NFMWorld.Graphics.ICommandBuffer cb)
     {
-        base.Render3DOverlays();
+        base.Render3DOverlays(cb);
 
         var tab = ActiveTab;
         if (!_isOpen || tab == null || tab.Object == null) return;

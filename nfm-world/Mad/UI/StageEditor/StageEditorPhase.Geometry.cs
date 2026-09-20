@@ -202,7 +202,7 @@ public partial class StageEditorPhase
         }
     }
     
-    private static void RenderSelectionHighlights(StageEditorTab tab)
+    private static void RenderSelectionHighlights(NFMWorld.Graphics.ICommandBuffer cb, StageEditorTab tab)
     {
         if (tab.SelectedPieceIds.Count == 0)
             return;
@@ -217,7 +217,7 @@ public partial class StageEditorPhase
         if (neededVertices == 0)
             return;
 
-        Debug.RenderHighlights(tab.SelectedPieceIds
+        Debug.RenderHighlights(cb, GameSparker.NewGraphicsDevice, tab.SelectedPieceIds
             .Select(id => tab.ScenePieces.GetValueOrDefault(id)?.Obj!)
             .Where(obj => obj != null!),
             activeCamera);
@@ -227,7 +227,7 @@ public partial class StageEditorPhase
     /// Renders a translucent ghost preview of the pending placement part at _pendingPlacementPos.
     /// Shows semi-transparent filled polygons plus a bright wireframe outline.
     /// </summary>
-    private void RenderPlacementPreview()
+    private void RenderPlacementPreview(NFMWorld.Graphics.ICommandBuffer cb)
     {
         if (_pendingPlacementPartIndex < 0 || _pendingPlacementPartIndex >= _availableParts.Count) return;
         var part = _availableParts[_pendingPlacementPartIndex];
@@ -241,7 +241,7 @@ public partial class StageEditorPhase
         var fillColor = new Color(0.3f, 0.8f, 1.0f, 0.35f);
         var wireColor = new Color(0.1f, 0.9f, 1.0f, 1.0f);
         
-        Debug.RenderGhost(part, worldMatrix, fillColor, wireColor, activeCamera);
+        Debug.RenderGhost(cb, GameSparker.NewGraphicsDevice, part, worldMatrix, fillColor, wireColor, activeCamera);
     }
     
     private Vector3 ComputeSelectionCentroid()

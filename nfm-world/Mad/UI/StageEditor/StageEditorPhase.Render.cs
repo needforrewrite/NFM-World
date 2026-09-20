@@ -112,13 +112,13 @@ public partial class StageEditorPhase
         _graphicsDevice.RasterizerState = oldRasterizerState;
         
         // Render selection highlight for all selected pieces, gizmo on primary
-        RenderSelectionHighlights(ActiveTab);
+        RenderSelectionHighlights(cb, ActiveTab);
         RenderSelectedWallHighlight(ActiveTab);
         if (ActiveTab.ActivePieceId >= 0)
         {
             var selectedPiece = ActiveTab.ScenePieces.GetValueOrDefault(ActiveTab.ActivePieceId);
             if (selectedPiece?.Obj != null)
-                Debug.RenderGizmo(ComputeSelectionCentroid(), activeCamera, ref _gizmoHovered, ref _gizmoDragging, new Vector2(_mouseX, _mouseY));
+                Debug.RenderGizmo(cb, GameSparker.NewGraphicsDevice, ComputeSelectionCentroid(), activeCamera, ref _gizmoHovered, ref _gizmoDragging, new Vector2(_mouseX, _mouseY));
         }
         
         // Process pending preview thumbnails
@@ -127,7 +127,7 @@ public partial class StageEditorPhase
         
         // Render placement ghost if in placement mode and mouse is over viewport
         if (_pendingPlacementPartIndex >= 0 && _hasValidPlacementPos)
-            RenderPlacementPreview();
+            RenderPlacementPreview(cb);
         
         // Clear the depth buffer so ImGui always renders on top of the 3D scene.
         // Without this, geometry close to the camera writes near-zero depth values and
