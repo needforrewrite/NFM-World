@@ -59,8 +59,14 @@ public class Submesh : IInstancedRenderElement, IDisposable
         cb.SetVertexBuffer(1, instanceBuffer, InstanceData.Stride);
         cb.SetIndexBuffer(_indexBuffer);
 
-        p.View.SetValue(cb, camera.ViewMatrix);
-        p.Projection.SetValue(cb, camera.ProjectionMatrix);
+        // CreateShadowMapVS transforms by the cascade's *light* camera, not the view camera: the
+        // shadow map holds the depths the sun sees, and the main pass re-projects each pixel with
+        // that same LightViewProj to compare against them. (The pre-migration Submesh.Render
+        // swapped the camera here the same way.) Feeding it the view camera instead puts unrelated
+        // depths in the map, and that comparison then simply never triggers - i.e. no shadows.
+        var passCamera = isShadowPass ? lighting!.CascadeLightCamera! : camera;
+        p.View.SetValue(cb, passCamera.ViewMatrix);
+        p.Projection.SetValue(cb, passCamera.ProjectionMatrix);
 
         if (isShadowPass)
         {
@@ -102,6 +108,12 @@ public class Submesh : IInstancedRenderElement, IDisposable
             p.UseBaseColor.SetValue(cb, true);
             p.BaseColor.SetValue(cb, new Color3(r, g, b));
         }
+
+        // Shadow-map depth bias - the shader's own default (0.0005) is an order of magnitude too
+        // large for the light cameras' depth range (Near 50 / Far 1000000 normalizes to ~d/1e6, so
+        // 0.0005 already means ~500 world units of occlusion) and leaves almost everything lit.
+        // Every pre-migration consumer of Poly.fx set this same value (see LineMesh/Ground/Mountains).
+        p.DepthBias.SetValue(cb, 0.00005f);
 
         lighting?.SetShadowMapParameters(cb, pipeline.Reflection);
 
