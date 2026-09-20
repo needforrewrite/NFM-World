@@ -53,8 +53,8 @@ public sealed partial class NanoSVGImage : IImage
 		if (grad == null || grad.Value.nstops == 0)
 			return default;
 
-		var icol = NsvgColorToNvg(grad.Value.stops[0].color, opacity).ToXna();
-		var ocol = NsvgColorToNvg(grad.Value.stops[grad.Value.nstops - 1].color, opacity).ToXna();
+		var icol = NsvgColorToNvg(grad.Value.stops[0].color, opacity).ToDrawing();
+		var ocol = NsvgColorToNvg(grad.Value.stops[grad.Value.nstops - 1].color, opacity).ToDrawing();
 
 		float t0 = grad.Value.xform[0], t1 = grad.Value.xform[1];
 		float t2 = grad.Value.xform[2], t3 = grad.Value.xform[3];
@@ -229,7 +229,7 @@ public sealed partial class NanoSVGImage : IImage
             if (hasFill)
             {
                 if (fillType == NSVGpaintType.NSVG_PAINT_COLOR)
-                    ctx.FillColor(NsvgColorToNvg(shape.fill.color, shape.opacity).ToXna());
+                    ctx.FillColor(NsvgColorToNvg(shape.fill.color, shape.opacity).ToDrawing());
                 else
                     ctx.FillPaint(GradientPaint(ctx, shape.fill, shape.opacity));
                 ctx.Fill();
@@ -237,7 +237,7 @@ public sealed partial class NanoSVGImage : IImage
             if (hasStroke)
             {
                 if (strokeType == NSVGpaintType.NSVG_PAINT_COLOR)
-                    ctx.StrokeColor(NsvgColorToNvg(shape.stroke.color, shape.opacity).ToXna());
+                    ctx.StrokeColor(NsvgColorToNvg(shape.stroke.color, shape.opacity).ToDrawing());
                 else
                     ctx.StrokePaint(GradientPaint(ctx, shape.stroke, shape.opacity));
                 ctx.StrokeWidth(shape.strokeWidth);
